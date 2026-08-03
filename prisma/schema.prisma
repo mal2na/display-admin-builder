@@ -1,0 +1,339 @@
+// 전시/관리 어드민 빌더 — 데이터 모델 (Phase 1)
+// 개념/상태값의 단일 진실 원본은 프로젝트 루트 CLAUDE.md.
+// 정책서: NC_전시관리기능_정책서_간소화_v0.31.html (POL-DSP v0.31)
+//
+// [주의] SQLite 커넥터는 Prisma의 `enum`을 지원하지 않는다.
+//   → 모든 유형/상태는 String으로 저장하고, 허용값은 src/lib/display-taxonomy.ts 의
+//     상수로 관리한다. 애플리케이션/시드 레벨에서 그 상수로 검증한다.
+//   → 실제 DB(Postgres 등)로 교체하면 그때 native enum으로 승격할 수 있다.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// 1. Atom — 가장 작은 표시 요소 (Component의 재료로만 쓰인다)
+// ─────────────────────────────────────────────────────────────
+model Atom {
+  id       String @id @default(cuid())
+  name     String // 운영자용 식별명
+  atomType String // TEXT | BUTTON | IMAGE | ICON | INFO  (display-taxonomy.ATOM_TYPES)
+
+  content String? // 문구/가격/혜택문구/정보값 등 텍스트성 값
+  imageUrl String? // IMAGE / ICON 의 에셋 경로
+  altText String? // 대체텍스트. IMAGE/ICON이면 draft는 허용하되 review 전환은 차단 (PI-DSP-CMP-004)
+  linkUrl String? // 랜딩/버튼 링크
+  status  String  @default("active") // 재료 상태: active(사용) | inactive(미사용)
+
+  componentAtoms ComponentAtom[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// 2. Component — Atom을 조합한 기능 모듈. 반드시 6개 유형 중 하나.
+// ─────────────────────────────────────────────────────────────
+model Component {
+  id            String  @id @default(cuid())
+  name          String
+  componentType String // 정보형 | 행동형 | 혜택형 | 선택형 | 배너형 | 상품형 (COMPONENT_TYPES)
+  description   String?
+  status        String  @default("active") // 재료 상태: active(사용) | inactive(미사용)
+  selectedIndex Int     @default(0) // 선택형(칩/탭)에서 기본 활성 칩 인덱스 (ChipPage Selection)
+  chipRows      Int     @default(1) // 선택형 칩 표시 줄 수 (1줄 | 2줄)
+
+  // 운영자가 이 Component를 쓸 수 있는 Corner 유형을 좁힌 값(JSON 배열 문자열).
+  // null/빈 값 = CORNER_COMPONENT_MAP상 호환되는 모든 Corner 유형 허용. (PI-DSP-CMP-003 하위 제약)
+  allowedCornerTypes String?
+
+  componentAtoms   ComponentAtom[]
+  cornerComponents CornerComponent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Component ↔ Atom (조합, 순서 + 필수/선택 구분)
+model ComponentAtom {
+  id          String @id @default(cuid())
+  componentId String
+  atomId      String
+  order       Int     // Component 안에서의 표시 순서
+  isRequired  Boolean @default(true) // 필수 Atom / 선택 Atom
+
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  atom      Atom      @relation(fields: [atomId], references: [id])
+
+  @@unique([componentId, atomId])
+  @@index([componentId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 3. Corner — Component를 올려놓는 화면 영역. corner_type이 허용 component_type을 제한.
+// ─────────────────────────────────────────────────────────────
+model Corner {
+  id           String  @id @default(cuid())
+  name         String
+  cornerType   String // 8종 (CORNER_TYPES). corner_type → 허용 component_type: CornerComponentRule / CORNER_COMPONENT_MAP
+  typeLabel    String? // 표시 유형명 오버라이드 (예: 복합형). null이면 cornerType 카탈로그 표시명 사용
+  title        String? // (레거시) 노출 타이틀 — 신규 화면은 mainTitle 사용
+  maxItems     Int?    // 최대 노출 개수
+  sortStrategy String? // 정렬 기준: MANUAL | PRIORITY | RECENT ...
+  status       String  @default("active") // 재료 상태: active(사용) | inactive(미사용)
+
+  // ── T우주 코너 정보 컬럼 (코너1·코너2 참고) ──
+  markupId     String? // 코너 마크업 ID (예: CMUID00030)
+  layoutDetail String? // 유형 상세 (예: 가로형(2.5배열), 팝업배너형, 세로형 …)
+  cornerLayout String? // 코너 레이아웃 (예: 가로 SWIPE형)
+  description  String? // 코너 설명
+  mainTitle    String? // 메인 타이틀 (줄바꿈 \n 허용)
+  subTitle     String? // 서브 타이틀
+  subTitleIcon String? // 서브 타이틀 아이콘 (사용안함 | 말줄임표 | 화살표 | 정보)
+
+  // ── 상품형 코너 전용 컬럼 (코너3·코너4 참고) ──
+  minItems           Int?    // 최소 노출 개수
+  noDisplayCondition String? // 미 노출 조건 (선택 없음 | 재고 소진 시 | 혜택 종료 시 | 개인화 제한 시)
+  moreButtonUse      Boolean @default(false) // 더보기 사용 여부
+  moreButtonLabel    String? // 더보기 버튼명
+  moreButtonLink     String? // 더보기 랜딩 URL
+
+  // 배너형 코너에 연결된 배너 라이브러리 항목 (포탈2 BannerSlot)
+  bannerId String?
+  banner   Banner? @relation(fields: [bannerId], references: [id])
+
+  cornerComponents CornerComponent[]
+  templateCorners  TemplateCorner[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Corner ↔ Component (배치, 순서). corner_type 제약은 앱/시드에서 CORNER_COMPONENT_MAP로 검증.
+model CornerComponent {
+  id          String @id @default(cuid())
+  cornerId    String
+  componentId String
+  order       Int
+
+  corner    Corner    @relation(fields: [cornerId], references: [id], onDelete: Cascade)
+  component Component @relation(fields: [componentId], references: [id])
+
+  @@unique([cornerId, componentId])
+  @@index([cornerId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 4. Template — 여러 Corner를 순서/배치로 구성한 레이아웃. Container에 속한다.
+//    10단계 전시 워크플로우 상태(status)가 여기 붙는다.  ← 정책서 "마. 상태 전이표"
+// ─────────────────────────────────────────────────────────────
+model Template {
+  id             String    @id @default(cuid())
+  containerId    String
+  name           String
+  conditionGroup String // 조건 그룹: 비로그인 | 로그인 | 조건충족 | 조건미충족 | (운영자 정의 커스텀)
+  isDefault      Boolean   @default(false) // 이 Container의 기본 Template 여부
+  memo           String? // 메모 (템플릿.png: 30자 이내)
+  displayOn      Boolean   @default(true) // 전시 여부 (전시/미전시) — 워크플로우 status와 별개
+  startAtOnApproval Boolean @default(false) // 전시 기간 시작일을 승인일시로 설정
+  startAt        DateTime? // 기간형 Template 시작 (nullable = 상시)
+  endAt          DateTime? // 기간형 Template 종료 (nullable = 상시)
+  priority       Int       @default(0) // 우선순위 (정책서: 우선순위)
+  status         String    @default("DRAFT") // 10단계 (DISPLAY_STATUS key). ST-DSP-001~010
+  version        Int       @default(1) // 롤백 대상 버전 식별 (PI-DSP-RBK-002)
+  rejectReason   String? // 반려 사유 (status = REJECTED / 수정 필요)
+
+  // 보관(soft-delete). null = 활성, 값 있으면 보관됨(목록에서 숨김, 복구 가능)
+  archivedAt DateTime?
+  archivedBy String?
+
+  // 게시 중지 기록 (PG-DSP-WFL / 상태 전이표: 게시 중 → 게시 중지, 사유·실행자·실행시각 필수)
+  suspendReason String? // 중지 사유
+  suspendedBy   String? // 실행자
+  suspendedAt   DateTime? // 실행 시각
+
+  // 직전 승인 완료 버전 (롤백 대상 — PI-DSP-RBK-002)
+  lastApprovedVersion Int? // 마지막으로 APPROVED 되었던 시점의 version
+  publishedAt         DateTime? // 실제 게시 전환 시각
+
+  container       Container        @relation("ContainerTemplates", fields: [containerId], references: [id])
+  templateCorners TemplateCorner[]
+  versions        TemplateVersion[]
+  defaultOf       Container?       @relation("DefaultTemplate") // 이 Template을 기본으로 지정한 Container (1:1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([containerId])
+}
+
+// 템플릿 버전 스냅샷 (임시저장 / 버전 되돌리기 — PG-DSP-RBK-001, PI-DSP-RBK-002)
+// snapshot = 구조 전체(meta + corners→components→atoms)를 JSON 문자열로 보관.
+model TemplateVersion {
+  id         String   @id @default(cuid())
+  templateId String
+  version    Int // 스냅샷 시점의 template.version
+  label      String? // '임시저장' | '되돌리기 전 자동저장' 등
+  snapshot   String // 구조 JSON
+  createdBy  String?
+  createdAt  DateTime @default(now())
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+}
+
+// Template ↔ Corner (배치, 세로 순서)
+model TemplateCorner {
+  id         String  @id @default(cuid())
+  templateId String
+  cornerId   String
+  order      Int // Template 안에서 Corner의 세로 배치 순서
+  visible    Boolean @default(true) // 이 Template에서 노출/비노출 (전시 여부)
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  corner   Corner   @relation(fields: [cornerId], references: [id])
+
+  @@unique([templateId, cornerId])
+  @@index([templateId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 5. Container — 채널에 실제로 나가는 화면/영역 단위. 화면과 1:1, Template과 1:N.
+//    삭제하지 않고 status(active/inactive)로 관리. 기본 Template 1개 필수.
+// ─────────────────────────────────────────────────────────────
+model Container {
+  id            String  @id @default(cuid())
+  name          String
+  containerType String? // MAIN | MENU | CURATION | BENEFIT ... (메인화면/메뉴/기획전/혜택영역)
+  channel       String? // APP | WEB ...
+  status        String  @default("active") // active | inactive (= 전시/미전시. soft-delete만 허용, 물리 삭제 없음)
+
+  // ── 승인 워크플로우 (컨테이너 단위) ──
+  // DRAFT 작성중 → REVIEW 승인 대기 → APPROVED 승인 완료 / REJECTED 반려. status(전시/미전시)와는 별개.
+  approvalStatus      String    @default("DRAFT") // DRAFT | REVIEW | APPROVED | REJECTED
+  approvalRequestedAt DateTime? // 승인 요청 시각
+  approvedBy          String? // 승인 담당자
+  approvedAt          DateTime? // 승인 완료 시각
+  rejectReason        String? // 반려 사유
+
+  // ── T우주 "컨테이너 기본 정보" (컨테이너정보 화면 참고) ──
+  parentId   String? // 상위 컨테이너
+  parent     Container?  @relation("ContainerHierarchy", fields: [parentId], references: [id])
+  children   Container[] @relation("ContainerHierarchy")
+  kind       String    @default("일반") // 컨테이너 타입: 일반 | 코너관리용
+  platform   String    @default("모바일") // 모바일 | PC
+  previewUrl String? // 미리보기 URL
+  startAt    DateTime? // 전시 기간 시작
+  endAt      DateTime? // 전시 기간 종료
+  noEndDate  Boolean   @default(false) // 종료 없음
+
+  // ── T우주 "메타 정보" ──
+  metaUse         Boolean @default(true) // 사용 여부
+  searchTags      String? // 검색 태그 (#키워드)
+  metaKeywords    String? // meta keywords
+  metaDescription String? // meta description
+  ogTitle         String? // og:title
+  ogDescription   String? // og:description
+  ogSiteName      String? // og:site_name
+  ogImage         String? // og:image (URL)
+
+  // 기본 Template. 논리적으로 필수지만, 최초 생성 시 Template이 아직 없어 순환이 생기므로
+  // DB에서는 nullable로 두고 "반드시 1개"는 앱/시드 레벨에서 보장한다.
+  defaultTemplateId String?   @unique
+  defaultTemplate   Template? @relation("DefaultTemplate", fields: [defaultTemplateId], references: [id])
+
+  templates Template[] @relation("ContainerTemplates")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// 배너 라이브러리 — 기존 배너 재사용 + 신규 등록 (포탈2 참고)
+// ─────────────────────────────────────────────────────────────
+model Banner {
+  id       String  @id @default(cuid())
+  name     String
+  imageUrl String // 배너 이미지 경로/URL (BannerSrc)
+  linkUrl  String? // 배너 클릭 시 랜딩
+  status   String  @default("active") // active | inactive
+
+  corners   Corner[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// 5-b. CornerType — 코너 유형 카탈로그 (T우주 "코너 유형 관리")
+//   운영자가 재사용할 코너 유형을 등록/관리한다. 코너를 만들 때 이 카탈로그에서 유형을 고른다.
+//   baseCategory 는 컴포넌트 매핑(CORNER_COMPONENT_MAP, PI-DSP-CMP-003)을 위한 내부 8분류 키.
+//   name 은 화면 표기명(관리 대상) — T우주 이미지 기준으로 붙이거나 신규로 등록.
+// ─────────────────────────────────────────────────────────────
+model CornerType {
+  id           String  @id @default(cuid())
+  typeId       String  @unique // 표시용 코너 유형 ID (예: CY0000001)
+  name         String // 표시명 (관리 대상)
+  baseCategory String // 컴포넌트 매핑 기준: CORNER_TYPES 8종 중 하나
+  markupId     String? // 코너 마크업 ID (예: CMUID00030)
+  typeDetail   String? // 유형 상세 (예: 가로형(2.5배열), 이미지형 …)
+  layout       String? // 코너 레이아웃 (예: 가로 SWIPE형)
+  description  String?
+
+  channels  String  @default("전체") // 운영 채널 csv: 전체 | FO | BO
+  platforms String  @default("모바일") // 운영 플랫폼 csv: 전체 | 모바일 | PC
+  active    Boolean @default(true) // 사용 여부
+
+  // 세부 항목(항목별 사용여부) — T우주 코너 유형 정보 하단
+  useMainTitle  Boolean @default(true)
+  useSubTitle   Boolean @default(true)
+  useMinItems   Boolean @default(true)
+  useMaxItems   Boolean @default(true)
+  useNoDisplay  Boolean @default(true)
+  useMoreButton Boolean @default(true)
+
+  sampleImageUrl String? // 유형 샘플 이미지
+  status         String  @default("APPROVED") // 승인상태: DRAFT 임시저장 | REVIEW 승인대기 | APPROVED 승인완료 | REJECTED 승인반려
+  createdBy      String? // 등록자
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// 6. CornerComponentRule — corner_type별 허용 component_type 매핑 (PI-DSP-CMP-003)
+//    권위 있는 원본은 src/lib/display-taxonomy.ts 의 CORNER_COMPONENT_MAP.
+//    이 테이블은 그 상수를 시드로 넣어 어드민에서 조회/검증 가능하게 한 사본.
+// ─────────────────────────────────────────────────────────────
+model CornerComponentRule {
+  id            String @id @default(cuid())
+  cornerType    String // CORNER_TYPES 중 하나
+  componentType String // COMPONENT_TYPES 중 하나
+
+  @@unique([cornerType, componentType])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 7. AuditLog — 감사 로그 (PI-DSP-AUD-002)
+//    변경자 / 변경일시 / 대상 타입·ID / 이전값 / 이후값 / 사유 / 승인자 / 결과
+// ─────────────────────────────────────────────────────────────
+model AuditLog {
+  id          String   @id @default(cuid())
+  actor       String // 변경자
+  changedAt   DateTime @default(now()) // 변경일시
+  targetType  String // 대상 타입: Container | Template | Corner | Component | Atom
+  targetId    String // 대상 ID
+  beforeValue String? // 이전값 (JSON 직렬화 문자열)
+  afterValue  String? // 이후값 (JSON 직렬화 문자열)
+  reason      String? // 변경 사유
+  approver    String? // 승인자
+  result      String // 결과: CREATED | UPDATED | APPROVED | REJECTED | PUBLISHED | SUSPENDED | ROLLED_BACK ...
+
+  @@index([targetType, targetId])
+  @@index([changedAt])
+}

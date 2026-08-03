@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 컬러 토큰: SKT BSS "BO 대표 유형 화면" 디자인 시스템 기준.
+   연한 라벤더그레이 페이지 배경 + 흰 카드 + 인디고 액센트 + 쿨 뉴트럴. shadcn 토큰 구조. */
+:root {
+  --background: 228 33% 97%; /* 페이지 배경: 연한 라벤더그레이 (카드가 떠 보이도록) */
+  --foreground: 222 25% 20%;
+  --card: 0 0% 100%; /* 카드/패널: 흰색 */
+  --card-foreground: 222 25% 20%;
+  --primary: 243 75% 59%; /* 인디고 (BO 액센트) */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 228 22% 95%;
+  --secondary-foreground: 222 22% 22%;
+  --muted: 228 24% 95%;
+  --muted-foreground: 222 12% 46%;
+  --accent: 243 75% 96%;
+  --accent-foreground: 243 60% 42%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 226 24% 90%;
+  --input: 226 20% 86%;
+  --ring: 243 75% 59%;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-feature-settings: 'tnum';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* BO 스크롤바 — 얇고 뉴트럴 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(226 15% 80%) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(226 15% 80%);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(226 15% 70%);
+}
+::selection {
+  background-color: hsl(243 75% 90%);
+}
