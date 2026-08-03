@@ -98,6 +98,14 @@ async function corner(
 }
 
 async function main() {
+  // 이미 데이터가 있으면 시드 건너뛰기 (배포 재빌드 시 기존 데이터·편집 보존).
+  // 강제로 다시 시드하려면 FORCE_SEED=1 로 실행.
+  const existingContainers = await prisma.container.count().catch(() => 0);
+  if (existingContainers > 0 && !process.env.FORCE_SEED) {
+    console.log(`↷ 이미 데이터가 있어 시드를 건너뜁니다 (containers=${existingContainers}). 재시드하려면 FORCE_SEED=1`);
+    return;
+  }
+
   await resetAll();
 
   await prisma.cornerComponentRule.createMany({
