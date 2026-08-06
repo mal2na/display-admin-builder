@@ -8,7 +8,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import { renderNodeBody, DeviceShell, type NodeView } from '@/components/preview/event-node';
 import { CATALOG, componentDef, componentLabel, isContainer, DEVICES, CORNER_TYPES, allowedComponentsFor, PROMO_CORNER_OPTIONS, GROUP_CORNER } from '@/lib/event-components';
-import { layerRole, LAYER_LABEL, LAYER_COLOR, isFixedNode } from '@/lib/event-layers';
+import { layerRole, LAYER_LABEL, LAYER_COLOR, isFixedNode, type Viewer, nodeAudience, audienceVisible, AUDIENCE_BADGE } from '@/lib/event-layers';
 import { addNode, addCornerNode, updateNodeProps, deleteNode, duplicateNode, updatePageMeta, addConditionPage, saveEventDraft, restoreEventVersion, reorderNodes } from '../../../actions';
 import { ProgramInfoEdit, type ProgramInfo } from './program-info-edit';
 import { PropertiesPanel } from './properties';
@@ -129,6 +129,27 @@ function ConditionSwitcher({ meta }: { meta: Meta }) {
   );
 }
 
+// 프로모션(오픈) 모드 — 로그인/비로그인 미리보기 대상 토글.
+// 정책 v0.19: 화면은 공통 1개이고 노드별 '노출 조건'으로 로그인 상태별 분기를 관리한다.
+function AudienceViewToggle({ viewer, setViewer }: { viewer: Viewer; setViewer: (v: Viewer) => void }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[11px] font-medium text-muted-foreground" title="화면은 공통 1개입니다. 각 코너·컴포넌트에 '노출 조건'을 달아 로그인/비로그인 화면을 분기합니다. 여기서는 대상별로 미리보기를 전환합니다.">미리보기 대상</span>
+      <div className="flex overflow-hidden rounded-md border">
+        {(['로그인', '비로그인'] as Viewer[]).map((v) => (
+          <button
+            key={v}
+            onClick={() => setViewer(v)}
+            className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium ${viewer === v ? (v === '로그인' ? 'bg-blue-600 text-white' : 'bg-orange-500 text-white') : 'bg-card hover:bg-secondary'}`}
+          >
+            <Icons.User className="h-3 w-3" /> {v}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function LucideIcon({ name, className }: { name: string; className?: string }) {
   const Ic = (Icons as any)[name] ?? Icons.Square;
   return <Ic className={className} />;
@@ -192,6 +213,7 @@ function SortableRow({ node, pageId, depth, selectedId, onSelect }: { node: Node
       <button onClick={() => onSelect(node.id)} className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
         <LayerBadge role={role} />
         <span className="truncate">{label}</span>
+        {(() => { const a = nodeAudience(node.props); return a !== '공통' ? <span className={`ml-auto shrink-0 rounded px-1 py-0.5 text-[8px] font-bold ${AUDIENCE_BADGE[a]}`}>{a}</span> : null; })()}
       </button>
     </div>
   );
@@ -321,16 +343,18 @@ function LayerBreadcrumb({ chain, meta, onSelect }: { chain: NodeView[]; meta: M
 }
 
 // ── 편집 가능한 노드 (선택/툴바 + 재귀) ──
-function EditableNode({ node, meta, selectedId, onSelect }: { node: NodeView; meta: Meta; selectedId: string | null; onSelect: (id: string) => void }) {
+function EditableNode({ node, meta, selectedId, onSelect, viewer }: { node: NodeView; meta: Meta; selectedId: string | null; onSelect: (id: string) => void; viewer: Viewer }) {
   const [pending, start] = useTransition();
   const selected = selectedId === node.id;
   const container = isContainer(node.type);
   const fixed = isFixedNode(node.type); // 개발 고정 영역(썸네일·헤더·CTA) — 이동/복제/삭제 불가
   const def = componentDef(node.type);
+  const audience = nodeAudience(node.props); // 노출 조건 (공통/로그인/비로그인)
+  const hiddenForViewer = !audienceVisible(audience, viewer); // 현재 미리보기 대상에겐 숨겨지는 노드
 
   const childrenEls = container ? (
     node.children.length > 0 ? (
-      node.children.map((c) => <EditableNode key={c.id} node={c} meta={meta} selectedId={selectedId} onSelect={onSelect} />)
+      node.children.map((c) => <EditableNode key={c.id} node={c} meta={meta} selectedId={selectedId} onSelect={onSelect} viewer={viewer} />)
     ) : (
       <div className="rounded-lg border-2 border-dashed border-slate-300 py-4 text-center text-[11px] text-slate-400">비어 있음{selected ? ' — 좌측에서 컴포넌트를 추가하세요' : ''}</div>
     )
@@ -339,12 +363,18 @@ function EditableNode({ node, meta, selectedId, onSelect }: { node: NodeView; me
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onSelect(node.id); }}
-      className={`group relative cursor-pointer rounded-lg transition ${selected ? 'outline outline-2 outline-primary' : 'hover:outline hover:outline-1 hover:outline-primary/40'}`}
+      className={`group relative cursor-pointer rounded-lg transition ${selected ? 'outline outline-2 outline-primary' : 'hover:outline hover:outline-1 hover:outline-primary/40'} ${hiddenForViewer ? 'opacity-40 grayscale' : ''}`}
     >
       {/* 라벨 — 고정 영역은 자물쇠 표시(개발 고정, 제어 불가) */}
       <span className={`absolute -top-0 left-0 z-20 inline-flex items-center gap-1 rounded-br-md rounded-tl-md px-1.5 py-0.5 text-[10px] font-semibold ${fixed ? 'bg-zinc-500 text-white' : 'bg-primary text-primary-foreground'} ${selected ? '' : 'opacity-0 group-hover:opacity-100'}`}>
         {fixed ? <Icons.Lock className="h-3 w-3" /> : <LucideIcon name={def?.icon ?? 'Square'} className="h-3 w-3" />} {fixed ? '고정' : def?.label}
       </span>
+      {/* 노출 조건 배지 — 공통이 아니면 로그인/비로그인 전용 표시 */}
+      {audience !== '공통' && (
+        <span className={`absolute -top-0 right-0 z-20 inline-flex items-center gap-1 rounded-bl-md rounded-tr-md px-1.5 py-0.5 text-[9px] font-bold ${AUDIENCE_BADGE[audience]}`}>
+          <Icons.User className="h-2.5 w-2.5" /> {audience}{hiddenForViewer ? ' · 숨김' : ''}
+        </span>
+      )}
       {/* 툴바 — 고정 영역은 이동/복제/삭제 불가 */}
       {selected && !fixed && (
         <div className="absolute -top-3 right-1 z-30 flex items-center gap-0.5 rounded-md bg-white p-0.5 shadow-md ring-1 ring-slate-200" onClick={(e) => e.stopPropagation()}>
@@ -352,7 +382,7 @@ function EditableNode({ node, meta, selectedId, onSelect }: { node: NodeView; me
           <button disabled={pending} onClick={() => start(() => deleteNode(meta.pageId, node.id))} className="p-1 text-slate-500 hover:text-destructive" title="삭제"><Icons.Trash2 className="h-3.5 w-3.5" /></button>
         </div>
       )}
-      {renderNodeBody(node.type, node.props, childrenEls)}
+      {renderNodeBody(node.type, node.props, childrenEls, viewer)}
     </div>
   );
 }
@@ -362,6 +392,7 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
   const [tab, setTab] = useState<'common' | 'node' | 'add'>('add');
   const [q, setQ] = useState('');
   const [device, setDevice] = useState(DEVICES.find((d) => d.key === meta.device) ?? DEVICES[0]);
+  const [viewer, setViewer] = useState<Viewer>('로그인'); // 프로모션 미리보기 대상(로그인/비로그인)
   const [, start] = useTransition();
 
   const display = meta.mode === 'display';
@@ -418,7 +449,7 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
           {display ? '전시 · 거버넌스 모드' : '이벤트 · 오픈 모드'}
         </span>
         <div className="ml-2">
-          <ConditionSwitcher meta={meta} />
+          {display ? <ConditionSwitcher meta={meta} /> : <AudienceViewToggle viewer={viewer} setViewer={setViewer} />}
         </div>
         <div className="mx-auto">
           <select
@@ -497,7 +528,7 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {tree.map((n) => <EditableNode key={n.id} node={n} meta={meta} selectedId={selectedId} onSelect={setSelectedId} />)}
+                    {tree.map((n) => <EditableNode key={n.id} node={n} meta={meta} selectedId={selectedId} onSelect={setSelectedId} viewer={viewer} />)}
                   </div>
                 )}
               </DeviceShell>

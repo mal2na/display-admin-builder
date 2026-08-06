@@ -31,7 +31,7 @@ export function ContainerTree({ containers }: { containers: TreeContainer[] }) {
 
   return (
     <div className="flex h-full w-72 shrink-0 flex-col border-r bg-card">
-      <div className="flex items-center justify-between border-b px-3 py-3">
+      <div className="flex h-14 items-center justify-between border-b px-3">
         <span className="text-sm font-semibold">컨테이너 목록</span>
         <Link
           href="/admin/containers/new"

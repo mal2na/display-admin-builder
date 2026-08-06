@@ -41,3 +41,29 @@ export function layerRole(nodeType: string): Extract<LayerRole, 'CORNER' | 'COMP
 }
 
 export const LAYERS_ORDER: LayerRole[] = ['CONTAINER', 'TEMPLATE', 'CORNER', 'COMPONENT', 'ATOM'];
+
+// ── 노출 조건(audience) — 프로모션 로그인/비로그인 분기 ──
+//    정책 v0.19: 로그인/비로그인은 별도 화면(액터)이 아니라 "상태·조건"으로 관리(§3 액터).
+//    화면은 공통 1개이고, 각 노드에 노출 조건을 달아 로그인 상태별로 보이거나 숨긴다.
+//    (PG-EVTMSN-ELIG-AUTH-001 고객 식별·비회원 참여 / CTA 라벨 매트릭스)
+export type Viewer = '로그인' | '비로그인';
+export const AUDIENCES = ['공통', '로그인', '비로그인'] as const; // 노드 노출 조건
+export const AUDIENCE_LABEL: Record<string, string> = { 공통: '공통', 로그인: '로그인 전용', 비로그인: '비로그인 전용' };
+export const AUDIENCE_BADGE: Record<string, string> = {
+  로그인: 'bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-200',
+  비로그인: 'bg-orange-50 text-orange-600 ring-1 ring-inset ring-orange-200',
+};
+
+export function nodeAudience(props: Record<string, unknown> | undefined | null): string {
+  const a = props?.['audience'];
+  return a === '로그인' || a === '비로그인' ? a : '공통';
+}
+
+/** 노드의 노출 조건이 현재 미리보기 대상(로그인/비로그인)에게 보이는가 */
+export function audienceVisible(audience: string, viewer: Viewer): boolean {
+  return audience === '공통' || audience === viewer;
+}
+
+// 로그인 유도 CTA 기본 라벨 (CTA 라벨 매트릭스 · 비로그인/식별 전 고객)
+export const GUEST_CTA_LABEL = '로그인 후 참여하기';
+export const MEMBER_CTA_LABEL = '참여하기';

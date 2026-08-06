@@ -1,5 +1,6 @@
 import { Signal, Wifi, BatteryFull, ChevronLeft, Share2, ChevronDown, ChevronRight, ImageIcon, Gift } from 'lucide-react';
 import { cornerLayout, GROUP_CORNER } from '@/lib/event-components';
+import { type Viewer, GUEST_CTA_LABEL, MEMBER_CTA_LABEL, nodeAudience, audienceVisible } from '@/lib/event-layers';
 
 // 페이지 노드 트리 (렌더 전용)
 export type NodeView = {
@@ -373,8 +374,23 @@ const SLOT_META: Record<string, { icon: string; tone: string }> = {
   SLOT_REWARD: { icon: '🎁', tone: 'border-slate-300 bg-slate-50 text-slate-500' },
   SLOT_CTA: { icon: '🔘', tone: 'border-indigo-300 bg-indigo-50 text-indigo-600' },
 };
-function SlotNode({ type, p }: { type: string; p: Record<string, any> }) {
+function SlotNode({ type, p, viewer }: { type: string; p: Record<string, any>; viewer?: Viewer }) {
   const meta = SLOT_META[type] ?? SLOT_META.SLOT_HEADER;
+  // CTA는 로그인 상태에 따라 라벨이 자동 전환된다 (CTA 라벨 매트릭스: 비로그인 → 로그인 유도 CTA)
+  const isCta = type === 'SLOT_CTA';
+  const guest = viewer === '비로그인';
+  const ctaLabel = guest ? p.guestLabel || GUEST_CTA_LABEL : p.label || MEMBER_CTA_LABEL;
+  if (isCta) {
+    return (
+      <div className="relative">
+        <span className="absolute -top-2 right-1.5 z-10 rounded bg-white/90 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide ring-1 ring-black/5">위치 표시</span>
+        <div className={`flex h-11 items-center justify-center rounded-xl text-[13px] font-semibold text-white ${guest ? 'bg-slate-700' : 'bg-indigo-600'}`}>
+          {ctaLabel}
+        </div>
+        {guest && <p className="mt-1 text-center text-[9px] text-orange-500">비로그인 → 로그인 유도 CTA</p>}
+      </div>
+    );
+  }
   return (
     <div className={`relative rounded-lg border-2 border-dashed px-3 py-4 text-center ${meta.tone}`}>
       <span className="absolute right-1.5 top-1.5 rounded bg-white/80 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide ring-1 ring-black/5">
@@ -388,7 +404,7 @@ function SlotNode({ type, p }: { type: string; p: Record<string, any> }) {
 }
 
 /** 노드 본체 렌더 (자식 엘리먼트는 호출측이 주입 → 프리뷰/에디터 공용) */
-export function renderNodeBody(type: string, props: Record<string, any>, childrenEls: React.ReactNode): React.ReactNode {
+export function renderNodeBody(type: string, props: Record<string, any>, childrenEls: React.ReactNode, viewer?: Viewer): React.ReactNode {
   const p = props ?? {};
   switch (type) {
     case 'TEXT':
@@ -435,16 +451,17 @@ export function renderNodeBody(type: string, props: Record<string, any>, childre
     case 'SLOT_CONSENT':
     case 'SLOT_REWARD':
     case 'SLOT_CTA':
-      return <SlotNode type={type} p={p} />;
+      return <SlotNode type={type} p={p} viewer={viewer} />;
     default:
       return <div className="rounded border border-dashed border-slate-300 p-2 text-[11px] text-slate-400">{type}</div>;
   }
 }
 
-/** 노드 하나(+자식) 순수 렌더 (프리뷰) */
-export function EventNodeView({ node }: { node: NodeView }) {
-  const kids = <>{node.children.map((c) => <EventNodeView key={c.id} node={c} />)}</>;
-  return <>{renderNodeBody(node.type, node.props ?? {}, kids)}</>;
+/** 노드 하나(+자식) 순수 렌더 (프리뷰). viewer가 있으면 노출 조건에 맞지 않는 노드는 숨긴다. */
+export function EventNodeView({ node, viewer }: { node: NodeView; viewer?: Viewer }) {
+  if (viewer && !audienceVisible(nodeAudience(node.props), viewer)) return null;
+  const kids = <>{node.children.map((c) => <EventNodeView key={c.id} node={c} viewer={viewer} />)}</>;
+  return <>{renderNodeBody(node.type, node.props ?? {}, kids, viewer)}</>;
 }
 
 /** 디바이스 프레임 (상태바 + 헤더 + 스크롤 바디) */

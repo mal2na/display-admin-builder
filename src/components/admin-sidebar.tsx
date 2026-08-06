@@ -38,7 +38,7 @@ export function AdminSidebar() {
 
         {/* 프로모션 관리 */}
         {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">프로모션 관리</p>}
-        <NavLink href="/admin/events" icon={<Ticket className="h-4 w-4" />} label="프로모션 목록" collapsed={collapsed} />
+        <NavLink href="/admin/events" icon={<Ticket className="h-4 w-4" />} label="프로모션 관리" collapsed={collapsed} />
 
         {/* 공통 */}
         <div className="mt-auto" />

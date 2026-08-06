@@ -314,7 +314,7 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
     <div className="flex h-screen">
       {/* 워크스페이스 사이드바 — 전시화면 관리(컨테이너 목록)와 동일한 헤더/버튼 규격 */}
       <aside className="flex w-72 shrink-0 flex-col border-r bg-card">
-        <div className="flex items-center justify-between border-b px-3 py-3">
+        <div className="flex h-14 items-center justify-between border-b px-3">
           <span className="text-sm font-semibold">워크스페이스</span>
           <Link
             href="/admin/events/new"
@@ -325,7 +325,7 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
         </div>
         <div className="flex-1 overflow-y-auto p-3">
           <nav className="space-y-1 text-sm">
-            {navItem('projects', <LayoutTemplate className="h-4 w-4" />, '프로모션 목록', projects.length)}
+            {navItem('projects', <LayoutTemplate className="h-4 w-4" />, '프로모션 관리', projects.length)}
             {navItem('deploy', <Rocket className="h-4 w-4" />, '배포 관리', deployRows.filter((d) => d.publishState === '게시 중').length)}
             {navItem('trash', <Trash2 className="h-4 w-4" />, '휴지통', trashRows.length)}
           </nav>

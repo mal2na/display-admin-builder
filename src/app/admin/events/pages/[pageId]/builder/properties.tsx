@@ -4,6 +4,7 @@ import { useTransition } from 'react';
 import { Trash2, Plus, Minus, Lock } from 'lucide-react';
 import type { NodeView } from '@/components/preview/event-node';
 import { componentDef, variantsFor } from '@/lib/event-components';
+import { AUDIENCES, AUDIENCE_LABEL, nodeAudience, GUEST_CTA_LABEL, MEMBER_CTA_LABEL } from '@/lib/event-layers';
 import { updateNodeProps, deleteNode } from '../../../actions';
 
 function VariantRow({ type, p, set }: { type: string; p: Record<string, any>; set: (patch: Record<string, unknown>) => void }) {
@@ -58,6 +59,39 @@ export function PropertiesPanel({ pageId, node, onDelete }: { pageId: string; no
         <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-3 text-[12px] text-zinc-600">
           <p className="font-semibold">개발 고정 영역</p>
           <p className="mt-1 leading-snug">{String(p.note ?? '이 영역은 개발에서 고정되어 위치·내용을 변경할 수 없습니다.')}</p>
+        </div>
+      )}
+
+      {/* 노출 조건 (로그인 상태 분기) — 정책 v0.19: 화면 공통, 노드별 조건으로 로그인/비로그인 분기 */}
+      {!fixed && (
+        <div>
+          <p className="mb-1.5 text-[12px] font-semibold">노출 조건 <span className="font-normal text-muted-foreground">· 로그인 상태</span></p>
+          <div className="flex overflow-hidden rounded-lg border">
+            {AUDIENCES.map((a) => (
+              <button
+                key={a}
+                onClick={() => set({ audience: a })}
+                className={`flex-1 px-2 py-1.5 text-[12px] font-medium ${nodeAudience(p) === a ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}
+              >
+                {AUDIENCE_LABEL[a]}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-[10px] leading-snug text-muted-foreground">공통은 모두에게, 로그인/비로그인 전용은 해당 상태에서만 노출됩니다. 상단 <b>미리보기 대상</b> 토글로 확인하세요.</p>
+        </div>
+      )}
+
+      {/* CTA 라벨 — SLOT_CTA는 위치는 고정이지만 문구는 운영자가 관리. 비로그인 시 로그인 유도 CTA 자동 노출 */}
+      {node.type === 'SLOT_CTA' && (
+        <div className="space-y-2">
+          <p className="text-[12px] font-semibold">CTA 라벨</p>
+          <label className="block text-[11px] text-muted-foreground">로그인 상태
+            <input defaultValue={p.label ?? MEMBER_CTA_LABEL} onBlur={(e) => set({ label: e.target.value })} className={inputCls} />
+          </label>
+          <label className="block text-[11px] text-muted-foreground">비로그인 (로그인 유도 CTA)
+            <input defaultValue={p.guestLabel ?? GUEST_CTA_LABEL} onBlur={(e) => set({ guestLabel: e.target.value })} className={inputCls} />
+          </label>
+          <p className="text-[10px] leading-snug text-muted-foreground">비로그인 대상에겐 자동으로 로그인 유도 문구가 노출됩니다 (CTA 라벨 매트릭스).</p>
         </div>
       )}
 
