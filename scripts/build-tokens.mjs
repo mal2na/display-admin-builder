@@ -88,7 +88,8 @@ for (const [k, v] of Object.entries(flat(T.semantic.light.icon))) { scaleVars.pu
 for (const [k, v] of Object.entries(flat(T.primitive.typography['font-size']))) { const n = clean(k); scaleVars.push(line(`fs-${n}`, v)); fontSize[n] = `var(--fs-${n})`; }
 for (const [k, v] of Object.entries(flat(T.primitive.typography['font-height']))) { const n = clean(k); scaleVars.push(line(`lh-${n}`, v)); lineHeight[n] = `var(--lh-${n})`; }
 for (const [k, v] of Object.entries(flat(T.primitive.typography['letter-spacing']))) { const n = clean(k); scaleVars.push(line(`ls-${n}`, v)); letterSpacing[n] = `var(--ls-${n})`; }
-for (const [k, v] of Object.entries(flat(T.primitive.typography['font-weight']))) { fontWeight[clean(k)] = v; }
+const WEIGHT_NUM = { regular: '400', medium: '500', semibold: '600', bold: '700' };
+for (const [k, v] of Object.entries(flat(T.primitive.typography['font-weight']))) { fontWeight[clean(k)] = WEIGHT_NUM[v] ?? v; }
 
 // ── CSS 작성 ──
 const css = `/* 자동 생성: scripts/build-tokens.mjs (원본 design/figma-tokens.json). 직접 수정 금지. */
