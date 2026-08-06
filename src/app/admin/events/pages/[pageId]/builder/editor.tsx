@@ -6,15 +6,67 @@ import * as Icons from 'lucide-react';
 import { renderNodeBody, DeviceShell, type NodeView } from '@/components/preview/event-node';
 import { CATALOG, componentDef, componentLabel, isContainer, DEVICES, CORNER_TYPES, allowedComponentsFor, PROMO_CORNER_OPTIONS, GROUP_CORNER } from '@/lib/event-components';
 import { layerRole, LAYER_LABEL, LAYER_COLOR } from '@/lib/event-layers';
-import { addNode, addCornerNode, updateNodeProps, deleteNode, duplicateNode, moveNode, updatePageMeta, addConditionPage } from '../../../actions';
+import { addNode, addCornerNode, updateNodeProps, deleteNode, duplicateNode, moveNode, updatePageMeta, addConditionPage, saveEventDraft, restoreEventVersion } from '../../../actions';
 import { ProgramInfoEdit, type ProgramInfo } from './program-info-edit';
 import { PropertiesPanel } from './properties';
 
 type CondPage = { id: string; name: string; conditionGroup: string; isDefault: boolean };
-type Meta = { pageId: string; pageName: string; device: string; projectId: string; projectName: string; env: string; mode: string; conditionGroup: string; pages: CondPage[]; program: ProgramInfo };
+type VersionRow = { id: string; version: number; label: string; createdLabel: string };
+type Meta = { pageId: string; pageName: string; device: string; projectId: string; projectName: string; env: string; mode: string; conditionGroup: string; pages: CondPage[]; versions: VersionRow[]; program: ProgramInfo };
 
 // 조건그룹 프리셋 (로그인/비로그인) — 전시 컨테이너 조건그룹에 대응
 const CONDITION_PRESETS = ['로그인', '비로그인'];
+
+// 임시저장 + 저장본(버전) 목록/복원
+function DraftControls({ meta }: { meta: Meta }) {
+  const [pending, start] = useTransition();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={() => start(() => saveEventDraft(meta.pageId))}
+        disabled={pending}
+        className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+      >
+        <Icons.Save className="h-3.5 w-3.5" /> 임시저장
+      </button>
+      <div className="relative">
+        <button onClick={() => setOpen((v) => !v)} className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-secondary" title="저장본(임시저장) 목록">
+          <Icons.History className="h-3.5 w-3.5" /> 저장본 {meta.versions.length > 0 && <span className="rounded bg-secondary px-1 text-[10px]">{meta.versions.length}</span>}
+        </button>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <div className="absolute right-0 top-9 z-50 w-64 overflow-hidden rounded-lg border bg-white shadow-xl">
+              <p className="border-b px-3 py-2 text-[11px] font-semibold text-muted-foreground">임시저장본 ({meta.versions.length})</p>
+              {meta.versions.length === 0 ? (
+                <p className="px-3 py-4 text-center text-[11px] text-muted-foreground">저장된 임시저장본이 없습니다.</p>
+              ) : (
+                <div className="max-h-72 overflow-y-auto">
+                  {meta.versions.map((v) => (
+                    <div key={v.id} className="flex items-center justify-between gap-2 border-b px-3 py-2 last:border-0">
+                      <div className="min-w-0">
+                        <p className="truncate text-[12px] font-medium">v{v.version} · {v.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{v.createdLabel}</p>
+                      </div>
+                      <button
+                        onClick={() => { if (confirm(`v${v.version}(으)로 복원할까요? 현재 상태는 자동 저장됩니다.`)) start(() => restoreEventVersion(meta.pageId, v.id).then(() => setOpen(false))); }}
+                        disabled={pending}
+                        className="shrink-0 rounded-md border px-2 py-1 text-[11px] font-medium hover:bg-secondary"
+                      >
+                        복원
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // 상단 조건그룹 스위처 — 프로그램의 조건그룹 페이지 전환 + 추가 + 비교
 function ConditionSwitcher({ meta }: { meta: Meta }) {
@@ -22,18 +74,21 @@ function ConditionSwitcher({ meta }: { meta: Meta }) {
   const [openAdd, setOpenAdd] = useState(false);
   const present = new Set(meta.pages.map((p) => p.conditionGroup));
   const addable = CONDITION_PRESETS.filter((g) => !present.has(g));
+  const condLabel = (g: string) => (g === '전체' ? '기본(전체)' : g); // '전체' = 모든 사용자 공통 기본 화면
+  const onlyBase = meta.pages.length <= 1;
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[11px] font-medium text-muted-foreground">조건그룹</span>
+      <span className="text-[11px] font-medium text-muted-foreground" title="로그인/비로그인 등 조건에 따라 다른 화면을 분기합니다. '기본(전체)'은 모든 사용자에게 보이는 기본 화면입니다.">조건그룹</span>
       <div className="flex overflow-hidden rounded-md border">
         {meta.pages.map((p) => (
           <Link
             key={p.id}
             href={`/admin/events/pages/${p.id}/builder`}
+            title={p.conditionGroup === '전체' ? '모든 사용자에게 보이는 기본 화면' : `${p.conditionGroup} 조건 화면`}
             className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium ${p.id === meta.pageId ? 'bg-primary text-primary-foreground' : 'bg-card hover:bg-secondary'}`}
           >
             {p.isDefault && <Icons.Star className="h-3 w-3" />}
-            {p.conditionGroup}
+            {condLabel(p.conditionGroup)}
           </Link>
         ))}
         {addable.length > 0 && (
@@ -60,11 +115,13 @@ function ConditionSwitcher({ meta }: { meta: Meta }) {
           </div>
         )}
       </div>
-      {meta.pages.length >= 2 && (
+      {meta.pages.length >= 2 ? (
         <Link href={`/admin/events/pages/${meta.pageId}/compare`} className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-secondary" title="조건그룹별 화면 비교">
           <Icons.Columns2 className="h-3.5 w-3.5" /> 비교
         </Link>
-      )}
+      ) : onlyBase && addable.length > 0 ? (
+        <span className="text-[10px] text-muted-foreground">＋로 로그인/비로그인 분기 추가</span>
+      ) : null}
     </div>
   );
 }
@@ -321,9 +378,15 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
             {DEVICES.map((d) => <option key={d.key} value={d.key}>{d.key}</option>)}
           </select>
         </div>
-        <span className="flex items-center gap-1 text-[11px] text-emerald-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> 자동 저장됨</span>
-        <button className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-secondary">임시저장</button>
-        <button className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"><Icons.Eye className="h-3.5 w-3.5" /> 미리보기</button>
+        <DraftControls meta={meta} />
+        <a
+          href={`/admin/events/pages/${meta.pageId}/preview`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          <Icons.Eye className="h-3.5 w-3.5" /> 미리보기
+        </a>
       </div>
 
       <div className="grid flex-1 grid-cols-[300px_1fr_320px] overflow-hidden">
@@ -454,13 +517,28 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
               </div>
             ) : tab === 'common' ? (
               <div className="space-y-4 text-sm">
+                <p className="text-[11px] text-muted-foreground">이 <b>조건그룹 화면(페이지)</b> 전체에 적용되는 설정입니다. (개별 요소는 <b>선택 속성</b>에서 편집)</p>
                 <div>
                   <p className="mb-1 text-[11px] font-semibold text-muted-foreground">페이지 이름</p>
                   <input defaultValue={meta.pageName} onBlur={(e) => start(() => updatePageMeta(meta.pageId, { name: e.target.value }))} className="h-9 w-full rounded-md border px-2 text-sm" />
                 </div>
+                <div>
+                  <p className="mb-1 text-[11px] font-semibold text-muted-foreground">편집 디바이스</p>
+                  <select
+                    value={device.key}
+                    onChange={(e) => { const d = DEVICES.find((x) => x.key === e.target.value)!; setDevice(d); start(() => updatePageMeta(meta.pageId, { device: d.key })); }}
+                    className="h-9 w-full rounded-md border px-2 text-sm"
+                  >
+                    {DEVICES.map((d) => <option key={d.key} value={d.key}>{d.key}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border bg-muted/40 p-2.5"><p className="text-[10px] text-muted-foreground">조건그룹</p><p className="text-[13px] font-semibold">{meta.conditionGroup === '전체' ? '기본(전체)' : meta.conditionGroup}</p></div>
+                  <div className="rounded-lg border bg-muted/40 p-2.5"><p className="text-[10px] text-muted-foreground">모드</p><p className="text-[13px] font-semibold">{display ? '전시 거버넌스' : '이벤트 오픈'}</p></div>
+                </div>
                 <div className="rounded-lg border bg-muted/40 p-3 text-[12px] text-muted-foreground">
-                  <p className="font-semibold text-foreground">안내</p>
-                  <p className="mt-1">우측 <b>추가</b> 탭에서 컴포넌트를 클릭해 캔버스에 추가하세요. 컨테이너(카드·가로/세로 묶음)를 선택한 상태로 추가하면 그 안에 중첩됩니다. 추가된 컴포넌트를 클릭하면 <b>선택 속성</b>에서 편집합니다.</p>
+                  <p className="font-semibold text-foreground">구성 방법</p>
+                  <p className="mt-1">좌측 <b>코너 추가</b>로 섹션(코너)을 만들고, 우측 <b>추가</b> 탭에서 Contents 모듈을 넣으세요. 추가한 요소를 클릭하면 <b>선택 속성</b>에서 편집합니다.</p>
                 </div>
               </div>
             ) : selected ? (

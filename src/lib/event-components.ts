@@ -434,10 +434,10 @@ export function allowedComponentsFor(cornerType: string): ComponentDef[] {
   return allowed.map((t) => COMPONENT_BY_TYPE[t]).filter(Boolean);
 }
 
-// 프로모션에서 고를 수 있는 코너: 그룹형(자유) + 거버넌스 8종(전시와 동일)
+// 프로모션 코너 = 자유 조립 구간의 '섹션'(Contents Catalog 모듈을 담는 그룹).
+//   전시 관리의 8종 거버넌스 코너와 달리, 프로모션은 섹션 안에 카탈로그 7모듈을 자유 배치한다.
 export const PROMO_CORNER_OPTIONS = [
-  { key: GROUP_CORNER, label: '그룹 (자유)', governed: false },
-  ...CORNER_TYPES.map((c) => ({ key: c.key, label: c.label, governed: true })),
+  { key: GROUP_CORNER, label: '섹션 (Contents 모듈 구성)', governed: false },
 ];
 export function cornerLayout(cornerType: string): 'stack' | 'scroll' | 'grid' {
   return CORNER_TYPE_BY_KEY[cornerType]?.layout ?? 'stack';

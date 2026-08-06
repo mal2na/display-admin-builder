@@ -31,6 +31,20 @@ export default async function EditorPage({ params }: { params: { pageId: string 
     select: { id: true, name: true, conditionGroup: true, isDefault: true },
   });
 
+  // 임시저장(버전) 목록
+  const versionRows = await prisma.eventPageVersion.findMany({
+    where: { pageId: page.id },
+    orderBy: { version: 'desc' },
+    take: 20,
+    select: { id: true, version: true, label: true, createdAt: true },
+  });
+  const versions = versionRows.map((v) => ({
+    id: v.id,
+    version: v.version,
+    label: v.label ?? '임시저장',
+    createdLabel: v.createdAt.toISOString().slice(5, 16).replace('T', ' '),
+  }));
+
   // flat → nested 트리
   const byId = new Map<string, NodeView>();
   for (const n of page.nodes) byId.set(n.id, { id: n.id, type: n.type, props: n.props ? JSON.parse(n.props) : {}, children: [] });
@@ -56,6 +70,7 @@ export default async function EditorPage({ params }: { params: { pageId: string 
         mode: pr.mode,
         conditionGroup: page.conditionGroup,
         pages: siblingPages,
+        versions,
         program: {
           id: pr.id,
           name: pr.name,

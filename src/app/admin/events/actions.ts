@@ -319,3 +319,37 @@ export async function addConditionPage(programId: string, conditionGroup: string
   revalidatePath('/admin/events');
   redirect(`/admin/events/pages/${page.id}/builder`);
 }
+
+// ─────────────────────────────────────────────────────────────
+// 임시저장(버전 스냅샷) / 복원 — EventPageVersion
+// ─────────────────────────────────────────────────────────────
+export async function saveEventDraft(pageId: string, label?: string) {
+  const nodes = await prisma.eventNode.findMany({ where: { pageId }, orderBy: { order: 'asc' } });
+  const snapshot = JSON.stringify(nodes.map((n) => ({ id: n.id, parentId: n.parentId, type: n.type, order: n.order, props: n.props })));
+  const max = await prisma.eventPageVersion.aggregate({ where: { pageId }, _max: { version: true } });
+  const version = (max._max.version ?? 0) + 1;
+  await prisma.eventPageVersion.create({ data: { pageId, version, label: label ?? '임시저장', snapshot, createdBy: ACTOR } });
+  rpEditor(pageId);
+}
+
+export async function restoreEventVersion(pageId: string, versionId: string) {
+  const ver = await prisma.eventPageVersion.findUnique({ where: { id: versionId } });
+  if (!ver || ver.pageId !== pageId) throw new Error('버전을 찾을 수 없습니다.');
+  // 복원 전 현재 상태를 자동 스냅샷 (되돌리기 안전장치)
+  await saveEventDraft(pageId, '복원 전 자동 저장').catch(() => {});
+  type Snap = { id: string; parentId: string | null; type: string; order: number; props: string | null };
+  const snap: Snap[] = JSON.parse(ver.snapshot);
+  await prisma.eventNode.deleteMany({ where: { pageId } });
+  const idMap = new Map<string, string>();
+  const pending = [...snap];
+  let guard = 0;
+  while (pending.length && guard++ < 10000) {
+    const nd = pending.shift()!;
+    if (nd.parentId && !idMap.has(nd.parentId)) { pending.push(nd); continue; }
+    const created = await prisma.eventNode.create({
+      data: { pageId, parentId: nd.parentId ? idMap.get(nd.parentId)! : null, type: nd.type, order: nd.order, props: nd.props },
+    });
+    idMap.set(nd.id, created.id);
+  }
+  rpEditor(pageId);
+}
