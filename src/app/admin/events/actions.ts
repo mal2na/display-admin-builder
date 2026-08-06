@@ -353,3 +353,9 @@ export async function restoreEventVersion(pageId: string, versionId: string) {
   }
   rpEditor(pageId);
 }
+
+// 형제 노드 순서 재정렬 (드래그앤드롭) — 같은 parent 안에서 orderedIds 순서대로 order 부여
+export async function reorderNodes(pageId: string, orderedIds: string[]) {
+  await prisma.$transaction(orderedIds.map((id, i) => prisma.eventNode.update({ where: { id }, data: { order: i } })));
+  rpEditor(pageId);
+}

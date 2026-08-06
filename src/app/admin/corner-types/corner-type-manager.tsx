@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X } from 'lucide-react';
+import { Plus, Trash2, Check, X, Search, ChevronDown, RotateCcw } from 'lucide-react';
 import { createCornerType, updateCornerType, toggleCornerTypeActive } from './actions';
 
 // 전시화면관리(빌더)에서 실제로 만들어진 코너 유형 조합. 등록 폼의 선택지를 이걸로 제한한다.
@@ -78,16 +78,48 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const router = useRouter();
   const noneBuilt = builtOptions.length === 0;
 
+  // ── 상세 검색 필터 (T우주 코너 유형 목록 기준) ──
+  const statusKeys = Object.keys(CORNER_TYPE_STATUS_LABEL);
+  const [expanded, setExpanded] = useState(true);
+  const [base, setBase] = useState('전체'); // 코너 유형
+  const [detail, setDetail] = useState('전체'); // 유형 상세
+  const [useOn, setUseOn] = useState(true);
+  const [useOff, setUseOff] = useState(true);
+  const [statusSel, setStatusSel] = useState<Set<string>>(new Set(statusKeys));
+  const [field, setField] = useState<'typeId' | 'markupId' | 'createdBy'>('typeId');
+  const [q, setQ] = useState('');
+  const [perPage, setPerPage] = useState(10);
+  const [page, setPage] = useState(1);
+
+  const baseOptions = ['전체', ...Array.from(new Set(types.map((t) => t.baseCategory).filter(Boolean)))];
+  const detailOptions = ['전체', ...Array.from(new Set(types.map((t) => t.typeDetail).filter((d): d is string => !!d)))];
+
+  const toggleStatus = (k: string) => setStatusSel((prev) => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const reset = () => { setBase('전체'); setDetail('전체'); setUseOn(true); setUseOff(true); setStatusSel(new Set(statusKeys)); setField('typeId'); setQ(''); setPage(1); };
+
+  const ql = q.trim().toLowerCase();
+  const filtered = types.filter((t) => {
+    if (base !== '전체' && t.baseCategory !== base) return false;
+    if (detail !== '전체' && (t.typeDetail ?? '') !== detail) return false;
+    if (!(t.active ? useOn : useOff)) return false;
+    if (statusSel.size < statusKeys.length && !statusSel.has(t.status)) return false;
+    if (ql) {
+      const hay = (field === 'markupId' ? t.markupId : field === 'createdBy' ? t.createdBy : t.typeId) ?? '';
+      if (!hay.toLowerCase().includes(ql)) return false;
+    }
+    return true;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const curPage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((curPage - 1) * perPage, curPage * perPage);
+
+  const selectCls = 'h-9 rounded-md border bg-white px-2.5 text-sm';
+  const chk = 'flex items-center gap-1.5 text-sm cursor-pointer';
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">코너 유형 관리</h1>
-          <p className="text-sm text-muted-foreground">
-            전시화면관리에서 <b className="text-foreground">실제로 만들어진 코너 유형</b>만 등록·관리합니다. 행을 클릭하면 상세(정보·이력)를 볼 수 있습니다. 검색결과:{' '}
-            <b className="text-foreground">{types.length}개</b>
-          </p>
-        </div>
+        <h1 className="text-lg font-semibold">코너 유형 관리</h1>
         {noneBuilt ? (
           <Button size="sm" disabled title="전시화면관리에서 코너를 먼저 만들어 주세요.">
             <Plus className="mr-1 h-4 w-4" /> 등록
@@ -107,6 +139,65 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         </div>
       )}
 
+      {/* 상세 검색 필터 */}
+      <div className="rounded-lg border bg-card p-4">
+        {expanded && (
+          <div className="mb-3 grid gap-x-6 gap-y-3 border-b pb-3 md:grid-cols-2 xl:grid-cols-4">
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">코너 유형</p>
+              <select value={base} onChange={(e) => { setBase(e.target.value); setPage(1); }} className={`${selectCls} w-full`}>
+                {baseOptions.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">유형 상세</p>
+              <select value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={`${selectCls} w-full`}>
+                {detailOptions.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">사용여부</p>
+              <div className="flex h-9 items-center gap-4">
+                <label className={chk}><input type="checkbox" checked={useOn} onChange={(e) => { setUseOn(e.target.checked); setPage(1); }} className="accent-primary" /> 사용</label>
+                <label className={chk}><input type="checkbox" checked={useOff} onChange={(e) => { setUseOff(e.target.checked); setPage(1); }} className="accent-primary" /> 미사용</label>
+              </div>
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">승인상태</p>
+              <div className="flex h-9 flex-wrap items-center gap-x-3 gap-y-1">
+                {statusKeys.map((k) => (
+                  <label key={k} className={chk}><input type="checkbox" checked={statusSel.has(k)} onChange={() => { toggleStatus(k); setPage(1); }} className="accent-primary" /> {CORNER_TYPE_STATUS_LABEL[k] ?? k}</label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* 직접 검색 행 */}
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={field} onChange={(e) => setField(e.target.value as typeof field)} className={selectCls}>
+            <option value="typeId">코너 유형 ID</option>
+            <option value="markupId">코너 마크업 ID</option>
+            <option value="createdBy">등록자</option>
+          </select>
+          <div className="relative min-w-[240px] flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="영문/숫자 포함 10자 이내로 입력해 주세요." className="h-9 w-full rounded-md border pl-8 pr-3 text-sm" />
+          </div>
+          <button onClick={() => setExpanded((v) => !v)} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-secondary">
+            상세검색 {expanded ? '닫기' : '열기'} <ChevronDown className={cn('h-3.5 w-3.5 transition', expanded && 'rotate-180')} />
+          </button>
+          <button onClick={reset} title="초기화" className="inline-flex h-9 w-9 items-center justify-center rounded-md border hover:bg-secondary"><RotateCcw className="h-4 w-4" /></button>
+          <Button size="sm" className="h-9"><Search className="mr-1 h-4 w-4" /> 조회</Button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">검색결과: <b className="text-foreground">{filtered.length}개</b></p>
+        <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="h-8 rounded-md border bg-white px-2 text-xs">
+          {[10, 20, 50].map((n) => <option key={n} value={n}>{n}개씩</option>)}
+        </select>
+      </div>
+
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-xs text-muted-foreground">
@@ -119,16 +210,16 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             </tr>
           </thead>
           <tbody className="divide-y">
-            {types.length === 0 && (
+            {pageRows.length === 0 && (
               <tr>
                 <td colSpan={12} className="px-3 py-8 text-center text-muted-foreground">
-                  등록된 코너 유형이 없습니다. 우측 상단 <b>등록</b>으로 추가하세요.
+                  {types.length === 0 ? <>등록된 코너 유형이 없습니다. 우측 상단 <b>등록</b>으로 추가하세요.</> : '검색 조건에 맞는 코너 유형이 없습니다.'}
                 </td>
               </tr>
             )}
-            {types.map((t, i) => (
+            {pageRows.map((t, i) => (
               <tr key={t.id} onClick={() => router.push(`/admin/corner-types/${t.id}`)} className="cursor-pointer hover:bg-muted/40">
-                <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{i + 1}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{(curPage - 1) * perPage + i + 1}</td>
                 <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-primary underline-offset-2 hover:underline">{t.typeId}</td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <Badge variant="outline">{t.baseCategory}</Badge>
@@ -169,6 +260,17 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           </tbody>
         </table>
       </div>
+
+      {/* 페이지네이션 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1 text-sm">
+          <button onClick={() => setPage(Math.max(1, curPage - 1))} disabled={curPage <= 1} className="rounded-md border px-2.5 py-1.5 disabled:opacity-40 hover:bg-secondary">‹</button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+            <button key={n} onClick={() => setPage(n)} className={cn('min-w-[32px] rounded-md border px-2 py-1.5 font-medium', n === curPage ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary')}>{n}</button>
+          ))}
+          <button onClick={() => setPage(Math.min(totalPages, curPage + 1))} disabled={curPage >= totalPages} className="rounded-md border px-2.5 py-1.5 disabled:opacity-40 hover:bg-secondary">›</button>
+        </div>
+      )}
     </div>
   );
 }

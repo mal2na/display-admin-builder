@@ -194,8 +194,9 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   const counts: Record<string, number> = { 전체: projects.length };
   for (const p of projects) counts[p.type] = (counts[p.type] ?? 0) + 1;
 
+  const ql = q.trim().toLowerCase();
   const filtered = projects
-    .filter((p) => (tab === '전체' || p.type === tab) && (!q || p.name.toLowerCase().includes(q.toLowerCase())))
+    .filter((p) => (tab === '전체' || p.type === tab) && (!ql || p.name.toLowerCase().includes(ql) || p.type.toLowerCase().includes(ql) || p.author.toLowerCase().includes(ql)))
     .sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
       switch (sortKey) {

@@ -3,10 +3,13 @@
 import { useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import * as Icons from 'lucide-react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { renderNodeBody, DeviceShell, type NodeView } from '@/components/preview/event-node';
 import { CATALOG, componentDef, componentLabel, isContainer, DEVICES, CORNER_TYPES, allowedComponentsFor, PROMO_CORNER_OPTIONS, GROUP_CORNER } from '@/lib/event-components';
-import { layerRole, LAYER_LABEL, LAYER_COLOR } from '@/lib/event-layers';
-import { addNode, addCornerNode, updateNodeProps, deleteNode, duplicateNode, moveNode, updatePageMeta, addConditionPage, saveEventDraft, restoreEventVersion } from '../../../actions';
+import { layerRole, LAYER_LABEL, LAYER_COLOR, isFixedNode } from '@/lib/event-layers';
+import { addNode, addCornerNode, updateNodeProps, deleteNode, duplicateNode, updatePageMeta, addConditionPage, saveEventDraft, restoreEventVersion, reorderNodes } from '../../../actions';
 import { ProgramInfoEdit, type ProgramInfo } from './program-info-edit';
 import { PropertiesPanel } from './properties';
 
@@ -135,28 +138,67 @@ function LayerBadge({ role }: { role: keyof typeof LAYER_COLOR }) {
   return <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${LAYER_COLOR[role]}`}>{LAYER_LABEL[role]}</span>;
 }
 
-// 순서 변경 버튼 (구조 트리 행 우측) — 같은 부모 안에서 위/아래 이동
-function ReorderButtons({ pageId, nodeId, isFirst, isLast }: { pageId: string; nodeId: string; isFirst: boolean; isLast: boolean }) {
-  const [pending, start] = useTransition();
+// ── 드래그앤드롭 순서 변경 (구조 트리) — 고정(FIXED) 노드는 위치 잠금 ──
+function SortableGroup({ nodes, pageId, depth, selectedId, onSelect }: { nodes: NodeView[]; pageId: string; depth: number; selectedId: string | null; onSelect: (id: string) => void }) {
+  const [, start] = useTransition();
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const movableIds = nodes.filter((n) => !isFixedNode(n.type)).map((n) => n.id);
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldI = movableIds.indexOf(String(active.id));
+    const newI = movableIds.indexOf(String(over.id));
+    if (oldI < 0 || newI < 0) return;
+    const nextMovable = arrayMove(movableIds, oldI, newI);
+    let mi = 0;
+    const fullOrder = nodes.map((n) => (isFixedNode(n.type) ? n.id : nextMovable[mi++])); // 고정은 원위치 유지
+    start(() => reorderNodes(pageId, fullOrder));
+  };
   return (
-    <span className="ml-auto flex shrink-0 items-center opacity-0 transition group-hover:opacity-100">
-      <button
-        disabled={pending || isFirst}
-        onClick={(e) => { e.stopPropagation(); start(() => moveNode(pageId, nodeId, 'up')); }}
-        className="rounded p-0.5 text-slate-400 hover:text-primary disabled:opacity-30"
-        title="위로"
+    <DndContext id={`dnd-${pageId}-${depth}-${nodes[0]?.id ?? 'e'}`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <SortableContext items={movableIds} strategy={verticalListSortingStrategy}>
+        {nodes.map((n) => (
+          <SortableRow key={n.id} node={n} pageId={pageId} depth={depth} selectedId={selectedId} onSelect={onSelect} />
+        ))}
+      </SortableContext>
+    </DndContext>
+  );
+}
+
+function SortableRow({ node, pageId, depth, selectedId, onSelect }: { node: NodeView; pageId: string; depth: number; selectedId: string | null; onSelect: (id: string) => void }) {
+  const fixed = isFixedNode(node.type);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: node.id, disabled: fixed });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const role = layerRole(node.type);
+  const label =
+    node.type === 'CORNER'
+      ? node.props.cornerType === GROUP_CORNER
+        ? `${node.props.title ?? '그룹'}`
+        : `${node.props.title ?? '코너'} · ${node.props.cornerType}`
+      : componentLabel(node.type);
+  return (
+    <>
+      <div
+        ref={setNodeRef}
+        style={{ ...style, paddingLeft: 8 + depth * 14 }}
+        className={`group flex items-center gap-1 rounded-md py-1.5 pr-2 text-[12px] ${selectedId === node.id ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-muted/60'}`}
       >
-        <Icons.ChevronUp className="h-3.5 w-3.5" />
-      </button>
-      <button
-        disabled={pending || isLast}
-        onClick={(e) => { e.stopPropagation(); start(() => moveNode(pageId, nodeId, 'down')); }}
-        className="rounded p-0.5 text-slate-400 hover:text-primary disabled:opacity-30"
-        title="아래로"
-      >
-        <Icons.ChevronDown className="h-3.5 w-3.5" />
-      </button>
-    </span>
+        {fixed ? (
+          <Icons.Lock className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+        ) : (
+          <button {...attributes} {...listeners} className="cursor-grab text-slate-300 hover:text-slate-500 active:cursor-grabbing" title="드래그로 순서 변경" onClick={(e) => e.stopPropagation()}>
+            <Icons.GripVertical className="h-3.5 w-3.5" />
+          </button>
+        )}
+        <button onClick={() => onSelect(node.id)} className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
+          <LayerBadge role={role} />
+          <span className="truncate">{label}</span>
+        </button>
+      </div>
+      {node.children.length > 0 && (
+        <SortableGroup nodes={node.children} pageId={pageId} depth={depth + 1} selectedId={selectedId} onSelect={onSelect} />
+      )}
+    </>
   );
 }
 
@@ -222,19 +264,10 @@ function StructureTree({ tree, meta, selectedId, onSelect }: { tree: NodeView[];
         {tree.length === 0 ? (
           <p className="px-2 py-3 text-[11px] leading-snug text-muted-foreground">아직 코너가 없습니다.<br />오른쪽 <b>추가</b>에서 코너(그룹)를 만들어 콘텐츠를 묶으세요.</p>
         ) : (
-          tree.map((n, i) => (
-            <StructureRow
-              key={n.id}
-              node={n}
-              depth={1}
-              selectedId={selectedId}
-              onSelect={onSelect}
-              right={<ReorderButtons pageId={meta.pageId} nodeId={n.id} isFirst={i === 0} isLast={i === tree.length - 1} />}
-            />
-          ))
+          <SortableGroup nodes={tree} pageId={meta.pageId} depth={1} selectedId={selectedId} onSelect={onSelect} />
         )}
       </div>
-      <p className="pt-2 text-[10px] leading-snug text-muted-foreground">템플릿(프로모션) ▸ 코너(그룹) ▸ 컴포넌트 ▸ 아톰</p>
+      <p className="pt-2 text-[10px] leading-snug text-muted-foreground">템플릿(프로모션) ▸ 코너(그룹) ▸ 컴포넌트 ▸ 아톰 · <b>드래그</b>로 순서 변경</p>
     </div>
   );
 }
@@ -273,6 +306,7 @@ function EditableNode({ node, meta, selectedId, onSelect }: { node: NodeView; me
   const [pending, start] = useTransition();
   const selected = selectedId === node.id;
   const container = isContainer(node.type);
+  const fixed = isFixedNode(node.type); // 개발 고정 영역(썸네일·헤더·CTA) — 이동/복제/삭제 불가
   const def = componentDef(node.type);
 
   const childrenEls = container ? (
@@ -288,15 +322,13 @@ function EditableNode({ node, meta, selectedId, onSelect }: { node: NodeView; me
       onClick={(e) => { e.stopPropagation(); onSelect(node.id); }}
       className={`group relative cursor-pointer rounded-lg transition ${selected ? 'outline outline-2 outline-primary' : 'hover:outline hover:outline-1 hover:outline-primary/40'}`}
     >
-      {/* 라벨 */}
-      <span className={`absolute -top-0 left-0 z-20 inline-flex items-center gap-1 rounded-br-md rounded-tl-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground ${selected ? '' : 'opacity-0 group-hover:opacity-100'}`}>
-        <LucideIcon name={def?.icon ?? 'Square'} className="h-3 w-3" /> {def?.label}
+      {/* 라벨 — 고정 영역은 자물쇠 표시(개발 고정, 제어 불가) */}
+      <span className={`absolute -top-0 left-0 z-20 inline-flex items-center gap-1 rounded-br-md rounded-tl-md px-1.5 py-0.5 text-[10px] font-semibold ${fixed ? 'bg-zinc-500 text-white' : 'bg-primary text-primary-foreground'} ${selected ? '' : 'opacity-0 group-hover:opacity-100'}`}>
+        {fixed ? <Icons.Lock className="h-3 w-3" /> : <LucideIcon name={def?.icon ?? 'Square'} className="h-3 w-3" />} {fixed ? '고정' : def?.label}
       </span>
-      {/* 툴바 */}
-      {selected && (
+      {/* 툴바 — 고정 영역은 이동/복제/삭제 불가 */}
+      {selected && !fixed && (
         <div className="absolute -top-3 right-1 z-30 flex items-center gap-0.5 rounded-md bg-white p-0.5 shadow-md ring-1 ring-slate-200" onClick={(e) => e.stopPropagation()}>
-          <button disabled={pending} onClick={() => start(() => moveNode(meta.pageId, node.id, 'up'))} className="p-1 text-slate-500 hover:text-primary" title="위로"><Icons.ArrowUp className="h-3.5 w-3.5" /></button>
-          <button disabled={pending} onClick={() => start(() => moveNode(meta.pageId, node.id, 'down'))} className="p-1 text-slate-500 hover:text-primary" title="아래로"><Icons.ArrowDown className="h-3.5 w-3.5" /></button>
           <button disabled={pending} onClick={() => start(() => duplicateNode(meta.pageId, node.id))} className="p-1 text-slate-500 hover:text-primary" title="복제"><Icons.Copy className="h-3.5 w-3.5" /></button>
           <button disabled={pending} onClick={() => start(() => deleteNode(meta.pageId, node.id))} className="p-1 text-slate-500 hover:text-destructive" title="삭제"><Icons.Trash2 className="h-3.5 w-3.5" /></button>
         </div>

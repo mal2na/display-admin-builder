@@ -1,9 +1,10 @@
 'use client';
 
 import { useTransition } from 'react';
-import { Trash2, Plus, Minus } from 'lucide-react';
+import { Trash2, Plus, Minus, Lock } from 'lucide-react';
 import type { NodeView } from '@/components/preview/event-node';
 import { componentDef, variantsFor } from '@/lib/event-components';
+import { updateNodeProps, deleteNode } from '../../../actions';
 
 function VariantRow({ type, p, set }: { type: string; p: Record<string, any>; set: (patch: Record<string, unknown>) => void }) {
   const vs = variantsFor(type);
@@ -16,7 +17,6 @@ function VariantRow({ type, p, set }: { type: string; p: Record<string, any>; se
     </Row>
   );
 }
-import { updateNodeProps, deleteNode } from '../../../actions';
 
 // 작은 폼 헬퍼
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -37,19 +37,32 @@ export function PropertiesPanel({ pageId, node, onDelete }: { pageId: string; no
   const set = (patch: Record<string, unknown>) => start(() => updateNodeProps(pageId, node.id, patch));
   const num = (v: string) => (v === '' ? 0 : Number(v));
 
+  const fixed = node.type.startsWith('SLOT_'); // 개발 고정 영역 — 삭제/여백 제어 불가
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="text-[15px] font-bold">{def?.label ?? node.type}</h3>
-        <button
-          onClick={() => start(() => deleteNode(pageId, node.id).then(onDelete))}
-          className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] text-destructive hover:bg-destructive/10"
-        >
-          <Trash2 className="h-3.5 w-3.5" /> 삭제
-        </button>
+        {fixed ? (
+          <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-[11px] font-medium text-zinc-500 ring-1 ring-inset ring-zinc-300"><Lock className="h-3.5 w-3.5" /> 고정</span>
+        ) : (
+          <button
+            onClick={() => start(() => deleteNode(pageId, node.id).then(onDelete))}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> 삭제
+          </button>
+        )}
       </div>
 
-      {/* 공통 설정 — 여백 (margin/padding) */}
+      {fixed && (
+        <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-3 text-[12px] text-zinc-600">
+          <p className="font-semibold">개발 고정 영역</p>
+          <p className="mt-1 leading-snug">{String(p.note ?? '이 영역은 개발에서 고정되어 위치·내용을 변경할 수 없습니다.')}</p>
+        </div>
+      )}
+
+      {/* 공통 설정 — 여백 (margin/padding) — 고정 영역은 제외 */}
+      {!fixed && (
       <div>
         <p className="mb-2 text-[12px] font-semibold">공통 설정</p>
         <p className="mb-1.5 text-[10px] text-muted-foreground">여백 — 바깥(margin) · 안쪽(padding)</p>
@@ -81,12 +94,15 @@ export function PropertiesPanel({ pageId, node, onDelete }: { pageId: string; no
           </div>
         </div>
       </div>
+      )}
 
-      {/* 세부 설정 — 유형별 */}
+      {/* 세부 설정 — 유형별 (고정 영역은 편집 항목 없음) */}
+      {!fixed && (
       <div className="space-y-3">
         <p className="text-[12px] font-semibold">세부 설정</p>
         <TypeFields type={node.type} p={p} set={set} num={num} />
       </div>
+      )}
     </div>
   );
 }
