@@ -257,6 +257,113 @@ function CornerFrame({ p, children }: { p: Record<string, any>; children: React.
   );
 }
 
+// ── Contents Catalog 모듈 (Variant별 렌더) ──
+function StepsNode({ p }: { p: Record<string, any> }) {
+  const steps: string[] = Array.isArray(p.steps) ? p.steps : [];
+  const v = p.variant ?? '스텝 리스트';
+  return (
+    <div className="space-y-2">
+      {p.title && <p className="text-[14px] font-bold text-slate-900">{p.title}</p>}
+      {v === '자유 텍스트' ? (
+        <div className="space-y-1 text-[13px] leading-relaxed text-slate-600">{steps.map((s, i) => <p key={i}>{s}</p>)}</div>
+      ) : v === '진행률' ? (
+        <div className="space-y-2">
+          {steps.map((s, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-500'}`}>{i + 1}</span>
+              <span className="text-[13px] text-slate-700">{s}</span>
+            </div>
+          ))}
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: steps.length ? `${Math.round(100 / steps.length)}%` : '0%' }} /></div>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {steps.map((s, i) => (
+            <div key={i} className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-600">{i + 1}</span>
+              <span className="text-[13px] text-slate-700">{s}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BenefitCardNode({ p }: { p: Record<string, any> }) {
+  const items: { name: string; desc?: string; price?: string }[] = Array.isArray(p.items) ? p.items : [];
+  const v = p.variant ?? '리스트형';
+  if (v === '2열 구좌형') {
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        {items.map((it, i) => (
+          <div key={i} className="rounded-xl border p-2.5">
+            <div className="mb-1.5 aspect-[4/3] w-full rounded-lg bg-gradient-to-br from-indigo-100 to-slate-200" />
+            <p className="truncate text-[12px] font-semibold text-slate-800">{it.name}</p>
+            {it.desc && <p className="truncate text-[11px] text-slate-400">{it.desc}</p>}
+            {it.price && <p className="text-[12px] font-bold text-indigo-600">{it.price}</p>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (v === '카드형') {
+    const it = items[0];
+    return (
+      <div className="overflow-hidden rounded-2xl border">
+        <div className="aspect-[16/9] w-full bg-gradient-to-br from-indigo-100 to-slate-200" />
+        <div className="p-3">
+          <p className="text-[14px] font-bold text-slate-900">{it?.name ?? '혜택'}</p>
+          {it?.desc && <p className="text-[12px] text-slate-500">{it.desc}</p>}
+          {it?.price && <p className="mt-1 text-[15px] font-bold text-indigo-600">{it.price}</p>}
+        </div>
+      </div>
+    );
+  }
+  // 리스트형
+  return (
+    <div className="divide-y divide-slate-100">
+      {items.map((it, i) => (
+        <div key={i} className="flex items-center gap-3 py-2">
+          <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-indigo-100 to-slate-200" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold text-slate-800">{it.name}</p>
+            {it.desc && <p className="truncate text-[11px] text-slate-400">{it.desc}</p>}
+          </div>
+          {it.price && <span className="shrink-0 text-[13px] font-bold text-indigo-600">{it.price}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function InputNode({ p }: { p: Record<string, any> }) {
+  const v = p.variant ?? '인풋';
+  const options: string[] = Array.isArray(p.options) ? p.options : [];
+  if (v === '객관식') {
+    return (
+      <div className="space-y-2">
+        {p.label && <p className="text-[13px] font-semibold text-slate-800">{p.label}</p>}
+        {options.map((o, i) => (
+          <label key={i} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-[13px] text-slate-700">
+            <span className={`flex h-4 w-4 items-center justify-center rounded-full border ${i === (p.selected ?? 0) ? 'border-indigo-500' : 'border-slate-300'}`}>{i === (p.selected ?? 0) && <span className="h-2 w-2 rounded-full bg-indigo-500" />}</span>
+            {o}
+          </label>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {p.label && <p className="text-[13px] font-semibold text-slate-800">{p.label}</p>}
+      <div className="flex gap-2">
+        <div className="flex h-10 flex-1 items-center rounded-lg border px-3 text-[12px] text-slate-400">{p.placeholder ?? '입력해 주세요'}</div>
+        <div className="flex h-10 items-center rounded-lg bg-slate-800 px-4 text-[12px] font-medium text-white">확인</div>
+      </div>
+    </div>
+  );
+}
+
 // 위치 표시 슬롯 — 등록정보/시스템에서 관리되는 콘텐츠의 "자리"만 표시 (빌더 편집 불가)
 const SLOT_META: Record<string, { icon: string; tone: string }> = {
   SLOT_HEADER: { icon: '🏷️', tone: 'border-slate-300 bg-slate-50 text-slate-500' },
@@ -298,6 +405,12 @@ export function renderNodeBody(type: string, props: Record<string, any>, childre
       return <HtmlNode p={p} />;
     case 'ROULETTE':
       return <RouletteNode p={p} />;
+    case 'STEPS':
+      return <StepsNode p={p} />;
+    case 'BENEFIT_CARD':
+      return <BenefitCardNode p={p} />;
+    case 'INPUT':
+      return <InputNode p={p} />;
     case 'CARD':
       return <CardNode p={p}>{childrenEls}</CardNode>;
     case 'HROW':

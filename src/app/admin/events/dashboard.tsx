@@ -4,7 +4,6 @@ import { useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteProject, restoreProject, purgeProject, setDisplayState } from './actions';
-import { NewProjectModal } from './new-project-modal';
 import { LayoutTemplate, Rocket, Trash2, Plus, Search, LayoutGrid, List, MoreVertical, ArrowDownUp, Eye, EyeOff, RotateCcw, ExternalLink } from 'lucide-react';
 
 export type ProjectCard = {
@@ -147,7 +146,6 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<'recent' | 'name'>('recent');
   const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [showNew, setShowNew] = useState(false);
 
   const counts: Record<string, number> = { 전체: projects.length };
   for (const p of projects) counts[p.type] = (counts[p.type] ?? 0) + 1;
@@ -175,12 +173,12 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
       <aside className="flex w-72 shrink-0 flex-col border-r bg-card">
         <div className="flex items-center justify-between border-b px-3 py-3">
           <span className="text-sm font-semibold">워크스페이스</span>
-          <button
-            onClick={() => setShowNew(true)}
+          <Link
+            href="/admin/events/new"
             className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-3.5 w-3.5" /> 새 프로모션
-          </button>
+          </Link>
         </div>
         <div className="flex-1 overflow-y-auto p-3">
           <nav className="space-y-1 text-sm">
@@ -256,8 +254,6 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
         {section === 'deploy' && <DeployView rows={deployRows} />}
         {section === 'trash' && <TrashView rows={trashRows} />}
       </main>
-
-      {showNew && <NewProjectModal onClose={() => setShowNew(false)} />}
     </div>
   );
 }

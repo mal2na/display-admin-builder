@@ -3,7 +3,19 @@
 import { useTransition } from 'react';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import type { NodeView } from '@/components/preview/event-node';
-import { componentDef } from '@/lib/event-components';
+import { componentDef, variantsFor } from '@/lib/event-components';
+
+function VariantRow({ type, p, set }: { type: string; p: Record<string, any>; set: (patch: Record<string, unknown>) => void }) {
+  const vs = variantsFor(type);
+  if (!vs.length) return null;
+  return (
+    <Row label="Variant (배리언스)">
+      <select defaultValue={p.variant ?? vs[0]} onChange={(e) => set({ variant: e.target.value })} className={inputCls}>
+        {vs.map((v) => <option key={v} value={v}>{v}</option>)}
+      </select>
+    </Row>
+  );
+}
 import { updateNodeProps, deleteNode } from '../../../actions';
 
 // 작은 폼 헬퍼
@@ -112,10 +124,42 @@ function TypeFields({ type, p, set, num }: { type: string; p: Record<string, any
         </>
       );
     case 'TABLE':
-      return <TableFields p={p} set={set} />;
+      return (<><VariantRow type="TABLE" p={p} set={set} /><TableFields p={p} set={set} /></>);
+    case 'STEPS':
+      return (
+        <>
+          <VariantRow type="STEPS" p={p} set={set} />
+          <Row label="제목"><input defaultValue={p.title} onBlur={(e) => set({ title: e.target.value })} className={inputCls} /></Row>
+          <Row label="단계 (줄바꿈으로 구분)"><textarea defaultValue={(p.steps ?? []).join('\n')} onBlur={(e) => set({ steps: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) })} rows={5} className="w-full rounded-md border p-2 text-[12px]" /></Row>
+        </>
+      );
+    case 'BENEFIT_CARD':
+      return (
+        <>
+          <VariantRow type="BENEFIT_CARD" p={p} set={set} />
+          <Row label="항목 (한 줄에 하나: 이름 | 설명 | 가격)">
+            <textarea
+              defaultValue={(p.items ?? []).map((it: any) => [it.name, it.desc, it.price].filter(Boolean).join(' | ')).join('\n')}
+              onBlur={(e) => set({ items: e.target.value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const [name, desc, price] = l.split('|').map((x) => x.trim()); return { name: name ?? '', desc: desc ?? '', price: price ?? '' }; }) })}
+              rows={5}
+              className="w-full rounded-md border p-2 text-[12px]"
+            />
+          </Row>
+        </>
+      );
+    case 'INPUT':
+      return (
+        <>
+          <VariantRow type="INPUT" p={p} set={set} />
+          <Row label="라벨"><input defaultValue={p.label} onBlur={(e) => set({ label: e.target.value })} className={inputCls} /></Row>
+          <Row label="입력 placeholder"><input defaultValue={p.placeholder} onBlur={(e) => set({ placeholder: e.target.value })} className={inputCls} /></Row>
+          <Row label="객관식 보기 (줄바꿈으로 구분)"><textarea defaultValue={(p.options ?? []).join('\n')} onBlur={(e) => set({ options: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) })} rows={4} className="w-full rounded-md border p-2 text-[12px]" /></Row>
+        </>
+      );
     case 'IMAGE':
       return (
         <>
+          <VariantRow type="IMAGE" p={p} set={set} />
           <Row label="이미지 URL"><input defaultValue={p.url} onBlur={(e) => set({ url: e.target.value })} placeholder="URL 입력 또는 붙여넣기" className={inputCls} /></Row>
           <Row label="영역 높이(px, 비우면 자동)"><input defaultValue={p.height === 'auto' ? '' : p.height} onBlur={(e) => set({ height: e.target.value === '' ? 'auto' : num(e.target.value) })} placeholder="자동" className={inputCls} /></Row>
           <Row label="모서리 라운드(px)"><input type="number" defaultValue={p.radius} onBlur={(e) => set({ radius: num(e.target.value) })} className={inputCls} /></Row>

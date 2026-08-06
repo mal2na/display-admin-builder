@@ -24,6 +24,10 @@ export type NodeType =
   | 'DIVIDER'
   | 'HTML'
   | 'ROULETTE'
+  // ── Contents Catalog 모듈 (자유 조립 구간 · Variant 보유) ──
+  | 'STEPS' // 이용 방법 안내 (자유텍스트/스텝/진행률)
+  | 'BENEFIT_CARD' // 혜택·상품 카드 (카드형/리스트형/2열)
+  | 'INPUT' // 입력·선택 (인풋/객관식)
   // ── 위치 표시(등록정보/시스템 관리 — 빌더에서 편집 불가, 위치만 표시) ──
   | 'SLOT_HEADER' // 헤더: 제목·운영기간·대상 (등록정보)
   | 'SLOT_THUMB' // 썸네일: 대표 이미지 (등록정보)
@@ -173,6 +177,42 @@ export const COMPONENTS: ComponentDef[] = [
     },
   },
 
+  // ── Contents Catalog 모듈 (자유 구간 · group = 카탈로그 카테고리) ──
+  {
+    type: 'STEPS',
+    label: '이용 방법 안내',
+    sub: '자유텍스트 / 스텝 / 진행률',
+    group: '이용 방법 안내',
+    icon: 'ListChecks',
+    container: false,
+    defaultProps: { variant: '스텝 리스트', title: '이용 방법', steps: ['STEP 1. 응모하기', 'STEP 2. 조건 달성', 'STEP 3. 보상 확인'], ...SPACING },
+  },
+  {
+    type: 'BENEFIT_CARD',
+    label: '혜택·상품 카드',
+    sub: '카드형 / 리스트형 / 2열',
+    group: '혜택·상품 카드',
+    icon: 'Gift',
+    container: false,
+    defaultProps: {
+      variant: '리스트형',
+      items: [
+        { name: '인기 음료 6종 50% 할인', desc: '공차', price: '' },
+        { name: '시그니처 버거 세트', desc: 'DOWNTOWNER', price: '5,900원' },
+      ],
+      ...SPACING,
+    },
+  },
+  {
+    type: 'INPUT',
+    label: '입력·선택',
+    sub: '인풋 / 객관식',
+    group: '입력·선택',
+    icon: 'FormInput',
+    container: false,
+    defaultProps: { variant: '인풋', label: '입력 항목', placeholder: '입력해 주세요', options: ['보기 1', '보기 2', '보기 3'], selected: 0, ...SPACING },
+  },
+
   // ── 위치 표시 (등록정보·시스템에서 관리 — 빌더는 위치만 표시, 내용 편집 불가) ──
   {
     type: 'SLOT_HEADER',
@@ -280,6 +320,33 @@ export const COMPONENTS: ComponentDef[] = [
 // 팔레트(추가) 그룹 — nebula-builder 기준: 콘텐츠 / Button / 레이아웃 / 고급 / 게임.
 //   '위치 표시' 슬롯은 골조에 자동 배치되는 고정 영역이라 수동 추가 팔레트에는 넣지 않는다.
 export const COMPONENT_GROUPS = ['콘텐츠', 'Button', '레이아웃', '고급', '게임'] as const;
+
+// ─────────────────────────────────────────────────────────────
+// Contents Catalog — 자유 조립 구간 팔레트(7 카테고리). EVT Contents Architecture-1 SSOT.
+//   각 모듈은 Variant(세부 배리언스)를 가지며, 섹션 = 모듈 + Variant + 데이터.
+// ─────────────────────────────────────────────────────────────
+export const CATALOG: { key: string; types: NodeType[] }[] = [
+  { key: '타이틀', types: ['TEXT'] },
+  { key: '이용 방법 안내', types: ['STEPS'] },
+  { key: '혜택·상품 카드', types: ['BENEFIT_CARD'] },
+  { key: '도표', types: ['TABLE'] },
+  { key: '이미지·HTML', types: ['IMAGE', 'HTML'] },
+  { key: '입력·선택', types: ['INPUT'] },
+  { key: '마무리 문구', types: ['ACCORDION'] },
+  { key: '레이아웃·기타', types: ['CARD', 'HROW', 'VSTACK', 'DIVIDER', 'BUTTON', 'ROULETTE'] },
+];
+
+// 모듈별 Variant 목록 (문서 정의). 없는 타입은 Variant 미사용.
+export const MODULE_VARIANTS: Record<string, string[]> = {
+  STEPS: ['자유 텍스트', '스텝 리스트', '진행률'],
+  BENEFIT_CARD: ['카드형', '리스트형', '2열 구좌형'],
+  INPUT: ['인풋', '객관식'],
+  IMAGE: ['풀 이미지', '이미지 나열'],
+  TABLE: ['상세표', '비교표'],
+};
+export function variantsFor(type: string): string[] {
+  return MODULE_VARIANTS[type] ?? [];
+}
 
 export const COMPONENT_BY_TYPE: Record<string, ComponentDef> = Object.fromEntries(COMPONENTS.map((c) => [c.type, c]));
 

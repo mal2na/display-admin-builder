@@ -4,7 +4,7 @@ import { useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import * as Icons from 'lucide-react';
 import { renderNodeBody, DeviceShell, type NodeView } from '@/components/preview/event-node';
-import { COMPONENTS, COMPONENT_GROUPS, componentDef, componentLabel, isContainer, DEVICES, CORNER_TYPES, allowedComponentsFor, PROMO_CORNER_OPTIONS, GROUP_CORNER } from '@/lib/event-components';
+import { CATALOG, componentDef, componentLabel, isContainer, DEVICES, CORNER_TYPES, allowedComponentsFor, PROMO_CORNER_OPTIONS, GROUP_CORNER } from '@/lib/event-components';
 import { layerRole, LAYER_LABEL, LAYER_COLOR } from '@/lib/event-layers';
 import { addNode, addCornerNode, updateNodeProps, deleteNode, duplicateNode, moveNode, updatePageMeta, addConditionPage } from '../../../actions';
 import { ProgramInfoEdit, type ProgramInfo } from './program-info-edit';
@@ -296,7 +296,6 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
     setTab('node');
   }
 
-  const filtered = COMPONENTS.filter((c) => !q || c.label.includes(q) || c.sub.includes(q));
 
   return (
     <div className="flex h-screen flex-col bg-slate-50" onClick={() => setSelectedId(null)}>
@@ -430,18 +429,21 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
                     </div>
                   </div>
                 ) : (
-                  COMPONENT_GROUPS.map((g) => {
-                    const items = filtered.filter((c) => c.group === g);
+                  // Contents Catalog 7 카테고리 (자유 구간 모듈)
+                  CATALOG.map((cat) => {
+                    const q2 = q.trim();
+                    const defs = cat.types.map((t) => componentDef(t)).filter(Boolean) as ReturnType<typeof componentDef>[];
+                    const items = defs.filter((c) => !q2 || c!.label.includes(q2) || c!.sub.includes(q2));
                     if (!items.length) return null;
                     return (
-                      <div key={g}>
-                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{g}</p>
+                      <div key={cat.key}>
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{cat.key}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {items.map((c) => (
-                            <button key={c.type} onClick={() => add(c.type)} className="flex flex-col items-center gap-1 rounded-lg border bg-card p-3 text-center transition hover:border-primary/60 hover:bg-accent">
-                              <LucideIcon name={c.icon} className="h-5 w-5 text-primary" />
-                              <span className="text-[12px] font-semibold">{c.label}</span>
-                              <span className="line-clamp-1 text-[10px] text-muted-foreground">{c.sub}</span>
+                            <button key={c!.type} onClick={() => add(c!.type)} className="flex flex-col items-center gap-1 rounded-lg border bg-card p-3 text-center transition hover:border-primary/60 hover:bg-accent">
+                              <LucideIcon name={c!.icon} className="h-5 w-5 text-primary" />
+                              <span className="text-[12px] font-semibold">{c!.label}</span>
+                              <span className="line-clamp-1 text-[10px] text-muted-foreground">{c!.sub}</span>
                             </button>
                           ))}
                         </div>
