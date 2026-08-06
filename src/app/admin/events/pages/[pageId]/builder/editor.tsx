@@ -168,37 +168,56 @@ function SortableGroup({ nodes, pageId, depth, selectedId, onSelect }: { nodes: 
 function SortableRow({ node, pageId, depth, selectedId, onSelect }: { node: NodeView; pageId: string; depth: number; selectedId: string | null; onSelect: (id: string) => void }) {
   const fixed = isFixedNode(node.type);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: node.id, disabled: fixed });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1, zIndex: isDragging ? 20 : undefined, position: 'relative' as const };
   const role = layerRole(node.type);
+  const isCorner = node.type === 'CORNER';
+  const hasChildren = node.children.length > 0;
   const label =
     node.type === 'CORNER'
       ? node.props.cornerType === GROUP_CORNER
         ? `${node.props.title ?? '그룹'}`
         : `${node.props.title ?? '코너'} · ${node.props.cornerType}`
       : componentLabel(node.type);
-  return (
-    <>
-      <div
-        ref={setNodeRef}
-        style={{ ...style, paddingLeft: 8 + depth * 14 }}
-        className={`group flex items-center gap-1 rounded-md py-1.5 pr-2 text-[12px] ${selectedId === node.id ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-muted/60'}`}
-      >
-        {fixed ? (
-          <Icons.Lock className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
-        ) : (
-          <button {...attributes} {...listeners} className="cursor-grab text-slate-300 hover:text-slate-500 active:cursor-grabbing" title="드래그로 순서 변경" onClick={(e) => e.stopPropagation()}>
-            <Icons.GripVertical className="h-3.5 w-3.5" />
-          </button>
-        )}
-        <button onClick={() => onSelect(node.id)} className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
-          <LayerBadge role={role} />
-          <span className="truncate">{label}</span>
+
+  // 헤더 행 (드래그 핸들 + 라벨) — 코너는 카드 헤더, 그 외는 단순 행
+  const headerRow = (
+    <div className={`group flex items-center gap-1 rounded-md py-1.5 pl-1.5 pr-2 text-[12px] ${selectedId === node.id ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-muted/60'}`}>
+      {fixed ? (
+        <Icons.Lock className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+      ) : (
+        <button {...attributes} {...listeners} className="cursor-grab text-slate-300 hover:text-slate-500 active:cursor-grabbing" title="드래그로 순서 변경 (같은 그룹 안에서만)" onClick={(e) => e.stopPropagation()}>
+          <Icons.GripVertical className="h-3.5 w-3.5" />
         </button>
-      </div>
-      {node.children.length > 0 && (
-        <SortableGroup nodes={node.children} pageId={pageId} depth={depth + 1} selectedId={selectedId} onSelect={onSelect} />
       )}
-    </>
+      <button onClick={() => onSelect(node.id)} className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
+        <LayerBadge role={role} />
+        <span className="truncate">{label}</span>
+      </button>
+    </div>
+  );
+
+  // 자식(컴포넌트/아톰)은 왼쪽 레일로 '이 안에 묶여 있음'을 명시 → 자기 그룹 안에서만 재정렬
+  const childGroup = hasChildren && (
+    <div className={`ml-2.5 border-l border-dashed pl-1 ${isCorner ? 'border-emerald-200 pb-1' : 'border-slate-200'}`}>
+      <SortableGroup nodes={node.children} pageId={pageId} depth={depth + 1} selectedId={selectedId} onSelect={onSelect} />
+    </div>
+  );
+
+  // 코너 = 하나의 그룹 박스(카드). 드래그하면 카드 전체가 한 덩어리로 이동, 코너끼리만 자리 교환.
+  if (isCorner) {
+    return (
+      <div ref={setNodeRef} style={style} className={`mb-1.5 overflow-hidden rounded-lg border bg-emerald-50/30 shadow-sm ${isDragging ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-emerald-200/70'}`}>
+        {headerRow}
+        {childGroup}
+      </div>
+    );
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className={isDragging ? 'rounded-md ring-2 ring-sky-200' : undefined}>
+      {headerRow}
+      {childGroup}
+    </div>
   );
 }
 

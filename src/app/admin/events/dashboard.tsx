@@ -4,7 +4,7 @@ import { useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteProject, restoreProject, purgeProject, setDisplayState } from './actions';
-import { LayoutTemplate, Rocket, Trash2, Plus, Search, LayoutGrid, Table2, MoreVertical, ArrowDownUp, ArrowUp, ArrowDown, Eye, EyeOff, RotateCcw, ExternalLink, PencilRuler } from 'lucide-react';
+import { LayoutTemplate, Rocket, Trash2, Plus, Search, LayoutGrid, Table2, MoreVertical, ArrowDownUp, ArrowUp, ArrowDown, Eye, EyeOff, RotateCcw, ExternalLink, PencilRuler, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type SortKey = 'recent' | 'name' | 'type' | 'status' | 'author';
 
@@ -184,6 +184,21 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   const [view, setView] = useState<'card' | 'table'>('card');
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  // 상세 검색 필터 (디자인.png 기준)
+  const [field, setField] = useState<'name' | 'author' | 'all'>('name'); // 검색 대상
+  const [status, setStatus] = useState<string>('전체'); // 게시 상태
+  const [expanded, setExpanded] = useState(false); // 펼치기(상세조회)
+  const [fromDate, setFromDate] = useState(''); // 등록일 시작
+  const [toDate, setToDate] = useState(''); // 등록일 종료
+  const [perPage, setPerPage] = useState(20);
+  const [page, setPage] = useState(1);
+
+  const STATUS_OPTIONS = ['전체', '게시 중', '게시 예정', '종료', '미노출'];
+  const FIELD_LABEL: Record<string, string> = { name: '프로모션명', author: '등록자', all: '전체' };
+
+  function resetFilters() {
+    setField('name'); setStatus('전체'); setQ(''); setFromDate(''); setToDate(''); setTab('전체'); setPage(1);
+  }
 
   // 헤더 클릭 정렬 토글 (같은 키 재클릭 시 방향 반전)
   function toggleSort(k: SortKey) {
@@ -195,8 +210,21 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   for (const p of projects) counts[p.type] = (counts[p.type] ?? 0) + 1;
 
   const ql = q.trim().toLowerCase();
-  const filtered = projects
-    .filter((p) => (tab === '전체' || p.type === tab) && (!ql || p.name.toLowerCase().includes(ql) || p.type.toLowerCase().includes(ql) || p.author.toLowerCase().includes(ql)))
+  const fromMs = fromDate ? new Date(fromDate).getTime() : null;
+  const toMs = toDate ? new Date(toDate).getTime() + 86_400_000 : null; // 종료일 포함
+  const matchQuery = (p: ProjectCard) => {
+    if (!ql) return true;
+    if (field === 'name') return p.name.toLowerCase().includes(ql);
+    if (field === 'author') return p.author.toLowerCase().includes(ql);
+    return p.name.toLowerCase().includes(ql) || p.type.toLowerCase().includes(ql) || p.author.toLowerCase().includes(ql);
+  };
+  const filteredAll = projects
+    .filter((p) =>
+      (tab === '전체' || p.type === tab) &&
+      (status === '전체' || p.publishState === status) &&
+      (fromMs === null || p.createdAtMs >= fromMs) &&
+      (toMs === null || p.createdAtMs < toMs) &&
+      matchQuery(p))
     .sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
       switch (sortKey) {
@@ -208,6 +236,10 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
         default: return (a.createdAtMs - b.createdAtMs) * dir;
       }
     });
+
+  const totalPages = Math.max(1, Math.ceil(filteredAll.length / perPage));
+  const curPage = Math.min(page, totalPages);
+  const filtered = filteredAll.slice((curPage - 1) * perPage, curPage * perPage);
 
   const navItem = (key: Section, icon: ReactNode, label: string, count: number) => (
     <button
@@ -262,34 +294,76 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
               ))}
             </div>
 
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div className="relative max-w-md flex-1">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="프로모션 검색..." className="h-10 w-full rounded-lg border pl-9 pr-3 text-sm" />
-              </div>
-              <div className="flex items-center gap-2">
-                {view === 'card' && (
-                  <div className="relative flex items-center">
-                    <ArrowDownUp className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                    <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="h-9 rounded-lg border pl-8 pr-3 text-sm">
-                      <option value="recent">최신순</option>
-                      <option value="name">이름순</option>
-                      <option value="type">유형순</option>
-                      <option value="status">상태순</option>
-                    </select>
+            {/* 상세 검색 필터 (디자인.png 기준) */}
+            <div className="mb-4 rounded-xl border bg-card p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* 검색 대상 */}
+                <select value={field} onChange={(e) => { setField(e.target.value as typeof field); setPage(1); }} className="h-9 rounded-lg border bg-background px-2.5 text-sm">
+                  {Object.entries(FIELD_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+                {/* 검색어 */}
+                <div className="relative min-w-[180px] flex-1">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="검색어 입력" className="h-9 w-full rounded-lg border pl-9 pr-3 text-sm" />
+                </div>
+                {/* 게시 상태 */}
+                <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="h-9 rounded-lg border bg-background px-2.5 text-sm">
+                  {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s === '전체' ? '상태 선택' : s}</option>)}
+                </select>
+                {/* 펼치기 */}
+                <button onClick={() => setExpanded((v) => !v)} className="inline-flex h-9 items-center gap-1 rounded-lg border px-2.5 text-sm text-muted-foreground hover:bg-secondary">
+                  {expanded ? '접기' : '펼치기'} <ChevronDown className={`h-4 w-4 transition ${expanded ? 'rotate-180' : ''}`} />
+                </button>
+                {/* 초기화 */}
+                <button onClick={resetFilters} title="초기화" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border text-muted-foreground hover:bg-secondary"><RotateCcw className="h-4 w-4" /></button>
+                {/* 상세조회 */}
+                <button onClick={() => setPage(1)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"><Search className="h-4 w-4" /> 상세조회</button>
+
+                <div className="ml-auto flex items-center gap-2">
+                  {view === 'card' && (
+                    <div className="relative flex items-center">
+                      <ArrowDownUp className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                      <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="h-9 rounded-lg border pl-8 pr-3 text-sm">
+                        <option value="recent">최신순</option>
+                        <option value="name">이름순</option>
+                        <option value="type">유형순</option>
+                        <option value="status">상태순</option>
+                      </select>
+                    </div>
+                  )}
+                  <div className="flex overflow-hidden rounded-lg border">
+                    <button onClick={() => setView('card')} className={`px-2.5 py-2 ${view === 'card' ? 'bg-secondary' : ''}`} title="카드 보기"><LayoutGrid className="h-4 w-4" /></button>
+                    <button onClick={() => setView('table')} className={`px-2.5 py-2 ${view === 'table' ? 'bg-secondary' : ''}`} title="테이블 보기"><Table2 className="h-4 w-4" /></button>
                   </div>
-                )}
-                <div className="flex overflow-hidden rounded-lg border">
-                  <button onClick={() => setView('card')} className={`px-2.5 py-2 ${view === 'card' ? 'bg-secondary' : ''}`} title="카드 보기"><LayoutGrid className="h-4 w-4" /></button>
-                  <button onClick={() => setView('table')} className={`px-2.5 py-2 ${view === 'table' ? 'bg-secondary' : ''}`} title="테이블 보기"><Table2 className="h-4 w-4" /></button>
                 </div>
               </div>
+
+              {/* 펼치기 — 등록일 범위 */}
+              {expanded && (
+                <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 border-t pt-3 sm:grid-cols-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <span className="w-16 shrink-0 text-muted-foreground">등록일</span>
+                    <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPage(1); }} className="h-9 flex-1 rounded-lg border px-2.5 text-sm" />
+                    <span className="text-muted-foreground">~</span>
+                    <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(1); }} className="h-9 flex-1 rounded-lg border px-2.5 text-sm" />
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* 검색결과 수 + N개씩 보기 */}
+            <div className="mb-3 flex items-center justify-between text-sm">
+              <p className="text-muted-foreground">총 <b className="text-foreground">{filteredAll.length}</b>건{filteredAll.length !== projects.length && <span className="text-muted-foreground"> (전체 {projects.length})</span>}</p>
+              <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="h-8 rounded-lg border bg-background px-2 text-[13px]">
+                {[10, 20, 50].map((n) => <option key={n} value={n}>{n}개씩 보기</option>)}
+              </select>
             </div>
 
             {filtered.length === 0 ? (
               <div className="flex h-64 flex-col items-center justify-center text-center text-muted-foreground">
                 <LayoutTemplate className="mb-3 h-10 w-10 opacity-40" />
-                <p className="text-sm">프로모션이 없습니다. 새 프로모션으로 시작하세요.</p>
+                <p className="text-sm">조건에 맞는 프로모션이 없습니다.</p>
+                <button onClick={resetFilters} className="mt-3 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-medium hover:bg-secondary"><RotateCcw className="h-3.5 w-3.5" /> 필터 초기화</button>
               </div>
             ) : view === 'card' ? (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -299,6 +373,17 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
               </div>
             ) : (
               <ProjectTable rows={filtered} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+            )}
+
+            {/* 페이지네이션 */}
+            {totalPages > 1 && (
+              <div className="mt-5 flex items-center justify-center gap-1">
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={curPage === 1} className="inline-flex h-8 w-8 items-center justify-center rounded-md border disabled:opacity-40 hover:bg-secondary"><ChevronLeft className="h-4 w-4" /></button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                  <button key={n} onClick={() => setPage(n)} className={`h-8 min-w-8 rounded-md border px-2 text-sm ${n === curPage ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}>{n}</button>
+                ))}
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={curPage === totalPages} className="inline-flex h-8 w-8 items-center justify-center rounded-md border disabled:opacity-40 hover:bg-secondary"><ChevronRight className="h-4 w-4" /></button>
+              </div>
             )}
           </>
         )}
