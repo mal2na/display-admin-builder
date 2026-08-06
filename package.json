@@ -5,6 +5,7 @@
   "description": "전시/관리 어드민 빌더 — 데이터 모델(Phase 1)",
   "scripts": {
     "dev": "next dev",
+    "tokens": "node scripts/build-tokens.mjs",
     "build": "prisma generate && prisma db push --skip-generate && tsx prisma/seed.ts && next build",
     "start": "next start",
     "lint": "next lint",
