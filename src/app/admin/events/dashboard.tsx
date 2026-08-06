@@ -175,14 +175,14 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
               <tr key={p.id} className="hover:bg-secondary/30">
                 <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{startIndex + i + 1}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[11px] text-muted-foreground">{p.programId}</td>
-                <td className="px-3 py-2.5"><span className={`rounded px-2 py-0.5 text-[11px] font-semibold ${EXPOSURE_BADGE[p.displayState] ?? EXPOSURE_BADGE['미노출']}`}>{p.displayState}</span></td>
+                <td className="px-3 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${EXPOSURE_BADGE[p.displayState] ?? EXPOSURE_BADGE['미노출']}`}>{p.displayState}</span></td>
                 <td className="whitespace-nowrap px-3 py-2.5"><Link href={href} className="font-medium hover:text-primary">{p.name}</Link></td>
                 <td className="whitespace-nowrap px-3 py-2.5">
                   {p.kind !== '전시' && <span className="mr-1 text-[11px] text-muted-foreground">{p.kind}</span>}
                   <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${typeBadge(p.type)}`}>{p.type}</span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{p.period}</td>
-                <td className="px-3 py-2.5"><span className={`rounded px-2 py-0.5 text-[11px] font-semibold ${PROMO_STATUS_BADGE[p.promoStatus] ?? PROMO_STATUS_BADGE['작성 중']}`}>{p.promoStatus}</span></td>
+                <td className="px-3 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${PROMO_STATUS_BADGE[p.promoStatus] ?? PROMO_STATUS_BADGE['작성 중']}`}>{p.promoStatus}</span></td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{p.author}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{p.createdDateTime}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{p.editor}</td>

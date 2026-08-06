@@ -1,5 +1,24 @@
 /* 자동 생성: scripts/build-tokens.mjs (원본 design/figma-tokens.json). 직접 수정 금지. */
 :root {
+  /* shadcn 기본 토큰 (BSS 재매핑) — 앱 전체 색 */
+  --background: 224 38% 94%;
+  --foreground: 214 11% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 214 11% 12%;
+  --primary: 250 80% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 206 18% 92%;
+  --secondary-foreground: 210 13% 31%;
+  --muted: 210 17% 95%;
+  --muted-foreground: 211 11% 46%;
+  --accent: 236 100% 97%;
+  --accent-foreground: 250 80% 45%;
+  --destructive: 359 83% 58%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 213 15% 88%;
+  --input: 213 15% 88%;
+  --ring: 250 80% 45%;
+  --radius: 0.5rem;
   /* 프리미티브 색 램프 */
   --color-neutral-50: #f8f9fb;
   --color-neutral-80: #f1f3f5;
@@ -444,6 +463,24 @@
 }
 
 .dark {
+  /* shadcn 기본 토큰 (다크) */
+  --background: 214 11% 12%;
+  --foreground: 220 27% 98%;
+  --card: 0 0% 10%;
+  --card-foreground: 220 27% 98%;
+  --primary: 238 100% 77%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 16% 22%;
+  --secondary-foreground: 213 15% 88%;
+  --muted: 210 16% 22%;
+  --muted-foreground: 213 10% 79%;
+  --accent: 250 78% 28%;
+  --accent-foreground: 238 100% 77%;
+  --destructive: 0 93% 79%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 210 13% 31%;
+  --input: 210 13% 31%;
+  --ring: 238 100% 77%;
   /* 시맨틱 색 (다크) — 같은 유틸리티가 자동 전환 */
   --text-primary: #f8f9fb;
   --text-secondary: #c4c9cf;

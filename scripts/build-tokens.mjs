@@ -30,15 +30,47 @@ const flat = (obj, prefix = '', acc = {}) => {
 
 const line = (name, val) => `  --${name}: ${val};`;
 
+// hex → "H S% L%" (shadcn 토큰은 hsl(var(--x)) 로 감싸므로 채널 문자열 필요)
+const hexToHsl = (hex) => {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const r = parseInt(h.slice(0, 2), 16) / 255, g = parseInt(h.slice(2, 4), 16) / 255, b = parseInt(h.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let H = 0; const L = (max + min) / 2; const S = d === 0 ? 0 : d / (1 - Math.abs(2 * L - 1));
+  if (d !== 0) {
+    if (max === r) H = ((g - b) / d) % 6; else if (max === g) H = (b - r) / d + 2; else H = (r - g) / d + 4;
+    H *= 60; if (H < 0) H += 360;
+  }
+  return `${Math.round(H)} ${Math.round(S * 100)}% ${Math.round(L * 100)}%`;
+};
+
+// shadcn 기본 토큰 → BSS 시맨틱 토큰 매핑 (앱 전체 리테마). 값이 #으로 시작하면 리터럴.
+const BASE = {
+  background: 'surface-canvas', foreground: 'text-primary',
+  card: 'surface-default', 'card-foreground': 'text-primary',
+  primary: 'action-primary-fill-enable', 'primary-foreground': '#ffffff',
+  secondary: 'surface-sunken', 'secondary-foreground': 'text-neutral-strong',
+  muted: 'surface-hover', 'muted-foreground': 'text-secondary',
+  accent: 'surface-brand-subtle', 'accent-foreground': 'text-brand',
+  destructive: 'text-danger', 'destructive-foreground': '#ffffff',
+  border: 'border-default', input: 'border-default', ring: 'action-primary-fill-enable',
+};
+
 // ── 1) 프리미티브 색 램프 → --color-* ──
 const primVars = Object.entries(flat(T.primitive.color)).map(([k, v]) => line(`color-${clean(k)}`, v));
 
 // ── 2) 시맨틱 색 (light/dark) — 다크는 같은 이름을 .dark에서 오버라이드 ──
 const twColors = {};
+const semLight = {}, semDark = {};
 const lightVars = Object.entries(flat(T.semantic.light.color)).map(([k, v]) => {
-  const name = clean(k); twColors[name] = `var(--${name})`; return line(name, v);
+  const name = clean(k); twColors[name] = `var(--${name})`; semLight[name] = v; return line(name, v);
 });
-const darkVars = Object.entries(flat(T.semantic.dark.color)).map(([k, v]) => line(clean(k), v));
+const darkVars = Object.entries(flat(T.semantic.dark.color)).map(([k, v]) => { const name = clean(k); semDark[name] = v; return line(name, v); });
+
+// ── shadcn 기본 토큰을 BSS로 재매핑 (앱 전체 색이 바뀜). light→:root, dark→.dark ──
+const resolve = (map, tok) => (tok.startsWith('#') ? tok : map[tok]);
+const shadcnLight = Object.entries(BASE).map(([k, tok]) => line(k, hexToHsl(resolve(semLight, tok)))).concat([line('radius', '0.5rem')]);
+const shadcnDark = Object.entries(BASE).map(([k, tok]) => line(k, hexToHsl(resolve(semDark, tok))));
 
 // ── 3) mapped 컴포넌트 색 (라이트 기준) → --<component>-<leaf> ──
 const mappedVars = Object.entries(flat(T.mapped.color)).map(([k, v]) => {
@@ -61,6 +93,8 @@ for (const [k, v] of Object.entries(flat(T.primitive.typography['font-weight']))
 // ── CSS 작성 ──
 const css = `/* 자동 생성: scripts/build-tokens.mjs (원본 design/figma-tokens.json). 직접 수정 금지. */
 :root {
+  /* shadcn 기본 토큰 (BSS 재매핑) — 앱 전체 색 */
+${shadcnLight.join('\n')}
   /* 프리미티브 색 램프 */
 ${primVars.join('\n')}
   /* 스케일 (spacing / radius / icon / font) */
@@ -72,6 +106,8 @@ ${mappedVars.join('\n')}
 }
 
 .dark {
+  /* shadcn 기본 토큰 (다크) */
+${shadcnDark.join('\n')}
   /* 시맨틱 색 (다크) — 같은 유틸리티가 자동 전환 */
 ${darkVars.join('\n')}
 }
