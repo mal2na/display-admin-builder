@@ -6,7 +6,7 @@ import * as LucideIcons from 'lucide-react';
 import { Check, Plus, Info, ChevronLeft } from 'lucide-react';
 import { createProject } from '../actions';
 import { TEMPLATES, PROGRAM_KINDS, typesForKind, createsStateFor, TYPE_META, toPromotionSkeleton, type NodeSpec } from '@/lib/event-templates';
-import { EventNodeView, DeviceShell, type NodeView } from '@/components/preview/event-node';
+import { EventNodeView, type NodeView } from '@/components/preview/event-node';
 
 function TIcon({ name, className }: { name: string; className?: string }) {
   const I = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name] ?? LucideIcons.Square;
@@ -25,18 +25,21 @@ function ExamplePreview({ tplKey }: { tplKey: string }) {
   const tpl = TEMPLATES.find((t) => t.key === tplKey);
   const built = tpl ? tpl.build() : [];
   const views = toViews(built.length ? toPromotionSkeleton(built) : []);
+  // 썸네일·헤더·CTA는 고정(모든 예시 동일)이라 생략하고, 이 유형의 '섹션'만 강조해 보여준다.
+  const sections = views.filter((v) => v.type === 'CORNER');
+  if (sections.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-slate-400">
+        <span className="text-[12px] font-medium">빈 페이지</span>
+        <span className="text-[10px]">직접 섹션을 구성합니다</span>
+      </div>
+    );
+  }
+  // 폰 크롬 없이 섹션 콘텐츠만 — 위에서부터 자연스럽게 클립
   return (
-    <div className="pointer-events-none flex justify-center overflow-hidden">
-      <div className="origin-top scale-[0.82]">
-        <DeviceShell width={240} height={360} headerLabel="미리보기">
-          {views.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-[11px] text-slate-400">빈 페이지</div>
-          ) : (
-            <div className="space-y-2">
-              {views.map((n) => <EventNodeView key={n.id} node={n} />)}
-            </div>
-          )}
-        </DeviceShell>
+    <div className="pointer-events-none h-full w-full overflow-hidden">
+      <div className="space-y-2.5 p-3">
+        {sections.map((n) => <EventNodeView key={n.id} node={n} />)}
       </div>
     </div>
   );
@@ -180,8 +183,10 @@ export function NewPromotion() {
                   className={`group relative cursor-pointer overflow-hidden rounded-2xl border-2 bg-card p-3 text-left transition ${active ? 'border-primary ring-2 ring-primary/20' : 'border-transparent ring-1 ring-border hover:ring-primary/50'}`}
                 >
                   {active && <span className="absolute right-2.5 top-2.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-3 w-3" /></span>}
-                  <div className="mb-2 h-[300px] overflow-hidden rounded-xl bg-slate-100">
+                  <div className="relative mb-2 h-[300px] overflow-hidden rounded-xl border bg-gradient-to-b from-white to-slate-50">
                     {mounted ? <ExamplePreview tplKey={ex.key} /> : <div className="flex h-full items-center justify-center text-[11px] text-slate-400">미리보기 로딩…</div>}
+                    {/* 하단 페이드 (콘텐츠가 잘리는 느낌을 자연스럽게) */}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent" />
                   </div>
                   <p className="text-[13px] font-semibold">{ex.label}</p>
                   <p className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">{ex.desc}</p>

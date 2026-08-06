@@ -4,7 +4,9 @@ import { useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteProject, restoreProject, purgeProject, setDisplayState } from './actions';
-import { LayoutTemplate, Rocket, Trash2, Plus, Search, LayoutGrid, List, MoreVertical, ArrowDownUp, Eye, EyeOff, RotateCcw, ExternalLink } from 'lucide-react';
+import { LayoutTemplate, Rocket, Trash2, Plus, Search, LayoutGrid, Table2, MoreVertical, ArrowDownUp, ArrowUp, ArrowDown, Eye, EyeOff, RotateCcw, ExternalLink, PencilRuler } from 'lucide-react';
+
+type SortKey = 'recent' | 'name' | 'type' | 'status' | 'author';
 
 export type ProjectCard = {
   id: string;
@@ -12,8 +14,12 @@ export type ProjectCard = {
   env: string;
   type: string; // 이벤트 유형(안내형·초청형…) 또는 '전시' / '기타'
   updatedLabel: string;
+  createdAtMs: number; // 등록일 정렬용
   createdLabel: string; // 등록일 (YYYY.MM.DD)
   author: string; // 등록자
+  displayState: string; // 노출 | 미노출
+  publishState: '미노출' | '게시 예정' | '게시 중' | '종료';
+  period: string; // 전시 기간
   pageId: string | null;
   nodeTypes: string[];
 };
@@ -107,35 +113,66 @@ function ProjectTile({ p }: { p: ProjectCard }) {
   );
 }
 
-// 리스트 뷰 — 한 줄 컴팩트 행 (썸네일 대신 유형 배지 + 이름 + 시간 + 메뉴)
-function ProjectRow({ p }: { p: ProjectCard }) {
+// 테이블 뷰 — SB-EVT-027 프로그램 등록·편집 목록형 (정렬 가능한 컬럼 헤더)
+const PUBLISH_BADGE_C: Record<string, string> = {
+  '게시 중': 'bg-emerald-100 text-emerald-700',
+  '게시 예정': 'bg-amber-100 text-amber-700',
+  종료: 'bg-slate-200 text-slate-600',
+  미노출: 'bg-slate-100 text-slate-500',
+};
+function ProjectTable({ rows, sortKey, sortDir, onSort }: { rows: ProjectCard[]; sortKey: SortKey; sortDir: 'asc' | 'desc'; onSort: (k: SortKey) => void }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [menu, setMenu] = useState(false);
-  const href = p.pageId ? `/admin/events/pages/${p.pageId}/builder` : '#';
+  const SortableTh = ({ k, label, className = '' }: { k: SortKey; label: string; className?: string }) => (
+    <th className={`whitespace-nowrap px-4 py-2.5 text-left font-medium ${className}`}>
+      <button onClick={() => onSort(k)} className="inline-flex items-center gap-1 hover:text-foreground">
+        {label}
+        {sortKey === k && (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
+      </button>
+    </th>
+  );
   return (
-    <div className="group flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5 transition hover:shadow-sm">
-      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${TYPE_BADGE[p.type] ?? TYPE_BADGE['기타']}`}>{p.type}</span>
-      <Link href={href} className="min-w-0 flex-1 truncate font-medium hover:text-primary">{p.name}</Link>
-      <span className="hidden shrink-0 text-[11px] text-muted-foreground sm:block">등록자 {p.author}</span>
-      <span className="hidden shrink-0 text-[11px] text-muted-foreground sm:block">{p.createdLabel}</span>
-      <span className="shrink-0 text-[11px] text-muted-foreground">{p.updatedLabel}</span>
-      <div className="relative shrink-0">
-        <button onClick={() => setMenu((v) => !v)} className="rounded p-0.5 text-slate-400 hover:bg-secondary" aria-label="메뉴">
-          <MoreVertical className="h-4 w-4" />
-        </button>
-        {menu && (
-          <div className="absolute right-0 top-6 z-20 w-32 overflow-hidden rounded-md border bg-white text-xs shadow-lg" onMouseLeave={() => setMenu(false)}>
-            <button
-              onClick={() => { if (confirm(`"${p.name}" 프로모션을 휴지통으로 옮길까요?`)) start(() => deleteProject(p.id).then(() => router.refresh())); }}
-              disabled={pending}
-              className="flex w-full items-center gap-2 px-3 py-2 text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-3.5 w-3.5" /> 휴지통으로
-            </button>
-          </div>
-        )}
-      </div>
+    <div className="overflow-hidden rounded-xl border bg-card">
+      <table className="w-full text-sm">
+        <thead className="border-b bg-secondary/50 text-[12px] text-muted-foreground">
+          <tr>
+            <SortableTh k="name" label="프로모션명" />
+            <SortableTh k="type" label="유형" />
+            <SortableTh k="status" label="게시 상태" />
+            <th className="whitespace-nowrap px-4 py-2.5 text-left font-medium">전시 기간</th>
+            <SortableTh k="author" label="등록자" />
+            <SortableTh k="recent" label="등록일" />
+            <th className="px-4 py-2.5 text-right font-medium">관리</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {rows.map((p) => {
+            const href = p.pageId ? `/admin/events/pages/${p.pageId}/builder` : '#';
+            return (
+              <tr key={p.id} className="hover:bg-secondary/30">
+                <td className="px-4 py-2.5"><Link href={href} className="font-medium hover:text-primary">{p.name}</Link></td>
+                <td className="px-4 py-2.5"><span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${TYPE_BADGE[p.type] ?? TYPE_BADGE['기타']}`}>{p.type}</span></td>
+                <td className="px-4 py-2.5"><span className={`rounded px-2 py-0.5 text-[11px] font-semibold ${PUBLISH_BADGE_C[p.publishState]}`}>{p.publishState}</span></td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-[12px] text-muted-foreground">{p.period}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-[12px] text-muted-foreground">{p.author}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-[12px] text-muted-foreground">{p.createdLabel}</td>
+                <td className="px-4 py-2.5">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <Link href={href} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium hover:bg-secondary"><PencilRuler className="h-3 w-3" /> 편집</Link>
+                    <button
+                      onClick={() => { if (confirm(`"${p.name}" 프로모션을 휴지통으로 옮길까요?`)) start(() => deleteProject(p.id).then(() => router.refresh())); }}
+                      disabled={pending}
+                      className="inline-flex items-center gap-1 rounded-md border border-destructive/30 px-2 py-1 text-[11px] font-medium text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -144,8 +181,15 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   const [section, setSection] = useState<Section>('projects');
   const [tab, setTab] = useState<string>('전체');
   const [q, setQ] = useState('');
-  const [sort, setSort] = useState<'recent' | 'name'>('recent');
-  const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [view, setView] = useState<'card' | 'table'>('card');
+  const [sortKey, setSortKey] = useState<SortKey>('recent');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  // 헤더 클릭 정렬 토글 (같은 키 재클릭 시 방향 반전)
+  function toggleSort(k: SortKey) {
+    if (sortKey === k) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(k); setSortDir(k === 'name' || k === 'type' ? 'asc' : 'desc'); }
+  }
 
   const counts: Record<string, number> = { 전체: projects.length };
   for (const p of projects) counts[p.type] = (counts[p.type] ?? 0) + 1;
@@ -153,8 +197,15 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   const filtered = projects
     .filter((p) => (tab === '전체' || p.type === tab) && (!q || p.name.toLowerCase().includes(q.toLowerCase())))
     .sort((a, b) => {
-      if (sort === 'name') return a.name.localeCompare(b.name, 'ko');
-      return 0; // 최신순: 서버 정렬(updatedAt desc) 유지
+      const dir = sortDir === 'asc' ? 1 : -1;
+      switch (sortKey) {
+        case 'name': return a.name.localeCompare(b.name, 'ko') * dir;
+        case 'type': return (typeRank(a.type) - typeRank(b.type)) * dir || a.name.localeCompare(b.name, 'ko');
+        case 'status': return a.publishState.localeCompare(b.publishState, 'ko') * dir;
+        case 'author': return a.author.localeCompare(b.author, 'ko') * dir;
+        case 'recent':
+        default: return (a.createdAtMs - b.createdAtMs) * dir;
+      }
     });
 
   const navItem = (key: Section, icon: ReactNode, label: string, count: number) => (
@@ -216,16 +267,20 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="프로모션 검색..." className="h-10 w-full rounded-lg border pl-9 pr-3 text-sm" />
               </div>
               <div className="flex items-center gap-2">
-                <div className="relative flex items-center">
-                  <ArrowDownUp className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                  <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className="h-9 rounded-lg border pl-8 pr-3 text-sm">
-                    <option value="recent">최신순</option>
-                    <option value="name">이름순</option>
-                  </select>
-                </div>
+                {view === 'card' && (
+                  <div className="relative flex items-center">
+                    <ArrowDownUp className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="h-9 rounded-lg border pl-8 pr-3 text-sm">
+                      <option value="recent">최신순</option>
+                      <option value="name">이름순</option>
+                      <option value="type">유형순</option>
+                      <option value="status">상태순</option>
+                    </select>
+                  </div>
+                )}
                 <div className="flex overflow-hidden rounded-lg border">
-                  <button onClick={() => setView('grid')} className={`px-2.5 py-2 ${view === 'grid' ? 'bg-secondary' : ''}`}><LayoutGrid className="h-4 w-4" /></button>
-                  <button onClick={() => setView('list')} className={`px-2.5 py-2 ${view === 'list' ? 'bg-secondary' : ''}`}><List className="h-4 w-4" /></button>
+                  <button onClick={() => setView('card')} className={`px-2.5 py-2 ${view === 'card' ? 'bg-secondary' : ''}`} title="카드 보기"><LayoutGrid className="h-4 w-4" /></button>
+                  <button onClick={() => setView('table')} className={`px-2.5 py-2 ${view === 'table' ? 'bg-secondary' : ''}`} title="테이블 보기"><Table2 className="h-4 w-4" /></button>
                 </div>
               </div>
             </div>
@@ -235,18 +290,14 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
                 <LayoutTemplate className="mb-3 h-10 w-10 opacity-40" />
                 <p className="text-sm">프로모션이 없습니다. 새 프로모션으로 시작하세요.</p>
               </div>
-            ) : view === 'grid' ? (
+            ) : view === 'card' ? (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {filtered.map((p) => (
                   <ProjectTile key={p.id} p={p} />
                 ))}
               </div>
             ) : (
-              <div className="space-y-1.5">
-                {filtered.map((p) => (
-                  <ProjectRow key={p.id} p={p} />
-                ))}
-              </div>
+              <ProjectTable rows={filtered} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
             )}
           </>
         )}

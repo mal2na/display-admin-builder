@@ -74,8 +74,12 @@ export default async function EventsPage() {
     // 유형: 전시(거버넌스) 프로젝트는 '전시', 그 외엔 이벤트 유형(category), 없으면 '기타'
     type: r.mode === 'display' ? '전시' : r.category || '기타',
     updatedLabel: relTime(r.updatedAt),
+    createdAtMs: new Date(r.createdAt).getTime(),
     createdLabel: fmt(r.createdAt),
     author: shortActor(authorOf.get(r.id)),
+    displayState: r.displayState,
+    publishState: publishState(r),
+    period: `${fmt(r.displayStartAt)} ~ ${r.displayNoEndDate ? '상시' : fmt(r.displayEndAt)}`,
     pageId: r.defaultPageId,
     nodeTypes: (r.defaultPage?.nodes ?? []).map((n) => n.type).slice(0, 8),
   }));

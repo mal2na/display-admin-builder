@@ -78,7 +78,7 @@ function ImageNode({ p }: { p: Record<string, any> }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={p.url} alt={p.overlayText ?? ''} style={{ height: h, borderRadius: p.radius }} className="w-full object-cover" />
       ) : (
-        <div style={{ height: h ?? 150, borderRadius: p.radius }} className="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 text-slate-400">
+        <div style={{ height: h ?? 150, borderRadius: p.radius }} className="flex flex-col items-center justify-center bg-slate-100 text-slate-400">
           <ImageIcon className="mb-1 h-7 w-7 opacity-50" />
           <span className="text-[11px]">이미지를 추가하세요</span>
         </div>
