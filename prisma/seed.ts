@@ -22,6 +22,7 @@ import {
   type ComponentType,
   type CornerType,
 } from '../src/lib/display-taxonomy';
+import { seedEvents } from './seed-events';
 
 const prisma = new PrismaClient();
 
@@ -412,7 +413,18 @@ async function main() {
 
   // Container + Template + 배치
   const container = await prisma.container.create({
-    data: { name: '혜택 홈', containerType: 'MAIN', channel: 'APP', status: 'active' },
+    data: {
+      name: '혜택 홈', containerType: 'MAIN', channel: 'APP', status: 'active',
+      previewUrl: 'https://main-concept1.vercel.app/',
+      metaUse: true,
+      searchTags: '#혜택 #홈 #추천 #멤버십',
+      metaKeywords: '혜택,홈,추천,멤버십,T우주',
+      metaDescription: '매일 새로워지는 맞춤 혜택을 한 곳에서 확인하세요.',
+      ogTitle: '혜택 홈',
+      ogDescription: '지훈님을 위한 맞춤 혜택 홈',
+      ogSiteName: 'T우주',
+      ogImage: 'https://main-concept1.vercel.app/og.png',
+    },
   });
   const template = await prisma.template.create({
     data: {
@@ -610,7 +622,16 @@ async function main() {
   );
 
   const shopContainer = await prisma.container.create({
-    data: { name: '쇼핑 홈', containerType: 'MAIN', channel: 'APP', status: 'active' },
+    data: {
+      name: '쇼핑 홈', containerType: 'MAIN', channel: 'APP', status: 'active',
+      metaUse: true,
+      searchTags: '#쇼핑 #홈 #특가 #세일',
+      metaKeywords: '쇼핑,홈,특가,세일,커머스',
+      metaDescription: '오늘의 특가와 추천 상품을 쇼핑 홈에서 만나보세요.',
+      ogTitle: '쇼핑 홈',
+      ogDescription: '오늘의 특가·추천 상품 모음',
+      ogSiteName: 'T우주',
+    },
   });
   const shopTemplate = await prisma.template.create({
     data: {
@@ -763,7 +784,16 @@ async function main() {
   );
 
   const myContainer = await prisma.container.create({
-    data: { name: '마이 홈', containerType: 'MAIN', channel: 'APP', status: 'active' },
+    data: {
+      name: '마이 홈', containerType: 'MAIN', channel: 'APP', status: 'active',
+      metaUse: true,
+      searchTags: '#마이 #내정보 #멤버십',
+      metaKeywords: '마이,내정보,멤버십,포인트,등급',
+      metaDescription: '내 등급·포인트·주문내역을 마이 홈에서 관리하세요.',
+      ogTitle: '마이 홈',
+      ogDescription: '내 멤버십·포인트·주문 관리',
+      ogSiteName: 'T우주',
+    },
   });
   const myTemplate = await prisma.template.create({
     data: {
@@ -852,6 +882,9 @@ async function main() {
     components: await prisma.component.count(),
     atoms: await prisma.atom.count(),
   });
+
+  // 이벤트·미션 빌더 시드 (룰렛)
+  await seedEvents(prisma);
 }
 
 main()

@@ -12,7 +12,9 @@
     "migrate": "prisma migrate dev",
     "seed": "prisma db seed",
     "studio": "prisma studio",
-    "reset": "prisma migrate reset"
+    "reset": "prisma migrate reset",
+    "local:schema": "node prisma/make-local-schema.mjs",
+    "local:setup": "npm run local:schema && prisma db push --schema prisma/schema.local.prisma && prisma generate --schema prisma/schema.local.prisma && tsx prisma/seed.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -64,6 +64,48 @@ export async function createContainer(formData: FormData) {
   redirect(`/admin/containers/${container.id}`);
 }
 
+// ── 컨테이너 기본/메타 정보 수정 ──
+export async function updateContainerInfo(id: string, formData: FormData) {
+  const S = (k: string) => String(formData.get(k) ?? '').trim();
+  const opt = (k: string) => S(k) || null;
+  const before = await prisma.container.findUnique({
+    where: { id },
+    select: {
+      name: true, kind: true, platform: true, previewUrl: true, status: true,
+      startAt: true, endAt: true, noEndDate: true,
+      metaUse: true, searchTags: true, metaKeywords: true, metaDescription: true,
+      ogTitle: true, ogDescription: true, ogSiteName: true, ogImage: true,
+    },
+  });
+  if (!before) throw new Error('컨테이너를 찾을 수 없습니다.');
+
+  const noEndDate = formData.get('noEndDate') != null;
+  const startRaw = S('startAt');
+  const endRaw = S('endAt');
+  const data = {
+    name: S('name') || before.name,
+    kind: S('kind') || '일반',
+    platform: S('platform') || '모바일',
+    previewUrl: opt('previewUrl'),
+    status: S('display') === '미전시' ? 'inactive' : 'active',
+    startAt: startRaw ? new Date(startRaw) : null,
+    endAt: noEndDate || !endRaw ? null : new Date(endRaw),
+    noEndDate,
+    metaUse: S('metaUse') !== '미사용',
+    searchTags: opt('searchTags'),
+    metaKeywords: opt('metaKeywords'),
+    metaDescription: opt('metaDescription'),
+    ogTitle: opt('ogTitle'),
+    ogDescription: opt('ogDescription'),
+    ogSiteName: opt('ogSiteName'),
+    ogImage: opt('ogImage'),
+  };
+  await prisma.container.update({ where: { id }, data });
+  await writeContainerAudit({ id, before, after: data, reason: '기본/메타 정보 수정', result: 'UPDATED' });
+  revalidatePath(`/admin/containers/${id}`);
+  revalidatePath('/admin/containers');
+}
+
 // ── 컨테이너 승인 워크플로우 (작성중 → 승인 대기 → 승인 완료/반려) ──
 const APPROVAL_ACTOR = 'marina.kim@sk.com';
 

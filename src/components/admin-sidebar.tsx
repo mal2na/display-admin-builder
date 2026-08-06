@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { NavLink } from '@/components/nav-link';
-import { MonitorSmartphone, LayoutGrid, ScrollText, PanelLeftClose, PanelLeftOpen, LayoutDashboard } from 'lucide-react';
+import { MonitorSmartphone, LayoutGrid, ScrollText, PanelLeftClose, PanelLeftOpen, LayoutDashboard, Ticket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 좌측 사이드바 — 접기/펴기 지원 (전체폭 ↔ 아이콘 레일)
@@ -31,8 +31,18 @@ export function AdminSidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 p-2">
+        {/* 전시 관리 */}
+        {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">전시 관리</p>}
         <NavLink href="/admin/containers" icon={<MonitorSmartphone className="h-4 w-4" />} label="전시화면 관리" collapsed={collapsed} />
         <NavLink href="/admin/corner-types" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리" collapsed={collapsed} />
+
+        {/* 프로모션 관리 */}
+        {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">프로모션 관리</p>}
+        <NavLink href="/admin/events" icon={<Ticket className="h-4 w-4" />} label="프로모션 목록" collapsed={collapsed} />
+
+        {/* 공통 */}
+        <div className="mt-auto" />
+        {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">공통</p>}
         <NavLink href="/admin/audit-log" icon={<ScrollText className="h-4 w-4" />} label="감사 로그" collapsed={collapsed} />
       </nav>
 

@@ -15,6 +15,7 @@ import { ContainerDetailTabs } from './container-detail-tabs';
 import { HistoryTable } from './history-table';
 import { TemplateRowActions } from './template-row-actions';
 import { ContainerApprovalBar } from './container-approval-bar';
+import { ContainerInfoEdit } from './container-info-edit';
 
 export const dynamic = 'force-dynamic';
 
@@ -145,9 +146,13 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
       processedAt: fmtDate(l.changedAt),
       before: statusOf(l.beforeValue),
       after: statusOf(l.afterValue),
+      beforeJson: l.beforeValue, // '변경 보기' 필드 단위 diff용 원본
+      afterJson: l.afterValue,
       reason: l.reason,
     };
   });
+  // 작성자 표기 — createdBy가 없으면(시드) 최초(가장 오래된) 이력의 작성자로 폴백
+  const firstActor = historyRows.length ? historyRows[historyRows.length - 1].actor : null;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
@@ -200,7 +205,30 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
           <div className="space-y-6">
       {/* 기본 정보 */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold">기본 정보</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">기본 정보</h2>
+          <ContainerInfoEdit
+            container={{
+              id: container.id,
+              name: container.name,
+              kind: container.kind,
+              platform: container.platform,
+              previewUrl: container.previewUrl,
+              status: container.status,
+              startAt: container.startAt ? container.startAt.toISOString().slice(0, 16) : null,
+              endAt: container.endAt ? container.endAt.toISOString().slice(0, 16) : null,
+              noEndDate: container.noEndDate,
+              metaUse: container.metaUse,
+              searchTags: container.searchTags,
+              metaKeywords: container.metaKeywords,
+              metaDescription: container.metaDescription,
+              ogTitle: container.ogTitle,
+              ogDescription: container.ogDescription,
+              ogSiteName: container.ogSiteName,
+              ogImage: container.ogImage,
+            }}
+          />
+        </div>
         <div className="grid grid-cols-1 overflow-hidden rounded-md border bg-card sm:grid-cols-2">
           <Row label="컨테이너 ID">{container.id.slice(-10)}</Row>
           <Row label="컨테이너 타입">{container.kind ?? TYPE_LABELS[container.containerType ?? ''] ?? '—'}</Row>
@@ -212,6 +240,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
             {container.noEndDate ? '종료 없음' : container.endAt ? container.endAt.toISOString().slice(0, 16).replace('T', ' ') : '상시'}
           </Row>
           <Row label="미리보기 URL">{container.previewUrl ?? '—'}</Row>
+          <Row label="등록자">{firstActor ?? '—'}</Row>
           <Row label="등록일">{container.createdAt.toISOString().slice(0, 16).replace('T', ' ')}</Row>
           <Row label="최근 수정">{container.updatedAt.toISOString().slice(0, 16).replace('T', ' ')}</Row>
         </div>

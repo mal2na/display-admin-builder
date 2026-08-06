@@ -8,3 +8,5 @@ prisma/dev.db-journal
 .DS_Store
 dist/
 .next/
+prisma/schema.local.prisma
+tsconfig.tsbuildinfo

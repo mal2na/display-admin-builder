@@ -8,7 +8,7 @@ import { usePathname } from 'next/navigation';
  */
 export function AdminMain({ children }: { children: React.ReactNode }) {
   const path = usePathname() ?? '';
-  const fullBleed = path.includes('/builder') || path.startsWith('/admin/containers');
+  const fullBleed = path.includes('/builder') || path.startsWith('/admin/containers') || path.startsWith('/admin/events');
 
   if (fullBleed) {
     return <main className="flex-1 overflow-x-hidden bg-background">{children}</main>;

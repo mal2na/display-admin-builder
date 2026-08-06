@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, createContext, useContext, useTransition } from 'react';
+import { useState, useEffect, useRef, createContext, useContext, useTransition, type MouseEvent as ReactMouseEvent } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -183,6 +183,62 @@ const CornerPreviewContext = createContext<CornerPreviewSetter>(() => {});
 type AtomsDraftState = { key: string; atoms: AtomNode[] } | null;
 type AtomsPreviewSetter = (key: string, atoms: AtomNode[] | null) => void;
 const AtomsPreviewContext = createContext<AtomsPreviewSetter>(() => {});
+
+// 삭제 안전장치 — 삭제 전 확인 팝오버 + 하위 항목 카운트 고지 (로드맵 1차: 삭제 안전 장치)
+function DeleteConfirmForm({
+  action,
+  itemLabel,
+  childSummary,
+  ariaLabel,
+  stopPropagation = false,
+}: {
+  action: (formData: FormData) => void | Promise<void>;
+  itemLabel: string; // '코너' | '컴포넌트' | 'Atom'
+  childSummary?: string; // 예: '컴포넌트 3개 · Atom 12개' — 없으면 하위 없음
+  ariaLabel: string;
+  stopPropagation?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const stop = (e: ReactMouseEvent) => e.stopPropagation();
+  return (
+    <div className="relative inline-flex" onClick={stopPropagation ? stop : undefined}>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        className="text-muted-foreground hover:text-destructive"
+        aria-label={ariaLabel}
+        title="삭제"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
+          <div className="absolute right-0 top-6 z-50 w-56 rounded-lg border bg-white p-3 text-left shadow-xl" onClick={stop}>
+            <p className="text-[13px] font-semibold">{itemLabel} 삭제</p>
+            <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+              {childSummary ? (
+                <>이 {itemLabel}에는 <span className="font-semibold text-foreground">{childSummary}</span>가 포함되어 있습니다. 함께 제거됩니다.</>
+              ) : (
+                <>이 {itemLabel}을(를) 화면에서 제거합니다.</>
+              )}
+            </p>
+            <div className="mt-2.5 flex justify-end gap-1.5">
+              <button type="button" onClick={(e) => { e.stopPropagation(); setOpen(false); }} className="rounded-md border px-2 py-1 text-[11px] hover:bg-secondary">
+                취소
+              </button>
+              <form action={action} onClick={stop}>
+                <button type="submit" className="rounded-md bg-destructive px-2 py-1 text-[11px] font-medium text-white hover:bg-destructive/90">
+                  삭제
+                </button>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function toPreviewCorner(c: CornerNode): PreviewCorner {
   return {
@@ -530,11 +586,7 @@ function AtomRow({
     <div className="space-y-1 rounded-md bg-white p-2.5">
       <div className="flex items-center justify-between">
         <label className="text-[11px] font-medium text-muted-foreground">{ATOM_TYPE_LABELS[atom.atomType as AtomType] ?? atom.atomType}</label>
-        <form action={removeAtom.bind(null, templateId, atom.componentAtomId)}>
-          <button className="text-muted-foreground hover:text-destructive" title="삭제" aria-label="Atom 삭제">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </form>
+        <DeleteConfirmForm action={removeAtom.bind(null, templateId, atom.componentAtomId)} itemLabel="Atom" ariaLabel="Atom 삭제" />
       </div>
       {f.content && (
         <Input
@@ -823,11 +875,12 @@ function ComponentCard({
         ) : (
           <span className="flex-1 truncate text-sm">{cc.name}</span>
         )}
-        <form action={removeComponent.bind(null, templateId, cc.cornerComponentId)}>
-          <button className="text-muted-foreground hover:text-destructive" aria-label="Component 제거">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </form>
+        <DeleteConfirmForm
+          action={removeComponent.bind(null, templateId, cc.cornerComponentId)}
+          itemLabel="컴포넌트"
+          childSummary={cc.atoms.length ? `Atom ${cc.atoms.length}개` : undefined}
+          ariaLabel="Component 제거"
+        />
         {edit ? (
           <div className="ml-0.5 flex items-center gap-1">
             <button
@@ -1539,21 +1592,22 @@ function CornerListRow({
             <span className="truncate text-[10px] text-muted-foreground">{(corner.mainTitle || corner.title || '').split('\n')[0]}</span>
           )}
         </span>
-        {/* 코너 최대 개수(배치/최대) — 복사 버튼 왼쪽에 표시 */}
-        <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground" title="배치 개수 / 최대 노출 개수">
-          {corner.components.length}
-          {corner.maxItems != null ? `/${corner.maxItems}` : ''}
-        </span>
         <form action={duplicateCorner.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
           <button className="text-muted-foreground hover:text-primary" aria-label="Corner 복제" title="복제">
             <Copy className="h-3.5 w-3.5" />
           </button>
         </form>
-        <form action={removeCorner.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
-          <button className="text-muted-foreground hover:text-destructive" aria-label="Corner 삭제" title="삭제">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </form>
+        <DeleteConfirmForm
+          action={removeCorner.bind(null, templateId, corner.templateCornerId)}
+          itemLabel="코너"
+          childSummary={
+            corner.components.length
+              ? `컴포넌트 ${corner.components.length}개 · Atom ${corner.components.reduce((s, c) => s + c.atoms.length, 0)}개`
+              : undefined
+          }
+          ariaLabel="Corner 삭제"
+          stopPropagation
+        />
       </div>
       <div className="mt-1 flex items-center gap-1.5 pl-5">
         <Badge variant="outline">
@@ -1844,6 +1898,18 @@ export function BuilderEditor({
     await reorderCorners(templateId, next);
   }
 
+  // 이탈 경고 — 카드 편집/드래프트가 열려 있으면(미저장) 페이지 이탈 시 브라우저 경고 (로드맵 1차: 이탈 경고 얼럿)
+  const isDirty = !!(chipDraft || cornerDraft || atomsDraft);
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
   return (
     <ChipPreviewProvider value={pushChipPreview}>
     <CornerPreviewProvider value={pushCornerPreview}>
@@ -1870,6 +1936,7 @@ export function BuilderEditor({
           <p className="flex items-center gap-1.5 text-sm font-semibold">
             템플릿 · 코너 배치
             {meta.isDefault && <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">기본</span>}
+            {isDirty && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700" title="편집 중인 카드가 있습니다. 완료를 눌러 저장하세요.">● 미저장</span>}
           </p>
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
             <b className="text-foreground">{meta.name}</b>
@@ -2018,21 +2085,18 @@ export function BuilderEditor({
 
       {/* 가운데: 실시간 디바이스 미리보기 */}
       <div className="flex flex-col overflow-hidden bg-background">
-        <div className="flex items-center justify-center gap-2 border-b bg-card py-2">
-          {DEVICES.map((d) => (
-            <button
-              key={d.key}
-              onClick={() => setDevice(d)}
-              className={cn(
-                'rounded-md px-3 py-1 text-xs font-medium',
-                device.key === d.key ? 'bg-primary text-primary-foreground' : 'border hover:bg-secondary',
-              )}
-            >
-              {d.label} <span className="opacity-70">{d.w}×{d.h}</span>
-            </button>
-          ))}
+        <div className="flex items-center justify-center border-b bg-card py-2">
+          <select
+            value={device.key}
+            onChange={(e) => setDevice(DEVICES.find((d) => d.key === e.target.value) ?? DEVICES[0])}
+            className="rounded-md border bg-white px-3 py-1.5 text-sm font-medium"
+          >
+            {DEVICES.map((d) => (
+              <option key={d.key} value={d.key}>{d.label} · {d.w}×{d.h}</option>
+            ))}
+          </select>
         </div>
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] p-6 [background-size:16px_16px]">
           <div className="mx-auto w-fit">
             <DeviceFrame width={device.w} bodyHeight={device.h - 150} headerLabel={meta.containerName}>
               {previewCorners.length === 0 ? (
