@@ -33,6 +33,26 @@ function fmt(d: Date | null): string {
   return `${x.getFullYear()}.${String(x.getMonth() + 1).padStart(2, '0')}.${String(x.getDate()).padStart(2, '0')}`;
 }
 
+function fmtDT(d: Date | null): string {
+  if (!d) return '—';
+  const x = new Date(d);
+  return `${fmt(d)} ${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`;
+}
+
+// 프로모션 상태(승인·배포) — SB-EVT-027 7단계. 전용 필드가 없어 전시상태+기간으로 파생.
+function promoStatus(r: {
+  displayState: string;
+  displayStartAt: Date | null;
+  displayEndAt: Date | null;
+  displayNoEndDate: boolean;
+}): '작성 중' | '배포 완료' | '게시중' | '종료' {
+  if (r.displayState !== '노출') return '작성 중';
+  const now = Date.now();
+  if (r.displayStartAt && now < new Date(r.displayStartAt).getTime()) return '배포 완료';
+  if (!r.displayNoEndDate && r.displayEndAt && now > new Date(r.displayEndAt).getTime()) return '종료';
+  return '게시중';
+}
+
 export default async function EventsPage() {
   const rows = await prisma.eventProgram.findMany({
     where: { parentId: null },
@@ -42,6 +62,8 @@ export default async function EventsPage() {
       name: true,
       env: true,
       category: true,
+      programKind: true,
+      programType: true,
       mode: true,
       status: true,
       updatedAt: true,
@@ -59,26 +81,40 @@ export default async function EventsPage() {
   const active = rows.filter((r) => r.status !== 'inactive');
   const trashed = rows.filter((r) => r.status === 'inactive');
 
-  // 등록자 = 프로그램 생성 감사로그의 작성자 (없으면 기본 담당자)
-  const createLogs = await prisma.auditLog.findMany({
-    where: { targetType: 'EventProgram', targetId: { in: active.map((r) => r.id) }, result: 'CREATED' },
-    select: { targetId: true, actor: true },
+  // 등록자 = 생성 감사로그 작성자 / 최근 수정자 = 가장 최근 감사로그 작성자
+  const logs = await prisma.auditLog.findMany({
+    where: { targetType: 'EventProgram', targetId: { in: active.map((r) => r.id) } },
+    orderBy: { changedAt: 'desc' },
+    select: { targetId: true, actor: true, result: true },
   });
-  const authorOf = new Map(createLogs.map((l) => [l.targetId, l.actor]));
+  const authorOf = new Map<string, string>();
+  const editorOf = new Map<string, string>();
+  for (const l of logs) {
+    if (!editorOf.has(l.targetId)) editorOf.set(l.targetId, l.actor); // 최신순 → 첫 항목이 최근 수정자
+    if (l.result === 'CREATED') authorOf.set(l.targetId, l.actor);
+  }
   const shortActor = (a: string | undefined) => (a ? a.split('@')[0] : '관리자');
+  // 프로모션 ID 표기 — cuid를 사람이 읽는 코드로 (예: EVT-A1B2C3)
+  const codeOf = (id: string) => `EVT-${id.slice(-6).toUpperCase()}`;
 
   const projects: ProjectCard[] = active.map((r) => ({
     id: r.id,
+    programId: codeOf(r.id),
     name: r.name,
     env: r.env,
-    // 유형: 전시(거버넌스) 프로젝트는 '전시', 그 외엔 이벤트 유형(category), 없으면 '기타'
-    type: r.mode === 'display' ? '전시' : r.category || '기타',
+    kind: r.mode === 'display' ? '전시' : r.programKind || '이벤트', // 상위 유형
+    // 유형(세부): 전시(거버넌스) 프로젝트는 '전시', 그 외엔 이벤트/미션 세부 유형
+    type: r.mode === 'display' ? '전시' : r.programType || r.category || '기타',
     updatedLabel: relTime(r.updatedAt),
     createdAtMs: new Date(r.createdAt).getTime(),
     createdLabel: fmt(r.createdAt),
+    createdDateTime: fmtDT(r.createdAt),
+    updatedDateTime: fmtDT(r.updatedAt),
     author: shortActor(authorOf.get(r.id)),
+    editor: shortActor(editorOf.get(r.id) ?? authorOf.get(r.id)),
     displayState: r.displayState,
     publishState: publishState(r),
+    promoStatus: promoStatus(r),
     period: `${fmt(r.displayStartAt)} ~ ${r.displayNoEndDate ? '상시' : fmt(r.displayEndAt)}`,
     pageId: r.defaultPageId,
     nodeTypes: (r.defaultPage?.nodes ?? []).map((n) => n.type).slice(0, 8),
