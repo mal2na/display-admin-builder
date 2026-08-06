@@ -142,7 +142,7 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
   const router = useRouter();
   const [pending, start] = useTransition();
   const SortableTh = ({ k, label, className = '' }: { k: SortKey; label: string; className?: string }) => (
-    <th className={`whitespace-nowrap px-3 py-2.5 text-left font-medium ${className}`}>
+    <th className={`whitespace-nowrap px-2.5 py-2.5 text-left font-medium ${className}`}>
       <button onClick={() => onSort(k)} className="inline-flex items-center gap-1 hover:text-foreground">
         {label}
         {sortKey === k && (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
@@ -151,21 +151,19 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
   );
   return (
     <div className="overflow-x-auto rounded-xl border bg-card">
-      <table className="w-full min-w-[1080px] text-sm">
+      <table className="w-full min-w-[880px] text-sm">
         <thead className="border-b bg-secondary/50 text-[12px] text-muted-foreground">
           <tr>
-            <th className="whitespace-nowrap px-3 py-2.5 text-left font-medium">No.</th>
-            <th className="whitespace-nowrap px-3 py-2.5 text-left font-medium">프로모션 ID</th>
-            <th className="whitespace-nowrap px-3 py-2.5 text-left font-medium">전시 상태</th>
+            <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">No.</th>
+            <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">프로모션 ID</th>
+            <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">전시 상태</th>
             <SortableTh k="name" label="프로모션명" />
             <SortableTh k="type" label="유형" />
-            <th className="whitespace-nowrap px-3 py-2.5 text-left font-medium">진행 기간</th>
+            <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">진행 기간</th>
             <SortableTh k="status" label="프로모션 상태" />
-            <SortableTh k="author" label="등록자" />
-            <SortableTh k="recent" label="등록일시" />
-            <th className="whitespace-nowrap px-3 py-2.5 text-left font-medium">최근 수정자</th>
-            <th className="whitespace-nowrap px-3 py-2.5 text-left font-medium">최근 수정일시</th>
-            <th className="px-3 py-2.5 text-right font-medium">관리</th>
+            <SortableTh k="recent" label="등록" />
+            <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">최근 수정</th>
+            <th className="px-2.5 py-2.5 text-right font-medium">관리</th>
           </tr>
         </thead>
         <tbody className="divide-y">
@@ -173,23 +171,27 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
             const href = p.pageId ? `/admin/events/pages/${p.pageId}/builder` : '#';
             return (
               <tr key={p.id} className="hover:bg-secondary/30">
-                <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{startIndex + i + 1}</td>
-                <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[11px] text-muted-foreground">{p.programId}</td>
-                <td className="px-3 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${EXPOSURE_BADGE[p.displayState] ?? EXPOSURE_BADGE['미노출']}`}>{p.displayState}</span></td>
-                <td className="whitespace-nowrap px-3 py-2.5"><Link href={href} className="font-medium hover:text-primary">{p.name}</Link></td>
-                <td className="whitespace-nowrap px-3 py-2.5">
+                <td className="whitespace-nowrap px-2.5 py-2.5 text-[12px] text-muted-foreground">{startIndex + i + 1}</td>
+                <td className="whitespace-nowrap px-2.5 py-2.5 font-mono text-[11px] text-muted-foreground">{p.programId}</td>
+                <td className="px-2.5 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${EXPOSURE_BADGE[p.displayState] ?? EXPOSURE_BADGE['미노출']}`}>{p.displayState}</span></td>
+                <td className="whitespace-nowrap px-2.5 py-2.5"><Link href={href} className="font-medium hover:text-primary">{p.name}</Link></td>
+                <td className="whitespace-nowrap px-2.5 py-2.5">
                   {p.kind !== '전시' && <span className="mr-1 text-[11px] text-muted-foreground">{p.kind}</span>}
                   <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${typeBadge(p.type)}`}>{p.type}</span>
                 </td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{p.period}</td>
-                <td className="px-3 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${PROMO_STATUS_BADGE[p.promoStatus] ?? PROMO_STATUS_BADGE['작성 중']}`}>{p.promoStatus}</span></td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{p.author}</td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{p.createdDateTime}</td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{p.editor}</td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{p.updatedDateTime}</td>
-                <td className="px-3 py-2.5">
+                <td className="whitespace-nowrap px-2.5 py-2.5 text-[12px] text-muted-foreground">{p.period}</td>
+                <td className="px-2.5 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${PROMO_STATUS_BADGE[p.promoStatus] ?? PROMO_STATUS_BADGE['작성 중']}`}>{p.promoStatus}</span></td>
+                <td className="whitespace-nowrap px-2.5 py-2.5">
+                  <div className="text-[12px] text-foreground">{p.author}</div>
+                  <div className="text-[11px] text-muted-foreground">{p.createdDateTime}</div>
+                </td>
+                <td className="whitespace-nowrap px-2.5 py-2.5">
+                  <div className="text-[12px] text-foreground">{p.editor}</div>
+                  <div className="text-[11px] text-muted-foreground">{p.updatedDateTime}</div>
+                </td>
+                <td className="px-2.5 py-2.5">
                   <div className="flex items-center justify-end gap-1.5">
-                    <Link href={href} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium hover:bg-secondary"><PencilRuler className="h-3 w-3" /> 편집</Link>
+                    <Link href={href} className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-medium hover:bg-secondary"><PencilRuler className="h-3 w-3" /> 편집</Link>
                     <button
                       onClick={() => { if (confirm(`"${p.name}" 프로모션을 휴지통으로 옮길까요?`)) start(() => deleteProject(p.id).then(() => router.refresh())); }}
                       disabled={pending}
@@ -300,40 +302,32 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
     URL.revokeObjectURL(a.href);
   }
 
-  const navItem = (key: Section, icon: ReactNode, label: string, count: number) => (
+  const tabBtn = (key: Section, icon: ReactNode, label: string, count: number) => (
     <button
       onClick={() => setSection(key)}
-      className={`flex w-full items-center justify-between rounded-md px-2.5 py-2 font-medium ${section === key ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
+      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium ${section === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
     >
-      <span className="flex items-center gap-2">{icon} {label}</span>
-      <span className={`rounded px-1.5 text-[11px] ${section === key ? 'bg-white/70' : 'bg-secondary'}`}>{count}</span>
+      {icon} {label}
+      <span className={`rounded px-1.5 text-[11px] ${section === key ? 'bg-white/25' : 'bg-secondary text-muted-foreground'}`}>{count}</span>
     </button>
   );
 
   return (
-    <div className="flex h-screen">
-      {/* 워크스페이스 사이드바 — 전시화면 관리(컨테이너 목록)와 동일한 헤더/버튼 규격 */}
-      <aside className="flex w-72 shrink-0 flex-col border-r bg-card">
-        <div className="flex h-14 items-center justify-between border-b px-3">
-          <span className="text-sm font-semibold">워크스페이스</span>
-          <Link
-            href="/admin/events/new"
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="h-3.5 w-3.5" /> 새 프로모션
-          </Link>
+    <main className="h-screen overflow-y-auto bg-background p-8">
+      {/* 섹션 탭 (워크스페이스 사이드바 대체) — 목록이 전폭을 쓰도록 상단 탭으로 이동 */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
+          {tabBtn('projects', <LayoutTemplate className="h-4 w-4" />, '프로모션 관리', projects.length)}
+          {tabBtn('deploy', <Rocket className="h-4 w-4" />, '배포 관리', deployRows.filter((d) => d.publishState === '게시 중').length)}
+          {tabBtn('trash', <Trash2 className="h-4 w-4" />, '휴지통', trashRows.length)}
         </div>
-        <div className="flex-1 overflow-y-auto p-3">
-          <nav className="space-y-1 text-sm">
-            {navItem('projects', <LayoutTemplate className="h-4 w-4" />, '프로모션 관리', projects.length)}
-            {navItem('deploy', <Rocket className="h-4 w-4" />, '배포 관리', deployRows.filter((d) => d.publishState === '게시 중').length)}
-            {navItem('trash', <Trash2 className="h-4 w-4" />, '휴지통', trashRows.length)}
-          </nav>
-        </div>
-      </aside>
-
-      {/* 메인 */}
-      <main className="flex-1 overflow-y-auto bg-background p-8">
+        <Link
+          href="/admin/events/new"
+          className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" /> 새 프로모션
+        </Link>
+      </div>
         {section === 'projects' && (
           <>
             <div className="mb-6">
@@ -460,10 +454,9 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
           </>
         )}
 
-        {section === 'deploy' && <DeployView rows={deployRows} />}
-        {section === 'trash' && <TrashView rows={trashRows} />}
-      </main>
-    </div>
+      {section === 'deploy' && <DeployView rows={deployRows} />}
+      {section === 'trash' && <TrashView rows={trashRows} />}
+    </main>
   );
 }
 
