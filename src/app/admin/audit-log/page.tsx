@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,12 +55,11 @@ export default async function AuditLogPage({
 
   return (
     <div className="space-y-4 p-6">
-      <div>
-        <h1 className="text-lg font-semibold">감사 로그</h1>
-        <p className="text-sm text-muted-foreground">
-          모든 상태 변경 이력 (변경자·일시·대상·이전값·이후값·사유·승인자·결과) — PI-DSP-AUD-002
-        </p>
-      </div>
+      <PageHeader
+        trail={['공통', '감사 로그']}
+        title="감사 로그"
+        subtitle="모든 상태 변경 이력 (변경자·일시·대상·이전값·이후값·사유·승인자·결과) — PI-DSP-AUD-002"
+      />
 
       {/* 필터: 대상별 / 기간별 */}
       <form className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3 text-sm">

@@ -30,7 +30,7 @@ export function ContainerTree({ containers }: { containers: TreeContainer[] }) {
   }
 
   return (
-    <div className="flex h-full w-72 shrink-0 flex-col border-r bg-card">
+    <div className="flex h-full w-72 shrink-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
       <div className="flex h-14 items-center justify-between border-b px-3">
         <span className="text-sm font-semibold">컨테이너 목록</span>
         <Link

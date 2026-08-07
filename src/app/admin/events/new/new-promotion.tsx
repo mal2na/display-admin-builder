@@ -79,7 +79,7 @@ export function NewPromotion() {
   const label = 'mb-1 block text-sm font-medium';
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50">
+    <div className="flex h-full flex-col bg-slate-50">
       {/* 상단 바 */}
       <div className="flex items-center gap-3 border-b bg-card px-4 py-2.5">
         <Link href="/admin/events" className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
