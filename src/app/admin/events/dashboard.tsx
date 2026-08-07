@@ -152,7 +152,7 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
   return (
     <div className="overflow-x-auto rounded-xl border bg-card">
       <table className="w-full min-w-[880px] text-sm">
-        <thead className="border-b bg-secondary/50 text-[12px] text-muted-foreground">
+        <thead className="border-b bg-surface-subtle text-[12px] text-muted-foreground">
           <tr>
             <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">No.</th>
             <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">프로모션 ID</th>
@@ -313,7 +313,7 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   );
 
   return (
-    <main className="h-screen overflow-y-auto bg-background p-8">
+    <div className="p-6">
       {/* 섹션 탭 (워크스페이스 사이드바 대체) — 목록이 전폭을 쓰도록 상단 탭으로 이동 */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
@@ -336,7 +336,7 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
             </div>
 
             {/* 검색 조건 영역 (SB-EVT-027 · PI-EVTMSN-SEARCH-001) */}
-            <div className="mb-4 rounded-xl border bg-card p-4">
+            <div className="mb-4 rounded-xl border bg-surface-subtle p-4">
               <div className="grid grid-cols-1 gap-x-8 gap-y-3 lg:grid-cols-2">
                 {/* 유형 (상위 + 세부) */}
                 <div className="flex items-center gap-3">
@@ -456,7 +456,7 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
 
       {section === 'deploy' && <DeployView rows={deployRows} />}
       {section === 'trash' && <TrashView rows={trashRows} />}
-    </main>
+    </div>
   );
 }
 

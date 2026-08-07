@@ -46,7 +46,7 @@ const hexToHsl = (hex) => {
 
 // shadcn 기본 토큰 → BSS 시맨틱 토큰 매핑 (앱 전체 리테마). 값이 #으로 시작하면 리터럴.
 const BASE = {
-  background: 'surface-canvas', foreground: 'text-primary',
+  background: 'surface-hover', foreground: 'text-primary',
   card: 'surface-default', 'card-foreground': 'text-primary',
   primary: 'action-primary-fill-enable', 'primary-foreground': '#ffffff',
   secondary: 'surface-sunken', 'secondary-foreground': 'text-neutral-strong',

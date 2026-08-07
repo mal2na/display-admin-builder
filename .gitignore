@@ -10,3 +10,6 @@ dist/
 .next/
 prisma/schema.local.prisma
 tsconfig.tsbuildinfo
+
+# 참고용 대용량 이미지 (저장소 제외 · 로컬 백업: ../바이브코딩-참고자료-backup)
+/*.png

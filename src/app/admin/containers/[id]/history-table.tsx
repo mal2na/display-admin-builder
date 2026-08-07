@@ -85,9 +85,9 @@ export function HistoryTable({ rows }: { rows: HistoryRow[] }) {
       <p className="mb-2 text-xs text-muted-foreground">
         이 전시화면과 소속 Template의 승인·상태 변경 이력입니다. <b>승인ID</b>를 클릭하면 상세를 볼 수 있습니다. (PI-DSP-AUD-002)
       </p>
-      <div className="overflow-x-auto rounded-md border bg-card">
+      <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-xs text-slate-500">
+          <thead className="bg-surface-subtle text-xs text-muted-foreground">
             <tr>
               {['버전', '승인ID', '승인요청자', '승인요청일시', '승인상태', '승인 담당자', '처리 일시'].map((h) => (
                 <th key={h} className="whitespace-nowrap px-3 py-2.5 text-left font-medium">{h}</th>
@@ -158,9 +158,9 @@ function ChangeView({ sel }: { sel: HistoryRow }) {
     return (
       <div className="px-5 py-2.5">
         <span className="mb-1.5 block text-xs font-medium text-slate-500">변경 항목 ({diff.length})</span>
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-hidden rounded-xl border">
           <table className="w-full text-xs">
-            <thead className="bg-slate-50 text-[11px] text-slate-500">
+            <thead className="bg-surface-subtle text-[11px] text-muted-foreground">
               <tr>
                 <th className="px-2.5 py-1.5 text-left font-medium">항목</th>
                 <th className="px-2.5 py-1.5 text-left font-medium">이전</th>
