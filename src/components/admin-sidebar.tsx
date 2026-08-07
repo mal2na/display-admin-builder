@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { NavLink } from '@/components/nav-link';
-import { MonitorSmartphone, LayoutGrid, ScrollText, PanelLeftClose, PanelLeftOpen, LayoutDashboard, Ticket } from 'lucide-react';
+import { MonitorSmartphone, LayoutGrid, ScrollText, PanelLeftClose, PanelLeftOpen, LayoutDashboard, Ticket, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 좌측 사이드바 — 접기/펴기 지원 (전체폭 ↔ 아이콘 레일)
@@ -44,6 +44,7 @@ export function AdminSidebar() {
         <div className="mt-auto" />
         {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">공통</p>}
         <NavLink href="/admin/audit-log" icon={<ScrollText className="h-4 w-4" />} label="감사 로그" collapsed={collapsed} />
+        <NavLink href="/admin/design-system" icon={<Palette className="h-4 w-4" />} label="디자인 시스템" collapsed={collapsed} />
       </nav>
 
       <div className="border-t p-3 text-center text-xs text-muted-foreground">{collapsed ? 'v0.31' : 'POL-DSP v0.31'}</div>

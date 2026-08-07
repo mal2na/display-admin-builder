@@ -5,6 +5,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 타이포 프리셋 — Figma 디자인 시스템의 글자 스타일(크기+행간+자간). 굵기는 font-* 유틸로 조합.
+   예: <h1 class="type-title-24 font-bold"> */
+@layer components {
+  .type-display-32 { font-size: 32px; line-height: 44px; letter-spacing: -0.6px; }
+  .type-title-28 { font-size: 28px; line-height: 36px; letter-spacing: -0.6px; }
+  .type-title-24 { font-size: 24px; line-height: 32px; letter-spacing: -0.6px; }
+  .type-title-20 { font-size: 20px; line-height: 28px; letter-spacing: -0.6px; }
+  .type-title-18 { font-size: 18px; line-height: 26px; letter-spacing: -0.2px; }
+  .type-title-16 { font-size: 16px; line-height: 24px; letter-spacing: -0.2px; }
+  .type-body-14 { font-size: 14px; line-height: 20px; letter-spacing: -0.2px; }
+  .type-body-13 { font-size: 13px; line-height: 20px; letter-spacing: -0.2px; }
+  .type-body-12 { font-size: 12px; line-height: 18px; letter-spacing: -0.2px; }
+  .type-control-13 { font-size: 13px; letter-spacing: -0.2px; }
+  .type-control-10 { font-size: 10px; letter-spacing: -0.2px; }
+}
+
 * {
   border-color: hsl(var(--border));
 }
