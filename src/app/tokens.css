@@ -1,7 +1,7 @@
 /* 자동 생성: scripts/build-tokens.mjs (원본 design/figma-tokens.json). 직접 수정 금지. */
 :root {
   /* shadcn 기본 토큰 (BSS 재매핑) — 앱 전체 색 */
-  --background: 224 38% 94%;
+  --background: 210 17% 95%;
   --foreground: 214 11% 12%;
   --card: 0 0% 100%;
   --card-foreground: 214 11% 12%;
@@ -532,7 +532,7 @@
 
 .dark {
   /* shadcn 기본 토큰 (다크) */
-  --background: 224 38% 94%;
+  --background: 210 16% 22%;
   --foreground: 220 27% 98%;
   --card: 0 0% 100%;
   --card-foreground: 220 27% 98%;

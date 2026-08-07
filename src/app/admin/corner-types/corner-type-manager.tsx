@@ -113,7 +113,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const curPage = Math.min(page, totalPages);
   const pageRows = filtered.slice((curPage - 1) * perPage, curPage * perPage);
 
-  const selectCls = 'h-9 rounded-md border bg-white px-2.5 text-sm';
+  const selectCls = 'h-9 rounded-lg border bg-white px-2.5 text-sm';
   const chk = 'flex items-center gap-1.5 text-sm cursor-pointer';
 
   return (
@@ -140,7 +140,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       )}
 
       {/* 상세 검색 필터 */}
-      <div className="rounded-lg border bg-card p-4">
+      <div className="rounded-xl border bg-surface-subtle p-4">
         {expanded && (
           <div className="mb-3 grid gap-x-6 gap-y-3 border-b pb-3 md:grid-cols-2 xl:grid-cols-4">
             <div>
@@ -181,7 +181,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           </select>
           <div className="relative min-w-[240px] flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="영문/숫자 포함 10자 이내로 입력해 주세요." className="h-9 w-full rounded-md border pl-8 pr-3 text-sm" />
+            <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="영문/숫자 포함 10자 이내로 입력해 주세요." className="h-9 w-full rounded-lg border pl-8 pr-3 text-sm" />
           </div>
           <button onClick={() => setExpanded((v) => !v)} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-secondary">
             상세검색 {expanded ? '닫기' : '열기'} <ChevronDown className={cn('h-3.5 w-3.5 transition', expanded && 'rotate-180')} />
@@ -198,9 +198,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-xl border">
         <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
+          <thead className="bg-surface-subtle text-xs text-muted-foreground">
             <tr>
               {['번호', '코너 유형 ID', '코너 유형', '코너 마크업 ID', '유형 상세', '사용여부', '유형 샘플', '승인상태', '등록자', '등록일시', '최근수정자', '최근 수정일시'].map((h) => (
                 <th key={h} className="whitespace-nowrap px-3 py-2 text-left font-medium">
