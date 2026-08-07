@@ -8,7 +8,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import { renderNodeBody, DeviceShell, type NodeView } from '@/components/preview/event-node';
 import { CATALOG, componentDef, componentLabel, isContainer, DEVICES, CORNER_TYPES, allowedComponentsFor, PROMO_CORNER_OPTIONS, GROUP_CORNER } from '@/lib/event-components';
-import { layerRole, LAYER_LABEL, LAYER_COLOR, isFixedNode, type Viewer, nodeAudience, audienceVisible, AUDIENCE_BADGE } from '@/lib/event-layers';
+import { layerRole, LAYER_LABEL, LAYER_COLOR, isFixedNode, type Viewer, nodeAudience, AUDIENCE_BADGE } from '@/lib/event-layers';
 import { addNode, addCornerNode, updateNodeProps, deleteNode, duplicateNode, updatePageMeta, addConditionPage, saveEventDraft, restoreEventVersion, reorderNodes } from '../../../actions';
 import { ProgramInfoEdit, type ProgramInfo } from './program-info-edit';
 import { PropertiesPanel } from './properties';
@@ -125,27 +125,6 @@ function ConditionSwitcher({ meta }: { meta: Meta }) {
       ) : onlyBase && addable.length > 0 ? (
         <span className="text-[10px] text-muted-foreground">＋로 로그인/비로그인 분기 추가</span>
       ) : null}
-    </div>
-  );
-}
-
-// 프로모션(오픈) 모드 — 로그인/비로그인 미리보기 대상 토글.
-// 정책 v0.19: 화면은 공통 1개이고 노드별 '노출 조건'으로 로그인 상태별 분기를 관리한다.
-function AudienceViewToggle({ viewer, setViewer }: { viewer: Viewer; setViewer: (v: Viewer) => void }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-[11px] font-medium text-muted-foreground" title="화면은 공통 1개입니다. 각 코너·컴포넌트에 '노출 조건'을 달아 로그인/비로그인 화면을 분기합니다. 여기서는 대상별로 미리보기를 전환합니다.">미리보기 대상</span>
-      <div className="flex overflow-hidden rounded-md border">
-        {(['로그인', '비로그인'] as Viewer[]).map((v) => (
-          <button
-            key={v}
-            onClick={() => setViewer(v)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium ${viewer === v ? (v === '로그인' ? 'bg-blue-600 text-white' : 'bg-orange-500 text-white') : 'bg-card hover:bg-secondary'}`}
-          >
-            <Icons.User className="h-3 w-3" /> {v}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
@@ -350,7 +329,7 @@ function EditableNode({ node, meta, selectedId, onSelect, viewer }: { node: Node
   const fixed = isFixedNode(node.type); // 개발 고정 영역(썸네일·헤더·CTA) — 이동/복제/삭제 불가
   const def = componentDef(node.type);
   const audience = nodeAudience(node.props); // 노출 조건 (공통/로그인/비로그인)
-  const hiddenForViewer = !audienceVisible(audience, viewer); // 현재 미리보기 대상에겐 숨겨지는 노드
+  const hiddenForViewer = false; // 미리보기 대상 토글 제거 — 빌더는 구성된 화면을 그대로 표시(로그인/비로그인 분기는 이전 단계에서)
 
   const childrenEls = container ? (
     node.children.length > 0 ? (
@@ -389,10 +368,10 @@ function EditableNode({ node, meta, selectedId, onSelect, viewer }: { node: Node
 
 export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [tab, setTab] = useState<'common' | 'node' | 'add'>('add');
+  const [tab, setTab] = useState<'node' | 'add'>('add');
   const [q, setQ] = useState('');
   const [device, setDevice] = useState(DEVICES.find((d) => d.key === meta.device) ?? DEVICES[0]);
-  const [viewer, setViewer] = useState<Viewer>('로그인'); // 프로모션 미리보기 대상(로그인/비로그인)
+  const [viewer] = useState<Viewer>('로그인'); // 빌더 렌더 기준(로그인) — 미리보기 대상 토글은 제거됨
   const [, start] = useTransition();
 
   const display = meta.mode === 'display';
@@ -437,9 +416,9 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
 
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50" onClick={() => setSelectedId(null)}>
-      {/* 상단 바 */}
-      <div className="flex items-center gap-3 border-b bg-card px-4 py-2.5">
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border bg-slate-50 shadow-sm" onClick={() => setSelectedId(null)}>
+      {/* 상단 바 — 흰 배경 없이 블렌드(가운데 디바이스 드롭다운만 떠 보이게) */}
+      <div className="flex items-center gap-3 px-4 py-2.5">
         <Link href="/admin/events" className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
           <Icons.ChevronLeft className="h-4 w-4" /> 목록
         </Link>
@@ -448,9 +427,11 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${display ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
           {display ? '전시 · 거버넌스 모드' : '이벤트 · 오픈 모드'}
         </span>
-        <div className="ml-2">
-          {display ? <ConditionSwitcher meta={meta} /> : <AudienceViewToggle viewer={viewer} setViewer={setViewer} />}
-        </div>
+        {display && (
+          <div className="ml-2">
+            <ConditionSwitcher meta={meta} />
+          </div>
+        )}
         <div className="mx-auto">
           <select
             value={device.key}
@@ -541,7 +522,6 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
           <div className="flex border-b text-[13px]">
             <button onClick={() => setTab('node')} className={`flex-1 border-b-2 py-2.5 font-medium ${tab === 'node' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}>선택 속성</button>
             <button onClick={() => setTab('add')} className={`flex-1 border-b-2 py-2.5 font-medium ${tab === 'add' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}>추가</button>
-            <button onClick={() => setTab('common')} className={`flex-1 border-b-2 py-2.5 font-medium ${tab === 'common' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}>공통</button>
           </div>
           <div className="flex-1 overflow-y-auto p-4">
             {tab === 'add' ? (
@@ -596,32 +576,6 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
                     );
                   })
                 )}
-              </div>
-            ) : tab === 'common' ? (
-              <div className="space-y-4 text-sm">
-                <p className="text-[11px] text-muted-foreground">이 <b>조건그룹 화면(페이지)</b> 전체에 적용되는 설정입니다. (개별 요소는 <b>선택 속성</b>에서 편집)</p>
-                <div>
-                  <p className="mb-1 text-[11px] font-semibold text-muted-foreground">페이지 이름</p>
-                  <input defaultValue={meta.pageName} onBlur={(e) => start(() => updatePageMeta(meta.pageId, { name: e.target.value }))} className="h-9 w-full rounded-md border px-2 text-sm" />
-                </div>
-                <div>
-                  <p className="mb-1 text-[11px] font-semibold text-muted-foreground">편집 디바이스</p>
-                  <select
-                    value={device.key}
-                    onChange={(e) => { const d = DEVICES.find((x) => x.key === e.target.value)!; setDevice(d); start(() => updatePageMeta(meta.pageId, { device: d.key })); }}
-                    className="h-9 w-full rounded-md border px-2 text-sm"
-                  >
-                    {DEVICES.map((d) => <option key={d.key} value={d.key}>{d.key}</option>)}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg border bg-muted/40 p-2.5"><p className="text-[10px] text-muted-foreground">조건그룹</p><p className="text-[13px] font-semibold">{meta.conditionGroup === '전체' ? '기본(전체)' : meta.conditionGroup}</p></div>
-                  <div className="rounded-lg border bg-muted/40 p-2.5"><p className="text-[10px] text-muted-foreground">모드</p><p className="text-[13px] font-semibold">{display ? '전시 거버넌스' : '이벤트 오픈'}</p></div>
-                </div>
-                <div className="rounded-lg border bg-muted/40 p-3 text-[12px] text-muted-foreground">
-                  <p className="font-semibold text-foreground">구성 방법</p>
-                  <p className="mt-1">좌측 <b>코너 추가</b>로 섹션(코너)을 만들고, 우측 <b>추가</b> 탭에서 Contents 모듈을 넣으세요. 추가한 요소를 클릭하면 <b>선택 속성</b>에서 편집합니다.</p>
-                </div>
               </div>
             ) : selected ? (
               <>

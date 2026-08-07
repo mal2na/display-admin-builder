@@ -157,7 +157,7 @@ export function AssemblyBuilder({
   const activePalette = activeId?.startsWith('p:') ? palette.find((c) => `p:${c.id}` === activeId) : null;
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full flex-col">
       {/* 상단 바 */}
       <div className="flex items-center gap-3 border-b bg-card px-5 py-3">
         <Link href={`/admin/containers/${meta.containerId}`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline">

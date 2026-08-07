@@ -325,15 +325,13 @@ export const COMPONENT_GROUPS = ['콘텐츠', 'Button', '레이아웃', '고급'
 // Contents Catalog — 자유 조립 구간 팔레트(7 카테고리). EVT Contents Architecture-1 SSOT.
 //   각 모듈은 Variant(세부 배리언스)를 가지며, 섹션 = 모듈 + Variant + 데이터.
 // ─────────────────────────────────────────────────────────────
+// nebula-builder 팔레트 기준 — 콘텐츠 / Button / 레이아웃 / 게임 / 고급 5그룹으로 단순화.
 export const CATALOG: { key: string; types: NodeType[] }[] = [
-  { key: '타이틀', types: ['TEXT'] },
-  { key: '이용 방법 안내', types: ['STEPS'] },
-  { key: '혜택·상품 카드', types: ['BENEFIT_CARD'] },
-  { key: '도표', types: ['TABLE'] },
-  { key: '이미지·HTML', types: ['IMAGE', 'HTML'] },
-  { key: '입력·선택', types: ['INPUT'] },
-  { key: '마무리 문구', types: ['ACCORDION'] },
-  { key: '레이아웃·기타', types: ['CARD', 'HROW', 'VSTACK', 'DIVIDER', 'BUTTON', 'ROULETTE'] },
+  { key: '콘텐츠', types: ['TEXT', 'TABLE', 'IMAGE', 'STEPS', 'BENEFIT_CARD', 'INPUT'] },
+  { key: 'Button', types: ['BUTTON', 'ACCORDION'] },
+  { key: '레이아웃', types: ['CARD', 'HROW', 'VSTACK', 'DIVIDER'] },
+  { key: '게임', types: ['ROULETTE'] },
+  { key: '고급', types: ['HTML'] },
 ];
 
 // 모듈별 Variant 목록 (문서 정의). 없는 타입은 Variant 미사용.

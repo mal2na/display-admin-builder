@@ -157,7 +157,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
   };
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
       <div className="flex items-center gap-3 border-b bg-card px-6 py-3">
         <Link href={`/admin/containers/${template.containerId}`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline">
           <ChevronLeft className="h-4 w-4" /> {template.container.name}

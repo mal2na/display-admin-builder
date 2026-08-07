@@ -2085,7 +2085,7 @@ export function BuilderEditor({
 
       {/* 가운데: 실시간 디바이스 미리보기 */}
       <div className="flex flex-col overflow-hidden bg-background">
-        <div className="flex items-center justify-center border-b bg-card py-2">
+        <div className="flex items-center justify-center py-2">
           <select
             value={device.key}
             onChange={(e) => setDevice(DEVICES.find((d) => d.key === e.target.value) ?? DEVICES[0])}

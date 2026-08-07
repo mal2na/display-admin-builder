@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { deleteProject, restoreProject, purgeProject, setDisplayState } from './actions';
 import { LayoutTemplate, Rocket, Trash2, Plus, Search, LayoutGrid, Table2, MoreVertical, ArrowDownUp, ArrowUp, ArrowDown, Eye, EyeOff, RotateCcw, ExternalLink, PencilRuler, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { EVENT_TYPES, MISSION_TYPES } from '@/lib/event-taxonomy';
+import { PageHeader } from '@/components/page-header';
 
 type SortKey = 'recent' | 'name' | 'type' | 'status' | 'author';
 
@@ -330,10 +331,12 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
       </div>
         {section === 'projects' && (
           <>
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold">프로모션</h1>
-              <p className="mt-1 text-sm text-muted-foreground">총 {projects.length}개의 프로모션이 있습니다.</p>
-            </div>
+            <PageHeader
+              trail={['프로모션 관리']}
+              title="프로모션"
+              subtitle={`총 ${projects.length}개의 프로모션이 있습니다.`}
+              className="mb-6"
+            />
 
             {/* 검색 조건 영역 (SB-EVT-027 · PI-EVTMSN-SEARCH-001) */}
             <div className="mb-4 rounded-xl border bg-surface-subtle p-4">

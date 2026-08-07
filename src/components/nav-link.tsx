@@ -25,8 +25,8 @@ export function NavLink({
         'flex items-center gap-2 rounded-md py-2 text-sm font-medium transition-colors',
         collapsed ? 'justify-center px-2' : 'px-3',
         active
-          ? 'bg-accent font-semibold text-accent-foreground'
-          : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+          ? 'bg-white font-semibold text-primary shadow-sm'
+          : 'text-foreground/70 hover:bg-white/70 hover:text-foreground',
       )}
     >
       <span className="shrink-0">{icon}</span>

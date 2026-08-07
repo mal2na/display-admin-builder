@@ -12,6 +12,7 @@ import {
 } from '@/lib/display-taxonomy';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -118,20 +119,23 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">코너 유형 관리</h1>
-        {noneBuilt ? (
-          <Button size="sm" disabled title="전시화면관리에서 코너를 먼저 만들어 주세요.">
-            <Plus className="mr-1 h-4 w-4" /> 등록
-          </Button>
-        ) : (
-          <Link href="/admin/corner-types/new">
-            <Button size="sm">
+      <PageHeader
+        trail={['전시 관리', '코너 유형 관리']}
+        title="코너 유형 관리"
+        action={
+          noneBuilt ? (
+            <Button size="sm" disabled title="전시화면관리에서 코너를 먼저 만들어 주세요.">
               <Plus className="mr-1 h-4 w-4" /> 등록
             </Button>
-          </Link>
-        )}
-      </div>
+          ) : (
+            <Link href="/admin/corner-types/new">
+              <Button size="sm">
+                <Plus className="mr-1 h-4 w-4" /> 등록
+              </Button>
+            </Link>
+          )
+        }
+      />
 
       {noneBuilt && (
         <div className="rounded-md border border-dashed bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
