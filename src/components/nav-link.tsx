@@ -25,7 +25,7 @@ export function NavLink({
         'flex items-center gap-2 rounded-md py-2 text-sm font-medium transition-colors',
         collapsed ? 'justify-center px-2' : 'px-3',
         active
-          ? 'bg-primary text-primary-foreground'
+          ? 'bg-accent font-semibold text-accent-foreground'
           : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
       )}
     >
