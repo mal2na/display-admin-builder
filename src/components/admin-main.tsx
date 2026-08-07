@@ -8,7 +8,8 @@ import { usePathname } from 'next/navigation';
  */
 export function AdminMain({ children }: { children: React.ReactNode }) {
   const path = usePathname() ?? '';
-  const fullBleed = path.includes('/builder') || path.startsWith('/admin/containers') || path.startsWith('/admin/events') || path.startsWith('/admin/design-system');
+  // 프로모션 목록(/admin/events)은 코너유형처럼 흰 패널에 담고, 그 하위(빌더·미리보기·새 프로모션)만 풀블리드
+  const fullBleed = path.includes('/builder') || path.startsWith('/admin/containers') || (path.startsWith('/admin/events') && path !== '/admin/events');
 
   if (fullBleed) {
     return <main className="flex-1 overflow-x-hidden bg-background">{children}</main>;

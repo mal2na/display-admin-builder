@@ -313,7 +313,7 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   );
 
   return (
-    <main className="h-screen overflow-y-auto bg-background p-8">
+    <div className="p-6">
       {/* 섹션 탭 (워크스페이스 사이드바 대체) — 목록이 전폭을 쓰도록 상단 탭으로 이동 */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
@@ -456,7 +456,7 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
 
       {section === 'deploy' && <DeployView rows={deployRows} />}
       {section === 'trash' && <TrashView rows={trashRows} />}
-    </main>
+    </div>
   );
 }
 
