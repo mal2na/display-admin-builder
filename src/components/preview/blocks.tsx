@@ -251,21 +251,25 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
 
   const wrapClass = isBanner ? '' : 'rounded-2xl bg-white p-4 shadow-sm';
 
+  // 코너 부속 배너. 배너형 코너는 배너가 곧 본문이라 상단, 그 외(상품형 등 '빅배너')는 카드 아래에 렌더.
+  const bannerEl = corner.bannerImageUrl ? (
+    isRenderableImg(corner.bannerImageUrl) ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={corner.bannerImageUrl}
+        alt={corner.bannerName ?? ''}
+        className="aspect-[16/7] w-full overflow-hidden rounded-2xl object-cover"
+      />
+    ) : (
+      <div className="flex aspect-[16/7] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-200 to-slate-300 text-[10px] font-medium text-slate-600">
+        {corner.bannerName ?? corner.bannerImageUrl.split('/').pop()}
+      </div>
+    )
+  ) : null;
+
   return (
     <section className={`space-y-2 ${wrapClass}`}>
-      {corner.bannerImageUrl &&
-        (isRenderableImg(corner.bannerImageUrl) ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={corner.bannerImageUrl}
-            alt={corner.bannerName ?? ''}
-            className="aspect-[16/7] w-full overflow-hidden rounded-2xl object-cover"
-          />
-        ) : (
-          <div className="flex aspect-[16/7] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-200 to-slate-300 text-[10px] font-medium text-slate-600">
-            {corner.bannerName ?? corner.bannerImageUrl.split('/').pop()}
-          </div>
-        ))}
+      {isBanner && bannerEl}
       {heading && (
         <div>
           <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
@@ -284,6 +288,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           </span>
         </div>
       )}
+      {!isBanner && bannerEl}
     </section>
   );
 }

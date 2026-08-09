@@ -27,6 +27,8 @@ export type NodeType =
   // ── Contents Catalog 모듈 (자유 조립 구간 · Variant 보유) ──
   | 'STEPS' // 이용 방법 안내 (자유텍스트/스텝/진행률)
   | 'BENEFIT_CARD' // 혜택·상품 카드 (카드형/리스트형/2열)
+  | 'BRAND' // 혜택 브랜드 (제휴 브랜드 · 등급 · 로고 · 혜택 목록)
+  | 'BENEFIT_ITEM' // 혜택 항목 (낱개 카드 — 코너에 하나씩 추가·그리드 배치)
   | 'INPUT' // 입력·선택 (인풋/객관식)
   // ── 위치 표시(등록정보/시스템 관리 — 빌더에서 편집 불가, 위치만 표시) ──
   | 'SLOT_HEADER' // 헤더: 제목·운영기간·대상 (등록정보)
@@ -204,6 +206,34 @@ export const COMPONENTS: ComponentDef[] = [
     },
   },
   {
+    type: 'BENEFIT_ITEM',
+    label: '혜택 항목',
+    sub: '낱개 카드 (이미지·이름·배지)',
+    group: '콘텐츠',
+    icon: 'Ticket',
+    container: false,
+    defaultProps: { name: '혜택 이름', desc: '', badge: '', image: '', ...SPACING },
+  },
+  {
+    type: 'BRAND',
+    label: '혜택 브랜드',
+    sub: '제휴 브랜드 · 등급 · 혜택',
+    group: '콘텐츠',
+    icon: 'BadgePercent',
+    container: false,
+    defaultProps: {
+      category: '카테고리',
+      brand: '브랜드명',
+      logo: '',
+      grade: 'VIP',
+      benefits: ['혜택 문구를 입력하세요'],
+      moreLabel: '자세히 보기',
+      moreLink: '',
+      ...SPACING,
+      pb: 12,
+    },
+  },
+  {
     type: 'INPUT',
     label: '입력·선택',
     sub: '인풋 / 객관식',
@@ -277,7 +307,7 @@ export const COMPONENTS: ComponentDef[] = [
     group: '전시',
     icon: 'LayoutGrid',
     container: true,
-    defaultProps: { cornerType: '혜택·오퍼형', title: '코너 제목', tag: '', subTitle: '', maxItems: 0, sort: '수동', ...SPACING, mb: 8 },
+    defaultProps: { cornerType: '혜택·오퍼형', title: '코너 제목', tag: '', subTitle: '', maxItems: 0, sort: '수동', bigBanner: false, bannerTitle: '', bannerSub: '', bannerImage: '', bannerLink: '', ...SPACING, mb: 8 },
   },
   {
     type: 'BANNER',
@@ -327,7 +357,7 @@ export const COMPONENT_GROUPS = ['콘텐츠', 'Button', '레이아웃', '고급'
 // ─────────────────────────────────────────────────────────────
 // nebula-builder 팔레트 기준 — 콘텐츠 / Button / 레이아웃 / 게임 / 고급 5그룹으로 단순화.
 export const CATALOG: { key: string; types: NodeType[] }[] = [
-  { key: '콘텐츠', types: ['TEXT', 'TABLE', 'IMAGE', 'STEPS', 'BENEFIT_CARD', 'INPUT'] },
+  { key: '콘텐츠', types: ['TEXT', 'TABLE', 'IMAGE', 'STEPS', 'BENEFIT_CARD', 'BENEFIT_ITEM', 'BRAND', 'INPUT'] },
   { key: 'Button', types: ['BUTTON', 'ACCORDION'] },
   { key: '레이아웃', types: ['CARD', 'HROW', 'VSTACK', 'DIVIDER'] },
   { key: '게임', types: ['ROULETTE'] },

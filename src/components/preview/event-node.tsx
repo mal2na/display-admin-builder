@@ -241,8 +241,43 @@ function CornerFrame({ p, children }: { p: Record<string, any>; children: React.
     ) : (
       <div className="space-y-2 divide-y divide-slate-100 [&>*]:pt-2 first:[&>*]:pt-0">{children}</div>
     );
-  // 전시/관리 코너처럼 '판'(테두리 카드) + 주요태그/타이틀/설명 헤더로 렌더 (template05 기준)
   const isGroup = !p.cornerType || p.cornerType === GROUP_CORNER;
+  // 프로모션 자유 섹션(그룹 코너):
+  //  · 제목이 자동 플레이스홀더('섹션 N')면 작은 라벨, 사용자가 정한 제목이면 큰 헤딩으로 렌더
+  //  · 레이아웃(p.layout: list/grid/scroll)으로 자식(아이템 카드)을 배치 — 전시 코너처럼 하나씩 추가·그리드
+  // 코너 부속 '빅배너'(TM-DSP-019 배너 사용처=Corner) — 상품형 등 어떤 코너든 하단에 배너를 붙일 수 있는 옵션 슬롯.
+  const hasBanner = !!(p.bigBanner || p.bannerImage || p.bannerTitle);
+  const bannerEl = hasBanner ? (
+    <div
+      className="relative mt-3 flex min-h-[96px] items-center overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 p-4 text-white"
+      style={p.bannerImage ? { backgroundImage: `url(${p.bannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+    >
+      {p.bannerImage && <div className="absolute inset-0 bg-black/25" />}
+      <div className="relative z-10 min-w-0">
+        <p className="text-[15px] font-bold leading-snug">{p.bannerTitle || '빅배너 문구를 입력하세요'}</p>
+        {p.bannerSub && <p className="mt-0.5 text-[12px] opacity-90">{p.bannerSub}</p>}
+      </div>
+    </div>
+  ) : null;
+  if (isGroup) {
+    const placeholder = /^섹션 \d+$/.test(p.title ?? '');
+    const groupBody =
+      p.layout === 'grid' ? <div className="grid grid-cols-2 gap-2">{children}</div>
+      : p.layout === 'scroll' ? <div className="flex gap-3 overflow-x-auto pb-1 [&>*]:w-[140px] [&>*]:shrink-0">{children}</div>
+      : <div className="space-y-2">{children}</div>;
+    return (
+      <section style={boxStyle(p)}>
+        {p.title && (placeholder
+          ? <span className="mb-1.5 inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">{p.title}</span>
+          : <h3 className="mb-0.5 text-[16px] font-bold text-slate-900">{p.title}</h3>)}
+        {p.subTitle && !placeholder && <p className="mb-2 text-[12px] text-slate-400">{p.subTitle}</p>}
+        {(!p.title || placeholder) ? null : <div className="mb-2" />}
+        {groupBody}
+        {bannerEl}
+      </section>
+    );
+  }
+  // 전시/관리 코너처럼 '판'(테두리 카드) + 주요태그/타이틀/설명 헤더로 렌더 (template05 기준)
   return (
     <section style={boxStyle(p)} className="rounded-2xl border border-indigo-100 bg-white p-4">
       <div className="mb-2 flex items-start justify-between gap-2">
@@ -251,9 +286,10 @@ function CornerFrame({ p, children }: { p: Record<string, any>; children: React.
           <h3 className="truncate text-[16px] font-bold text-slate-900">{p.title || '코너'}</h3>
           {p.subTitle && <p className="mt-0.5 text-[12px] text-slate-400">{p.subTitle}</p>}
         </div>
-        {!isGroup && <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">{p.cornerType}</span>}
+        <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">{p.cornerType}{hasBanner ? ' · 빅배너' : ''}</span>
       </div>
       {body}
+      {bannerEl}
     </section>
   );
 }
@@ -334,6 +370,47 @@ function BenefitCardNode({ p }: { p: Record<string, any> }) {
           {it.price && <span className="shrink-0 text-[13px] font-bold text-indigo-600">{it.price}</span>}
         </div>
       ))}
+    </div>
+  );
+}
+
+function BenefitItemNode({ p }: { p: Record<string, any> }) {
+  return (
+    <div style={boxStyle(p)} className="overflow-hidden rounded-xl border">
+      <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-indigo-100 to-slate-200">
+        {p.image ? <img src={p.image} alt={p.name ?? ''} className="h-full w-full object-cover" /> : null}
+        {p.badge && <span className="absolute left-1.5 top-1.5 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600">{p.badge}</span>}
+      </div>
+      <div className="p-2">
+        <p className="truncate text-[12px] font-semibold text-slate-800">{p.name || '혜택 이름'}</p>
+        {p.desc && <p className="truncate text-[11px] text-slate-400">{p.desc}</p>}
+      </div>
+    </div>
+  );
+}
+
+function BrandNode({ p }: { p: Record<string, any> }) {
+  const benefits: string[] = Array.isArray(p.benefits) ? p.benefits : [];
+  return (
+    <div style={boxStyle(p)} className="border-b border-slate-100">
+      {p.category && <p className="mb-1.5 text-[11px] font-semibold text-slate-400">{p.category}</p>}
+      <div className="flex items-center gap-3">
+        {p.logo ? (
+          <img src={p.logo} alt={p.brand ?? ''} className="h-11 w-11 shrink-0 rounded-full object-cover ring-1 ring-slate-200" />
+        ) : (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[9px] text-slate-400">로고</div>
+        )}
+        <p className="min-w-0 flex-1 truncate text-[15px] font-bold text-slate-900">{p.brand || '브랜드명'}</p>
+        {p.grade && <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-600">{p.grade}</span>}
+      </div>
+      {benefits.length > 0 && (
+        <ul className="mt-2.5 space-y-1">
+          {benefits.map((b, i) => (
+            <li key={i} className="flex gap-1.5 text-[12px] leading-snug text-slate-600"><span className="text-slate-300">·</span><span className="min-w-0 flex-1">{b}</span></li>
+          ))}
+        </ul>
+      )}
+      {p.moreLabel && <p className="mt-2.5 text-[11px] font-medium text-slate-400">{p.moreLabel} ›</p>}
     </div>
   );
 }
@@ -425,6 +502,10 @@ export function renderNodeBody(type: string, props: Record<string, any>, childre
       return <StepsNode p={p} />;
     case 'BENEFIT_CARD':
       return <BenefitCardNode p={p} />;
+    case 'BENEFIT_ITEM':
+      return <BenefitItemNode p={p} />;
+    case 'BRAND':
+      return <BrandNode p={p} />;
     case 'INPUT':
       return <InputNode p={p} />;
     case 'CARD':

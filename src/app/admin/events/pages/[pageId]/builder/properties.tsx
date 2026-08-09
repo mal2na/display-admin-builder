@@ -30,12 +30,16 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 const inputCls = 'h-8 w-full rounded-md border px-2 text-[12px]';
 
-export function PropertiesPanel({ pageId, node, onDelete }: { pageId: string; node: NodeView; onDelete: () => void }) {
+export function PropertiesPanel({ pageId, node, onDelete, onPatch }: { pageId: string; node: NodeView; onDelete: () => void; onPatch?: (nodeId: string, patch: Record<string, unknown>) => void }) {
   const [, start] = useTransition();
   const p = node.props ?? {};
   const def = componentDef(node.type);
 
-  const set = (patch: Record<string, unknown>) => start(() => updateNodeProps(pageId, node.id, patch));
+  // onPatch가 있으면 낙관적 반영(미리보기 즉시 갱신) + 백그라운드 저장 경로로 위임
+  const set = (patch: Record<string, unknown>) => {
+    if (onPatch) onPatch(node.id, patch);
+    else start(() => updateNodeProps(pageId, node.id, patch));
+  };
   const num = (v: string) => (v === '' ? 0 : Number(v));
 
   const fixed = node.type.startsWith('SLOT_'); // 개발 고정 영역 — 삭제/여백 제어 불가
@@ -104,26 +108,26 @@ export function PropertiesPanel({ pageId, node, onDelete }: { pageId: string; no
           <p className="mb-1 text-center text-[9px] text-muted-foreground">바깥 margin</p>
           <div className="grid grid-cols-3 items-center gap-1">
             <span />
-            <input type="number" defaultValue={p.mt ?? 0} onBlur={(e) => set({ mt: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
+            <input type="number" defaultValue={p.mt ?? 0} onChange={(e) => set({ mt: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
             <span />
-            <input type="number" defaultValue={p.ml ?? 0} onBlur={(e) => set({ ml: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
+            <input type="number" defaultValue={p.ml ?? 0} onChange={(e) => set({ ml: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
             <div className="rounded bg-slate-100 p-2">
               <p className="mb-1 text-center text-[9px] text-muted-foreground">안쪽 padding</p>
               <div className="grid grid-cols-3 items-center gap-1">
                 <span />
-                <input type="number" defaultValue={p.pt ?? 0} onBlur={(e) => set({ pt: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
+                <input type="number" defaultValue={p.pt ?? 0} onChange={(e) => set({ pt: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
                 <span />
-                <input type="number" defaultValue={p.pl ?? 0} onBlur={(e) => set({ pl: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
+                <input type="number" defaultValue={p.pl ?? 0} onChange={(e) => set({ pl: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
                 <span className="text-center text-[9px] text-slate-400">{def?.label}</span>
-                <input type="number" defaultValue={p.pr ?? 0} onBlur={(e) => set({ pr: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
+                <input type="number" defaultValue={p.pr ?? 0} onChange={(e) => set({ pr: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
                 <span />
-                <input type="number" defaultValue={p.pb ?? 0} onBlur={(e) => set({ pb: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
+                <input type="number" defaultValue={p.pb ?? 0} onChange={(e) => set({ pb: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
                 <span />
               </div>
             </div>
-            <input type="number" defaultValue={p.mr ?? 0} onBlur={(e) => set({ mr: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
+            <input type="number" defaultValue={p.mr ?? 0} onChange={(e) => set({ mr: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
             <span />
-            <input type="number" defaultValue={p.mb ?? 0} onBlur={(e) => set({ mb: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
+            <input type="number" defaultValue={p.mb ?? 0} onChange={(e) => set({ mb: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
             <span />
           </div>
         </div>
@@ -195,6 +199,49 @@ function TypeFields({ type, p, set, num }: { type: string; p: Record<string, any
               className="w-full rounded-md border p-2 text-[12px]"
             />
           </Row>
+        </>
+      );
+    case 'BENEFIT_ITEM':
+      return (
+        <>
+          <Row label="혜택 이름"><input defaultValue={p.name} onBlur={(e) => set({ name: e.target.value })} className={inputCls} /></Row>
+          <Row label="설명(선택)"><input defaultValue={p.desc} onBlur={(e) => set({ desc: e.target.value })} className={inputCls} /></Row>
+          <Row label="배지(예: 무료 · 20%)"><input defaultValue={p.badge} onBlur={(e) => set({ badge: e.target.value })} className={inputCls} /></Row>
+          <Row label="이미지 URL"><input defaultValue={p.image} onBlur={(e) => set({ image: e.target.value })} placeholder="URL 입력 또는 붙여넣기" className={inputCls} /></Row>
+        </>
+      );
+    case 'BRAND':
+      return (
+        <>
+          <Row label="카테고리"><input defaultValue={p.category} onBlur={(e) => set({ category: e.target.value })} placeholder="예: 건강 · 교육 · 여행" className={inputCls} /></Row>
+          <Row label="브랜드명"><input defaultValue={p.brand} onBlur={(e) => set({ brand: e.target.value })} className={inputCls} /></Row>
+          <Row label="등급 (VGS)">
+            <select defaultValue={p.grade} onChange={(e) => set({ grade: e.target.value })} className={inputCls}>
+              <option value="ALL">전체 등급</option>
+              <option value="VVIP">VVIP</option>
+              <option value="VIP">VIP</option>
+              <option value="GOLD">GOLD</option>
+              <option value="SILVER">SILVER</option>
+            </select>
+          </Row>
+          <Row label="브랜드 로고 이미지 등록">
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3">
+              <div className="mb-2 flex items-center gap-3">
+                {p.logo ? (
+                  <img src={p.logo} alt="" className="h-10 w-10 rounded-full object-cover ring-1 ring-slate-200" />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[9px] text-slate-400 ring-1 ring-slate-200">로고</div>
+                )}
+                <span className="text-[11px] leading-snug text-muted-foreground">브랜드 로고 이미지 URL을 등록하면<br />여기와 미리보기에 반영됩니다.</span>
+              </div>
+              <input defaultValue={p.logo} onBlur={(e) => set({ logo: e.target.value })} placeholder="이미지 URL 입력 또는 붙여넣기" className={inputCls} />
+            </div>
+          </Row>
+          <Row label="혜택 목록 (줄바꿈으로 구분)"><textarea defaultValue={(p.benefits ?? []).join('\n')} onBlur={(e) => set({ benefits: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) })} rows={4} className="w-full rounded-md border p-2 text-[12px]" /></Row>
+          <div className="grid grid-cols-2 gap-2">
+            <Row label="자세히보기 라벨"><input defaultValue={p.moreLabel} onBlur={(e) => set({ moreLabel: e.target.value })} className={inputCls} /></Row>
+            <Row label="링크"><input defaultValue={p.moreLink} onBlur={(e) => set({ moreLink: e.target.value })} placeholder="/brand/..." className={inputCls} /></Row>
+          </div>
         </>
       );
     case 'INPUT':
@@ -287,11 +334,35 @@ function TypeFields({ type, p, set, num }: { type: string; p: Record<string, any
             {p.cornerType === '그룹' ? '그룹(자유) 코너 · 모든 컴포넌트 허용' : <>코너 유형 <b>{p.cornerType}</b> · 허용 컴포넌트가 제한됩니다 (거버넌스)</>}
           </div>
           <Row label="주요태그"><input defaultValue={p.tag} onBlur={(e) => set({ tag: e.target.value })} placeholder="예: 주요태그 (선택)" className={inputCls} /></Row>
-          <Row label="코너 타이틀"><input defaultValue={p.title} onBlur={(e) => set({ title: e.target.value })} className={inputCls} /></Row>
+          <Row label="코너 타이틀"><input defaultValue={p.title} onBlur={(e) => set({ title: e.target.value })} placeholder="예: ‘free’ 하게 누리는 14가지 혜택" className={inputCls} /></Row>
           <Row label="설명(캡션)"><input defaultValue={p.subTitle} onBlur={(e) => set({ subTitle: e.target.value })} placeholder="캡션 정보를 적어주세요 (선택)" className={inputCls} /></Row>
+          {p.cornerType === '그룹' && (
+            <Row label="레이아웃 (아이템 배치)">
+              <select defaultValue={p.layout ?? 'list'} onChange={(e) => set({ layout: e.target.value })} className={inputCls}>
+                <option value="list">리스트 (세로)</option>
+                <option value="grid">2열 그리드</option>
+                <option value="scroll">가로 스크롤</option>
+              </select>
+            </Row>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <Row label="최대 노출 개수(0=제한없음)"><input type="number" defaultValue={p.maxItems} onBlur={(e) => set({ maxItems: num(e.target.value) })} className={inputCls} /></Row>
             <Row label="정렬"><select defaultValue={p.sort} onChange={(e) => set({ sort: e.target.value })} className={inputCls}><option value="수동">수동</option><option value="우선순위">우선순위</option><option value="최신순">최신순</option></select></Row>
+          </div>
+          <p className="rounded-md border border-dashed bg-muted/30 px-2.5 py-2 text-[11px] leading-snug text-muted-foreground">전시화면처럼 이 코너에 <b>혜택 항목·상품·브랜드</b> 등을 <b>‘추가’ 탭에서 하나씩</b> 넣고, 위 레이아웃으로 배치하세요. 순서는 드래그로 변경됩니다.</p>
+
+          {/* 빅배너 — 코너 부속 배너(TM-DSP-019). 유형은 그대로 두고 '구분자'로 배너를 얹는다. */}
+          <div className="rounded-lg border p-3">
+            <label className="flex items-center gap-2 text-[12px] font-semibold">
+              <input type="checkbox" defaultChecked={!!p.bigBanner} onChange={(e) => set({ bigBanner: e.target.checked })} className="accent-primary" />
+              빅배너 추가 <span className="font-normal text-muted-foreground">· 상품형 등 코너에 배너를 얹는 구분자</span>
+            </label>
+            <div className="mt-2 space-y-2">
+              <Row label="배너 문구"><input defaultValue={p.bannerTitle} onBlur={(e) => set({ bannerTitle: e.target.value })} placeholder="예: iPhone 20 사전 예약 시 에어팟 프로 증정" className={inputCls} /></Row>
+              <Row label="배너 서브문구"><input defaultValue={p.bannerSub} onBlur={(e) => set({ bannerSub: e.target.value })} placeholder="예: 사전예약 클립 멤버십 혜택" className={inputCls} /></Row>
+              <Row label="배너 이미지 URL"><input defaultValue={p.bannerImage} onBlur={(e) => set({ bannerImage: e.target.value })} placeholder="URL 입력 (없으면 그라데이션)" className={inputCls} /></Row>
+              <Row label="배너 링크"><input defaultValue={p.bannerLink} onBlur={(e) => set({ bannerLink: e.target.value })} placeholder="/..." className={inputCls} /></Row>
+            </div>
           </div>
         </>
       );

@@ -380,6 +380,17 @@ async function main() {
         `</svg>`,
     );
 
+  // 심플 톤 배너 — 그라데이션·장식 없이 부드러운 단색 배경 + 어두운 텍스트
+  const simpleBanner = (title: string, sub: string, bg = '#edeff7', fg = '#1c1f23', subFg = '#6b7280') =>
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='672' height='240' viewBox='0 0 672 240'>` +
+        `<rect width='672' height='240' rx='24' fill='${bg}'/>` +
+        `<text x='40' y='116' font-family='sans-serif' font-size='26' font-weight='700' fill='${fg}'>${escSvg(title)}</text>` +
+        `<text x='40' y='154' font-family='sans-serif' font-size='16' fill='${subFg}'>${escSvg(sub)}</text>` +
+        `</svg>`,
+    );
+
   // T Week 소멸 히어로 — 심플: 그레이 배경 + 텍스트만 (프로토타입 플레이스홀더)
   const tweekHeroSvg =
     'data:image/svg+xml;utf8,' +
@@ -475,149 +486,232 @@ async function main() {
   // ═══════════════════════════════════════════════════════════
   // 1) 상단 카테고리 탭 (업무 진입형 · 선택형)
   const shopTab = await comp('쇼핑 상단 탭', '선택형', [
-    { name: '쇼핑탭:추천', atomType: 'TEXT', content: '추천' },
-    { name: '쇼핑탭:패션', atomType: 'TEXT', content: '패션' },
-    { name: '쇼핑탭:뷰티', atomType: 'TEXT', content: '뷰티' },
-    { name: '쇼핑탭:디지털', atomType: 'TEXT', content: '디지털' },
-    { name: '쇼핑탭:식품', atomType: 'TEXT', content: '식품' },
-    { name: '쇼핑탭:리빙', atomType: 'TEXT', content: '리빙' },
-    { name: '쇼핑탭:유아동', atomType: 'TEXT', content: '유아동' },
+    { name: '쇼핑탭:GalaxyS28', atomType: 'TEXT', content: 'Galaxy S28' },
+    { name: '쇼핑탭:휴대폰', atomType: 'TEXT', content: '휴대폰' },
+    { name: '쇼핑탭:모바일요금제', atomType: 'TEXT', content: '모바일 요금제' },
+    { name: '쇼핑탭:결합상품', atomType: 'TEXT', content: '결합상품' },
+    { name: '쇼핑탭:구독', atomType: 'TEXT', content: '구독' },
+    { name: '쇼핑탭:부가서비스', atomType: 'TEXT', content: '부가서비스' },
+    { name: '쇼핑탭:액세서리', atomType: 'TEXT', content: '액세서리' },
   ]);
   const shopCornerTab = await corner(
     { name: '쇼핑 상단 탭', cornerType: '업무 진입형', maxItems: 10, layoutDetail: '고정형(탭)', subTitleIcon: '사용안함' },
     [{ id: shopTab.id, componentType: '선택형' }],
   );
 
-  // 2) 쇼핑 히어로 배너 (배너형 · 이미지형/빅배너)
-  const shopHeroBanner = await prisma.banner.create({
-    data: { name: '쇼핑 여름 특가 히어로', imageUrl: bannerSvg('여름 맞이 최대 70%', '오늘만 이 가격 · TODAY SALE', '#2563eb', '#06b6d4'), linkUrl: '/shop/summer', status: 'active' },
-  });
-  const shopHero = await comp('쇼핑 히어로 배너', '배너형', [
-    { name: '쇼핑히어로 제목', atomType: 'TEXT', content: '여름 맞이 최대 70% 특가' },
-    { name: '쇼핑히어로 서브', atomType: 'INFO', content: '오늘만 이 가격, 지금 확인하세요' },
-    { name: '쇼핑히어로 이미지', atomType: 'IMAGE', imageUrl: '/assets/shop-hero.png', altText: '여름 특가 히어로 배너' },
+  // 2) 단말기 추천 (상품형 · 가로 SWIPE)
+  const dev1 = await comp('iPhone 20 Air 256GB', '상품형', [
+    { name: '단말기1 이미지', atomType: 'IMAGE', imageUrl: '/assets/iphone20-air.png', altText: 'iPhone 20 Air' },
+    { name: '단말기1 제목', atomType: 'TEXT', content: 'iPhone 20 Air' },
+    { name: '단말기1 가격', atomType: 'PRICE', content: '1,165,600원' },
+    { name: '단말기1 배지', atomType: 'BADGE', content: '7%' },
   ]);
-  const shopCornerHero = await corner(
-    { name: '쇼핑 히어로 배너', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형/빅배너' },
-    [{ id: shopHero.id, componentType: '배너형' }],
-  );
-
-  // 3) 오늘의 특가 (상품형 · 가로형(2.5배열))
-  const sp1 = await comp('갤럭시 버즈4 프로', '상품형', [
-    { name: '버즈 이미지', atomType: 'IMAGE', imageUrl: '/assets/prod-buds.png', altText: '갤럭시 버즈4 프로' },
-    { name: '버즈 제목', atomType: 'TEXT', content: '갤럭시 버즈4 프로' },
-    { name: '버즈 가격', atomType: 'PRICE', content: '189,000원' },
-    { name: '버즈 배지', atomType: 'BADGE', content: '25%' },
+  const dev2 = await comp('iPhone 20 Pro 256GB', '상품형', [
+    { name: '단말기2 이미지', atomType: 'IMAGE', imageUrl: '/assets/iphone20-pro.png', altText: 'iPhone 20 Pro' },
+    { name: '단말기2 제목', atomType: 'TEXT', content: 'iPhone 20 Pro' },
+    { name: '단말기2 가격', atomType: 'PRICE', content: '1,550,900원' },
+    { name: '단말기2 배지', atomType: 'BADGE', content: '7%' },
   ]);
-  const sp2 = await comp('스탠리 텀블러', '상품형', [
-    { name: '텀블러 이미지', atomType: 'IMAGE', imageUrl: '/assets/prod-tumbler.png', altText: '스탠리 텀블러' },
-    { name: '텀블러 제목', atomType: 'TEXT', content: '스탠리 퀜처 940ml' },
-    { name: '텀블러 가격', atomType: 'PRICE', content: '44,900원' },
-    { name: '텀블러 배지', atomType: 'BADGE', content: '30%' },
+  const dev3 = await comp('iPhone 20 Pro Max 256GB', '상품형', [
+    { name: '단말기3 이미지', atomType: 'IMAGE', imageUrl: '/assets/iphone20-promax.png', altText: 'iPhone 20 Pro Max' },
+    { name: '단말기3 제목', atomType: 'TEXT', content: 'iPhone 20 Pro Max' },
+    { name: '단말기3 가격', atomType: 'PRICE', content: '1,850,300원' },
+    { name: '단말기3 배지', atomType: 'BADGE', content: '7%' },
   ]);
-  const sp3 = await comp('나이키 에어맥스', '상품형', [
-    { name: '운동화 이미지', atomType: 'IMAGE', imageUrl: '/assets/prod-shoes.png', altText: '나이키 에어맥스 DN' },
-    { name: '운동화 제목', atomType: 'TEXT', content: '나이키 에어맥스 DN' },
-    { name: '운동화 가격', atomType: 'PRICE', content: '159,000원' },
-    { name: '운동화 배지', atomType: 'BADGE', content: '20%' },
-  ]);
-  const shopCornerDeal = await corner(
+  const shopCornerDevice = await corner(
     {
-      name: '오늘의 특가',
+      name: '단말기 추천',
       cornerType: '상품형',
       minItems: 1,
       maxItems: 10,
-      mainTitle: '오늘의 특가\n지금 아니면 못 사요',
-      subTitle: 'TODAY SALE',
+      mainTitle: '최근 본 아이폰을\n혜택으로 만나보세요',
+      subTitle: '단말기 추천',
+      layoutDetail: '가로형(2.5배열) · 빅배너',
+      cornerLayout: '가로 SWIPE형',
+      subTitleIcon: '화살표',
+      sortStrategy: '인기순',
+      moreButtonUse: true,
+      moreButtonLabel: '단말기 전체보기',
+      moreButtonLink: '/shop/device',
+    },
+    [
+      { id: dev1.id, componentType: '상품형' },
+      { id: dev2.id, componentType: '상품형' },
+      { id: dev3.id, componentType: '상품형' },
+    ],
+  );
+
+  // 3) 사전예약 빅배너 — 별도 배너 코너로 쪼개지 않고 '단말기 추천' 코너에 부속 배너로 붙인다.
+  //    (TM-DSP-019 배너 사용처=Corner / PI-DSP-CMP-003은 Component만 제한 → 상품형 코너 + 코너 배너는 규칙 충돌 없음)
+  const shopPreorderBanner = await prisma.banner.create({
+    data: { name: 'iPhone 20 사전예약 배너', imageUrl: simpleBanner('iPhone 20 사전 예약 시 에어팟 프로 증정', '사전예약 클립 멤버십 혜택'), linkUrl: '/shop/preorder', status: 'active' },
+  });
+  await prisma.corner.update({ where: { id: shopCornerDevice.id }, data: { bannerId: shopPreorderBanner.id } });
+
+  // 4) 요금제 추천 — 약정 만료 (혜택·오퍼형 · 정보형)
+  const plan1 = await comp('0 청년 109 넷플릭스', '정보형', [
+    { name: '요금제1 배지', atomType: 'BADGE', content: '무료' },
+    { name: '요금제1 제목', atomType: 'TEXT', content: '0 청년 109 (넷플릭스)' },
+    { name: '요금제1 가격', atomType: 'INFO', content: '월 99,000원' },
+    { name: '요금제1 설명', atomType: 'INFO', content: '데이터 500GB · 넷플릭스 프리미엄 제공 +2' },
+  ]);
+  const plan2 = await comp('0 청년 109 네이버', '정보형', [
+    { name: '요금제2 배지', atomType: 'BADGE', content: '500GB' },
+    { name: '요금제2 제목', atomType: 'TEXT', content: '0 청년 109 (네이버 플러스 스토어)' },
+    { name: '요금제2 가격', atomType: 'INFO', content: '월 99,000원' },
+    { name: '요금제2 설명', atomType: 'INFO', content: '데이터 500GB · 넷플릭스 프리미엄 제공 +2' },
+  ]);
+  const shopCornerPlan = await corner(
+    {
+      name: '약정 만료 요금제',
+      cornerType: '혜택·오퍼형',
+      maxItems: 6,
+      mainTitle: '약정 만료 시 위약금 없이\n이어갈 수 있는 요금제에요',
+      subTitle: '전체 요금제',
+      layoutDetail: '세로형',
+      subTitleIcon: '화살표',
+      moreButtonUse: true,
+      moreButtonLabel: '전체 요금제',
+      moreButtonLink: '/plan',
+    },
+    [
+      { id: plan1.id, componentType: '정보형' },
+      { id: plan2.id, componentType: '정보형' },
+    ],
+  );
+
+  // 5) 데이터 요금제 안내 (업무 진입형 · 행동형)
+  const data1 = await comp('데이터 무제한', '행동형', [
+    { name: '데이터1 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-infinity.png', altText: '무제한' },
+    { name: '데이터1 제목', atomType: 'TEXT', content: '데이터 걱정 없이 마음껏 사용해요' },
+    { name: '데이터1 설명', atomType: 'INFO', content: '무제한 · 월 69,000원부터' },
+  ]);
+  const data2 = await comp('데이터 영상', '행동형', [
+    { name: '데이터2 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-video.png', altText: '영상' },
+    { name: '데이터2 제목', atomType: 'TEXT', content: '영상도 보고 여유 있게 사용해요' },
+    { name: '데이터2 설명', atomType: 'INFO', content: '50~100GB · 월 48,000원부터' },
+  ]);
+  const data3 = await comp('데이터 메신저', '행동형', [
+    { name: '데이터3 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-chat.png', altText: '메신저' },
+    { name: '데이터3 제목', atomType: 'TEXT', content: '메신저 위주로 가볍게 사용해요' },
+    { name: '데이터3 설명', atomType: 'INFO', content: '5~10GB · 월 34,000원부터' },
+  ]);
+  const data4 = await comp('데이터 직접찾기', '행동형', [
+    { name: '데이터4 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-search.png', altText: '직접 찾기' },
+    { name: '데이터4 제목', atomType: 'TEXT', content: '원하는 요금제 직접 찾아볼게요' },
+    { name: '데이터4 설명', atomType: 'INFO', content: '월 19,000원부터' },
+  ]);
+  const shopCornerData = await corner(
+    {
+      name: '데이터 요금제 안내',
+      cornerType: '업무 진입형',
+      maxItems: 10,
+      mainTitle: '일상 생활 속 데이터\n얼마나 필요하세요?',
+      subTitle: 'SKT 고객을 위한 요금제',
+      layoutDetail: '세로 리스트형',
+      subTitleIcon: '사용안함',
+    },
+    [
+      { id: data1.id, componentType: '행동형' },
+      { id: data2.id, componentType: '행동형' },
+      { id: data3.id, componentType: '행동형' },
+      { id: data4.id, componentType: '행동형' },
+    ],
+  );
+
+  // 6) 기프티콘 추천 (상품형 · 가로 SWIPE)
+  const gift1 = await comp('영 메모리즈 오드 퍼퓸', '상품형', [
+    { name: '기프티콘1 이미지', atomType: 'IMAGE', imageUrl: '/assets/gift-perfume.png', altText: '영 메모리즈 오드 퍼퓸' },
+    { name: '기프티콘1 제목', atomType: 'TEXT', content: '영 메모리즈 오드 퍼퓸 100ml' },
+    { name: '기프티콘1 가격', atomType: 'PRICE', content: '235,000원' },
+    { name: '기프티콘1 배지', atomType: 'BADGE', content: '20%' },
+  ]);
+  const gift2 = await comp('SNOWMAN8 Portable', '상품형', [
+    { name: '기프티콘2 이미지', atomType: 'IMAGE', imageUrl: '/assets/gift-humidifier.png', altText: 'SNOWMAN8 Portable' },
+    { name: '기프티콘2 제목', atomType: 'TEXT', content: 'SNOWMAN8 Portable WARMGREY TAIL' },
+    { name: '기프티콘2 가격', atomType: 'PRICE', content: '46,550원' },
+    { name: '기프티콘2 배지', atomType: 'BADGE', content: '5%' },
+  ]);
+  const gift3 = await comp('로즈마리 바디 세트', '상품형', [
+    { name: '기프티콘3 이미지', atomType: 'IMAGE', imageUrl: '/assets/gift-body.png', altText: '로즈마리 바디 세트' },
+    { name: '기프티콘3 제목', atomType: 'TEXT', content: '로즈마리 리프레시 바디 세트' },
+    { name: '기프티콘3 가격', atomType: 'PRICE', content: '83,160원' },
+    { name: '기프티콘3 배지', atomType: 'BADGE', content: '10%' },
+  ]);
+  const shopCornerGift = await corner(
+    {
+      name: '기프티콘 추천',
+      cornerType: '상품형',
+      minItems: 1,
+      maxItems: 10,
+      mainTitle: '더 저렴하게 살 수 있는\n기프티콘이 있어요',
+      subTitle: '기프티콘',
       layoutDetail: '가로형(2.5배열)',
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '낮은 가격순',
-      noDisplayCondition: '재고 소진 시',
       moreButtonUse: true,
-      moreButtonLabel: '특가 전체보기',
-      moreButtonLink: '/shop/deal',
+      moreButtonLabel: '기프티콘 전체보기',
+      moreButtonLink: '/shop/gift',
     },
     [
-      { id: sp1.id, componentType: '상품형' },
-      { id: sp2.id, componentType: '상품형' },
-      { id: sp3.id, componentType: '상품형' },
+      { id: gift1.id, componentType: '상품형' },
+      { id: gift2.id, componentType: '상품형' },
+      { id: gift3.id, componentType: '상품형' },
     ],
   );
 
-  // 4) 카테고리 기획전 배너 (배너형 · 이미지형)
-  const shopCurationBanner = await prisma.banner.create({
-    data: { name: '뷰티 페어 기획전', imageUrl: bannerSvg('뷰티 페어 최대 50%', '인기 브랜드 한정 특가', '#db2777', '#f472b6'), linkUrl: '/shop/beauty', status: 'active' },
+  // 7) 프로모션 배너 — Marshall 스피커 (배너형 · 이미지형)
+  const shopSpeakerBanner = await prisma.banner.create({
+    data: { name: 'Marshall Stockwell 배너', imageUrl: bannerSvg('Marshall Stockwell 블루투스 스피커', '사전예약 클립 멤버십 혜택', '#111827', '#374151'), linkUrl: '/shop/marshall', status: 'active' },
   });
-  const shopCuration = await comp('카테고리 기획전 배너', '배너형', [
-    { name: '기획전 제목', atomType: 'TEXT', content: '뷰티 페어, 인기 브랜드 최대 50%' },
-    { name: '기획전 서브', atomType: 'INFO', content: '이번 주 한정 특가' },
-    { name: '기획전 이미지', atomType: 'IMAGE', imageUrl: '/assets/shop-beauty.png', altText: '뷰티 페어 기획전 배너' },
+  const shopSpeaker = await comp('Marshall Stockwell 배너', '배너형', [
+    { name: '스피커 제목', atomType: 'TEXT', content: 'Marshall Stockwell 블루투스 스피커' },
+    { name: '스피커 서브', atomType: 'INFO', content: '사전예약 클립 멤버십 혜택' },
+    { name: '스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/marshall-speaker.png', altText: 'Marshall Stockwell 스피커' },
   ]);
-  const shopCornerCuration = await corner(
-    { name: '카테고리 기획전', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
-    [{ id: shopCuration.id, componentType: '배너형' }],
+  const shopCornerSpeaker = await corner(
+    { name: 'Marshall 스피커', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
+    [{ id: shopSpeaker.id, componentType: '배너형' }],
   );
 
-  // 5) 베스트셀러 (상품형 · 세로형)
-  const sb1 = await comp('정관장 홍삼정', '상품형', [
-    { name: '홍삼 이미지', atomType: 'IMAGE', imageUrl: '/assets/prod-hongsam.png', altText: '정관장 홍삼정' },
-    { name: '홍삼 제목', atomType: 'TEXT', content: '정관장 홍삼정 에브리타임' },
-    { name: '홍삼 가격', atomType: 'PRICE', content: '89,000원' },
+  // 8) 구독 혜택 (상품형 · 가로 SWIPE)
+  const sub1 = await comp('주말 장보기 패스', '상품형', [
+    { name: '구독1 이미지', atomType: 'IMAGE', imageUrl: '/assets/sub-grocery.png', altText: '주말 장보기 패스' },
+    { name: '구독1 제목', atomType: 'TEXT', content: '주말 장보기 패스 (네이버플러스스토어+컬리)' },
+    { name: '구독1 가격', atomType: 'PRICE', content: '월 8,900원' },
   ]);
-  const sb2 = await comp('리큐 세제', '상품형', [
-    { name: '세제 이미지', atomType: 'IMAGE', imageUrl: '/assets/prod-detergent.png', altText: '리큐 진한겔' },
-    { name: '세제 제목', atomType: 'TEXT', content: '리큐 진한겔 대용량' },
-    { name: '세제 가격', atomType: 'PRICE', content: '19,900원' },
+  const sub2 = await comp('쇼핑 올인원', '상품형', [
+    { name: '구독2 이미지', atomType: 'IMAGE', imageUrl: '/assets/sub-shopping.png', altText: '쇼핑 올인원' },
+    { name: '구독2 제목', atomType: 'TEXT', content: '쇼핑 올인원 (무신사+EQL)' },
+    { name: '구독2 가격', atomType: 'PRICE', content: '월 9,900원' },
   ]);
-  const sb3 = await comp('카누 커피', '상품형', [
-    { name: '커피 이미지', atomType: 'IMAGE', imageUrl: '/assets/prod-coffee.png', altText: '카누 마일드' },
-    { name: '커피 제목', atomType: 'TEXT', content: '카누 마일드 200개입' },
-    { name: '커피 가격', atomType: 'PRICE', content: '27,800원' },
+  const sub3 = await comp('AI 크리에이터', '상품형', [
+    { name: '구독3 이미지', atomType: 'IMAGE', imageUrl: '/assets/sub-ai.png', altText: 'AI 크리에이터' },
+    { name: '구독3 제목', atomType: 'TEXT', content: 'AI 크리에이터 (Figma)' },
+    { name: '구독3 가격', atomType: 'PRICE', content: '월 20,000원' },
+    { name: '구독3 배지', atomType: 'BADGE', content: '20%' },
   ]);
-  const shopCornerBest = await corner(
+  const shopCornerSub = await corner(
     {
-      name: '베스트셀러',
+      name: '구독 혜택',
       cornerType: '상품형',
-      maxItems: 8,
-      mainTitle: '지금 가장 많이 담은\n베스트셀러',
-      subTitle: '실시간 베스트',
-      layoutDetail: '세로형',
-      cornerLayout: '세로 리스트형',
+      minItems: 1,
+      maxItems: 10,
+      mainTitle: 'SKT에만 있는\n구독 혜택이에요',
+      subTitle: '구독 상품',
+      layoutDetail: '가로형(2.5배열)',
+      cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '인기순',
+      moreButtonUse: true,
+      moreButtonLabel: '구독 상품 전체보기',
+      moreButtonLink: '/shop/subscribe',
     },
     [
-      { id: sb1.id, componentType: '상품형' },
-      { id: sb2.id, componentType: '상품형' },
-      { id: sb3.id, componentType: '상품형' },
-    ],
-  );
-
-  // 6) 브랜드 위크 혜택 (혜택·오퍼형 · 혜택형)
-  const sbrand1 = await comp('Apple 브랜드위크', '혜택형', [
-    { name: '애플 아이콘', atomType: 'ICON', imageUrl: '/assets/brand-apple.png', altText: 'Apple 로고' },
-    { name: '애플 혜택문구', atomType: 'BENEFIT_TEXT', content: '카드 청구할인 최대 10%' },
-    { name: '애플 브랜드', atomType: 'TEXT', content: 'Apple 공식스토어' },
-  ]);
-  const sbrand2 = await comp('Dyson 브랜드위크', '혜택형', [
-    { name: '다이슨 아이콘', atomType: 'ICON', imageUrl: '/assets/brand-dyson.png', altText: 'Dyson 로고' },
-    { name: '다이슨 혜택문구', atomType: 'BENEFIT_TEXT', content: '사은품 증정 + 무이자 12개월' },
-    { name: '다이슨 브랜드', atomType: 'TEXT', content: 'Dyson' },
-  ]);
-  const shopCornerBrand = await corner(
-    {
-      name: '브랜드 위크',
-      cornerType: '혜택·오퍼형',
-      maxItems: 6,
-      mainTitle: '이번 주 브랜드 위크',
-      subTitle: '브랜드 혜택',
-      layoutDetail: '세로형',
-      subTitleIcon: '화살표',
-    },
-    [
-      { id: sbrand1.id, componentType: '혜택형' },
-      { id: sbrand2.id, componentType: '혜택형' },
+      { id: sub1.id, componentType: '상품형' },
+      { id: sub2.id, componentType: '상품형' },
+      { id: sub3.id, componentType: '상품형' },
     ],
   );
 
@@ -625,11 +719,11 @@ async function main() {
     data: {
       name: '쇼핑 홈', containerType: 'MAIN', channel: 'APP', status: 'active',
       metaUse: true,
-      searchTags: '#쇼핑 #홈 #특가 #세일',
-      metaKeywords: '쇼핑,홈,특가,세일,커머스',
-      metaDescription: '오늘의 특가와 추천 상품을 쇼핑 홈에서 만나보세요.',
+      searchTags: '#쇼핑 #홈 #단말기 #요금제 #구독',
+      metaKeywords: '쇼핑,홈,단말기,요금제,구독,기프티콘,T우주',
+      metaDescription: '단말기·요금제·구독 혜택을 쇼핑 홈에서 만나보세요.',
       ogTitle: '쇼핑 홈',
-      ogDescription: '오늘의 특가·추천 상품 모음',
+      ogDescription: '단말기·요금제·구독 혜택 모음',
       ogSiteName: 'T우주',
     },
   });
@@ -644,20 +738,20 @@ async function main() {
       templateCorners: {
         create: [
           { cornerId: shopCornerTab.id, order: 0 },
-          { cornerId: shopCornerHero.id, order: 1 },
-          { cornerId: shopCornerDeal.id, order: 2 },
-          { cornerId: shopCornerCuration.id, order: 3 },
-          { cornerId: shopCornerBest.id, order: 4 },
-          { cornerId: shopCornerBrand.id, order: 5 },
+          { cornerId: shopCornerDevice.id, order: 1 }, // 단말기 추천 + 사전예약 빅배너(부속)
+          { cornerId: shopCornerPlan.id, order: 2 },
+          { cornerId: shopCornerData.id, order: 3 },
+          { cornerId: shopCornerGift.id, order: 4 },
+          { cornerId: shopCornerSpeaker.id, order: 5 },
+          { cornerId: shopCornerSub.id, order: 6 },
         ],
       },
     },
   });
   await prisma.container.update({ where: { id: shopContainer.id }, data: { defaultTemplateId: shopTemplate.id } });
-  await prisma.corner.update({ where: { id: shopCornerHero.id }, data: { bannerId: shopHeroBanner.id } });
-  await prisma.corner.update({ where: { id: shopCornerCuration.id }, data: { bannerId: shopCurationBanner.id } });
+  await prisma.corner.update({ where: { id: shopCornerSpeaker.id }, data: { bannerId: shopSpeakerBanner.id } });
   await prisma.auditLog.create({
-    data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: shopTemplate.id, afterValue: JSON.stringify({ name: '쇼핑 기본', status: 'DRAFT', corners: 6 }), reason: '쇼핑 홈 초안 생성', result: 'CREATED' },
+    data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: shopTemplate.id, afterValue: JSON.stringify({ name: '쇼핑 기본', status: 'DRAFT', corners: 7 }), reason: '쇼핑 홈 재구성(단말기 코너에 사전예약 빅배너 통합)', result: 'CREATED' },
   });
 
   // ═══════════════════════════════════════════════════════════

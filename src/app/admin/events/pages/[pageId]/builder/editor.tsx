@@ -341,8 +341,9 @@ function EditableNode({ node, meta, selectedId, onSelect, viewer }: { node: Node
 
   return (
     <div
+      id={`ev-node-${node.id}`}
       onClick={(e) => { e.stopPropagation(); onSelect(node.id); }}
-      className={`group relative cursor-pointer rounded-lg transition ${selected ? 'outline outline-2 outline-primary' : 'hover:outline hover:outline-1 hover:outline-primary/40'} ${hiddenForViewer ? 'opacity-40 grayscale' : ''}`}
+      className={`group relative scroll-mt-4 cursor-pointer rounded-lg transition ${selected ? 'outline outline-2 outline-primary' : 'hover:outline hover:outline-1 hover:outline-primary/40'} ${hiddenForViewer ? 'opacity-40 grayscale' : ''}`}
     >
       {/* 라벨 — 고정 영역은 자물쇠 표시(개발 고정, 제어 불가) */}
       <span className={`absolute -top-0 left-0 z-20 inline-flex items-center gap-1 rounded-br-md rounded-tl-md px-1.5 py-0.5 text-[10px] font-semibold ${fixed ? 'bg-zinc-500 text-white' : 'bg-primary text-primary-foreground'} ${selected ? '' : 'opacity-0 group-hover:opacity-100'}`}>
@@ -369,6 +370,23 @@ function EditableNode({ node, meta, selectedId, onSelect, viewer }: { node: Node
 export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<'node' | 'add'>('add');
+  // 노드 선택 시: ① 우측 패널을 '선택 속성' 탭으로 자동 포커스 ② 디바이스 미리보기를 해당 노드 위치로 스크롤
+  const selectNode = (id: string) => {
+    setSelectedId(id);
+    setTab('node');
+    // React 커밋 이후 스크롤 (rAF은 커밋 전에 실행돼 반영이 안 됨)
+    setTimeout(() => {
+      const el = document.getElementById(`ev-node-${id}`);
+      const canvas = el?.closest('.evt-scroll') as HTMLElement | null;
+      if (el && canvas) {
+        const cr = canvas.getBoundingClientRect(), er = el.getBoundingClientRect();
+        const top = canvas.scrollTop + (er.top - cr.top) - canvas.clientHeight / 2 + er.height / 2;
+        canvas.scrollTop = Math.max(0, top);
+      } else {
+        el?.scrollIntoView({ block: 'center' });
+      }
+    }, 60);
+  };
   const [q, setQ] = useState('');
   const [device, setDevice] = useState(DEVICES.find((d) => d.key === meta.device) ?? DEVICES[0]);
   const [viewer] = useState<Viewer>('로그인'); // 빌더 렌더 기준(로그인) — 미리보기 대상 토글은 제거됨
@@ -376,7 +394,17 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
 
   const display = meta.mode === 'display';
 
-  // 선택 노드 + 조상 체인 탐색
+  // 낙관적 반영 — 속성 변경 시 미리보기에 즉시 적용(서버 저장은 백그라운드)
+  const [overrides, setOverrides] = useState<Record<string, Record<string, unknown>>>({});
+  const patchNode = (nodeId: string, patch: Record<string, unknown>) => {
+    setOverrides((prev) => ({ ...prev, [nodeId]: { ...(prev[nodeId] ?? {}), ...patch } }));
+    start(() => updateNodeProps(meta.pageId, nodeId, patch));
+  };
+  const applyOverrides = (nodes: NodeView[]): NodeView[] =>
+    nodes.map((n) => ({ ...n, props: overrides[n.id] ? { ...n.props, ...overrides[n.id] } : n.props, children: applyOverrides(n.children) }));
+  const vtree = applyOverrides(tree);
+
+  // 선택 노드 + 조상 체인 탐색 (오버라이드 반영된 vtree 기준)
   function findChain(nodes: NodeView[], id: string, chain: NodeView[] = []): NodeView[] | null {
     for (const n of nodes) {
       if (n.id === id) return [...chain, n];
@@ -385,7 +413,7 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
     }
     return null;
   }
-  const chain = selectedId ? findChain(tree, selectedId) : null;
+  const chain = selectedId ? findChain(vtree, selectedId) : null;
   const selected = chain ? chain[chain.length - 1] : null;
   // 거버넌스: 대상 코너 = 선택 노드(또는 조상) 중 가장 가까운 CORNER
   const targetCorner = chain ? [...chain].reverse().find((n) => n.type === 'CORNER') ?? null : null;
@@ -460,7 +488,7 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
             <span className="text-[10px] text-muted-foreground">{display ? '코너 거버넌스' : '5단계 계층'}</span>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
-            <StructureTree tree={tree} meta={meta} selectedId={selectedId} onSelect={setSelectedId} />
+            <StructureTree tree={vtree} meta={meta} selectedId={selectedId} onSelect={selectNode} />
           </div>
           {/* 코너 추가 — 전시화면 관리처럼 구조(좌측) 하단에 배치 */}
           <details className="border-t p-3" open>
@@ -509,7 +537,7 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {tree.map((n) => <EditableNode key={n.id} node={n} meta={meta} selectedId={selectedId} onSelect={setSelectedId} viewer={viewer} />)}
+                    {vtree.map((n) => <EditableNode key={n.id} node={n} meta={meta} selectedId={selectedId} onSelect={selectNode} viewer={viewer} />)}
                   </div>
                 )}
               </DeviceShell>
@@ -579,8 +607,8 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
               </div>
             ) : selected ? (
               <>
-                <LayerBreadcrumb chain={chain ?? []} meta={meta} onSelect={setSelectedId} />
-                <PropertiesPanel pageId={meta.pageId} node={selected} onDelete={() => setSelectedId(null)} />
+                <LayerBreadcrumb chain={chain ?? []} meta={meta} onSelect={selectNode} />
+                <PropertiesPanel key={selected.id} pageId={meta.pageId} node={selected} onDelete={() => setSelectedId(null)} onPatch={patchNode} />
               </>
             ) : (
               <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">

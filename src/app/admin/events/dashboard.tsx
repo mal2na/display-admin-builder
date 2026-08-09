@@ -335,8 +335,31 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
               trail={['프로모션 관리']}
               title="프로모션"
               subtitle={`총 ${projects.length}개의 프로모션이 있습니다.`}
-              className="mb-6"
+              className="mb-4"
             />
+
+            {/* 유형별 빠른 필터 칩 — 전체 + 이벤트 유형(안내형·초청형·기획전형·응모형…) 원클릭 소팅 */}
+            <div className="mb-4 flex flex-wrap gap-1.5">
+              {['전체', ...EVENT_TYPES].map((t) => {
+                const active = t === '전체' ? kind === '전체' && detailType === '전체' : detailType === t;
+                const count = t === '전체' ? projects.length : projects.filter((p) => p.type === t).length;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      if (t === '전체') { setKind('전체'); setDetailType('전체'); }
+                      else { setKind('이벤트'); setDetailType(t); }
+                      setPage(1);
+                    }}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}
+                  >
+                    {t}
+                    <span className={`rounded-full px-1.5 text-[11px] tabular-nums ${active ? 'bg-white/25' : 'bg-secondary text-muted-foreground'}`}>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
 
             {/* 검색 조건 영역 (SB-EVT-027 · PI-EVTMSN-SEARCH-001) */}
             <div className="mb-4 rounded-xl border bg-surface-subtle p-4">
