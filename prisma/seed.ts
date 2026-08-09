@@ -526,7 +526,7 @@ async function main() {
       maxItems: 10,
       mainTitle: '최근 본 아이폰을\n혜택으로 만나보세요',
       subTitle: '단말기 추천',
-      layoutDetail: '가로형(2.5배열)',
+      layoutDetail: '가로형(2.5배열) · 빅배너',
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '인기순',
@@ -541,19 +541,12 @@ async function main() {
     ],
   );
 
-  // 3) 사전예약 배너 (배너형 · 이미지형)
+  // 3) 사전예약 빅배너 — 별도 배너 코너로 쪼개지 않고 '단말기 추천' 코너에 부속 배너로 붙인다.
+  //    (TM-DSP-019 배너 사용처=Corner / PI-DSP-CMP-003은 Component만 제한 → 상품형 코너 + 코너 배너는 규칙 충돌 없음)
   const shopPreorderBanner = await prisma.banner.create({
     data: { name: 'iPhone 20 사전예약 배너', imageUrl: simpleBanner('iPhone 20 사전 예약 시 에어팟 프로 증정', '사전예약 클립 멤버십 혜택'), linkUrl: '/shop/preorder', status: 'active' },
   });
-  const shopPreorder = await comp('iPhone 20 사전예약 배너', '배너형', [
-    { name: '사전예약 제목', atomType: 'TEXT', content: 'iPhone 20 사전 예약 시 에어팟 프로 증정' },
-    { name: '사전예약 서브', atomType: 'INFO', content: '사전예약 클립 멤버십 혜택' },
-    { name: '사전예약 이미지', atomType: 'IMAGE', imageUrl: '/assets/preorder-airpods.png', altText: 'iPhone 20 사전예약 에어팟 증정' },
-  ]);
-  const shopCornerPreorder = await corner(
-    { name: 'iPhone 20 사전예약', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
-    [{ id: shopPreorder.id, componentType: '배너형' }],
-  );
+  await prisma.corner.update({ where: { id: shopCornerDevice.id }, data: { bannerId: shopPreorderBanner.id } });
 
   // 4) 요금제 추천 — 약정 만료 (혜택·오퍼형 · 정보형)
   const plan1 = await comp('0 청년 109 넷플릭스', '정보형', [
@@ -745,22 +738,20 @@ async function main() {
       templateCorners: {
         create: [
           { cornerId: shopCornerTab.id, order: 0 },
-          { cornerId: shopCornerDevice.id, order: 1 },
-          { cornerId: shopCornerPreorder.id, order: 2 },
-          { cornerId: shopCornerPlan.id, order: 3 },
-          { cornerId: shopCornerData.id, order: 4 },
-          { cornerId: shopCornerGift.id, order: 5 },
-          { cornerId: shopCornerSpeaker.id, order: 6 },
-          { cornerId: shopCornerSub.id, order: 7 },
+          { cornerId: shopCornerDevice.id, order: 1 }, // 단말기 추천 + 사전예약 빅배너(부속)
+          { cornerId: shopCornerPlan.id, order: 2 },
+          { cornerId: shopCornerData.id, order: 3 },
+          { cornerId: shopCornerGift.id, order: 4 },
+          { cornerId: shopCornerSpeaker.id, order: 5 },
+          { cornerId: shopCornerSub.id, order: 6 },
         ],
       },
     },
   });
   await prisma.container.update({ where: { id: shopContainer.id }, data: { defaultTemplateId: shopTemplate.id } });
-  await prisma.corner.update({ where: { id: shopCornerPreorder.id }, data: { bannerId: shopPreorderBanner.id } });
   await prisma.corner.update({ where: { id: shopCornerSpeaker.id }, data: { bannerId: shopSpeakerBanner.id } });
   await prisma.auditLog.create({
-    data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: shopTemplate.id, afterValue: JSON.stringify({ name: '쇼핑 기본', status: 'DRAFT', corners: 8 }), reason: '쇼핑 홈 재구성(단말기·요금제·구독)', result: 'CREATED' },
+    data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: shopTemplate.id, afterValue: JSON.stringify({ name: '쇼핑 기본', status: 'DRAFT', corners: 7 }), reason: '쇼핑 홈 재구성(단말기 코너에 사전예약 빅배너 통합)', result: 'CREATED' },
   });
 
   // ═══════════════════════════════════════════════════════════

@@ -5,7 +5,16 @@ import Link from 'next/link';
 import * as LucideIcons from 'lucide-react';
 import { Check, Plus, Info, ChevronLeft } from 'lucide-react';
 import { createProject } from '../actions';
-import { TEMPLATES, PROGRAM_KINDS, typesForKind, createsStateFor, TYPE_META, toPromotionSkeleton, type NodeSpec } from '@/lib/event-templates';
+import { TEMPLATES, PROGRAM_KINDS, typesForKind, createsStateFor, TYPE_META, toPromotionSkeleton, describeTemplate, type NodeSpec, type EventSectionGroup } from '@/lib/event-templates';
+
+// 섹션 유형별 배지 색 (구성 미리보기)
+const SECTION_GROUP_BADGE: Record<EventSectionGroup, string> = {
+  '주요 대표': 'bg-indigo-100 text-indigo-700',
+  '상세 콘텐츠': 'bg-sky-100 text-sky-700',
+  '일반 콘텐츠': 'bg-slate-100 text-slate-600',
+  '입력·참여': 'bg-emerald-100 text-emerald-700',
+  '안내·고지': 'bg-amber-100 text-amber-700',
+};
 import { EventNodeView, type NodeView } from '@/components/preview/event-node';
 
 function TIcon({ name, className }: { name: string; className?: string }) {
@@ -173,6 +182,7 @@ export function NewPromotion() {
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
             {examples.map((ex) => {
               const active = tpl === ex.key;
+              const structure = mounted ? describeTemplate(ex.key) : [];
               return (
                 <div
                   key={ex.key}
@@ -180,16 +190,55 @@ export function NewPromotion() {
                   tabIndex={0}
                   onClick={() => setTpl(ex.key)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTpl(ex.key); } }}
-                  className={`group relative cursor-pointer overflow-hidden rounded-2xl border-2 bg-card p-3 text-left transition ${active ? 'border-primary ring-2 ring-primary/20' : 'border-transparent ring-1 ring-border hover:ring-primary/50'}`}
+                  className={`group relative cursor-pointer overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition hover:shadow-md ${active ? 'border-primary ring-2 ring-primary/25' : 'border-border hover:border-primary/40'}`}
                 >
-                  {active && <span className="absolute right-2.5 top-2.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-3 w-3" /></span>}
-                  <div className="relative mb-2 h-[300px] overflow-hidden rounded-xl border bg-gradient-to-b from-white to-slate-50">
-                    {mounted ? <ExamplePreview tplKey={ex.key} /> : <div className="flex h-full items-center justify-center text-[11px] text-slate-400">미리보기 로딩…</div>}
-                    {/* 하단 페이드 (콘텐츠가 잘리는 느낌을 자연스럽게) */}
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent" />
+                  {active && <span className="absolute right-2.5 top-2.5 z-30 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow"><Check className="h-3 w-3" /></span>}
+
+                  {/* 썸네일 — 모던 앱 화면 목업 (소프트 그라데이션 위에 라운드 스크린) */}
+                  <div className="relative h-[220px] overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-slate-100">
+                    <div className="absolute inset-x-6 top-5 bottom-0 overflow-hidden rounded-t-[20px] border border-black/5 bg-white shadow-[0_8px_30px_rgba(30,27,58,0.12)]">
+                      {/* 상단 노치 바 */}
+                      <div className="flex h-5 items-center justify-center border-b border-black/5 bg-white/80">
+                        <span className="h-1 w-10 rounded-full bg-slate-200" />
+                      </div>
+                      {mounted ? (
+                        <div className="h-[calc(100%-1.25rem)] overflow-hidden">
+                          <ExamplePreview tplKey={ex.key} />
+                        </div>
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-[11px] text-slate-400">미리보기 로딩…</div>
+                      )}
+                    </div>
+                    {/* 하단 페이드 */}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent" />
+
+                    {/* 호버 — 구성 미리보기 (스크롤) */}
+                    <div className="absolute inset-0 z-20 flex flex-col bg-white/95 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 pointer-events-none">
+                      <div className="flex items-center justify-between border-b px-3 py-2">
+                        <span className="text-[11px] font-semibold text-foreground">구성 미리보기</span>
+                        <span className="text-[10px] text-muted-foreground">{structure.length ? `섹션 ${structure.length}개` : '빈 페이지'}</span>
+                      </div>
+                      <div className="flex-1 space-y-1.5 overflow-y-auto px-3 py-2.5">
+                        {structure.length === 0 ? (
+                          <p className="pt-6 text-center text-[11px] text-muted-foreground">직접 섹션을 구성하는<br />빈 페이지예요.</p>
+                        ) : (
+                          structure.map((s, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <span className="w-3 shrink-0 text-[10px] tabular-nums text-slate-400">{i + 1}</span>
+                              <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ${SECTION_GROUP_BADGE[s.group]}`}>{s.group}</span>
+                              <span className="truncate text-[11px] text-foreground">{s.label}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div className="border-t px-3 py-1.5 text-center text-[10px] text-muted-foreground">클릭해 이 구성으로 시작</div>
+                    </div>
                   </div>
-                  <p className="text-[13px] font-semibold">{ex.label}</p>
-                  <p className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">{ex.desc}</p>
+
+                  <div className="p-3">
+                    <p className="text-[13px] font-semibold">{ex.label}</p>
+                    <p className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">{ex.desc}</p>
+                  </div>
                 </div>
               );
             })}
