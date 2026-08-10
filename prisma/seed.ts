@@ -757,124 +757,117 @@ async function main() {
   // ═══════════════════════════════════════════════════════════
   // 마이 홈 (Container) — 혜택 홈과 동일 포맷
   // ═══════════════════════════════════════════════════════════
-  // 1) 내 멤버십 요약 (고정·필수 노출형 · 정보형)
-  const myProfile = await comp('내 멤버십 요약', '정보형', [
-    { name: '마이 이름', atomType: 'TEXT', content: '지훈님, 안녕하세요' },
-    { name: '마이 등급', atomType: 'BADGE', content: 'VIP' },
-    { name: '마이 포인트', atomType: 'INFO', content: '보유 포인트 12,340P · 등급 혜택 보기' },
+  // 1) 프로필·가입현황 (고정·필수 노출형 · 프로필 요약)
+  const myProfile = await comp('내 프로필', '정보형', [
+    { name: '프로필 이름', atomType: 'TEXT', content: '김지훈님' },
+    { name: '프로필 번호', atomType: 'INFO', content: '010-****-5678' },
+    { name: '가입현황 CTA', atomType: 'CTA', content: '나의 가입 현황', linkUrl: '/my/subscription' },
   ]);
   const myCornerProfile = await corner(
-    { name: '내 멤버십 요약', cornerType: '고정·필수 노출형', title: '내 정보', maxItems: 1, subTitleIcon: '사용안함' },
+    { name: '프로필·가입현황', cornerType: '고정·필수 노출형', title: '내 정보', maxItems: 1, layoutDetail: '프로필 요약', subTitleIcon: '사용안함' },
     [{ id: myProfile.id, componentType: '정보형' }],
   );
 
-  // 2) 빠른 메뉴 (업무 진입형 · 선택형)
-  const myQuick = await comp('마이 빠른 메뉴', '선택형', [
-    { name: '마이메뉴:주문내역', atomType: 'TEXT', content: '주문내역' },
-    { name: '마이메뉴:찜', atomType: 'TEXT', content: '찜' },
-    { name: '마이메뉴:쿠폰', atomType: 'TEXT', content: '쿠폰' },
-    { name: '마이메뉴:리뷰', atomType: 'TEXT', content: '리뷰' },
-    { name: '마이메뉴:1:1문의', atomType: 'TEXT', content: '1:1문의' },
+  // 2) 실시간 이용요금 (상태 안내형 · 금액 요약)
+  const myBill = await comp('실시간 이용요금', '정보형', [
+    { name: '요금 금액', atomType: 'PRICE', content: '39,250원' },
+    { name: '요금 배지', atomType: 'BADGE', content: '3월 납부완료' },
+    { name: '요금 라벨', atomType: 'TEXT', content: '실시간 이용요금' },
   ]);
-  const myCornerQuick = await corner(
-    { name: '빠른 메뉴', cornerType: '업무 진입형', maxItems: 10, layoutDetail: '고정형(탭)', subTitleIcon: '사용안함' },
-    [{ id: myQuick.id, componentType: '선택형' }],
+  const myCornerBill = await corner(
+    { name: '실시간 이용요금', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '금액 요약', subTitleIcon: '화살표' },
+    [{ id: myBill.id, componentType: '정보형' }],
   );
 
-  // 3) 포인트 요약 (상태 안내형 · 정보형)
-  const myPoint = await comp('포인트 현황', '정보형', [
-    { name: '포인트 값', atomType: 'INFO', content: '12,340 P 보유' },
-    { name: '포인트 소멸', atomType: 'TEXT', content: '이번 달 소멸 예정 500P' },
-    { name: '포인트 CTA', atomType: 'CTA', content: '포인트 사용처 보기', linkUrl: '/my/point' },
+  // 3) T멤버십 포인트 (상태 안내형 · 금액 요약)
+  const myPoint = await comp('T멤버십 포인트', '정보형', [
+    { name: '포인트 값', atomType: 'PRICE', content: '13,500P' },
+    { name: '포인트 배지', atomType: 'BADGE', content: '3월 누적할인 1,700원' },
+    { name: '포인트 라벨', atomType: 'TEXT', content: 'T멤버십 포인트' },
   ]);
   const myCornerPoint = await corner(
-    {
-      name: '포인트 요약',
-      cornerType: '상태 안내형',
-      maxItems: 2,
-      mainTitle: '포인트 현황',
-      subTitle: '나의 포인트',
-      layoutDetail: '카드형',
-      subTitleIcon: '화살표',
-    },
+    { name: 'T멤버십 포인트', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '금액 요약', subTitleIcon: '화살표' },
     [{ id: myPoint.id, componentType: '정보형' }],
   );
 
-  // 4) 내 쿠폰함 (혜택·오퍼형 · 혜택형)
-  const myCoupon1 = await comp('10% 할인 쿠폰', '혜택형', [
-    { name: '쿠폰1 아이콘', atomType: 'ICON', imageUrl: '/assets/ic-coupon.png', altText: '할인 쿠폰' },
-    { name: '쿠폰1 혜택문구', atomType: 'BENEFIT_TEXT', content: '전 상품 10% 할인 (~8/31)' },
-    { name: '쿠폰1 대상', atomType: 'TEXT', content: '전 상품' },
+  // 4) T멤버십 바코드 (고정·필수 노출형 · 바코드)
+  const myBarcode = await comp('T멤버십 바코드', '정보형', [
+    { name: '바코드 라벨', atomType: 'TEXT', content: 'T멤버십' },
+    { name: '바코드 번호', atomType: 'INFO', content: '1234 4561 1506 4932' },
+    { name: '바코드 타이머', atomType: 'BADGE', content: '19:58' },
   ]);
-  const myCoupon2 = await comp('무료배송 쿠폰', '혜택형', [
-    { name: '쿠폰2 아이콘', atomType: 'ICON', imageUrl: '/assets/ic-truck.png', altText: '무료배송 쿠폰' },
-    { name: '쿠폰2 혜택문구', atomType: 'BENEFIT_TEXT', content: '3만원 이상 무료배송' },
-    { name: '쿠폰2 대상', atomType: 'TEXT', content: '전 상품' },
-  ]);
-  const myCornerCoupon = await corner(
-    {
-      name: '내 쿠폰함',
-      cornerType: '혜택·오퍼형',
-      maxItems: 6,
-      mainTitle: '지금 쓸 수 있는 쿠폰\n2장이 있어요',
-      subTitle: '내 쿠폰함',
-      layoutDetail: '세로형',
-      subTitleIcon: '화살표',
-    },
-    [
-      { id: myCoupon1.id, componentType: '혜택형' },
-      { id: myCoupon2.id, componentType: '혜택형' },
-    ],
+  const myCornerBarcode = await corner(
+    { name: 'T멤버십 바코드', cornerType: '고정·필수 노출형', maxItems: 1, layoutDetail: '바코드', subTitleIcon: '사용안함' },
+    [{ id: myBarcode.id, componentType: '정보형' }],
   );
 
-  // 5) 최근 주문 (상품형 · 세로형)
-  const myOrder1 = await comp('최근 주문 - 버즈', '상품형', [
-    { name: '주문1 이미지', atomType: 'IMAGE', imageUrl: '/assets/prod-buds.png', altText: '갤럭시 버즈4 프로' },
-    { name: '주문1 제목', atomType: 'TEXT', content: '갤럭시 버즈4 프로' },
-    { name: '주문1 상태', atomType: 'INFO', content: '배송 완료 · 7/29 도착' },
+  // 5) 실시간 데이터 잔여량 (상태 안내형 · 사용량 요약)
+  const myData = await comp('실시간 데이터 잔여량', '정보형', [
+    { name: '데이터 값', atomType: 'PRICE', content: '6.5GB' },
+    { name: '데이터 배지', atomType: 'BADGE', content: '20GB 제공' },
+    { name: '데이터 라벨', atomType: 'TEXT', content: '실시간 잔여량' },
   ]);
-  const myOrder2 = await comp('최근 주문 - 텀블러', '상품형', [
-    { name: '주문2 이미지', atomType: 'IMAGE', imageUrl: '/assets/prod-tumbler.png', altText: '스탠리 텀블러' },
-    { name: '주문2 제목', atomType: 'TEXT', content: '스탠리 퀜처 940ml' },
-    { name: '주문2 상태', atomType: 'INFO', content: '배송 중 · 오늘 도착 예정' },
-  ]);
-  const myCornerOrder = await corner(
-    {
-      name: '최근 주문',
-      cornerType: '상품형',
-      maxItems: 8,
-      mainTitle: '최근 주문한 상품',
-      subTitle: '주문/배송',
-      layoutDetail: '세로형',
-      cornerLayout: '세로 리스트형',
-      subTitleIcon: '화살표',
-      moreButtonUse: true,
-      moreButtonLabel: '주문 전체보기',
-      moreButtonLink: '/my/orders',
-    },
-    [
-      { id: myOrder1.id, componentType: '상품형' },
-      { id: myOrder2.id, componentType: '상품형' },
-    ],
+  const myCornerData = await corner(
+    { name: '실시간 데이터 잔여량', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '사용량 요약', subTitleIcon: '화살표' },
+    [{ id: myData.id, componentType: '정보형' }],
   );
 
-  // 6) 고객센터·설정 (콘텐츠 안내형 · 정보형)
-  const mySupport = await comp('고객센터·설정', '정보형', [
-    { name: '지원 공지', atomType: 'TEXT', content: '자주 묻는 질문 · 1:1 문의' },
-    { name: '지원 안내', atomType: 'INFO', content: '평일 09:00~18:00 상담 가능' },
-    { name: '설정 CTA', atomType: 'CTA', content: '앱 설정 바로가기', linkUrl: '/my/settings' },
+  // 6) 결합가족 (상태 안내형 · 금액 요약)
+  const myCombine = await comp('결합가족', '정보형', [
+    { name: '결합 값', atomType: 'TEXT', content: '4명 결합' },
+    { name: '결합 배지', atomType: 'BADGE', content: '15,000원 할인' },
+    { name: '결합 라벨', atomType: 'TEXT', content: '결합가족' },
   ]);
-  const myCornerSupport = await corner(
-    {
-      name: '고객센터·설정',
-      cornerType: '콘텐츠 안내형',
-      maxItems: 4,
-      mainTitle: '도움이 필요하신가요?',
-      subTitle: '고객센터',
-      layoutDetail: '리스트형',
-      subTitleIcon: '화살표',
-    },
-    [{ id: mySupport.id, componentType: '정보형' }],
+  const myCornerCombine = await corner(
+    { name: '결합가족', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '금액 요약', subTitleIcon: '화살표' },
+    [{ id: myCombine.id, componentType: '정보형' }],
+  );
+
+  // 7) 추천 상품 (상품형 · 단일 상품)
+  const myProduct = await comp('CHANEL 루쥬 코코 립스틱', '상품형', [
+    { name: '상품 이미지', atomType: 'IMAGE', imageUrl: '/assets/chanel-lipstick.png', altText: 'CHANEL 루쥬 코코 립스틱' },
+    { name: '상품 브랜드', atomType: 'TEXT', content: 'CHANEL' },
+    { name: '상품명', atomType: 'TEXT', content: '루쥬 코코 립스틱' },
+    { name: '상품 옵션', atomType: 'INFO', content: '봄 뮤트 핑크 #130' },
+  ]);
+  const myCornerProduct = await corner(
+    { name: '추천 상품', cornerType: '상품형', maxItems: 1, layoutDetail: '단일 상품', cornerLayout: '단일강조', subTitleIcon: '사용안함' },
+    [{ id: myProduct.id, componentType: '상품형' }],
+  );
+
+  // 8) 휴대폰 결제·콘텐츠 이용료 (상태 안내형 · 금액 요약)
+  const myPay = await comp('휴대폰 결제·콘텐츠 이용료', '정보형', [
+    { name: '결제 금액', atomType: 'PRICE', content: '23,800원' },
+    { name: '결제 배지', atomType: 'BADGE', content: '80,000원 한도' },
+    { name: '결제 라벨', atomType: 'TEXT', content: '휴대폰 결제 / 콘텐츠 이용료' },
+  ]);
+  const myCornerPay = await corner(
+    { name: '휴대폰 결제·이용료', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '금액 요약', subTitleIcon: '화살표' },
+    [{ id: myPay.id, componentType: '정보형' }],
+  );
+
+  // 9) T 우주 월 구독료 (상태 안내형 · 금액 요약)
+  const mySub = await comp('T 우주 월 구독료', '정보형', [
+    { name: '구독 금액', atomType: 'PRICE', content: '67,500원' },
+    { name: '구독 배지', atomType: 'BADGE', content: '3개 상품 구독중' },
+    { name: '구독 라벨', atomType: 'TEXT', content: 'T 우주 월 구독료' },
+  ]);
+  const myCornerSub = await corner(
+    { name: 'T 우주 구독료', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '금액 요약', subTitleIcon: '화살표' },
+    [{ id: mySub.id, componentType: '정보형' }],
+  );
+
+  // 10) 자주 보는 메뉴 (업무 진입형 · 메뉴 리스트)
+  const myMenu = await comp('자주 보는 메뉴', '선택형', [
+    { name: '메뉴:데이터통화', atomType: 'TEXT', content: '데이터/통화 관리' },
+    { name: '메뉴:요금제부가', atomType: 'TEXT', content: '나의 요금제/부가서비스' },
+    { name: '메뉴:약정할부', atomType: 'TEXT', content: '약정할인/기기 할부 정보' },
+    { name: '메뉴:PASS지갑', atomType: 'TEXT', content: '나의 PASS지갑' },
+    { name: '메뉴:나의쇼핑', atomType: 'TEXT', content: '나의 쇼핑' },
+  ]);
+  const myCornerMenu = await corner(
+    { name: '자주 보는 메뉴', cornerType: '업무 진입형', maxItems: 10, mainTitle: '자주 보는 메뉴', layoutDetail: '메뉴 리스트', cornerLayout: '세로 리스트형', subTitleIcon: '사용안함' },
+    [{ id: myMenu.id, componentType: '선택형' }],
   );
 
   const myContainer = await prisma.container.create({
@@ -882,10 +875,10 @@ async function main() {
       name: '마이 홈', containerType: 'MAIN', channel: 'APP', status: 'active',
       metaUse: true,
       searchTags: '#마이 #내정보 #멤버십',
-      metaKeywords: '마이,내정보,멤버십,포인트,등급',
-      metaDescription: '내 등급·포인트·주문내역을 마이 홈에서 관리하세요.',
+      metaKeywords: '마이,내정보,멤버십,포인트,요금,데이터',
+      metaDescription: '내 요금·포인트·데이터·구독을 마이 홈에서 한 번에 관리하세요.',
       ogTitle: '마이 홈',
-      ogDescription: '내 멤버십·포인트·주문 관리',
+      ogDescription: '내 요금·포인트·멤버십 관리',
       ogSiteName: 'T우주',
     },
   });
@@ -900,24 +893,29 @@ async function main() {
       templateCorners: {
         create: [
           { cornerId: myCornerProfile.id, order: 0 },
-          { cornerId: myCornerQuick.id, order: 1 },
+          { cornerId: myCornerBill.id, order: 1 },
           { cornerId: myCornerPoint.id, order: 2 },
-          { cornerId: myCornerCoupon.id, order: 3 },
-          { cornerId: myCornerOrder.id, order: 4 },
-          { cornerId: myCornerSupport.id, order: 5 },
+          { cornerId: myCornerBarcode.id, order: 3 },
+          { cornerId: myCornerData.id, order: 4 },
+          { cornerId: myCornerCombine.id, order: 5 },
+          { cornerId: myCornerProduct.id, order: 6 },
+          { cornerId: myCornerPay.id, order: 7 },
+          { cornerId: myCornerSub.id, order: 8 },
+          { cornerId: myCornerMenu.id, order: 9 },
         ],
       },
     },
   });
   await prisma.container.update({ where: { id: myContainer.id }, data: { defaultTemplateId: myTemplate.id } });
   await prisma.auditLog.create({
-    data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: myTemplate.id, afterValue: JSON.stringify({ name: '마이 기본', status: 'DRAFT', corners: 6 }), reason: '마이 홈 초안 생성', result: 'CREATED' },
+    data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: myTemplate.id, afterValue: JSON.stringify({ name: '마이 기본', status: 'DRAFT', corners: 10 }), reason: '마이 홈 재구성(마이.png 기준: 요금·포인트·바코드·데이터·결합·상품·결제·구독·메뉴)', result: 'CREATED' },
   });
 
-  // 코너 유형 카탈로그 (T우주 "코너 유형 관리") — 이 Container에 실제 배치된 유형만 정리한다.
+  // 코너 유형 카탈로그 (T우주 "코너 유형 관리") — 모든 홈(혜택·쇼핑·마이)에 실제 배치된 코너 유형을 카탈로그화.
+  //   → 코너 유형 관리 = 전시화면에 쓰인 코너 유형의 단일 소스. 여기 등록된 유형만 빌더에서 가져올 수 있다.
   const placed = await prisma.templateCorner.findMany({
-    where: { template: { containerId: container.id } },
     include: { corner: true },
+    orderBy: { corner: { createdAt: 'asc' } },
   });
   // (기준분류 · 유형상세) 조합별로 카탈로그를 정리한다 — 코너에 쓰인 유형이 그대로 유형 관리에 반영된다.
   const repByType = new Map<string, (typeof placed)[number]['corner']>();
