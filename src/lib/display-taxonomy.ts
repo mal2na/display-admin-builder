@@ -224,6 +224,26 @@ export function isComponentAllowedInCorner(
   return CORNER_COMPONENT_MAP[cornerType].includes(componentType);
 }
 
+// ─────────────────────────────────────────────────────────────
+// 코너 세부 유형(typeDetail) SSOT — "정확한 룰"의 단일 출처.
+//  · 코너 유형 8종(위 CORNER_TYPES/CORNER_COMPONENT_MAP)은 정책서 근거: PI-DSP-CMP-003 / TM-DSP-021.
+//  · 그러나 '세부 유형'은 정책서가 "상세 설계에서 확정한다"고만 규정 → 정책서에 고정값이 없다.
+//    따라서 아래 목록이 우리 서비스의 세부 유형 확정 카탈로그(상세 설계 산출물)다.
+//    새 세부 유형은 반드시 여기 추가한 뒤 코너 등록/빌더에서 사용한다(임의 문자열 금지).
+export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
+  상품형: ['가로형(2.5배열)', '세로형', '단일강조(1.5배열)', '세로형(배너)', '세로형(카테고리탭)', '단일 상품'],
+  배너형: ['이미지형', '이미지형/빅배너', '팝업배너형', '띠배너형'],
+  '혜택·오퍼형': ['세로형', '그리드형'],
+  '업무 진입형': ['고정형(탭)', '세로 리스트형', '메뉴 리스트'],
+  '상태 안내형': ['금액 요약', '사용량 요약', '카드형'],
+  '콘텐츠 안내형': ['리스트형', '아코디언형'],
+  '개인화 추천형': ['복합형(세로)'],
+  '고정·필수 노출형': ['프로필 요약', '바코드', '고지형'],
+};
+export function cornerTypeDetails(cornerType: string): readonly string[] {
+  return (CORNER_TYPE_DETAILS as Record<string, readonly string[]>)[cornerType] ?? [];
+}
+
 /**
  * 역방향 조회: 이 Component 유형을 담을 수 있는 Corner 유형 목록.
  * Component.allowedCornerTypes 체크박스에서 "고를 수 있는" 후보를 이걸로 제한한다

@@ -87,7 +87,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const [useOn, setUseOn] = useState(true);
   const [useOff, setUseOff] = useState(true);
   const [statusSel, setStatusSel] = useState<Set<string>>(new Set(statusKeys));
-  const [field, setField] = useState<'typeId' | 'markupId' | 'createdBy'>('typeId');
+  const [field, setField] = useState<'typeId' | 'createdBy'>('typeId');
   const [q, setQ] = useState('');
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
@@ -105,7 +105,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
     if (!(t.active ? useOn : useOff)) return false;
     if (statusSel.size < statusKeys.length && !statusSel.has(t.status)) return false;
     if (ql) {
-      const hay = (field === 'markupId' ? t.markupId : field === 'createdBy' ? t.createdBy : t.typeId) ?? '';
+      const hay = (field === 'createdBy' ? t.createdBy : t.typeId) ?? '';
       if (!hay.toLowerCase().includes(ql)) return false;
     }
     return true;
@@ -136,6 +136,25 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           )
         }
       />
+
+      {/* 코너 유형별 빠른 필터 칩 — 메뉴에서 바로 소팅 (프로모션 관리와 동일 패턴) */}
+      <div className="flex flex-wrap gap-1.5">
+        {baseOptions.map((b) => {
+          const active = base === b;
+          const count = b === '전체' ? types.length : types.filter((t) => t.baseCategory === b).length;
+          return (
+            <button
+              key={b}
+              type="button"
+              onClick={() => { setBase(b); setPage(1); }}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}
+            >
+              {b}
+              <span className={`rounded-full px-1.5 text-[11px] tabular-nums ${active ? 'bg-white/25' : 'bg-secondary text-muted-foreground'}`}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {noneBuilt && (
         <div className="rounded-md border border-dashed bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
@@ -180,7 +199,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         <div className="flex flex-wrap items-center gap-2">
           <select value={field} onChange={(e) => setField(e.target.value as typeof field)} className={selectCls}>
             <option value="typeId">코너 유형 ID</option>
-            <option value="markupId">코너 마크업 ID</option>
             <option value="createdBy">등록자</option>
           </select>
           <div className="relative min-w-[240px] flex-1">
@@ -206,7 +224,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         <table className="w-full text-sm">
           <thead className="bg-surface-subtle text-xs text-muted-foreground">
             <tr>
-              {['번호', '코너 유형 ID', '코너 유형', '코너 마크업 ID', '유형 상세', '사용여부', '유형 샘플', '승인상태', '등록자', '등록일시', '최근수정자', '최근 수정일시'].map((h) => (
+              {['번호', '코너 유형 ID', '코너 유형', '유형 상세', '사용여부', '유형 샘플', '승인상태', '등록자', '등록일시', '최근수정자', '최근 수정일시'].map((h) => (
                 <th key={h} className="whitespace-nowrap px-3 py-2 text-left font-medium">
                   {h}
                 </th>
@@ -228,7 +246,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                 <td className="whitespace-nowrap px-3 py-2">
                   <Badge variant="outline">{t.baseCategory}</Badge>
                 </td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{t.markupId ?? '-'}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-xs">{t.typeDetail ?? '-'}</td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <form action={toggleCornerTypeActive.bind(null, t.id)} onClick={(e) => e.stopPropagation()}>
@@ -339,7 +356,7 @@ export function CornerTypeForm({ row, builtOptions, onClose }: { row: CornerType
       {/* 기본 정보 */}
       <section className="overflow-hidden rounded-md border">
         <div className="border-b bg-muted/50 px-3 py-2 text-xs font-semibold">기본 정보</div>
-        {/* 상단: 좌측 미리보기(고정 폭) + 우측 핵심 필드(코너 유형 ID · 코너 마크업 ID · 코너 유형 · 유형 상세) */}
+        {/* 상단: 좌측 미리보기(고정 폭) + 우측 핵심 필드(코너 유형 ID · 코너 유형 · 유형 상세) */}
         <div className="grid grid-cols-1 items-start gap-5 border-b p-3 md:grid-cols-[360px_minmax(0,1fr)]">
           <TypeDetailPreview base={base} detail={detailValid} />
           <div className="space-y-3">
@@ -348,9 +365,6 @@ export function CornerTypeForm({ row, builtOptions, onClose }: { row: CornerType
             <input type="hidden" name="layout" value={row.layout ?? ''} />
             <TRow flat label="코너 유형 ID">
               <Input value={row.typeId} disabled className="h-8 bg-muted text-xs" />
-            </TRow>
-            <TRow flat label="코너 마크업 ID">
-              <Input name="markupId" defaultValue={row.markupId ?? ''} placeholder="영문/숫자 10자 이내 (CMUID…)" className="h-8 text-xs" />
             </TRow>
             <TRow flat label="코너 유형" required hint="전시화면관리에서 만들어진 유형만 · PI-DSP-CMP-003">
               <Select
@@ -521,129 +535,108 @@ function TRow({
 
 /** 유형 상세 선택 시 만들어질 코너 레이아웃 미리보기 (스켈레톤 목업) */
 export function TypeDetailPreview({ base, detail }: { base: string; detail: string }) {
-  const skel = 'rounded bg-slate-200';
-  const card = 'rounded border border-slate-200 bg-white';
-  const d = detail;
-  let body: React.ReactNode;
+  // 스켈레톤(회색 막대) 대신 '위치에 이름'을 적는 라벨 슬롯 — Title / Description / img / Badge / Price …
+  const Slot = ({ label, className = '' }: { label: string; className?: string }) => (
+    <div className={cn('flex items-center justify-center overflow-hidden rounded border border-dashed border-slate-300 bg-slate-50 px-1 text-center text-[9px] font-medium leading-none text-slate-400', className)}>
+      {label}
+    </div>
+  );
+  const d = detail ?? '';
+  const has = (...keys: string[]) => keys.some((k) => d.includes(k));
 
-  if (!d) {
-    body = <div className="flex h-24 items-center justify-center text-[11px] text-muted-foreground">유형 상세를 선택하면 미리보기가 표시됩니다.</div>;
-  } else if (d.includes('빅배너') || d.includes('이미지형')) {
-    body = <div className={`${skel} h-20 w-full`} />;
-  } else if (d.includes('팝업')) {
+  let body: React.ReactNode;
+  if (!d && !base) {
+    body = <div className="flex h-24 items-center justify-center text-[11px] text-muted-foreground">유형/상세를 선택하면 미리보기가 표시됩니다.</div>;
+  } else if (base === '배너형' || has('빅배너', '이미지형', '팝업', '띠', '텍스트배너')) {
+    body = <Slot label="img (배너)" className={has('띠', '텍스트배너') ? 'h-8 w-full' : 'h-24 w-full'} />;
+  } else if (has('단일 상품')) {
     body = (
-      <div className="relative">
-        <div className={`${skel} h-20 w-full`} />
-        <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-500 text-[9px] text-white">×</span>
-      </div>
-    );
-  } else if (d.includes('스몰')) {
-    body = <div className={`${skel} mx-auto h-11 w-3/4`} />;
-  } else if (d.includes('띠') || d.includes('텍스트배너')) {
-    body = <div className={`${skel} h-6 w-full`} />;
-  } else if (d.includes('2.5') || d.includes('가로')) {
-    body = (
-      <div className="flex gap-1.5 overflow-hidden">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className={`${card} h-24 w-[42%] shrink-0 p-1`}>
-            <div className={`${skel} mb-1 h-14 w-full`} />
-            <div className={`${skel} h-2 w-3/4`} />
-          </div>
-        ))}
-      </div>
-    );
-  } else if (d.includes('1.5') || d.includes('단일강조')) {
-    // 단일강조(1.5배열): 카드가 가로로 나열된 형태로 미리보기
-    body = (
-      <div className="flex gap-1.5 overflow-hidden">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className={`${card} h-24 w-[42%] shrink-0 p-1`}>
-            <div className={`${skel} mb-1 h-14 w-full`} />
-            <div className={`${skel} h-2 w-3/4`} />
-          </div>
-        ))}
-      </div>
-    );
-  } else if (d.includes('그리드') || d.includes('격자')) {
-    body = (
-      <div className="grid grid-cols-2 gap-1.5">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className={`${skel} h-11`} />
-        ))}
-      </div>
-    );
-  } else if (d.includes('묶음')) {
-    body = (
-      <div>
-        <div className="mb-1.5 flex gap-1">
-          {['카페', '베이커리', '외식'].map((t, i) => (
-            <span key={t} className={cn('rounded-full px-2 py-0.5 text-[9px]', i === 0 ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600')}>
-              {t}
-            </span>
-          ))}
+      <div className="flex gap-2 rounded-lg border border-slate-200 p-2">
+        <div className="flex-1 space-y-1.5">
+          <Slot label="Brand" className="h-3 w-1/3 justify-start" />
+          <Slot label="Title" className="h-4 w-3/4 justify-start" />
+          <Slot label="Description" className="h-3 w-1/2 justify-start" />
         </div>
-        {[0, 1].map((i) => (
-          <div key={i} className="mb-1 flex items-center gap-1.5">
-            <div className={`${skel} h-6 w-6 rounded-full`} />
-            <div className={`${skel} h-2 flex-1`} />
-          </div>
-        ))}
+        <Slot label="img" className="h-16 w-16 shrink-0" />
       </div>
     );
-  } else if (d.includes('패스')) {
+  } else if (base === '상품형' || has('2.5', '가로', '1.5', '단일강조')) {
     body = (
-      <div className="flex items-center justify-between px-3 py-2">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className={`${skel} h-9 w-9 rounded-full`} />
-        ))}
-      </div>
-    );
-  } else if (d.includes('탭') || d.includes('고정형')) {
-    // 고정형(탭): 하위 콘텐츠 없이 탭만 표시
-    body = (
-      <div className="flex flex-wrap gap-1.5">
-        {['탭1', '탭2', '탭3'].map((t, i) => (
-          <span key={t} className={cn('rounded-full px-3 py-1 text-[11px] font-medium', i === 0 ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600')}>
-            {t}
-          </span>
-        ))}
-      </div>
-    );
-  } else if (d.includes('아코디언')) {
-    body = (
-      <div className="space-y-1">
+      <div className="flex gap-2 overflow-hidden">
         {[0, 1, 2].map((i) => (
-          <div key={i} className={`${card} flex items-center justify-between px-2 py-1.5`}>
-            <div className={`${skel} h-2 w-1/2`} />
-            <span className="text-[10px] text-slate-400">⌄</span>
+          <div key={i} className="w-[42%] shrink-0 space-y-1 rounded-lg border border-slate-200 p-1.5">
+            <Slot label="img" className="h-14 w-full" />
+            <Slot label="Title" className="h-3 w-full justify-start" />
+            <Slot label="Price" className="h-3 w-2/3 justify-start" />
           </div>
         ))}
       </div>
     );
-  } else if (d.includes('카드')) {
+  } else if (has('바코드')) {
+    body = (
+      <div className="space-y-1.5 rounded-lg border border-slate-200 p-3">
+        <Slot label="Title (라벨)" className="h-3 w-1/4 justify-start" />
+        <Slot label="바코드 img" className="h-12 w-full" />
+        <div className="flex justify-between gap-2">
+          <Slot label="번호" className="h-3 w-1/2 justify-start" />
+          <Slot label="타이머" className="h-3 w-12" />
+        </div>
+      </div>
+    );
+  } else if (base === '상태 안내형' || has('금액 요약', '사용량 요약', '요약')) {
+    // 마이.png 상태 카드: 값(Title) + Badge + 라벨(Description) + 우측 아이콘(img)
+    body = (
+      <div className="flex items-center gap-2 rounded-lg border border-slate-200 p-3">
+        <div className="flex-1 space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <Slot label="Title (값)" className="h-5 w-1/2 justify-start" />
+            <Slot label="Badge" className="h-4 w-1/3" />
+          </div>
+          <Slot label="Description (라벨)" className="h-3 w-2/3 justify-start" />
+        </div>
+        <Slot label="img" className="h-10 w-10 shrink-0 rounded-full" />
+      </div>
+    );
+  } else if (base === '업무 진입형' && has('메뉴')) {
+    body = <div className="space-y-1.5">{[0, 1, 2, 3].map((i) => <Slot key={i} label="Menu" className="h-6 w-full justify-start" />)}</div>;
+  } else if (has('탭', '고정형')) {
+    body = <div className="flex flex-wrap gap-1.5">{['Tab', 'Tab', 'Tab'].map((t, i) => <Slot key={i} label={t} className="h-7 w-16 rounded-full" />)}</div>;
+  } else if (has('그리드', '격자')) {
+    body = (
+      <div className="grid grid-cols-2 gap-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="space-y-1 rounded-lg border border-slate-200 p-1.5">
+            <Slot label="img" className="h-10 w-full" />
+            <Slot label="Title" className="h-3 w-3/4 justify-start" />
+          </div>
+        ))}
+      </div>
+    );
+  } else if (has('묶음')) {
     body = (
       <div className="space-y-1.5">
+        <div className="flex gap-1">
+          <Slot label="Tab" className="h-5 w-12 rounded-full" />
+          <Slot label="Tab" className="h-5 w-12 rounded-full" />
+        </div>
         {[0, 1].map((i) => (
-          <div key={i} className={`${card} flex gap-1.5 p-1.5`}>
-            <div className={`${skel} h-10 w-10`} />
-            <div className="flex-1 space-y-1">
-              <div className={`${skel} h-2 w-3/4`} />
-              <div className={`${skel} h-2 w-1/2`} />
-            </div>
+          <div key={i} className="flex items-center gap-1.5">
+            <Slot label="img" className="h-7 w-7 shrink-0 rounded-full" />
+            <Slot label="Title" className="h-3 flex-1 justify-start" />
           </div>
         ))}
       </div>
     );
   } else {
-    // 세로형 / 리스트형 / 기본
+    // 리스트/카드 기본: 아이콘(img) + Title + Description 행
     body = (
       <div className="space-y-1.5">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="flex items-center gap-1.5">
-            <div className={`${skel} h-7 w-7 rounded-full`} />
+          <div key={i} className="flex items-center gap-2 rounded-lg border border-slate-200 p-1.5">
+            <Slot label="img" className="h-9 w-9 shrink-0 rounded-full" />
             <div className="flex-1 space-y-1">
-              <div className={`${skel} h-2 w-3/4`} />
-              <div className={`${skel} h-2 w-1/3`} />
+              <Slot label="Title" className="h-3 w-3/4 justify-start" />
+              <Slot label="Description" className="h-3 w-1/2 justify-start" />
             </div>
           </div>
         ))}
@@ -651,28 +644,23 @@ export function TypeDetailPreview({ base, detail }: { base: string; detail: stri
     );
   }
 
-  // 상품형: 상단 타이틀·서브타이틀 + 본문 + 더보기 버튼까지 전체 프레임으로 표시 (영역만 라벨로 표시)
-  const withFrame = base === '상품형';
-  const framed = withFrame ? (
-    <div className="space-y-3">
-      <div className="space-y-1.5">
-        <div className="flex h-6 w-3/5 items-center rounded bg-slate-100 px-2 text-[11px] font-semibold text-slate-400">Title</div>
-        <div className="flex h-4 w-2/5 items-center rounded bg-slate-50 px-2 text-[10px] text-slate-400">Subtitle</div>
-      </div>
-      {body}
-      <div className="mx-auto flex h-7 w-28 items-center justify-center rounded-full border border-slate-200 text-[11px] text-slate-400">더보기</div>
-    </div>
-  ) : (
-    body
-  );
-
+  // 공통 프레임: 코너 타이틀/설명 헤더 + 본문 (+ 상품형은 더보기)
+  const showMore = base === '상품형';
   return (
     <div className="rounded-md border bg-slate-50 p-3">
       <p className="mb-2 text-xs font-medium text-muted-foreground">
-        미리보기 · {base} {detail ? `› ${detail}` : ''}
+        미리보기 · {base}
+        {detail ? ` › ${detail}` : ''}
       </p>
-      <div className="flex min-h-[220px] w-full items-center rounded-lg border bg-white p-4 shadow-sm">
-        <div className="w-full">{framed}</div>
+      <div className="min-h-[220px] w-full rounded-lg border bg-white p-4 shadow-sm">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Slot label="Title (코너 타이틀)" className="h-6 w-3/5 justify-start text-[10px] font-semibold" />
+            <Slot label="Description (서브)" className="h-4 w-2/5 justify-start" />
+          </div>
+          {body}
+          {showMore && <div className="mx-auto flex h-7 w-28 items-center justify-center rounded-full border border-dashed border-slate-300 text-[10px] text-slate-400">더보기</div>}
+        </div>
       </div>
     </div>
   );
