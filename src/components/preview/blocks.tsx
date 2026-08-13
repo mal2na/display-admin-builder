@@ -1,5 +1,6 @@
 import { Signal, Wifi, BatteryFull, ChevronRight, Percent, ShoppingBag, User } from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
+import { PreviewImage } from './preview-image';
 
 export type PreviewAtom = {
   id: string;
@@ -27,24 +28,20 @@ export type PreviewCorner = {
   moreButtonLabel?: string | null;
   bannerImageUrl?: string | null;
   bannerName?: string | null;
+  bannerPosition?: string | null;
+  sampleImageUrl?: string | null;
 };
 
 const byType = (atoms: PreviewAtom[], ...types: string[]) => atoms.filter((a) => types.includes(a.atomType));
 const first = (atoms: PreviewAtom[], ...types: string[]) => byType(atoms, ...types)[0];
 
 /** 실제로 <img>로 그릴 수 있는 소스인지 (AI 생성 data URI / 외부 http) */
-const isRenderableImg = (src?: string | null) => !!src && (src.startsWith('data:') || src.startsWith('http'));
+// 실제 존재하는 파일만 렌더: data URI · http · /assets/corner-samples(유형 샘플). 그 외 /assets 자리표시자는 placeholder 처리.
+const isRenderableImg = (src?: string | null) => !!src && (src.startsWith('data:') || src.startsWith('http') || src.startsWith('/assets/corner-samples/'));
 
 function ImageBox({ atom, className }: { atom?: PreviewAtom; className?: string }) {
-  if (isRenderableImg(atom?.imageUrl)) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={atom!.imageUrl!} alt={atom?.altText ?? ''} className={`object-cover ${className ?? ''}`} />;
-  }
-  return (
-    <div className={`flex items-center justify-center bg-gradient-to-br from-indigo-100 to-slate-200 text-[9px] text-slate-500 ${className ?? ''}`}>
-      {atom?.imageUrl?.split('/').pop() ?? atom?.altText ?? '이미지'}
-    </div>
-  );
+  // 실제 파일이 없으면 onError로 깔끔한 영역+슬러그 라벨(PreviewImage)로 대체 — 깨진 이미지 방지
+  return <PreviewImage src={atom?.imageUrl} alt={atom?.altText} className={className} />;
 }
 
 function ChipsView({ component }: { component: PreviewComponent }) {
@@ -135,6 +132,37 @@ function BenefitRow({ component }: { component: PreviewComponent }) {
   );
 }
 
+// 아이콘을 IconGlyph(icon:ref) 또는 이미지로 렌더
+function AtomIcon({ atom, className }: { atom?: PreviewAtom; className?: string }) {
+  if (!atom) return null;
+  if (isIconRef(atom.imageUrl)) return <IconGlyph name={atom.imageUrl!} className={className} />;
+  return <ImageBox atom={atom} className={`rounded-xl ${className ?? ''}`} />;
+}
+
+// 상태 안내형·정보형 카드(마이 홈 아이콘형): [값(크게)+배지 / 라벨] + 우측 아이콘 원.
+function InfoCard({ component }: { component: PreviewComponent }) {
+  const iconAtom = first(component.atoms, 'ICON', 'IMAGE');
+  const value = first(component.atoms, 'PRICE') ?? first(component.atoms, 'TEXT');
+  const badge = first(component.atoms, 'BADGE');
+  const label = byType(component.atoms, 'TEXT', 'INFO').find((a) => a !== value) ?? first(component.atoms, 'INFO');
+  return (
+    <div className="flex items-center gap-3">
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="text-[17px] font-bold leading-tight text-slate-900">{value?.content ?? component.name}</p>
+          {badge && <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">{badge.content}</span>}
+        </div>
+        {label && <p className="truncate text-[12px] text-slate-400">{label.content}</p>}
+      </div>
+      {iconAtom && (
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-50 text-indigo-500">
+          <AtomIcon atom={iconAtom} className="h-6 w-6" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DefaultCard({ component }: { component: PreviewComponent }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-3 text-[12px] text-slate-700">
@@ -156,6 +184,8 @@ function ComponentView({ component, mode }: { component: PreviewComponent; mode?
       return <BannerCard component={component} />;
     case '혜택형':
       return <BenefitRow component={component} />;
+    case '정보형':
+      return <InfoCard component={component} />;
     default:
       return <DefaultCard component={component} />;
   }
@@ -235,9 +265,19 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
 
   const body =
     corner.components.length === 0 ? (
-      <div className="rounded-lg border border-dashed border-slate-300 p-3 text-center text-[11px] text-slate-400">
-        {corner.name} — Component 없음
-      </div>
+      // 컴포넌트가 아직 없으면: 코너 유형 관리에서 상속한 유형 샘플 썸네일을 보여준다(불러온 유형 확인용).
+      corner.sampleImageUrl && isRenderableImg(corner.sampleImageUrl.split('\n')[0]) ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={corner.sampleImageUrl.split('\n')[0]}
+          alt={corner.name}
+          className="w-full overflow-hidden rounded-xl border border-slate-200 object-cover [filter:contrast(1.05)_saturate(1.1)]"
+        />
+      ) : (
+        <div className="rounded-lg border border-dashed border-slate-300 p-3 text-center text-[11px] text-slate-400">
+          {corner.name} — Component를 추가하세요
+        </div>
+      )
     ) : chipComps.length > 0 && bodyComps.length > 0 ? (
       <div className="space-y-3">
         {chipComps.map((c) => (
@@ -251,7 +291,9 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
 
   const wrapClass = isBanner ? '' : 'rounded-2xl bg-white p-4 shadow-sm';
 
-  // 코너 부속 배너. 배너형 코너는 배너가 곧 본문이라 상단, 그 외(상품형 등 '빅배너')는 카드 아래에 렌더.
+  // 코너 부속 배너. 배너형 코너는 배너가 곧 본문이라 항상 상단. 그 외(상품형 등 '빅배너')는
+  // 빌더에서 정한 bannerPosition(상단/하단)에 따라 카드 위/아래로 렌더(기본 상단).
+  const bannerAtTop = isBanner || corner.bannerPosition !== '하단';
   const bannerEl = corner.bannerImageUrl ? (
     isRenderableImg(corner.bannerImageUrl) ? (
       // eslint-disable-next-line @next/next/no-img-element
@@ -269,7 +311,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
 
   return (
     <section className={`space-y-2 ${wrapClass}`}>
-      {isBanner && bannerEl}
+      {bannerAtTop && bannerEl}
       {heading && (
         <div>
           <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
@@ -288,7 +330,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           </span>
         </div>
       )}
-      {!isBanner && bannerEl}
+      {!bannerAtTop && bannerEl}
     </section>
   );
 }

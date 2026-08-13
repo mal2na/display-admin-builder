@@ -2,18 +2,19 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { CornerTypeDetail, type HistoryRow } from './corner-type-detail';
 import { type CornerTypeRow } from '../corner-type-manager';
-import { getBuiltCornerOptions } from '../built-options';
+import { getBuiltCornerOptions, getRegisteredCombos } from '../built-options';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CornerTypeDetailPage({ params }: { params: { id: string } }) {
-  const [ct, logs, builtOptions] = await Promise.all([
+  const [ct, logs, builtOptions, registered] = await Promise.all([
     prisma.cornerType.findUnique({ where: { id: params.id } }),
     prisma.auditLog.findMany({
       where: { targetType: 'CornerType', targetId: params.id },
       orderBy: { changedAt: 'desc' },
     }),
     getBuiltCornerOptions(),
+    getRegisteredCombos(),
   ]);
   if (!ct) notFound();
 
@@ -22,8 +23,10 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     typeId: ct.typeId,
     name: ct.name,
     baseCategory: ct.baseCategory,
-    markupId: ct.markupId,
+    componentType: ct.componentType ?? null,
     typeDetail: ct.typeDetail,
+    bigBanner: ct.bigBanner ?? false,
+    markupId: ct.markupId,
     layout: ct.layout,
     description: ct.description,
     channels: ct.channels,
@@ -35,6 +38,11 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     useMaxItems: ct.useMaxItems,
     useNoDisplay: ct.useNoDisplay,
     useMoreButton: ct.useMoreButton,
+    defaultMinItems: ct.defaultMinItems ?? null,
+    defaultMaxItems: ct.defaultMaxItems ?? null,
+    defaultSortStrategy: ct.defaultSortStrategy ?? null,
+    defaultMoreButton: ct.defaultMoreButton ?? false,
+    defaultMoreButtonLabel: ct.defaultMoreButtonLabel ?? null,
     sampleImageUrl: ct.sampleImageUrl,
     status: ct.status,
     createdBy: ct.createdBy,
@@ -50,7 +58,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
 
   return (
     <div className="p-6">
-      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} />
+      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} />
     </div>
   );
 }

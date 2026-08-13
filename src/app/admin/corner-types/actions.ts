@@ -2,7 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
-import { CORNER_TYPES, type CornerType } from '@/lib/display-taxonomy';
+import {
+  CORNER_TYPES,
+  componentTypesForCorner,
+  componentLayoutDetails,
+  type CornerType,
+} from '@/lib/display-taxonomy';
 
 const RP = '/admin/corner-types';
 const ACTOR = 'marina.kim@sk.com';
@@ -57,12 +62,21 @@ function readForm(formData: FormData) {
   };
   const csv = (k: string) => formData.getAll(k).map(String).filter(Boolean).join(',') || null;
   const flag = (k: string) => formData.get(k) != null;
+  const num = (k: string) => {
+    const v = String(formData.get(k) ?? '').trim();
+    if (!v.length) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
 
   return {
     name,
     baseCategory,
+    componentType: opt('componentType'),
     markupId: opt('markupId'),
     typeDetail: opt('typeDetail'),
+    bigBanner: String(formData.get('bigBanner') ?? '') === '1', // ④ 빅배너 구분자
+
     layout: opt('layout'),
     description: opt('description'),
     channels: csv('channels') ?? '전체',
@@ -74,30 +88,56 @@ function readForm(formData: FormData) {
     useMaxItems: flag('useMaxItems'),
     useNoDisplay: flag('useNoDisplay'),
     useMoreButton: flag('useMoreButton'),
+    // 타입-레벨 기본값(템플릿 강화) — 빌더에서 이 유형으로 코너 생성 시 상속
+    defaultMinItems: num('defaultMinItems'),
+    defaultMaxItems: num('defaultMaxItems'),
+    defaultSortStrategy: opt('defaultSortStrategy'),
+    defaultMoreButton: String(formData.get('defaultMoreButton') ?? '') === '1',
+    defaultMoreButtonLabel: opt('defaultMoreButtonLabel'),
     sampleImageUrl: opt('sampleImageUrl'),
     status: opt('status') ?? 'DRAFT',
   };
 }
 
 /**
- * 전시화면관리(빌더)에서 실제로 만들어진 (cornerType, layoutDetail) 조합인지 검증.
- * UI 드롭다운뿐 아니라 서버에서도 강제해 "만들어진 유형만 등록" 규칙을 권위 있게 지킨다.
+ * 3단 계층 검증: ① 코너 유형(8종, PI-DSP-CMP-003) → ② 구성 컴포넌트 유형(CORNER_COMPONENT_MAP) →
+ * ③ 배열/레이아웃 상세(COMPONENT_LAYOUT_DETAILS). 코너 유형 관리가 마스터, 빌더는 여기서 소비한다.
+ * legacy*: 수정 시 이미 저장돼 있던 값은 규칙에 없어도 보존 허용.
  */
-async function assertBuiltCombo(baseCategory: string, typeDetail: string | null) {
-  const built = await prisma.corner.findFirst({
-    where: { cornerType: baseCategory, layoutDetail: typeDetail ?? null },
-    select: { id: true },
-  });
-  if (!built) {
-    throw new Error(
-      `전시화면관리에서 만들어진 코너 유형만 등록할 수 있습니다. (${baseCategory}${typeDetail ? ' · ' + typeDetail : ''} 조합으로 만들어진 코너가 없습니다.)`,
-    );
+function assertPolicyCombo(
+  baseCategory: string,
+  componentType: string | null,
+  typeDetail: string | null,
+  legacy?: { componentType?: string | null; typeDetail?: string | null },
+) {
+  if (!(CORNER_TYPES as readonly string[]).includes(baseCategory)) {
+    throw new Error(`코너 유형은 정책서 8종 중에서만 선택할 수 있습니다. (${baseCategory})`);
+  }
+  // ② 컴포넌트 유형 — 코너 유형이 허용하는 것만 (선택 사항: 없으면 통과)
+  const comp = componentType ?? '';
+  if (comp) {
+    const allowedComps = componentTypesForCorner(baseCategory);
+    if (!allowedComps.includes(comp as (typeof allowedComps)[number]) && comp !== (legacy?.componentType ?? '')) {
+      throw new Error(
+        `구성 컴포넌트 유형이 이 코너 유형에서 허용되지 않습니다. (${baseCategory} · ${comp}) 허용: ${allowedComps.join(', ') || '없음'}`,
+      );
+    }
+  }
+  // ③ 배열 상세 — 컴포넌트 유형이 정한 배열만 (선택 사항)
+  const detail = typeDetail ?? '';
+  if (detail && comp) {
+    const allowedDetails = componentLayoutDetails(comp);
+    if (!allowedDetails.includes(detail) && detail !== (legacy?.typeDetail ?? '')) {
+      throw new Error(
+        `배열/레이아웃 상세가 규칙에 없습니다. (${comp} · ${detail}) 허용: ${allowedDetails.join(', ') || '없음'}`,
+      );
+    }
   }
 }
 
 export async function createCornerType(formData: FormData) {
   const data = readForm(formData);
-  await assertBuiltCombo(data.baseCategory, data.typeDetail);
+  assertPolicyCombo(data.baseCategory, data.componentType, data.typeDetail);
   const typeId = await nextTypeId();
   const created = await prisma.cornerType.create({ data: { ...data, typeId, createdBy: ACTOR } });
   await writeAudit({ targetId: created.id, after: { name: data.name, baseCategory: data.baseCategory }, reason: `코너 유형 등록 (${typeId} · ${data.name})`, result: 'CREATED' });
@@ -109,8 +149,15 @@ export async function updateCornerType(id: string, formData: FormData) {
   const before = await prisma.cornerType.findUnique({ where: { id } });
   // 조합이 바뀔 때만 강제 → 기존(레거시) 값을 그대로 두는 수정은 허용
   const comboChanged =
-    !before || before.baseCategory !== data.baseCategory || (before.typeDetail ?? null) !== (data.typeDetail ?? null);
-  if (comboChanged) await assertBuiltCombo(data.baseCategory, data.typeDetail);
+    !before ||
+    before.baseCategory !== data.baseCategory ||
+    (before.componentType ?? null) !== (data.componentType ?? null) ||
+    (before.typeDetail ?? null) !== (data.typeDetail ?? null);
+  if (comboChanged)
+    assertPolicyCombo(data.baseCategory, data.componentType, data.typeDetail, {
+      componentType: before?.componentType ?? null,
+      typeDetail: before?.typeDetail ?? null,
+    });
   await prisma.cornerType.update({ where: { id }, data });
   await writeAudit({
     targetId: id,

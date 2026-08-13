@@ -87,6 +87,40 @@ export const CORNER_TYPES = [
 ] as const;
 export type CornerType = (typeof CORNER_TYPES)[number];
 
+// 코너 유형별 '목적' — 정책서 코너 유형 표(목적 컬럼)의 문구를 그대로 사용(임의 변경 금지).
+export const CORNER_TYPE_PURPOSE: Record<CornerType, string> = {
+  상품형: '상품, 요금제, 단말, 부가서비스 후보를 탐색하게 한다.',
+  배너형: '기간성 이벤트, 공지, 프로모션을 노출한다.',
+  '혜택·오퍼형': '고객이 받을 수 있는 혜택, 쿠폰, 제휴 오퍼를 제안한다.',
+  '업무 진입형': '조회, 변경, 신청, 납부 같은 업무로 바로 이동하게 한다.',
+  '상태 안내형': '고객 상태, 보유 정보, 진행 상태, 제한 사유를 안내한다.',
+  '콘텐츠 안내형': '이용 가이드, 설명, 추천 콘텐츠를 제공한다.',
+  '개인화 추천형': '고객 상태와 행동에 따라 후보와 순서를 다르게 보여준다.',
+  '고정·필수 노출형': '필수 고지, 장애 안내, 보안 안내처럼 안정적으로 유지해야 하는 정보를 노출한다.',
+};
+export function cornerTypePurpose(cornerType?: string | null): string {
+  if (!cornerType) return '';
+  return (CORNER_TYPE_PURPOSE as Record<string, string>)[cornerType] ?? '';
+}
+
+// 코너 유형(8종) → Chip 색상. 같은 유형이면 코너 유형 관리·빌더 어디서든 같은 색으로 보이게 하는 SSOT.
+// 부드러운 톤(bg-50/text-700/border-200) — BSS UI 라벤더/인디고 크롬과 충돌하지 않는 8색.
+export const CORNER_TYPE_CHIP: Record<CornerType, string> = {
+  상품형: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  배너형: 'bg-rose-50 text-rose-700 border-rose-200',
+  '혜택·오퍼형': 'bg-amber-50 text-amber-700 border-amber-200',
+  '업무 진입형': 'bg-sky-50 text-sky-700 border-sky-200',
+  '상태 안내형': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  '콘텐츠 안내형': 'bg-violet-50 text-violet-700 border-violet-200',
+  '개인화 추천형': 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
+  '고정·필수 노출형': 'bg-slate-100 text-slate-700 border-slate-300',
+};
+// 코너 유형 → Chip className. 알 수 없는 값은 중립(회색)으로.
+export function cornerTypeChipClass(cornerType?: string | null): string {
+  if (!cornerType) return 'bg-slate-100 text-slate-600 border-slate-200';
+  return (CORNER_TYPE_CHIP as Record<string, string>)[cornerType] ?? 'bg-slate-100 text-slate-600 border-slate-200';
+}
+
 // ── 코너 유형 카탈로그 (T우주 "코너 유형 관리") 부가 상수 ──
 // 코너 유형 등록/승인 상태 (T우주 이미지: 임시저장/승인대기/승인완료/승인반려)
 export const CORNER_TYPE_STATUSES = [
@@ -105,13 +139,13 @@ export const OPERATION_CHANNELS = ['전체', 'FO', 'BO'] as const;
 export const OPERATION_PLATFORMS = ['전체', '모바일', 'PC'] as const;
 
 // 코너 유형 세부 항목(항목별 사용여부) 정의 — 폼/표기 공용
+// 노출 개수(최소/최대)는 코너 유형이 아니라 빌더에서 코너별로 조정한다 → 세부 항목에서 제외.
+// 더보기 → 'CTA 노출'로 일반화(전체보기·바로가기 등 포함, moreButton* 필드 재사용).
 export const CORNER_TYPE_FEATURES = [
-  { key: 'useMainTitle', label: '메인 타이틀' },
-  { key: 'useSubTitle', label: '서브 타이틀' },
-  { key: 'useMinItems', label: '최소 노출 개수' },
-  { key: 'useMaxItems', label: '최대 노출 개수' },
+  { key: 'useMainTitle', label: '타이틀' },
+  { key: 'useSubTitle', label: '서브타이틀' },
   { key: 'useNoDisplay', label: '미 노출 기준' },
-  { key: 'useMoreButton', label: '더보기 여부' },
+  { key: 'useMoreButton', label: 'CTA 노출' },
 ] as const;
 
 // 우리 8분류(CORNER_TYPES) → T우주 이미지의 코너 유형 표기명 매핑.
@@ -209,11 +243,15 @@ export const CORNER_COMPONENT_MAP: Record<CornerType, readonly ComponentType[]> 
   // 상품형: 상품 컴포넌트 + 상단 카테고리 탭(선택형) 허용 — '세로형(카테고리탭)' 유형 지원
   상품형: ['상품형', '선택형'],
   배너형: ['배너형'],
-  '혜택·오퍼형': ['혜택형', '정보형', '행동형', '배너형'],
-  '업무 진입형': ['행동형', '정보형', '선택형'],
+  // 혜택·오퍼형: 혜택 홈 정리(카테고리 탭+제휴 상품 카드)처럼 상품형·선택형 결합 허용 — 상세설계 확정(정책 baseline 확장)
+  '혜택·오퍼형': ['혜택형', '정보형', '행동형', '배너형', '상품형', '선택형'],
+  // 업무 진입형: 상단 탭·메뉴 등 '선택/이동' 컴포넌트만 담는다 → 선택형 단일
+  '업무 진입형': ['선택형'],
   '상태 안내형': ['정보형', '행동형'],
-  '콘텐츠 안내형': ['정보형', '행동형', '배너형'],
-  '개인화 추천형': ['정보형', '혜택형', '선택형', '행동형', '배너형'],
+  // 콘텐츠 안내형: 레퍼런스(영화 예매 혜택 등)처럼 상품형 카드 결합 허용 — 상세설계 확정(정책 baseline 확장)
+  '콘텐츠 안내형': ['정보형', '행동형', '배너형', '상품형'],
+  // 개인화 추천형: 0 Week('지훈님에게만' 개인화) 등 상품형 카드 결합 허용 — 상세설계 확정(정책 baseline 확장)
+  '개인화 추천형': ['정보형', '혜택형', '선택형', '행동형', '배너형', '상품형'],
   '고정·필수 노출형': ['정보형', '행동형'],
 };
 
@@ -242,6 +280,29 @@ export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
 };
 export function cornerTypeDetails(cornerType: string): readonly string[] {
   return (CORNER_TYPE_DETAILS as Record<string, readonly string[]>)[cornerType] ?? [];
+}
+
+// ── 3단 계층 ③: 구성 컴포넌트 유형(②) → 배열/레이아웃 상세 SSOT ──
+//  코너 유형(①) → CORNER_COMPONENT_MAP → 컴포넌트 유형(②) → 여기 → 배열 상세(③).
+//  같은 '상품형'이라도 ①(상품 코너 자체)과 ②(다른 코너 안 상품 모듈)는 계층이 다르며,
+//  배열 상세는 언제나 ②(컴포넌트) 기준으로 정한다. (예: 콘텐츠 안내형 · 상품형 · 단일강조(1.5배열))
+//  어휘는 CORNER_TYPE_DETAILS / LAYOUT_DETAILS_BY_FAMILY와 동일하게 유지(임의 문자열 금지).
+export const COMPONENT_LAYOUT_DETAILS: Record<ComponentType, readonly string[]> = {
+  // 빅배너는 배열이 아니라 '구분자'(bigBanner)로 분리 → 여기엔 순수 배열만 둔다.
+  상품형: ['가로형(2.5배열)', '세로형', '단일강조(1.5배열)', '세로형(카테고리탭)', '그리드형', '단일 상품'],
+  배너형: ['이미지형', '이미지형/빅배너', '팝업배너형', '띠배너형', '텍스트배너'],
+  정보형: ['아이콘형', '금액 요약', '사용량 요약', '카드형', '리스트형', '프로필 요약', '바코드', '고지형'],
+  행동형: ['버튼형', '메뉴 리스트', '고정형(탭)', '바로가기'],
+  혜택형: ['혜택 카드', '세로형', '그리드형', '쿠폰형'],
+  선택형: ['카테고리 탭', '메뉴 리스트'],
+};
+export function componentLayoutDetails(componentType?: string | null): readonly string[] {
+  if (!componentType) return [];
+  return (COMPONENT_LAYOUT_DETAILS as Record<string, readonly string[]>)[componentType] ?? [];
+}
+// 코너 유형(①) → 담을 수 있는 컴포넌트 유형(②) 후보 (CORNER_COMPONENT_MAP 그대로)
+export function componentTypesForCorner(cornerType: string): readonly ComponentType[] {
+  return (CORNER_COMPONENT_MAP as Record<string, readonly ComponentType[]>)[cornerType] ?? [];
 }
 
 /**
