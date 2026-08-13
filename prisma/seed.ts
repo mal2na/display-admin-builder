@@ -18,7 +18,7 @@ import { PrismaClient } from '@prisma/client';
 import {
   isComponentAllowedInCorner,
   CORNER_COMPONENT_MAP,
-  cornerTypeDisplayName,
+  componentTypesForCorner,
   type ComponentType,
   type CornerType,
 } from '../src/lib/display-taxonomy';
@@ -36,6 +36,7 @@ async function resetAll() {
   await prisma.template.deleteMany();
   await prisma.container.deleteMany();
   await prisma.corner.deleteMany();
+  await prisma.banner.deleteMany(); // 코너 삭제 후(FK 해제) 배너 정리 — 리시드 누적 방지
   await prisma.component.deleteMany();
   await prisma.atom.deleteMany();
   await prisma.cornerType.deleteMany();
@@ -127,7 +128,7 @@ async function main() {
     { name: '탭:글로벌 여행', atomType: 'TEXT', content: '글로벌 여행' },
   ]);
   const cornerTop = await corner(
-    { name: '상단 퀵메뉴', cornerType: '업무 진입형', maxItems: 10, layoutDetail: '고정형(탭)', subTitleIcon: '사용안함' },
+    { name: '상단 퀵메뉴', cornerType: '업무 진입형', maxItems: 10, layoutDetail: '카테고리 탭', subTitleIcon: '사용안함' },
     [{ id: topMenu.id, componentType: '선택형' }],
   );
 
@@ -150,12 +151,12 @@ async function main() {
   const cornerMovie = await corner(
     {
       name: '영화 예매',
-      cornerType: '상품형',
+      cornerType: '콘텐츠 안내형', // 정책서 코너유형(혜택 정리 #1) · 구성=상품형 · 배열=가로형(2.5배열)
       minItems: 1,
       maxItems: 10,
       mainTitle: '불금인 오늘 명동 CGV에서\n무료 영화 어때요?',
       subTitle: 'T 영화예매',
-      layoutDetail: '단일강조(1.5배열)',
+      layoutDetail: '가로형(2.5배열)',
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '인기순',
@@ -190,7 +191,7 @@ async function main() {
   const cornerZeroWeek = await corner(
     {
       name: '0 Week',
-      cornerType: '상품형',
+      cornerType: '개인화 추천형', // 정책서 코너유형(혜택 정리 #2) · 구성=상품형 · 배열=세로형
       maxItems: 6,
       mainTitle: '6월 8일까지 지훈님에게만\n보이는 혜택이에요',
       subTitle: '0 Week',
@@ -225,7 +226,7 @@ async function main() {
   const cornerTWeek = await corner(
     {
       name: 'T Week 소멸 혜택',
-      cornerType: '상품형', // 표시명: 상품형 · 세로형(배너) (상단 배너 + 상품 리스트)
+      cornerType: '혜택·오퍼형', // 정책서 코너유형(혜택 정리 #4) · 구성=상품형 · 배열=세로형(배너)
       maxItems: 6,
       mainTitle: '오늘이 지나면\n다시 없는 혜택이에요',
       subTitle: 'T Week · 오늘 소멸 예정',
@@ -250,7 +251,7 @@ async function main() {
   const cornerTDay = await corner(
     {
       name: 'T DAY 멤버십',
-      cornerType: '상품형',
+      cornerType: '혜택·오퍼형', // 정책서 코너유형(혜택 정리 #5) · 구성=상품형 · 배열=세로형
       maxItems: 6,
       mainTitle: '오늘의 T DAY 멤버십\n혜택을 만나보세요',
       subTitle: '제휴사별 혜택',
@@ -271,7 +272,7 @@ async function main() {
     { name: '에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/airpods-max.png', altText: 'AirPods Max3 헤드폰' },
   ]);
   const cornerAirpods = await corner(
-    { name: 'AirPods 사전예약', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형/빅배너' },
+    { name: 'AirPods 사전예약', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
     [{ id: banner3.id, componentType: '배너형' }],
   );
 
@@ -304,7 +305,7 @@ async function main() {
   const cornerCategory = await corner(
     {
       name: '카테고리별 혜택',
-      cornerType: '상품형',
+      cornerType: '혜택·오퍼형', // 정책서 코너유형(혜택 정리 #7) · 구성=상품형+선택형 · 배열=세로형(카테고리탭)
       maxItems: 10,
       mainTitle: 'VIP 지훈님,\n최대 할인 혜택만 모았어요',
       subTitle: '카테고리별 혜택',
@@ -364,6 +365,9 @@ async function main() {
   );
   void cornerNotice;
   void cornerReco;
+  // 새 혜택 홈(24 슬라이스)에 없는 코너 — 미배치(라이브러리)로만 유지
+  void cornerTDay;
+  void cornerAirpods;
 
   // 배너 라이브러리 샘플. 미리보기가 실제로 보이도록 data-URI(SVG) 이미지로 생성한다.
   // 상위 배너(히어로)는 실제로 히어로가 있는 코너에만 연결한다.
@@ -452,9 +456,7 @@ async function main() {
           { cornerId: cornerZeroWeek.id, order: 2 },
           { cornerId: cornerBanner1.id, order: 3 },
           { cornerId: cornerTWeek.id, order: 4 },
-          { cornerId: cornerTDay.id, order: 5 },
-          { cornerId: cornerAirpods.id, order: 6 },
-          { cornerId: cornerCategory.id, order: 7 },
+          { cornerId: cornerCategory.id, order: 5 },
         ],
       },
     },
@@ -474,8 +476,6 @@ async function main() {
         create: [
           { cornerId: cornerTop.id, order: 0 },
           { cornerId: cornerMovie.id, order: 1 },
-          { cornerId: cornerEvent.id, order: 2 },
-          { cornerId: cornerAirpods.id, order: 3 },
         ],
       },
     },
@@ -495,7 +495,7 @@ async function main() {
     { name: '쇼핑탭:액세서리', atomType: 'TEXT', content: '액세서리' },
   ]);
   const shopCornerTab = await corner(
-    { name: '쇼핑 상단 탭', cornerType: '업무 진입형', maxItems: 10, layoutDetail: '고정형(탭)', subTitleIcon: '사용안함' },
+    { name: '쇼핑 상단 탭', cornerType: '업무 진입형', maxItems: 10, layoutDetail: '카테고리 탭', subTitleIcon: '사용안함' },
     [{ id: shopTab.id, componentType: '선택형' }],
   );
 
@@ -548,14 +548,14 @@ async function main() {
   });
   await prisma.corner.update({ where: { id: shopCornerDevice.id }, data: { bannerId: shopPreorderBanner.id } });
 
-  // 4) 요금제 추천 — 약정 만료 (혜택·오퍼형 · 정보형)
-  const plan1 = await comp('0 청년 109 넷플릭스', '정보형', [
+  // 4) 요금제 추천 — 약정 만료 (혜택·오퍼형 · 상품형 · 세로형(배너)) — 상단 히어로 배너 + 요금제(상품) 리스트
+  const plan1 = await comp('0 청년 109 넷플릭스', '상품형', [
     { name: '요금제1 배지', atomType: 'BADGE', content: '무료' },
     { name: '요금제1 제목', atomType: 'TEXT', content: '0 청년 109 (넷플릭스)' },
     { name: '요금제1 가격', atomType: 'INFO', content: '월 99,000원' },
     { name: '요금제1 설명', atomType: 'INFO', content: '데이터 500GB · 넷플릭스 프리미엄 제공 +2' },
   ]);
-  const plan2 = await comp('0 청년 109 네이버', '정보형', [
+  const plan2 = await comp('0 청년 109 네이버', '상품형', [
     { name: '요금제2 배지', atomType: 'BADGE', content: '500GB' },
     { name: '요금제2 제목', atomType: 'TEXT', content: '0 청년 109 (네이버 플러스 스토어)' },
     { name: '요금제2 가격', atomType: 'INFO', content: '월 99,000원' },
@@ -564,39 +564,39 @@ async function main() {
   const shopCornerPlan = await corner(
     {
       name: '약정 만료 요금제',
-      cornerType: '혜택·오퍼형',
+      cornerType: '상품형', // 요금제(상품) 리스트 → 상품형 · 세로형 · 빅배너
       maxItems: 6,
       mainTitle: '약정 만료 시 위약금 없이\n이어갈 수 있는 요금제에요',
       subTitle: '전체 요금제',
-      layoutDetail: '세로형',
+      layoutDetail: '세로형(배너)',
       subTitleIcon: '화살표',
       moreButtonUse: true,
       moreButtonLabel: '전체 요금제',
       moreButtonLink: '/plan',
     },
     [
-      { id: plan1.id, componentType: '정보형' },
-      { id: plan2.id, componentType: '정보형' },
+      { id: plan1.id, componentType: '상품형' },
+      { id: plan2.id, componentType: '상품형' },
     ],
   );
 
-  // 5) 데이터 요금제 안내 (업무 진입형 · 행동형)
-  const data1 = await comp('데이터 무제한', '행동형', [
+  // 5) 데이터 요금제 안내 (상품형 · 세로형) — 요금제(상품) 리스트
+  const data1 = await comp('데이터 무제한', '상품형', [
     { name: '데이터1 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-infinity.png', altText: '무제한' },
     { name: '데이터1 제목', atomType: 'TEXT', content: '데이터 걱정 없이 마음껏 사용해요' },
     { name: '데이터1 설명', atomType: 'INFO', content: '무제한 · 월 69,000원부터' },
   ]);
-  const data2 = await comp('데이터 영상', '행동형', [
+  const data2 = await comp('데이터 영상', '상품형', [
     { name: '데이터2 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-video.png', altText: '영상' },
     { name: '데이터2 제목', atomType: 'TEXT', content: '영상도 보고 여유 있게 사용해요' },
     { name: '데이터2 설명', atomType: 'INFO', content: '50~100GB · 월 48,000원부터' },
   ]);
-  const data3 = await comp('데이터 메신저', '행동형', [
+  const data3 = await comp('데이터 메신저', '상품형', [
     { name: '데이터3 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-chat.png', altText: '메신저' },
     { name: '데이터3 제목', atomType: 'TEXT', content: '메신저 위주로 가볍게 사용해요' },
     { name: '데이터3 설명', atomType: 'INFO', content: '5~10GB · 월 34,000원부터' },
   ]);
-  const data4 = await comp('데이터 직접찾기', '행동형', [
+  const data4 = await comp('데이터 직접찾기', '상품형', [
     { name: '데이터4 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-search.png', altText: '직접 찾기' },
     { name: '데이터4 제목', atomType: 'TEXT', content: '원하는 요금제 직접 찾아볼게요' },
     { name: '데이터4 설명', atomType: 'INFO', content: '월 19,000원부터' },
@@ -604,18 +604,19 @@ async function main() {
   const shopCornerData = await corner(
     {
       name: '데이터 요금제 안내',
-      cornerType: '업무 진입형',
+      cornerType: '상품형', // 요금제(상품) 리스트 → 상품형 · 세로형
       maxItems: 10,
       mainTitle: '일상 생활 속 데이터\n얼마나 필요하세요?',
       subTitle: 'SKT 고객을 위한 요금제',
-      layoutDetail: '세로 리스트형',
+      layoutDetail: '세로형',
+      cornerLayout: '세로 리스트형',
       subTitleIcon: '사용안함',
     },
     [
-      { id: data1.id, componentType: '행동형' },
-      { id: data2.id, componentType: '행동형' },
-      { id: data3.id, componentType: '행동형' },
-      { id: data4.id, componentType: '행동형' },
+      { id: data1.id, componentType: '상품형' },
+      { id: data2.id, componentType: '상품형' },
+      { id: data3.id, componentType: '상품형' },
+      { id: data4.id, componentType: '상품형' },
     ],
   );
 
@@ -641,7 +642,7 @@ async function main() {
   const shopCornerGift = await corner(
     {
       name: '기프티콘 추천',
-      cornerType: '상품형',
+      cornerType: '혜택·오퍼형', // 제휴 기프티콘 혜택/오퍼 → 혜택·오퍼형 · 상품형 · 가로형(2.5배열)
       minItems: 1,
       maxItems: 10,
       mainTitle: '더 저렴하게 살 수 있는\n기프티콘이 있어요',
@@ -695,7 +696,7 @@ async function main() {
   const shopCornerSub = await corner(
     {
       name: '구독 혜택',
-      cornerType: '상품형',
+      cornerType: '혜택·오퍼형', // 구독 혜택/오퍼 → 혜택·오퍼형 · 상품형 · 가로형(2.5배열)
       minItems: 1,
       maxItems: 10,
       mainTitle: 'SKT에만 있는\n구독 혜택이에요',
@@ -759,6 +760,7 @@ async function main() {
   // ═══════════════════════════════════════════════════════════
   // 1) 프로필·가입현황 (고정·필수 노출형 · 프로필 요약)
   const myProfile = await comp('내 프로필', '정보형', [
+    { name: '프로필 아이콘', atomType: 'ICON', imageUrl: 'icon:nav/My', altText: '프로필' },
     { name: '프로필 이름', atomType: 'TEXT', content: '김지훈님' },
     { name: '프로필 번호', atomType: 'INFO', content: '010-****-5678' },
     { name: '가입현황 CTA', atomType: 'CTA', content: '나의 가입 현황', linkUrl: '/my/subscription' },
@@ -770,28 +772,31 @@ async function main() {
 
   // 2) 실시간 이용요금 (상태 안내형 · 금액 요약)
   const myBill = await comp('실시간 이용요금', '정보형', [
+    { name: '요금 아이콘', atomType: 'ICON', imageUrl: 'icon:general/Won', altText: '이용요금' },
     { name: '요금 금액', atomType: 'PRICE', content: '39,250원' },
     { name: '요금 배지', atomType: 'BADGE', content: '3월 납부완료' },
     { name: '요금 라벨', atomType: 'TEXT', content: '실시간 이용요금' },
   ]);
   const myCornerBill = await corner(
-    { name: '실시간 이용요금', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '금액 요약', subTitleIcon: '화살표' },
+    { name: '실시간 이용요금', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘형', subTitleIcon: '화살표' },
     [{ id: myBill.id, componentType: '정보형' }],
   );
 
   // 3) T멤버십 포인트 (상태 안내형 · 금액 요약)
   const myPoint = await comp('T멤버십 포인트', '정보형', [
+    { name: '포인트 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Point', altText: '포인트' },
     { name: '포인트 값', atomType: 'PRICE', content: '13,500P' },
     { name: '포인트 배지', atomType: 'BADGE', content: '3월 누적할인 1,700원' },
     { name: '포인트 라벨', atomType: 'TEXT', content: 'T멤버십 포인트' },
   ]);
   const myCornerPoint = await corner(
-    { name: 'T멤버십 포인트', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '금액 요약', subTitleIcon: '화살표' },
+    { name: 'T멤버십 포인트', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘형', subTitleIcon: '화살표' },
     [{ id: myPoint.id, componentType: '정보형' }],
   );
 
   // 4) T멤버십 바코드 (고정·필수 노출형 · 바코드)
   const myBarcode = await comp('T멤버십 바코드', '정보형', [
+    { name: '바코드 아이콘', atomType: 'ICON', imageUrl: 'icon:general/Barcode', altText: '바코드' },
     { name: '바코드 라벨', atomType: 'TEXT', content: 'T멤버십' },
     { name: '바코드 번호', atomType: 'INFO', content: '1234 4561 1506 4932' },
     { name: '바코드 타이머', atomType: 'BADGE', content: '19:58' },
@@ -803,36 +808,37 @@ async function main() {
 
   // 5) 실시간 데이터 잔여량 (상태 안내형 · 사용량 요약)
   const myData = await comp('실시간 데이터 잔여량', '정보형', [
+    { name: '데이터 아이콘', atomType: 'ICON', imageUrl: 'icon:general/Data', altText: '데이터' },
     { name: '데이터 값', atomType: 'PRICE', content: '6.5GB' },
     { name: '데이터 배지', atomType: 'BADGE', content: '20GB 제공' },
     { name: '데이터 라벨', atomType: 'TEXT', content: '실시간 잔여량' },
   ]);
   const myCornerData = await corner(
-    { name: '실시간 데이터 잔여량', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '사용량 요약', subTitleIcon: '화살표' },
+    { name: '실시간 데이터 잔여량', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘형', subTitleIcon: '화살표' },
     [{ id: myData.id, componentType: '정보형' }],
   );
 
   // 6) 결합가족 (상태 안내형 · 금액 요약)
   const myCombine = await comp('결합가족', '정보형', [
+    { name: '결합 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Family', altText: '결합가족' },
     { name: '결합 값', atomType: 'TEXT', content: '4명 결합' },
     { name: '결합 배지', atomType: 'BADGE', content: '15,000원 할인' },
     { name: '결합 라벨', atomType: 'TEXT', content: '결합가족' },
   ]);
   const myCornerCombine = await corner(
-    { name: '결합가족', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '금액 요약', subTitleIcon: '화살표' },
+    { name: '결합가족', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘형', subTitleIcon: '화살표' },
     [{ id: myCombine.id, componentType: '정보형' }],
   );
 
-  // 7) 추천 상품 (상품형 · 단일 상품)
-  const myProduct = await comp('CHANEL 루쥬 코코 립스틱', '상품형', [
-    { name: '상품 이미지', atomType: 'IMAGE', imageUrl: '/assets/chanel-lipstick.png', altText: 'CHANEL 루쥬 코코 립스틱' },
-    { name: '상품 브랜드', atomType: 'TEXT', content: 'CHANEL' },
-    { name: '상품명', atomType: 'TEXT', content: '루쥬 코코 립스틱' },
-    { name: '상품 옵션', atomType: 'INFO', content: '봄 뮤트 핑크 #130' },
+  // 7) 추천 상품 (배너형 · 이미지형) — 루쥬 코코를 단일 상품이 아니라 이미지 배너로 노출
+  const myProduct = await comp('CHANEL 루쥬 코코 배너', '배너형', [
+    { name: '루쥬 코코 제목', atomType: 'TEXT', content: 'CHANEL 루쥬 코코 립스틱' },
+    { name: '루쥬 코코 서브', atomType: 'INFO', content: '봄 뮤트 핑크 #130' },
+    { name: '루쥬 코코 이미지', atomType: 'IMAGE', imageUrl: '/assets/chanel-lipstick.png', altText: 'CHANEL 루쥬 코코 립스틱' },
   ]);
   const myCornerProduct = await corner(
-    { name: '추천 상품', cornerType: '상품형', maxItems: 1, layoutDetail: '단일 상품', cornerLayout: '단일강조', subTitleIcon: '사용안함' },
-    [{ id: myProduct.id, componentType: '상품형' }],
+    { name: '추천 상품', cornerType: '배너형', maxItems: 1, layoutDetail: '이미지형' },
+    [{ id: myProduct.id, componentType: '배너형' }],
   );
 
   // 8) 휴대폰 결제·콘텐츠 이용료 (상태 안내형 · 금액 요약)
@@ -842,7 +848,7 @@ async function main() {
     { name: '결제 라벨', atomType: 'TEXT', content: '휴대폰 결제 / 콘텐츠 이용료' },
   ]);
   const myCornerPay = await corner(
-    { name: '휴대폰 결제·이용료', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '금액 요약', subTitleIcon: '화살표' },
+    { name: '휴대폰 결제·이용료', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘형', subTitleIcon: '화살표' },
     [{ id: myPay.id, componentType: '정보형' }],
   );
 
@@ -853,7 +859,7 @@ async function main() {
     { name: '구독 라벨', atomType: 'TEXT', content: 'T 우주 월 구독료' },
   ]);
   const myCornerSub = await corner(
-    { name: 'T 우주 구독료', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '금액 요약', subTitleIcon: '화살표' },
+    { name: 'T 우주 구독료', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘형', subTitleIcon: '화살표' },
     [{ id: mySub.id, componentType: '정보형' }],
   );
 
@@ -914,31 +920,84 @@ async function main() {
   // 코너 유형 카탈로그 (T우주 "코너 유형 관리") — 모든 홈(혜택·쇼핑·마이)에 실제 배치된 코너 유형을 카탈로그화.
   //   → 코너 유형 관리 = 전시화면에 쓰인 코너 유형의 단일 소스. 여기 등록된 유형만 빌더에서 가져올 수 있다.
   const placed = await prisma.templateCorner.findMany({
-    include: { corner: true },
+    include: {
+      corner: {
+        include: { cornerComponents: { include: { component: true }, orderBy: { order: 'asc' } } },
+      },
+    },
     orderBy: { corner: { createdAt: 'asc' } },
   });
+  // 코너명 → 유형 샘플 이미지(홈 스크린샷 크롭). 같은 유형에 코너가 여러 개면 최대 2장까지 보여준다.
+  const SAMPLE_MAP: Record<string, string> = {
+    '상단 퀵메뉴': 'hb-topmenu', '영화 예매': 'hb-movie', '0 Week': 'hb-0week', '제휴 혜택 배너': 'hb-partner-banner',
+    'T Week 소멸 혜택': 'hb-tweek', 'T DAY 멤버십': 'hb-tday', 'AirPods 사전예약': 'hb-airpods', '카테고리별 혜택': 'hb-category',
+    '쇼핑 상단 탭': 'sh-topmenu', '단말기 추천': 'sh-device', '약정 만료 요금제': 'sh-plan', '데이터 요금제 안내': 'sh-data',
+    '기프티콘 추천': 'sh-gifticon', 'Marshall 스피커': 'sh-speaker', '구독 혜택': 'sh-subscription',
+    '프로필·가입현황': 'my-profile', '실시간 이용요금': 'my-bill', 'T멤버십 포인트': 'my-point',
+    'T멤버십 바코드': 'my-barcode', '실시간 데이터 잔여량': 'my-data', '추천 상품': 'my-product', '자주 보는 메뉴': 'my-menu',
+    '결합가족': 'my-combine', '휴대폰 결제·이용료': 'my-pay', 'T 우주 구독료': 'my-sub',
+  };
   // (기준분류 · 유형상세) 조합별로 카탈로그를 정리한다 — 코너에 쓰인 유형이 그대로 유형 관리에 반영된다.
-  const repByType = new Map<string, (typeof placed)[number]['corner']>();
+  const allByType = new Map<string, (typeof placed)[number]['corner'][]>();
+  // 배너 마커 파싱: 빅배너는 배열이 아니라 구분자(bigBanner)로 분리. 배열명은 깨끗하게.
+  //   '가로형(2.5배열) · 빅배너' → 배열=가로형(2.5배열), bigBanner=true
+  //   '세로형(배너)' → 배열=세로형, bigBanner=true   (배너형 코너는 배너 자체이므로 제외)
+  const parseBanner = (c: { cornerType: string; layoutDetail: string | null }) => {
+    const raw = c.layoutDetail ?? '';
+    const isBannerCorner = c.cornerType === '배너형';
+    const bigBanner = !isBannerCorner && /배너/.test(raw);
+    const cleanDetail = bigBanner ? raw.replace(/\s*·\s*빅배너\s*/, '').replace(/\(배너\)/, '').trim() : raw;
+    return { cleanDetail: cleanDetail || null, bigBanner };
+  };
   for (const tc of placed) {
-    const key = `${tc.corner.cornerType}|${tc.corner.layoutDetail ?? ''}`;
-    if (!repByType.has(key)) repByType.set(key, tc.corner);
+    const { cleanDetail, bigBanner } = parseBanner(tc.corner);
+    const key = `${tc.corner.cornerType}|${cleanDetail ?? ''}|${bigBanner ? 'B' : ''}`;
+    const arr = allByType.get(key) ?? [];
+    if (!arr.find((c) => c.name === tc.corner.name)) arr.push(tc.corner);
+    allByType.set(key, arr);
   }
   let typeIdx = 1;
   const seenBase = new Map<string, number>();
-  for (const [, rep] of repByType) {
+  for (const [, corners] of allByType) {
+    const rep = corners[0];
     const base = rep.cornerType;
     // 개인화 추천형(VIP 지훈님 섹션)은 "타이틀 + 칩(선택형) + 혜택 리스트(혜택형)" 복합형으로 등록
     const isComposite = base === '개인화 추천형';
-    const detail = rep.layoutDetail ?? (isComposite ? '세로형' : null);
-    const baseName = isComposite ? '복합형' : cornerTypeDisplayName(base); // 이미지에 있으면 그 이름, 없으면 우리 이름
+    const { cleanDetail, bigBanner } = parseBanner(rep);
+    const detail = cleanDetail ?? (isComposite ? '세로형' : null);
+    // ② 구성 컴포넌트 유형 = 코너에서 가장 많은 컴포넌트 유형(동률이면 먼저 배치된 것).
+    //   예: 카테고리별 혜택 = 선택형(탭) 1 + 상품형 3 → 상품형(주 콘텐츠) 으로 잡는다.
+    const freq = new Map<string, number>();
+    for (const cc of rep.cornerComponents) freq.set(cc.component.componentType, (freq.get(cc.component.componentType) ?? 0) + 1);
+    let componentType: string | null = null;
+    let bestFreq = -1;
+    for (const cc of rep.cornerComponents) {
+      const f = freq.get(cc.component.componentType)!;
+      if (f > bestFreq) { bestFreq = f; componentType = cc.component.componentType; }
+    }
+    componentType = componentType ?? componentTypesForCorner(base)[0] ?? null;
+    // 유형 샘플 이미지 — 이 유형에 속한 코너들의 홈 크롭(최대 2장, 줄바꿈으로 구분)
+    const samples = corners
+      .map((c) => SAMPLE_MAP[c.name])
+      .filter(Boolean)
+      .slice(0, 6)
+      .map((slug) => `/assets/corner-samples/${slug}.png`);
+    const sampleImageUrl = samples.length ? samples.join('\n') : null;
+    const baseName = base; // 코너 유형 관리 이름 = 코너 유형과 동치(별칭 미사용)
     const seen = seenBase.get(base) ?? 0;
-    const name = seen > 0 && detail ? `${baseName} · ${detail}` : baseName; // 같은 기준분류가 여러 개면 유형상세로 구분
+    const suffix: string[] = [];
+    if (seen > 0 && detail) suffix.push(detail); // 같은 기준분류가 여러 개면 유형상세로 구분
+    if (bigBanner) suffix.push('빅배너'); // 빅배너 구분자는 이름에도 표기
+    const name = suffix.length ? `${baseName} · ${suffix.join(' · ')}` : baseName;
     seenBase.set(base, seen + 1);
     await prisma.cornerType.create({
       data: {
         typeId: 'CY' + String(typeIdx).padStart(7, '0'),
         name,
         baseCategory: base,
+        componentType,
+        bigBanner,
+        sampleImageUrl,
         markupId: rep.markupId,
         typeDetail: detail,
         layout: rep.cornerLayout ?? (isComposite ? '세로 리스트형' : null),
@@ -950,10 +1009,25 @@ async function main() {
         active: true,
         status: 'APPROVED',
         createdBy: '김마리나',
+        // 타입-레벨 기본값(템플릿 강화) — 대표 코너의 노출/정렬/더보기 설정을 유형 기본값으로 승격.
+        defaultMinItems: rep.minItems ?? null,
+        defaultMaxItems: rep.maxItems ?? null,
+        defaultSortStrategy: rep.sortStrategy && rep.sortStrategy !== 'MANUAL' ? rep.sortStrategy : null,
+        defaultMoreButton: rep.moreButtonUse ?? false,
+        defaultMoreButtonLabel: rep.moreButtonUse ? rep.moreButtonLabel : null,
       },
     });
     typeIdx += 1;
   }
+
+  // 배너형·이미지형 = 홈 전반의 '이미지 배너' 유형. 3개 홈에서 이미지 배너 5개를 큐레이션해 샘플로 등록.
+  //   혜택: 제휴(롯데월드), AirPods, T Week 카운트다운 / 쇼핑: iPhone20 사전예약, Marshall
+  // 배너형·이미지형 = 홈의 '독립 이미지 배너'. 슬라이스 기준 3개: 제휴(롯데월드)·iPhone20 사전예약·Marshall
+  const BANNER_IMAGE_SAMPLES = ['hb-partner-banner', 'sh-preorder', 'sh-speaker'];
+  await prisma.cornerType.updateMany({
+    where: { baseCategory: '배너형', typeDetail: '이미지형' },
+    data: { sampleImageUrl: BANNER_IMAGE_SAMPLES.map((s) => `/assets/corner-samples/${s}.png`).join('\n') },
+  });
 
   await prisma.auditLog.create({
     data: {

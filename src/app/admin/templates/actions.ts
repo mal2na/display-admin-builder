@@ -10,7 +10,6 @@ import {
   CORNER_TYPES,
   CORNER_COMPONENT_MAP,
   isComponentAllowedInCorner,
-  cornerTypeDisplayName,
   type AtomType,
   type ComponentType,
   type CornerType,
@@ -299,6 +298,7 @@ function readCornerInfo(formData: FormData) {
     moreButtonLink: nn(formData, 'moreButtonLink'),
     markupId: nn(formData, 'markupId'),
     layoutDetail: nn(formData, 'layoutDetail'),
+    bannerPosition: nn(formData, 'bannerPosition'),
     cornerLayout: nn(formData, 'cornerLayout'),
     description: nn(formData, 'description'),
     mainTitle: nn(formData, 'mainTitle'),
@@ -324,32 +324,178 @@ export async function createCorner(templateId: string, formData: FormData) {
   rp(templateId);
 }
 
-// 등록된 코너 유형(코너 유형 관리 카탈로그)을 그대로 상속해 코너 추가.
-// base + 유형상세뿐 아니라 코너 레이아웃(가로 SWIPE형 등)·마크업·설명까지 등록된 "형태"를 반영한다.
-export async function createCornerFromType(templateId: string, formData: FormData) {
-  const cornerTypeId = String(formData.get('cornerTypeId') ?? '').trim();
+// ── 유형 → 코너 구성 스캐폴드 ──────────────────────────────────────────────
+// 코너 유형(컴포넌트 유형·배열 상세)에 맞춰 대표 Component + Atom을 생성한다.
+// 불러오기 시 '코너 구성'이 비어 있지 않고, 미리보기가 유형 형태대로 보이게 하기 위함(운영자가 이후 편집).
+type ScaffoldAtom = { name: string; atomType: string; content?: string; imageUrl?: string; altText?: string; linkUrl?: string };
+type ScaffoldComp = { name: string; componentType: ComponentType; atoms: ScaffoldAtom[]; chipRows?: number; selectedIndex?: number };
+
+function scaffoldSpecFor(componentType: string | null, typeDetail: string | null): ScaffoldComp[] {
+  const ct = (componentType ?? '') as ComponentType | '';
+  const d = typeDetail ?? '';
+  const tabComp: ScaffoldComp = {
+    name: '카테고리 탭',
+    componentType: '선택형',
+    selectedIndex: 0,
+    atoms: ['전체', '카테고리1', '카테고리2', '카테고리3'].map((c) => ({ name: c, atomType: 'TEXT', content: c })),
+  };
+  const productComp = (i: number): ScaffoldComp => ({
+    name: `상품 ${i}`,
+    componentType: '상품형',
+    atoms: [
+      { name: '상품 이미지', atomType: 'IMAGE', imageUrl: '', altText: `상품 ${i} 이미지` },
+      { name: '상품명', atomType: 'TEXT', content: `상품 ${i}` },
+      { name: '가격', atomType: 'PRICE', content: '가격' },
+    ],
+  });
+  const benefitComp = (i: number): ScaffoldComp => ({
+    name: `혜택 ${i}`,
+    componentType: '혜택형',
+    atoms: [
+      { name: '로고', atomType: 'ICON', imageUrl: '', altText: `브랜드 ${i}` },
+      { name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: `혜택 ${i} 문구를 입력하세요` },
+      { name: '브랜드', atomType: 'INFO', content: `브랜드 ${i}` },
+    ],
+  });
+
+  let comps: ScaffoldComp[] = [];
+  switch (ct) {
+    case '선택형':
+      comps = [tabComp];
+      break;
+    case '상품형':
+      comps = d.includes('단일') ? [productComp(1)] : [productComp(1), productComp(2), productComp(3)];
+      break;
+    case '배너형':
+      comps = [
+        {
+          name: '배너',
+          componentType: '배너형',
+          atoms: [
+            { name: '배너 타이틀', atomType: 'TEXT', content: '배너 타이틀' },
+            { name: '배너 설명', atomType: 'INFO', content: '배너 설명 문구' },
+            { name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: '/' },
+            { name: '배너 이미지', atomType: 'IMAGE', imageUrl: '', altText: '배너 이미지' },
+          ],
+        },
+      ];
+      break;
+    case '혜택형':
+      comps = [benefitComp(1), benefitComp(2), benefitComp(3)];
+      break;
+    case '정보형':
+      comps = [
+        {
+          name: '정보 카드',
+          componentType: '정보형',
+          // 아이콘형 상태카드 기준: 아이콘 + 값(가격) + 상태(배지) + 라벨(텍스트) → 와이어프레임과 원자 유형 일치
+          atoms: [
+            { name: '아이콘', atomType: 'ICON', imageUrl: 'icon:general/Info', altText: '아이콘' },
+            { name: '값', atomType: 'PRICE', content: '주요 값' },
+            { name: '상태', atomType: 'BADGE', content: '상태' },
+            { name: '라벨', atomType: 'TEXT', content: '라벨' },
+          ],
+        },
+      ];
+      break;
+    case '행동형':
+      comps = [
+        {
+          name: '바로가기',
+          componentType: '행동형',
+          atoms: [
+            { name: '제목', atomType: 'TEXT', content: '업무 바로가기' },
+            { name: '버튼', atomType: 'CTA', content: '바로가기', linkUrl: '/' },
+          ],
+        },
+      ];
+      break;
+    default:
+      comps = [];
+  }
+  // 배열 상세에 '카테고리탭'이 있고 주 컴포넌트가 선택형이 아니면 상단 탭을 얹는다(예: 상품형·세로형(카테고리탭)).
+  if (/카테고리\s*탭/.test(d) && ct !== '선택형' && comps.length) comps = [tabComp, ...comps];
+  return comps;
+}
+
+// 스캐폴드 스펙대로 Component/Atom/CornerComponent 생성. 코너 유형이 허용하지 않는 컴포넌트는 건너뛴다.
+async function createScaffoldComponents(cornerId: string, cornerType: string, specs: ScaffoldComp[]) {
+  let order = 0;
+  for (const spec of specs) {
+    if (!isComponentAllowedInCorner(cornerType as CornerType, spec.componentType)) continue;
+    const comp = await prisma.component.create({
+      data: {
+        name: spec.name,
+        componentType: spec.componentType,
+        status: 'active',
+        ...(spec.chipRows != null ? { chipRows: spec.chipRows } : {}),
+        ...(spec.selectedIndex != null ? { selectedIndex: spec.selectedIndex } : {}),
+      },
+    });
+    for (let i = 0; i < spec.atoms.length; i++) {
+      const a = spec.atoms[i];
+      const atom = await prisma.atom.create({ data: { ...a, status: 'active' } });
+      await prisma.componentAtom.create({ data: { componentId: comp.id, atomId: atom.id, order: i, isRequired: true } });
+    }
+    await prisma.cornerComponent.create({ data: { cornerId, componentId: comp.id, order } });
+    order += 1;
+  }
+}
+
+// 등록된 코너 유형(카탈로그) 1건 → 새 Corner 인스턴스 생성. createCornerFromType / swapCornerToType 공용.
+async function createCornerInstanceFromTypeId(cornerTypeId: string) {
   const ct = cornerTypeId ? await prisma.cornerType.findUnique({ where: { id: cornerTypeId } }) : null;
   if (!ct) throw new Error('등록된 코너 유형을 찾을 수 없습니다.');
   if (!(CORNER_TYPES as readonly string[]).includes(ct.baseCategory)) throw new Error('유효한 Corner 유형이 아닙니다.');
 
   const isComposite = ct.baseCategory === '개인화 추천형';
-  const baseName = isComposite ? '복합형' : cornerTypeDisplayName(ct.baseCategory);
-  const name = ct.typeDetail ? `${baseName} · ${ct.typeDetail}` : baseName;
+  const baseName = ct.baseCategory; // 코너 이름 = 코너 유형과 동치(별칭 미사용)
+  const nameParts = [ct.typeDetail, ct.bigBanner ? '빅배너' : ''].filter(Boolean);
+  const name = nameParts.length ? `${baseName} · ${nameParts.join(' · ')}` : baseName;
+  // 전시화면 코너의 배열명에는 빅배너를 마커로 유지(렌더/기존 시드와 일관)
+  const cornerLayoutDetail = ct.bigBanner ? `${ct.typeDetail ?? ''} · 빅배너`.trim().replace(/^· /, '') : ct.typeDetail;
 
+  // 타입-레벨 기본값 상속(템플릿 강화) — 항목 사용여부 토글이 켜진 것만 채우고, 코너별 수정은 자유.
+  const moreOn = ct.defaultMoreButton && ct.useMoreButton;
   const corner = await prisma.corner.create({
     data: {
       name,
       cornerType: ct.baseCategory,
       typeLabel: isComposite ? baseName : null,
-      layoutDetail: ct.typeDetail, // 유형 상세 (단일강조(1.5배열) 등)
+      layoutDetail: cornerLayoutDetail, // 유형 상세 (+ 빅배너 마커)
       cornerLayout: ct.layout, // 등록된 코너 레이아웃 상속 → 미리보기 형태가 등록 유형과 일치
       markupId: ct.markupId,
       description: ct.description,
-      sortStrategy: 'MANUAL',
+      // 노출 개수(최소/최대)는 타입에서 상속하지 않는다 — 빌더에서 코너별로 설정
+      sortStrategy: ct.defaultSortStrategy ?? 'MANUAL',
+      moreButtonUse: moreOn,
+      moreButtonLabel: moreOn ? (ct.defaultMoreButtonLabel ?? '더보기') : null,
+      // 코너 유형 관리의 유형 샘플 썸네일을 코너에 상속(카드/참고용) — 컴포넌트가 생기면 미리보기는 컴포넌트로 렌더
+      sampleImageUrl: ct.sampleImageUrl,
     },
   });
+  // 유형의 컴포넌트 유형·배열에 맞춰 '코너 구성'을 스캐폴딩(불러오면 코너 정보 + 코너 구성이 실제로 채워짐)
+  await createScaffoldComponents(corner.id, ct.baseCategory, scaffoldSpecFor(ct.componentType, ct.typeDetail));
+  return corner;
+}
+
+// 등록된 코너 유형(코너 유형 관리 카탈로그)을 그대로 상속해 코너 추가.
+// base + 유형상세뿐 아니라 코너 레이아웃(가로 SWIPE형 등)·마크업·설명까지 등록된 "형태"를 반영한다.
+export async function createCornerFromType(templateId: string, formData: FormData) {
+  const cornerTypeId = String(formData.get('cornerTypeId') ?? '').trim();
+  const corner = await createCornerInstanceFromTypeId(cornerTypeId);
   const order = await nextOrder('templateCorner', { templateId });
   await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order } });
+  rp(templateId);
+}
+
+// 코너 불러오기(슬롯 교체) — 코너 유형 관리 카탈로그에서 고른 유형으로 이 슬롯을 교체한다.
+// 기존 인스턴스 재사용(swapCornerRef)이 아니라, 등록된 유형의 형태를 그대로 상속한 새 코너로 채운다.
+export async function swapCornerToType(templateId: string, templateCornerId: string, formData: FormData) {
+  const cornerTypeId = String(formData.get('cornerTypeId') ?? '').trim();
+  if (!cornerTypeId) return;
+  const corner = await createCornerInstanceFromTypeId(cornerTypeId);
+  await prisma.templateCorner.update({ where: { id: templateCornerId }, data: { cornerId: corner.id } });
   rp(templateId);
 }
 
@@ -393,7 +539,7 @@ async function ensureCornerTypeCatalog(
   if (existing) return;
   const count = await prisma.cornerType.count();
   const typeId = 'CY' + String(count + 1).padStart(7, '0');
-  const baseName = baseCategory === '개인화 추천형' ? '복합형' : cornerTypeDisplayName(baseCategory);
+  const baseName = baseCategory; // 코너 유형 관리 이름 = 코너 유형과 동치(별칭 미사용)
   // 같은 기준분류가 이미 있으면 유형상세를 붙여 구분, 없으면 기본 이름
   const sameBase = await prisma.cornerType.count({ where: { baseCategory } });
   const name = detail && sameBase > 0 ? `${baseName} · ${detail}` : baseName;

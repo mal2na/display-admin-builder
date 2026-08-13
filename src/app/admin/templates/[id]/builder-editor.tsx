@@ -16,8 +16,8 @@ import {
   SUBTITLE_ICONS,
   PRODUCT_SORT_OPTIONS,
   NO_DISPLAY_CONDITIONS,
-  layoutDetailsFor,
   cornerFamily,
+  cornerTypeChipClass,
   ATOM_TYPES,
   ATOM_TYPE_LABELS,
   ATOM_TYPE_FIELDS,
@@ -57,7 +57,7 @@ import {
   createBanner,
   setCornerBanner,
   saveChips,
-  swapCornerRef,
+  swapCornerToType,
 } from '../actions';
 
 export type AtomNode = {
@@ -104,6 +104,8 @@ export type CornerNode = {
   bannerId: string | null;
   bannerName: string | null;
   bannerImageUrl: string | null;
+  bannerPosition: string | null;
+  sampleImageUrl: string | null;
   visible: boolean;
   components: ComponentNode[];
 };
@@ -112,7 +114,7 @@ export type LibraryData = {
   components: { id: string; name: string; componentType: string; allowedCornerTypes: string[] }[];
   atoms: { id: string; name: string; atomType: string }[];
   banners: { id: string; name: string; imageUrl: string }[];
-  cornerTypes: { id: string; name: string; baseCategory: string; typeDetail?: string | null; active: boolean }[];
+  cornerTypes: { id: string; name: string; baseCategory: string; componentType?: string | null; typeDetail?: string | null; bigBanner?: boolean; sampleImageUrl?: string | null; active: boolean }[];
   images: { url: string; alt: string | null; name: string }[];
   links: { url: string; label: string }[];
 };
@@ -122,6 +124,56 @@ function cornerTypeNameMap(library: LibraryData): Record<string, string> {
   const m: Record<string, string> = {};
   for (const t of library.cornerTypes) if (!m[t.baseCategory]) m[t.baseCategory] = t.name;
   return m;
+}
+
+/**
+ * 코너를 코너 유형 관리와 동일한 3단 경로로 매핑: 코너유형 · 구성 컴포넌트 · 배열/레이아웃 상세 (· 빅배너).
+ *  - 컴포넌트 = 코너에서 가장 많은 componentType(동률이면 먼저 배치된 것)
+ *  - 빅배너 = 배너형 코너가 아닌데 배열명에 '배너' 마커가 있거나 배너가 연결된 경우 → 배열은 마커 제거
+ */
+function cornerTypeParts(corner: CornerNode): { base: string; rest: string; bigBanner: boolean } {
+  const base = corner.cornerType;
+  const freq = new Map<string, number>();
+  for (const c of corner.components) freq.set(c.componentType, (freq.get(c.componentType) ?? 0) + 1);
+  let comp = '';
+  let best = -1;
+  for (const c of corner.components) {
+    const f = freq.get(c.componentType)!;
+    if (f > best) { best = f; comp = c.componentType; }
+  }
+  const raw = corner.layoutDetail ?? '';
+  const isBannerCorner = base === '배너형';
+  const bigBanner = !isBannerCorner && (/배너/.test(raw) || corner.bannerId != null);
+  const detail = bigBanner ? raw.replace(/\s*·\s*빅배너\s*/, '').replace(/\(배너\)/, '').trim() : raw;
+  const rest = [comp, detail].filter(Boolean).join(' · '); // 빅배너는 경로에서 빼고 별도 배지로
+  return { base, rest, bigBanner };
+}
+
+// 렌더 가능한 이미지 소스인지(data URI · http · 유형 샘플 썸네일). 그 외 /assets 자리표시자는 제외.
+const isImgSrc = (src?: string | null): src is string => !!src && (src.startsWith('data:') || src.startsWith('http') || src.startsWith('/assets/corner-samples/'));
+
+// 빅배너 = 코너 유형(8색 칩)이 아니라 '부속 구분자'. 타입 칩과 헷갈리지 않게 점선+아이콘의 다른 스타일로.
+function BigBannerBadge({ className }: { className?: string }) {
+  return (
+    <span className={cn('inline-flex items-center gap-0.5 rounded border border-dashed border-indigo-400 bg-indigo-50/60 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600', className)}>
+      <ImageIcon className="h-3 w-3" /> 빅배너
+    </span>
+  );
+}
+
+// 코너 유형은 색 Chip으로 분리, 나머지 경로(컴포넌트 · 배열)는 회색 텍스트, 빅배너는 별도 구분자 배지.
+// 코너 유형 관리와 같은 8색 팔레트(cornerTypeChipClass)를 공유한다.
+function CornerTypeChip({ corner, className }: { corner: CornerNode; className?: string }) {
+  const { base, rest, bigBanner } = cornerTypeParts(corner);
+  return (
+    <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
+      <span className={cn('inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold', cornerTypeChipClass(base))}>
+        {base}
+      </span>
+      {rest && <span className="truncate text-xs text-muted-foreground">{rest}</span>}
+      {bigBanner && <BigBannerBadge className="shrink-0" />}
+    </span>
+  );
 }
 
 export type TemplateMeta = {
@@ -174,6 +226,7 @@ type CornerPatch = {
   maxItems?: number | null;
   moreButtonUse?: boolean;
   moreButtonLabel?: string;
+  bannerPosition?: string;
 };
 type CornerDraftState = { key: string; patch: CornerPatch } | null;
 type CornerPreviewSetter = (key: string, patch: CornerPatch | null) => void;
@@ -256,6 +309,8 @@ function toPreviewCorner(c: CornerNode): PreviewCorner {
     moreButtonLabel: c.moreButtonLabel,
     bannerImageUrl: c.bannerImageUrl,
     bannerName: c.bannerName,
+    bannerPosition: c.bannerPosition,
+    sampleImageUrl: c.sampleImageUrl,
     components: c.components.map((cc) => ({
       id: cc.cornerComponentId,
       name: cc.name,
@@ -1046,11 +1101,11 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
   return (
     <div className="rounded-md border bg-muted/20 px-3">
       <InfoRow label="코너명" value={corner.name} />
-      <InfoRow label="코너 유형" value={`${corner.typeLabel ?? nameMap[corner.cornerType] ?? corner.cornerType}${corner.layoutDetail ? ' · ' + corner.layoutDetail : ''}`} />
+      <InfoRow label="코너 유형" value={<CornerTypeChip corner={corner} />} />
       {corner.cornerLayout && <InfoRow label="코너 레이아웃" value={corner.cornerLayout} />}
-      {corner.mainTitle && <InfoRow label="메인 타이틀" value={corner.mainTitle} />}
-      {corner.subTitle && <InfoRow label="서브 타이틀" value={corner.subTitle} />}
-      {corner.subTitleIcon && corner.subTitleIcon !== '사용안함' && <InfoRow label="서브 아이콘" value={corner.subTitleIcon} />}
+      {corner.mainTitle && <InfoRow label="타이틀" value={corner.mainTitle} />}
+      {corner.subTitle && <InfoRow label="서브타이틀" value={corner.subTitle} />}
+      {corner.subTitleIcon && corner.subTitleIcon !== '사용안함' && <InfoRow label="서브타이틀 아이콘" value={corner.subTitleIcon} />}
       {(corner.minItems != null || corner.maxItems != null) && (
         <InfoRow label="노출 개수" value={`${corner.minItems ?? '-'} ~ ${corner.maxItems ?? '-'}`} />
       )}
@@ -1058,7 +1113,7 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
       {fam === 'product' && corner.noDisplayCondition && <InfoRow label="미 노출 조건" value={corner.noDisplayCondition} />}
       {fam === 'product' && (
         <InfoRow
-          label="더보기"
+          label="CTA"
           value={
             corner.moreButtonUse
               ? `사용${corner.moreButtonLabel ? ' · ' + corner.moreButtonLabel : ''}${corner.moreButtonLink ? ' → ' + corner.moreButtonLink : ''}`
@@ -1099,6 +1154,9 @@ function CornerInfoForm({
   const [cornerLayout] = useState(corner.cornerLayout ?? ''); // 필드는 숨김(값 보존)
   const [layoutDetail, setLayoutDetail] = useState(corner.layoutDetail ?? '');
   const [moreLabel, setMoreLabel] = useState(corner.moreButtonLabel ?? '');
+  const [bannerPos, setBannerPos] = useState(corner.bannerPosition ?? '상단');
+  // 빅배너 = 배너형이 아닌 코너에 얹은 부속 배너(위치 조정 대상). 배너형은 배너가 곧 본문이라 제외.
+  const isBigBanner = ct !== '배너형' && (corner.bannerId != null || /배너/.test(layoutDetail));
 
   // 편집 중일 때만 현재 값을 미리보기로 반영(뷰 모드에선 서버 데이터 사용). pushCorner는 매 렌더 새 참조라 deps 제외.
   useEffect(() => {
@@ -1112,12 +1170,13 @@ function CornerInfoForm({
         layoutDetail,
         moreButtonUse: moreUse,
         moreButtonLabel: moreLabel,
+        bannerPosition: bannerPos,
       });
     } else {
       pushCorner(corner.templateCornerId, null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, moreUse, moreLabel, corner.templateCornerId]);
+  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, moreUse, moreLabel, bannerPos, corner.templateCornerId]);
 
   // 언마운트(코너 전환) 시 미리보기 정리
   useEffect(() => () => pushCorner(corner.templateCornerId, null), [corner.templateCornerId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1132,27 +1191,17 @@ function CornerInfoForm({
     setLayoutDetail(corner.layoutDetail ?? '');
     setMoreUse(corner.moreButtonUse);
     setMoreLabel(corner.moreButtonLabel ?? '');
+    setBannerPos(corner.bannerPosition ?? '상단');
     setResetKey((k) => k + 1);
   };
 
-  // 코너 유형 선택지 = 기준분류 단위(카탈로그의 유형상세별 행은 합쳐 하나로). 유형상세는 아래 '유형 상세'에서 선택.
-  const typeOptions = library.cornerTypes.length
-    ? Array.from(new Set(library.cornerTypes.map((t) => t.baseCategory))).map((base) => ({ value: base, label: nameMap[base] ?? base, key: base }))
-    : CORNER_TYPES.map((t) => ({ value: t, label: t, key: t }));
-  if (!typeOptions.some((o) => o.value === corner.cornerType)) {
-    typeOptions.unshift({ value: corner.cornerType, label: nameMap[corner.cornerType] ?? corner.cornerType, key: 'cur' });
-  }
-  const details = layoutDetailsFor(ct);
-
+  // 코너 유형·유형 상세는 빌더에서 수정 불가(카탈로그가 정의) → 선택지 목록은 더 이상 필요 없음.
   return (
     <div className="rounded-lg border bg-card p-4">
       <div className="mb-3 flex items-center gap-1.5">
         <p className="flex items-center gap-1.5 text-sm font-semibold">
           코너 정보
-          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-            {nameMap[ct] ?? ct}
-            {layoutDetail ? ` · ${layoutDetail}` : ''}
-          </span>
+          <CornerTypeChip corner={corner} />
         </p>
         {edit ? (
           <button
@@ -1180,32 +1229,31 @@ function CornerInfoForm({
         <CornerInfoView corner={corner} nameMap={nameMap} />
       ) : (
       <>
-      {/* 코너 불러오기: 기존 코너로 이 위치(슬롯) 교체 */}
+      {/* 코너 불러오기: 코너 유형 관리 카탈로그에서 고른 유형으로 이 슬롯 교체 */}
       {loadOpen && (
         <div className="mb-3 rounded-md border border-dashed bg-muted/20 p-2">
-          {library.corners.filter((c) => c.id !== corner.id).length > 0 ? (
+          {library.cornerTypes.length > 0 ? (
             <>
-              <form action={swapCornerRef.bind(null, templateId, corner.templateCornerId)} className="flex gap-1">
-                <Select name="cornerId" defaultValue="" className="h-8 flex-1 text-xs">
+              <form action={swapCornerToType.bind(null, templateId, corner.templateCornerId)} className="flex gap-1">
+                <Select name="cornerTypeId" defaultValue="" className="h-8 flex-1 text-xs">
                   <option value="" disabled>
-                    기존 코너 선택…
+                    코너 유형 관리에서 선택…
                   </option>
-                  {library.corners
-                    .filter((c) => c.id !== corner.id)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({nameMap[c.cornerType] ?? c.cornerType})
-                      </option>
-                    ))}
+                  {library.cornerTypes.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {(nameMap[t.baseCategory] ?? t.baseCategory)}
+                      {t.typeDetail ? ` · ${t.typeDetail}` : ''}
+                    </option>
+                  ))}
                 </Select>
                 <Button type="submit" size="sm" variant="secondary">
                   적용
                 </Button>
               </form>
-              <p className="mt-1 text-[10px] text-muted-foreground">선택한 기존 코너로 이 슬롯이 교체되어 정보·구성을 그대로 불러옵니다.</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">코너 유형 관리에서 만든 유형(형태·레이아웃)을 그대로 이 슬롯으로 불러옵니다.</p>
             </>
           ) : (
-            <p className="text-[11px] text-muted-foreground">불러올 다른 코너가 없습니다.</p>
+            <p className="text-[11px] text-muted-foreground">코너 유형 관리에 등록된 코너가 없습니다.</p>
           )}
         </div>
       )}
@@ -1216,54 +1264,55 @@ function CornerInfoForm({
           <label className="text-[11px] text-muted-foreground">코너명 *</label>
           <Input name="name" value={name} onChange={(e) => setName(e.target.value)} className="h-8 text-xs" required />
         </div>
-        <div className="space-y-1">
-          <label className="text-[11px] text-muted-foreground">코너 유형 *</label>
-          <Select
-            name="cornerType"
-            value={ct}
-            onChange={(e) => {
-              setCt(e.target.value);
-              setLayoutDetail(''); // 유형이 바뀌면 유형 상세 초기화
-            }}
-            className="h-8 text-xs"
-          >
-            {typeOptions.map((o) => (
-              <option key={o.key} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
+        {/* 코너 유형·유형 상세는 코너 유형 관리(카탈로그)가 정하는 '정체성'이라 빌더에서 수정 불가.
+            변경은 위 '코너 불러오기'로 다른 유형을 불러와 슬롯을 교체한다. 값은 hidden으로 보존. */}
+        <input type="hidden" name="cornerType" value={ct} />
+        <input type="hidden" name="layoutDetail" value={layoutDetail} />
+        <div className="col-span-2 space-y-1">
+          <label className="text-[11px] text-muted-foreground">코너 유형 (코너 유형 관리에서 관리)</label>
+          <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-2.5 py-1.5">
+            <CornerTypeChip corner={corner} />
+            <span className="ml-auto text-[10px] text-muted-foreground">유형 변경은 ‘코너 불러오기’로</span>
+          </div>
         </div>
-        <div className="space-y-1">
-          <label className="text-[11px] text-muted-foreground">유형 상세</label>
-          <Select
-            name="layoutDetail"
-            value={details.includes(layoutDetail) ? layoutDetail : ''}
-            onChange={(e) => setLayoutDetail(e.target.value)}
-            className="h-8 text-xs"
-          >
-            <option value="">선택 안 함</option>
-            {details.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </Select>
-        </div>
+
+        {/* 빅배너 위치 — 코너 유형은 고정이지만 부속 빅배너의 상단/하단 배치는 빌더에서 조정 가능 */}
+        {isBigBanner && (
+          <div className="col-span-2 space-y-1">
+            <label className="text-[11px] text-muted-foreground">빅배너 위치</label>
+            <div className="flex gap-1.5">
+              {(['상단', '하단'] as const).map((pos) => (
+                <button
+                  key={pos}
+                  type="button"
+                  onClick={() => setBannerPos(pos)}
+                  className={cn(
+                    'flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition',
+                    bannerPos === pos ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-secondary',
+                  )}
+                >
+                  배너 {pos}
+                </button>
+              ))}
+            </div>
+            <input type="hidden" name="bannerPosition" value={bannerPos} />
+            <p className="text-[10px] text-muted-foreground">상품 리스트 기준 배너를 위/아래에 배치해요. (미리보기 즉시 반영)</p>
+          </div>
+        )}
         {/* 코너 마크업 ID 필드는 표시하지 않음 (값은 보존) */}
         <input type="hidden" name="markupId" value={corner.markupId ?? ''} />
 
         {/* 타이틀·레이아웃 — 모든 코너 유형 공통 (코너 타이틀 편집) */}
         <div className="col-span-2 space-y-1">
-          <label className="text-[11px] text-muted-foreground">메인 타이틀 (줄바꿈 가능)</label>
+          <label className="text-[11px] text-muted-foreground">타이틀 (줄바꿈 가능)</label>
           <Textarea name="mainTitle" value={mainTitle} onChange={(e) => setMainTitle(e.target.value)} className="min-h-[44px] text-xs" />
         </div>
         <div className="space-y-1">
-          <label className="text-[11px] text-muted-foreground">서브 타이틀</label>
+          <label className="text-[11px] text-muted-foreground">서브타이틀</label>
           <Input name="subTitle" value={subTitle} onChange={(e) => setSubTitle(e.target.value)} className="h-8 text-xs" />
         </div>
         <div className="space-y-1">
-          <label className="text-[11px] text-muted-foreground">서브 타이틀 아이콘</label>
+          <label className="text-[11px] text-muted-foreground">서브타이틀 아이콘</label>
           <Select name="subTitleIcon" value={subTitleIcon} onChange={(e) => setSubTitleIcon(e.target.value)} className="h-8 text-xs">
             {SUBTITLE_ICONS.map((t) => (
               <option key={t} value={t}>
@@ -1303,7 +1352,7 @@ function CornerInfoForm({
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">더보기 사용</label>
+              <label className="text-[11px] text-muted-foreground">CTA 노출</label>
               <Select
                 name="moreButtonUse"
                 value={moreUse ? '사용' : '미사용'}
@@ -1317,11 +1366,11 @@ function CornerInfoForm({
             {moreUse && (
               <>
                 <div className="space-y-1">
-                  <label className="text-[11px] text-muted-foreground">더보기 버튼명</label>
-                  <Input name="moreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} className="h-8 text-xs" placeholder="예) 더보기" />
+                  <label className="text-[11px] text-muted-foreground">CTA 문구</label>
+                  <Input name="moreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} className="h-8 text-xs" placeholder="예) 전체보기 · 더보기" />
                 </div>
                 <div className="col-span-2 space-y-1">
-                  <label className="text-[11px] text-muted-foreground">더보기 랜딩 URL</label>
+                  <label className="text-[11px] text-muted-foreground">CTA 링크</label>
                   <Input name="moreButtonLink" defaultValue={corner.moreButtonLink ?? ''} className="h-8 text-xs" placeholder="/..." />
                 </div>
               </>
@@ -1394,6 +1443,111 @@ function aiBannerDataUri(prompt: string, variant: number) {
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
+// ── 배너 라이브러리 모달 — 썸네일 그리드에서 예시 배너를 골라 코너에 적용 ──────────
+function BannerLibraryModal({
+  open,
+  onClose,
+  templateId,
+  cornerId,
+  banners,
+  currentBannerId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  templateId: string;
+  cornerId: string;
+  banners: LibraryData['banners'];
+  currentBannerId: string | null;
+}) {
+  const [q, setQ] = useState('');
+  const [pending, start] = useTransition();
+  if (!open) return null;
+
+  // 리시드 누적으로 같은 예시가 중복될 수 있어 이미지 기준 dedupe
+  const seen = new Set<string>();
+  const uniq = banners.filter((b) => {
+    const k = b.imageUrl || b.name;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  const query = q.trim().toLowerCase();
+  const list = uniq.filter((b) => !query || b.name.toLowerCase().includes(query));
+
+  const apply = (bannerId: string) => {
+    const fd = new FormData();
+    fd.set('bannerId', bannerId);
+    start(async () => {
+      await setCornerBanner(templateId, cornerId, fd);
+      onClose();
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b px-5 py-3">
+          <ImageIcon className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold">배너 라이브러리</h2>
+          <span className="text-xs text-muted-foreground">예시 배너를 골라 이 코너에 적용합니다</span>
+          <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="닫기">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="border-b p-3">
+          <div className="flex items-center gap-2 rounded-md border bg-background px-3">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="배너 이름 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {/* 배너 해제 */}
+            <button
+              type="button"
+              onClick={() => apply('')}
+              disabled={pending}
+              className={cn(
+                'flex aspect-[16/9] flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition hover:border-primary/50 hover:bg-accent',
+                !currentBannerId && 'border-primary bg-accent',
+              )}
+            >
+              <X className="h-4 w-4" /> 배너 없음
+            </button>
+            {list.map((b) => {
+              const active = b.id === currentBannerId;
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => apply(b.id)}
+                  disabled={pending}
+                  className={cn(
+                    'group overflow-hidden rounded-lg border text-left transition hover:ring-2 hover:ring-primary/40',
+                    active ? 'border-primary ring-2 ring-primary/50' : 'border-border',
+                  )}
+                  title={b.name}
+                >
+                  {isImgSrc(b.imageUrl) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={b.imageUrl} alt={b.name} className="aspect-[16/9] w-full object-cover" />
+                  ) : (
+                    <div className="flex aspect-[16/9] w-full items-center justify-center bg-gradient-to-br from-indigo-100 to-slate-200 text-[10px] text-slate-500">
+                      {b.name}
+                    </div>
+                  )}
+                  <p className="truncate px-2 py-1.5 text-[11px] font-medium text-foreground">{b.name}</p>
+                </button>
+              );
+            })}
+          </div>
+          {list.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BannerPanel({
   templateId,
   corner,
@@ -1407,10 +1561,9 @@ function BannerPanel({
   const [imageUrl, setImageUrl] = useState('');
   const [prompt, setPrompt] = useState('');
   const [pickedVariant, setPickedVariant] = useState<number | null>(null);
-  const [selBannerId, setSelBannerId] = useState(corner.bannerId ?? ''); // 라이브러리 선택(미리보기용)
+  const [libOpen, setLibOpen] = useState(false); // 배너 라이브러리 모달
 
-  const canRenderImg = (u?: string | null) => !!u && (u.startsWith('data:') || u.startsWith('http'));
-  const selBanner = banners.find((b) => b.id === selBannerId);
+  const canRenderImg = (u?: string | null) => !!u && (u.startsWith('data:') || u.startsWith('http') || u.startsWith('/'));
 
   // 타이핑하면 즉시 후보 이미지가 뜬다
   const candidates = prompt.trim() ? AI_PALETTES.map((_, i) => aiBannerDataUri(prompt, i)) : [];
@@ -1442,44 +1595,37 @@ function BannerPanel({
         </div>
 
         {mode === 'library' ? (
-          <form action={setCornerBanner.bind(null, templateId, corner.id)} className="space-y-1.5">
-            <div className="flex gap-1">
-              <Select
-                name="bannerId"
-                value={selBannerId}
-                onChange={(e) => setSelBannerId(e.target.value)}
-                className="h-8 flex-1 text-xs"
-              >
-                <option value="">배너 없음</option>
-                {banners.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </Select>
-              <Button type="submit" size="sm" variant="secondary">
-                적용
-              </Button>
-            </div>
-            {/* 선택한 배너 미리보기 */}
-            {selBanner ? (
+          <div className="space-y-1.5">
+            <Button type="button" size="sm" variant="secondary" className="w-full" onClick={() => setLibOpen(true)}>
+              <ImageIcon className="mr-1 h-3.5 w-3.5" /> 배너 라이브러리에서 선택
+            </Button>
+            {/* 현재 적용된 배너 미리보기 */}
+            {corner.bannerName ? (
               <div className="overflow-hidden rounded-md border bg-card">
-                {canRenderImg(selBanner.imageUrl) ? (
+                {canRenderImg(corner.bannerImageUrl) ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={selBanner.imageUrl} alt={selBanner.name} className="aspect-[16/7] w-full object-cover" />
+                  <img src={corner.bannerImageUrl!} alt={corner.bannerName} className="aspect-[16/7] w-full object-cover" />
                 ) : (
                   <div className="flex aspect-[16/7] w-full items-center justify-center bg-gradient-to-br from-indigo-100 to-slate-200 text-[10px] text-slate-500">
-                    {selBanner.name}
+                    {corner.bannerName}
                   </div>
                 )}
-                <p className="truncate px-2 py-1 text-[10px] text-muted-foreground">{selBanner.name}</p>
+                <p className="truncate px-2 py-1 text-[10px] text-muted-foreground">{corner.bannerName}</p>
               </div>
             ) : (
               <div className="flex aspect-[16/7] w-full items-center justify-center rounded-md border border-dashed text-[10px] text-muted-foreground">
-                미리보기 · 배너를 선택하세요
+                미리보기 · ‘배너 라이브러리에서 선택’을 눌러 고르세요
               </div>
             )}
-          </form>
+            <BannerLibraryModal
+              open={libOpen}
+              onClose={() => setLibOpen(false)}
+              templateId={templateId}
+              cornerId={corner.id}
+              banners={banners}
+              currentBannerId={corner.bannerId}
+            />
+          </div>
         ) : (
           <form action={createBanner.bind(null, templateId, corner.id)} className="grid grid-cols-1 gap-1.5">
             <Input
@@ -1610,13 +1756,10 @@ function CornerListRow({
         />
       </div>
       <div className="mt-1 flex items-center gap-1.5 pl-5">
-        <Badge variant="outline">
-          {corner.typeLabel ?? nameMap[corner.cornerType] ?? corner.cornerType}
-          {corner.layoutDetail ? ` · ${corner.layoutDetail}` : ''}
-        </Badge>
-        {!corner.visible && <Badge variant="outline">비노출</Badge>}
+        <CornerTypeChip corner={corner} className="min-w-0 flex-1" />
+        {!corner.visible && <Badge variant="outline" className="shrink-0">비노출</Badge>}
         {/* 토글: 오른쪽 끝에 배치 */}
-        <form className="ml-auto" action={toggleCornerVisible.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
+        <form className="ml-auto shrink-0" action={toggleCornerVisible.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
           <button
             type="submit"
             role="switch"
@@ -1638,17 +1781,11 @@ function CornerListRow({
         </form>
       </div>
 
-      {/* 화면에 추가된 배너를 좌측에 고정 표시 (포탈3) */}
+      {/* 화면에 추가된 배너를 좌측에 읽기 전용으로 표시 — 배너 변경/해제는 우측 코너 편집에서만(좌측에서 컨트롤 금지) */}
       {corner.bannerName && (
-        <div className="mt-1.5 ml-5 flex items-center gap-1.5 rounded-md border border-dashed bg-muted/40 px-2 py-1" onClick={(e) => e.stopPropagation()}>
+        <div className="mt-1.5 ml-5 flex items-center gap-1.5 rounded-md border border-dashed bg-muted/40 px-2 py-1">
           <ImageIcon className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
           <span className="flex-1 truncate text-[11px] text-muted-foreground">배너: {corner.bannerName}</span>
-          <form action={setCornerBanner.bind(null, templateId, corner.id)}>
-            <input type="hidden" name="bannerId" value="" />
-            <button className="text-muted-foreground hover:text-destructive" aria-label="배너 해제" title="배너 해제">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </form>
         </div>
       )}
     </div>
@@ -1674,15 +1811,24 @@ function CornerLoadModal({
   const [pending, start] = useTransition();
   if (!open) return null;
 
-  // 사용 중인 코너 유형만, (기준분류 + 유형상세)로 라벨 구성
+  // 사용 중인 코너 유형만 — 코너 유형 관리 그대로(코너유형·컴포넌트·배열·빅배너 + 썸네일)
   const types = cornerTypes
     .filter((t) => t.active)
-    .map((t) => ({
-      id: t.id,
-      base: t.baseCategory,
-      detail: t.typeDetail ?? '',
-      label: `${nameMap[t.baseCategory] ?? t.baseCategory}${t.typeDetail ? ` · ${t.typeDetail}` : ''}`,
-    }));
+    .map((t) => {
+      const component = t.componentType ?? '';
+      const bigBanner = !!t.bigBanner;
+      const rest = [component, t.typeDetail ?? ''].filter(Boolean).join(' · '); // 빅배너는 배지로 분리
+      return {
+        id: t.id,
+        base: t.baseCategory,
+        component,
+        detail: t.typeDetail ?? '',
+        bigBanner,
+        sampleImageUrl: t.sampleImageUrl ?? null,
+        rest,
+        label: `${nameMap[t.baseCategory] ?? t.baseCategory}${rest ? ` · ${rest}` : ''}`,
+      };
+    });
   const query = q.trim().toLowerCase();
   const list = types.filter((t) => !query || t.label.toLowerCase().includes(query));
   const sel = types.find((t) => t.id === selId) ?? null;
@@ -1730,8 +1876,15 @@ function CornerLoadModal({
                     selId === t.id ? 'border-primary bg-accent' : 'hover:bg-muted/50',
                   )}
                 >
-                  <Badge variant="outline">{nameMap[t.base] ?? t.base}</Badge>
-                  {t.detail && <span className="text-xs text-muted-foreground">· {t.detail}</span>}
+                  {isImgSrc(t.sampleImageUrl?.split('\n')[0]) && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={t.sampleImageUrl!.split('\n')[0]} alt="" className="h-8 w-12 shrink-0 rounded border object-cover object-top" />
+                  )}
+                  <span className={cn('inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold', cornerTypeChipClass(t.base))}>
+                    {t.base}
+                  </span>
+                  {t.rest && <span className="truncate text-xs text-muted-foreground">· {t.rest}</span>}
+                  {t.bigBanner && <BigBannerBadge className="ml-auto shrink-0" />}
                 </button>
               ))}
             </div>
@@ -1740,8 +1893,22 @@ function CornerLoadModal({
           <div className="flex min-h-0 flex-col overflow-y-auto p-4">
             {sel ? (
               <div className="space-y-3">
-                <p className="text-sm font-semibold">{sel.label}</p>
-                <TypeDetailPreview base={sel.base} detail={sel.detail} />
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold', cornerTypeChipClass(sel.base))}>
+                    {sel.base}
+                  </span>
+                  {sel.rest && <span className="text-xs text-muted-foreground">{sel.rest}</span>}
+                  {sel.bigBanner && <BigBannerBadge />}
+                </div>
+                {isImgSrc(sel.sampleImageUrl?.split('\n')[0]) && (
+                  <div className="flex flex-wrap gap-2">
+                    {sel.sampleImageUrl!.split('\n').filter(Boolean).slice(0, 3).map((src, i) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={i} src={src} alt="유형 샘플" className="h-24 w-auto max-w-[140px] rounded-lg border object-cover object-top [filter:contrast(1.05)_saturate(1.1)]" />
+                    ))}
+                  </div>
+                )}
+                <TypeDetailPreview base={sel.base} component={sel.component} detail={sel.detail} bigBanner={sel.bigBanner} />
                 <Button type="button" onClick={doAdd} disabled={pending} className="w-full">
                   {pending ? '추가 중…' : '이 유형으로 코너 추가'}
                 </Button>
@@ -1839,6 +2006,7 @@ export function BuilderEditor({
         if (p.layoutDetail !== undefined) pc.layoutDetail = p.layoutDetail || null;
         if (p.moreButtonUse !== undefined) pc.moreButtonUse = p.moreButtonUse;
         if (p.moreButtonLabel !== undefined) pc.moreButtonLabel = p.moreButtonLabel || null;
+        if (p.bannerPosition !== undefined) pc.bannerPosition = p.bannerPosition || null;
       }
       // 컴포넌트 Atom 실시간 반영 (칩 편집 · 비-칩 Atom 편집)
       pc.components = pc.components.map((comp) => {
@@ -1970,29 +2138,14 @@ export function BuilderEditor({
           <details className="rounded-md border bg-muted/20 p-2">
             <DisclosureButton>Corner 추가</DisclosureButton>
             <div className="mt-2 space-y-2">
-              {library.cornerTypes.length > 0 && (
-                <Button type="button" size="sm" variant="secondary" className="w-full" onClick={() => setLoadCornerOpen(true)}>
-                  <Copy className="mr-1 h-3.5 w-3.5" /> 코너 불러오기
-                </Button>
-              )}
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                <div className="h-px flex-1 bg-border" /> 또는 유형 선택해 추가 <div className="h-px flex-1 bg-border" />
-              </div>
               {library.cornerTypes.length ? (
-                // 등록된 코너 유형(코너 유형 관리)을 골라 그 형태 그대로 추가
-                <form action={createCornerFromType.bind(null, templateId)} className="grid grid-cols-2 gap-1.5">
-                  <Select name="cornerTypeId" defaultValue={library.cornerTypes[0]?.id} className="col-span-2 h-8 text-xs">
-                    {library.cornerTypes.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {(nameMap[t.baseCategory] ?? t.baseCategory)}
-                        {t.typeDetail ? ` · ${t.typeDetail}` : ''}
-                      </option>
-                    ))}
-                  </Select>
-                  <Button type="submit" size="sm" className="col-span-2 w-fit">
-                    이 유형으로 코너 추가
+                // 코너 추가 = 코너 유형 관리에서 '코너 불러오기'로만 (드롭다운 제거)
+                <>
+                  <Button type="button" size="sm" variant="secondary" className="w-full" onClick={() => setLoadCornerOpen(true)}>
+                    <Copy className="mr-1 h-3.5 w-3.5" /> 코너 불러오기
                   </Button>
-                </form>
+                  <p className="text-[10px] text-muted-foreground">코너 유형 관리에 등록된 유형을 골라 썸네일·정보 그대로 불러옵니다.</p>
+                </>
               ) : (
                 // 카탈로그가 비어 있을 때만 자유 생성 (기준분류만)
                 <form action={createCorner.bind(null, templateId)} className="grid grid-cols-2 gap-1.5">
@@ -2133,10 +2286,7 @@ export function BuilderEditor({
         {selectedCorner ? (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Badge variant="outline">
-                {selectedCorner.typeLabel ?? nameMap[selectedCorner.cornerType] ?? selectedCorner.cornerType}
-                {selectedCorner.layoutDetail ? ` · ${selectedCorner.layoutDetail}` : ''}
-              </Badge>
+              <CornerTypeChip corner={selectedCorner} />
               <h2 className="truncate text-base font-semibold">{selectedCorner.name}</h2>
             </div>
 

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, Info, History } from 'lucide-react';
-import { CornerTypeForm, type CornerTypeRow, type BuiltCornerOption } from '../corner-type-manager';
+import { CornerTypeForm, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo } from '../corner-type-manager';
 
 export type HistoryRow = { id: string; changedAt: string; actor: string; result: string; reason: string | null };
 
@@ -17,7 +17,7 @@ const RESULT_COLOR: Record<string, string> = {
   DELETED: 'bg-rose-100 text-rose-700',
 };
 
-export function CornerTypeDetail({ row, history, builtOptions }: { row: CornerTypeRow; history: HistoryRow[]; builtOptions: BuiltCornerOption[] }) {
+export function CornerTypeDetail({ row, history, builtOptions, registered = [] }: { row: CornerTypeRow; history: HistoryRow[]; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[] }) {
   const router = useRouter();
   const [tab, setTab] = useState<'info' | 'history'>('info');
 
@@ -47,7 +47,7 @@ export function CornerTypeDetail({ row, history, builtOptions }: { row: CornerTy
       </div>
 
       {/* 코너 유형 정보 = 등록 화면과 동일한 폼(미리보기 포함). 저장/취소 시 목록으로 복귀. */}
-      {tab === 'info' && <CornerTypeForm row={row} builtOptions={builtOptions} onClose={() => router.push('/admin/corner-types')} />}
+      {tab === 'info' && <CornerTypeForm row={row} builtOptions={builtOptions} registered={registered} onClose={() => router.push('/admin/corner-types')} />}
 
       {tab === 'history' && (
         <div className="overflow-x-auto rounded-lg border">

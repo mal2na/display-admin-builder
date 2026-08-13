@@ -107,6 +107,10 @@ model Corner {
   // 배너형 코너에 연결된 배너 라이브러리 항목 (포탈2 BannerSlot)
   bannerId String?
   banner   Banner? @relation(fields: [bannerId], references: [id])
+  // 빅배너(상품형 등 코너에 얹는 부속 배너)의 위치 — 빌더에서 배치 조정. 상단 | 하단 (배너형 코너는 무관)
+  bannerPosition String? @default("상단")
+  // 코너 유형 관리에서 불러올 때 상속받은 유형 샘플 썸네일 — 컴포넌트가 아직 없을 때 미리보기/카드에 표시
+  sampleImageUrl String?
 
   cornerComponents CornerComponent[]
   templateCorners  TemplateCorner[]
@@ -280,9 +284,11 @@ model CornerType {
   id           String  @id @default(cuid())
   typeId       String  @unique // 표시용 코너 유형 ID (예: CY0000001)
   name         String // 표시명 (관리 대상)
-  baseCategory String // 컴포넌트 매핑 기준: CORNER_TYPES 8종 중 하나
-  markupId     String? // 코너 마크업 ID (예: CMUID00030)
-  typeDetail   String? // 유형 상세 (예: 가로형(2.5배열), 이미지형 …)
+  baseCategory  String // ① 코너 유형: CORNER_TYPES 8종 중 하나 (정책 PI-DSP-CMP-003)
+  componentType String? // ② 구성 컴포넌트 유형: 코너에 담기는 모듈(6종). CORNER_COMPONENT_MAP으로 제한
+  markupId      String? // 코너 마크업 ID (예: CMUID00030)
+  typeDetail    String? // ③ 배열/레이아웃 상세 (예: 가로형(2.5배열), 세로형 …) — 순수 배열만(빅배너 접미사 제거)
+  bigBanner     Boolean @default(false) // ④ 빅배너 구분자: 상단 빅배너 부속 유무(배열과 직교, TM-DSP-019)
   layout       String? // 코너 레이아웃 (예: 가로 SWIPE형)
   description  String?
 
@@ -297,6 +303,13 @@ model CornerType {
   useMaxItems   Boolean @default(true)
   useNoDisplay  Boolean @default(true)
   useMoreButton Boolean @default(true)
+
+  // 타입-레벨 기본값(템플릿 강화) — 이 유형으로 빌더에서 코너를 만들 때 기본 상속(코너별 수정 가능).
+  defaultMinItems       Int?    // 기본 노출 개수(하한)
+  defaultMaxItems       Int?    // 최대 노출 개수 — 정책서 Corner 구성 기준(노출 순서·최대 노출 개수)
+  defaultSortStrategy   String? // 기본 정렬 기준: MANUAL | PRIORITY | RECENT | POPULAR | PRICE_ASC | PRICE_DESC
+  defaultMoreButton     Boolean @default(false) // 더보기 버튼 기본 ON 여부(라벨은 아래, 링크는 코너별 입력)
+  defaultMoreButtonLabel String? // 더보기 기본 라벨(예: 더보기, 전체보기)
 
   sampleImageUrl String? // 유형 샘플 이미지
   status         String  @default("APPROVED") // 승인상태: DRAFT 임시저장 | REVIEW 승인대기 | APPROVED 승인완료 | REJECTED 승인반려
