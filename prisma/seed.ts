@@ -1022,8 +1022,8 @@ async function main() {
 
   // 배너형·이미지형 = 홈 전반의 '이미지 배너' 유형. 3개 홈에서 이미지 배너 5개를 큐레이션해 샘플로 등록.
   //   혜택: 제휴(롯데월드), AirPods, T Week 카운트다운 / 쇼핑: iPhone20 사전예약, Marshall
-  // 배너형·이미지형 = 홈의 '독립 이미지 배너'. 슬라이스 기준 3개: 제휴(롯데월드)·iPhone20 사전예약·Marshall
-  const BANNER_IMAGE_SAMPLES = ['hb-partner-banner', 'sh-preorder', 'sh-speaker'];
+  // 배너형·이미지형 = 홈의 '독립 이미지 배너'. 슬라이스 기준 4개: 제휴(롯데월드)·iPhone20 사전예약·Marshall·루쥬 코코
+  const BANNER_IMAGE_SAMPLES = ['hb-partner-banner', 'sh-preorder', 'sh-speaker', 'my-product'];
   await prisma.cornerType.updateMany({
     where: { baseCategory: '배너형', typeDetail: '이미지형' },
     data: { sampleImageUrl: BANNER_IMAGE_SAMPLES.map((s) => `/assets/corner-samples/${s}.png`).join('\n') },
