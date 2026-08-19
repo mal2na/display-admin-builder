@@ -84,6 +84,56 @@ const corner = (title: string, layout: 'list' | 'grid' | 'scroll', children: Nod
 const benefitItem = (name: string, badge = '', desc = ''): NodeSpec => n('BENEFIT_ITEM', { name, badge, desc });
 const steps = (arr: string[]) => n('CARD', { mb: 8 }, [n('VSTACK', { gap: 8 }, arr.map((s) => n('TEXT', { text: s, size: 13, weight: 'semibold' })))]);
 
+// ── 프로모션 전용 코너 카탈로그 (프로토타입) ─────────────────────────────
+// 프로모션 빌더의 '코너 불러오기'가 쓰는 프리셋. 각 프리셋 = GROUP_CORNER(자유형) + 모듈 스캐폴딩.
+// 렌더 가능한 실제 컴포넌트 타입만 사용. 이후 코너 유형 관리와 병합 예정(용도 태그).
+export const PROMOTION_CORNER_PRESETS: { key: string; label: string; desc: string; children: NodeSpec[] }[] = [
+  {
+    key: 'hero',
+    label: '이벤트 히어로',
+    desc: '키비주얼 + 제목 + 참여 버튼',
+    children: [
+      n('IMAGE', { overlay: true, overlayText: '이벤트 키비주얼' }),
+      n('TEXT', { text: '이벤트 제목을 입력하세요', size: 20, weight: 'bold', align: 'center' }),
+      n('TEXT', { text: '혜택·부제 요약', align: 'center', color: '#64748b' }),
+      n('BUTTON', { label: '참여하기' }),
+    ],
+  },
+  {
+    key: 'entry',
+    label: '참여·응모',
+    desc: '안내 + 응모 입력 + 동의 + 응모 버튼',
+    children: [n('TEXT', { text: '응모 방법을 안내하세요', weight: 'semibold' }), n('INPUT'), n('SLOT_CONSENT'), n('BUTTON', { label: '응모하기' })],
+  },
+  {
+    key: 'mission',
+    label: '미션 진행',
+    desc: '미션명 + 단계 + 미션 버튼',
+    children: [n('TEXT', { text: '미션명', weight: 'bold' }), n('STEPS'), n('BUTTON', { label: '미션 하러가기' })],
+  },
+  {
+    key: 'reward',
+    label: '보상 안내',
+    desc: '제목 + 보상/경품 항목',
+    children: [n('TEXT', { text: '이런 혜택을 드려요', weight: 'bold' }), n('SLOT_REWARD')],
+  },
+  {
+    key: 'roulette',
+    label: '룰렛 이벤트',
+    desc: '제목 + 룰렛 + 돌리기 버튼',
+    children: [n('TEXT', { text: '룰렛 돌리고 경품 받기', weight: 'bold', align: 'center' }), n('ROULETTE'), n('BUTTON', { label: '룰렛 돌리기' })],
+  },
+  {
+    key: 'notice',
+    label: '유의사항',
+    desc: '이벤트 유의사항 고지',
+    children: [n('SLOT_NOTICE')],
+  },
+];
+export const PROMOTION_CORNER_PRESET_BY_KEY: Record<string, (typeof PROMOTION_CORNER_PRESETS)[number]> = Object.fromEntries(
+  PROMOTION_CORNER_PRESETS.map((p) => [p.key, p]),
+);
+
 export const TEMPLATES: TemplateDef[] = [
   { key: 'blank', label: '빈 페이지에서 시작', eventType: '', desc: '아무것도 없는 상태에서 직접 구성합니다.', build: () => [] },
 

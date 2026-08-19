@@ -1,5 +1,6 @@
 import { Signal, Wifi, BatteryFull, ChevronRight, Percent, ShoppingBag, User } from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
+import { resolveCvmSample, cvmBindingLabel } from '@/lib/display-taxonomy';
 import { PreviewImage } from './preview-image';
 
 export type PreviewAtom = {
@@ -81,6 +82,21 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   );
 }
 
+// 메뉴 리스트(업무 진입형 · 선택형 · 메뉴 리스트) — 칩이 아니라 세로 메뉴 행 + 오른쪽 화살표.
+function MenuListView({ component }: { component: PreviewComponent }) {
+  return (
+    <div className="divide-y divide-slate-100">
+      {component.atoms.map((a) => (
+        <div key={a.id} className="flex items-center gap-2 py-2.5">
+          {a.imageUrl && isIconRef(a.imageUrl) && <IconGlyph name={a.imageUrl} className="h-4 w-4 shrink-0 text-slate-500" />}
+          <span className="flex-1 truncate text-[14px] text-slate-800">{a.content ?? a.name}</span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ProductCard({ component }: { component: PreviewComponent }) {
   const poster = first(component.atoms, 'IMAGE');
   const title = first(component.atoms, 'TEXT');
@@ -149,16 +165,48 @@ function InfoCard({ component }: { component: PreviewComponent }) {
     <div className="flex items-center gap-3">
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
-          <p className="text-[17px] font-bold leading-tight text-slate-900">{value?.content ?? component.name}</p>
-          {badge && <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">{badge.content}</span>}
+          <p className="text-[17px] font-bold leading-tight text-slate-900">{resolveCvmSample(value?.content) || component.name}</p>
+          {badge && <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">{resolveCvmSample(badge.content)}</span>}
         </div>
-        {label && <p className="truncate text-[12px] text-slate-400">{label.content}</p>}
+        {label && <p className="truncate text-[12px] text-slate-400">{resolveCvmSample(label.content)}</p>}
       </div>
       {iconAtom && (
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-50 text-indigo-500">
           <AtomIcon atom={iconAtom} className="h-6 w-6" />
         </div>
       )}
+    </div>
+  );
+}
+
+// 멤버십 바코드 카드 — 회원별 런타임 발급(동적). 어드민은 라벨·유효(갱신)시간 정책만 관리.
+function BarcodeCard({ component }: { component?: PreviewComponent }) {
+  const atoms = component?.atoms ?? [];
+  const label = first(atoms, 'TEXT');
+  const number = first(atoms, 'INFO');
+  const barcode = first(atoms, 'BARCODE'); // content = 유효/갱신 분(어드민 정책)
+  const refreshMin = Number(barcode?.content?.trim() || '20') || 20;
+  // 타이머는 어드민이 정한 유효시간(분)에서 시작하는 런타임 카운트다운 → 시작값 mm:00으로 표시
+  const timerStart = `${String(refreshMin).padStart(2, '0')}:00`;
+  // 번호는 CVM 바인딩이면 sample로 대체 표시(런타임엔 회원 값)
+  const numberText = resolveCvmSample(number?.content);
+  // 하이드레이션 안정(랜덤 X): 고정 폭 패턴으로 바코드 막대를 그린다(실제 값은 런타임 발급).
+  const bars = [3, 1, 2, 1, 4, 1, 2, 3, 1, 1, 2, 1, 3, 2, 1, 4, 1, 2, 1, 1, 3, 1, 2, 4, 1, 2, 1, 3, 1, 1, 2, 1, 4, 2, 1, 3, 1, 2, 1, 1, 3, 1, 2, 1, 4, 1, 2, 3];
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <p className="text-[14px] font-bold text-slate-900">{label?.content ?? component?.name ?? '멤버십'}</p>
+        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-500">
+          <span className="h-1.5 w-1.5 rounded-full bg-rose-400" /> {timerStart}
+        </span>
+      </div>
+      <div className="mt-3 flex h-14 items-stretch justify-center gap-[2px] overflow-hidden rounded-md bg-white px-1">
+        {bars.map((w, i) => (
+          <span key={i} style={{ width: `${w}px` }} className="shrink-0 bg-slate-900" />
+        ))}
+      </div>
+      {numberText && <p className="mt-2 text-center text-[13px] font-medium tracking-[0.25em] text-slate-500">{numberText}</p>}
+      <p className="mt-1.5 text-center text-[10px] text-slate-400">회원별 발급 · {refreshMin}분 유효(자동 갱신) · 번호는 CVM 연동</p>
     </div>
   );
 }
@@ -262,6 +310,11 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // (예: 상품형·세로형(카테고리탭) = 상단 카테고리 탭 + 아래 세로 리스트)
   const chipComps = corner.components.filter((c) => c.componentType === '선택형');
   const bodyComps = corner.components.filter((c) => c.componentType !== '선택형');
+  // 바코드 코너(고정·필수 노출형 · 바코드)는 상태카드가 아니라 멤버십 바코드 카드로 렌더
+  const isBarcode = /바코드/.test(corner.layoutDetail ?? '');
+  // 메뉴 리스트(업무 진입형 · 선택형 · 메뉴 리스트)는 칩이 아니라 세로 메뉴 리스트로 렌더 — 코너 유형 관리 와이어프레임과 일치
+  const isMenuList = /메뉴\s*리스트/.test(corner.layoutDetail ?? '');
+  const menuComp = corner.components.find((c) => c.componentType === '선택형') ?? corner.components[0];
 
   const body =
     corner.components.length === 0 ? (
@@ -278,6 +331,10 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           {corner.name} — Component를 추가하세요
         </div>
       )
+    ) : isBarcode ? (
+      <BarcodeCard component={corner.components[0]} />
+    ) : isMenuList ? (
+      <MenuListView component={menuComp} />
     ) : chipComps.length > 0 && bodyComps.length > 0 ? (
       <div className="space-y-3">
         {chipComps.map((c) => (

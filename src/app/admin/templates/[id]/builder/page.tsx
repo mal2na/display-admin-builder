@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { DISPLAY_STATUS_LABEL, type DisplayStatusKey } from '@/lib/display-taxonomy';
 import { BuilderEditor } from '../builder-editor';
-import { PublishRequestButton } from '../publish-request-button';
+import { TemplateReviewBar } from '../template-review-bar';
+import { collectReviewIssues } from '../workflow-actions';
 import { TemplateHeaderBar } from '../template-header-bar';
 import { ChevronLeft } from 'lucide-react';
 
@@ -123,6 +124,10 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     bannerImageUrl: tc.corner.banner?.imageUrl ?? null,
     bannerPosition: tc.corner.bannerPosition ?? '상단',
     sampleImageUrl: tc.corner.sampleImageUrl ?? null,
+    reviewStatus: tc.corner.reviewStatus ?? 'DRAFT',
+    reviewReason: tc.corner.reviewReason ?? null,
+    reviewedBy: tc.corner.reviewedBy ?? null,
+    reviewedAt: tc.corner.reviewedAt ? tc.corner.reviewedAt.toISOString() : null,
     visible: tc.visible,
     components: tc.corner.cornerComponents.map((cc) => ({
       cornerComponentId: cc.id,
@@ -144,6 +149,9 @@ export default async function BuilderPage({ params }: { params: { id: string } }
       })),
     })),
   }));
+
+  // 템플릿 승인 요청 필수값
+  const reviewIssues = await collectReviewIssues(template.id);
 
   const library = {
     corners: libCorners,
@@ -174,8 +182,14 @@ export default async function BuilderPage({ params }: { params: { id: string } }
           archiveBlockReason={archiveBlockReason}
         />
         <div className="ml-auto" />
-        <PublishRequestButton templateId={template.id} />
       </div>
+
+      <TemplateReviewBar
+        templateId={template.id}
+        status={template.status}
+        rejectReason={template.rejectReason}
+        issues={reviewIssues}
+      />
 
       <BuilderEditor
         meta={{

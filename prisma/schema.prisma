@@ -88,6 +88,14 @@ model Corner {
   sortStrategy String? // 정렬 기준: MANUAL | PRIORITY | RECENT ...
   status       String  @default("active") // 재료 상태: active(사용) | inactive(미사용)
 
+  // ── 코너 검수 워크플로우 (정책서 마.상태전이표 / PG-DSP-WFL-001) ──
+  //    코너 단위로 생성 → 검수 요청 → 승인/반려. 템플릿 status와 별개로 코너마다 관리.
+  //    DRAFT 초안 작성중 | REVIEW 검수 대기 | APPROVED 승인 완료 | REJECTED 수정 필요
+  reviewStatus String  @default("DRAFT")
+  reviewReason String? // 반려 사유 (reviewStatus = REJECTED)
+  reviewedBy   String? // 검수(승인/반려) 처리자
+  reviewedAt   DateTime? // 검수 처리 시각
+
   // ── T우주 코너 정보 컬럼 (코너1·코너2 참고) ──
   markupId     String? // 코너 마크업 ID (예: CMUID00030)
   layoutDetail String? // 유형 상세 (예: 가로형(2.5배열), 팝업배너형, 세로형 …)
@@ -310,9 +318,23 @@ model CornerType {
   defaultSortStrategy   String? // 기본 정렬 기준: MANUAL | PRIORITY | RECENT | POPULAR | PRICE_ASC | PRICE_DESC
   defaultMoreButton     Boolean @default(false) // 더보기 버튼 기본 ON 여부(라벨은 아래, 링크는 코너별 입력)
   defaultMoreButtonLabel String? // 더보기 기본 라벨(예: 더보기, 전체보기)
+  // CVM 연동 필드 — 이 코너 유형이 CVM/BSS에서 자동으로 가져오는 회원 데이터(FN-EVTMSN-FORM-001). CVM_FIELDS key csv.
+  cvmFields String @default("")
 
   sampleImageUrl String? // 유형 샘플 이미지
-  status         String  @default("APPROVED") // 승인상태: DRAFT 임시저장 | REVIEW 승인대기 | APPROVED 승인완료 | REJECTED 승인반려
+  // ── 승인 워크플로우 (편집본 status) ──
+  //  코너 승인은 이 코너 유형 단위로 BSS에 승인 요청한다(운영자는 요청만, 승인/반려는 BSS).
+  //  status = '작업본(편집본)'의 승인 상태이지, 라이브 사용 여부가 아니다. 사용 여부는 liveVersion으로 판정.
+  status         String  @default("APPROVED") // DRAFT 임시저장 | REVIEW 승인대기 | APPROVED 승인완료 | REJECTED 승인반려
+  rejectReason   String? // BSS 반려 사유 (status = REJECTED)
+  reviewedBy     String? // 승인/반려 처리 주체 (BSS)
+  reviewedAt     DateTime? // 승인/반려 처리 시각
+  // ── 버전관리 (라이브 승인본 ↔ 작업본 분리) ──
+  //  라이브 승인본은 재검수 중에도 유지된다. 승인완료 후 운영자가 '반영(사용)'을 눌러야 라이브로 승격(수동 게시).
+  workingVersion Int      @default(1) // 편집본 버전 (수정 착수 시 증가)
+  liveVersion    Int?     // 현재 사용(반영)된 승인본 버전. null = 아직 라이브 없음(미사용)
+  liveSnapshot   String?  // 반영된 승인본 정의 스냅샷(JSON) — 불러오기/노출의 정본. 재검수 중에도 이 값이 쓰인다.
+  liveAt         DateTime? // 마지막 반영(게시) 시각
   createdBy      String? // 등록자
 
   createdAt DateTime @default(now())

@@ -8,12 +8,15 @@ import {
   OPERATION_PLATFORMS,
   CORNER_TYPE_FEATURES,
   CORNER_TYPE_STATUS_LABEL,
+  CORNER_TYPE_STATUS_COLOR,
+  deriveCornerTypeUsage,
   CORNER_TYPES,
   cornerTypePurpose,
   cornerTypeChipClass,
   componentTypesForCorner,
   componentLayoutDetails,
   PRODUCT_SORT_OPTIONS,
+  CVM_FIELDS,
 } from '@/lib/display-taxonomy';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -59,8 +62,15 @@ export type CornerTypeRow = {
   defaultSortStrategy: string | null;
   defaultMoreButton: boolean;
   defaultMoreButtonLabel: string | null;
+  cvmFields: string; // CVM 연동 필드 keys csv
   sampleImageUrl: string | null;
   status: string;
+  rejectReason?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  workingVersion?: number;
+  liveVersion?: number | null;
+  liveAt?: string | null;
   createdBy: string | null;
   updatedBy?: string | null;
   createdAt?: string;
@@ -92,8 +102,12 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   defaultSortStrategy: null,
   defaultMoreButton: false,
   defaultMoreButtonLabel: null,
+  cvmFields: '',
   sampleImageUrl: null,
   status: 'DRAFT',
+  workingVersion: 1,
+  liveVersion: null,
+  liveAt: null,
   createdBy: null,
 };
 
@@ -122,7 +136,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const baseOptions = ['전체', ...Array.from(new Set(types.map((t) => t.baseCategory).filter(Boolean)))];
   const detailOptions = ['전체', ...Array.from(new Set(types.map((t) => t.typeDetail).filter((d): d is string => !!d)))];
 
-  const toggleStatus = (k: string) => setStatusSel((prev) => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
   const reset = () => { setBase('전체'); setDetail('전체'); setUseOn(true); setUseOff(true); setStatusSel(new Set(statusKeys)); setField('typeId'); setQ(''); setPage(1); };
 
   const ql = q.trim().toLowerCase();
@@ -175,36 +188,43 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         }
       />
 
-      {/* 코너 유형별 빠른 필터 칩 — 메뉴에서 바로 소팅 (프로모션 관리와 동일 패턴) */}
-      <div className="flex flex-wrap gap-1.5">
-        {baseOptions.map((b) => {
-          const active = base === b;
-          const count = b === '전체' ? types.length : types.filter((t) => t.baseCategory === b).length;
-          const isAll = b === '전체';
-          // 유형 칩은 8색 팔레트로, '전체'는 중립. 선택 시 ring으로 강조.
-          const color = isAll ? 'border-border bg-card text-muted-foreground' : cornerTypeChipClass(b);
-          return (
-            <button
-              key={b}
-              type="button"
-              onClick={() => { setBase(b); setPage(1); }}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition',
-                color,
-                active ? 'ring-2 ring-primary ring-offset-1 font-semibold' : 'opacity-80 hover:opacity-100',
-              )}
-            >
-              {b}
-              <span className="rounded-full bg-black/5 px-1.5 text-[11px] tabular-nums">{count}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* ── 상위 거버넌스: 승인 상태 탭 (언더라인 탭 — 참고 UI 스타일) ── */}
+      {(() => {
+        const statusTabActive = statusSel.size >= statusKeys.length ? '전체' : statusSel.size === 1 ? [...statusSel][0] : '';
+        const setStatusTab = (k: string) => { setStatusSel(k === '전체' ? new Set(statusKeys) : new Set([k])); setPage(1); };
+        // 라벨·순서는 정책서 상태값(CORNER_TYPE_STATUSES) 그대로 사용: 승인완료·승인요청·반려·임시저장
+        const tabs: { key: string; label: string }[] = [{ key: '전체', label: '전체' }, ...statusKeys.map((k) => ({ key: k, label: CORNER_TYPE_STATUS_LABEL[k] ?? k }))];
+        return (
+          <div className="flex flex-wrap items-center gap-6 border-b">
+            {tabs.map((t) => {
+              const active = statusTabActive === t.key;
+              const count = t.key === '전체' ? types.length : types.filter((x) => x.status === t.key).length;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setStatusTab(t.key)}
+                  className={cn(
+                    '-mb-px border-b-2 pb-2.5 text-sm font-semibold transition',
+                    active ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {t.label}
+                  <span className={cn('ml-1.5 text-xs tabular-nums', active ? 'text-primary' : 'text-muted-foreground/70')}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* 코너 유형은 상위 탭이 아니라 아래 상세 필터에서 고른다 (승인 상태만 상위 거버넌스 탭). */}
 
       {/* 상세 검색 필터 */}
       <div className="rounded-xl border bg-surface-subtle p-4">
         {expanded && (
-          <div className="mb-3 grid gap-x-6 gap-y-3 border-b pb-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mb-3 grid gap-x-6 gap-y-3 border-b pb-3 md:grid-cols-2 xl:grid-cols-3">
+            {/* 승인상태는 상단 탭에서 고른다 → 상세 필터에서는 중복 제거 */}
             <div>
               <p className="mb-1 text-xs font-medium text-muted-foreground">코너 유형</p>
               <select value={base} onChange={(e) => { setBase(e.target.value); setPage(1); }} className={`${selectCls} w-full`}>
@@ -222,14 +242,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               <div className="flex h-9 items-center gap-4">
                 <label className={chk}><input type="checkbox" checked={useOn} onChange={(e) => { setUseOn(e.target.checked); setPage(1); }} className="accent-primary" /> 사용</label>
                 <label className={chk}><input type="checkbox" checked={useOff} onChange={(e) => { setUseOff(e.target.checked); setPage(1); }} className="accent-primary" /> 미사용</label>
-              </div>
-            </div>
-            <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">승인상태</p>
-              <div className="flex h-9 flex-wrap items-center gap-x-3 gap-y-1">
-                {statusKeys.map((k) => (
-                  <label key={k} className={chk}><input type="checkbox" checked={statusSel.has(k)} onChange={() => { toggleStatus(k); setPage(1); }} className="accent-primary" /> {CORNER_TYPE_STATUS_LABEL[k] ?? k}</label>
-                ))}
               </div>
             </div>
           </div>
@@ -252,6 +264,30 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         </div>
       </div>
 
+      {/* 코너 유형 빠른 필터 칩 — 검색결과 바로 위, 원클릭 소팅(8색). 상위 탭은 승인 상태, 이건 유형. */}
+      <div className="flex flex-wrap gap-1.5">
+        {baseOptions.map((b) => {
+          const active = base === b;
+          const count = b === '전체' ? types.length : types.filter((t) => t.baseCategory === b).length;
+          const color = b === '전체' ? 'border-border bg-card text-muted-foreground' : cornerTypeChipClass(b);
+          return (
+            <button
+              key={b}
+              type="button"
+              onClick={() => { setBase(b); setPage(1); }}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition',
+                color,
+                active ? 'ring-2 ring-primary ring-offset-1 font-semibold' : 'opacity-80 hover:opacity-100',
+              )}
+            >
+              {b}
+              <span className="rounded-full bg-black/5 px-1.5 text-[11px] tabular-nums">{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">검색결과: <b className="text-foreground">{filtered.length}개</b></p>
         <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="h-8 rounded-md border bg-white px-2 text-xs">
@@ -259,9 +295,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         </select>
       </div>
 
-      <div className="rounded-xl border">
+      <div className="overflow-x-auto border">
         <table className="w-full text-sm">
-          <thead className="bg-surface-subtle text-xs text-muted-foreground">
+          <thead className="border-b bg-surface-subtle text-xs text-muted-foreground">
             <tr>
               {['번호', '코너 유형 ID', '코너 유형', '구성 컴포넌트', '배열/레이아웃 상세', '사용여부', '유형 샘플', '승인상태', '등록자', '등록일시', '최근수정자', '최근 수정일시'].map((h) => (
                 <th key={h} className="whitespace-nowrap px-3 py-2 text-left font-medium">
@@ -297,14 +333,19 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
-                  <form action={toggleCornerTypeActive.bind(null, t.id)} onClick={(e) => e.stopPropagation()}>
-                    <button
-                      className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', t.active ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground')}
-                      title="클릭하여 사용/미사용 전환"
-                    >
-                      {t.active ? '사용' : '미사용'}
-                    </button>
-                  </form>
+                  {/* 사용 여부(TM-DSP-021) = 노출 사용 스위치. 반영(승인·게시)된 유형만 켤 수 있다. */}
+                  {t.liveVersion == null ? (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground" title="승인·반영 후에 사용할 수 있습니다">미사용</span>
+                  ) : (
+                    <form action={toggleCornerTypeActive.bind(null, t.id)} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', t.active ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground')}
+                        title="클릭하여 사용/미사용 전환"
+                      >
+                        {t.active ? `사용 중 · v${t.liveVersion}` : '미사용'}
+                      </button>
+                    </form>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2" onClick={(e) => e.stopPropagation()}>
                   {t.sampleImageUrl ? (
@@ -336,7 +377,21 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                     <span className="inline-flex items-center rounded border px-2 py-0.5 text-[11px] text-muted-foreground/50">없음</span>
                   )}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs">{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-xs">
+                  {(() => {
+                    const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
+                    return (
+                      <span className="inline-flex items-center gap-1">
+                        <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>
+                          {CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}
+                        </span>
+                        {/* '사용 중'은 사용여부 컬럼으로 일원화 → 승인상태에는 편집본 관련 플래그만 */}
+                        {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
+                        {g.changeInReview && <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">변경 검수 중</span>}
+                      </span>
+                    );
+                  })()}
+                </td>
                 <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{t.createdBy ?? '-'}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{t.createdAt ? t.createdAt.replace('T', ' ').slice(0, 16) : '-'}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{t.updatedBy ?? '-'}</td>
@@ -410,6 +465,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const [bigBanner, setBigBanner] = useState(row.bigBanner ?? false); // ④ 빅배너 구분자
   const [active, setActive] = useState(row.active);
   const [moreDefault, setMoreDefault] = useState(row.defaultMoreButton ?? false); // 더보기 기본 ON(타입-레벨)
+  const [cvmSel, setCvmSel] = useState<Set<string>>(new Set(row.cvmFields ? row.cvmFields.split(',').filter(Boolean) : [])); // CVM 연동 필드
+  const toggleCvm = (k: string) => setCvmSel((prev) => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
   // 세부 항목(항목별 사용여부) — 6개 토글을 한 곳에서 관리(미리보기/노출 기본값과 실시간 연동)
   const [features, setFeatures] = useState({
     useMainTitle: row.useMainTitle,
@@ -646,22 +703,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
         {/* 하단: 나머지 항목 2열 */}
         <div className="grid grid-cols-1 md:grid-cols-2">
           <TRow label="운영 채널">
-            <div className="flex flex-wrap gap-3 py-0.5">
-              {OPERATION_CHANNELS.map((c) => (
-                <label key={c} className="flex items-center gap-1.5 text-xs">
-                  <input type="checkbox" name="channels" value={c} defaultChecked={channels.includes(c)} className="accent-indigo-600" /> {c}
-                </label>
-              ))}
-            </div>
+            <OpsCheckGroup name="channels" options={OPERATION_CHANNELS} initial={channels} />
           </TRow>
           <TRow label="운영 플랫폼">
-            <div className="flex flex-wrap gap-3 py-0.5">
-              {OPERATION_PLATFORMS.map((p) => (
-                <label key={p} className="flex items-center gap-1.5 text-xs">
-                  <input type="checkbox" name="platforms" value={p} defaultChecked={platforms.includes(p)} className="accent-indigo-600" /> {p}
-                </label>
-              ))}
-            </div>
+            <OpsCheckGroup name="platforms" options={OPERATION_PLATFORMS} initial={platforms} />
           </TRow>
 
           <TRow label="사용 여부" required>
@@ -787,6 +832,39 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
         </section>
       )}
 
+      {/* CVM 연동 필드 — 이 유형이 CVM/BSS에서 자동으로 가져오는 회원 데이터(어드민 입력 X, 출처 표시) */}
+      <section className="overflow-hidden rounded-md border">
+        <div className="flex items-center gap-2 border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
+          <Info className="h-3.5 w-3.5 text-sky-500" /> CVM 연동 필드
+          <span className="font-normal text-slate-400">회원 정보는 어드민이 입력하지 않고 CVM에서 가져옵니다 · FN-EVTMSN-FORM-001</span>
+        </div>
+        <div className="space-y-2 p-3">
+          <p className="text-[11px] text-muted-foreground">이 코너 유형이 CVM에서 가져오는 항목을 선택하세요. 빌더에서 해당 항목은 “CVM 연동”으로 표시됩니다.</p>
+          <div className="flex flex-wrap gap-1.5">
+            {CVM_FIELDS.map((f) => {
+              const on = cvmSel.has(f.key);
+              return (
+                <label
+                  key={f.key}
+                  className={cn(
+                    'inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
+                    on ? 'border-sky-400 bg-sky-50 text-sky-700' : 'border-border text-muted-foreground hover:border-sky-300',
+                  )}
+                >
+                  <input type="checkbox" name="cvmFields" value={f.key} checked={on} onChange={() => toggleCvm(f.key)} className="sr-only" />
+                  {on && <Check className="h-3 w-3" />}
+                  {f.label}
+                  <span className="text-[9px] text-slate-400">{f.category}</span>
+                </label>
+              );
+            })}
+          </div>
+          {cvmSel.size > 0 && (
+            <p className="text-[10px] text-sky-600">선택 {cvmSel.size}개 — 빌더에서 이 유형으로 코너를 만들면 해당 값은 CVM에서 회원별로 채워집니다(고정값 입력 불가).</p>
+          )}
+        </div>
+      </section>
+
       {/* 유형 샘플 이미지 — 로컬에서 직접 등록 */}
       <section className="overflow-hidden rounded-md border">
         <div className="border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">유형 샘플 이미지</div>
@@ -837,6 +915,43 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
 }
 
 /** BO 폼 행: 라벨 셀 + 값 셀 (셀 경계). flat=경계/패딩 없는 단일 행 */
+// 운영 채널/플랫폼처럼 '전체'가 마스터(select-all)인 다중 체크박스 그룹.
+//  - '전체' 체크 → 하위 옵션 모두 체크 / 해제 → 모두 해제
+//  - 하위를 모두 체크하면 '전체'도 자동 체크, 일부만이면 indeterminate
+//  - 폼 제출값(name)은 하위 실제 옵션만 (저장값에 '전체' 리터럴이 있으면 전체 선택으로 해석)
+function OpsCheckGroup({ name, options, initial }: { name: string; options: readonly string[]; initial: string[] }) {
+  const reals = options.filter((o) => o !== '전체');
+  const [sel, setSel] = useState<Set<string>>(
+    () => new Set(initial.includes('전체') ? reals : initial.filter((o) => reals.includes(o))),
+  );
+  const allOn = reals.every((r) => sel.has(r));
+  const someOn = reals.some((r) => sel.has(r));
+  const allRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (allRef.current) allRef.current.indeterminate = someOn && !allOn;
+  }, [someOn, allOn]);
+  const toggleAll = () => setSel(allOn ? new Set() : new Set(reals));
+  const toggle = (r: string) =>
+    setSel((prev) => {
+      const n = new Set(prev);
+      if (n.has(r)) n.delete(r);
+      else n.add(r);
+      return n;
+    });
+  return (
+    <div className="flex flex-wrap gap-3 py-0.5">
+      <label className="flex items-center gap-1.5 text-xs">
+        <input ref={allRef} type="checkbox" checked={allOn} onChange={toggleAll} className="accent-indigo-600" /> 전체
+      </label>
+      {reals.map((r) => (
+        <label key={r} className="flex items-center gap-1.5 text-xs">
+          <input type="checkbox" name={name} value={r} checked={sel.has(r)} onChange={() => toggle(r)} className="accent-indigo-600" /> {r}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 function TRow({
   label,
   required,

@@ -446,36 +446,42 @@ async function createScaffoldComponents(cornerId: string, cornerType: string, sp
 async function createCornerInstanceFromTypeId(cornerTypeId: string) {
   const ct = cornerTypeId ? await prisma.cornerType.findUnique({ where: { id: cornerTypeId } }) : null;
   if (!ct) throw new Error('등록된 코너 유형을 찾을 수 없습니다.');
-  if (!(CORNER_TYPES as readonly string[]).includes(ct.baseCategory)) throw new Error('유효한 Corner 유형이 아닙니다.');
+  // 정본(불러오기의 기준) = 라이브 승인본 스냅샷. 재검수 중이라도 직전 승인본으로 생성된다.
+  //  liveSnapshot이 없으면(아직 미반영) 현재 컬럼값으로 폴백.
+  let def: typeof ct = ct;
+  if (ct.liveSnapshot) {
+    try { def = { ...ct, ...(JSON.parse(ct.liveSnapshot) as Partial<typeof ct>) }; } catch { def = ct; }
+  }
+  if (!(CORNER_TYPES as readonly string[]).includes(def.baseCategory)) throw new Error('유효한 Corner 유형이 아닙니다.');
 
-  const isComposite = ct.baseCategory === '개인화 추천형';
-  const baseName = ct.baseCategory; // 코너 이름 = 코너 유형과 동치(별칭 미사용)
-  const nameParts = [ct.typeDetail, ct.bigBanner ? '빅배너' : ''].filter(Boolean);
+  const isComposite = def.baseCategory === '개인화 추천형';
+  const baseName = def.baseCategory; // 코너 이름 = 코너 유형과 동치(별칭 미사용)
+  const nameParts = [def.typeDetail, def.bigBanner ? '빅배너' : ''].filter(Boolean);
   const name = nameParts.length ? `${baseName} · ${nameParts.join(' · ')}` : baseName;
   // 전시화면 코너의 배열명에는 빅배너를 마커로 유지(렌더/기존 시드와 일관)
-  const cornerLayoutDetail = ct.bigBanner ? `${ct.typeDetail ?? ''} · 빅배너`.trim().replace(/^· /, '') : ct.typeDetail;
+  const cornerLayoutDetail = def.bigBanner ? `${def.typeDetail ?? ''} · 빅배너`.trim().replace(/^· /, '') : def.typeDetail;
 
   // 타입-레벨 기본값 상속(템플릿 강화) — 항목 사용여부 토글이 켜진 것만 채우고, 코너별 수정은 자유.
-  const moreOn = ct.defaultMoreButton && ct.useMoreButton;
+  const moreOn = def.defaultMoreButton && def.useMoreButton;
   const corner = await prisma.corner.create({
     data: {
       name,
-      cornerType: ct.baseCategory,
+      cornerType: def.baseCategory,
       typeLabel: isComposite ? baseName : null,
       layoutDetail: cornerLayoutDetail, // 유형 상세 (+ 빅배너 마커)
-      cornerLayout: ct.layout, // 등록된 코너 레이아웃 상속 → 미리보기 형태가 등록 유형과 일치
-      markupId: ct.markupId,
-      description: ct.description,
+      cornerLayout: def.layout, // 등록된 코너 레이아웃 상속 → 미리보기 형태가 등록 유형과 일치
+      markupId: def.markupId,
+      description: def.description,
       // 노출 개수(최소/최대)는 타입에서 상속하지 않는다 — 빌더에서 코너별로 설정
-      sortStrategy: ct.defaultSortStrategy ?? 'MANUAL',
+      sortStrategy: def.defaultSortStrategy ?? 'MANUAL',
       moreButtonUse: moreOn,
-      moreButtonLabel: moreOn ? (ct.defaultMoreButtonLabel ?? '더보기') : null,
+      moreButtonLabel: moreOn ? (def.defaultMoreButtonLabel ?? '더보기') : null,
       // 코너 유형 관리의 유형 샘플 썸네일을 코너에 상속(카드/참고용) — 컴포넌트가 생기면 미리보기는 컴포넌트로 렌더
-      sampleImageUrl: ct.sampleImageUrl,
+      sampleImageUrl: def.sampleImageUrl,
     },
   });
   // 유형의 컴포넌트 유형·배열에 맞춰 '코너 구성'을 스캐폴딩(불러오면 코너 정보 + 코너 구성이 실제로 채워짐)
-  await createScaffoldComponents(corner.id, ct.baseCategory, scaffoldSpecFor(ct.componentType, ct.typeDetail));
+  await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail));
   return corner;
 }
 

@@ -9,7 +9,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { renderNodeBody, DeviceShell, type NodeView } from '@/components/preview/event-node';
 import { CATALOG, componentDef, componentLabel, isContainer, DEVICES, CORNER_TYPES, allowedComponentsFor, PROMO_CORNER_OPTIONS, GROUP_CORNER } from '@/lib/event-components';
 import { layerRole, LAYER_LABEL, LAYER_COLOR, isFixedNode, type Viewer, nodeAudience, AUDIENCE_BADGE } from '@/lib/event-layers';
-import { addNode, addCornerNode, updateNodeProps, deleteNode, duplicateNode, updatePageMeta, addConditionPage, saveEventDraft, restoreEventVersion, reorderNodes } from '../../../actions';
+import { addNode, addCornerNode, addPromotionCorner, updateNodeProps, deleteNode, duplicateNode, updatePageMeta, addConditionPage, saveEventDraft, restoreEventVersion, reorderNodes } from '../../../actions';
+import { PROMOTION_CORNER_PRESETS } from '@/lib/event-templates';
 import { ProgramInfoEdit, type ProgramInfo } from './program-info-edit';
 import { PropertiesPanel } from './properties';
 
@@ -370,6 +371,7 @@ function EditableNode({ node, meta, selectedId, onSelect, viewer }: { node: Node
 export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<'node' | 'add'>('add');
+  const [promoLoadOpen, setPromoLoadOpen] = useState(false); // 프로모션 코너 불러오기 모달
   // 노드 선택 시: ① 우측 패널을 '선택 속성' 탭으로 자동 포커스 ② 디바이스 미리보기를 해당 노드 위치로 스크롤
   const selectNode = (id: string) => {
     setSelectedId(id);
@@ -390,7 +392,7 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
   const [q, setQ] = useState('');
   const [device, setDevice] = useState(DEVICES.find((d) => d.key === meta.device) ?? DEVICES[0]);
   const [viewer] = useState<Viewer>('로그인'); // 빌더 렌더 기준(로그인) — 미리보기 대상 토글은 제거됨
-  const [, start] = useTransition();
+  const [pending, start] = useTransition();
 
   const display = meta.mode === 'display';
 
@@ -439,6 +441,16 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
       const id = await addCornerNode(meta.pageId, cornerType);
       if (id) setSelectedId(id);
     });
+    setTab('node');
+  }
+
+  // 프로모션: 전용 코너 카탈로그에서 불러오기 (프리셋 + 모듈 스캐폴딩)
+  function loadPromoCorner(presetKey: string) {
+    start(async () => {
+      const id = await addPromotionCorner(meta.pageId, presetKey);
+      if (id) setSelectedId(id);
+    });
+    setPromoLoadOpen(false);
     setTab('node');
   }
 
@@ -493,6 +505,19 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
           {/* 코너 추가 — 전시화면 관리처럼 구조(좌측) 하단에 배치 */}
           <details className="border-t p-3" open>
             <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">＋ 코너 추가</summary>
+            {!display && (
+              <>
+                <button
+                  onClick={() => setPromoLoadOpen(true)}
+                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-primary/50 bg-primary/5 p-2 text-[13px] font-semibold text-primary transition hover:bg-primary hover:text-primary-foreground"
+                >
+                  <LucideIcon name="Copy" className="h-4 w-4" /> 코너 불러오기
+                </button>
+                <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <div className="h-px flex-1 bg-border" /> 또는 빈 섹션 추가 <div className="h-px flex-1 bg-border" />
+                </div>
+              </>
+            )}
             <div className="mt-2 max-h-56 space-y-1.5 overflow-y-auto">
               {(display
                 ? CORNER_TYPES.map((c) => ({ key: c.key, label: c.label, governed: true }))
@@ -511,6 +536,39 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
             </div>
           </details>
         </div>
+
+        {/* 프로모션 코너 불러오기 모달 — 전용 카탈로그 프리셋 */}
+        {promoLoadOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPromoLoadOpen(false)}>
+            <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-2 border-b px-5 py-3">
+                <LucideIcon name="Copy" className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold">코너 불러오기</h2>
+                <span className="text-xs text-muted-foreground">프로모션 코너를 골라 페이지에 얹어요</span>
+                <button onClick={() => setPromoLoadOpen(false)} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="닫기">
+                  <Icons.X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-4">
+                {PROMOTION_CORNER_PRESETS.map((p) => (
+                  <button
+                    key={p.key}
+                    onClick={() => loadPromoCorner(p.key)}
+                    disabled={pending}
+                    className="flex w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition hover:border-primary/60 hover:bg-accent"
+                  >
+                    <LucideIcon name="LayoutGrid" className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13px] font-semibold">{p.label}</span>
+                      <span className="block truncate text-[11px] text-muted-foreground">{p.desc}</span>
+                    </span>
+                    <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-500">{p.children.length}개 모듈</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 중앙 캔버스 */}
         <div className="flex flex-col overflow-hidden bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]">

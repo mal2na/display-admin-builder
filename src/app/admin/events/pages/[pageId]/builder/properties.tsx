@@ -3,21 +3,9 @@
 import { useTransition } from 'react';
 import { Trash2, Plus, Minus, Lock } from 'lucide-react';
 import type { NodeView } from '@/components/preview/event-node';
-import { componentDef, variantsFor } from '@/lib/event-components';
-import { AUDIENCES, AUDIENCE_LABEL, nodeAudience, GUEST_CTA_LABEL, MEMBER_CTA_LABEL } from '@/lib/event-layers';
+import { componentDef } from '@/lib/event-components';
+import { GUEST_CTA_LABEL, MEMBER_CTA_LABEL } from '@/lib/event-layers';
 import { updateNodeProps, deleteNode } from '../../../actions';
-
-function VariantRow({ type, p, set }: { type: string; p: Record<string, any>; set: (patch: Record<string, unknown>) => void }) {
-  const vs = variantsFor(type);
-  if (!vs.length) return null;
-  return (
-    <Row label="Variant (배리언스)">
-      <select defaultValue={p.variant ?? vs[0]} onChange={(e) => set({ variant: e.target.value })} className={inputCls}>
-        {vs.map((v) => <option key={v} value={v}>{v}</option>)}
-      </select>
-    </Row>
-  );
-}
 
 // 작은 폼 헬퍼
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -66,24 +54,8 @@ export function PropertiesPanel({ pageId, node, onDelete, onPatch }: { pageId: s
         </div>
       )}
 
-      {/* 노출 조건 (로그인 상태 분기) — 정책 v0.19: 화면 공통, 노드별 조건으로 로그인/비로그인 분기 */}
-      {!fixed && (
-        <div>
-          <p className="mb-1.5 text-[12px] font-semibold">노출 조건 <span className="font-normal text-muted-foreground">· 로그인 상태</span></p>
-          <div className="flex overflow-hidden rounded-lg border">
-            {AUDIENCES.map((a) => (
-              <button
-                key={a}
-                onClick={() => set({ audience: a })}
-                className={`flex-1 px-2 py-1.5 text-[12px] font-medium ${nodeAudience(p) === a ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}
-              >
-                {AUDIENCE_LABEL[a]}
-              </button>
-            ))}
-          </div>
-          <p className="mt-1 text-[10px] leading-snug text-muted-foreground">공통은 모두에게, 로그인/비로그인 전용은 해당 상태에서만 노출됩니다. 상단 <b>미리보기 대상</b> 토글로 확인하세요.</p>
-        </div>
-      )}
+      {/* 노출 조건(로그인/비로그인)은 노드 단위가 아니라 조건그룹(템플릿) 단위로 분기한다 —
+          전시 빌더의 조건그룹과 동일 거버넌스. 노드별 토글은 제거. */}
 
       {/* CTA 라벨 — SLOT_CTA는 위치는 고정이지만 문구는 운영자가 관리. 비로그인 시 로그인 유도 CTA 자동 노출 */}
       {node.type === 'SLOT_CTA' && (
@@ -99,42 +71,9 @@ export function PropertiesPanel({ pageId, node, onDelete, onPatch }: { pageId: s
         </div>
       )}
 
-      {/* 공통 설정 — 여백 (margin/padding) — 고정 영역은 제외 */}
-      {!fixed && (
-      <div>
-        <p className="mb-2 text-[12px] font-semibold">공통 설정</p>
-        <p className="mb-1.5 text-[10px] text-muted-foreground">여백 — 바깥(margin) · 안쪽(padding)</p>
-        <div className="rounded-lg border p-3">
-          <p className="mb-1 text-center text-[9px] text-muted-foreground">바깥 margin</p>
-          <div className="grid grid-cols-3 items-center gap-1">
-            <span />
-            <input type="number" defaultValue={p.mt ?? 0} onChange={(e) => set({ mt: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
-            <span />
-            <input type="number" defaultValue={p.ml ?? 0} onChange={(e) => set({ ml: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
-            <div className="rounded bg-slate-100 p-2">
-              <p className="mb-1 text-center text-[9px] text-muted-foreground">안쪽 padding</p>
-              <div className="grid grid-cols-3 items-center gap-1">
-                <span />
-                <input type="number" defaultValue={p.pt ?? 0} onChange={(e) => set({ pt: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
-                <span />
-                <input type="number" defaultValue={p.pl ?? 0} onChange={(e) => set({ pl: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
-                <span className="text-center text-[9px] text-slate-400">{def?.label}</span>
-                <input type="number" defaultValue={p.pr ?? 0} onChange={(e) => set({ pr: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
-                <span />
-                <input type="number" defaultValue={p.pb ?? 0} onChange={(e) => set({ pb: num(e.target.value) })} className="h-6 rounded border px-1 text-center text-[10px]" />
-                <span />
-              </div>
-            </div>
-            <input type="number" defaultValue={p.mr ?? 0} onChange={(e) => set({ mr: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
-            <span />
-            <input type="number" defaultValue={p.mb ?? 0} onChange={(e) => set({ mb: num(e.target.value) })} className="h-7 rounded border px-1 text-center text-[11px]" />
-            <span />
-          </div>
-        </div>
-      </div>
-      )}
-
-      {/* 세부 설정 — 유형별 (고정 영역은 편집 항목 없음) */}
+      {/* 세부 설정 — 유형별 (고정 영역은 편집 항목 없음).
+          픽셀 여백(margin/padding) 같은 저수준 설정은 코너 거버넌스와 맞지 않아 제거.
+          간격·배치는 코너 레이아웃(리스트/그리드/스크롤)에서 표준으로 정한다. */}
       {!fixed && (
       <div className="space-y-3">
         <p className="text-[12px] font-semibold">세부 설정</p>
@@ -158,48 +97,26 @@ function TypeFields({ type, p, set, num }: { type: string; p: Record<string, any
   }
   switch (type) {
     case 'TEXT':
-      return (
-        <>
-          <Row label="내용"><textarea defaultValue={p.text} onBlur={(e) => set({ text: e.target.value })} rows={3} className="w-full rounded-md border p-2 text-[12px]" /></Row>
-          <div className="grid grid-cols-2 gap-2">
-            <Row label="크기(px)"><input type="number" defaultValue={p.size} onBlur={(e) => set({ size: num(e.target.value) })} className={inputCls} /></Row>
-            <Row label="굵기">
-              <select defaultValue={p.weight} onChange={(e) => set({ weight: e.target.value })} className={inputCls}>
-                <option value="normal">보통</option><option value="semibold">중간</option><option value="bold">굵게</option>
-              </select>
-            </Row>
-            <Row label="정렬">
-              <select defaultValue={p.align} onChange={(e) => set({ align: e.target.value })} className={inputCls}>
-                <option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option>
-              </select>
-            </Row>
-            <Row label="색상"><input type="color" defaultValue={p.color} onChange={(e) => set({ color: e.target.value })} className="h-8 w-full rounded-md border" /></Row>
-          </div>
-        </>
-      );
+      return <Row label="내용"><textarea defaultValue={p.text} onBlur={(e) => set({ text: e.target.value })} rows={3} className="w-full rounded-md border p-2 text-[12px]" /></Row>;
     case 'TABLE':
-      return (<><VariantRow type="TABLE" p={p} set={set} /><TableFields p={p} set={set} /></>);
+      return <TableFields p={p} set={set} />;
     case 'STEPS':
       return (
         <>
-          <VariantRow type="STEPS" p={p} set={set} />
           <Row label="제목"><input defaultValue={p.title} onBlur={(e) => set({ title: e.target.value })} className={inputCls} /></Row>
           <Row label="단계 (줄바꿈으로 구분)"><textarea defaultValue={(p.steps ?? []).join('\n')} onBlur={(e) => set({ steps: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) })} rows={5} className="w-full rounded-md border p-2 text-[12px]" /></Row>
         </>
       );
     case 'BENEFIT_CARD':
       return (
-        <>
-          <VariantRow type="BENEFIT_CARD" p={p} set={set} />
-          <Row label="항목 (한 줄에 하나: 이름 | 설명 | 가격)">
-            <textarea
-              defaultValue={(p.items ?? []).map((it: any) => [it.name, it.desc, it.price].filter(Boolean).join(' | ')).join('\n')}
-              onBlur={(e) => set({ items: e.target.value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const [name, desc, price] = l.split('|').map((x) => x.trim()); return { name: name ?? '', desc: desc ?? '', price: price ?? '' }; }) })}
-              rows={5}
-              className="w-full rounded-md border p-2 text-[12px]"
-            />
-          </Row>
-        </>
+        <Row label="항목 (한 줄에 하나: 이름 | 설명 | 가격)">
+          <textarea
+            defaultValue={(p.items ?? []).map((it: any) => [it.name, it.desc, it.price].filter(Boolean).join(' | ')).join('\n')}
+            onBlur={(e) => set({ items: e.target.value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const [name, desc, price] = l.split('|').map((x) => x.trim()); return { name: name ?? '', desc: desc ?? '', price: price ?? '' }; }) })}
+            rows={5}
+            className="w-full rounded-md border p-2 text-[12px]"
+          />
+        </Row>
       );
     case 'BENEFIT_ITEM':
       return (
@@ -247,7 +164,6 @@ function TypeFields({ type, p, set, num }: { type: string; p: Record<string, any
     case 'INPUT':
       return (
         <>
-          <VariantRow type="INPUT" p={p} set={set} />
           <Row label="라벨"><input defaultValue={p.label} onBlur={(e) => set({ label: e.target.value })} className={inputCls} /></Row>
           <Row label="입력 placeholder"><input defaultValue={p.placeholder} onBlur={(e) => set({ placeholder: e.target.value })} className={inputCls} /></Row>
           <Row label="객관식 보기 (줄바꿈으로 구분)"><textarea defaultValue={(p.options ?? []).join('\n')} onBlur={(e) => set({ options: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) })} rows={4} className="w-full rounded-md border p-2 text-[12px]" /></Row>
@@ -256,12 +172,8 @@ function TypeFields({ type, p, set, num }: { type: string; p: Record<string, any
     case 'IMAGE':
       return (
         <>
-          <VariantRow type="IMAGE" p={p} set={set} />
           <Row label="이미지 URL"><input defaultValue={p.url} onBlur={(e) => set({ url: e.target.value })} placeholder="URL 입력 또는 붙여넣기" className={inputCls} /></Row>
-          <Row label="영역 높이(px, 비우면 자동)"><input defaultValue={p.height === 'auto' ? '' : p.height} onBlur={(e) => set({ height: e.target.value === '' ? 'auto' : num(e.target.value) })} placeholder="자동" className={inputCls} /></Row>
-          <Row label="모서리 라운드(px)"><input type="number" defaultValue={p.radius} onBlur={(e) => set({ radius: num(e.target.value) })} className={inputCls} /></Row>
-          <label className="flex items-center gap-2 text-[12px]"><input type="checkbox" defaultChecked={!!p.overlay} onChange={(e) => set({ overlay: e.target.checked })} /> 어두운 오버레이</label>
-          <Row label="오버레이 텍스트"><input defaultValue={p.overlayText} onBlur={(e) => set({ overlayText: e.target.value })} className={inputCls} /></Row>
+          <Row label="오버레이 텍스트(선택)"><input defaultValue={p.overlayText} onBlur={(e) => set({ overlayText: e.target.value })} className={inputCls} /></Row>
         </>
       );
     case 'BUTTON':
@@ -269,23 +181,7 @@ function TypeFields({ type, p, set, num }: { type: string; p: Record<string, any
         <>
           <Row label="버튼 문구"><input defaultValue={p.label} onBlur={(e) => set({ label: e.target.value })} className={inputCls} /></Row>
           <Row label="링크(href)"><input defaultValue={p.href} onBlur={(e) => set({ href: e.target.value })} className={inputCls} /></Row>
-          <div className="grid grid-cols-2 gap-2">
-            <Row label="배경색"><input type="color" defaultValue={p.bg} onChange={(e) => set({ bg: e.target.value })} className="h-8 w-full rounded-md border" /></Row>
-            <Row label="글자색"><input type="color" defaultValue={p.color} onChange={(e) => set({ color: e.target.value })} className="h-8 w-full rounded-md border" /></Row>
-            <Row label="라운드(px)"><input type="number" defaultValue={p.radius} onBlur={(e) => set({ radius: num(e.target.value) })} className={inputCls} /></Row>
-          </div>
-          <label className="flex items-center gap-2 text-[12px]"><input type="checkbox" defaultChecked={!!p.full} onChange={(e) => set({ full: e.target.checked })} /> 가로 꽉 채우기</label>
         </>
-      );
-    case 'DIVIDER':
-      return (
-        <div className="grid grid-cols-2 gap-2">
-          <Row label="스타일">
-            <select defaultValue={p.style} onChange={(e) => set({ style: e.target.value })} className={inputCls}><option value="solid">실선</option><option value="dashed">점선</option><option value="dotted">점</option></select>
-          </Row>
-          <Row label="두께(px)"><input type="number" defaultValue={p.thickness} onBlur={(e) => set({ thickness: num(e.target.value) })} className={inputCls} /></Row>
-          <Row label="색상"><input type="color" defaultValue={p.color} onChange={(e) => set({ color: e.target.value })} className="h-8 w-full rounded-md border" /></Row>
-        </div>
       );
     case 'HTML':
       return <Row label="HTML / CSS / JS 코드"><textarea defaultValue={p.html} onBlur={(e) => set({ html: e.target.value })} rows={8} className="w-full rounded-md border p-2 font-mono text-[11px]" /></Row>;
@@ -297,35 +193,7 @@ function TypeFields({ type, p, set, num }: { type: string; p: Record<string, any
         </>
       );
     case 'ACCORDION':
-      return (
-        <>
-          <Row label="헤더 문구"><input defaultValue={p.header} onBlur={(e) => set({ header: e.target.value })} className={inputCls} /></Row>
-          <label className="flex items-center gap-2 text-[12px]"><input type="checkbox" defaultChecked={!!p.open} onChange={(e) => set({ open: e.target.checked })} /> 기본 펼침</label>
-          <div className="grid grid-cols-2 gap-2">
-            <Row label="헤더 배경"><input type="color" defaultValue={p.headerBg} onChange={(e) => set({ headerBg: e.target.value })} className="h-8 w-full rounded-md border" /></Row>
-            <Row label="헤더 글자색"><input type="color" defaultValue={p.headerColor} onChange={(e) => set({ headerColor: e.target.value })} className="h-8 w-full rounded-md border" /></Row>
-          </div>
-        </>
-      );
-    case 'CARD':
-      return (
-        <>
-          <Row label="배경색"><input type="color" defaultValue={p.bg} onChange={(e) => set({ bg: e.target.value })} className="h-8 w-full rounded-md border" /></Row>
-          <Row label="라운드(px)"><input type="number" defaultValue={p.radius} onBlur={(e) => set({ radius: num(e.target.value) })} className={inputCls} /></Row>
-          <label className="flex items-center gap-2 text-[12px]"><input type="checkbox" defaultChecked={!!p.shadow} onChange={(e) => set({ shadow: e.target.checked })} /> 그림자</label>
-        </>
-      );
-    case 'HROW':
-      return (
-        <>
-          <Row label="자식 간격(px)"><input type="number" defaultValue={p.gap} onBlur={(e) => set({ gap: num(e.target.value) })} className={inputCls} /></Row>
-          <Row label="정렬(교차축)"><select defaultValue={p.align} onChange={(e) => set({ align: e.target.value })} className={inputCls}><option value="start">start</option><option value="center">center</option><option value="end">end</option><option value="stretch">stretch</option></select></Row>
-          <Row label="분배(주축)"><select defaultValue={p.justify} onChange={(e) => set({ justify: e.target.value })} className={inputCls}><option value="start">start</option><option value="center">center</option><option value="end">end</option><option value="between">between</option></select></Row>
-          <Row label="가로 넘침"><select defaultValue={p.wrap} onChange={(e) => set({ wrap: e.target.value })} className={inputCls}><option value="nowrap">줄바꿈 안함</option><option value="wrap">줄바꿈</option></select></Row>
-        </>
-      );
-    case 'VSTACK':
-      return <Row label="자식 간격(px)"><input type="number" defaultValue={p.gap} onBlur={(e) => set({ gap: num(e.target.value) })} className={inputCls} /></Row>;
+      return <Row label="헤더 문구"><input defaultValue={p.header} onBlur={(e) => set({ header: e.target.value })} className={inputCls} /></Row>;
     // ── 전시(거버넌스) ──
     case 'CORNER':
       return (

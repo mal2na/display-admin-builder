@@ -62,17 +62,21 @@ const TYPE_BADGE: Record<string, string> = {
 };
 const typeBadge = (t: string) => TYPE_BADGE[t] ?? 'bg-indigo-100 text-indigo-700'; // 미션 유형 등은 기본색
 
-// 프로모션 상태(승인·배포) 배지 — SB-EVT-027 하단 승인 상태표 기준
+// 프로모션 운영 상태 — 이벤트·미션 정책서 운영 상태값 기준
+//  (작성 · 검수 요청 · 검수 반려 · 승인 대기 · 승인 완료 · 배포 예약 · 배포 중 · 배포 완료 · 중지 · 재개 · 종료 · 롤백)
+//  프로토타입 목록은 대표 라이프사이클만 탭으로 노출. '배포 대기/게시중'은 정책 표현이 아니라 '배포 예약/배포 중'으로 정정.
+// 이벤트·미션 운영 상태(PI-EVTMSN-APPROVAL-001-01) — 등록→검수→승인→배포(노출)→종료(내림) 흐름.
+//  배포는 정책상 예약→중→완료 3단계지만, 운영자의 노출/비노출 관점에선 '배포 중(=노출 중)'으로 충분해
+//  '배포 완료'는 생략(배포 중과 겹침). 검수 반려·승인 대기·중지·재개·롤백은 예외 상태로 탭에서 제외.
 const PROMO_STATUS_BADGE: Record<string, string> = {
-  '작성 중': 'bg-slate-100 text-slate-600',
-  '승인 대기': 'bg-amber-100 text-amber-700',
+  작성: 'bg-slate-100 text-slate-600',
+  '검수 요청': 'bg-amber-100 text-amber-700',
   '승인 완료': 'bg-sky-100 text-sky-700',
-  '배포 대기': 'bg-violet-100 text-violet-700',
-  '배포 완료': 'bg-indigo-100 text-indigo-700',
-  게시중: 'bg-emerald-100 text-emerald-700',
+  '배포 예약': 'bg-violet-100 text-violet-700',
+  '배포 중': 'bg-emerald-100 text-emerald-700',
   종료: 'bg-slate-200 text-slate-600',
 };
-const PROMO_STATUSES = ['작성 중', '승인 대기', '승인 완료', '배포 대기', '배포 완료', '게시중', '종료'];
+const PROMO_STATUSES = ['작성', '검수 요청', '승인 완료', '배포 예약', '배포 중', '종료'];
 const typeRank = (t: string) => { const i = TYPE_ORDER.indexOf(t); return i < 0 ? TYPE_ORDER.length : i; };
 
 // 카드 미니 프리뷰 (노드 타입으로 스켈레톤 구성) — 모든 카드 동일한 고정 크기 모바일 프레임
@@ -151,7 +155,7 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
     </th>
   );
   return (
-    <div className="overflow-x-auto rounded-xl border bg-card">
+    <div className="overflow-x-auto border bg-card">
       <table className="w-full min-w-[880px] text-sm">
         <thead className="border-b bg-surface-subtle text-[12px] text-muted-foreground">
           <tr>
@@ -181,7 +185,7 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
                   <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${typeBadge(p.type)}`}>{p.type}</span>
                 </td>
                 <td className="whitespace-nowrap px-2.5 py-2.5 text-[12px] text-muted-foreground">{p.period}</td>
-                <td className="px-2.5 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${PROMO_STATUS_BADGE[p.promoStatus] ?? PROMO_STATUS_BADGE['작성 중']}`}>{p.promoStatus}</span></td>
+                <td className="px-2.5 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${PROMO_STATUS_BADGE[p.promoStatus] ?? PROMO_STATUS_BADGE['작성']}`}>{p.promoStatus}</span></td>
                 <td className="whitespace-nowrap px-2.5 py-2.5">
                   <div className="text-[12px] text-foreground">{p.author}</div>
                   <div className="text-[11px] text-muted-foreground">{p.createdDateTime}</div>
@@ -212,7 +216,7 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
 }
 
 export function EventsDashboard({ projects, deployRows, trashRows }: { projects: ProjectCard[]; deployRows: DeployRow[]; trashRows: TrashRow[] }) {
-  const [section, setSection] = useState<Section>('projects');
+  const [section] = useState<Section>('projects'); // 섹션 탭 제거 → 프로모션 목록만
   const [view, setView] = useState<'card' | 'table'>('table');
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -234,15 +238,7 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   const FIELD_LABEL: Record<string, string> = { name: '프로모션명', programId: '프로모션 ID', author: '등록자', editor: '최근 수정자' };
   const EXPOSURE_OPTIONS = ['전체', '노출', '미노출'];
 
-  function toggleStatus(s: string) {
-    setStatusSel((prev) => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; });
-    setPage(1);
-  }
-  const allStatus = statusSel.size === PROMO_STATUSES.length;
-  function toggleAllStatus() {
-    setStatusSel(allStatus ? new Set() : new Set(PROMO_STATUSES));
-    setPage(1);
-  }
+  // 프로모션 상태는 상단 언더라인 탭에서 단일 선택으로 제어(statusSel).
 
   function resetFilters() {
     setKind('전체'); setDetailType('전체'); setPeriodBasis('created'); setFromDate(''); setToDate('');
@@ -303,32 +299,9 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
     URL.revokeObjectURL(a.href);
   }
 
-  const tabBtn = (key: Section, icon: ReactNode, label: string, count: number) => (
-    <button
-      onClick={() => setSection(key)}
-      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium ${section === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
-    >
-      {icon} {label}
-      <span className={`rounded px-1.5 text-[11px] ${section === key ? 'bg-white/25' : 'bg-secondary text-muted-foreground'}`}>{count}</span>
-    </button>
-  );
 
   return (
     <div className="p-6">
-      {/* 섹션 탭 (워크스페이스 사이드바 대체) — 목록이 전폭을 쓰도록 상단 탭으로 이동 */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
-          {tabBtn('projects', <LayoutTemplate className="h-4 w-4" />, '프로모션 관리', projects.length)}
-          {tabBtn('deploy', <Rocket className="h-4 w-4" />, '배포 관리', deployRows.filter((d) => d.publishState === '게시 중').length)}
-          {tabBtn('trash', <Trash2 className="h-4 w-4" />, '휴지통', trashRows.length)}
-        </div>
-        <Link
-          href="/admin/events/new"
-          className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" /> 새 프로모션
-        </Link>
-      </div>
         {section === 'projects' && (
           <>
             <PageHeader
@@ -336,30 +309,41 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
               title="프로모션"
               subtitle={`총 ${projects.length}개의 프로모션이 있습니다.`}
               className="mb-4"
+              action={
+                <Link
+                  href="/admin/events/new"
+                  className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  <Plus className="h-4 w-4" /> 새 프로모션
+                </Link>
+              }
             />
 
-            {/* 유형별 빠른 필터 칩 — 전체 + 이벤트 유형(안내형·초청형·기획전형·응모형…) 원클릭 소팅 */}
-            <div className="mb-4 flex flex-wrap gap-1.5">
-              {['전체', ...EVENT_TYPES].map((t) => {
-                const active = t === '전체' ? kind === '전체' && detailType === '전체' : detailType === t;
-                const count = t === '전체' ? projects.length : projects.filter((p) => p.type === t).length;
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => {
-                      if (t === '전체') { setKind('전체'); setDetailType('전체'); }
-                      else { setKind('이벤트'); setDetailType(t); }
-                      setPage(1);
-                    }}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}
-                  >
-                    {t}
-                    <span className={`rounded-full px-1.5 text-[11px] tabular-nums ${active ? 'bg-white/25' : 'bg-secondary text-muted-foreground'}`}>{count}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {/* 상위 거버넌스: 프로모션 상태 언더라인 탭(참고 UI 스타일). 유형은 아래 상세 필터에서 고른다. */}
+            {(() => {
+              const statusTabActive = statusSel.size >= PROMO_STATUSES.length ? '전체' : statusSel.size === 1 ? [...statusSel][0] : '';
+              const setStatusTab = (k: string) => { setStatusSel(k === '전체' ? new Set(PROMO_STATUSES) : new Set([k])); setPage(1); };
+              const tabs = ['전체', ...PROMO_STATUSES];
+              return (
+                <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-1 border-b">
+                  {tabs.map((t) => {
+                    const active = statusTabActive === t;
+                    const count = t === '전체' ? projects.length : projects.filter((p) => p.promoStatus === t).length;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setStatusTab(t)}
+                        className={`-mb-px border-b-2 pb-2.5 text-sm font-semibold transition ${active ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                      >
+                        {t}
+                        <span className={`ml-1.5 text-xs tabular-nums ${active ? 'text-primary' : 'text-muted-foreground/70'}`}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
             {/* 검색 조건 영역 (SB-EVT-027 · PI-EVTMSN-SEARCH-001) */}
             <div className="mb-4 rounded-xl border bg-surface-subtle p-4">
@@ -385,20 +369,7 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
                   <span className="text-muted-foreground">~</span>
                   <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(1); }} className="h-9 flex-1 rounded-lg border px-2.5 text-sm" />
                 </div>
-                {/* 프로모션 상태 (다중) */}
-                <div className="flex items-start gap-3">
-                  <span className="w-20 shrink-0 pt-1.5 text-sm font-medium text-muted-foreground">프로모션 상태</span>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1">
-                    <label className="inline-flex items-center gap-1 text-sm">
-                      <input type="checkbox" checked={allStatus} onChange={toggleAllStatus} className="h-3.5 w-3.5 accent-primary" /> 전체
-                    </label>
-                    {PROMO_STATUSES.map((s) => (
-                      <label key={s} className="inline-flex items-center gap-1 text-sm">
-                        <input type="checkbox" checked={statusSel.has(s)} onChange={() => toggleStatus(s)} className="h-3.5 w-3.5 accent-primary" /> {s}
-                      </label>
-                    ))}
-                  </div>
-                </div>
+                {/* 프로모션 상태는 상단 탭에서 고른다 → 상세 필터에서는 중복 제거 */}
                 {/* 전시 상태 */}
                 <div className="flex items-center gap-3">
                   <span className="w-20 shrink-0 text-sm font-medium text-muted-foreground">전시 상태</span>
