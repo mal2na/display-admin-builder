@@ -43,8 +43,15 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     defaultSortStrategy: ct.defaultSortStrategy ?? null,
     defaultMoreButton: ct.defaultMoreButton ?? false,
     defaultMoreButtonLabel: ct.defaultMoreButtonLabel ?? null,
+    cvmFields: ct.cvmFields ?? '',
     sampleImageUrl: ct.sampleImageUrl,
     status: ct.status,
+    rejectReason: ct.rejectReason ?? null,
+    reviewedBy: ct.reviewedBy ?? null,
+    reviewedAt: ct.reviewedAt ? ct.reviewedAt.toISOString() : null,
+    workingVersion: ct.workingVersion ?? 1,
+    liveVersion: ct.liveVersion ?? null,
+    liveAt: ct.liveAt ? ct.liveAt.toISOString() : null,
     createdBy: ct.createdBy,
   };
 

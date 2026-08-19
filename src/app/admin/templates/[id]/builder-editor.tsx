@@ -21,6 +21,10 @@ import {
   ATOM_TYPES,
   ATOM_TYPE_LABELS,
   ATOM_TYPE_FIELDS,
+  cvmBindingLabel,
+  resolveCvmSample,
+  isCvmBinding,
+  CVM_FIELDS,
   type AtomType,
   type CornerType,
 } from '@/lib/display-taxonomy';
@@ -106,6 +110,10 @@ export type CornerNode = {
   bannerImageUrl: string | null;
   bannerPosition: string | null;
   sampleImageUrl: string | null;
+  reviewStatus: string;
+  reviewReason: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
   visible: boolean;
   components: ComponentNode[];
 };
@@ -643,14 +651,39 @@ function AtomRow({
         <label className="text-[11px] font-medium text-muted-foreground">{ATOM_TYPE_LABELS[atom.atomType as AtomType] ?? atom.atomType}</label>
         <DeleteConfirmForm action={removeAtom.bind(null, templateId, atom.componentAtomId)} itemLabel="Atom" ariaLabel="Atom 삭제" />
       </div>
-      {f.content && (
-        <Input
-          value={atom.content ?? ''}
-          onChange={(e) => onChange({ content: e.target.value })}
-          placeholder="문구 / 가격 / 정보값"
-          className="h-8 text-xs"
-        />
-      )}
+      {f.content &&
+        (isCvmBinding(atom.content) ? (
+          // CVM 연동 중 — 직접 입력 대신 출처 표시(FN-EVTMSN-FORM-001 자동 입력 출처 표시)
+          <div className="flex items-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 px-2 py-1.5">
+            <span className="rounded border border-sky-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-sky-700">CVM · {cvmBindingLabel(atom.content)}</span>
+            <span className="flex-1 truncate text-[11px] text-slate-500">회원별 자동 입력 · 예: {resolveCvmSample(atom.content)}</span>
+            <button type="button" onClick={() => onChange({ content: '' })} className="text-[10px] text-muted-foreground hover:text-foreground" title="직접 입력으로 전환">
+              직접 입력
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <Input
+              value={atom.content ?? ''}
+              onChange={(e) => onChange({ content: e.target.value })}
+              placeholder="문구 / 가격 / 정보값"
+              className="h-8 text-xs"
+            />
+            <Select
+              value=""
+              onChange={(e) => e.target.value && onChange({ content: `@cvm:${e.target.value}` })}
+              className="h-7 w-full text-[11px] text-sky-700"
+              title="CVM에서 가져오기"
+            >
+              <option value="">＋ CVM에서 가져오기…</option>
+              {CVM_FIELDS.map((cf) => (
+                <option key={cf.key} value={cf.key}>
+                  {cf.category} · {cf.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        ))}
       {f.image && (
         <ImagePickField
           value={atom.imageUrl}
@@ -821,11 +854,23 @@ function ReadOnlyAtoms({ component }: { component: ComponentNode }) {
   return (
     <div className="space-y-1">
       {component.atoms.map((a) => {
+        const binding = cvmBindingLabel(a.content); // CVM 연동이면 라벨(예: 멤버십 번호)
+        const isBarcode = a.atomType === 'BARCODE';
         const val = a.content || a.imageUrl || a.altText;
         return (
           <div key={a.componentAtomId} className="flex items-center gap-1.5 text-xs">
             <Badge variant="outline">{ATOM_TYPE_LABELS[a.atomType as AtomType] ?? a.atomType}</Badge>
-            {val ? (
+            {binding ? (
+              <span className="flex flex-1 items-center gap-1 truncate">
+                <span className="shrink-0 rounded border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">CVM · {binding}</span>
+                <span className="truncate text-muted-foreground/60">{resolveCvmSample(a.content)}</span>
+              </span>
+            ) : isBarcode ? (
+              <span className="flex flex-1 items-center gap-1 truncate">
+                <span className="shrink-0 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">동적 · 회원별 발급</span>
+                <span className="truncate text-muted-foreground/60">유효 {a.content || '20'}분</span>
+              </span>
+            ) : val ? (
               <span className="flex-1 truncate text-muted-foreground">{val}</span>
             ) : (
               <span className="flex-1 truncate italic text-muted-foreground/50">미입력</span>
@@ -1015,6 +1060,9 @@ function ComponentList({
   const chipIds = chipOrdered.map((c) => c.cornerComponentId);
   const bodyIds = bodyOrdered.map((c) => c.cornerComponentId);
   const bodyLabel = corner.cornerType === '상품형' ? '상품 묶음' : corner.cornerType === '배너형' ? '배너 묶음' : '콘텐츠 묶음';
+  // 선택형이라도 레이아웃이 '메뉴 리스트'면 칩이 아니라 세로 메뉴 묶음으로 표기
+  const isMenuList = /메뉴\s*리스트/.test(corner.layoutDetail ?? '');
+  const chipLabel = isMenuList ? '메뉴 묶음' : '칩 묶음';
 
   // 같은 묶음 안에서만 재정렬. 저장 순서는 항상 [칩 묶음 → 본문 묶음].
   async function onDragEnd(e: DragEndEvent) {
@@ -1045,7 +1093,7 @@ function ComponentList({
         {chipOrdered.length > 0 && (
           <div className="rounded-lg border border-indigo-200 bg-indigo-50/40 p-2">
             <p className="mb-1.5 flex items-center gap-1 px-0.5 text-[11px] font-semibold text-indigo-700">
-              칩 묶음 <span className="rounded-full bg-white px-1.5 text-[10px] text-indigo-600">{chipOrdered.length}</span>
+              {chipLabel} <span className="rounded-full bg-white px-1.5 text-[10px] text-indigo-600">{chipOrdered.length}</span>
             </p>
             <SortableContext items={chipIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-1.5">
@@ -2289,6 +2337,8 @@ export function BuilderEditor({
               <CornerTypeChip corner={selectedCorner} />
               <h2 className="truncate text-base font-semibold">{selectedCorner.name}</h2>
             </div>
+
+            {/* 코너 승인은 코너 유형 관리에서 처리한다. 빌더는 템플릿 전체를 승인 요청(상단 스트립). */}
 
             {/* 기존 코너 끌어오기는 아래 '코너 정보'의 '코너 불러오기' 버튼으로 통합됨 */}
             <CornerInfoForm key={selectedCorner.templateCornerId} templateId={templateId} corner={selectedCorner} library={library} nameMap={nameMap} />

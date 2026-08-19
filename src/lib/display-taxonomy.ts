@@ -21,6 +21,7 @@ export const ATOM_TYPES = [
   'BENEFIT_TEXT', // 혜택문구
   'CTA', // CTA
   'INFO', // 정보값
+  'BARCODE', // 바코드 — 회원별 런타임 발급(동적). 어드민은 정책만 관리, 값은 미입력.
 ] as const;
 export type AtomType = (typeof ATOM_TYPES)[number];
 
@@ -34,6 +35,7 @@ export const ATOM_TYPE_LABELS: Record<AtomType, string> = {
   BENEFIT_TEXT: '혜택문구',
   CTA: 'CTA',
   INFO: '정보값',
+  BARCODE: '바코드',
 };
 
 // 유형별로 폼에서 어떤 입력을 쓰는지 힌트 (UI 렌더링용)
@@ -47,7 +49,43 @@ export const ATOM_TYPE_FIELDS: Record<AtomType, { content: boolean; image: boole
   BENEFIT_TEXT: { content: true, image: false, link: false },
   CTA: { content: true, image: false, link: true },
   INFO: { content: true, image: false, link: false },
+  // 바코드 값은 회원 인증 기반으로 런타임 발급 → 어드민에서 값 입력 없음(정책은 별도 관리)
+  BARCODE: { content: false, image: false, link: false },
 };
+
+// 런타임에 데이터 바인딩되는(어드민이 값을 직접 입력하지 않는) 동적 Atom 유형
+export const DYNAMIC_ATOM_TYPES: readonly AtomType[] = ['BARCODE'];
+
+// ── CVM(고객관리) 데이터 바인딩 ──────────────────────────────────────────────
+// 어드민이 직접 입력하지 않고 CVM에서 회원별로 가져오는 필드 카탈로그.
+// 바인딩된 Atom은 content에 "@cvm:<key>" 토큰을 저장한다. 빌더 미리보기는 sample로 대체 표시.
+export const CVM_FIELDS = [
+  { key: 'customer.name', label: '고객 이름', sample: '김지훈', category: '기본' },
+  { key: 'customer.phone', label: '휴대폰 번호', sample: '010-****-5678', category: '기본' },
+  { key: 'membership.number', label: '멤버십 번호', sample: '1234 4561 1506 4932', category: '멤버십' },
+  { key: 'membership.grade', label: '멤버십 등급', sample: 'VIP', category: '멤버십' },
+  { key: 'membership.point', label: '멤버십 포인트', sample: '13,500P', category: '멤버십' },
+  { key: 'bill.amount', label: '실시간 이용요금', sample: '39,250원', category: '요금' },
+  { key: 'data.remaining', label: '데이터 잔여량', sample: '6.5GB', category: '데이터' },
+  { key: 'combine.count', label: '결합 가족 수', sample: '4명', category: '결합' },
+] as const;
+export type CvmFieldKey = (typeof CVM_FIELDS)[number]['key'];
+export const CVM_FIELD_BY_KEY: Record<string, (typeof CVM_FIELDS)[number]> = Object.fromEntries(CVM_FIELDS.map((f) => [f.key, f]));
+
+const CVM_PREFIX = '@cvm:';
+export const isCvmBinding = (v?: string | null): v is string => !!v && v.startsWith(CVM_PREFIX);
+export const cvmBindingKey = (v?: string | null): string | null => (isCvmBinding(v) ? v.slice(CVM_PREFIX.length) : null);
+// 바인딩 토큰이면 CVM 라벨(예: "멤버십 번호"), 아니면 null
+export function cvmBindingLabel(v?: string | null): string | null {
+  const k = cvmBindingKey(v);
+  return k ? (CVM_FIELD_BY_KEY[k]?.label ?? k) : null;
+}
+// 미리보기 표시값: 바인딩이면 CVM sample로, 아니면 원문 그대로
+export function resolveCvmSample(v?: string | null): string {
+  const k = cvmBindingKey(v);
+  if (!k) return v ?? '';
+  return CVM_FIELD_BY_KEY[k]?.sample ?? (v ?? '');
+}
 
 // 대체텍스트가 필수인 Atom 유형 (없으면 draft는 허용, review 전환 차단 — PI-DSP-CMP-004)
 export const ALT_TEXT_REQUIRED_ATOM_TYPES: readonly AtomType[] = ['IMAGE', 'ICON'];
@@ -123,16 +161,35 @@ export function cornerTypeChipClass(cornerType?: string | null): string {
 
 // ── 코너 유형 카탈로그 (T우주 "코너 유형 관리") 부가 상수 ──
 // 코너 유형 등록/승인 상태 (T우주 이미지: 임시저장/승인대기/승인완료/승인반려)
+// 전시 정책서(TM-DSP-020) 승인 상태값: 임시저장 · 승인요청 · 승인완료 · 반려.
+// 목록 상단 탭 노출 순서: 승인완료 → 승인요청 → 반려 → 임시저장 (전체는 코드에서 앞에 붙임).
 export const CORNER_TYPE_STATUSES = [
-  { key: 'DRAFT', label: '임시저장' },
-  { key: 'REVIEW', label: '승인대기' },
   { key: 'APPROVED', label: '승인완료' },
-  { key: 'REJECTED', label: '승인반려' },
+  { key: 'REVIEW', label: '승인요청' },
+  { key: 'REJECTED', label: '반려' },
+  { key: 'DRAFT', label: '임시저장' },
 ] as const;
 export type CornerTypeStatusKey = (typeof CORNER_TYPE_STATUSES)[number]['key'];
 export const CORNER_TYPE_STATUS_LABEL: Record<string, string> = Object.fromEntries(
   CORNER_TYPE_STATUSES.map((s) => [s.key, s.label]),
 );
+export const CORNER_TYPE_STATUS_COLOR: Record<string, string> = {
+  DRAFT: 'bg-slate-100 text-slate-600 border-slate-200',
+  REVIEW: 'bg-amber-100 text-amber-800 border-amber-200',
+  APPROVED: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  REJECTED: 'bg-rose-100 text-rose-700 border-rose-200',
+};
+
+// 코너 유형 거버넌스는 두 축이다:
+//  (1) status = 편집본(작업본)의 승인 상태 (임시저장/승인대기/승인완료/승인반려)
+//  (2) 라이브 승인본 존재/버전 = 실제 사용 가능 여부. 재검수 중에도 라이브는 유지된다.
+// 승인완료는 곧 사용이 아니라, 운영자가 '반영(사용)'을 눌러야 라이브로 승격(수동 게시)된다.
+export function deriveCornerTypeUsage(o: { status: string; active: boolean; liveVersion: number | null; workingVersion: number }) {
+  const live = o.liveVersion != null && o.active; // 사용 중(반영된 승인본 존재 + 사용 ON)
+  const needsPublish = o.status === 'APPROVED' && (o.liveVersion ?? -1) !== o.workingVersion; // 승인완료·미반영 → 반영 필요
+  const changeInReview = o.status === 'REVIEW' && o.liveVersion != null; // 라이브 유지 중 변경 검수 중
+  return { live, needsPublish, changeInReview };
+}
 
 // 운영 채널 / 운영 플랫폼 (코너 유형 정보 - 기본 정보)
 export const OPERATION_CHANNELS = ['전체', 'FO', 'BO'] as const;
@@ -369,6 +426,34 @@ export const CONTAINER_APPROVAL_STATUS_LABEL: Record<string, string> = Object.fr
 );
 // 허용 전이: 작성중/반려 → 승인 대기 → 승인 완료/반려. 승인 완료 후 수정 시 작성중으로 회귀.
 export const CONTAINER_APPROVAL_TRANSITIONS: Record<string, ContainerApprovalStatusKey[]> = {
+  DRAFT: ['REVIEW'],
+  REVIEW: ['APPROVED', 'REJECTED'],
+  REJECTED: ['REVIEW'],
+  APPROVED: ['DRAFT'],
+};
+
+// ── 코너 검수 워크플로우 상태 ─────────────────────────────
+// 코너 단위 생성 → 검수 요청 → 승인/반려. 운영자는 "검수 요청"만 보내고,
+// 승인/반려는 승인권자가 처리한다(정책서 PI-DSP-WFL-002). 반려 시 사유를 남긴다.
+export const CORNER_REVIEW_STATUSES = [
+  { key: 'DRAFT', code: 'ST-DSP-001', label: '초안 작성중' },
+  { key: 'REVIEW', code: 'ST-DSP-002', label: '검수 대기' },
+  { key: 'REJECTED', code: 'ST-DSP-003', label: '수정 필요' },
+  { key: 'APPROVED', code: 'ST-DSP-004', label: '승인 완료' },
+] as const;
+export type CornerReviewStatusKey = (typeof CORNER_REVIEW_STATUSES)[number]['key'];
+export const CORNER_REVIEW_STATUS_LABEL: Record<string, string> = Object.fromEntries(
+  CORNER_REVIEW_STATUSES.map((s) => [s.key, s.label]),
+);
+// 검수 상태 뱃지 색 (전시 워크플로우 STATUS_COLOR와 톤 일치)
+export const CORNER_REVIEW_STATUS_COLOR: Record<string, string> = {
+  DRAFT: 'bg-slate-100 text-slate-600 border-slate-200',
+  REVIEW: 'bg-amber-100 text-amber-800 border-amber-200',
+  REJECTED: 'bg-rose-100 text-rose-700 border-rose-200',
+  APPROVED: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+};
+// 허용 전이: 작성중/반려 → 검수 대기 → 승인 완료/수정 필요. 승인 후 수정 시 작성중 회귀.
+export const CORNER_REVIEW_TRANSITIONS: Record<string, CornerReviewStatusKey[]> = {
   DRAFT: ['REVIEW'],
   REVIEW: ['APPROVED', 'REJECTED'],
   REJECTED: ['REVIEW'],

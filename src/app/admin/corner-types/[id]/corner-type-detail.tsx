@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, Info, History } from 'lucide-react';
 import { CornerTypeForm, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo } from '../corner-type-manager';
+import { CornerTypeReviewBar, cornerTypeReviewIssues } from './corner-type-review-bar';
 
 export type HistoryRow = { id: string; changedAt: string; actor: string; result: string; reason: string | null };
 
@@ -35,6 +36,19 @@ export function CornerTypeDetail({ row, history, builtOptions, registered = [] }
           {row.active ? '사용' : '미사용'}
         </span>
       </div>
+
+      {/* 코너 승인 — 이 코너 유형 단위로 BSS에 승인 요청. 운영자는 요청만, 승인/반려는 BSS. */}
+      <CornerTypeReviewBar
+        id={row.id}
+        status={row.status}
+        active={row.active}
+        liveVersion={row.liveVersion ?? null}
+        workingVersion={row.workingVersion ?? 1}
+        rejectReason={row.rejectReason ?? null}
+        reviewedAt={row.reviewedAt ?? null}
+        liveAt={row.liveAt ?? null}
+        issues={cornerTypeReviewIssues(row)}
+      />
 
       {/* 탭 */}
       <div className="flex gap-1 border-b">

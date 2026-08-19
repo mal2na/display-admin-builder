@@ -45,12 +45,13 @@ function promoStatus(r: {
   displayStartAt: Date | null;
   displayEndAt: Date | null;
   displayNoEndDate: boolean;
-}): '작성 중' | '배포 완료' | '게시중' | '종료' {
-  if (r.displayState !== '노출') return '작성 중';
+}): '작성' | '배포 예약' | '배포 중' | '종료' {
+  // 이벤트·미션 정책서 운영 상태값 기준: 작성 · 배포 예약(게시 예정) · 배포 중(노출) · 종료
+  if (r.displayState !== '노출') return '작성';
   const now = Date.now();
-  if (r.displayStartAt && now < new Date(r.displayStartAt).getTime()) return '배포 완료';
+  if (r.displayStartAt && now < new Date(r.displayStartAt).getTime()) return '배포 예약';
   if (!r.displayNoEndDate && r.displayEndAt && now > new Date(r.displayEndAt).getTime()) return '종료';
-  return '게시중';
+  return '배포 중';
 }
 
 export default async function EventsPage() {

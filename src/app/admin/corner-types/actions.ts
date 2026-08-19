@@ -94,6 +94,7 @@ function readForm(formData: FormData) {
     defaultSortStrategy: opt('defaultSortStrategy'),
     defaultMoreButton: String(formData.get('defaultMoreButton') ?? '') === '1',
     defaultMoreButtonLabel: opt('defaultMoreButtonLabel'),
+    cvmFields: formData.getAll('cvmFields').map(String).filter(Boolean).join(','), // CVM 연동 필드 keys
     sampleImageUrl: opt('sampleImageUrl'),
     status: opt('status') ?? 'DRAFT',
   };
@@ -158,12 +159,26 @@ export async function updateCornerType(id: string, formData: FormData) {
       componentType: before?.componentType ?? null,
       typeDetail: before?.typeDetail ?? null,
     });
-  await prisma.cornerType.update({ where: { id }, data });
+
+  // ── 버전관리: 폼 수정은 '작업본'을 바꾼다. 라이브 승인본(liveSnapshot/liveVersion)은 건드리지 않는다. ──
+  //  - 승인완료 & 반영 완료(clean = workingVersion === liveVersion) 상태에서 수정하면
+  //    → 새 편집본이 시작되므로 workingVersion++, status='DRAFT'(임시저장). 라이브는 그대로 사용 중 유지.
+  //  - 이미 편집 중(초안/반려/검수)이면 그 편집본을 계속 수정 → 버전 유지, status는 DRAFT로.
+  const clean = !!before && before.status === 'APPROVED' && before.workingVersion === (before.liveVersion ?? -1);
+  const nextWorking = clean ? before!.workingVersion + 1 : (before?.workingVersion ?? 1);
+  // 폼의 status 값은 무시하고 워크플로우가 관리(수정 = 편집본 초안)
+  const { status: _ignore, ...rest } = data;
+  void _ignore;
+
+  await prisma.cornerType.update({
+    where: { id },
+    data: { ...rest, status: 'DRAFT', workingVersion: nextWorking, rejectReason: null, reviewedBy: null, reviewedAt: null },
+  });
   await writeAudit({
     targetId: id,
-    before: before ? { name: before.name, typeDetail: before.typeDetail, layout: before.layout, active: before.active, status: before.status } : null,
-    after: { name: data.name, typeDetail: data.typeDetail, layout: data.layout, active: data.active, status: data.status },
-    reason: '코너 유형 정보 수정',
+    before: before ? { name: before.name, typeDetail: before.typeDetail, status: before.status, workingVersion: before.workingVersion, liveVersion: before.liveVersion } : null,
+    after: { name: data.name, typeDetail: data.typeDetail, status: 'DRAFT', workingVersion: nextWorking },
+    reason: clean ? '코너 유형 수정 착수 (새 편집본 작성중 · 라이브는 사용 중 유지)' : '코너 유형 정보 수정',
     result: 'UPDATED',
   });
   revalidate(id);

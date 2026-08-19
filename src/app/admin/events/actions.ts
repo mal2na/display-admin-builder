@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { defaultPropsFor, componentDef, cornerAllows, CORNER_TYPE_BY_KEY, componentLabel, GROUP_CORNER } from '@/lib/event-components';
-import { TEMPLATE_BY_KEY, insertNodes, createsStateFor, toPromotionSkeleton, type NodeSpec } from '@/lib/event-templates';
+import { TEMPLATE_BY_KEY, insertNodes, createsStateFor, toPromotionSkeleton, PROMOTION_CORNER_PRESET_BY_KEY, type NodeSpec } from '@/lib/event-templates';
 
 const ACTOR = 'marina.kim@sk.com';
 
@@ -184,6 +184,20 @@ export async function addCornerNode(pageId: string, cornerType: string) {
   });
   rpEditor(pageId);
   return node.id;
+}
+
+// 프로모션 전용 코너 카탈로그에서 '불러오기' — 프리셋 코너(자유형) + 모듈 스캐폴딩을 페이지 루트에 얹는다.
+export async function addPromotionCorner(pageId: string, presetKey: string) {
+  const preset = PROMOTION_CORNER_PRESET_BY_KEY[presetKey];
+  if (!preset) throw new Error('유효한 프로모션 코너가 아닙니다.');
+  const props = { ...defaultPropsFor('CORNER'), cornerType: GROUP_CORNER, title: preset.label };
+  const max = await prisma.eventNode.aggregate({ where: { pageId, parentId: null }, _max: { order: true } });
+  const corner = await prisma.eventNode.create({
+    data: { pageId, parentId: null, type: 'CORNER', order: (max._max.order ?? -1) + 1, props: JSON.stringify(props) },
+  });
+  if (preset.children.length) await insertNodes(prisma, pageId, preset.children, corner.id);
+  rpEditor(pageId);
+  return corner.id;
 }
 
 export async function updateNodeProps(pageId: string, nodeId: string, patch: Record<string, unknown>) {

@@ -761,8 +761,8 @@ async function main() {
   // 1) 프로필·가입현황 (고정·필수 노출형 · 프로필 요약)
   const myProfile = await comp('내 프로필', '정보형', [
     { name: '프로필 아이콘', atomType: 'ICON', imageUrl: 'icon:nav/My', altText: '프로필' },
-    { name: '프로필 이름', atomType: 'TEXT', content: '김지훈님' },
-    { name: '프로필 번호', atomType: 'INFO', content: '010-****-5678' },
+    { name: '프로필 이름', atomType: 'TEXT', content: '@cvm:customer.name' }, // CVM 연동
+    { name: '프로필 번호', atomType: 'INFO', content: '@cvm:customer.phone' }, // CVM 연동
     { name: '가입현황 CTA', atomType: 'CTA', content: '나의 가입 현황', linkUrl: '/my/subscription' },
   ]);
   const myCornerProfile = await corner(
@@ -773,7 +773,7 @@ async function main() {
   // 2) 실시간 이용요금 (상태 안내형 · 금액 요약)
   const myBill = await comp('실시간 이용요금', '정보형', [
     { name: '요금 아이콘', atomType: 'ICON', imageUrl: 'icon:general/Won', altText: '이용요금' },
-    { name: '요금 금액', atomType: 'PRICE', content: '39,250원' },
+    { name: '요금 금액', atomType: 'PRICE', content: '@cvm:bill.amount' }, // CVM 연동
     { name: '요금 배지', atomType: 'BADGE', content: '3월 납부완료' },
     { name: '요금 라벨', atomType: 'TEXT', content: '실시간 이용요금' },
   ]);
@@ -785,7 +785,7 @@ async function main() {
   // 3) T멤버십 포인트 (상태 안내형 · 금액 요약)
   const myPoint = await comp('T멤버십 포인트', '정보형', [
     { name: '포인트 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Point', altText: '포인트' },
-    { name: '포인트 값', atomType: 'PRICE', content: '13,500P' },
+    { name: '포인트 값', atomType: 'PRICE', content: '@cvm:membership.point' }, // CVM 연동
     { name: '포인트 배지', atomType: 'BADGE', content: '3월 누적할인 1,700원' },
     { name: '포인트 라벨', atomType: 'TEXT', content: 'T멤버십 포인트' },
   ]);
@@ -796,10 +796,9 @@ async function main() {
 
   // 4) T멤버십 바코드 (고정·필수 노출형 · 바코드)
   const myBarcode = await comp('T멤버십 바코드', '정보형', [
-    { name: '바코드 아이콘', atomType: 'ICON', imageUrl: 'icon:general/Barcode', altText: '바코드' },
-    { name: '바코드 라벨', atomType: 'TEXT', content: 'T멤버십' },
-    { name: '바코드 번호', atomType: 'INFO', content: '1234 4561 1506 4932' },
-    { name: '바코드 타이머', atomType: 'BADGE', content: '19:58' },
+    { name: '멤버십 라벨', atomType: 'TEXT', content: 'T멤버십' }, // 고정 문구(어드민 관리)
+    { name: '바코드(동적·회원별 발급)', atomType: 'BARCODE', content: '20' }, // content=유효(갱신) 분(어드민 정책). 값은 런타임 발급, 타이머도 이 값에서 파생
+    { name: '멤버십 번호(CVM 연동)', atomType: 'INFO', content: '@cvm:membership.number' }, // CVM에서 회원 멤버십 번호 바인딩
   ]);
   const myCornerBarcode = await corner(
     { name: 'T멤버십 바코드', cornerType: '고정·필수 노출형', maxItems: 1, layoutDetail: '바코드', subTitleIcon: '사용안함' },
@@ -809,7 +808,7 @@ async function main() {
   // 5) 실시간 데이터 잔여량 (상태 안내형 · 사용량 요약)
   const myData = await comp('실시간 데이터 잔여량', '정보형', [
     { name: '데이터 아이콘', atomType: 'ICON', imageUrl: 'icon:general/Data', altText: '데이터' },
-    { name: '데이터 값', atomType: 'PRICE', content: '6.5GB' },
+    { name: '데이터 값', atomType: 'PRICE', content: '@cvm:data.remaining' }, // CVM 연동
     { name: '데이터 배지', atomType: 'BADGE', content: '20GB 제공' },
     { name: '데이터 라벨', atomType: 'TEXT', content: '실시간 잔여량' },
   ]);
@@ -821,7 +820,7 @@ async function main() {
   // 6) 결합가족 (상태 안내형 · 금액 요약)
   const myCombine = await comp('결합가족', '정보형', [
     { name: '결합 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Family', altText: '결합가족' },
-    { name: '결합 값', atomType: 'TEXT', content: '4명 결합' },
+    { name: '결합 값', atomType: 'TEXT', content: '@cvm:combine.count' }, // CVM 연동
     { name: '결합 배지', atomType: 'BADGE', content: '15,000원 할인' },
     { name: '결합 라벨', atomType: 'TEXT', content: '결합가족' },
   ]);
@@ -1029,6 +1028,57 @@ async function main() {
     data: { sampleImageUrl: BANNER_IMAGE_SAMPLES.map((s) => `/assets/corner-samples/${s}.png`).join('\n') },
   });
 
+  // CVM 연동 필드 선언 — 회원 데이터를 CVM에서 가져오는 코너 유형(FN-EVTMSN-FORM-001)
+  await prisma.cornerType.updateMany({
+    where: { baseCategory: '상태 안내형', typeDetail: '아이콘형' },
+    data: { cvmFields: 'bill.amount,membership.point,data.remaining,combine.count' },
+  });
+  await prisma.cornerType.updateMany({
+    where: { baseCategory: '고정·필수 노출형', typeDetail: '바코드' },
+    data: { cvmFields: 'membership.number' },
+  });
+  await prisma.cornerType.updateMany({
+    where: { baseCategory: '고정·필수 노출형', typeDetail: '프로필 요약' },
+    data: { cvmFields: 'customer.name,customer.phone' },
+  });
+
+  // ── 코너 승인 상태 데모 (코너 유형 단위로 BSS 승인 요청 + 버전관리) ──
+  // 대부분 승인 완료 = 라이브 v1 사용 중. 앞쪽 유형 몇 개로 승인대기/반려/초안 + 재검수 라이브유지 시연.
+  {
+    const now = new Date();
+    const snap = (ct: {
+      name: string; baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner: boolean;
+      layout: string | null; markupId: string | null; description: string | null; defaultMoreButton: boolean;
+      useMoreButton: boolean; defaultMoreButtonLabel: string | null; defaultSortStrategy: string | null;
+      sampleImageUrl: string | null; cvmFields: string;
+    }) =>
+      JSON.stringify({
+        name: ct.name, baseCategory: ct.baseCategory, componentType: ct.componentType, typeDetail: ct.typeDetail,
+        bigBanner: ct.bigBanner, layout: ct.layout, markupId: ct.markupId, description: ct.description,
+        defaultMoreButton: ct.defaultMoreButton, useMoreButton: ct.useMoreButton, defaultMoreButtonLabel: ct.defaultMoreButtonLabel,
+        defaultSortStrategy: ct.defaultSortStrategy, sampleImageUrl: ct.sampleImageUrl, cvmFields: ct.cvmFields,
+      });
+    // 승인 완료 유형 = 라이브 v1 (사용 중), 편집본도 v1 (clean)
+    for (const ct of await prisma.cornerType.findMany({ where: { status: 'APPROVED' } })) {
+      await prisma.cornerType.update({ where: { id: ct.id }, data: { liveVersion: 1, workingVersion: 1, liveSnapshot: snap(ct), liveAt: now } });
+    }
+    const setByTypeId = async (typeId: string, data: Record<string, unknown>) => {
+      const ct = await prisma.cornerType.findFirst({ where: { typeId } });
+      if (ct) await prisma.cornerType.update({ where: { id: ct.id }, data });
+    };
+    // CY0000001: 라이브 v1 유지 + 변경 v2 검수 중
+    await setByTypeId('CY0000001', { status: 'REVIEW', rejectReason: null, reviewedBy: null, reviewedAt: null, liveVersion: 1, workingVersion: 2 });
+    // CY0000002: 라이브 v1 유지 + 변경 v2 반려
+    await setByTypeId('CY0000002', { status: 'REJECTED', reviewedBy: 'BSS', reviewedAt: now, rejectReason: '허용 컴포넌트 매핑 규칙 위반 — 배너형 코너에는 배너형 컴포넌트만 연결 가능합니다.', liveVersion: 1, workingVersion: 2 });
+    // CY0000003: 신규 초안 = 미사용 (라이브 없음)
+    await setByTypeId('CY0000003', { status: 'DRAFT', reviewedBy: null, reviewedAt: null, rejectReason: null, liveVersion: null, workingVersion: 1, liveSnapshot: null, liveAt: null });
+    // 라이브 v1이 있는 재검수/반려 유형(CY0000001·2)도 정본 스냅샷을 채워 불러오기가 정본을 쓰게 한다.
+    for (const tid of ['CY0000001', 'CY0000002']) {
+      const ct = await prisma.cornerType.findFirst({ where: { typeId: tid } });
+      if (ct && !ct.liveSnapshot) await prisma.cornerType.update({ where: { id: ct.id }, data: { liveSnapshot: snap(ct), liveAt: now } });
+    }
+  }
+
   await prisma.auditLog.create({
     data: {
       actor: 'marina.kim@sk.com',
@@ -1039,6 +1089,23 @@ async function main() {
       result: 'CREATED',
     },
   });
+
+  // ── 코너 검수 상태 데모 백필 (생성 → 검수 요청 → 승인/반려) ──
+  // 대부분 승인 완료, 마이 홈에서 네 상태(승인/검수 대기/수정 필요/초안)를 모두 보이게 한다.
+  {
+    const now = new Date();
+    const APPROVER = 'approver@sk.com';
+    await prisma.corner.updateMany({ data: { reviewStatus: 'APPROVED', reviewedBy: APPROVER, reviewedAt: now, reviewReason: null } });
+    const myTcs = await prisma.templateCorner.findMany({ where: { templateId: myTemplate.id }, include: { corner: true } });
+    const byName = new Map(myTcs.map((tc) => [tc.corner.name, tc.corner.id]));
+    const setStatus = async (name: string, data: Record<string, unknown>) => {
+      const id = byName.get(name);
+      if (id) await prisma.corner.update({ where: { id }, data });
+    };
+    await setStatus('자주 보는 메뉴', { reviewStatus: 'REVIEW', reviewedBy: null, reviewedAt: null, reviewReason: null });
+    await setStatus('휴대폰 결제·이용료', { reviewStatus: 'REJECTED', reviewedBy: APPROVER, reviewedAt: now, reviewReason: '이미지 대체텍스트 누락, 랜딩 링크 미검증 — 보완 후 재요청 바랍니다.' });
+    await setStatus('T 우주 구독료', { reviewStatus: 'DRAFT', reviewedBy: null, reviewedAt: null, reviewReason: null });
+  }
 
   console.log('✅ 시드 완료 (혜택 홈 · 쇼핑 홈 · 마이 홈):', {
     containers: await prisma.container.count(),
