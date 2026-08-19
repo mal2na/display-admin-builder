@@ -67,6 +67,8 @@ model ComponentAtom {
   atomId      String
   order       Int     // Component 안에서의 표시 순서
   isRequired  Boolean @default(true) // 필수 Atom / 선택 Atom
+  // 고객 메뉴 역할(선택형·메뉴 리스트): FIXED(고정·고객 삭제 불가) | EDITABLE(기본 노출·고객 편집 가능)
+  menuRole    String  @default("EDITABLE")
 
   component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
   atom      Atom      @relation(fields: [atomId], references: [id])
@@ -115,10 +117,19 @@ model Corner {
   // 배너형 코너에 연결된 배너 라이브러리 항목 (포탈2 BannerSlot)
   bannerId String?
   banner   Banner? @relation(fields: [bannerId], references: [id])
+  // ── FO 사용자 설정(고객 커스터마이즈) — 자주 보는 메뉴 등 선택형·메뉴 리스트 코너 ──
+  //  BO는 기본값(항목·고정 여부)을 제공하고, userCustomizable가 켜지면 FO 고객이 편집 가능.
+  //  이때 고객이 노출할 수 있는 개수 범위를 userMinItems~userMaxItems로 제한한다(고정 항목 포함).
+  userCustomizable Boolean @default(false)
+  userMinItems     Int?    // 고객이 최소 이만큼은 노출(고정 항목 포함)
+  userMaxItems     Int?    // 고객이 최대 이만큼까지 노출 가능
+
   // 빅배너(상품형 등 코너에 얹는 부속 배너)의 위치 — 빌더에서 배치 조정. 상단 | 하단 (배너형 코너는 무관)
   bannerPosition String? @default("상단")
   // 코너 유형 관리에서 불러올 때 상속받은 유형 샘플 썸네일 — 컴포넌트가 아직 없을 때 미리보기/카드에 표시
   sampleImageUrl String?
+  // 이 코너가 어느 코너 유형(카탈로그)에서 생성됐는지 — 사용처(영향 범위) 추적용. CornerType.id.
+  sourceCornerTypeId String?
 
   cornerComponents CornerComponent[]
   templateCorners  TemplateCorner[]
@@ -320,6 +331,11 @@ model CornerType {
   defaultMoreButtonLabel String? // 더보기 기본 라벨(예: 더보기, 전체보기)
   // CVM 연동 필드 — 이 코너 유형이 CVM/BSS에서 자동으로 가져오는 회원 데이터(FN-EVTMSN-FORM-001). CVM_FIELDS key csv.
   cvmFields String @default("")
+
+  // ── FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 리스트 유형에서. 코너 불러오기 시 코너에 상속. ──
+  userCustomizable Boolean @default(false)
+  userMinItems     Int?
+  userMaxItems     Int?
 
   sampleImageUrl String? // 유형 샘플 이미지
   // ── 승인 워크플로우 (편집본 status) ──

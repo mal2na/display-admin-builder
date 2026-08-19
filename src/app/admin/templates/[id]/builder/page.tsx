@@ -58,7 +58,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     prisma.component.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, componentType: true, allowedCornerTypes: true } }),
     prisma.atom.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, atomType: true } }),
     prisma.banner.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, imageUrl: true } }),
-    prisma.cornerType.findMany({ orderBy: { typeId: 'asc' }, select: { id: true, name: true, baseCategory: true, componentType: true, typeDetail: true, bigBanner: true, sampleImageUrl: true, active: true } }),
+    prisma.cornerType.findMany({ orderBy: { typeId: 'asc' }, select: { id: true, name: true, baseCategory: true, componentType: true, typeDetail: true, bigBanner: true, sampleImageUrl: true, active: true, liveVersion: true } }),
     // 이미지 라이브러리 재료: IMAGE/ICON Atom
     prisma.atom.findMany({
       where: { status: 'active', atomType: { in: ['ICON', 'IMAGE'] }, NOT: { imageUrl: null } },
@@ -124,6 +124,9 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     bannerImageUrl: tc.corner.banner?.imageUrl ?? null,
     bannerPosition: tc.corner.bannerPosition ?? '상단',
     sampleImageUrl: tc.corner.sampleImageUrl ?? null,
+    userCustomizable: tc.corner.userCustomizable ?? false,
+    userMinItems: tc.corner.userMinItems ?? null,
+    userMaxItems: tc.corner.userMaxItems ?? null,
     reviewStatus: tc.corner.reviewStatus ?? 'DRAFT',
     reviewReason: tc.corner.reviewReason ?? null,
     reviewedBy: tc.corner.reviewedBy ?? null,
@@ -142,6 +145,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
         name: ca.atom.name,
         atomType: ca.atom.atomType,
         isRequired: ca.isRequired,
+        menuRole: ca.menuRole,
         content: ca.atom.content,
         imageUrl: ca.atom.imageUrl,
         altText: ca.atom.altText,

@@ -44,6 +44,8 @@ export function CornerTypeReviewBar(props: CornerTypeReviewData) {
   const [pending, start] = useTransition();
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState('');
+  const [reqOpen, setReqOpen] = useState(false); // 승인 요청 메모 모달
+  const [reqNote, setReqNote] = useState('');
   const [msg, setMsg] = useState<{ kind: 'error' | 'ok'; text: string; issues?: CornerTypeReviewIssue[] } | null>(null);
 
   const { live, needsPublish, changeInReview } = deriveCornerTypeUsage(props);
@@ -51,9 +53,9 @@ export function CornerTypeReviewBar(props: CornerTypeReviewData) {
 
   const onRequest = () =>
     run(async () => {
-      const r = await requestCornerTypeReview(props.id);
+      const r = await requestCornerTypeReview(props.id, reqNote);
       if (!r.ok) setMsg({ kind: 'error', text: `승인 요청 불가 — 필수값 ${r.issues.length}건 누락`, issues: r.issues });
-      else setMsg({ kind: 'ok', text: 'BSS로 승인 요청을 보냈습니다 → 승인 대기' });
+      else { setMsg({ kind: 'ok', text: 'BSS로 승인 요청을 보냈습니다 → 승인 대기' }); setReqOpen(false); setReqNote(''); }
     });
   const onBssApprove = () => run(async () => { await approveCornerType(props.id); setMsg({ kind: 'ok', text: 'BSS 승인 결과 수신 — 승인 완료 (‘반영’을 눌러 사용하세요)' }); });
   const onBssReject = () =>
@@ -97,7 +99,7 @@ export function CornerTypeReviewBar(props: CornerTypeReviewData) {
         {/* 액션 */}
         <div className="ml-auto flex items-center gap-1.5">
           {(status === 'DRAFT' || status === 'REJECTED') && (
-            <Button size="sm" onClick={onRequest} disabled={pending || !gateOk} title="BSS로 승인 요청을 전송합니다">
+            <Button size="sm" onClick={() => { setReqNote(''); setMsg(null); setReqOpen(true); }} disabled={pending || !gateOk} title="변경 사항 메모를 적고 BSS로 승인 요청을 보냅니다">
               <Send className="mr-1 h-3.5 w-3.5" /> {status === 'REJECTED' ? '재승인 요청' : '승인 요청'}
             </Button>
           )}
@@ -194,6 +196,36 @@ export function CornerTypeReviewBar(props: CornerTypeReviewData) {
               <button onClick={onBssReject} disabled={pending || !reason.trim()} className="rounded bg-rose-500 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-rose-600 disabled:opacity-50">반려 응답 전송</button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 승인 요청 메모 모달 — 변경 사항(재승인 시 "어디를 고쳐 다시 보냄")을 적어 함께 전송 */}
+      {reqOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={() => !pending && setReqOpen(false)}>
+          <div className="w-full max-w-md rounded-xl bg-card p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-1 flex items-center gap-1.5">
+              <Send className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">{status === 'REJECTED' ? '재승인 요청' : '승인 요청'}</h3>
+            </div>
+            <p className="mb-3 text-[11px] text-muted-foreground">
+              {status === 'REJECTED'
+                ? '반려 후 무엇을 변경해 다시 보내는지 적어주세요. 검수자가 변경 이력으로 확인합니다.'
+                : '변경/요청 사항 메모를 남기면 검수자가 참고합니다. (선택)'}
+            </p>
+            <Textarea
+              value={reqNote}
+              onChange={(e) => setReqNote(e.target.value)}
+              autoFocus
+              className="min-h-[96px] text-xs"
+              placeholder={status === 'REJECTED' ? '예) 배너형 컴포넌트 매핑 제거, 대체텍스트 보완 후 재요청합니다.' : '예) 신규 등록 — 요금제 안내 카드 유형'}
+            />
+            <div className="mt-3 flex justify-end gap-1.5">
+              <Button size="sm" variant="secondary" onClick={() => setReqOpen(false)} disabled={pending}>취소</Button>
+              <Button size="sm" onClick={onRequest} disabled={pending || (status === 'REJECTED' && !reqNote.trim())} title={status === 'REJECTED' && !reqNote.trim() ? '재승인은 변경 사항 메모가 필요합니다' : undefined}>
+                <Send className="mr-1 h-3.5 w-3.5" /> BSS로 승인 요청
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

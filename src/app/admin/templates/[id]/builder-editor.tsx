@@ -38,7 +38,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Sparkles, Search } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Sparkles, Search, Lock } from 'lucide-react';
 import { TypeDetailPreview } from '../../corner-types/corner-type-manager';
 import {
   updateTemplateMeta,
@@ -70,6 +70,7 @@ export type AtomNode = {
   name: string;
   atomType: string;
   isRequired: boolean;
+  menuRole?: string; // FIXED(고정) | EDITABLE(편집가능) — 선택형·메뉴 리스트 항목 역할
   content: string | null;
   imageUrl: string | null;
   altText: string | null;
@@ -110,6 +111,9 @@ export type CornerNode = {
   bannerImageUrl: string | null;
   bannerPosition: string | null;
   sampleImageUrl: string | null;
+  userCustomizable: boolean;
+  userMinItems: number | null;
+  userMaxItems: number | null;
   reviewStatus: string;
   reviewReason: string | null;
   reviewedBy: string | null;
@@ -122,7 +126,7 @@ export type LibraryData = {
   components: { id: string; name: string; componentType: string; allowedCornerTypes: string[] }[];
   atoms: { id: string; name: string; atomType: string }[];
   banners: { id: string; name: string; imageUrl: string }[];
-  cornerTypes: { id: string; name: string; baseCategory: string; componentType?: string | null; typeDetail?: string | null; bigBanner?: boolean; sampleImageUrl?: string | null; active: boolean }[];
+  cornerTypes: { id: string; name: string; baseCategory: string; componentType?: string | null; typeDetail?: string | null; bigBanner?: boolean; sampleImageUrl?: string | null; active: boolean; liveVersion?: number | null }[];
   images: { url: string; alt: string | null; name: string }[];
   links: { url: string; label: string }[];
 };
@@ -204,13 +208,13 @@ const DEVICES = [
 ];
 
 // ── 선택형(칩) 실시간 편집 드래프트 + 미리보기 반영 ─────────
-type ChipItem = { content: string; linkUrl: string; iconUrl: string; iconAlt: string };
+type ChipItem = { content: string; linkUrl: string; iconUrl: string; iconAlt: string; menuRole: string };
 type ChipDraft = { chips: ChipItem[]; selectedIndex: number; chipRows: number };
 type ChipDraftState = { key: string; draft: ChipDraft } | null;
 
 function initChipDraft(cc: ComponentNode): ChipDraft {
   return {
-    chips: cc.atoms.map((a) => ({ content: a.content ?? '', linkUrl: a.linkUrl ?? '', iconUrl: a.imageUrl ?? '', iconAlt: a.altText ?? '' })),
+    chips: cc.atoms.map((a) => ({ content: a.content ?? '', linkUrl: a.linkUrl ?? '', iconUrl: a.imageUrl ?? '', iconAlt: a.altText ?? '', menuRole: a.menuRole ?? 'EDITABLE' })),
     selectedIndex: cc.selectedIndex ?? 0,
     chipRows: cc.chipRows ?? 1,
   };
@@ -333,6 +337,7 @@ function toPreviewCorner(c: CornerNode): PreviewCorner {
         imageUrl: a.imageUrl,
         altText: a.altText,
         linkUrl: a.linkUrl,
+        menuRole: a.menuRole,
       })),
     })),
   };
@@ -353,12 +358,14 @@ function SortableChipRow({
   onEdit,
   onRemove,
   onOpenIcon,
+  showMenuRole,
 }: {
   i: number;
   chip: ChipItem;
   onEdit: (patch: Partial<ChipItem>) => void;
   onRemove: () => void;
   onOpenIcon: () => void;
+  showMenuRole?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(i) });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
@@ -410,6 +417,20 @@ function SortableChipRow({
 
       <Input value={chip.content} onChange={(e) => onEdit({ content: e.target.value })} placeholder={`ChipLabel${String(i + 1).padStart(2, '0')}`} className="h-8 min-w-0 flex-1 text-xs" />
       <Input value={chip.linkUrl} onChange={(e) => onEdit({ linkUrl: e.target.value })} placeholder="이동 링크 URL" className="h-8 min-w-0 flex-1 text-xs" />
+      {/* 고객 메뉴 역할: 고정(삭제불가) ↔ 편집가능 — 메뉴 리스트 코너에서만 */}
+      {showMenuRole && (
+        <button
+          type="button"
+          onClick={() => onEdit({ menuRole: chip.menuRole === 'FIXED' ? 'EDITABLE' : 'FIXED' })}
+          title={chip.menuRole === 'FIXED' ? '고정 (고객이 삭제·이동 불가) — 클릭 시 편집가능' : '편집가능 (고객이 삭제·순서변경 가능) — 클릭 시 고정'}
+          className={cn(
+            'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-medium transition',
+            chip.menuRole === 'FIXED' ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-border text-muted-foreground hover:border-primary/40',
+          )}
+        >
+          {chip.menuRole === 'FIXED' ? <><Lock className="h-3 w-3" /> 고정</> : <><Pencil className="h-3 w-3" /> 편집</>}
+        </button>
+      )}
       <button type="button" onClick={onRemove} className="shrink-0 text-muted-foreground hover:text-destructive" title="칩 삭제" aria-label="칩 삭제">
         <Trash2 className="h-3.5 w-3.5" />
       </button>
@@ -419,7 +440,7 @@ function SortableChipRow({
 
 // ── 선택형(칩/탭) 편집기 = ChipPage (업무진입형.png) ─────────
 // 완전 제어형: 개별 저장 없이 로컬 draft만 수정 → 미리보기 즉시 반영, 저장은 카드의 "완료"가 일괄 처리.
-function ChipEditor({ draft, onChange }: { draft: ChipDraft; onChange: (next: ChipDraft) => void }) {
+function ChipEditor({ draft, onChange, showMenuRole }: { draft: ChipDraft; onChange: (next: ChipDraft) => void; showMenuRole?: boolean }) {
   const { chips, selectedIndex, chipRows } = draft;
   const [iconFor, setIconFor] = useState<number | null>(null); // 아이콘 모달을 연 칩 index
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -445,7 +466,7 @@ function ChipEditor({ draft, onChange }: { draft: ChipDraft; onChange: (next: Ch
     else if (from > selectedIndex && to <= selectedIndex) sel = selectedIndex + 1;
     setChips(next, sel);
   };
-  const addChip = () => setChips([...chips, { content: '', linkUrl: '', iconUrl: '', iconAlt: '' }]);
+  const addChip = () => setChips([...chips, { content: '', linkUrl: '', iconUrl: '', iconAlt: '', menuRole: 'EDITABLE' }]);
 
   return (
     <div className="mt-1 space-y-2 rounded-md bg-muted/40 p-2">
@@ -466,6 +487,7 @@ function ChipEditor({ draft, onChange }: { draft: ChipDraft; onChange: (next: Ch
                 onEdit={(patch) => editChip(i, patch)}
                 onRemove={() => removeChip(i)}
                 onOpenIcon={() => setIconFor(i)}
+                showMenuRole={showMenuRole}
               />
             ))}
           </div>
@@ -1013,7 +1035,7 @@ function ComponentCard({
 
       {edit ? (
         isChip ? (
-          <ChipEditor draft={draft} onChange={updateDraft} />
+          <ChipEditor draft={draft} onChange={updateDraft} showMenuRole={/메뉴\s*리스트/.test(corner.layoutDetail ?? '')} />
         ) : (
           <AtomManager
             key={cc.atoms.map((a) => a.componentAtomId).join(',')}
@@ -1203,6 +1225,11 @@ function CornerInfoForm({
   const [layoutDetail, setLayoutDetail] = useState(corner.layoutDetail ?? '');
   const [moreLabel, setMoreLabel] = useState(corner.moreButtonLabel ?? '');
   const [bannerPos, setBannerPos] = useState(corner.bannerPosition ?? '상단');
+  // FO 사용자 설정(고객 커스터마이즈) — 메뉴 리스트 코너
+  const [userCustom, setUserCustom] = useState(corner.userCustomizable ?? false);
+  const [userMin, setUserMin] = useState(corner.userMinItems != null ? String(corner.userMinItems) : '');
+  const [userMax, setUserMax] = useState(corner.userMaxItems != null ? String(corner.userMaxItems) : '');
+  const isMenuListCorner = /메뉴\s*리스트/.test(layoutDetail);
   // 빅배너 = 배너형이 아닌 코너에 얹은 부속 배너(위치 조정 대상). 배너형은 배너가 곧 본문이라 제외.
   const isBigBanner = ct !== '배너형' && (corner.bannerId != null || /배너/.test(layoutDetail));
 
@@ -1349,6 +1376,41 @@ function CornerInfoForm({
         )}
         {/* 코너 마크업 ID 필드는 표시하지 않음 (값은 보존) */}
         <input type="hidden" name="markupId" value={corner.markupId ?? ''} />
+
+        {/* FO 사용자 설정 — 메뉴 리스트 코너에서만. 켜면 고객이 편집할 수 있고, 노출 개수 범위를 정한다. */}
+        {isMenuListCorner && (
+          <div className="col-span-2 space-y-2 rounded-md border border-sky-200 bg-sky-50/40 p-2.5">
+            <label className="flex items-center justify-between gap-2">
+              <span className="flex flex-col">
+                <span className="text-xs font-semibold text-sky-800">FO 사용자 설정 가능</span>
+                <span className="text-[10px] text-sky-600/80">켜면 고객이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 그대로 유지.</span>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={userCustom}
+                onClick={() => setUserCustom((v) => !v)}
+                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-sky-500' : 'bg-slate-300')}
+              >
+                <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
+              </button>
+            </label>
+            <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
+            {userCustom && (
+              <div className="grid grid-cols-2 gap-2 border-t border-sky-200/70 pt-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] text-sky-700">고객 노출 최소 개수</label>
+                  <Input name="userMinItems" type="number" min={0} value={userMin} onChange={(e) => setUserMin(e.target.value)} placeholder="예: 3 (고정 포함)" className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-sky-700">고객 노출 최대 개수</label>
+                  <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
+                </div>
+                <p className="col-span-2 text-[10px] text-sky-600/80">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함되고 삭제 불가.</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 타이틀·레이아웃 — 모든 코너 유형 공통 (코너 타이틀 편집) */}
         <div className="col-span-2 space-y-1">
@@ -1762,10 +1824,11 @@ function CornerListRow({
   return (
     <div
       ref={setNodeRef}
+      id={`cl-${corner.templateCornerId}`}
       style={style}
       onClick={() => onSelect(corner.templateCornerId)}
       className={cn(
-        'cursor-pointer rounded-md border p-2',
+        'cursor-pointer rounded-md border p-2 scroll-mt-2',
         selected ? 'border-primary bg-accent' : 'bg-card hover:bg-muted/50',
         !corner.visible && 'opacity-55',
       )}
@@ -1847,21 +1910,24 @@ function CornerLoadModal({
   templateId,
   cornerTypes,
   nameMap,
+  onCreated,
 }: {
   open: boolean;
   onClose: () => void;
   templateId: string;
   cornerTypes: LibraryData['cornerTypes'];
   nameMap: Record<string, string>;
+  onCreated?: (templateCornerId: string) => void;
 }) {
   const [q, setQ] = useState('');
   const [selId, setSelId] = useState<string | null>(null);
   const [pending, start] = useTransition();
   if (!open) return null;
 
-  // 사용 중인 코너 유형만 — 코너 유형 관리 그대로(코너유형·컴포넌트·배열·빅배너 + 썸네일)
+  // 정책상 '사용(active) + 승인·반영된(liveVersion)' 코너 유형만 불러올 수 있다.
+  //  TM-DSP-021(미사용 제외) + PI-DSP-WFL-002/004(승인 완료 전 노출 후보 제외).
   const types = cornerTypes
-    .filter((t) => t.active)
+    .filter((t) => t.active && t.liveVersion != null)
     .map((t) => {
       const component = t.componentType ?? '';
       const bigBanner = !!t.bigBanner;
@@ -1887,8 +1953,9 @@ function CornerLoadModal({
     const fd = new FormData();
     fd.set('cornerTypeId', sel.id);
     start(async () => {
-      await createCornerFromType(templateId, fd);
+      const newId = await createCornerFromType(templateId, fd);
       onClose();
+      if (newId) onCreated?.(newId);
     });
   };
 
@@ -2071,6 +2138,7 @@ export function BuilderEditor({
               imageUrl: ch.iconUrl || null,
               altText: ch.iconAlt || null,
               linkUrl: ch.linkUrl || null,
+              menuRole: ch.menuRole,
             })),
           };
         }
@@ -2093,10 +2161,20 @@ export function BuilderEditor({
       return pc;
     });
 
-  // 선택된 코너로 가운데 미리보기를 스크롤 (렌더 커밋 후 실행)
+  // 선택된 코너로 좌측 리스트 + 가운데 미리보기를 스크롤 (렌더/서버 반영 후 나타날 수 있어 재시도)
   useEffect(() => {
     if (!sel) return;
-    document.getElementById(`pv-${sel}`)?.scrollIntoView({ block: 'start' });
+    let tries = 0;
+    const tick = () => {
+      const pv = document.getElementById(`pv-${sel}`);
+      const cl = document.getElementById(`cl-${sel}`);
+      if (pv) pv.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (cl) cl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      // 새로 만든 코너는 서버 반영 후 DOM에 나타나므로, 아직 없으면 잠깐 뒤 재시도
+      if ((!pv || !cl) && tries < 8) { tries += 1; setTimeout(tick, 120); }
+    };
+    const t = setTimeout(tick, 60);
+    return () => clearTimeout(t);
   }, [sel]);
 
   function selectCorner(id: string) {
@@ -2136,6 +2214,7 @@ export function BuilderEditor({
       templateId={templateId}
       cornerTypes={library.cornerTypes}
       nameMap={nameMap}
+      onCreated={(id) => selectCorner(id)}
     />
     <div
       className="grid flex-1 overflow-hidden"

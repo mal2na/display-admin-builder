@@ -7,7 +7,7 @@ import { getBuiltCornerOptions, getRegisteredCombos } from '../built-options';
 export const dynamic = 'force-dynamic';
 
 export default async function CornerTypeDetailPage({ params }: { params: { id: string } }) {
-  const [ct, logs, builtOptions, registered] = await Promise.all([
+  const [ct, logs, builtOptions, registered, usageCorners] = await Promise.all([
     prisma.cornerType.findUnique({ where: { id: params.id } }),
     prisma.auditLog.findMany({
       where: { targetType: 'CornerType', targetId: params.id },
@@ -15,8 +15,27 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     }),
     getBuiltCornerOptions(),
     getRegisteredCombos(),
+    // 사용처: 이 코너 유형으로 생성된 코너 + 배치된 템플릿/컨테이너
+    prisma.corner.findMany({
+      where: { sourceCornerTypeId: params.id },
+      select: {
+        id: true,
+        name: true,
+        templateCorners: {
+          select: { template: { select: { name: true, container: { select: { name: true } } } } },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    }),
   ]);
   if (!ct) notFound();
+
+  // 사용처 rows: 배치된 곳마다 (컨테이너 · 템플릿 · 코너명). 미배치 코너는 템플릿/컨테이너 null.
+  const usage: { container: string | null; template: string | null; corner: string }[] = [];
+  for (const c of usageCorners) {
+    if (c.templateCorners.length === 0) usage.push({ container: null, template: null, corner: c.name });
+    for (const tc of c.templateCorners) usage.push({ container: tc.template.container.name, template: tc.template.name, corner: c.name });
+  }
 
   const row: CornerTypeRow = {
     id: ct.id,
@@ -44,6 +63,9 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     defaultMoreButton: ct.defaultMoreButton ?? false,
     defaultMoreButtonLabel: ct.defaultMoreButtonLabel ?? null,
     cvmFields: ct.cvmFields ?? '',
+    userCustomizable: ct.userCustomizable ?? false,
+    userMinItems: ct.userMinItems ?? null,
+    userMaxItems: ct.userMaxItems ?? null,
     sampleImageUrl: ct.sampleImageUrl,
     status: ct.status,
     rejectReason: ct.rejectReason ?? null,
@@ -65,7 +87,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
 
   return (
     <div className="p-6">
-      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} />
+      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} usage={usage} />
     </div>
   );
 }
