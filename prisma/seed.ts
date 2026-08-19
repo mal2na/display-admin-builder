@@ -766,7 +766,7 @@ async function main() {
     { name: '가입현황 CTA', atomType: 'CTA', content: '나의 가입 현황', linkUrl: '/my/subscription' },
   ]);
   const myCornerProfile = await corner(
-    { name: '프로필·가입현황', cornerType: '고정·필수 노출형', title: '내 정보', maxItems: 1, layoutDetail: '프로필 요약', subTitleIcon: '사용안함' },
+    { name: '프로필·가입현황', cornerType: '고정·필수 노출형', title: '내 정보', maxItems: 1, layoutDetail: '프로필형', subTitleIcon: '사용안함' },
     [{ id: myProfile.id, componentType: '정보형' }],
   );
 
@@ -1038,9 +1038,29 @@ async function main() {
     data: { cvmFields: 'membership.number' },
   });
   await prisma.cornerType.updateMany({
-    where: { baseCategory: '고정·필수 노출형', typeDetail: '프로필 요약' },
+    where: { baseCategory: '고정·필수 노출형', typeDetail: '프로필형' },
     data: { cvmFields: 'customer.name,customer.phone' },
   });
+  // FO 사용자 설정(고객 커스터마이즈) 기본값 — 업무 진입형(메뉴·탭) 유형은 고객이 3~8개 범위에서 편집 가능
+  await prisma.cornerType.updateMany({
+    where: { baseCategory: '업무 진입형' },
+    data: { userCustomizable: true, userMinItems: 3, userMaxItems: 8 },
+  });
+
+  // ── 사용처 추적: 기존 코너를 유형에 매칭해 sourceCornerTypeId 백필 ──
+  {
+    const norm = (d: string | null) => (d ?? '').replace(/\s*·\s*빅배너\s*/, '').replace(/\(배너\)/, '').trim();
+    const allTypes = await prisma.cornerType.findMany({ select: { id: true, baseCategory: true, typeDetail: true, bigBanner: true } });
+    const allCorners = await prisma.corner.findMany({ select: { id: true, cornerType: true, layoutDetail: true, bannerId: true } });
+    for (const c of allCorners) {
+      const d = norm(c.layoutDetail);
+      const big = /배너/.test(c.layoutDetail ?? '') || c.bannerId != null;
+      let cand = allTypes.filter((t) => t.baseCategory === c.cornerType && (t.typeDetail ?? '') === d);
+      if (cand.length > 1) { const b = cand.filter((t) => !!t.bigBanner === big); if (b.length) cand = b; }
+      if (cand.length === 0) cand = allTypes.filter((t) => t.baseCategory === c.cornerType);
+      if (cand[0]) await prisma.corner.update({ where: { id: c.id }, data: { sourceCornerTypeId: cand[0].id } });
+    }
+  }
 
   // ── 코너 승인 상태 데모 (코너 유형 단위로 BSS 승인 요청 + 버전관리) ──
   // 대부분 승인 완료 = 라이브 v1 사용 중. 앞쪽 유형 몇 개로 승인대기/반려/초안 + 재검수 라이브유지 시연.
@@ -1105,6 +1125,24 @@ async function main() {
     await setStatus('자주 보는 메뉴', { reviewStatus: 'REVIEW', reviewedBy: null, reviewedAt: null, reviewReason: null });
     await setStatus('휴대폰 결제·이용료', { reviewStatus: 'REJECTED', reviewedBy: APPROVER, reviewedAt: now, reviewReason: '이미지 대체텍스트 누락, 랜딩 링크 미검증 — 보완 후 재요청 바랍니다.' });
     await setStatus('T 우주 구독료', { reviewStatus: 'DRAFT', reviewedBy: null, reviewedAt: null, reviewReason: null });
+  }
+
+  // ── 자주 보는 메뉴: FO 사용자 설정 가능(고객이 3~8개 범위에서 편집) ──
+  await prisma.corner.updateMany({ where: { name: '자주 보는 메뉴' }, data: { userCustomizable: true, userMinItems: 3, userMaxItems: 8 } });
+
+  // ── 자주 보는 메뉴: 고객 메뉴 역할 데모 — 앞 2개 고정(삭제불가), 나머지 편집가능 ──
+  {
+    const corner = await prisma.corner.findFirst({
+      where: { name: '자주 보는 메뉴' },
+      include: { cornerComponents: { include: { component: { include: { componentAtoms: { orderBy: { order: 'asc' } } } } } } },
+    });
+    const comp = corner?.cornerComponents.map((cc) => cc.component).find((c) => c.componentType === '선택형') ?? corner?.cornerComponents[0]?.component;
+    if (comp) {
+      const cas = comp.componentAtoms;
+      for (let i = 0; i < cas.length; i++) {
+        await prisma.componentAtom.update({ where: { id: cas[i].id }, data: { menuRole: i < 2 ? 'FIXED' : 'EDITABLE' } });
+      }
+    }
   }
 
   console.log('✅ 시드 완료 (혜택 홈 · 쇼핑 홈 · 마이 홈):', {

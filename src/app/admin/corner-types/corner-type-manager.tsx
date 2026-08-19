@@ -24,7 +24,7 @@ import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Check, X, Search, ChevronDown, RotateCcw, Info } from 'lucide-react';
-import { createCornerType, updateCornerType, toggleCornerTypeActive } from './actions';
+import { createCornerType, updateCornerType } from './actions';
 
 // 등록된 코너 유형(코너 유형 관리 = 마스터)의 (코너유형·컴포넌트·배열) 조합. 등록 폼 ②③을 이걸로 좁힌다.
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
@@ -63,6 +63,9 @@ export type CornerTypeRow = {
   defaultMoreButton: boolean;
   defaultMoreButtonLabel: string | null;
   cvmFields: string; // CVM 연동 필드 keys csv
+  userCustomizable?: boolean;
+  userMinItems?: number | null;
+  userMaxItems?: number | null;
   sampleImageUrl: string | null;
   status: string;
   rejectReason?: string | null;
@@ -103,6 +106,9 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   defaultMoreButton: false,
   defaultMoreButtonLabel: null,
   cvmFields: '',
+  userCustomizable: false,
+  userMinItems: null,
+  userMaxItems: null,
   sampleImageUrl: null,
   status: 'DRAFT',
   workingVersion: 1,
@@ -121,6 +127,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const statusKeys = Object.keys(CORNER_TYPE_STATUS_LABEL);
   const [expanded, setExpanded] = useState(true);
   const [preview, setPreview] = useState<string[] | null>(null); // 유형 샘플 확대 미리보기(클릭)
+  const [hoverThumb, setHoverThumb] = useState<{ src: string; x: number; y: number } | null>(null); // 호버 확대(테이블 overflow에 안 잘리게 fixed 오버레이)
   const [base, setBase] = useState(sp.get('base') ?? '전체'); // 코너 유형
   const [detail, setDetail] = useState(sp.get('detail') ?? '전체'); // 유형 상세
   const [useOn, setUseOn] = useState(sp.get('on') !== '0');
@@ -333,44 +340,37 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
-                  {/* 사용 여부(TM-DSP-021) = 노출 사용 스위치. 반영(승인·게시)된 유형만 켤 수 있다. */}
-                  {t.liveVersion == null ? (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground" title="승인·반영 후에 사용할 수 있습니다">미사용</span>
+                  {/* 사용 여부(TM-DSP-021) — 목록에서는 읽기 전용 표시. 전환은 상세에서만(오클릭 방지). */}
+                  {t.liveVersion != null && t.active ? (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
                   ) : (
-                    <form action={toggleCornerTypeActive.bind(null, t.id)} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', t.active ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground')}
-                        title="클릭하여 사용/미사용 전환"
-                      >
-                        {t.active ? `사용 중 · v${t.liveVersion}` : '미사용'}
-                      </button>
-                    </form>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground" title={t.liveVersion == null ? '승인·반영 후에 사용할 수 있습니다' : '미사용'}>미사용</span>
                   )}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2" onClick={(e) => e.stopPropagation()}>
                   {t.sampleImageUrl ? (
                     (() => {
                       const srcs = t.sampleImageUrl!.split('\n').filter(Boolean);
+                      const first = srcs[0];
+                      const more = srcs.length - 1; // 나머지 개수 → +N 마킹
                       return (
-                        <div className="flex flex-nowrap items-center gap-1.5">
-                          {srcs.map((src, i) => (
-                            <button
-                              key={i}
-                              type="button"
-                              onClick={() => setPreview(srcs)}
-                              className="group/thumb relative shrink-0 rounded-lg ring-offset-1 transition hover:ring-2 hover:ring-primary/50"
-                              title="클릭하면 전체보기"
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={src} alt="유형 샘플" className="h-9 w-14 rounded-lg border object-cover object-top [filter:contrast(1.08)_saturate(1.15)]" />
-                              {/* 호버 시 확대 미리보기 (오버플로우 visible라 잘리지 않음) */}
-                              <div className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 hidden group-hover/thumb:block">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={src} alt="유형 샘플 미리보기" className="w-56 max-w-none rounded-xl border bg-white object-contain shadow-xl ring-1 ring-black/5 [filter:contrast(1.08)_saturate(1.15)]" />
-                              </div>
-                            </button>
-                          ))}
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPreview(srcs)}
+                          onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHoverThumb({ src: first, x: r.left, y: r.top }); }}
+                          onMouseLeave={() => setHoverThumb(null)}
+                          className="relative inline-flex shrink-0 items-center rounded-lg ring-offset-1 transition hover:ring-2 hover:ring-primary/50"
+                          title={`클릭하면 전체보기 (총 ${srcs.length}장)`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={first} alt="유형 샘플" className="h-9 w-14 rounded-lg border object-cover object-top [filter:contrast(1.08)_saturate(1.15)]" />
+                          {/* 여러 장이면 +N 마킹 (오른쪽 아래 배지) */}
+                          {more > 0 && (
+                            <span className="absolute -bottom-1 -right-1 rounded-full border border-white bg-slate-800 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white shadow-sm">
+                              +{more}
+                            </span>
+                          )}
+                        </button>
                       );
                     })()
                   ) : (
@@ -435,6 +435,21 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           </div>
         </div>
       )}
+
+      {/* 유형 샘플 호버 확대 — 테이블 overflow에 잘리지 않도록 fixed 오버레이(viewport 기준). 위 공간 부족하면 아래로. */}
+      {hoverThumb && (
+        <div
+          className="pointer-events-none fixed z-[90]"
+          style={
+            hoverThumb.y > 200
+              ? { left: hoverThumb.x, top: hoverThumb.y - 8, transform: 'translateY(-100%)' }
+              : { left: hoverThumb.x, top: hoverThumb.y + 44 }
+          }
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={hoverThumb.src} alt="유형 샘플 미리보기" className="w-56 max-w-none rounded-xl border bg-white object-contain shadow-xl ring-1 ring-black/5 [filter:contrast(1.08)_saturate(1.15)]" />
+        </div>
+      )}
     </div>
   );
 }
@@ -467,6 +482,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const [moreDefault, setMoreDefault] = useState(row.defaultMoreButton ?? false); // 더보기 기본 ON(타입-레벨)
   const [cvmSel, setCvmSel] = useState<Set<string>>(new Set(row.cvmFields ? row.cvmFields.split(',').filter(Boolean) : [])); // CVM 연동 필드
   const toggleCvm = (k: string) => setCvmSel((prev) => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  // FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 유형에서
+  const [userCustom, setUserCustom] = useState(row.userCustomizable ?? false);
+  const [userMin, setUserMin] = useState(row.userMinItems != null ? String(row.userMinItems) : '');
+  const [userMax, setUserMax] = useState(row.userMaxItems != null ? String(row.userMaxItems) : '');
   // 세부 항목(항목별 사용여부) — 6개 토글을 한 곳에서 관리(미리보기/노출 기본값과 실시간 연동)
   const [features, setFeatures] = useState({
     useMainTitle: row.useMainTitle,
@@ -524,8 +543,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   // 선택형(탭·메뉴)·단일/배너/바코드/프로필은 '리스트'가 아니므로 노출 개수·더보기가 의미 없다.
   const dStr = detailValid ?? '';
   const isBannerType = compValid === '배너형' || base === '배너형';
-  // 헤더(코너 타이틀/서브타이틀) 없는 유형 — 미리보기 noHeader와 동일 기준
-  const noHeaderType = isBannerType || /카테고리\s*탭/.test(dStr) || dStr.includes('고정형(탭)') || ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너'].some((k) => dStr.includes(k));
+  // 헤더(코너 타이틀/서브타이틀) 없는 유형 — 배너·아이콘/이미지 카드, 그리고 '순수 탭'(선택형)만.
+  //  '세로형(카테고리탭)'처럼 상품형 리스트의 탭 변형은 헤더가 있으므로 제외(선택형일 때만 탭=무헤더).
+  const isStandaloneTab = compValid === '선택형' && (/카테고리\s*탭/.test(dStr) || dStr.includes('고정형(탭)'));
+  const noHeaderType = isBannerType || isStandaloneTab || ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너'].some((k) => dStr.includes(k));
   // 여러 아이템을 나열하는 리스트형 코너 — 노출 개수·더보기가 의미 있는 유형(상품형/혜택형/정보형 리스트)
   const isListType = compValid === '상품형' || compValid === '혜택형' || (compValid === '정보형' && /리스트/.test(dStr));
   const featureApplies = (key: string) => {
@@ -844,26 +865,71 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
             {CVM_FIELDS.map((f) => {
               const on = cvmSel.has(f.key);
               return (
-                <label
+                <button
                   key={f.key}
+                  type="button"
+                  onClick={() => toggleCvm(f.key)}
                   className={cn(
                     'inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
                     on ? 'border-sky-400 bg-sky-50 text-sky-700' : 'border-border text-muted-foreground hover:border-sky-300',
                   )}
                 >
-                  <input type="checkbox" name="cvmFields" value={f.key} checked={on} onChange={() => toggleCvm(f.key)} className="sr-only" />
                   {on && <Check className="h-3 w-3" />}
                   {f.label}
                   <span className="text-[9px] text-slate-400">{f.category}</span>
-                </label>
+                </button>
               );
             })}
           </div>
+          {/* 폼 제출용 — 선택된 키만 hidden input으로 (sr-only 체크박스 포커스 스크롤 튐 제거) */}
+          {[...cvmSel].map((k) => (
+            <input key={k} type="hidden" name="cvmFields" value={k} />
+          ))}
           {cvmSel.size > 0 && (
             <p className="text-[10px] text-sky-600">선택 {cvmSel.size}개 — 빌더에서 이 유형으로 코너를 만들면 해당 값은 CVM에서 회원별로 채워집니다(고정값 입력 불가).</p>
           )}
         </div>
       </section>
+
+      {/* FO 사용자 설정 — 선택형/업무 진입형(메뉴·탭) 유형에서. 고객이 직접 편집 + 노출 개수 범위 */}
+      {(base === '업무 진입형' || compValid === '선택형') && (
+        <section className="overflow-hidden rounded-md border">
+          <div className="flex items-center gap-1.5 border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
+            <Info className="h-3.5 w-3.5 text-sky-500" /> FO 사용자 설정 (고객 커스터마이즈)
+          </div>
+          <div className="space-y-2.5 p-3">
+            <label className="flex items-center justify-between gap-2">
+              <span className="flex flex-col">
+                <span className="text-xs font-medium text-foreground">사용자 설정 가능</span>
+                <span className="text-[10px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={userCustom}
+                onClick={() => setUserCustom((v) => !v)}
+                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-sky-500' : 'bg-slate-300')}
+              >
+                <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
+              </button>
+            </label>
+            <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
+            {userCustom && (
+              <div className="grid grid-cols-2 gap-2 border-t pt-2.5">
+                <div className="space-y-1">
+                  <label className="text-[10px] text-muted-foreground">고객 노출 최소 개수</label>
+                  <Input name="userMinItems" type="number" min={0} value={userMin} onChange={(e) => setUserMin(e.target.value)} placeholder="예: 3 (고정 포함)" className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-muted-foreground">고객 노출 최대 개수</label>
+                  <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
+                </div>
+                <p className="col-span-2 text-[10px] text-muted-foreground">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* 유형 샘플 이미지 — 로컬에서 직접 등록 */}
       <section className="overflow-hidden rounded-md border">
@@ -1064,7 +1130,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         </div>
       </div>
     );
-  } else if (base === '상태 안내형' || has('아이콘형', '금액 요약', '사용량 요약', '요약')) {
+  } else if (base === '상태 안내형' || has('아이콘형', '금액형', '사용량형', '프로필형', '요약')) {
     // 마이.png 상태 카드(아이콘형): 값(Value) + 상태(Status) + 라벨(Label) + 우측 icon
     body = (
       <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">

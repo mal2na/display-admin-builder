@@ -1,4 +1,4 @@
-import { Signal, Wifi, BatteryFull, ChevronRight, Percent, ShoppingBag, User } from 'lucide-react';
+import { Signal, Wifi, BatteryFull, ChevronRight, Percent, ShoppingBag, User, Lock, GripVertical } from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 import { resolveCvmSample, cvmBindingLabel } from '@/lib/display-taxonomy';
 import { PreviewImage } from './preview-image';
@@ -11,6 +11,7 @@ export type PreviewAtom = {
   imageUrl: string | null;
   altText: string | null;
   linkUrl: string | null;
+  menuRole?: string; // FIXED(고정) | EDITABLE(편집가능)
 };
 export type PreviewComponent = { id: string; name: string; componentType: string; atoms: PreviewAtom[]; selectedIndex?: number; chipRows?: number };
 export type PreviewCorner = {
@@ -86,13 +87,22 @@ function ChipsView({ component }: { component: PreviewComponent }) {
 function MenuListView({ component }: { component: PreviewComponent }) {
   return (
     <div className="divide-y divide-slate-100">
-      {component.atoms.map((a) => (
-        <div key={a.id} className="flex items-center gap-2 py-2.5">
-          {a.imageUrl && isIconRef(a.imageUrl) && <IconGlyph name={a.imageUrl} className="h-4 w-4 shrink-0 text-slate-500" />}
-          <span className="flex-1 truncate text-[14px] text-slate-800">{a.content ?? a.name}</span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
-        </div>
-      ))}
+      {component.atoms.map((a) => {
+        const fixed = a.menuRole === 'FIXED';
+        return (
+          <div key={a.id} className="flex items-center gap-2 py-2.5">
+            {a.imageUrl && isIconRef(a.imageUrl) && <IconGlyph name={a.imageUrl} className="h-4 w-4 shrink-0 text-slate-500" />}
+            <span className="flex-1 truncate text-[14px] text-slate-800">{a.content ?? a.name}</span>
+            {/* 고객 메뉴 역할: 고정=자물쇠(삭제/이동 불가), 편집가능=드래그 핸들(고객이 편집) */}
+            {fixed ? (
+              <Lock className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-label="고정 메뉴" />
+            ) : (
+              <GripVertical className="h-4 w-4 shrink-0 text-slate-300" aria-label="편집 가능(고객이 순서변경·삭제)" />
+            )}
+            <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+          </div>
+        );
+      })}
     </div>
   );
 }

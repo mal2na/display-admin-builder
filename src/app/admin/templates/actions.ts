@@ -290,8 +290,13 @@ const nn = (formData: FormData, k: string) => {
 function readCornerInfo(formData: FormData) {
   const maxItemsRaw = String(formData.get('maxItems') ?? '').trim();
   const minItemsRaw = String(formData.get('minItems') ?? '').trim();
+  const uMinRaw = String(formData.get('userMinItems') ?? '').trim();
+  const uMaxRaw = String(formData.get('userMaxItems') ?? '').trim();
   return {
     minItems: minItemsRaw ? Number(minItemsRaw) : null,
+    userCustomizable: String(formData.get('userCustomizable') ?? '') === '1',
+    userMinItems: uMinRaw ? Number(uMinRaw) : null,
+    userMaxItems: uMaxRaw ? Number(uMaxRaw) : null,
     noDisplayCondition: nn(formData, 'noDisplayCondition'),
     moreButtonUse: String(formData.get('moreButtonUse') ?? '') === '사용',
     moreButtonLabel: nn(formData, 'moreButtonLabel'),
@@ -478,6 +483,12 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
       moreButtonLabel: moreOn ? (def.defaultMoreButtonLabel ?? '더보기') : null,
       // 코너 유형 관리의 유형 샘플 썸네일을 코너에 상속(카드/참고용) — 컴포넌트가 생기면 미리보기는 컴포넌트로 렌더
       sampleImageUrl: def.sampleImageUrl,
+      // 사용처 추적: 이 코너가 생성된 원본 코너 유형(카탈로그) id
+      sourceCornerTypeId: ct.id,
+      // FO 사용자 설정(고객 커스터마이즈) 기본값 상속 — 빌더에서 코너별 조정 가능
+      userCustomizable: ct.userCustomizable ?? false,
+      userMinItems: ct.userMinItems ?? null,
+      userMaxItems: ct.userMaxItems ?? null,
     },
   });
   // 유형의 컴포넌트 유형·배열에 맞춰 '코너 구성'을 스캐폴딩(불러오면 코너 정보 + 코너 구성이 실제로 채워짐)
@@ -491,8 +502,9 @@ export async function createCornerFromType(templateId: string, formData: FormDat
   const cornerTypeId = String(formData.get('cornerTypeId') ?? '').trim();
   const corner = await createCornerInstanceFromTypeId(cornerTypeId);
   const order = await nextOrder('templateCorner', { templateId });
-  await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order } });
+  const tc = await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order } });
   rp(templateId);
+  return tc.id; // 생성된 templateCorner id → 빌더에서 새 코너로 포커싱
 }
 
 // 코너 불러오기(슬롯 교체) — 코너 유형 관리 카탈로그에서 고른 유형으로 이 슬롯을 교체한다.
@@ -866,13 +878,14 @@ export async function setChipRows(templateId: string, componentId: string, rows:
 export async function saveChips(
   templateId: string,
   componentId: string,
-  payload: { chips: { content: string; linkUrl: string; iconUrl?: string; iconAlt?: string }[]; selectedIndex: number; chipRows: number },
+  payload: { chips: { content: string; linkUrl: string; iconUrl?: string; iconAlt?: string; menuRole?: string }[]; selectedIndex: number; chipRows: number },
 ) {
   const chips = (payload.chips ?? []).map((c) => ({
     content: (c.content ?? '').trim(),
     linkUrl: (c.linkUrl ?? '').trim() || null,
     imageUrl: (c.iconUrl ?? '').trim() || null, // 칩 좌측 아이콘 (라이브러리에서 끌어옴)
     altText: (c.iconAlt ?? '').trim() || null,
+    menuRole: c.menuRole === 'FIXED' ? 'FIXED' : 'EDITABLE', // 고객 메뉴 역할
   }));
   const existing = await prisma.componentAtom.findMany({
     where: { componentId },
@@ -886,12 +899,13 @@ export async function saveChips(
         where: { id: existing[i].atomId },
         data: { content: chips[i].content, linkUrl: chips[i].linkUrl, imageUrl: chips[i].imageUrl, altText: chips[i].altText, name: chips[i].content ? `칩:${chips[i].content}` : `칩 ${i + 1}` },
       });
-      if (existing[i].order !== i) await prisma.componentAtom.update({ where: { id: existing[i].id }, data: { order: i } });
+      if (existing[i].order !== i || existing[i].menuRole !== chips[i].menuRole)
+        await prisma.componentAtom.update({ where: { id: existing[i].id }, data: { order: i, menuRole: chips[i].menuRole } });
     } else {
       const atom = await prisma.atom.create({
         data: { name: chips[i].content ? `칩:${chips[i].content}` : `칩 ${i + 1}`, atomType: 'TEXT', content: chips[i].content, linkUrl: chips[i].linkUrl, imageUrl: chips[i].imageUrl, altText: chips[i].altText, status: 'active' },
       });
-      await prisma.componentAtom.create({ data: { componentId, atomId: atom.id, order: i, isRequired: true } });
+      await prisma.componentAtom.create({ data: { componentId, atomId: atom.id, order: i, isRequired: true, menuRole: chips[i].menuRole } });
     }
   }
   // 남는 기존 칩 제거

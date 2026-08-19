@@ -95,6 +95,10 @@ function readForm(formData: FormData) {
     defaultMoreButton: String(formData.get('defaultMoreButton') ?? '') === '1',
     defaultMoreButtonLabel: opt('defaultMoreButtonLabel'),
     cvmFields: formData.getAll('cvmFields').map(String).filter(Boolean).join(','), // CVM 연동 필드 keys
+    // FO 사용자 설정(고객 커스터마이즈) 기본값
+    userCustomizable: String(formData.get('userCustomizable') ?? '') === '1',
+    userMinItems: num('userMinItems'),
+    userMaxItems: num('userMaxItems'),
     sampleImageUrl: opt('sampleImageUrl'),
     status: opt('status') ?? 'DRAFT',
   };

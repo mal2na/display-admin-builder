@@ -52,14 +52,15 @@ function gateIssues(ct: { name: string | null; baseCategory: string | null; comp
   return issues;
 }
 
-// ── 1. 승인 요청 (초안/반려 → 승인 대기). BSS로 보내기. ──
-export async function requestCornerTypeReview(id: string) {
+// ── 1. 승인 요청 (초안/반려 → 승인 대기). BSS로 보내기. note = 변경 사항/메모(재승인 시 사유). ──
+export async function requestCornerTypeReview(id: string, note?: string) {
   const ct = await prisma.cornerType.findUniqueOrThrow({ where: { id } });
   const issues = gateIssues(ct);
   if (issues.length) return { ok: false as const, issues };
   assertTransition(ct.status, 'REVIEW');
+  const memo = note?.trim() || null;
   await prisma.cornerType.update({ where: { id }, data: { status: 'REVIEW', rejectReason: null, reviewedBy: null, reviewedAt: null } });
-  await writeAudit({ id, before: { status: ct.status }, after: { status: 'REVIEW' }, result: 'REVIEW_REQUESTED' });
+  await writeAudit({ id, before: { status: ct.status }, after: { status: 'REVIEW' }, reason: memo, result: 'REVIEW_REQUESTED' });
   rp(id);
   return { ok: true as const, issues: [] as Issue[] };
 }
