@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SB-DSP-OPR1-001 · 전체 메뉴 관리 (개정 SB)</title>
+<style>
+  :root{
+    --primary:#502dfb;--primary-50:#f1f2ff;--primary-80:#e1e3ff;--primary-700:#2f15b2;
+    --n50:#f8f9fb;--n80:#f1f3f5;--n100:#e8ecef;--n200:#dce0e5;--n300:#c4c9cf;
+    --n500:#8b949e;--n600:#697582;--n700:#454f59;--n900:#1c1f23;
+    --red:#e8384f;--amber:#f9a825;--green:#1f9d55;--bg:#eef0f4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--n900);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    font-size:13px;line-height:1.55;padding:20px}
+  .wrap{max-width:1860px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  h2{font-size:15px;margin:30px 0 10px;padding-left:8px;border-left:3px solid var(--primary)}
+  .lead{color:var(--n600);margin-bottom:14px;font-size:12.5px}
+  .meta{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--n200);margin-bottom:14px;font-size:11.5px}
+  .meta th{background:var(--n80);color:var(--n700);font-weight:600;text-align:left;padding:6px 9px;border:1px solid var(--n200);white-space:nowrap;width:80px}
+  .meta td{padding:6px 9px;border:1px solid var(--n200)}
+  .cols{display:grid;grid-template-columns:minmax(0,1fr) 470px;gap:14px;align-items:start}
+  .panel{background:#fff;border:1px solid var(--n200);border-radius:10px;padding:16px}
+  /* ---------- badges ---------- */
+  .n{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;
+    border-radius:10px;background:var(--red);color:#fff;font-size:11px;font-weight:700;vertical-align:middle;margin-right:5px;flex:none}
+  .n.new{background:#1f7a45}
+  /* ---------- wireframe ---------- */
+  .crumb{color:var(--n500);font-size:11.5px;margin-bottom:2px}
+  .title{font-size:17px;font-weight:700;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--n200)}
+  .row{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:8px}
+  .lbl{font-size:12px;color:var(--n700);font-weight:600;white-space:nowrap}
+  .sel{border:1px solid var(--n200);border-radius:7px;padding:5px 20px 5px 9px;font-size:11.5px;color:var(--n600);background:#fff;position:relative;white-space:nowrap}
+  .sel::after{content:"▾";position:absolute;right:7px;top:4px;color:var(--n500)}
+  .inp{border:1px solid var(--n200);border-radius:7px;padding:5px 9px;font-size:11.5px;color:var(--n500);background:#fff;min-width:150px}
+  .btn{border:1px solid var(--n200);background:#fff;border-radius:7px;padding:5px 11px;font-size:11.5px;color:var(--n700);white-space:nowrap}
+  .btn.pri{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
+  .btn.ghost{border-color:var(--primary);color:var(--primary);font-weight:600;background:#fff}
+  .btn.dis{background:var(--n80);border-color:var(--n200);color:var(--n500)}
+  .fold{color:var(--primary);font-size:11.5px;font-weight:600;margin-left:2px}
+  .searchbox{background:var(--n50);border:1px solid var(--n100);border-radius:9px;padding:11px 12px;margin-bottom:12px}
+  .body2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0;border:1px solid var(--n200);border-radius:9px;overflow:hidden}
+  .listcol{border-right:1px solid var(--n200)}
+  .lhead{display:flex;gap:6px;align-items:center;padding:9px 10px;background:var(--n80);border-bottom:1px solid var(--n200)}
+  .tt{width:100%;border-collapse:collapse;font-size:11.5px}
+  .tt th{background:var(--n50);color:var(--n600);text-align:left;padding:6px 8px;border-bottom:1px solid var(--n200);font-weight:600;white-space:nowrap}
+  .tt td{padding:6px 8px;border-bottom:1px solid var(--n100);vertical-align:middle}
+  .tt tr.sel-row{background:var(--primary-50)}
+  .d1{font-weight:700}
+  .d2{padding-left:16px!important;color:var(--n700)}
+  .d3{padding-left:30px!important;color:var(--n600)}
+  .dim{opacity:.45}
+  .chip{display:inline-block;padding:1px 6px;border-radius:999px;font-size:10.5px;font-weight:700;border:1px solid;white-space:nowrap}
+  .c-use{color:#1f7a45;border-color:#a8e0c0;background:#eefaf3}
+  .c-off{color:var(--n600);border-color:var(--n200);background:var(--n80)}
+  .c-ok{color:#2f15b2;border-color:var(--primary-80);background:var(--primary-50)}
+  .c-wait{color:#b26a00;border-color:#ffe07f;background:#fff7dc}
+  .c-rej{color:#b3162a;border-color:#f7b9c1;background:#fdeef0}
+  .sw{display:inline-block;width:26px;height:14px;border-radius:8px;background:var(--primary);position:relative;vertical-align:middle}
+  .sw::after{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;top:2px;right:2px}
+  .sw.off{background:var(--n300)}
+  .sw.off::after{right:auto;left:2px}
+  .warn{color:var(--red);font-weight:700}
+  /* detail panel */
+  .dcol{padding:0}
+  .dhead{display:flex;align-items:center;gap:6px;padding:9px 12px;background:var(--n80);border-bottom:1px solid var(--n200);font-weight:700;font-size:12px}
+  .sec{border-bottom:1px solid var(--n100);padding:10px 12px}
+  .sec-t{font-size:11.5px;font-weight:700;color:var(--primary-700);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+  .kv{display:grid;grid-template-columns:82px minmax(0,1fr);gap:5px 8px;font-size:11.5px}
+  .kv .k{color:var(--n600)}
+  .ro{background:var(--n80);border:1px dashed var(--n200);border-radius:5px;padding:2px 7px;color:var(--n600);font-size:11px}
+  .fld{border:1px solid var(--n200);border-radius:5px;padding:2px 7px;background:#fff;font-size:11px;color:var(--n700)}
+  .req{color:var(--red);font-weight:700}
+  .foot{display:flex;gap:8px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--n200);flex-wrap:wrap}
+  /* ---------- description ---------- */
+  table.d{width:100%;border-collapse:collapse;font-size:12px}
+  table.d th{background:var(--n80);color:var(--n700);text-align:left;padding:7px 9px;border-bottom:1px solid var(--n200);font-weight:600}
+  table.d td{padding:8px 9px;border-bottom:1px solid var(--n100);vertical-align:top}
+  table.d td.no{width:46px;font-weight:700;color:var(--n700);white-space:nowrap}
+  table.d tr.grp td{background:var(--primary-50);font-weight:700;color:var(--primary-700);border-bottom:1px solid var(--primary-80);font-size:11.5px}
+  b.h{display:block;margin-bottom:3px}
+  table.d ul{margin:3px 0 0;padding-left:15px}
+  table.d ul ul{padding-left:13px;margin-top:1px}
+  .src{margin-top:6px;color:var(--n600);font-size:11px;border-top:1px dashed var(--n200);padding-top:4px}
+  .src b{font-weight:600;display:inline}
+  .tg{display:inline-block;padding:0 5px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid;margin-left:3px}
+  .tg-fix{color:#b26a00;border-color:#ffe07f;background:#fff7dc}
+  .tg-new{color:#1f7a45;border-color:#a8e0c0;background:#eefaf3}
+  .chk{color:var(--red);font-weight:700}
+  .fixnote{color:var(--red);font-size:11px;margin:2px 0 4px}
+  /* popups */
+  .pops{display:flex;gap:12px;flex-wrap:wrap}
+  .pop{width:290px;border:1px solid var(--n200);border-radius:11px;padding:14px;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.05)}
+  .pop h4{margin:0 0 5px;font-size:13px}
+  .pop p{margin:0 0 9px;color:var(--n600);font-size:11.5px}
+  .pop .fldbox{border:1px solid var(--n200);border-radius:6px;padding:6px 8px;color:var(--n500);font-size:11px;margin-bottom:9px}
+  table.g{width:100%;border-collapse:collapse;font-size:12px;background:#fff}
+  table.g th{background:var(--n80);color:var(--n700);text-align:left;padding:7px 9px;border:1px solid var(--n200);font-weight:600}
+  table.g td{padding:7px 9px;border:1px solid var(--n200);vertical-align:top}
+  code{font-family:ui-monospace,Menlo,monospace;background:var(--n80);padding:1px 5px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>SB-DSP-OPR1-001 · 전체 메뉴 관리 <span style="font-size:12px;color:var(--n600);font-weight:400">(개정 SB v4)</span></h1>
+<div class="lead">번호는 원본 SB를 유지. <span class="n" style="margin:0 3px 0 0">n</span> 원본 번호 · <span class="n new" style="margin:0 3px 0 0">n</span> 신규 영역(8~10). 정책과 어긋난 항목은 <span class="tg tg-fix">수정</span>, 원본에 없던 영역은 <span class="tg tg-new">신규</span>.</div>
+
+<table class="meta">
+  <tr>
+    <th>SB 버전</th><td>4</td>
+    <th>화면ID</th><td>SB-DSP-OPR1-001</td>
+    <th>구현유형</th><td>page</td>
+    <th>상태</th><td>latest</td>
+    <th>화면명</th><td>전체 메뉴 관리</td>
+    <th>작성일</th><td>2026.08.21</td>
+  </tr>
+  <tr>
+    <th>정책서 버전</th><td>v0.31</td>
+    <th>정책서ID</th><td>DSP</td>
+    <th>화면유형</th><td>단일</td>
+    <th>참고 정책서</th><td>PI-DSP-MNU-001·002·003, PG-DSP-WFL-001, PI-DSP-AUD-002</td>
+    <th>경로</th><td>홈 &gt; 전시관리 &gt; 전체 메뉴 관리</td>
+    <th>작성자</th><td>P213980</td>
+  </tr>
+</table>
+
+<div class="cols">
+  <!-- ================== WIREFRAME ================== -->
+  <div class="panel">
+    <div class="crumb">홈 &gt; 전시관리 &gt; 전체 메뉴 관리</div>
+    <div class="title">전체 메뉴 관리</div>
+
+    <!-- search -->
+    <div class="searchbox">
+      <div class="row">
+        <span class="n">1</span><span class="lbl">조회 조건</span>
+        <span class="n">1-1</span><span class="sel">메뉴명</span><span class="inp">검색어 입력</span>
+        <span class="n">1-2</span><span class="fold">접기 ⌃</span>
+        <span style="margin-left:auto"></span>
+        <span class="n">1-4</span><button class="btn">초기화</button>
+        <span class="n">1-5</span><button class="btn pri">조회</button>
+      </div>
+      <div class="row" style="margin-bottom:0">
+        <span class="n">1-3</span>
+        <span class="sel">사용여부 선택</span>
+        <span class="sel">로그인 조건 선택</span>
+        <span class="sel">채널 조건 선택</span>
+        <span class="sel">권한 조건 선택</span>
+        <span class="sel">대상 고객군 선택</span>
+        <span class="sel">승인상태 선택</span>
+        <span class="sel">담당 조직·담당자</span>
+      </div>
+    </div>
+
+    <!-- main -->
+    <div class="body2">
+      <div class="listcol">
+        <div class="lhead">
+          <span class="n">3</span><button class="btn ghost">+ 메뉴 노출 등록</button>
+          <button class="btn">전체 펼치기</button><button class="btn">전체 접기</button>
+          <span style="margin-left:auto;color:var(--n600);font-size:11px">총 24건</span>
+        </div>
+        <table class="tt">
+          <tr>
+            <th><span class="n">2</span>메뉴명</th><th>사용</th><th>승인상태</th><th>연결 대상</th><th>담당 / 최근 변경</th>
+          </tr>
+          <tr>
+            <td class="d1">▸ 1Depth_01</td>
+            <td><span class="n">7</span><span class="sw"></span></td>
+            <td><span class="chip c-ok">승인완료</span></td>
+            <td>CT-0101</td>
+            <td>전시운영팀 · 08.20</td>
+          </tr>
+          <tr class="sel-row">
+            <td class="d1">▾ 1Depth_02</td>
+            <td><span class="sw"></span></td>
+            <td><span class="chip c-wait">승인대기</span></td>
+            <td>CT-0102</td>
+            <td>전시운영팀 · 08.21</td>
+          </tr>
+          <tr><td class="d2">2Depth_01</td><td><span class="sw"></span></td><td><span class="chip c-ok">승인완료</span></td><td>CT-0142</td><td>전시운영팀 · 08.19</td></tr>
+          <tr><td class="d3">3Depth_01</td><td><span class="sw"></span></td><td><span class="chip c-ok">승인완료</span></td><td>내부 랜딩</td><td>전시운영팀 · 08.15</td></tr>
+          <tr><td class="d1">▸ 1Depth_03</td><td><span class="sw"></span></td><td><span class="chip c-rej">반려</span></td><td class="warn">⚠ 연결값 없음</td><td>혜택기획팀 · 08.21</td></tr>
+          <tr class="dim"><td class="d1">▾ 1Depth_04 <span class="chip c-off">미사용</span></td><td><span class="sw off"></span></td><td><span class="chip c-ok">승인완료</span></td><td>CT-0104</td><td>전시운영팀 · 07.30</td></tr>
+          <tr class="dim"><td class="d2">2Depth <span style="font-size:10.5px">(상위 미사용 상속)</span></td><td><span class="sw"></span></td><td><span class="chip c-ok">승인완료</span></td><td>CT-0151</td><td>— · 07.30</td></tr>
+          <tr class="dim"><td class="d3">3Depth_02</td><td><span class="sw"></span></td><td><span class="chip c-ok">승인완료</span></td><td>내부 랜딩</td><td>— · 07.30</td></tr>
+          <tr><td class="d1">▸ 1Depth_05</td><td><span class="sw"></span></td><td><span class="chip c-wait">승인대기</span></td><td class="warn">⚠ CT-0210 미승인</td><td>Shop기획팀 · 08.21</td></tr>
+        </table>
+      </div>
+
+      <!-- detail -->
+      <div class="dcol">
+        <div class="dhead"><span class="n new">9</span>1Depth_02 상세 · 편집</div>
+
+        <div class="sec">
+          <div class="sec-t"><span class="n new">9-1</span>기본 정보</div>
+          <div class="kv">
+            <div class="k">메뉴 코드</div><div><span class="ro">MNU-0102</span></div>
+            <div class="k">Depth / 상위</div><div><span class="ro">1Depth / —</span> <span style="color:var(--n500);font-size:10.5px">채널 구조 기준값 · 읽기 전용</span></div>
+            <div class="k">메뉴명 <span class="req">*</span></div><div><span class="fld">혜택</span></div>
+            <div class="k">아이콘</div><div><span class="fld">ic_benefit</span> <span style="color:var(--red);font-size:10.5px">대체텍스트 필수</span></div>
+            <div class="k">표시 문구</div><div><span class="fld">혜택 모아보기</span></div>
+            <div class="k">노출 채널 <span class="req">*</span></div><div><span class="fld">APP · PC</span></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-t"><span class="n new">9-2</span>연결 대상</div>
+          <div class="kv">
+            <div class="k">유형 <span class="req">*</span></div><div><span class="fld">Container</span></div>
+            <div class="k">대상 <span class="req">*</span></div><div><span class="fld">CT-0102 혜택 홈</span> <span class="chip c-ok">승인완료</span></div>
+            <div class="k">검증 결과</div><div style="color:var(--green)">유효 · 랜딩 정상</div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-t"><span class="n new">9-3</span>노출 조건 <span style="font-weight:400;color:var(--n600)">필수 4종</span></div>
+          <div class="kv">
+            <div class="k">로그인 여부 <span class="req">*</span></div><div><span class="fld">전체 노출</span></div>
+            <div class="k">권한 조건 <span class="req">*</span></div><div><span class="fld">일반</span></div>
+            <div class="k">대상 고객군 <span class="req">*</span></div><div><span class="fld">전체</span> <span style="color:var(--n500);font-size:10.5px">CVM 승인 세그먼트</span></div>
+            <div class="k">채널 조건 <span class="req">*</span></div><div><span class="fld">APP · PC</span></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-t"><span class="n new">9-4</span>운영 · 소유 정보 <span style="font-weight:400;color:var(--n600)">필수 5종</span></div>
+          <div class="kv">
+            <div class="k">사용 여부 <span class="req">*</span></div><div><span class="sw"></span> 사용</div>
+            <div class="k">공개 상태 <span class="req">*</span></div><div><span class="fld">공개</span></div>
+            <div class="k">담당 조직 <span class="req">*</span></div><div><span class="fld">전시운영팀</span></div>
+            <div class="k">담당자 <span class="req">*</span></div><div><span class="fld">P213980</span></div>
+            <div class="k">변경 사유 <span class="req">*</span></div><div><span class="fld" style="display:block">혜택 개편에 따른 메뉴명 변경</span></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-t"><span class="n new">9-5</span>변경 이력</div>
+          <div style="font-size:11px;color:var(--n600)">08.21 14:02 P213980 · 메뉴명 「혜택관」 → 「혜택」 · 사유 기재 · 승인자 P100234 · 승인대기<br>
+          08.15 09:11 P213980 · 노출 채널 APP → APP·PC · 승인완료 · <span style="color:var(--primary)">롤백 대상</span></div>
+        </div>
+
+        <div class="sec" style="border-bottom:0;display:flex;gap:7px;align-items:center">
+          <span class="n new">9-6</span><button class="btn pri">저장</button><button class="btn">취소</button>
+          <span style="color:var(--n600);font-size:11px;margin-left:auto">저장 시 초안 상태 (ST-DSP-001)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- footer actions -->
+    <div class="foot">
+      <span class="n">4</span><button class="btn">메뉴 순서 수정</button>
+      <span class="n">5</span><button class="btn">미리보기</button>
+      <span style="margin-left:auto"></span>
+      <span class="n new">8</span><button class="btn ghost">검수 요청</button>
+      <span class="n">6</span><button class="btn dis" title="승인 완료 변경 0건">게시</button>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--n600)">
+      ⚠ 검수 요청 차단 2건 — 1Depth_03 연결값 없음 / 1Depth_05 미승인 Container 연결 &nbsp;·&nbsp; 게시 버튼은 승인 완료 변경이 있을 때만 활성
+    </div>
+  </div>
+
+  <!-- ================== DESCRIPTION ================== -->
+  <div class="panel">
+    <table class="d">
+      <tr><th class="no">번호</th><th>Description</th></tr>
+
+      <tr><td class="no">개요</td><td>
+        <b class="h">개요 <span class="tg tg-fix">수정</span></b>
+        채널 탐색 구조(1~3 Depth)의 전체 메뉴를 조회하고, 선택 메뉴의 사용 여부 · 전시 순서 · 연결 대상 · 노출 조건 · 운영·소유 정보를 편집한다.
+        <ul>
+          <li>이 화면은 <b>메뉴를 생성·삭제하지 않는다.</b> 신규 노출은 Container를 신규 생성하거나 기존 Container를 연결한 뒤 사용 여부를 켜는 방식</li>
+          <li><b>Depth·상위 메뉴는 채널 구조 기준값으로 조회만</b> 한다. 어드민이 조정하는 것은 동일 상위 내 정렬 순서</li>
+          <li>범위는 전체 메뉴. 탭메뉴는 Container·Template 안에서, 퀵메뉴는 별도 화면에서 관리</li>
+          <li>승인 완료 전에는 채널에 반영되지 않고, 미승인 변경은 미리보기에서만 확인</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b><br>· FN-DSP-MNU-001 (메뉴 노출·연결 운영 관리)<br>· PI-DSP-MNU-001 · PI-DSP-MNU-003</div>
+      </td></tr>
+
+      <tr class="grp"><td colspan="2">1. 검색 조건 영역</td></tr>
+
+      <tr><td class="no">1</td><td>
+        <b class="h">검색 조건 영역 <span class="tg tg-fix">수정</span></b>
+        <div class="fixnote">원본의 필수 표시(*)와 "미 설정 시 전체 조회" 설명이 모순 → 필수 표시 제거</div>
+        <ul>
+          <li>필수 조건 첫 줄 + 옵션 조건 펼치기/접기 (기본 접힘, SB는 펼친 상태 표기)</li>
+          <li>조회 조건에 필수값 없음. 검색어 미입력 시 전체 조회</li>
+          <li>조회 결과 — 일치 메뉴 하이라이트 + 상위 Depth 자동 펼침 / 미일치 항목 Dim / 0건이면 Empty (10번)</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · FN-DSP-MNU-001 (전체 메뉴 조회)</div>
+      </td></tr>
+
+      <tr><td class="no">1-1</td><td>
+        <b class="h">조회 조건</b>
+        <ul><li>메뉴명 (Default)</li><li>그 외 : 메뉴 코드, 연결 값(Container ID · 랜딩 URL)</li><li>검색어 입력</li></ul>
+      </td></tr>
+
+      <tr><td class="no">1-2</td><td>
+        <b class="h">펼치기/접기 토글</b>
+        <ul><li>필수 조건은 첫 줄에 컴팩트하게, 옵션 조건은 접어 둠</li><li>토글은 첫 줄 마지막 폼 뒤에 위치</li></ul>
+      </td></tr>
+
+      <tr><td class="no">1-3</td><td>
+        <b class="h">옵션 조건 <span class="tg tg-fix">수정</span></b>
+        <div class="fixnote">원본에서 "운영채널 선택(전체 노출/로그인 시 노출)"과 "로그인 조건(PC/APP)"의 라벨↔값이 뒤바뀌어 있어 교정 + 정책 필수값 추가</div>
+        <ul>
+          <li>사용여부 : 사용 / 미사용</li>
+          <li>로그인 조건 : 전체 노출 / 로그인 시 노출</li>
+          <li>채널 조건 : PC / APP <span style="color:var(--n600)">(OS는 하위 값)</span></li>
+          <li>권한 조건 : 일반 / 권한 필요 <span class="chk">[확인필요]</span></li>
+          <li>대상 고객군 : CVM 승인 세그먼트에서 선택 (직접 입력 불가)</li>
+          <li>승인상태 : 승인완료 / 승인대기 / 반려</li>
+          <li>담당 조직 · 담당자</li>
+          <li>미 설정 시 전체 조회</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b><br>· PI-DSP-MNU-001 (노출 조건 필수값 = 로그인 여부·권한 조건·대상 고객군·채널 조건 / 운영·소유 필수값 = 사용 여부·공개 상태·담당 조직·담당자·변경 사유)<br>· PI-DSP-PER-001 (CVM 판정값 참조)</div>
+      </td></tr>
+
+      <tr><td class="no">1-4</td><td><b class="h">초기화</b>
+        <ul><li>전체 조건 리셋</li><li>편집 중 변경사항이 있으면 이탈 방지 확인 (10번)</li></ul></td></tr>
+      <tr><td class="no">1-5</td><td><b class="h">조회</b><ul><li>조회조건·검색·필터 기준으로 조회</li></ul></td></tr>
+
+      <tr class="grp"><td colspan="2">2~3. 목록 / 노출 등록</td></tr>
+
+      <tr><td class="no">2</td><td>
+        <b class="h">메뉴 목록 <span class="tg tg-fix">수정</span></b>
+        <div class="fixnote">원본은 메뉴명 + 미사용 배지만 있어 필터로 거른 값을 목록에서 확인할 수 없었음</div>
+        <ul>
+          <li>선택 시 하위 Depth 펼침·포커스, 우측 상세 표출 (9번)</li>
+          <li>3 Depth까지 노출 / 영역 초과 시 스크롤</li>
+          <li>행 표시 정보 — 메뉴명(+메뉴 코드), 사용여부, 승인상태, 연결 대상, 담당 조직·담당자, 최근 변경일시</li>
+          <li><b>미사용 상속</b> : 상위가 미사용이면 하위도 노출 대상 제외 → 하위 행 Dim + "상위 미사용" 표기. 하위 설정값 자체는 보존</li>
+          <li><b>경고 표기</b> : 연결값 없음 · 미승인 Container 연결은 ⚠ 표기 (검수·게시 차단 대상, 8번)</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · PI-DSP-MNU-001 (운영 상태·소유 정보, 미사용 전환) · PI-DSP-MNU-002 (연결값 검증)</div>
+      </td></tr>
+
+      <tr><td class="no">3</td><td>
+        <b class="h">메뉴 노출 등록 <span class="tg tg-fix">수정</span></b>
+        <div class="fixnote">원본 "+ 메뉴 등록" → 정책상 어드민에 메뉴 생성·삭제 기능은 없다. 채널 구조상 존재하는 메뉴에 연결 대상을 지정하고 노출을 켜는 기능</div>
+        <ul>
+          <li>선택 시 사이드 패널 오픈. 입력 순서
+            <ul>
+              <li>① 대상 메뉴 선택 (채널 구조 기준값 조회, Depth·상위 읽기 전용)</li>
+              <li>② 연결 대상 — 승인된 Container / 내부 랜딩 / 외부 랜딩 중 1개</li>
+              <li>③ 표시 정보 — 메뉴명, 아이콘, 표시 문구, 노출 채널</li>
+              <li>④ 노출 조건 4종</li>
+              <li>⑤ 운영·소유 정보 5종</li>
+            </ul>
+          </li>
+          <li>미승인 Container는 선택 목록 제외 또는 게시 차단 사유로 표기</li>
+          <li>SB-DSP-OPR1-001-SP1_08_메뉴노출등록 참조</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · PI-DSP-MNU-001 (별도 메뉴 생성·삭제 기능으로 관리하지 않음) · PI-DSP-MNU-002</div>
+      </td></tr>
+
+      <tr class="grp"><td colspan="2">4~7. 순서 · 미리보기 · 게시</td></tr>
+
+      <tr><td class="no">4</td><td>
+        <b class="h">메뉴 순서 수정 <span class="tg tg-fix">수정</span></b>
+        <ul>
+          <li>순서 수정 모드 전환, Drag&amp;Drop으로 정렬 순서 변경</li>
+          <li><b>동일 상위 내 형제 순서만 허용.</b> Depth 간 이동(상위 변경)은 드롭 불가 + 안내 문구</li>
+          <li>저장 / 취소, 저장 시 변경 사유 필수 → 초안 상태 반영 (ST-DSP-001)</li>
+          <li>SB-DSP-OPR1-001_07_메뉴순서수정 참조</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · PI-DSP-MNU-001 (Depth·상위 메뉴 직접 변경 금지) · PI-DSP-AUD-002</div>
+      </td></tr>
+
+      <tr><td class="no">5</td><td>
+        <b class="h">미리보기 <span class="tg tg-fix">수정</span></b>
+        <ul>
+          <li>현재 조회 조건 + 편집 중인 작업본 기준으로 새 창 호출</li>
+          <li>승인본 / 작업본 / 비교 기준 선택, 조건별 노출 결과와 판정 사유 확인</li>
+          <li>조회 결과 0건이면 호출하지 않고 얼럿</li>
+          <li>SB-DSP-OPR1-001-PV1 참조</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · PI-DSP-MNU-003 (미승인 메뉴는 미리보기에서만 확인) · FN-DSP-MNU-001-4</div>
+      </td></tr>
+
+      <tr><td class="no">6</td><td>
+        <b class="h">게시(반영) <span class="tg tg-fix">수정</span></b>
+        <div class="fixnote">원본 "업데이트"는 FO 즉시 반영과 재검수 요청을 한 버튼에 묶었으나 상태 전이가 달라 8번(검수 요청)과 분리</div>
+        <ul>
+          <li>승인 완료(ST-DSP-004) → 게시 중(ST-DSP-006)</li>
+          <li><b>승인 완료 변경이 1건 이상일 때만 활성.</b> 미승인 변경만 있으면 비활성 + 안내</li>
+          <li>즉시 게시 / 예약 게시 — 예약 시 시작일시 입력, 예약 대기(ST-DSP-005)</li>
+          <li>게시 시 채널 메뉴 구조 · 검색 노출 · 캐시 갱신 대상 반영</li>
+          <li>게시 차단 사유가 있으면 실행 불가</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · ST-DSP-004~006 · PI-DSP-MNU-003 · FN-DSP-MNU-001-4 · 1DSP-H08</div>
+      </td></tr>
+
+      <tr><td class="no">6-1</td><td>
+        <b class="h">게시 확인 팝업 <span class="tg tg-fix">수정</span></b>
+        <ul>
+          <li>본문 : 승인 완료된 변경 내용이 FO에 반영됩니다 + 반영 대상 건수·메뉴 요약</li>
+          <li><b>변경 사유 입력 필수</b> — 감사 로그 필수값 입력 지점</li>
+          <li>예약 게시 선택 시 시작일시 필드 노출</li>
+          <li>액션 : 취소 / 확인</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · PI-DSP-AUD-002 · PI-DSP-MNU-002</div>
+      </td></tr>
+
+      <tr><td class="no">7</td><td>
+        <b class="h">행 펼침 · 사용여부 전환 <span class="tg tg-fix">수정</span></b>
+        <ul>
+          <li>Depth 펼침/접힘, 전체 펼치기·접기와 연동</li>
+          <li>행에서 사용여부 전환. <b>미사용 전환 시 영향도 확인 팝업</b> 선행
+            <ul><li>영향 대상 : 연결 Container, 배너, CTA, 퀵메뉴 사용처, 하위 Depth</li>
+                <li>롤백 대상 버전 + 변경 사유 입력</li></ul>
+          </li>
+          <li>노출 제외는 삭제가 아니라 미사용 상태 전환으로 처리</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · PI-DSP-MNU-001 · PI-DSP-MNU-002</div>
+      </td></tr>
+
+      <tr class="grp"><td colspan="2">8~10. 신규 정의</td></tr>
+
+      <tr><td class="no">8</td><td>
+        <b class="h">검수 요청 <span class="tg tg-new">신규</span></b>
+        <ul>
+          <li>초안 작성중·수정 필요 → 검수 대기 (ST-DSP-001·003 → 002)</li>
+          <li><b>차단 조건</b> — 하나라도 해당하면 비활성 + 대상 항목 표기
+            <ul>
+              <li>연결 대상 없음 / 미승인 Container·랜딩 연결</li>
+              <li>표시명·연결 대상·권한 조건·노출 채널 불일치</li>
+              <li>노출 조건 필수값 누락</li>
+              <li>운영·소유 정보 누락</li>
+              <li>아이콘 변경 시 대체텍스트 없음</li>
+            </ul>
+          </li>
+          <li>반려 재요청은 <b>반려 사유별 보완 내용 + 변경 사유</b> 기록 필수</li>
+          <li>반려 사유는 목록 행과 상세 패널에 표기</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · PI-DSP-MNU-002 · PI-DSP-WFL-001 / PG-DSP-WFL-001 · PI-DSP-CMP-004</div>
+      </td></tr>
+
+      <tr><td class="no">9</td><td>
+        <b class="h">메뉴 상세 · 편집 패널 <span class="tg tg-new">신규</span></b>
+        <div class="fixnote">원본은 "메뉴명을 클릭하면 상세 정보를 볼 수 있습니다" 안내만 있고 편집 영역 정의가 없었음 — 개요에 명시된 편집 대상이 실제로 들어가는 영역</div>
+        <ul>
+          <li><b>9-1 기본 정보</b> — 메뉴 코드, Depth·상위(읽기 전용), 메뉴명, 아이콘, 표시 문구, 노출 채널 / 아이콘·이미지 변경 시 대체텍스트 필수</li>
+          <li><b>9-2 연결 대상</b> — 승인 Container / 내부 랜딩 / 외부 랜딩 중 1개, 승인 상태·검증 결과 표기</li>
+          <li><b>9-3 노출 조건</b> — 로그인 여부, 권한 조건, 대상 고객군, 채널 조건 (필수 4종)</li>
+          <li><b>9-4 운영·소유 정보</b> — 사용 여부, 공개 상태, 담당 조직, 담당자, 변경 사유 (필수 5종)</li>
+          <li><b>9-5 변경 이력</b> — 변경자·일시·이전값·이후값·사유·승인자·결과 / 롤백 대상 버전</li>
+          <li><b>9-6 액션</b> — 저장(초안 반영) / 취소, 변경 사유 필수</li>
+          <li>전시 순서는 4번 순서 수정 모드에서만 변경</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · FN-DSP-MNU-001 · PI-DSP-MNU-001 · PI-DSP-AUD-002</div>
+      </td></tr>
+
+      <tr><td class="no">10</td><td>
+        <b class="h">공통 상태 · 권한 <span class="tg tg-new">신규</span></b>
+        <ul>
+          <li><b>Empty</b> : 조회 0건 — 안내 + 조건 초기화</li>
+          <li><b>로딩</b> : 목록·상세 각각 스켈레톤</li>
+          <li><b>조회 실패</b> : 채널 구조·CVM 응답 실패 시 오류 + 재시도. 판정값 미확보 시 편집 차단, 기존 승인 구조 유지</li>
+          <li><b>미저장 이탈 방지</b> : 조회·초기화·다른 메뉴 선택·창 종료 시 확인</li>
+          <li><b>동시 편집 충돌</b> : 타 사용자 선저장 시 저장 차단 + 최신 버전 재조회 안내</li>
+          <li><b>대량 데이터</b> : 3 Depth 초과는 노출 대상 아님, 가상 스크롤 <span class="chk">[확인필요]</span> 페이징 여부</li>
+          <li><b>역할별 버튼</b> — 운영자(등록·순서·편집·미리보기·검수 요청) / 검수·승인자(승인·반려) / 게시 권한자(게시·예약). 권한 없으면 비활성이 아니라 미노출</li>
+        </ul>
+        <div class="src"><b>[출처 ID]</b> · PI-DSP-PER-002 · PG-DSP-AUD-001</div>
+      </td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ================== POPUPS ================== -->
+<h2>POPUP / 얼럿 (별도 관리)</h2>
+<div class="pops">
+  <div class="pop">
+    <h4>게시하시겠습니까? <span class="n">6-1</span></h4>
+    <p>승인 완료된 변경 내용이 FO에 즉시 반영됩니다.<br>반영 대상 3건 · 1Depth_01 외 2건</p>
+    <div class="fldbox">변경 사유 입력 <span class="req">*</span></div>
+    <div class="fldbox">□ 예약 게시 · 시작일시 지정</div>
+    <button class="btn">취소</button> <button class="btn pri">확인</button>
+  </div>
+  <div class="pop">
+    <h4>미사용으로 전환하시겠습니까? <span class="n">7</span></h4>
+    <p>영향 범위를 확인하세요.<br>· 연결 Container 1건 (CT-0104)<br>· 배너 사용처 2건 / 퀵메뉴 1건<br>· 하위 Depth 3건 동반 미노출</p>
+    <div class="fldbox">변경 사유 입력 <span class="req">*</span></div>
+    <button class="btn">취소</button> <button class="btn pri">확인</button>
+  </div>
+  <div class="pop">
+    <h4>검수 요청할 수 없습니다 <span class="n new">8</span></h4>
+    <p>차단 항목 2건을 먼저 수정해 주세요.<br>· 1Depth_03 연결값 없음<br>· 1Depth_05 미승인 Container 연결</p>
+    <button class="btn">차단 항목 보기</button> <button class="btn pri">확인</button>
+  </div>
+  <div class="pop">
+    <h4>저장하지 않은 변경이 있습니다 <span class="n new">10</span></h4>
+    <p>이동하면 편집 내용이 사라집니다. 계속하시겠습니까?</p>
+    <button class="btn">취소</button> <button class="btn pri">이동</button>
+  </div>
+  <div class="pop">
+    <h4>다른 사용자가 먼저 저장했습니다 <span class="n new">10</span></h4>
+    <p>최신 버전을 다시 불러온 뒤 편집해 주세요. (최종 저장 P100234 · 08.21 14:05)</p>
+    <button class="btn pri">최신 버전 불러오기</button>
+  </div>
+</div>
+
+<h2>버튼 ↔ 상태 전이 매핑</h2>
+<table class="g">
+  <tr><th style="width:150px">액션</th><th style="width:230px">상태 전이</th><th>전환 조건</th></tr>
+  <tr><td>상세 저장 (9-6)</td><td>— → 초안 작성중 <code>ST-DSP-001</code></td><td>변경 사유 입력</td></tr>
+  <tr><td>순서 저장 (4)</td><td>— → 초안 작성중 <code>ST-DSP-001</code></td><td>동일 상위 내 이동만, 변경 사유 입력</td></tr>
+  <tr><td>검수 요청 (8)</td><td>001 · 003 → 검수 대기 <code>ST-DSP-002</code></td><td>연결 대상 · 노출 조건 4종 · 운영 정보 5종 · 대체텍스트 충족, 불일치 없음. 재요청은 보완 내용 + 변경 사유</td></tr>
+  <tr><td>반려 (검수자)</td><td>002 → 수정 필요 <code>ST-DSP-003</code></td><td>반려 사유 필수</td></tr>
+  <tr><td>승인 (승인자)</td><td>002 → 승인 완료 <code>ST-DSP-004</code></td><td>연결 대상 승인 상태 재확인</td></tr>
+  <tr><td>게시 · 예약 (6)</td><td>004 → 예약 대기 <code>ST-DSP-005</code> → 게시 중 <code>ST-DSP-006</code></td><td>예약 시각 도래 + 연결값 · 노출 충돌 · 대상 조건 유효</td></tr>
+  <tr><td>사용여부 미사용 (7)</td><td>006 → 게시 중지 <code>ST-DSP-007</code></td><td>영향도 확인 + 사유 · 실행자 · 실행 시각 기록</td></tr>
+  <tr><td>롤백</td><td>007 → 롤백 완료 <code>ST-DSP-009</code></td><td>복원 대상 버전 · 승인자 확인. Draft · Review · Rejected는 롤백 불가</td></tr>
+</table>
+
+<div style="margin:18px 0 40px;color:var(--n600);font-size:12px">
+  ※ <span class="chk">[확인필요]</span> 권한 조건 코드 목록 기준 / 목록 페이징 방식 / 예약 게시 단위(메뉴 단건 vs 변경 묶음) — 정책서 근거 없음
+</div>
+
+</div>
+</body>
+</html>
