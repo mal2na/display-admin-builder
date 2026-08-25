@@ -1,7 +1,7 @@
 'use client';
 
 import { NavLink } from '@/components/nav-link';
-import { MonitorSmartphone, LayoutGrid, ScrollText, Ticket, ListTree } from 'lucide-react';
+import { MonitorSmartphone, LayoutGrid, Ticket, ListTree } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 좌측 사이드바 — GNB와 같은 라벤더(#ebeef6) 배경. 브랜드/접기 토글은 GNB로 이동했다.
@@ -19,11 +19,6 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         {/* 프로모션 관리 */}
         {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">프로모션 관리</p>}
         <NavLink href="/admin/events" icon={<Ticket className="h-4 w-4" />} label="프로모션 관리" collapsed={collapsed} />
-
-        {/* 공통 */}
-        <div className="mt-auto" />
-        {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">공통</p>}
-        <NavLink href="/admin/audit-log" icon={<ScrollText className="h-4 w-4" />} label="감사 로그" collapsed={collapsed} />
       </nav>
 
       <div className="border-t p-3 text-center text-xs text-muted-foreground">{collapsed ? 'v0.31' : 'POL-DSP v0.31'}</div>

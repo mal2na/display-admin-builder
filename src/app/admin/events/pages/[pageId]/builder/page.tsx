@@ -17,6 +17,8 @@ export default async function EditorPage({ params }: { params: { pageId: string 
           displayStartAt: true, displayEndAt: true, displayNoEndDate: true, displayState: true, commentUse: true,
           searchExposed: true, searchTags: true, metaKeywords: true, metaDescription: true,
           ogTitle: true, ogDescription: true, ogSiteName: true, ogImage: true,
+          reward: true, target: true, usageSteps: true, notice: true, summary: true, contact: true,
+          ctaLabel: true, entryConfig: true,
         },
       },
       nodes: { orderBy: { order: 'asc' } },
@@ -45,7 +47,7 @@ export default async function EditorPage({ params }: { params: { pageId: string 
     createdLabel: v.createdAt.toISOString().slice(5, 16).replace('T', ' '),
   }));
 
-  // flat → nested 트리
+  // flat → nested 트리 (DB 노드)
   const byId = new Map<string, NodeView>();
   for (const n of page.nodes) byId.set(n.id, { id: n.id, type: n.type, props: n.props ? JSON.parse(n.props) : {}, children: [] });
   const roots: NodeView[] = [];
@@ -57,6 +59,33 @@ export default async function EditorPage({ params }: { params: { pageId: string 
 
   const pr = page.program;
   const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 16) : null);
+
+  // ── 고정 프레임 vs 편집 본문 분리 (NC-EVTMSN-001) ──
+  //   편집(구조 트리/드래그/저장)은 본문(비-SLOT DB 노드)만. 고정 프레임은 등록정보에서 파생한 합성 노드로
+  //   미리보기에만 렌더한다. (합성 노드는 DB에 없으므로 reorderNodes 대상에서 제외 → 안전)
+  const editTree = roots.filter((r) => !r.type.startsWith('SLOT_')); // 가운데 본문 = 편집 가능
+
+  const fmtDate = (d: Date | null) => (d ? d.toISOString().slice(0, 10).replace(/-/g, '.') : '');
+  const schedule = pr.startAt || pr.endAt ? `${fmtDate(pr.startAt)}${pr.endAt ? ` ~ ${fmtDate(pr.endAt)}` : ''}` : '';
+
+  // 안내형 고정 프레임 = 상단 헤더(이미지·제목·기간)·일정/보상/대상·이용방법 / 하단 유의사항·문의. 가운데 본문만 빌더.
+  let steps: { title: string; desc: string }[] = [];
+  try { const a = JSON.parse(pr.usageSteps ?? '[]'); if (Array.isArray(a)) steps = a; } catch { /* ignore */ }
+
+  const syn = (type: string, props: Record<string, unknown>): NodeView => ({ id: `syn-${type}`, type, props, children: [] });
+  const frameTop: NodeView[] = [
+    syn('SLOT_THUMB', { imageUrl: pr.thumbnail ?? null, alt: pr.thumbnailAlt ?? '' }),
+    syn('SLOT_HEADER', { title: pr.name, subtitle: pr.purpose ?? '', schedule }),
+    syn('SLOT_SUMMARY', { schedule, reward: pr.reward ?? '', target: pr.target ?? '' }),
+  ];
+  if (steps.length) frameTop.push(syn('SLOT_GUIDE', { steps }));
+  const frameBottom: NodeView[] = [
+    syn('SLOT_NOTICE', { text: pr.notice ?? '', label: '유의사항' }),
+  ];
+  // 응모형 = 하단 고정 '응모하기' CTA (등록정보 ctaLabel)
+  if (pr.programType === '응모형') frameBottom.push(syn('SLOT_CTA', { label: pr.ctaLabel ?? '응모하기' }));
+  const middle = editTree.length ? editTree : [syn('SLOT_BODYHINT', {})];
+  const previewTree: NodeView[] = [...frameTop, ...middle, ...frameBottom];
 
   return (
     <EventEditor
@@ -97,7 +126,8 @@ export default async function EditorPage({ params }: { params: { pageId: string 
           ogImage: pr.ogImage,
         },
       }}
-      tree={roots}
+      tree={editTree}
+      previewTree={previewTree}
     />
   );
 }

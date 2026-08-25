@@ -38,7 +38,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Sparkles, Search, Lock } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock } from 'lucide-react';
 import { TypeDetailPreview } from '../../corner-types/corner-type-manager';
 import {
   updateTemplateMeta,
@@ -70,6 +70,7 @@ export type AtomNode = {
   name: string;
   atomType: string;
   isRequired: boolean;
+  visible?: boolean; // 코너 구성 표시/숨김 토글 (숨김=미리보기·FO 제외, 삭제 아님)
   menuRole?: string; // FIXED(고정) | EDITABLE(편집가능) — 선택형·메뉴 리스트 항목 역할
   content: string | null;
   imageUrl: string | null;
@@ -329,7 +330,7 @@ function toPreviewCorner(c: CornerNode): PreviewCorner {
       componentType: cc.componentType,
       selectedIndex: cc.selectedIndex,
       chipRows: cc.chipRows,
-      atoms: cc.atoms.map((a) => ({
+      atoms: cc.atoms.filter((a) => a.atomType === 'IMAGE' || a.visible !== false).map((a) => ({
         id: a.componentAtomId,
         name: a.name,
         atomType: a.atomType,
@@ -666,12 +667,26 @@ function AtomRow({
 }) {
   const f = ATOM_TYPE_FIELDS[atom.atomType as AtomType] ?? { content: true, image: false, link: false };
   const altMissing = (atom.atomType === 'IMAGE' || atom.atomType === 'ICON') && !atom.altText;
-  // 라벨(유형) + 인풋 형식 — 코너 정보 폼과 동일. 개별 저장 없이 상단 '완료'에서 일괄 저장.
+  // 이미지는 카드의 핵심 시각요소 → 개별 표시/숨김 토글을 두지 않는다(항상 노출).
+  const noToggle = atom.atomType === 'IMAGE';
+  const shown = noToggle ? true : atom.visible !== false;
+  // 라벨(유형) + 표시/숨김 토글. 숨김은 삭제가 아니라 미리보기·FO에서 제외(데이터 보존). 저장은 상단 '완료' 일괄.
   return (
-    <div className="space-y-1 rounded-md bg-white p-2.5">
+    <div className={cn('space-y-1 rounded-md bg-white p-2.5', !shown && 'opacity-55')}>
       <div className="flex items-center justify-between">
-        <label className="text-[11px] font-medium text-muted-foreground">{ATOM_TYPE_LABELS[atom.atomType as AtomType] ?? atom.atomType}</label>
-        <DeleteConfirmForm action={removeAtom.bind(null, templateId, atom.componentAtomId)} itemLabel="Atom" ariaLabel="Atom 삭제" />
+        <label className="text-[11px] font-medium text-muted-foreground">{ATOM_TYPE_LABELS[atom.atomType as AtomType] ?? atom.atomType}{!shown && <span className="ml-1.5 rounded bg-slate-100 px-1 py-px text-[9px] font-semibold text-slate-400 ring-1 ring-inset ring-slate-200">숨김</span>}</label>
+        {!noToggle && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={shown}
+            onClick={() => onChange({ visible: !shown })}
+            title={shown ? '표시 중 — 클릭 시 숨김 (삭제 아님)' : '숨김 — 클릭 시 표시'}
+            className={cn('relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors', shown ? 'bg-primary' : 'bg-slate-300')}
+          >
+            <span className={cn('inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform', shown ? 'translate-x-4' : 'translate-x-0.5')} />
+          </button>
+        )}
       </div>
       {f.content &&
         (isCvmBinding(atom.content) ? (
@@ -959,7 +974,7 @@ function ComponentCard({
       startSave(async () => {
         await saveAtoms(
           templateId,
-          atomsRef.current.map((a) => ({ atomId: a.id, content: a.content, imageUrl: a.imageUrl, altText: a.altText, linkUrl: a.linkUrl })),
+          atomsRef.current.map((a) => ({ atomId: a.id, componentAtomId: a.componentAtomId, visible: a.visible !== false, content: a.content, imageUrl: a.imageUrl, altText: a.altText, linkUrl: a.linkUrl })),
         );
         setEdit(false);
       });
@@ -1529,29 +1544,6 @@ function CornerInfoForm({
 }
 
 // ── 배너 패널 (배너형 코너 전용 — 포탈2) ────────────────────
-// ── AI 배너 이미지 생성 (로컬 SVG 목업 — 실제 이미지 API로 교체 가능) ────────
-const AI_PALETTES = [
-  { from: '#6366f1', to: '#a855f7', label: '퍼플' },
-  { from: '#0ea5e9', to: '#22d3ee', label: '스카이' },
-  { from: '#f59e0b', to: '#ef4444', label: '선셋' },
-  { from: '#10b981', to: '#0ea5e9', label: '민트' },
-];
-const xmlEscape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-function aiBannerDataUri(prompt: string, variant: number) {
-  const p = AI_PALETTES[variant % AI_PALETTES.length];
-  const title = xmlEscape((prompt.trim() || 'AI 배너').slice(0, 16));
-  const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' width='672' height='294' viewBox='0 0 672 294'>` +
-    `<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>` +
-    `<stop offset='0' stop-color='${p.from}'/><stop offset='1' stop-color='${p.to}'/></linearGradient></defs>` +
-    `<rect width='672' height='294' rx='28' fill='url(#g)'/>` +
-    `<circle cx='560' cy='60' r='120' fill='#ffffff' opacity='0.12'/>` +
-    `<circle cx='120' cy='250' r='90' fill='#ffffff' opacity='0.10'/>` +
-    `<text x='40' y='150' font-family='sans-serif' font-size='34' font-weight='700' fill='#ffffff'>${title}</text>` +
-    `<text x='40' y='192' font-family='sans-serif' font-size='18' fill='#ffffff' opacity='0.85'>AI 생성 · ${p.label}</text>` +
-    `</svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-}
 
 // ── 배너 라이브러리 모달 — 썸네일 그리드에서 예시 배너를 골라 코너에 적용 ──────────
 function BannerLibraryModal({
@@ -1669,19 +1661,9 @@ function BannerPanel({
 }) {
   const [mode, setMode] = useState<'library' | 'direct'>('library');
   const [imageUrl, setImageUrl] = useState('');
-  const [prompt, setPrompt] = useState('');
-  const [pickedVariant, setPickedVariant] = useState<number | null>(null);
   const [libOpen, setLibOpen] = useState(false); // 배너 라이브러리 모달
 
   const canRenderImg = (u?: string | null) => !!u && (u.startsWith('data:') || u.startsWith('http') || u.startsWith('/'));
-
-  // 타이핑하면 즉시 후보 이미지가 뜬다
-  const candidates = prompt.trim() ? AI_PALETTES.map((_, i) => aiBannerDataUri(prompt, i)) : [];
-  const pickCandidate = (i: number) => {
-    setPickedVariant(i);
-    setImageUrl(aiBannerDataUri(prompt, i));
-    setMode('direct'); // 후보를 고르면 '직접 등록' 쪽에 이미지가 채워지므로 그 모드로 전환
-  };
 
   return (
     <div className="rounded-lg border bg-card p-4">
@@ -1742,7 +1724,7 @@ function BannerPanel({
               name="imageUrl"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="이미지 URL 또는 아래 AI 후보 선택"
+              placeholder="이미지 URL"
               className="h-8 text-xs"
               required
             />
@@ -1751,7 +1733,7 @@ function BannerPanel({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imageUrl} alt="선택한 배너" className="h-10 w-24 shrink-0 rounded object-cover" />
                 <span className="truncate text-[10px] text-muted-foreground">
-                  {imageUrl.startsWith('data:') ? 'AI 생성 이미지' : imageUrl}
+                  {imageUrl.startsWith('data:') ? '등록 이미지' : imageUrl}
                 </span>
               </div>
             )}
@@ -1763,42 +1745,6 @@ function BannerPanel({
         )}
       </div>
 
-      {/* ② AI 이미지 생성 (후보 선택 → 위 '직접 등록'의 이미지로 채워짐) */}
-      <div className="mt-2 rounded-md border border-indigo-200 bg-indigo-50/60 p-2.5">
-        <p className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-indigo-700">
-          <Sparkles className="h-3.5 w-3.5" /> AI 이미지 생성
-        </p>
-        <Input
-          value={prompt}
-          onChange={(e) => {
-            setPrompt(e.target.value);
-            setPickedVariant(null);
-          }}
-          placeholder="원하는 배너를 설명하세요 (예: 여름 시원한 아이스 아메리카노 프로모션)"
-          className="h-8 text-xs"
-        />
-        {candidates.length > 0 ? (
-          <div className="mt-2 grid grid-cols-2 gap-1.5">
-            {candidates.map((src, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => pickCandidate(i)}
-                className={cn(
-                  'overflow-hidden rounded-md border-2 transition',
-                  pickedVariant === i ? 'border-indigo-600 ring-2 ring-indigo-200' : 'border-transparent hover:border-indigo-300',
-                )}
-                title={`후보 ${i + 1} · ${AI_PALETTES[i].label}`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={`AI 후보 ${i + 1}`} className="aspect-[16/7] w-full object-cover" />
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-2 text-[10px] text-muted-foreground">문구를 입력하면 후보 이미지가 자동 생성됩니다.</p>
-        )}
-      </div>
     </div>
   );
 }
@@ -2055,6 +2001,7 @@ export function BuilderEditor({
   const [ids, setIds] = useState(corners.map((c) => c.templateCornerId));
   const [sel, setSel] = useState<string | null>(corners[0]?.templateCornerId ?? null);
   const [device, setDevice] = useState(DEVICES[0]);
+  const [zoom, setZoom] = useState(1); // 미리보기 배율 (비율 유지)
   const [rightW, setRightW] = useState(440); // 우측 상세 패널 너비(px), 드래그로 조절
   const [leftW, setLeftW] = useState(300); // 좌측 코너 리스트 너비(px), 드래그로 조절
   const [loadCornerOpen, setLoadCornerOpen] = useState(false); // '코너 불러오기' 모달
@@ -2365,7 +2312,7 @@ export function BuilderEditor({
 
       {/* 가운데: 실시간 디바이스 미리보기 */}
       <div className="flex flex-col overflow-hidden bg-background">
-        <div className="flex items-center justify-center py-2">
+        <div className="flex items-center justify-center gap-2 py-2">
           <select
             value={device.key}
             onChange={(e) => setDevice(DEVICES.find((d) => d.key === e.target.value) ?? DEVICES[0])}
@@ -2375,9 +2322,15 @@ export function BuilderEditor({
               <option key={d.key} value={d.key}>{d.label} · {d.w}×{d.h}</option>
             ))}
           </select>
+          <div className="flex items-center gap-1 rounded-md border bg-white p-0.5">
+            <button type="button" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))} disabled={zoom <= 0.5} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-30" title="축소">−</button>
+            <button type="button" onClick={() => setZoom(1)} className="min-w-[42px] rounded px-1 text-center text-[11px] font-semibold tabular-nums text-muted-foreground hover:bg-muted" title="기본 크기(100%)">{Math.round(zoom * 100)}%</button>
+            <button type="button" onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))} disabled={zoom >= 1.5} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-30" title="확대">＋</button>
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] p-6 [background-size:16px_16px]">
-          <div className="mx-auto w-fit">
+        <div className="flex-1 overflow-auto bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] p-6 [background-size:16px_16px]">
+          <div className="mx-auto" style={{ width: device.w * zoom }}>
+           <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', width: device.w, margin: '0 auto' }}>
             <DeviceFrame width={device.w} bodyHeight={device.h - 150} headerLabel={meta.containerName}>
               {previewCorners.length === 0 ? (
                 <div className="flex h-full items-center justify-center rounded-xl border-2 border-dashed border-slate-300 p-6 text-center text-sm text-slate-400">
@@ -2399,6 +2352,7 @@ export function BuilderEditor({
                 ))
               )}
             </DeviceFrame>
+           </div>
           </div>
         </div>
       </div>

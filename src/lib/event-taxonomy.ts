@@ -248,6 +248,47 @@ export const SECTION_MECHANIC_MAP: Record<SectionType, readonly MechanicKind[]> 
   '필수 고지': ['콘텐츠'],
 };
 
+// ─────────────────────────────────────────────────────────────
+// 3-1. 이벤트·미션 전용 코너 유형 (BO EVT Architecture "코너 유형 정의")
+//   전시(display-taxonomy CORNER_TYPES 8종)와 별개로, 이벤트·미션에만 들어가는
+//   레이아웃(비주얼 패턴) 계열. 3계열 · 총 14종. (용어 TBD — 조정 가능)
+//   코너 유형 관리 화면에서 [전시/관리 | 이벤트/미션] 상위 분기 중 이벤트/미션 하위로 노출.
+// ─────────────────────────────────────────────────────────────
+export const EVENT_CORNER_FAMILIES = ['혜택상품형', '디스플레이형', '동작형'] as const;
+export type EventCornerFamily = (typeof EVENT_CORNER_FAMILIES)[number];
+
+export const EVENT_CORNER_FAMILY_DESC: Record<EventCornerFamily, string> = {
+  혜택상품형: '혜택·상품·제휴처를 카드/리스트로 전시하는 코너 계열.',
+  디스플레이형: '이미지·도표·임베드 등 비주얼 중심으로 정보를 전시하는 코너 계열.',
+  동작형: '아코디언·룰렛·카테고리바 등 사용자 인터랙션이 있는 코너 계열.',
+};
+
+export type EventCornerType = { family: EventCornerFamily; name: string; desc: string };
+export const EVENT_CORNER_TYPES: EventCornerType[] = [
+  // ① 혜택 상품형 (5종)
+  { family: '혜택상품형', name: '1열 리스트형', desc: '혜택·제휴처를 1열 세로 리스트로 나열.' },
+  { family: '혜택상품형', name: '1열 이미지형', desc: '이미지 중심 카드 1열 나열(썸네일+요약).' },
+  { family: '혜택상품형', name: '1열 카드 리스트형', desc: '카드형 아이템을 1열로 나열(가격/배지 포함).' },
+  { family: '혜택상품형', name: '이미지형', desc: '단일 혜택 이미지 배너.' },
+  { family: '혜택상품형', name: '기획전형', desc: '상품·혜택을 주제로 묶은 기획전 그리드.' },
+  // ② 디스플레이형 (6종)
+  { family: '디스플레이형', name: '풀 이미지형', desc: '화면 폭 전체 키비주얼 이미지.' },
+  { family: '디스플레이형', name: '이미지 6분할형', desc: '이미지를 6분할 그리드로 배치.' },
+  { family: '디스플레이형', name: '도표형', desc: '요금/혜택 비교 등 표(테이블) 전시.' },
+  { family: '디스플레이형', name: '임베드형', desc: '외부 콘텐츠/HTML 임베드 전시.' },
+  { family: '디스플레이형', name: '1열 카드 텍스트형', desc: '텍스트 중심 카드 1열 나열.' },
+  { family: '디스플레이형', name: '상단 이미지형', desc: '상단 고정 이미지 + 하단 콘텐츠.' },
+  // ③ 동작형 (3종)
+  { family: '동작형', name: '아코디언형', desc: '펼침/접힘 아코디언(FAQ·유의사항 등).' },
+  { family: '동작형', name: '룰렛형', desc: '룰렛 돌리기 인터랙션 코너.' },
+  { family: '동작형', name: '카테고리바형', desc: '상단 카테고리 탭/바로 콘텐츠 전환.' },
+];
+
+/** baseCategory 가 이벤트·미션 전용 코너 계열인지 (코너 유형 도메인 분기용) */
+export function isEventCornerFamily(baseCategory?: string | null): boolean {
+  return !!baseCategory && (EVENT_CORNER_FAMILIES as readonly string[]).includes(baseCategory);
+}
+
 // 페이지에서 삭제할 수 없는 섹션 유형 (필수 고지). PI-EVTMSN-ADMIN-DISPLAY-001-02
 export const MANDATORY_SECTION_TYPES: readonly SectionType[] = ['필수 고지'];
 

@@ -153,10 +153,18 @@ export const CORNER_TYPE_CHIP: Record<CornerType, string> = {
   '개인화 추천형': 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
   '고정·필수 노출형': 'bg-slate-100 text-slate-700 border-slate-300',
 };
+// 이벤트·미션 전용 코너 계열(3종) → Chip 색상. (전시 8색과 구분되는 톤)
+export const EVENT_CORNER_FAMILY_CHIP: Record<string, string> = {
+  혜택상품형: 'bg-teal-50 text-teal-700 border-teal-200',
+  디스플레이형: 'bg-blue-50 text-blue-700 border-blue-200',
+  동작형: 'bg-orange-50 text-orange-700 border-orange-200',
+};
 // 코너 유형 → Chip className. 알 수 없는 값은 중립(회색)으로.
 export function cornerTypeChipClass(cornerType?: string | null): string {
   if (!cornerType) return 'bg-slate-100 text-slate-600 border-slate-200';
-  return (CORNER_TYPE_CHIP as Record<string, string>)[cornerType] ?? 'bg-slate-100 text-slate-600 border-slate-200';
+  return (CORNER_TYPE_CHIP as Record<string, string>)[cornerType]
+    ?? EVENT_CORNER_FAMILY_CHIP[cornerType]
+    ?? 'bg-slate-100 text-slate-600 border-slate-200';
 }
 
 // ── 코너 유형 카탈로그 (T우주 "코너 유형 관리") 부가 상수 ──
@@ -430,6 +438,13 @@ export const CONTAINER_APPROVAL_TRANSITIONS: Record<string, ContainerApprovalSta
   REVIEW: ['APPROVED', 'REJECTED'],
   REJECTED: ['REVIEW'],
   APPROVED: ['DRAFT'],
+};
+
+// ── 컨테이너 폐기(삭제 대체) 승인 상태 ──
+// 물리 삭제 대신 '폐기'를 승인받는다. null(정상) → REVIEW(폐기 승인 대기) → RETIRED(폐기 완료). 반려 시 null 복귀.
+export const CONTAINER_RETIRE_STATUS_LABEL: Record<string, string> = {
+  REVIEW: '폐기 승인 대기',
+  RETIRED: '폐기됨',
 };
 
 // ── 코너 검수 워크플로우 상태 ─────────────────────────────

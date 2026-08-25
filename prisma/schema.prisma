@@ -67,6 +67,7 @@ model ComponentAtom {
   atomId      String
   order       Int     // Component 안에서의 표시 순서
   isRequired  Boolean @default(true) // 필수 Atom / 선택 Atom
+  visible     Boolean @default(true) // 코너 구성에서 표시/숨김 토글 (숨김 시 미리보기·FO 제외, 삭제 아님)
   // 고객 메뉴 역할(선택형·메뉴 리스트): FIXED(고정·고객 삭제 불가) | EDITABLE(기본 노출·고객 편집 가능)
   menuRole    String  @default("EDITABLE")
 
@@ -245,6 +246,15 @@ model Container {
   approvedBy          String? // 승인 담당자
   approvedAt          DateTime? // 승인 완료 시각
   rejectReason        String? // 반려 사유
+
+  // ── 폐기(삭제 대체) 승인 워크플로우 ──
+  // 컨테이너는 물리 삭제하지 않는다. '폐기'는 승인이 필요: 운영자 요청 → BSS 승인 시 미전시(inactive) + 폐기됨.
+  //   retireStatus: null(정상) | REVIEW(폐기 승인 대기) | RETIRED(폐기 완료). 반려 시 null로 복귀.
+  retireStatus      String? // null | REVIEW | RETIRED
+  retireReason      String? // 폐기 요청 사유 / 반려 사유
+  retireRequestedAt DateTime? // 폐기 요청 시각
+  retiredBy         String? // 폐기 승인 담당자(BSS)
+  retiredAt         DateTime? // 폐기 승인(확정) 시각
 
   // ── T우주 "컨테이너 기본 정보" (컨테이너정보 화면 참고) ──
   parentId   String? // 상위 컨테이너
@@ -537,10 +547,19 @@ model EventProgram {
   approvedAt          DateTime?
   rejectReason        String?
 
-  // 상세 콘텐츠/고지
-  summary String? // 핵심 혜택 요약
-  notice  String? // 유의사항
-  faq     String?
+  // 상세 콘텐츠/고지 — 상세(등록정보)에서 관리, 빌더에선 고정 노출 (NC-EVTMSN-001 안내형)
+  summary    String? // 핵심 혜택 요약
+  notice     String? // 유의사항 (고정)
+  faq        String?
+  reward     String? // 보상 (일정/보상/대상 카드) — 미사용(레거시)
+  target     String? // 대상 (일정/보상/대상 카드) — 미사용(레거시)
+  usageSteps String? // 이용 방법 스텝(JSON) — 미사용(레거시)
+  contact    String? // 문의 (안내형 하단 고정)
+
+  // 응모형 (PG-EVTMSN-PROG-001 응모형) — 응모 버튼 + 응모/당첨/리워드 설정
+  ctaLabel    String? // 응모 버튼명 (예: 응모하기)
+  ctaUrl      String? // 응모 버튼 링크
+  entryConfig String? // 응모/당첨/리워드 설정(JSON): 응모방식·당첨방식·당첨시점·당첨안내·당첨규모·참여조건·리워드[]
 
   defaultPageId String?    @unique
   defaultPage   EventPage? @relation("DefaultPage", fields: [defaultPageId], references: [id])

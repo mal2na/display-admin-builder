@@ -13,11 +13,15 @@ export const EVENT_TYPES = ['안내형', '초청형', '기획전형', '응모형
 export type EventType = (typeof EVENT_TYPES)[number];
 
 // 프로그램 등록 정책 (PI-EVTMSN-ADMIN-001-02): 이벤트·미션 구분 + 유형 선택
-export const PROGRAM_KINDS = ['이벤트', '미션'] as const;
+// 현재 프로모션 관리는 '안내형'만 운영한다 (나머지 유형 제거). 구분도 이벤트만.
+export const PROGRAM_KINDS = ['이벤트'] as const;
 export const MISSION_TYPES = ['행동완료형', '출석형', '누적형', '단계완료형', '전환형', '유지형', '탐험형', '협업형', '개인화형', '성장형'] as const;
 
-export function typesForKind(kind: string): readonly string[] {
-  return kind === '미션' ? MISSION_TYPES : EVENT_TYPES;
+// 관리 UI에서 노출/선택 가능한 유형 (안내형 + 응모형)
+export const PROMOTION_TYPES = ['안내형', '응모형'] as const;
+
+export function typesForKind(_kind: string): readonly string[] {
+  return PROMOTION_TYPES;
 }
 
 // 유형별 메타 — 정책서 "이벤트/미션 유형 정의·대표 목적·적용 기준" 표 기준 요약 + 대표 아이콘.
@@ -305,7 +309,7 @@ export const TEMPLATES: TemplateDef[] = [
       n('IMAGE', { height: 220, overlay: true, overlayText: '써든 폰 바꾸고 최대 15만 원 특별 보상', radius: 0, mb: 8 }),
       tag('T다이렉트샵'),
       n('TEXT', { text: '티다 럭키 페스티벌', size: 20, weight: 'bold', align: 'center', mb: 8 }),
-      n('CARD', { mb: 8 }, [n('TEXT', { text: '이용 방법 안내', size: 15, weight: 'bold', mb: 6 }), n('VSTACK', { gap: 8 }, [n('TEXT', { text: '· 대상 : 기간 내 온라인 개통 고객', size: 13 }), n('TEXT', { text: '· 기간 : 2026.07.01 ~ 07.31', size: 13 })])]),
+      n('CARD', { mb: 8 }, [n('TEXT', { text: '이용 방법 안내', size: 15, weight: 'bold', mb: 6 }), n('VSTACK', { gap: 8 }, [n('TEXT', { text: '· 대상 : 기간 내 온라인 개통 고객', size: 13 }), n('TEXT', { text: '· 기간 : 2026.08.01 ~ 08.31', size: 13 })])]),
       n('TABLE', { variant: '카드형', headers: ['구분', '보상'], rows: [['5G 개통', '최대 15만 원'], ['LTE 개통', '최대 10만 원']] }),
       n('BUTTON', { label: '특별 보상 신청하기', bg: '#7c3aed', full: true, mt: 8 }),
       notice('· 개통 후 14일 이내 신청해야 합니다.'),

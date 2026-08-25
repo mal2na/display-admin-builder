@@ -828,18 +828,22 @@ export async function updateAtom(templateId: string, atomId: string, formData: F
 // 컴포넌트의 Atom들을 한 번에 저장 (개별 저장 버튼 없이 '완료'에서 일괄 처리)
 export async function saveAtoms(
   templateId: string,
-  updates: { atomId: string; content: string | null; imageUrl: string | null; altText: string | null; linkUrl: string | null }[],
+  updates: { atomId: string; componentAtomId?: string; visible?: boolean; content: string | null; imageUrl: string | null; altText: string | null; linkUrl: string | null }[],
 ) {
   const norm = (v: string | null) => (v && v.trim().length ? v.trim() : null);
   if (updates.length) {
-    await prisma.$transaction(
-      updates.map((u) =>
+    await prisma.$transaction([
+      ...updates.map((u) =>
         prisma.atom.update({
           where: { id: u.atomId },
           data: { content: norm(u.content), imageUrl: norm(u.imageUrl), altText: norm(u.altText), linkUrl: norm(u.linkUrl) },
         }),
       ),
-    );
+      // 표시/숨김(visible)은 ComponentAtom(정션)에 저장
+      ...updates
+        .filter((u) => u.componentAtomId && typeof u.visible === 'boolean')
+        .map((u) => prisma.componentAtom.update({ where: { id: u.componentAtomId! }, data: { visible: u.visible! } })),
+    ]);
   }
   rp(templateId);
 }

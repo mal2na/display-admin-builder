@@ -18,6 +18,7 @@ import {
   PRODUCT_SORT_OPTIONS,
   CVM_FIELDS,
 } from '@/lib/display-taxonomy';
+import { isEventCornerFamily } from '@/lib/event-taxonomy';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
@@ -128,6 +129,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const [expanded, setExpanded] = useState(true);
   const [preview, setPreview] = useState<string[] | null>(null); // 유형 샘플 확대 미리보기(클릭)
   const [hoverThumb, setHoverThumb] = useState<{ src: string; x: number; y: number } | null>(null); // 호버 확대(테이블 overflow에 안 잘리게 fixed 오버레이)
+  const [domain, setDomain] = useState<'전시/관리' | '이벤트/미션'>(sp.get('domain') === '이벤트/미션' ? '이벤트/미션' : '전시/관리'); // 상위 분기
   const [base, setBase] = useState(sp.get('base') ?? '전체'); // 코너 유형
   const [detail, setDetail] = useState(sp.get('detail') ?? '전체'); // 유형 상세
   const [useOn, setUseOn] = useState(sp.get('on') !== '0');
@@ -140,13 +142,17 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 10);
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
 
-  const baseOptions = ['전체', ...Array.from(new Set(types.map((t) => t.baseCategory).filter(Boolean)))];
-  const detailOptions = ['전체', ...Array.from(new Set(types.map((t) => t.typeDetail).filter((d): d is string => !!d)))];
+  // 상위 분기(도메인)로 코너 유형을 먼저 나눈다: 전시/관리(전시 8종) vs 이벤트/미션(전용 계열)
+  const inDomain = (t: CornerTypeRow) => (domain === '이벤트/미션' ? isEventCornerFamily(t.baseCategory) : !isEventCornerFamily(t.baseCategory));
+  const domainTypes = types.filter(inDomain);
+  const baseOptions = ['전체', ...Array.from(new Set(domainTypes.map((t) => t.baseCategory).filter(Boolean)))];
+  const detailOptions = ['전체', ...Array.from(new Set(domainTypes.map((t) => t.typeDetail).filter((d): d is string => !!d)))];
 
   const reset = () => { setBase('전체'); setDetail('전체'); setUseOn(true); setUseOff(true); setStatusSel(new Set(statusKeys)); setField('typeId'); setQ(''); setPage(1); };
+  const switchDomain = (d: '전시/관리' | '이벤트/미션') => { setDomain(d); setBase('전체'); setDetail('전체'); setPage(1); };
 
   const ql = q.trim().toLowerCase();
-  const filtered = types.filter((t) => {
+  const filtered = domainTypes.filter((t) => {
     if (base !== '전체' && t.baseCategory !== base) return false;
     if (detail !== '전체' && (t.typeDetail ?? '') !== detail) return false;
     if (!(t.active ? useOn : useOff)) return false;
@@ -164,6 +170,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   // 필터 상태 → URL 쿼리 동기화 (기본값은 생략). 상세 진입 후 뒤로 오면 이 쿼리로 복원된다.
   useEffect(() => {
     const p = new URLSearchParams();
+    if (domain !== '전시/관리') p.set('domain', domain);
     if (base !== '전체') p.set('base', base);
     if (detail !== '전체') p.set('detail', detail);
     if (!useOn) p.set('on', '0');
@@ -176,7 +183,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [base, detail, useOn, useOff, statusSel, field, q, perPage, curPage]);
+  }, [domain, base, detail, useOn, useOff, statusSel, field, q, perPage, curPage]);
 
   const selectCls = 'h-9 rounded-lg border bg-white px-2.5 text-sm';
   const chk = 'flex items-center gap-1.5 text-sm cursor-pointer';
@@ -195,6 +202,28 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         }
       />
 
+      {/* ── 최상위 분기: 전시/관리 ↔ 이벤트/미션 ── */}
+      <div className="inline-flex rounded-xl border bg-surface-subtle p-1">
+        {(['전시/관리', '이벤트/미션'] as const).map((d) => {
+          const active = domain === d;
+          const cnt = types.filter((t) => (d === '이벤트/미션' ? isEventCornerFamily(t.baseCategory) : !isEventCornerFamily(t.baseCategory))).length;
+          return (
+            <button
+              key={d}
+              type="button"
+              onClick={() => switchDomain(d)}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition',
+                active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {d}
+              <span className={cn('rounded-full px-1.5 text-[11px] tabular-nums', active ? 'bg-white/20' : 'bg-black/5')}>{cnt}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── 상위 거버넌스: 승인 상태 탭 (언더라인 탭 — 참고 UI 스타일) ── */}
       {(() => {
         const statusTabActive = statusSel.size >= statusKeys.length ? '전체' : statusSel.size === 1 ? [...statusSel][0] : '';
@@ -205,7 +234,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           <div className="flex flex-wrap items-center gap-6 border-b">
             {tabs.map((t) => {
               const active = statusTabActive === t.key;
-              const count = t.key === '전체' ? types.length : types.filter((x) => x.status === t.key).length;
+              const count = t.key === '전체' ? domainTypes.length : domainTypes.filter((x) => x.status === t.key).length;
               return (
                 <button
                   key={t.key}
@@ -275,7 +304,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       <div className="flex flex-wrap gap-1.5">
         {baseOptions.map((b) => {
           const active = base === b;
-          const count = b === '전체' ? types.length : types.filter((t) => t.baseCategory === b).length;
+          const count = b === '전체' ? domainTypes.length : domainTypes.filter((t) => t.baseCategory === b).length;
           const color = b === '전체' ? 'border-border bg-card text-muted-foreground' : cornerTypeChipClass(b);
           return (
             <button

@@ -1,615 +1,221 @@
-// 전체 메뉴 관리(SB-DSP-OPR1-001 v4) 클릭 테스트용 목업 + 정책 판정 로직.
-// DB를 쓰지 않는 프로토타입 전용이다. 판정 기준은 정책 ID를 주석으로 남긴다.
-
-// 메뉴 승인 상태 — BSS 승인 모델(우리 SSOT TM-DSP-020 계열).
-// 어드민은 승인 '요청'만 하고, 승인/반려는 BSS가 한다. 승인 완료분만 'FO 반영(캐시 갱신)'으로 채널에 나간다.
-export type MenuStatus = 'DRAFT' | 'REVIEW' | 'APPROVED' | 'REJECTED' | 'CANCELED';
-
-// 상태는 '상태 명사'로 통일한다. 승인요청은 '행위(버튼)', 그 결과 상태는 '승인대기'. (SB 03 변경이력 1-1)
-export const STATUS_LABEL: Record<MenuStatus, string> = {
-  DRAFT: '임시저장',
-  REVIEW: '승인대기',
-  APPROVED: '승인완료',
-  REJECTED: '반려',
-  CANCELED: '요청취소',
-};
-
-// 상태 정의 (안내/툴팁용)
-export const STATUS_DESC: Record<MenuStatus, string> = {
-  DRAFT: '저장만 하고 아직 승인 요청 전. FO 미반영.',
-  REVIEW: '승인 요청을 보내 BSS 검수 대기 중. 요청취소 가능.',
-  APPROVED: '검수 승인 완료. FO 반영 가능하며 롤백 기준 버전.',
-  REJECTED: '검수 반려. 반려 사유 확인 후 수정해 재요청.',
-  CANCELED: '검수 전 요청자가 요청을 철회한 상태.',
-};
-
-export const STATUS_CODE: Record<MenuStatus, string> = {
-  DRAFT: 'ST-DSP-001', // 초안(임시저장)
-  REVIEW: 'ST-DSP-002', // 검수 대기(승인요청)
-  APPROVED: 'ST-DSP-004', // 승인 완료
-  REJECTED: 'ST-DSP-003', // 수정 필요(반려)
-  CANCELED: 'ST-DSP-011', // 요청취소(검수 전 요청자 철회)
-};
-
-/** 승인 상태 배지 색 */
-export const STATUS_BADGE: Record<MenuStatus, 'neutral' | 'warning' | 'success' | 'negative'> = {
-  DRAFT: 'neutral',
-  REVIEW: 'warning',
-  APPROVED: 'success',
-  REJECTED: 'negative',
-  CANCELED: 'neutral',
-};
-
-/** 미승인 변경(초안·승인요청·반려) = FO 미반영, 미리보기 전용 (PI-DSP-MNU-003) */
-export const UNAPPROVED: MenuStatus[] = ['DRAFT', 'REVIEW', 'REJECTED'];
+// 전체 메뉴 관리(SB-DSP-OPR1-001 v3) 클릭 테스트용 목업 + 정책 판정 로직.
+// 핵심 모델: 승인본(현재 FO 반영) ↔ 수정본(누적 편집본). 편집은 수정본에 쌓이고,
+// '변동 있을 때 = 수정본 전체(변경 세트)를 한 번에' 승인 요청한다. (개별 승인 아님)
+// DB를 쓰지 않는 프로토타입 전용. 판정 기준은 정책 ID를 주석으로 남긴다.
 
 export type Channel = 'PC' | 'APP';
-export type LinkType = 'CONTAINER' | 'INTERNAL' | 'EXTERNAL';
+export type LinkKind = 'CONTAINER' | 'INTERNAL' | 'EXTERNAL';
 
-/** 승인본 스냅샷 — 승인 완료 시점의 값. null이면 아직 승인된 적 없는 신규 노출. */
-export type Snapshot = {
+export const LINK_LABEL: Record<LinkKind, string> = { CONTAINER: '승인 컨테이너', INTERNAL: '내부 랜딩', EXTERNAL: '외부 랜딩' };
+export const LOGIN_LABEL = { ALL: '전체 노출', LOGIN: '로그인 시 노출' } as const;
+export const GRADES = ['전체', 'VIP', 'GOLD', 'SILVER'] as const;
+export const LINES = ['전체', '통화내역', '모바일', 'SKT법인', '법인실사용자', 'PPS', '유선서비스', '준회원(회선없음)'] as const;
+export const OS_OPTS = ['전체', 'Android', 'iOS'] as const;
+
+/** 한 메뉴의 설정값(버전별로 보관: 승인본 / 수정본) */
+export type MenuValue = {
   name: string;
-  order: number;
-  active: boolean;
-  linkType: LinkType | null;
-  linkTarget: string | null;
-  caption: string | null;
-  channels: Channel[];
+  icon: boolean;          // 아이콘 유무 (TBD)
+  linkKind: LinkKind;
+  container: string;      // 컨테이너 명 / ID
+  url: string;            // 랜딩 URL
+  urlVerified: boolean;   // URL 검증 완료
+  linkApproved: boolean;  // 컨테이너 승인 여부 (PI-DSP-MNU-002)
+  active: boolean;        // 사용 여부
+  channels: Channel[];    // 운영 채널
+  os: string[];           // OS 조건 (TBD)
   loginCond: 'ALL' | 'LOGIN';
-  authCond: 'NONE' | 'REQUIRED';
-  segment: string;
-  channelCond: Channel[];
-};
-
-export type HistoryEntry = {
-  at: string;
-  actor: string;
-  field: string;
-  before: string;
-  after: string;
-  reason: string;
-  approver: string | null;
-  result: string;
+  easyLogin: boolean;     // 간편 로그인 포함 (TBD)
+  grades: string[];       // 회원 등급 조건 (TBD)
+  lines: string[];        // 회선 조건 (TBD)
+  nameChecked: boolean;   // 메뉴명 중복 확인 완료
 };
 
 export type MenuNode = {
   id: string;
-  code: string;
-  name: string;
+  code: string;           // 메뉴 코드 (저장 시 자동 부여)
   depth: 1 | 2 | 3;
   parentId: string | null;
-  order: number;
-  /** 사용 여부 (PI-DSP-MNU-001 운영 상태 필수값) */
-  active: boolean;
-  /** 공개 상태 */
-  visibility: '공개' | '비공개';
-  linkType: LinkType | null;
-  linkTarget: string | null;
-  /** 연결 대상의 승인 여부 (PI-DSP-MNU-002) */
-  linkApproved: boolean;
-  icon: string | null;
-  /** 아이콘·이미지 대체텍스트 (PI-DSP-CMP-004) */
-  iconAlt: string | null;
-  caption: string | null;
-  /** 표시 정보상의 노출 채널 */
-  channels: Channel[];
-  loginCond: 'ALL' | 'LOGIN';
-  authCond: 'NONE' | 'REQUIRED';
-  segment: string;
-  /** 노출 조건상의 채널 */
-  channelCond: Channel[];
+  approved: MenuValue | null; // 승인본 값 (null = 승인된 적 없는 신규)
+  approvedOrder: number | null;
+  working: MenuValue;         // 수정본 값
+  order: number;              // 수정본 표시 순서
   org: string;
   owner: string;
-  status: MenuStatus;
-  changeReason: string | null;
-  rejectReason: string | null;
-  updatedAt: string;
-  updatedBy: string;
-  /** 승인된 적 없는 신규 노출 여부 */
-  isNew: boolean;
-  approved: Snapshot | null;
-  history: HistoryEntry[];
 };
 
-export const SEGMENTS = ['전체', 'VIP', '신규가입', '장기고객'];
-export const ORGS = ['전시운영팀', '혜택기획팀', 'Shop기획팀', '고객경험팀'];
+/** 수정본(변경 세트) 전역 상태 */
+export type DraftState = '없음' | '임시저장' | '승인대기' | '승인반려';
+export const DRAFT_BADGE: Record<DraftState, 'neutral' | 'warning' | 'success' | 'negative'> = {
+  없음: 'success', 임시저장: 'neutral', 승인대기: 'warning', 승인반려: 'negative',
+};
+export const DRAFT_LABEL: Record<DraftState, string> = { 없음: '승인완료', 임시저장: '임시저장', 승인대기: '승인대기', 승인반려: '승인반려' };
 
-export const LOGIN_LABEL = { ALL: '전체 노출', LOGIN: '로그인 시 노출' } as const;
-export const AUTH_LABEL = { NONE: '일반', REQUIRED: '권한 필요' } as const;
+const key = (a: string[]) => [...a].sort().join(',');
 
-const snap = (n: Partial<Snapshot>, base: Snapshot): Snapshot => ({ ...base, ...n });
+const emptyIfDefault = (v: MenuValue) => v; // placeholder
 
-const baseSnap: Snapshot = {
-  name: '',
-  order: 1,
-  active: true,
-  linkType: 'CONTAINER',
-  linkTarget: null,
-  caption: null,
-  channels: ['PC', 'APP'],
-  loginCond: 'ALL',
-  authCond: 'NONE',
-  segment: '전체',
-  channelCond: ['PC', 'APP'],
+const V = (o: Partial<MenuValue>): MenuValue => ({
+  name: '', icon: false, linkKind: 'CONTAINER', container: '', url: '', urlVerified: false, linkApproved: true,
+  active: true, channels: ['PC', 'APP'], os: ['전체'], loginCond: 'ALL', easyLogin: true, grades: ['전체'], lines: ['전체'],
+  nameChecked: true, ...o,
+});
+
+/* ------------------------------------------------------------------ */
+/* 변경/검증 판정 (변경 내용 배지 표 · SB 2-1)                          */
+/* ------------------------------------------------------------------ */
+
+export type Badge = '정보변경' | '정보변경 미완료' | '메뉴등록' | '등록 미완료' | '순서변경';
+
+/** 미완료 사유 — 필수값 미입력 / 중복확인·URL검증 미수행·실패 */
+export function validateValue(v: MenuValue): string[] {
+  const out: string[] = [];
+  if (!v.name.trim()) out.push('메뉴명 미입력');
+  else if (!v.nameChecked) out.push('메뉴명 중복 확인 미수행');
+  if (v.linkKind === 'CONTAINER') {
+    if (!v.container) out.push('연결 컨테이너 미선택');
+    else if (!v.linkApproved) out.push('미승인 컨테이너 (게시 불가)');
+  } else {
+    if (!v.url.trim()) out.push('랜딩 URL 미입력');
+    else if (!v.urlVerified) out.push('URL 검증 미수행/실패');
+  }
+  if (!v.channels.length) out.push('운영 채널 미선택');
+  return out;
+}
+
+export const isNewNode = (n: MenuNode) => n.approved === null;
+
+export function infoChanged(n: MenuNode): boolean {
+  if (!n.approved) return false;
+  const a = n.approved, w = n.working;
+  return a.name !== w.name || a.icon !== w.icon || a.linkKind !== w.linkKind || a.container !== w.container
+    || a.url !== w.url || a.active !== w.active || key(a.channels) !== key(w.channels) || a.loginCond !== w.loginCond
+    || key(a.os) !== key(w.os) || key(a.grades) !== key(w.grades) || key(a.lines) !== key(w.lines);
+}
+export const orderChanged = (n: MenuNode) => n.approvedOrder != null && n.approvedOrder !== n.order;
+export const isIncomplete = (n: MenuNode) => (isNewNode(n) || infoChanged(n)) && validateValue(n.working).length > 0;
+export const hasChange = (n: MenuNode) => isNewNode(n) || infoChanged(n) || orderChanged(n);
+
+/** 최대 2개 (정보/등록 계열 1 + 순서변경 1) */
+export function badgesOf(n: MenuNode): Badge[] {
+  const out: Badge[] = [];
+  const incomplete = validateValue(n.working).length > 0;
+  if (isNewNode(n)) out.push(incomplete ? '등록 미완료' : '메뉴등록');
+  else if (infoChanged(n)) out.push(incomplete ? '정보변경 미완료' : '정보변경');
+  if (orderChanged(n)) out.push('순서변경');
+  return out;
+}
+
+export const BADGE_TONE: Record<Badge, string> = {
+  정보변경: 'bg-sky-50 text-sky-600 ring-sky-200',
+  '정보변경 미완료': 'bg-amber-50 text-amber-700 ring-amber-200',
+  메뉴등록: 'bg-violet-50 text-violet-600 ring-violet-200',
+  '등록 미완료': 'bg-amber-50 text-amber-700 ring-amber-200',
+  순서변경: 'bg-emerald-50 text-emerald-600 ring-emerald-200',
 };
 
-/** 초기 목업 — 정책 판정이 갈리는 케이스를 일부러 섞어 두었다. */
+/* ------------------------------------------------------------------ */
+/* 정보 변경 diff (변경사항 팝업 · SB 5b)                              */
+/* ------------------------------------------------------------------ */
+const chanTxt = (c: Channel[]) => c.join('·') || '-';
+export function infoDiffRows(n: MenuNode): { field: string; before: string; after: string }[] {
+  if (!n.approved) return [];
+  const a = n.approved, w = n.working;
+  const rows: { field: string; before: string; after: string }[] = [];
+  const push = (field: string, b: string, af: string) => { if (b !== af) rows.push({ field, before: b, after: af }); };
+  push('메뉴명', a.name, w.name);
+  push('연결 설정', linkText(a), linkText(w));
+  push('사용 여부', a.active ? '사용' : '미사용', w.active ? '사용' : '미사용');
+  push('운영 채널', chanTxt(a.channels), chanTxt(w.channels));
+  push('로그인 조건', LOGIN_LABEL[a.loginCond], LOGIN_LABEL[w.loginCond]);
+  return rows;
+}
+export const linkText = (v: MenuValue) =>
+  v.linkKind === 'CONTAINER' ? `승인 컨테이너 - ${v.container || '-'}` : `${LINK_LABEL[v.linkKind]} - ${v.url || '-'}`;
+
+/* ------------------------------------------------------------------ */
+/* 운영 이력 (SB 5)                                                    */
+/* ------------------------------------------------------------------ */
+export type HistoryKind = '승인요청' | '취소요청' | '임시저장';
+export type ApprovalResult = '승인대기' | '승인완료' | '승인반려' | '요청취소';
+export type HistoryEntry = {
+  id: string;
+  version: number | null;   // 승인완료만 버전 부여
+  kind: HistoryKind;
+  requester: string;
+  requestedAt: string;
+  approver: string | null;
+  result: ApprovalResult;
+  processedAt: string | null;
+  reason: string | null;    // 취소/반려 사유
+  summary: { info: number; order: number; add: number };
+};
+
+/* ------------------------------------------------------------------ */
+/* 시드                                                                */
+/* ------------------------------------------------------------------ */
 export function seedMenus(): MenuNode[] {
-  const h = (
-    at: string,
-    actor: string,
-    field: string,
-    before: string,
-    after: string,
-    reason: string,
-    approver: string | null,
-    result: string,
-  ): HistoryEntry => ({ at, actor, field, before, after, reason, approver, result });
+  const node = (
+    id: string, code: string, depth: 1 | 2 | 3, parentId: string | null, order: number,
+    approved: MenuValue | null, working?: Partial<MenuValue>,
+  ): MenuNode => ({
+    id, code, depth, parentId, order,
+    approved,
+    approvedOrder: approved ? order : null,
+    working: approved ? V({ ...approved, ...working }) : V({ ...working }),
+    org: '전시운영팀', owner: 'P213980',
+  });
 
   return [
-    {
-      id: 'm-benefit',
-      code: 'MNU-0101',
-      name: '혜택',
-      depth: 1,
-      parentId: null,
-      order: 1,
-      active: true,
-      visibility: '공개',
-      linkType: 'CONTAINER',
-      linkTarget: 'CT-0101 혜택 홈',
-      linkApproved: true,
-      icon: 'ic_benefit',
-      iconAlt: '혜택',
-      caption: '혜택 모아보기',
-      channels: ['PC', 'APP'],
-      loginCond: 'ALL',
-      authCond: 'NONE',
-      segment: '전체',
-      channelCond: ['PC', 'APP'],
-      org: '혜택기획팀',
-      owner: 'P213980',
-      status: 'DRAFT',
-      changeReason: '혜택 개편에 따른 메뉴명 변경',
-      rejectReason: null,
-      updatedAt: '2026-08-21 14:02',
-      updatedBy: 'P213980',
-      isNew: false,
-      approved: snap({ name: '혜택관', order: 1, linkTarget: 'CT-0101 혜택 홈', caption: '혜택 모아보기' }, baseSnap),
-      history: [
-        h('2026-08-21 14:02', 'P213980', '메뉴명', '혜택관', '혜택', '혜택 개편에 따른 메뉴명 변경', null, '초안 저장'),
-        h('2026-08-15 09:11', 'P213980', '노출 채널', 'APP', 'PC·APP', 'PC 웹 오픈 대응', 'P100234', '승인 완료'),
-      ],
-    },
-    {
-      id: 'm-benefit-partner',
-      code: 'MNU-0101-01',
-      name: '제휴 혜택',
-      depth: 2,
-      parentId: 'm-benefit',
-      order: 1,
-      active: true,
-      visibility: '공개',
-      linkType: 'CONTAINER',
-      linkTarget: 'CT-0142 제휴 혜택',
-      linkApproved: true,
-      icon: 'ic_partner',
-      iconAlt: null, // 대체텍스트 없음 → 검수 요청 차단 (PI-DSP-CMP-004)
-      caption: null,
-      channels: ['PC', 'APP'],
-      loginCond: 'ALL',
-      authCond: 'NONE',
-      segment: '전체',
-      channelCond: ['PC', 'APP'],
-      org: '혜택기획팀',
-      owner: 'P213980',
-      status: 'DRAFT',
-      changeReason: '제휴 혜택 신규 노출',
-      rejectReason: null,
-      updatedAt: '2026-08-21 11:40',
-      updatedBy: 'P213980',
-      isNew: true,
-      approved: null,
-      history: [h('2026-08-21 11:40', 'P213980', '노출 등록', '-', '제휴 혜택', '제휴 혜택 신규 노출', null, '초안 저장')],
-    },
-    {
-      id: 'm-benefit-membership',
-      code: 'MNU-0101-02',
-      name: '멤버십',
-      depth: 2,
-      parentId: 'm-benefit',
-      order: 2,
-      active: true,
-      visibility: '공개',
-      linkType: 'CONTAINER',
-      linkTarget: 'CT-0143 멤버십',
-      linkApproved: true,
-      icon: null,
-      iconAlt: null,
-      caption: null,
-      channels: ['PC', 'APP'],
-      loginCond: 'LOGIN',
-      authCond: 'NONE',
-      segment: '전체',
-      channelCond: ['PC', 'APP'],
-      org: '혜택기획팀',
-      owner: 'P213980',
-      status: 'APPROVED',
-      changeReason: null,
-      rejectReason: null,
-      updatedAt: '2026-08-01 10:00',
-      updatedBy: 'P213980',
-      isNew: false,
-      approved: snap({ name: '멤버십', order: 2, linkTarget: 'CT-0143 멤버십', loginCond: 'LOGIN' }, baseSnap),
-      history: [h('2026-08-01 10:00', 'P213980', '게시', '-', '게시 중', '멤버십 개편 반영', 'P100234', '게시 중')],
-    },
-    {
-      id: 'm-benefit-membership-coupon',
-      code: 'MNU-0101-02-01',
-      name: '쿠폰함',
-      depth: 3,
-      parentId: 'm-benefit-membership',
-      order: 1,
-      active: true,
-      visibility: '공개',
-      linkType: 'INTERNAL',
-      linkTarget: '/benefit/coupon',
-      linkApproved: true,
-      icon: null,
-      iconAlt: null,
-      caption: null,
-      channels: ['APP'],
-      loginCond: 'LOGIN',
-      authCond: 'NONE',
-      segment: '전체',
-      channelCond: ['APP'],
-      org: '혜택기획팀',
-      owner: 'P213980',
-      status: 'APPROVED',
-      changeReason: null,
-      rejectReason: null,
-      updatedAt: '2026-07-20 15:30',
-      updatedBy: 'P213980',
-      isNew: false,
-      approved: snap({ name: '쿠폰함', order: 1, linkType: 'INTERNAL', linkTarget: '/benefit/coupon', loginCond: 'LOGIN', channels: ['APP'], channelCond: ['APP'] }, baseSnap),
-      history: [h('2026-07-20 15:30', 'P213980', '게시', '-', '게시 중', '쿠폰함 오픈', 'P100234', '게시 중')],
-    },
-    {
-      id: 'm-shop',
-      code: 'MNU-0102',
-      name: 'Shop',
-      depth: 1,
-      parentId: null,
-      order: 2,
-      active: true,
-      visibility: '공개',
-      linkType: 'CONTAINER',
-      linkTarget: 'CT-0102 Shop 홈',
-      linkApproved: true,
-      icon: 'ic_shop',
-      iconAlt: 'Shop',
-      caption: null,
-      channels: ['PC', 'APP'],
-      loginCond: 'ALL',
-      authCond: 'NONE',
-      segment: '전체',
-      channelCond: ['PC', 'APP'],
-      org: 'Shop기획팀',
-      owner: 'P220114',
-      status: 'DRAFT',
-      changeReason: '메인 진입 순서 조정',
-      rejectReason: null,
-      updatedAt: '2026-08-21 13:20',
-      updatedBy: 'P220114',
-      isNew: false,
-      // 승인본에서는 3번째였다 → 순서변경 diff
-      approved: snap({ name: 'Shop', order: 3, linkTarget: 'CT-0102 Shop 홈' }, baseSnap),
-      history: [h('2026-08-21 13:20', 'P220114', '정렬 순서', '3', '2', '메인 진입 순서 조정', null, '초안 저장')],
-    },
-    {
-      id: 'm-bill',
-      code: 'MNU-0103',
-      name: '요금·납부',
-      depth: 1,
-      parentId: null,
-      order: 3,
-      active: true,
-      visibility: '공개',
-      linkType: 'CONTAINER',
-      linkTarget: null, // 연결 대상 없음 → 게시·검수 차단 (PI-DSP-MNU-002)
-      linkApproved: false,
-      icon: 'ic_bill',
-      iconAlt: '요금 납부',
-      caption: null,
-      channels: ['PC', 'APP'],
-      loginCond: 'LOGIN',
-      authCond: 'REQUIRED',
-      segment: '전체',
-      channelCond: ['PC', 'APP'],
-      org: '고객경험팀',
-      owner: 'P231007',
-      status: 'REJECTED',
-      changeReason: '요금 메뉴 신설',
-      rejectReason: '연결 대상 미지정 · 랜딩 확인 불가',
-      updatedAt: '2026-08-20 17:45',
-      updatedBy: 'P100234',
-      isNew: true,
-      approved: null,
-      history: [
-        h('2026-08-20 17:45', 'P100234', '검수', '검수 대기', '수정 필요', '연결 대상 미지정 · 랜딩 확인 불가', 'P100234', '반려'),
-        h('2026-08-20 16:02', 'P231007', '검수 요청', '초안 작성중', '검수 대기', '요금 메뉴 신설', null, '검수 요청'),
-      ],
-    },
-    {
-      id: 'm-event',
-      code: 'MNU-0104',
-      name: '이벤트',
-      depth: 1,
-      parentId: null,
-      order: 4,
-      active: false, // 미사용 → 하위 Depth 동반 미노출
-      visibility: '공개',
-      linkType: 'CONTAINER',
-      linkTarget: 'CT-0104 이벤트 홈',
-      linkApproved: true,
-      icon: 'ic_event',
-      iconAlt: '이벤트',
-      caption: null,
-      channels: ['PC', 'APP'],
-      loginCond: 'ALL',
-      authCond: 'NONE',
-      segment: '전체',
-      channelCond: ['PC', 'APP'],
-      org: '전시운영팀',
-      owner: 'P213980',
-      status: 'APPROVED',
-      changeReason: '하계 프로모션 종료',
-      rejectReason: null,
-      updatedAt: '2026-07-30 09:00',
-      updatedBy: 'P213980',
-      isNew: false,
-      approved: snap({ name: '이벤트', order: 4, active: false, linkTarget: 'CT-0104 이벤트 홈' }, baseSnap),
-      history: [h('2026-07-30 09:00', 'P213980', '사용 여부', '사용', '미사용', '하계 프로모션 종료', 'P100234', '게시 중지')],
-    },
-    {
-      id: 'm-event-ongoing',
-      code: 'MNU-0104-01',
-      name: '진행 중 이벤트',
-      depth: 2,
-      parentId: 'm-event',
-      order: 1,
-      active: true,
-      visibility: '공개',
-      linkType: 'CONTAINER',
-      linkTarget: 'CT-0151 이벤트 리스트',
-      linkApproved: true,
-      icon: null,
-      iconAlt: null,
-      caption: null,
-      channels: ['PC', 'APP'],
-      loginCond: 'ALL',
-      authCond: 'NONE',
-      segment: '전체',
-      channelCond: ['PC', 'APP'],
-      org: '전시운영팀',
-      owner: 'P213980',
-      status: 'APPROVED',
-      changeReason: null,
-      rejectReason: null,
-      updatedAt: '2026-07-30 09:00',
-      updatedBy: 'P213980',
-      isNew: false,
-      approved: snap({ name: '진행 중 이벤트', order: 1, linkTarget: 'CT-0151 이벤트 리스트' }, baseSnap),
-      history: [],
-    },
-    {
-      id: 'm-support',
-      code: 'MNU-0105',
-      name: '고객지원',
-      depth: 1,
-      parentId: null,
-      order: 5,
-      active: true,
-      visibility: '공개',
-      linkType: 'CONTAINER',
-      linkTarget: 'CT-0105 고객지원 홈',
-      linkApproved: true,
-      icon: 'ic_support',
-      iconAlt: '고객지원',
-      caption: '문의·상담',
-      channels: ['PC', 'APP'],
-      loginCond: 'ALL',
-      authCond: 'NONE',
-      segment: '전체',
-      channelCond: ['PC', 'APP'],
-      org: '고객경험팀',
-      owner: 'P231007',
-      status: 'APPROVED', // 승인 완료 → 게시 버튼 활성 테스트용
-      changeReason: '표시 문구 추가',
-      rejectReason: null,
-      updatedAt: '2026-08-21 10:15',
-      updatedBy: 'P100234',
-      isNew: false,
-      approved: snap({ name: '고객지원', order: 5, linkTarget: 'CT-0105 고객지원 홈', caption: null }, baseSnap),
-      history: [
-        h('2026-08-21 10:15', 'P100234', '검수', '검수 대기', '승인 완료', '표시 문구 추가', 'P100234', '승인 완료'),
-        h('2026-08-21 09:30', 'P231007', '표시 문구', '-', '문의·상담', '표시 문구 추가', null, '검수 요청'),
-      ],
-    },
-    {
-      id: 'm-my',
-      code: 'MNU-0106',
-      name: 'MY',
-      depth: 1,
-      parentId: null,
-      order: 6,
-      active: true,
-      visibility: '공개',
-      linkType: 'CONTAINER',
-      linkTarget: 'CT-0210 MY 홈(검수 대기)',
-      linkApproved: false, // 미승인 Container 연결 → 게시 차단
-      icon: 'ic_my',
-      iconAlt: 'MY',
-      caption: null,
-      channels: ['PC', 'APP'],
-      loginCond: 'LOGIN',
-      authCond: 'NONE',
-      segment: 'VIP', // 대상 고객군 제한 → 조건별 미노출 확인용
-      channelCond: ['APP'], // 표시 채널(PC·APP)과 불일치 → 검수 차단
-      org: '전시운영팀',
-      owner: 'P213980',
-      status: 'DRAFT',
-      changeReason: 'MY 개편 연결',
-      rejectReason: null,
-      updatedAt: '2026-08-21 12:05',
-      updatedBy: 'P213980',
-      isNew: false,
-      approved: snap({ name: 'MY', order: 6, linkTarget: 'CT-0106 MY 홈', loginCond: 'LOGIN' }, baseSnap),
-      history: [h('2026-08-21 12:05', 'P213980', '연결 대상', 'CT-0106 MY 홈', 'CT-0210 MY 홈(검수 대기)', 'MY 개편 연결', null, '초안 저장')],
-    },
-  ];
+    // 1Depth_01 — 정보 변경 (메뉴명·로그인조건 변경, 완료)
+    node('m1', 'MNU-0101', 1, null, 1,
+      V({ name: '1Depth_01', linkKind: 'CONTAINER', container: '혜택 / 123153123', loginCond: 'ALL' }),
+      { loginCond: 'LOGIN', name: '1Depth_01' }),
+    node('m1-1', 'MNU-0101-01', 2, 'm1', 1, V({ name: '2Depth_01', container: '제휴 혜택 / 0sxl' })),
+    node('m1-1-1', 'MNU-0101-0101', 3, 'm1-1', 1, V({ name: '3Depth_01', linkKind: 'INTERNAL', url: '/benefit/a', container: '' })),
+    // 3Depth_02 — 정보 변경 미완료 (연결 URL 검증 미수행)
+    node('m1-1-2', 'MNU-0101-0102', 3, 'm1-1', 2,
+      V({ name: '3Depth_02', linkKind: 'INTERNAL', url: '/benefit/b', urlVerified: true }),
+      { url: '/benefit/b-new', urlVerified: false }),
+
+    // 1Depth_02 — 정보 변경 + 순서 변경 (order 2→3 로 바뀜)
+    node('m2', 'MNU-0102', 1, null, 3, V({ name: '1Depth_02', container: 'Shop / 0sx2' }, ), { name: '1Depth_02', active: true }),
+    // (approvedOrder=2 이지만 order=3 → 순서변경) — 아래에서 보정
+    // 1Depth_03 — 순서 변경만 (order 3→2)
+    node('m3', 'MNU-0103', 1, null, 2, V({ name: '1Depth_03', container: 'MY / 0sx3' })),
+    // 1Depth_04 — 미사용 + 변경 없음
+    node('m4', 'MNU-0104', 1, null, 4, V({ name: '1Depth_04', active: false })),
+    // 신규 메뉴 (등록 미완료 — 컨테이너 미선택)
+    node('m5', 'MNU-NEW-1', 1, null, 5, null, { name: '신규 메뉴', container: '', nameChecked: false }),
+  ].map((n) => {
+    // 1Depth_02/03 순서 스왑 반영: approvedOrder 유지, order 스왑
+    if (n.id === 'm2') return { ...n, approvedOrder: 2, order: 3 };
+    if (n.id === 'm3') return { ...n, approvedOrder: 3, order: 2 };
+    // 1Depth_02 정보변경: 승인본 name '1Depth_02(구)' → working '1Depth_02'
+    return n;
+  });
 }
 
-/* ------------------------------------------------------------------ */
-/* 검수 요청 차단 판정 (PI-DSP-MNU-002 / PI-DSP-WFL-001 / PI-DSP-CMP-004) */
-/* ------------------------------------------------------------------ */
-
-export type Issue = { label: string; policy: string; kind: 'PUBLISH' | 'REVIEW' };
-
-export function validateNode(n: MenuNode): Issue[] {
-  const out: Issue[] = [];
-  if (!n.linkTarget) out.push({ label: '연결 대상 없음', policy: 'PI-DSP-MNU-002', kind: 'PUBLISH' });
-  else if (!n.linkApproved) out.push({ label: `미승인 연결 대상 (${n.linkTarget})`, policy: 'PI-DSP-MNU-002', kind: 'PUBLISH' });
-
-  const shown = [...n.channels].sort().join(',');
-  const cond = [...n.channelCond].sort().join(',');
-  if (n.channels.length && n.channelCond.length && shown !== cond)
-    out.push({ label: `표시 채널(${shown || '-'}) ↔ 노출 채널(${cond || '-'}) 불일치`, policy: 'PI-DSP-MNU-002', kind: 'REVIEW' });
-
-  if (!n.channelCond.length) out.push({ label: '노출 조건 누락 — 채널 조건', policy: 'PI-DSP-MNU-001', kind: 'REVIEW' });
-  if (!n.segment) out.push({ label: '노출 조건 누락 — 대상 고객군', policy: 'PI-DSP-MNU-001', kind: 'REVIEW' });
-  if (!n.org) out.push({ label: '운영 정보 누락 — 담당 조직', policy: 'PI-DSP-MNU-001', kind: 'REVIEW' });
-  if (!n.owner) out.push({ label: '운영 정보 누락 — 담당자', policy: 'PI-DSP-MNU-001', kind: 'REVIEW' });
-  if (!n.changeReason) out.push({ label: '운영 정보 누락 — 변경 사유', policy: 'PI-DSP-AUD-002', kind: 'REVIEW' });
-  if (n.icon && !n.iconAlt) out.push({ label: '아이콘 대체텍스트 없음', policy: 'PI-DSP-CMP-004', kind: 'REVIEW' });
-  return out;
+/** 1Depth_02 정보변경을 확실히 만들기 위한 승인본 보정 */
+export function seedFixed(): MenuNode[] {
+  const list = seedMenus();
+  const m2 = list.find((n) => n.id === 'm2');
+  if (m2 && m2.approved) { m2.approved = { ...m2.approved, name: '1Depth_02(구)' }; m2.working = { ...m2.working, name: '1Depth_02' }; }
+  return list;
 }
 
-/* ------------------------------------------------------------------ */
-/* 승인본 대비 변경(diff) — 미리보기 배지용                            */
-/* ------------------------------------------------------------------ */
+export const CONTAINERS = [
+  { id: '0sxl75swte1', name: '혜택', period: '상시', on: true },
+  { id: '0sxl75swte1', name: '쇼핑', period: '상시', on: true },
+  { id: '0sxl75swte1', name: '마이', period: '상시', on: true },
+  { id: '0sxl75swte2', name: 'VIP Pick', period: '상시', on: false },
+  { id: '0sxl75swte2', name: 'VIP Pick', period: '2026.08.25 ~ 2026.08.25', on: true },
+  { id: '0sxl75swte3', name: '고객지원', period: '상시', on: true },
+] as const;
 
-export type DiffKind = '추가' | '명칭변경' | '순서변경' | '노출변경' | '연결변경' | '조건변경';
+/** 트리 자식 정렬 */
+export const childrenOf = (nodes: MenuNode[], parentId: string | null, useApproved = false) =>
+  nodes.filter((n) => n.parentId === parentId).sort((a, b) =>
+    (useApproved ? (a.approvedOrder ?? 999) - (b.approvedOrder ?? 999) : a.order - b.order));
 
-export function diffOf(n: MenuNode): DiffKind[] {
-  if (n.isNew) return ['추가'];
-  const a = n.approved;
-  if (!a) return ['추가'];
-  const out: DiffKind[] = [];
-  if (a.name !== n.name) out.push('명칭변경');
-  if (a.order !== n.order) out.push('순서변경');
-  if (a.active !== n.active) out.push('노출변경');
-  if (a.linkTarget !== n.linkTarget) out.push('연결변경');
-  if (a.loginCond !== n.loginCond || a.segment !== n.segment || [...a.channelCond].sort().join() !== [...n.channelCond].sort().join())
-    out.push('조건변경');
-  return out;
-}
-
-/** 승인본 뷰 — 승인 시점 값으로 되돌린 노드. 신규(미승인) 노출은 제외 대상. */
-export function toApprovedView(n: MenuNode): MenuNode | null {
-  if (n.isNew || !n.approved) return null;
-  const a = n.approved;
-  return { ...n, ...a, status: 'APPROVED' };
-}
-
-/* ------------------------------------------------------------------ */
-/* 미리보기 노출 판정                                                  */
-/* ------------------------------------------------------------------ */
-
-export type PreviewCond = {
-  login: 'GUEST' | 'MEMBER';
-  auth: 'NONE' | 'GRANTED';
-  segment: string;
-  channel: Channel;
-};
-
-export type VerdictResult = 'SHOW' | 'HIDE' | 'BLOCK_PUBLISH' | 'BLOCK_REVIEW';
-
-export type Verdict = {
-  id: string;
-  name: string;
-  depth: number;
-  result: VerdictResult;
-  reason: string;
-  policy: string;
-};
-
-export const VERDICT_LABEL: Record<VerdictResult, string> = {
-  SHOW: '노출',
-  HIDE: '미노출',
-  BLOCK_PUBLISH: '게시 차단',
-  BLOCK_REVIEW: '검수 차단',
-};
-
-/**
- * 조건 세트 기준으로 메뉴별 노출 결과를 판정한다.
- * base='APPROVED' 이면 승인본(미승인 변경 제외), 'WORKING' 이면 작업본.
- */
-export function evaluateMenus(nodes: MenuNode[], cond: PreviewCond, base: 'APPROVED' | 'WORKING'): Verdict[] {
-  const list = base === 'WORKING' ? nodes : (nodes.map(toApprovedView).filter(Boolean) as MenuNode[]);
-  const byId = new Map(list.map((n) => [n.id, n]));
-  const inactiveAncestor = (n: MenuNode): MenuNode | null => {
-    let p = n.parentId ? byId.get(n.parentId) : undefined;
-    while (p) {
-      if (!p.active) return p;
-      p = p.parentId ? byId.get(p.parentId) : undefined;
-    }
-    return null;
-  };
-
-  return list
-    .slice()
-    .sort((a, b) => a.depth - b.depth || a.order - b.order)
-    .map<Verdict>((n) => {
-      const v = (result: VerdictResult, reason: string, policy: string): Verdict => ({
-        id: n.id, name: n.name, depth: n.depth, result, reason, policy,
-      });
-
-      // 1) 사용 여부 · 상속
-      if (!n.active) return v('HIDE', '사용여부 = 미사용', 'PI-DSP-MNU-001');
-      const dead = inactiveAncestor(n);
-      if (dead) return v('HIDE', `상위 미사용 상속 (${dead.name})`, 'PI-DSP-MNU-001');
-
-      // 2) 연결값 검증 — 게시 차단
-      if (!n.linkTarget) return v('BLOCK_PUBLISH', '연결 대상 없음', 'PI-DSP-MNU-002');
-      if (!n.linkApproved) return v('BLOCK_PUBLISH', `미승인 연결 대상 (${n.linkTarget})`, 'PI-DSP-MNU-002');
-
-      // 3) 정합성 — 검수 차단. 미승인(초안·검수대기·반려) 건만 판정 대상이다.
-      const review = UNAPPROVED.includes(n.status) ? validateNode(n).filter((i) => i.kind === 'REVIEW') : [];
-      if (review.length) return v('BLOCK_REVIEW', review[0].label, review[0].policy);
-
-      // 4) 노출 조건 판정 (PI-DSP-MNU-001 필수 4종)
-      if (n.loginCond === 'LOGIN' && cond.login === 'GUEST') return v('HIDE', '로그인 조건 = 로그인 시 노출', 'PI-DSP-MNU-001');
-      if (n.authCond === 'REQUIRED' && cond.auth === 'NONE') return v('HIDE', '권한 조건 = 권한 필요', 'PI-DSP-MNU-001');
-      if (n.segment !== '전체' && n.segment !== cond.segment) return v('HIDE', `대상 고객군 = ${n.segment}`, 'PI-DSP-MNU-001');
-      if (!n.channelCond.includes(cond.channel)) return v('HIDE', `노출 채널 = ${n.channelCond.join('·') || '-'}`, 'PI-DSP-MNU-001');
-
-      return v('SHOW', '조건 충족', 'PI-DSP-MNU-001');
-    });
-}
-
-/** 트리 정렬용 — parentId/order 기준으로 평면 목록을 계층 순서로 재배열 */
-export function orderTree(nodes: MenuNode[]): MenuNode[] {
-  const out: MenuNode[] = [];
-  const walk = (parentId: string | null) => {
-    nodes
-      .filter((n) => n.parentId === parentId)
-      .sort((a, b) => a.order - b.order)
-      .forEach((n) => {
-        out.push(n);
-        walk(n.id);
-      });
-  };
-  walk(null);
-  return out;
-}
+export { V as menuValue };

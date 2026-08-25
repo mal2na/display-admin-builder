@@ -368,7 +368,7 @@ function EditableNode({ node, meta, selectedId, onSelect, viewer }: { node: Node
   );
 }
 
-export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
+export function EventEditor({ meta, tree, previewTree }: { meta: Meta; tree: NodeView[]; previewTree?: NodeView[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<'node' | 'add'>('add');
   const [promoLoadOpen, setPromoLoadOpen] = useState(false); // 프로모션 코너 불러오기 모달
@@ -405,6 +405,8 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
   const applyOverrides = (nodes: NodeView[]): NodeView[] =>
     nodes.map((n) => ({ ...n, props: overrides[n.id] ? { ...n.props, ...overrides[n.id] } : n.props, children: applyOverrides(n.children) }));
   const vtree = applyOverrides(tree);
+  // 미리보기 트리 = 고정 프레임 + 본문 (없으면 편집 트리 그대로 — display 모드 등)
+  const vpreview = previewTree ? applyOverrides(previewTree) : vtree;
 
   // 선택 노드 + 조상 체인 탐색 (오버라이드 반영된 vtree 기준)
   function findChain(nodes: NodeView[], id: string, chain: NodeView[] = []): NodeView[] | null {
@@ -459,8 +461,8 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border bg-slate-50 shadow-sm" onClick={() => setSelectedId(null)}>
       {/* 상단 바 — 흰 배경 없이 블렌드(가운데 디바이스 드롭다운만 떠 보이게) */}
       <div className="flex items-center gap-3 px-4 py-2.5">
-        <Link href="/admin/events" className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
-          <Icons.ChevronLeft className="h-4 w-4" /> 목록
+        <Link href={`/admin/events/pages/${meta.pageId}`} className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
+          <Icons.ChevronLeft className="h-4 w-4" /> 상세
         </Link>
         <span className="text-sm font-semibold">{meta.projectName}</span>
         {!display && <ProgramInfoEdit program={meta.program} />}
@@ -575,29 +577,9 @@ export function EventEditor({ meta, tree }: { meta: Meta; tree: NodeView[] }) {
           <div className="flex-1 overflow-y-auto p-8">
             <div className="mx-auto w-fit" onClick={(e) => e.stopPropagation()}>
               <DeviceShell width={device.w} height={device.h - 110} headerLabel={meta.projectName}>
-                {tree.length === 0 ? (
-                  <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                    <p className="text-sm font-semibold text-slate-500">이 페이지가 비어 있습니다</p>
-                    <p className="text-[11px] text-slate-400">{display ? "오른쪽 '추가' 탭에서 코너를 추가하세요" : "오른쪽 '추가' 탭에서 컴포넌트를 추가하세요"}</p>
-                    <div className="flex flex-wrap justify-center gap-1.5">
-                      {display
-                        ? CORNER_TYPES.map((ct) => (
-                            <button key={ct.key} onClick={() => addCorner(ct.key)} className="rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary hover:text-primary-foreground">
-                              + {ct.label} 코너
-                            </button>
-                          ))
-                        : ['CARD', 'TEXT', 'IMAGE', 'BUTTON', 'HROW', 'VSTACK'].map((t) => (
-                            <button key={t} onClick={() => add(t)} className="rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary hover:text-primary-foreground">
-                              + {componentDef(t)?.label}
-                            </button>
-                          ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {vtree.map((n) => <EditableNode key={n.id} node={n} meta={meta} selectedId={selectedId} onSelect={selectNode} viewer={viewer} />)}
-                  </div>
-                )}
+                <div className="space-y-2">
+                  {vpreview.map((n) => <EditableNode key={n.id} node={n} meta={meta} selectedId={selectedId} onSelect={selectNode} viewer={viewer} />)}
+                </div>
               </DeviceShell>
             </div>
           </div>

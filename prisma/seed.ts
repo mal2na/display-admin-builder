@@ -22,6 +22,7 @@ import {
   type ComponentType,
   type CornerType,
 } from '../src/lib/display-taxonomy';
+import { EVENT_CORNER_TYPES } from '../src/lib/event-taxonomy';
 import { seedEvents } from './seed-events';
 
 const prisma = new PrismaClient();
@@ -1017,6 +1018,30 @@ async function main() {
       },
     });
     typeIdx += 1;
+  }
+
+  // ── 이벤트·미션 전용 코너 유형 (BO EVT Architecture "코너 유형 정의") — 3계열 14종 ──
+  //   전시 8종과 별개. 코너 유형 관리에서 [이벤트/미션] 상위 분기 하위로 노출된다.
+  let evIdx = 1;
+  for (const ct of EVENT_CORNER_TYPES) {
+    await prisma.cornerType.create({
+      data: {
+        typeId: 'EV' + String(evIdx).padStart(7, '0'),
+        name: ct.name,
+        baseCategory: ct.family, // 계열(혜택상품형/디스플레이형/동작형) — isEventCornerFamily로 도메인 판정
+        typeDetail: ct.name,
+        description: ct.desc,
+        channels: '전체',
+        platforms: '모바일',
+        active: true,
+        status: 'APPROVED',
+        workingVersion: 1,
+        liveVersion: 1,
+        liveAt: new Date(),
+        createdBy: 'marina.kim@sk.com',
+      },
+    });
+    evIdx += 1;
   }
 
   // 배너형·이미지형 = 홈 전반의 '이미지 배너' 유형. 3개 홈에서 이미지 배너 5개를 큐레이션해 샘플로 등록.

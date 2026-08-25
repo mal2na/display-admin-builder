@@ -55,8 +55,9 @@ function promoStatus(r: {
 }
 
 export default async function EventsPage() {
+  // 프로모션 관리 유형 (안내형 + 응모형)
   const rows = await prisma.eventProgram.findMany({
-    where: { parentId: null },
+    where: { parentId: null, programType: { in: ['안내형', '응모형'] } },
     orderBy: { updatedAt: 'desc' },
     select: {
       id: true,
