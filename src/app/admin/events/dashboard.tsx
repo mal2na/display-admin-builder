@@ -99,7 +99,7 @@ function ProjectTile({ p }: { p: ProjectCard }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [menu, setMenu] = useState(false);
-  const href = p.pageId ? `/admin/events/pages/${p.pageId}/builder` : '#';
+  const href = p.pageId ? `/admin/events/pages/${p.pageId}` : '#';
   return (
     <div className="group overflow-hidden rounded-xl border bg-card transition hover:shadow-md">
       <Link href={href} className="block cursor-pointer bg-gradient-to-b from-slate-50 to-slate-100 p-4">
@@ -173,7 +173,8 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
         </thead>
         <tbody className="divide-y">
           {rows.map((p, i) => {
-            const href = p.pageId ? `/admin/events/pages/${p.pageId}/builder` : '#';
+            const href = p.pageId ? `/admin/events/pages/${p.pageId}` : '#';
+            const builderHref = p.pageId ? `/admin/events/pages/${p.pageId}/builder` : '#';
             return (
               <tr key={p.id} className="hover:bg-secondary/30">
                 <td className="whitespace-nowrap px-2.5 py-2.5 text-[12px] text-muted-foreground">{startIndex + i + 1}</td>
@@ -196,7 +197,7 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
                 </td>
                 <td className="px-2.5 py-2.5">
                   <div className="flex items-center justify-end gap-1.5">
-                    <Link href={href} className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-medium hover:bg-secondary"><PencilRuler className="h-3 w-3" /> 편집</Link>
+                    <Link href={builderHref} className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-medium hover:bg-secondary"><PencilRuler className="h-3 w-3" /> 빌더</Link>
                     <button
                       onClick={() => { if (confirm(`"${p.name}" 프로모션을 휴지통으로 옮길까요?`)) start(() => deleteProject(p.id).then(() => router.refresh())); }}
                       disabled={pending}
@@ -233,8 +234,9 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
 
-  const KIND_OPTIONS = ['전체', '이벤트', '미션'];
-  const typeOptions = ['전체', ...(kind === '미션' ? MISSION_TYPES : kind === '이벤트' ? EVENT_TYPES : [...EVENT_TYPES, ...MISSION_TYPES])];
+  const KIND_OPTIONS = ['전체', '이벤트'];
+  // 프로모션 관리 유형 (안내형 + 응모형)
+  const typeOptions = ['전체', '안내형', '응모형'];
   const FIELD_LABEL: Record<string, string> = { name: '프로모션명', programId: '프로모션 ID', author: '등록자', editor: '최근 수정자' };
   const EXPOSURE_OPTIONS = ['전체', '노출', '미노출'];
 

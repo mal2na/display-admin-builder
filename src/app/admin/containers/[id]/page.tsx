@@ -12,9 +12,9 @@ import { Select } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Star, Columns, Archive, RotateCcw, Download } from 'lucide-react';
 import { ContainerDetailTabs } from './container-detail-tabs';
-import { HistoryTable } from './history-table';
 import { TemplateRowActions } from './template-row-actions';
 import { ContainerApprovalBar } from './container-approval-bar';
+import { ContainerRetireBar } from './container-retire-bar';
 import { ContainerInfoEdit } from './container-info-edit';
 
 export const dynamic = 'force-dynamic';
@@ -107,52 +107,6 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
     include: { container: { select: { name: true } }, _count: { select: { templateCorners: true } } },
   });
 
-  // 이력 관리: 이 전시화면(Container) + 소속 Template의 상태 변경 이력
-  const templateIds = container.templates.map((t) => t.id);
-  const tNameById = new Map(container.templates.map((t) => [t.id, t.name]));
-  const logs = await prisma.auditLog.findMany({
-    where: {
-      OR: [
-        { targetType: 'Container', targetId: container.id },
-        { targetType: 'Template', targetId: { in: templateIds } },
-      ],
-    },
-    orderBy: { changedAt: 'desc' },
-    take: 200,
-  });
-  const fmtDate = (d: Date) => d.toISOString().replace('T', ' ').slice(0, 19);
-  const statusOf = (json: string | null) => {
-    if (!json) return null;
-    try {
-      const o = JSON.parse(json);
-      return o?.status ? (DISPLAY_STATUS_LABEL[o.status as DisplayStatusKey] ?? o.status) : null;
-    } catch {
-      return null;
-    }
-  };
-  const admin = (n: number) => `관리자${((n % 3) + 3) % 3 + 1}`; // 관리자1~3 순환
-  const historyRows = logs.map((l, idx) => {
-    const version = logs.length - idx;
-    return {
-      id: l.id,
-      version,
-      approvalId: l.id.slice(-10).toUpperCase(),
-      target: l.targetType === 'Template' ? (tNameById.get(l.targetId) ?? 'Template') : '전시화면',
-      actor: admin(version - 1), // 승인요청자 → 관리자1~3
-      status: APPROVAL_STATUS[l.result] ?? l.result,
-      result: l.result,
-      approver: l.approver ? admin(version) : null, // 승인 담당자 → 관리자1~3
-      requestedAt: fmtDate(l.changedAt),
-      processedAt: fmtDate(l.changedAt),
-      before: statusOf(l.beforeValue),
-      after: statusOf(l.afterValue),
-      beforeJson: l.beforeValue, // '변경 보기' 필드 단위 diff용 원본
-      afterJson: l.afterValue,
-      reason: l.reason,
-    };
-  });
-  // 작성자 표기 — createdBy가 없으면(시드) 최초(가장 오래된) 이력의 작성자로 폴백
-  const firstActor = historyRows.length ? historyRows[historyRows.length - 1].actor : null;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
@@ -169,6 +123,8 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
             ) : (
               <Badge variant="outline">미전시</Badge>
             )}
+            {container.retireStatus === 'RETIRED' && <Badge variant="destructive">폐기됨</Badge>}
+            {container.retireStatus === 'REVIEW' && <Badge variant="warning">폐기 승인 대기</Badge>}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             실제 반영 기준: Container + Template + 고객 상태 + 노출 조건
@@ -180,11 +136,13 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
               <Columns className="h-3.5 w-3.5" /> 조건그룹 비교
             </Button>
           </Link>
-          <form action={toggleStatus}>
-            <Button type="submit" variant="outline" size="sm">
-              {container.status === 'active' ? '미전시로 전환' : '전시로 전환'}
-            </Button>
-          </form>
+          {container.retireStatus !== 'RETIRED' && (
+            <form action={toggleStatus}>
+              <Button type="submit" variant="outline" size="sm">
+                {container.status === 'active' ? '미전시로 전환' : '전시로 전환'}
+              </Button>
+            </form>
+          )}
         </div>
       </div>
 
@@ -198,9 +156,17 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
         approvalRequestedAt={container.approvalRequestedAt ? container.approvalRequestedAt.toISOString() : null}
       />
 
+      {/* 폐기(삭제 대체) 승인 절차 — 물리 삭제 대신 승인 받아 미전시(soft-delete) */}
+      <ContainerRetireBar
+        id={container.id}
+        retireStatus={container.retireStatus}
+        retireReason={container.retireReason}
+        retireRequestedAt={container.retireRequestedAt ? container.retireRequestedAt.toISOString() : null}
+        retiredBy={container.retiredBy}
+        retiredAt={container.retiredAt ? container.retiredAt.toISOString() : null}
+      />
+
       <ContainerDetailTabs
-        historyCount={logs.length}
-        history={<HistoryTable rows={historyRows} />}
         info={
           <div className="space-y-6">
       {/* 기본 정보 */}
@@ -240,7 +206,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
             {container.noEndDate ? '종료 없음' : container.endAt ? container.endAt.toISOString().slice(0, 16).replace('T', ' ') : '상시'}
           </Row>
           <Row label="미리보기 URL">{container.previewUrl ?? '—'}</Row>
-          <Row label="등록자">{firstActor ?? '—'}</Row>
+          <Row label="등록자">관리자1</Row>
           <Row label="등록일">{container.createdAt.toISOString().slice(0, 16).replace('T', ' ')}</Row>
           <Row label="최근 수정">{container.updatedAt.toISOString().slice(0, 16).replace('T', ' ')}</Row>
         </div>

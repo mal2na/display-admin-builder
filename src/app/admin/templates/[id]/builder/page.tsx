@@ -145,6 +145,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
         name: ca.atom.name,
         atomType: ca.atom.atomType,
         isRequired: ca.isRequired,
+        visible: ca.visible,
         menuRole: ca.menuRole,
         content: ca.atom.content,
         imageUrl: ca.atom.imageUrl,

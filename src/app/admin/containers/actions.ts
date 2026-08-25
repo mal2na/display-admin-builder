@@ -185,7 +185,71 @@ export async function reopenContainerApproval(id: string) {
 
 export async function setContainerStatus(id: string, status: string) {
   if (!(CONTAINER_STATUSES as readonly string[]).includes(status)) throw new Error('유효한 상태가 아닙니다.');
+  const c = await prisma.container.findUnique({ where: { id }, select: { retireStatus: true } });
+  if (c?.retireStatus === 'RETIRED') throw new Error('폐기된 컨테이너는 전시할 수 없습니다. 먼저 폐기를 취소(복구)해 주세요.');
   await prisma.container.update({ where: { id }, data: { status } });
+  revalidatePath('/admin/containers');
+  revalidatePath(`/admin/containers/${id}`);
+}
+
+// ── 컨테이너 폐기(삭제 대체) 승인 워크플로우 ──
+//   물리 삭제 없음. 폐기 요청 → BSS 승인 시 미전시(inactive) + 폐기됨. 반려 시 정상 복귀. (정책: Container soft-delete)
+
+// 폐기 요청 (정상 → 폐기 승인 대기). 사유 필수.
+export async function requestContainerRetire(id: string, reason: string) {
+  const r = reason?.trim();
+  if (!r) throw new Error('폐기 사유를 입력해 주세요.');
+  const c = await prisma.container.findUnique({ where: { id }, select: { retireStatus: true } });
+  if (!c) throw new Error('컨테이너를 찾을 수 없습니다.');
+  if (c.retireStatus) throw new Error('이미 폐기 요청/처리된 컨테이너입니다.');
+  await prisma.container.update({ where: { id }, data: { retireStatus: 'REVIEW', retireReason: r, retireRequestedAt: new Date() } });
+  await writeContainerAudit({ id, before: { retireStatus: null }, after: { retireStatus: 'REVIEW' }, reason: `폐기 요청 · ${r}`, result: 'RETIRE_REQUESTED' });
+  revalidatePath('/admin/containers');
+  revalidatePath(`/admin/containers/${id}`);
+}
+
+// 폐기 요청 취소 (폐기 승인 대기 → 정상). 운영자 스스로 철회.
+export async function cancelContainerRetire(id: string) {
+  const c = await prisma.container.findUnique({ where: { id }, select: { retireStatus: true } });
+  if (!c) throw new Error('컨테이너를 찾을 수 없습니다.');
+  if (c.retireStatus !== 'REVIEW') throw new Error('폐기 승인 대기 상태에서만 취소할 수 있습니다.');
+  await prisma.container.update({ where: { id }, data: { retireStatus: null, retireReason: null, retireRequestedAt: null } });
+  await writeContainerAudit({ id, before: { retireStatus: 'REVIEW' }, after: { retireStatus: null }, reason: '폐기 요청 취소', result: 'RETIRE_CANCELED' });
+  revalidatePath('/admin/containers');
+  revalidatePath(`/admin/containers/${id}`);
+}
+
+// 폐기 승인 (폐기 승인 대기 → 폐기됨). 미전시(inactive)로 내린다. BSS 처리.
+export async function approveContainerRetire(id: string) {
+  const c = await prisma.container.findUnique({ where: { id }, select: { retireStatus: true } });
+  if (!c) throw new Error('컨테이너를 찾을 수 없습니다.');
+  if (c.retireStatus !== 'REVIEW') throw new Error('폐기 승인 대기 상태가 아닙니다.');
+  await prisma.container.update({ where: { id }, data: { retireStatus: 'RETIRED', retiredBy: APPROVAL_ACTOR, retiredAt: new Date(), status: 'inactive' } });
+  await writeContainerAudit({ id, before: { retireStatus: 'REVIEW' }, after: { retireStatus: 'RETIRED', status: 'inactive' }, approver: APPROVAL_ACTOR, reason: '폐기 승인 — 미전시 처리(soft-delete)', result: 'RETIRED' });
+  revalidatePath('/admin/containers');
+  revalidatePath(`/admin/containers/${id}`);
+}
+
+// 폐기 반려 (폐기 승인 대기 → 정상). 사유 필수. BSS 처리.
+export async function rejectContainerRetire(id: string, reason: string) {
+  const r = reason?.trim();
+  if (!r) throw new Error('반려 사유를 입력해 주세요.');
+  const c = await prisma.container.findUnique({ where: { id }, select: { retireStatus: true } });
+  if (!c) throw new Error('컨테이너를 찾을 수 없습니다.');
+  if (c.retireStatus !== 'REVIEW') throw new Error('폐기 승인 대기 상태가 아닙니다.');
+  await prisma.container.update({ where: { id }, data: { retireStatus: null, retireReason: r, retireRequestedAt: null } });
+  await writeContainerAudit({ id, before: { retireStatus: 'REVIEW' }, after: { retireStatus: null }, reason: `폐기 반려 · ${r}`, approver: APPROVAL_ACTOR, result: 'RETIRE_REJECTED' });
+  revalidatePath('/admin/containers');
+  revalidatePath(`/admin/containers/${id}`);
+}
+
+// 폐기 취소/복구 (폐기됨 → 정상). 폐기된 컨테이너를 되살린다(미전시 상태 유지, 전시는 별도 전환).
+export async function restoreContainerRetire(id: string) {
+  const c = await prisma.container.findUnique({ where: { id }, select: { retireStatus: true } });
+  if (!c) throw new Error('컨테이너를 찾을 수 없습니다.');
+  if (c.retireStatus !== 'RETIRED') throw new Error('폐기된 컨테이너만 복구할 수 있습니다.');
+  await prisma.container.update({ where: { id }, data: { retireStatus: null, retireReason: null, retiredBy: null, retiredAt: null, retireRequestedAt: null } });
+  await writeContainerAudit({ id, before: { retireStatus: 'RETIRED' }, after: { retireStatus: null }, reason: '폐기 복구(미전시 유지)', result: 'RETIRE_RESTORED' });
   revalidatePath('/admin/containers');
   revalidatePath(`/admin/containers/${id}`);
 }

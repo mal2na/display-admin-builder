@@ -8,6 +8,13 @@ import { TEMPLATE_BY_KEY, insertNodes, createsStateFor, toPromotionSkeleton, PRO
 
 const ACTOR = 'marina.kim@sk.com';
 
+// 프로모션 기본 유의사항 문구 (신규 생성 시 채워짐 — 운영자가 수정 가능)
+export const DEFAULT_NOTICE = [
+  '- 기본 배송비는 무료이며, 지역에 따라 추가 비용이 발생할 수 있습니다.',
+  '- 배송은 택배 사정으로 늦어질 수 있습니다.',
+  '- 교환이나 환불을 하시면 왕복 기본 배송비 7,000원이 청구됩니다. (환불 금액에서 차감되며, 경우에 따라 직접 송금해 주셔야 합니다.)',
+].join('\n');
+
 function rpEditor(pageId: string) {
   revalidatePath(`/admin/events/pages/${pageId}/builder`);
 }
@@ -63,6 +70,8 @@ export async function createProject(formData: FormData) {
       ogDescription: S('ogDescription') || null,
       ogSiteName: S('ogSiteName') || null,
       ogImage: S('ogImage') || null,
+      // 유의사항 기본 문구 (운영자가 상세에서 수정 가능)
+      notice: DEFAULT_NOTICE,
     },
   });
   const page = await prisma.eventPage.create({
@@ -78,7 +87,8 @@ export async function createProject(formData: FormData) {
     .catch(() => {});
 
   revalidatePath('/admin/events');
-  redirect(`/admin/events/pages/${page.id}/builder`);
+  // 등록 후에는 상세(기본 정보) 화면으로 — 프레임/메타 입력 → 이후 '빌더로 본문 구성'
+  redirect(`/admin/events/pages/${page.id}`);
 }
 
 // 휴지통 = 소프트삭제 (컨테이너 정책: 삭제하지 않고 상태로 관리). status=inactive로 내린다.
@@ -294,6 +304,16 @@ export async function updateProgramInfo(programId: string, formData: FormData) {
       ogDescription: S('ogDescription') || null,
       ogSiteName: S('ogSiteName') || null,
       ogImage: S('ogImage') || null,
+      // 상세 안내(고정 노출) — 보상/대상/이용방법/유의사항/문의 (안내형)
+      reward: S('reward') || null,
+      target: S('target') || null,
+      usageSteps: S('usageSteps') || null,
+      notice: S('notice') || null,
+      contact: S('contact') || null,
+      // 응모형 전용 (안내형이면 폼에 없으므로 null)
+      ctaLabel: programType === '응모형' ? (S('ctaLabel') || '응모하기') : null,
+      ctaUrl: programType === '응모형' ? (S('ctaUrl') || null) : null,
+      entryConfig: programType === '응모형' ? (S('entryConfig') || null) : null,
     },
   });
   await prisma.auditLog

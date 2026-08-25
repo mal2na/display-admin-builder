@@ -451,12 +451,126 @@ const SLOT_META: Record<string, { icon: string; tone: string }> = {
   SLOT_REWARD: { icon: '🎁', tone: 'border-slate-300 bg-slate-50 text-slate-500' },
   SLOT_CTA: { icon: '🔘', tone: 'border-indigo-300 bg-indigo-50 text-indigo-600' },
 };
+// 등록정보(상세 image1)에서 관리되는 고정 영역 표식
+function RegTag() {
+  return (
+    <span className="absolute right-1.5 top-1.5 z-10 rounded bg-white/85 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-slate-500 ring-1 ring-black/5">
+      등록정보
+    </span>
+  );
+}
+
 function SlotNode({ type, p, viewer }: { type: string; p: Record<string, any>; viewer?: Viewer }) {
   const meta = SLOT_META[type] ?? SLOT_META.SLOT_HEADER;
   // CTA는 로그인 상태에 따라 라벨이 자동 전환된다 (CTA 라벨 매트릭스: 비로그인 → 로그인 유도 CTA)
   const isCta = type === 'SLOT_CTA';
   const guest = viewer === '비로그인';
   const ctaLabel = guest ? p.guestLabel || GUEST_CTA_LABEL : p.label || MEMBER_CTA_LABEL;
+
+  // 헤더 이미지(등록정보) — image2 상단 이미지
+  if (type === 'SLOT_THUMB') {
+    return (
+      <div className="relative">
+        <RegTag />
+        {p.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={p.imageUrl} alt={p.alt ?? ''} className="h-40 w-full rounded-xl object-cover" />
+        ) : (
+          <div className="flex h-40 w-full items-center justify-center rounded-xl bg-slate-100 text-[11px] font-medium text-slate-400">
+            Header 이미지 · 등록정보에서 관리
+          </div>
+        )}
+      </div>
+    );
+  }
+  // 제목/부제/기간(등록정보) — 타이틀
+  if (type === 'SLOT_HEADER') {
+    return (
+      <div className="relative pr-14">
+        <RegTag />
+        <h2 className="text-[18px] font-bold leading-snug text-slate-900">{p.title || '프로모션 제목'}</h2>
+        {p.subtitle && <p className="mt-0.5 text-[13px] text-slate-500">{p.subtitle}</p>}
+        {p.schedule && (
+          <span className="mt-1.5 inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
+            프로모션 기간 · {p.schedule}
+          </span>
+        )}
+      </div>
+    );
+  }
+  // 문의(등록정보) — 안내형 하단 고지
+  if (type === 'SLOT_CONTACT') {
+    return (
+      <div className="relative rounded-xl border border-slate-100 p-3.5">
+        <RegTag />
+        <p className="mb-1.5 text-[13px] font-bold text-slate-700">{p.label || '문의'}</p>
+        <p className="whitespace-pre-line text-[11px] leading-relaxed text-slate-500">{p.text || '문의처 (등록정보에서 관리)'}</p>
+      </div>
+    );
+  }
+  // 일정/보상/대상 요약 카드(등록정보) — image2 info card
+  if (type === 'SLOT_SUMMARY') {
+    const rows: [string, string][] = [
+      ['일정', p.schedule || '—'],
+      ['보상', p.reward || '—'],
+      ['대상', p.target || '—'],
+    ];
+    return (
+      <div className="relative rounded-xl bg-slate-50 p-3.5 ring-1 ring-slate-100">
+        <RegTag />
+        <dl className="space-y-1.5">
+          {rows.map(([k, v]) => (
+            <div key={k} className="flex gap-3 text-[12px]">
+              <dt className="w-9 shrink-0 text-slate-400">{k}</dt>
+              <dd className="min-w-0 flex-1 font-medium text-slate-700">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    );
+  }
+  // 이용 방법 스텝(등록정보) — image2 원형 스텝 리스트
+  if (type === 'SLOT_GUIDE') {
+    const steps: { title?: string; desc?: string }[] = Array.isArray(p.steps) ? p.steps : [];
+    return (
+      <div className="relative rounded-xl border border-slate-100 p-3.5">
+        <RegTag />
+        <div className="space-y-3">
+          {steps.length === 0 ? (
+            <p className="text-[12px] text-slate-400">이용 방법 (등록정보에서 관리)</p>
+          ) : steps.map((s, i) => (
+            <div key={i} className="flex items-start gap-2.5">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-500">{i + 1}</span>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-slate-800">{s.title}</p>
+                {s.desc && <p className="text-[11px] text-slate-400">{s.desc}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  // 유의사항(등록정보) — image2 하단 고지
+  if (type === 'SLOT_NOTICE') {
+    return (
+      <div className="relative rounded-xl bg-slate-50 p-3.5 ring-1 ring-slate-100">
+        <RegTag />
+        <p className="mb-1.5 text-[13px] font-bold text-slate-700">{p.label || '유의사항'}</p>
+        <p className="whitespace-pre-line text-[11px] leading-relaxed text-slate-500">{p.text || '유의사항 (등록정보에서 관리)'}</p>
+      </div>
+    );
+  }
+  // 본문 영역 안내 — 편집 가능 중간 영역이 비었을 때
+  if (type === 'SLOT_BODYHINT') {
+    return (
+      <div className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-3 py-8 text-center">
+        <p className="text-[12px] font-semibold text-primary">본문 영역 (편집 가능)</p>
+        <p className="mt-0.5 text-[10px] text-primary/70">오른쪽 ‘추가’ 또는 왼쪽 ‘＋ 코너 추가’로 본문을 구성하세요</p>
+      </div>
+    );
+  }
+
   if (isCta) {
     return (
       <div className="relative">
@@ -532,6 +646,10 @@ export function renderNodeBody(type: string, props: Record<string, any>, childre
     case 'SLOT_CONSENT':
     case 'SLOT_REWARD':
     case 'SLOT_CTA':
+    case 'SLOT_SUMMARY':
+    case 'SLOT_GUIDE':
+    case 'SLOT_CONTACT':
+    case 'SLOT_BODYHINT':
       return <SlotNode type={type} p={p} viewer={viewer} />;
     default:
       return <div className="rounded border border-dashed border-slate-300 p-2 text-[11px] text-slate-400">{type}</div>;
