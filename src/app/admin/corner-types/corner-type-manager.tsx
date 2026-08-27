@@ -16,7 +16,8 @@ import {
   componentTypesForCorner,
   componentLayoutDetails,
   PRODUCT_SORT_OPTIONS,
-  CVM_FIELDS,
+  REC_SOURCE_METHODS,
+  REC_SOURCE_INFO,
 } from '@/lib/display-taxonomy';
 import { isEventCornerFamily } from '@/lib/event-taxonomy';
 import { cn } from '@/lib/utils';
@@ -61,9 +62,10 @@ export type CornerTypeRow = {
   defaultMinItems: number | null;
   defaultMaxItems: number | null;
   defaultSortStrategy: string | null;
+  defaultRecSource: string | null; // 기본 추천 수급 방식 (상품형·개인화 추천형)
   defaultMoreButton: boolean;
   defaultMoreButtonLabel: string | null;
-  cvmFields: string; // CVM 연동 필드 keys csv
+  cvmFields: string; // 고객정보 연동 필드 keys csv
   userCustomizable?: boolean;
   userMinItems?: number | null;
   userMaxItems?: number | null;
@@ -104,6 +106,7 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   defaultMinItems: null,
   defaultMaxItems: null,
   defaultSortStrategy: null,
+  defaultRecSource: null,
   defaultMoreButton: false,
   defaultMoreButtonLabel: null,
   cvmFields: '',
@@ -509,8 +512,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const [bigBanner, setBigBanner] = useState(row.bigBanner ?? false); // ④ 빅배너 구분자
   const [active, setActive] = useState(row.active);
   const [moreDefault, setMoreDefault] = useState(row.defaultMoreButton ?? false); // 더보기 기본 ON(타입-레벨)
-  const [cvmSel, setCvmSel] = useState<Set<string>>(new Set(row.cvmFields ? row.cvmFields.split(',').filter(Boolean) : [])); // CVM 연동 필드
-  const toggleCvm = (k: string) => setCvmSel((prev) => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
   // FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 유형에서
   const [userCustom, setUserCustom] = useState(row.userCustomizable ?? false);
   const [userMin, setUserMin] = useState(row.userMinItems != null ? String(row.userMinItems) : '');
@@ -607,9 +608,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
     >
       <div className="flex items-center gap-2 border-b pb-3">
         <h2 className="text-sm font-semibold">{isNew ? '코너 유형 등록' : `코너 유형 수정 · ${row.typeId}`}</h2>
-        <button type="button" onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground" title="닫기">
-          <X className="h-4 w-4" />
-        </button>
       </div>
 
       {/* 기본 정보 */}
@@ -713,35 +711,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
                   </label>
                 ))}
               </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                배열은 <b>형태(레이아웃)</b>만 정합니다. <b>노출 개수(몇 개를 보여줄지)</b>는 유형에서 고정하지 않고, <b>코너를 배치할 때(빌더)에서 최대 노출 개수로 추가·조정</b>할 수 있어요.
+              </p>
             </div>
 
-            {/* ④ 빅배너 구분자 — 상품형 모듈에만 노출(그 외 유형은 빅배너 개념 없음) */}
-            <input type="hidden" name="bigBanner" value={bigBannerOn ? '1' : ''} />
-            {canBigBanner && (
-              <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-                <StepHead n={4} title="빅배너 구분자" hint="배열 위에 상단 빅배너를 얹을지 (배열과 별개)" />
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { on: false, label: '없음' },
-                    { on: true, label: '빅배너 있음' },
-                  ].map((o) => (
-                    <button
-                      key={o.label}
-                      type="button"
-                      onClick={() => setBigBanner(o.on)}
-                      className={cn(
-                        'inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium transition',
-                        bigBanner === o.on
-                          ? 'border-indigo-600 bg-indigo-600 text-white'
-                          : 'border-border text-muted-foreground hover:border-indigo-300',
-                      )}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* 빅배너 구분자 제거 — 빅배너는 유형 식별자가 아니라 코너 인스턴스의 부속 옵션(빌더의 '빅배너 위치 상/하단')으로만 둔다. */}
+            <input type="hidden" name="bigBanner" value="" />
 
             {/* 결과 요약 */}
             <div className="rounded-md border border-dashed bg-slate-50 px-3 py-2 text-[11px] text-muted-foreground">
@@ -827,7 +803,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
             </p>
             <ul className="space-y-1.5 text-[11px] leading-relaxed text-slate-500">
               {[
-                ['타이틀·서브타이틀', '미리보기 상단에 표시돼요 (서브타이틀은 타이틀 없이 못 켜요)'],
+                ['타이틀·서브타이틀', '미리보기 상단에 표시돼요 · 빌더에서도 코너별로 수정 가능 (서브타이틀은 타이틀 없이 못 켜요)'],
                 ['CTA 노출', '아래 ‘노출·구성 기본값’에서 기본값 → 빌더에서 코너별로 문구·링크 조정'],
                 ['미 노출 기준', '빌더에서 ‘재고 소진 시’ 등 숨김 조건으로 쓰여요'],
               ].map(([k, v]) => (
@@ -844,6 +820,36 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
           </div>
           </div>
       </section>
+
+      {/* 추천 수급 방식 — 추천 슬롯 유형(상품형·혜택·오퍼형·콘텐츠 안내형)에만. 상태 안내형·프로필·바코드 등 고객정보 카드는 제외 (CVM=추천이지 고객정보 아님) */}
+      {['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(base) && (
+      <section className="overflow-hidden rounded-md border border-violet-200">
+        <div className="flex items-center gap-2 border-b border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-xs font-semibold text-violet-700">
+          추천 수급 방식 · 기본값
+          <span className="font-normal text-violet-400">이 코너를 ‘무엇을 기준으로’ 채울지의 기본값 · 실제 선택은 빌더에서 코너별로</span>
+        </div>
+        <div className="space-y-2 p-3">
+          <select name="defaultRecSource" defaultValue={row.defaultRecSource ?? ''} className="h-8 w-full max-w-xs rounded-md border border-violet-200 bg-background px-2 text-xs">
+            <option value="">미지정 (직접 구성한 항목을 그대로 노출)</option>
+            {REC_SOURCE_METHODS.map((s) => (
+              <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
+            ))}
+          </select>
+          <p className="rounded-md bg-violet-50/70 px-2.5 py-1.5 text-[10px] leading-relaxed text-violet-700/90">
+            추천은 <b>통합채널이 만드는 게 아니라</b>, CVM(세일즈포스 기반 추천 시스템)이 후보·순위·근거를 내려주면 화면이 그 순서대로 전시합니다. 운영자는 최대 노출 개수·정렬·대체안(폴백)만 정해요. <b>여기선 기본값만</b> 두고, 실제 방식은 코너를 배치할 때 빌더에서 고릅니다.
+          </p>
+          {/* 각 수급 방식 설명 (SSOT: REC_SOURCE_INFO) */}
+          <dl className="space-y-1 rounded-md bg-violet-50/50 p-2.5 text-[10px] leading-relaxed">
+            {REC_SOURCE_METHODS.map((k) => (
+              <div key={k} className="flex gap-1.5">
+                <dt className="w-24 shrink-0 font-semibold text-violet-700">{k} <span className="font-normal text-violet-400">· {REC_SOURCE_INFO[k].tag}</span></dt>
+                <dd className="min-w-0 flex-1 text-muted-foreground">{REC_SOURCE_INFO[k].how}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+      )}
 
       {/* 노출·구성 기본값 (빌더 상속) — 정렬/CTA 기본값. 노출 개수는 빌더에서만 조정(타입에 두지 않음). */}
       {isListType && (
@@ -882,43 +888,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
         </section>
       )}
 
-      {/* CVM 연동 필드 — 이 유형이 CVM/BSS에서 자동으로 가져오는 회원 데이터(어드민 입력 X, 출처 표시) */}
-      <section className="overflow-hidden rounded-md border">
-        <div className="flex items-center gap-2 border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
-          <Info className="h-3.5 w-3.5 text-sky-500" /> CVM 연동 필드
-          <span className="font-normal text-slate-400">회원 정보는 어드민이 입력하지 않고 CVM에서 가져옵니다 · FN-EVTMSN-FORM-001</span>
-        </div>
-        <div className="space-y-2 p-3">
-          <p className="text-[11px] text-muted-foreground">이 코너 유형이 CVM에서 가져오는 항목을 선택하세요. 빌더에서 해당 항목은 “CVM 연동”으로 표시됩니다.</p>
-          <div className="flex flex-wrap gap-1.5">
-            {CVM_FIELDS.map((f) => {
-              const on = cvmSel.has(f.key);
-              return (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => toggleCvm(f.key)}
-                  className={cn(
-                    'inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
-                    on ? 'border-sky-400 bg-sky-50 text-sky-700' : 'border-border text-muted-foreground hover:border-sky-300',
-                  )}
-                >
-                  {on && <Check className="h-3 w-3" />}
-                  {f.label}
-                  <span className="text-[9px] text-slate-400">{f.category}</span>
-                </button>
-              );
-            })}
-          </div>
-          {/* 폼 제출용 — 선택된 키만 hidden input으로 (sr-only 체크박스 포커스 스크롤 튐 제거) */}
-          {[...cvmSel].map((k) => (
-            <input key={k} type="hidden" name="cvmFields" value={k} />
-          ))}
-          {cvmSel.size > 0 && (
-            <p className="text-[10px] text-sky-600">선택 {cvmSel.size}개 — 빌더에서 이 유형으로 코너를 만들면 해당 값은 CVM에서 회원별로 채워집니다(고정값 입력 불가).</p>
-          )}
-        </div>
-      </section>
+      {/* (제거됨) 고객정보 연동 필드 — 코너 유형 단계에선 실제 바인딩을 하지 않아 삭제.
+          실제 고객정보 연동은 빌더의 아톰 단계('고객정보 가져오기' = @cvm:key)에서 처리한다. */}
 
       {/* FO 사용자 설정 — 선택형/업무 진입형(메뉴·탭) 유형에서. 고객이 직접 편집 + 노출 개수 범위 */}
       {(base === '업무 진입형' || compValid === '선택형') && (
@@ -1079,6 +1050,8 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       {label}
     </div>
   );
+  // 가로형(2.5배열) 카드 비율 미리보기 뷰 — 1:1(상품)/3:4(포스터)/4:3(와이드) 전환
+  const [shapeView, setShapeView] = useState<'1:1' | '3:4' | '4:3'>('3:4');
   const d = detail ?? '';
   const c = component ?? '';
   const has = (...keys: string[]) => keys.some((k) => d.includes(k));
@@ -1097,7 +1070,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
         <div className="flex-1 space-y-1.5">
           <Slot label="텍스트" className="h-4 w-3/4 justify-start" />
-          <Slot label="정보값" className="h-3 w-1/2 justify-start" />
+          <Slot label="설명" className="h-3 w-1/2 justify-start" />
         </div>
         <Slot label="이미지" className="h-12 w-12 shrink-0 rounded-full" />
       </div>
@@ -1108,7 +1081,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         <div className="flex-1 space-y-1.5">
           <Slot label="텍스트" className="h-3 w-1/3 justify-start" />
           <Slot label="텍스트" className="h-4 w-3/4 justify-start" />
-          <Slot label="정보값" className="h-3 w-1/2 justify-start" />
+          <Slot label="설명" className="h-3 w-1/2 justify-start" />
         </div>
         <Slot label="이미지" className="h-16 w-16 shrink-0" />
       </div>
@@ -1135,7 +1108,38 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         ))}
       </div>
     );
-  } else if (isProduct || has('2.5', '가로', '1.5', '단일강조')) {
+  } else if (has('2.5')) {
+    // 가로형(2.5배열) — 카드 비율 1:1(상품)/3:4(포스터)/4:3(와이드)을 뷰 토글로 전환해 미리본다(빌더에서 코너별 선택).
+    const ratioCls = shapeView === '1:1' ? 'aspect-square' : shapeView === '4:3' ? 'aspect-[4/3]' : 'aspect-[3/4]';
+    const cardW = shapeView === '4:3' ? 'w-[52%]' : 'w-[42%]';
+    body = (
+      <div className="space-y-2">
+        <div className="flex items-center gap-1">
+          <span className="mr-1 text-[10px] font-medium text-slate-400">카드 비율</span>
+          {(['1:1', '3:4', '4:3'] as const).map((sh) => (
+            <button
+              key={sh}
+              type="button"
+              onClick={() => setShapeView(sh)}
+              className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold transition', shapeView === sh ? 'border-primary bg-primary text-primary-foreground' : 'border-slate-300 text-slate-500 hover:bg-slate-100')}
+            >
+              {sh}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 overflow-hidden">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className={cn('shrink-0 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5', cardW)}>
+              <Slot label="이미지" className={cn('w-full', ratioCls)} />
+              <Slot label="텍스트" className="h-3 w-full justify-start" />
+              <Slot label="가격" className="h-3 w-2/3 justify-start" />
+            </div>
+          ))}
+        </div>
+        <p className="text-[9px] leading-relaxed text-slate-400">같은 가로형(2.5배열)이라도 콘텐츠에 따라 비율이 달라요(1:1 상품·3:4 포스터·4:3 와이드). 실제 비율은 빌더에서 코너별로 선택합니다.</p>
+      </div>
+    );
+  } else if (isProduct || has('가로', '1.5', '단일강조')) {
     body = (
       <div className="flex gap-2 overflow-hidden">
         {[0, 1, 2].map((i) => (
@@ -1154,13 +1158,25 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         <Slot label="텍스트" className="h-3 w-1/4 justify-start" />
         <Slot label="바코드" className="h-12 w-full" />
         <div className="flex justify-between gap-2">
-          <Slot label="정보값" className="h-3 w-1/2 justify-start" />
+          <Slot label="설명" className="h-3 w-1/2 justify-start" />
           <Slot label="배지" className="h-3 w-12" />
         </div>
       </div>
     );
-  } else if (base === '상태 안내형' || has('아이콘형', '금액형', '사용량형', '프로필형', '요약')) {
-    // 마이.png 상태 카드(아이콘형): 값(Value) + 상태(Status) + 라벨(Label) + 우측 icon
+  } else if (has('프로필')) {
+    // 고정·필수 노출형·정보형·프로필형: [원형 사진][이름·번호] … [CTA] (my-profile.png 기준)
+    body = (
+      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <Slot label="사진" className="h-9 w-9 shrink-0 rounded-full" />
+        <div className="flex-1 space-y-1">
+          <Slot label="이름" className="h-3 w-1/2 justify-start" />
+          <Slot label="설명" className="h-3 w-2/3 justify-start" />
+        </div>
+        <Slot label="버튼(CTA)" className="h-6 w-20 rounded-full" />
+      </div>
+    );
+  } else if (base === '상태 안내형' || has('아이콘', '금액형', '사용량형', '요약')) {
+    // 마이.png 상태 카드(아이콘/이미지형): 값(Value) + 상태(Status) + 라벨(Label) + 우측 icon/이미지
     body = (
       <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
         <div className="flex-1 space-y-1.5">
@@ -1212,7 +1228,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
             <Slot label="이미지" className="h-9 w-9 shrink-0 rounded-full" />
             <div className="flex-1 space-y-1">
               <Slot label="텍스트" className="h-3 w-3/4 justify-start" />
-              <Slot label="정보값" className="h-3 w-1/2 justify-start" />
+              <Slot label="설명" className="h-3 w-1/2 justify-start" />
             </div>
           </div>
         ))}

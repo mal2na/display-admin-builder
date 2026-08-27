@@ -217,7 +217,7 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
 }
 
 export function EventsDashboard({ projects, deployRows, trashRows }: { projects: ProjectCard[]; deployRows: DeployRow[]; trashRows: TrashRow[] }) {
-  const [section] = useState<Section>('projects'); // 섹션 탭 제거 → 프로모션 목록만
+  const [section, setSection] = useState<Section>('projects'); // 프로모션 목록 ↔ 휴지통 전환
   const [view, setView] = useState<'card' | 'table'>('table');
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -312,12 +312,23 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
               subtitle={`총 ${projects.length}개의 프로모션이 있습니다.`}
               className="mb-4"
               action={
-                <Link
-                  href="/admin/events/new"
-                  className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4" /> 새 프로모션
-                </Link>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSection('trash')}
+                    className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm font-medium hover:bg-secondary"
+                    title="휴지통 — 삭제한 프로모션 복원/영구삭제"
+                  >
+                    <Trash2 className="h-4 w-4" /> 휴지통
+                    {trashRows.length > 0 && <span className="ml-0.5 rounded-full bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">{trashRows.length}</span>}
+                  </button>
+                  <Link
+                    href="/admin/events/new"
+                    className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Plus className="h-4 w-4" /> 새 프로모션
+                  </Link>
+                </div>
               }
             />
 
@@ -454,7 +465,7 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
         )}
 
       {section === 'deploy' && <DeployView rows={deployRows} />}
-      {section === 'trash' && <TrashView rows={trashRows} />}
+      {section === 'trash' && <TrashView rows={trashRows} onBack={() => setSection('projects')} />}
     </div>
   );
 }
@@ -538,14 +549,17 @@ function DeployView({ rows }: { rows: DeployRow[] }) {
 }
 
 // ── 휴지통 — 복원 / 영구 삭제 ──
-function TrashView({ rows }: { rows: TrashRow[] }) {
+function TrashView({ rows, onBack }: { rows: TrashRow[]; onBack: () => void }) {
   const [pending, start] = useTransition();
   const router = useRouter();
   return (
     <div>
+      <button onClick={onBack} className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ChevronLeft className="h-4 w-4" /> 프로모션 목록으로
+      </button>
       <div className="mb-6">
         <h1 className="text-2xl font-bold">휴지통</h1>
-        <p className="mt-1 text-sm text-muted-foreground">삭제한 프로젝트는 여기서 복원하거나 영구 삭제할 수 있습니다.</p>
+        <p className="mt-1 text-sm text-muted-foreground">삭제한 프로모션은 여기서 복원하거나 영구 삭제할 수 있습니다.</p>
       </div>
       {rows.length === 0 ? (
         <div className="flex h-64 flex-col items-center justify-center text-center text-muted-foreground">

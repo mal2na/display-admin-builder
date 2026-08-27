@@ -5,11 +5,13 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { defaultPropsFor, componentDef, cornerAllows, CORNER_TYPE_BY_KEY, componentLabel, GROUP_CORNER } from '@/lib/event-components';
 import { TEMPLATE_BY_KEY, insertNodes, createsStateFor, toPromotionSkeleton, PROMOTION_CORNER_PRESET_BY_KEY, type NodeSpec } from '@/lib/event-templates';
+import type { CommentExposureResult } from './pages/[pageId]/comment-manager';
 
 const ACTOR = 'marina.kim@sk.com';
 
 // 프로모션 기본 유의사항 문구 (신규 생성 시 채워짐 — 운영자가 수정 가능)
-export const DEFAULT_NOTICE = [
+// 'use server' 파일은 async 함수만 export 가능 → 모듈 내부 상수로만 사용(비export)
+const DEFAULT_NOTICE = [
   '- 기본 배송비는 무료이며, 지역에 따라 추가 비용이 발생할 수 있습니다.',
   '- 배송은 택배 사정으로 늦어질 수 있습니다.',
   '- 교환이나 환불을 하시면 왕복 기본 배송비 7,000원이 청구됩니다. (환불 금액에서 차감되며, 경우에 따라 직접 송금해 주셔야 합니다.)',
@@ -392,4 +394,94 @@ export async function restoreEventVersion(pageId: string, versionId: string) {
 export async function reorderNodes(pageId: string, orderedIds: string[]) {
   await prisma.$transaction(orderedIds.map((id, i) => prisma.eventNode.update({ where: { id }, data: { order: i } })));
   rpEditor(pageId);
+}
+
+// SB-EVT-050 5·3-14 댓글 노출여부 일괄 변경 — 선택한 댓글의 현재 노출여부를 '토글'한다.
+//  (노출 → 미노출, 미노출 → 노출). 결과를 노출전환·미노출전환·실패로 분류해 변경내역 팝업에 표시.
+//  결과 타입은 클라이언트(comment-manager)에서 정의 — 'use server' 파일은 함수만 export 가능.
+export async function toggleCommentsExposure(
+  pageId: string,
+  programId: string,
+  ids: string[],
+): Promise<CommentExposureResult> {
+  const result: CommentExposureResult = { toExposed: [], toHidden: [], failed: [] };
+  if (!ids.length) return result;
+  const rows = await prisma.eventComment.findMany({
+    where: { id: { in: ids }, programId },
+    select: { id: true, content: true, exposed: true },
+  });
+  const found = new Set(rows.map((r) => r.id));
+  // 조회되지 않은 id(동시 삭제 등) → 실패로 기록
+  for (const id of ids) if (!found.has(id)) result.failed.push({ id, content: '(삭제되었거나 찾을 수 없는 댓글)', reason: '대상 없음' });
+  const toExpose = rows.filter((r) => !r.exposed).map((r) => r.id); // 미노출 → 노출
+  const toHide = rows.filter((r) => r.exposed).map((r) => r.id); // 노출 → 미노출
+  // 댓글 노출여부 전환 시 그 댓글의 답글도 함께 동기화 — 미노출 댓글의 답글이 단독 노출되지 않도록.
+  await prisma.$transaction([
+    ...(toExpose.length ? [prisma.eventComment.updateMany({ where: { id: { in: toExpose }, programId }, data: { exposed: true } })] : []),
+    ...(toHide.length ? [prisma.eventComment.updateMany({ where: { id: { in: toHide }, programId }, data: { exposed: false } })] : []),
+    ...(toExpose.length ? [prisma.eventCommentReply.updateMany({ where: { commentId: { in: toExpose } }, data: { exposed: true } })] : []),
+    ...(toHide.length ? [prisma.eventCommentReply.updateMany({ where: { commentId: { in: toHide } }, data: { exposed: false } })] : []),
+  ]);
+  for (const r of rows) (r.exposed ? result.toHidden : result.toExposed).push({ id: r.id, content: r.content });
+  revalidatePath(`/admin/events/pages/${pageId}`);
+  return result;
+}
+
+// SB 댓글 상세 · 답글 등록 — 사이드 패널에서 한 댓글의 답글(여러 개)과 댓글 노출여부를 저장.
+//  replies를 통째로 교체(추가/삭제 반영)하고, 목록 표기용 비정규화 필드(대표 답글·총 개수·답변여부)를 갱신.
+const COMMENT_REPLY_ACTOR = '운영자(P217129)';
+export async function saveCommentReplies(
+  pageId: string,
+  commentId: string,
+  commentExposed: boolean,
+  replies: { content: string; exposed: boolean }[],
+) {
+  const comment = await prisma.eventComment.findUnique({ where: { id: commentId }, select: { id: true } });
+  if (!comment) throw new Error('댓글을 찾을 수 없습니다.');
+  // 댓글이 미노출이면 답글도 함께 미노출(단독 노출 방지). 노출 댓글은 답글별 개별 노출여부 유지.
+  const clean = replies
+    .map((r) => ({ content: r.content.trim(), exposed: commentExposed ? r.exposed : false }))
+    .filter((r) => r.content.length > 0);
+  // 답글 통째 교체 (프로토타입: 삭제 후 재생성). 등록자·시각은 저장 시점 기준.
+  await prisma.eventCommentReply.deleteMany({ where: { commentId } });
+  if (clean.length) {
+    await prisma.eventCommentReply.createMany({ data: clean.map((r) => ({ commentId, content: r.content, exposed: r.exposed, author: COMMENT_REPLY_ACTOR })) });
+  }
+  const last = clean[clean.length - 1];
+  await prisma.eventComment.update({
+    where: { id: commentId },
+    data: {
+      exposed: commentExposed,
+      answered: clean.length > 0,
+      replyCount: clean.length,
+      replyContent: last?.content ?? null,
+      replyAuthor: last ? COMMENT_REPLY_ACTOR : null,
+      replyAt: clean.length ? new Date() : null,
+    },
+  });
+  revalidatePath(`/admin/events/pages/${pageId}`);
+}
+
+// ── 프로모션 본문 빌더 통합 — 본문을 전시 빌더 엔진(Template→Corner)으로 구성 ──
+//  숨김 Container(containerType='PROMOTION') 아래 Template 1개를 만들어 EventPage.bodyTemplateId로 연결.
+//  전시화면 관리 목록에는 PROMOTION 컨테이너가 제외되므로 전시/관리와 섞이지 않는다. 코너는 이벤트 계열(EV*)만 사용.
+export async function ensurePromotionBodyTemplate(pageId: string): Promise<string> {
+  const page = await prisma.eventPage.findUnique({
+    where: { id: pageId },
+    select: { id: true, bodyTemplateId: true, program: { select: { name: true } } },
+  });
+  if (!page) throw new Error('프로모션 페이지를 찾을 수 없습니다.');
+  if (page.bodyTemplateId) {
+    const t = await prisma.template.findUnique({ where: { id: page.bodyTemplateId }, select: { id: true } });
+    if (t) return t.id;
+  }
+  const container = await prisma.container.create({
+    data: { name: `[프로모션] ${page.program.name}`, containerType: 'PROMOTION', channel: 'FO', status: 'active', approvalStatus: 'APPROVED' },
+  });
+  const template = await prisma.template.create({
+    data: { containerId: container.id, name: '본문', conditionGroup: '전체', isDefault: true, status: 'DRAFT' },
+  });
+  await prisma.container.update({ where: { id: container.id }, data: { defaultTemplateId: template.id } });
+  await prisma.eventPage.update({ where: { id: pageId }, data: { bodyTemplateId: template.id } });
+  return template.id;
 }

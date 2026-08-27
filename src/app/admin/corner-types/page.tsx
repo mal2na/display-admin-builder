@@ -42,6 +42,7 @@ export default async function CornerTypesPage() {
     defaultMinItems: r.defaultMinItems ?? null,
     defaultMaxItems: r.defaultMaxItems ?? null,
     defaultSortStrategy: r.defaultSortStrategy ?? null,
+    defaultRecSource: r.defaultRecSource ?? null,
     defaultMoreButton: r.defaultMoreButton ?? false,
     defaultMoreButtonLabel: r.defaultMoreButtonLabel ?? null,
     cvmFields: r.cvmFields ?? '',

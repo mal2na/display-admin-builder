@@ -265,13 +265,26 @@ function CornerFrame({ p, children }: { p: Record<string, any>; children: React.
       p.layout === 'grid' ? <div className="grid grid-cols-2 gap-2">{children}</div>
       : p.layout === 'scroll' ? <div className="flex gap-3 overflow-x-auto pb-1 [&>*]:w-[140px] [&>*]:shrink-0">{children}</div>
       : <div className="space-y-2">{children}</div>;
+    // 자동명(섹션 N)·무제 섹션은 가볍게 흐르도록 유지 — 아직 구성 전이라 판으로 감싸면 빈 상자가 됨
+    if (placeholder || !p.title) {
+      return (
+        <section style={boxStyle(p)}>
+          {p.title && placeholder && <span className="mb-1.5 inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">{p.title}</span>}
+          {groupBody}
+          {bannerEl}
+        </section>
+      );
+    }
+    // 사용자가 제목을 지정한 섹션 = 전시 코너처럼 테두리 '판' 카드 + 타이틀/설명 헤더 + '섹션' 딱지
     return (
-      <section style={boxStyle(p)}>
-        {p.title && (placeholder
-          ? <span className="mb-1.5 inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">{p.title}</span>
-          : <h3 className="mb-0.5 text-[16px] font-bold text-slate-900">{p.title}</h3>)}
-        {p.subTitle && !placeholder && <p className="mb-2 text-[12px] text-slate-400">{p.subTitle}</p>}
-        {(!p.title || placeholder) ? null : <div className="mb-2" />}
+      <section style={boxStyle(p)} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="truncate text-[16px] font-bold text-slate-900">{p.title}</h3>
+            {p.subTitle && <p className="mt-0.5 text-[12px] text-slate-400">{p.subTitle}</p>}
+          </div>
+          <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">섹션{hasBanner ? ' · 빅배너' : ''}</span>
+        </div>
         {groupBody}
         {bannerEl}
       </section>

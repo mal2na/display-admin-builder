@@ -25,6 +25,8 @@ export const ATOM_TYPES = [
 ] as const;
 export type AtomType = (typeof ATOM_TYPES)[number];
 
+// 표시 라벨 = 역할 중심(운영자 이해 쉬운 말). 데이터 유형(키)은 그대로.
+//  BENEFIT_TEXT=타이틀, INFO=설명, CTA=버튼(CTA). TEXT는 범용(탭·메뉴·칩·문구)이라 '텍스트' 유지.
 export const ATOM_TYPE_LABELS: Record<AtomType, string> = {
   TEXT: '텍스트',
   BUTTON: '버튼',
@@ -32,9 +34,9 @@ export const ATOM_TYPE_LABELS: Record<AtomType, string> = {
   ICON: '아이콘',
   BADGE: '배지',
   PRICE: '가격',
-  BENEFIT_TEXT: '혜택문구',
-  CTA: 'CTA',
-  INFO: '정보값',
+  BENEFIT_TEXT: '타이틀',
+  CTA: '버튼(CTA)',
+  INFO: '설명',
   BARCODE: '바코드',
 };
 
@@ -56,8 +58,9 @@ export const ATOM_TYPE_FIELDS: Record<AtomType, { content: boolean; image: boole
 // 런타임에 데이터 바인딩되는(어드민이 값을 직접 입력하지 않는) 동적 Atom 유형
 export const DYNAMIC_ATOM_TYPES: readonly AtomType[] = ['BARCODE'];
 
-// ── CVM(고객관리) 데이터 바인딩 ──────────────────────────────────────────────
-// 어드민이 직접 입력하지 않고 CVM에서 회원별로 가져오는 필드 카탈로그.
+// ── 고객정보 데이터 바인딩 ──────────────────────────────────────────────
+// 어드민이 직접 입력하지 않고 고객정보(BSS/고객 마스터 등)에서 회원별로 가져오는 필드 카탈로그.
+// (참고: 정책의 'CVM'은 추천 시스템을 뜻함 — 이 표시값 바인딩과는 다른 개념이라 라벨은 '고객정보'로 둔다.)
 // 바인딩된 Atom은 content에 "@cvm:<key>" 토큰을 저장한다. 빌더 미리보기는 sample로 대체 표시.
 export const CVM_FIELDS = [
   { key: 'customer.name', label: '고객 이름', sample: '김지훈', category: '기본' },
@@ -112,7 +115,42 @@ export const COMPONENT_TYPES = [
 ] as const;
 export type ComponentType = (typeof COMPONENT_TYPES)[number];
 
-// ── Corner 유형 (8종) ───────────────────────────────────────
+// ── 추천 수급 방식 (POL-REC PG-REC-SOURCE-001) ──────────────────────────────
+//  '이 코너를 무엇을 기준으로 채우는가.' 통합채널(전시)은 추천을 '생성'하지 않고 '전시·제어'만 한다.
+//  후보·순위·근거는 CVM(추천 시스템)이 산출하고, 운영자는 슬롯 규칙(최대 노출·정렬·폴백)만 정한다.
+export const REC_SOURCE_METHODS = ['CVM 기반', '채널 데이터', '룰 기반', '운영 편성', '수동 대체'] as const;
+export type RecSourceMethod = (typeof REC_SOURCE_METHODS)[number];
+// 각 방식: 짧은 태그 + '어떻게 골라 보여주는지' 친절 설명 + 개인화 표기 여부.
+export const REC_SOURCE_INFO: Record<string, { tag: string; how: string; personalized: boolean }> = {
+  'CVM 기반': {
+    tag: '개인화 추천 시스템',
+    how: 'CVM(세일즈포스 기반 추천 시스템)이 고객 한 명 한 명에게 맞는 상품을 계산해 “추천 후보 + 순위 + 추천 근거”를 내려줍니다. 화면은 그 순위대로 카드를 나열해요. 운영자는 최대 노출 개수·정렬(=CVM 순위 따름)·대체안(폴백)만 정하고, 무엇을 어떤 순서로 추천할지는 CVM이 정합니다. 로그인·동의가 충족될 때만 ‘개인화 추천’으로 표기됩니다.',
+    personalized: true,
+  },
+  '채널 데이터': {
+    tag: '행동 기반',
+    how: '고객이 이 채널에서 한 행동(최근 본 상품·클릭·검색·장바구니 등)을 바탕으로 후보를 뽑아 보여줍니다.',
+    personalized: true,
+  },
+  '룰 기반': {
+    tag: '조건 기반',
+    how: '고객 상태·가입 여부·보유 상품·등급 같은 “조건”에 맞춰 후보를 고릅니다. (예: VIP에게만, 특정 요금제 가입자에게만)',
+    personalized: false,
+  },
+  '운영 편성': {
+    tag: '운영자 지정',
+    how: '운영자가 직접 고른 상품·혜택·캠페인을 지정한 순서대로 보여줍니다. (기획전·시즌 프로모션 등 — 개인화 아님)',
+    personalized: false,
+  },
+  '수동 대체': {
+    tag: '폴백(대체안)',
+    how: '추천 후보가 없거나 조건이 안 맞을 때 대신 보여줄, 운영자가 지정한 대체안입니다.',
+    personalized: false,
+  },
+};
+
+// ── Corner 유형 (7종) ───────────────────────────────────────
+// 개인화 추천형은 별도 유형이 아니라, 각 유형의 '추천 수급 방식(CVM 등)' 설정으로 흡수됨.
 export const CORNER_TYPES = [
   '상품형',
   '배너형',
@@ -120,7 +158,6 @@ export const CORNER_TYPES = [
   '업무 진입형',
   '상태 안내형',
   '콘텐츠 안내형',
-  '개인화 추천형',
   '고정·필수 노출형',
 ] as const;
 export type CornerType = (typeof CORNER_TYPES)[number];
@@ -133,7 +170,6 @@ export const CORNER_TYPE_PURPOSE: Record<CornerType, string> = {
   '업무 진입형': '조회, 변경, 신청, 납부 같은 업무로 바로 이동하게 한다.',
   '상태 안내형': '고객 상태, 보유 정보, 진행 상태, 제한 사유를 안내한다.',
   '콘텐츠 안내형': '이용 가이드, 설명, 추천 콘텐츠를 제공한다.',
-  '개인화 추천형': '고객 상태와 행동에 따라 후보와 순서를 다르게 보여준다.',
   '고정·필수 노출형': '필수 고지, 장애 안내, 보안 안내처럼 안정적으로 유지해야 하는 정보를 노출한다.',
 };
 export function cornerTypePurpose(cornerType?: string | null): string {
@@ -150,7 +186,6 @@ export const CORNER_TYPE_CHIP: Record<CornerType, string> = {
   '업무 진입형': 'bg-sky-50 text-sky-700 border-sky-200',
   '상태 안내형': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   '콘텐츠 안내형': 'bg-violet-50 text-violet-700 border-violet-200',
-  '개인화 추천형': 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
   '고정·필수 노출형': 'bg-slate-100 text-slate-700 border-slate-300',
 };
 // 이벤트·미션 전용 코너 계열(3종) → Chip 색상. (전시 8색과 구분되는 톤)
@@ -219,7 +254,6 @@ export const CORNER_TYPE_IMAGE_NAME: Partial<Record<CornerType, string>> = {
   상품형: '상품형',
   배너형: '배너형',
   '혜택·오퍼형': '혜택 컨텐츠형',
-  '개인화 추천형': '개인화 컨텍스트',
   '고정·필수 노출형': '관리용(고정형)',
 };
 export function cornerTypeDisplayName(baseCategory: string): string {
@@ -257,7 +291,7 @@ export type SubtitleIcon = (typeof SUBTITLE_ICONS)[number];
 // 코너 유형을 3개 패밀리로 묶는다 (컬럼/유형상세가 패밀리별로 달라짐)
 //  - product : 상품형
 //  - banner  : 배너형
-//  - manage  : 그 외(관리·콘텐츠형) — 혜택·오퍼/업무진입/상태안내/콘텐츠안내/개인화추천/고정필수
+//  - manage  : 그 외(관리·콘텐츠형) — 혜택·오퍼/업무진입/상태안내/콘텐츠안내/고정필수
 export type CornerFamily = 'product' | 'banner' | 'manage';
 export function cornerFamily(cornerType: string): CornerFamily {
   if (cornerType === '상품형') return 'product';
@@ -287,7 +321,8 @@ export const COMPOSITE_LAYOUT_DETAILS = [
 ] as const;
 
 export function layoutDetailsFor(cornerType: string): string[] {
-  if (cornerType === '개인화 추천형') return [...COMPOSITE_LAYOUT_DETAILS];
+  // 혜택·오퍼형은 복합형(제목+탭+리스트 등)도 허용 (구 개인화 추천형 케이스 흡수).
+  if (cornerType === '혜택·오퍼형') return [...LAYOUT_DETAILS_BY_FAMILY[cornerFamily(cornerType)], ...COMPOSITE_LAYOUT_DETAILS];
   return LAYOUT_DETAILS_BY_FAMILY[cornerFamily(cornerType)];
 }
 
@@ -315,8 +350,6 @@ export const CORNER_COMPONENT_MAP: Record<CornerType, readonly ComponentType[]> 
   '상태 안내형': ['정보형', '행동형'],
   // 콘텐츠 안내형: 레퍼런스(영화 예매 혜택 등)처럼 상품형 카드 결합 허용 — 상세설계 확정(정책 baseline 확장)
   '콘텐츠 안내형': ['정보형', '행동형', '배너형', '상품형'],
-  // 개인화 추천형: 0 Week('지훈님에게만' 개인화) 등 상품형 카드 결합 허용 — 상세설계 확정(정책 baseline 확장)
-  '개인화 추천형': ['정보형', '혜택형', '선택형', '행동형', '배너형', '상품형'],
   '고정·필수 노출형': ['정보형', '행동형'],
 };
 
@@ -340,7 +373,6 @@ export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
   '업무 진입형': ['고정형(탭)', '세로 리스트형', '메뉴 리스트'],
   '상태 안내형': ['금액형', '사용량형', '카드형'],
   '콘텐츠 안내형': ['리스트형', '아코디언형'],
-  '개인화 추천형': ['복합형(세로)'],
   '고정·필수 노출형': ['프로필형', '바코드', '고지형'],
 };
 export function cornerTypeDetails(cornerType: string): readonly string[] {
@@ -356,7 +388,7 @@ export const COMPONENT_LAYOUT_DETAILS: Record<ComponentType, readonly string[]> 
   // 빅배너는 배열이 아니라 '구분자'(bigBanner)로 분리 → 여기엔 순수 배열만 둔다.
   상품형: ['가로형(2.5배열)', '세로형', '단일강조(1.5배열)', '세로형(카테고리탭)', '그리드형', '단일 상품'],
   배너형: ['이미지형', '이미지형/빅배너', '팝업배너형', '띠배너형', '텍스트배너'],
-  정보형: ['아이콘형', '금액형', '사용량형', '카드형', '리스트형', '프로필형', '바코드', '고지형'],
+  정보형: ['아이콘/이미지형', '금액형', '사용량형', '카드형', '리스트형', '프로필형', '바코드', '고지형'],
   행동형: ['버튼형', '메뉴 리스트', '고정형(탭)', '바로가기'],
   혜택형: ['혜택 카드', '세로형', '그리드형', '쿠폰형'],
   선택형: ['카테고리 탭', '메뉴 리스트'],
