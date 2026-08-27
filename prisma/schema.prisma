@@ -111,6 +111,14 @@ model Corner {
   // ── 상품형 코너 전용 컬럼 (코너3·코너4 참고) ──
   minItems           Int?    // 최소 노출 개수
   noDisplayCondition String? // 미 노출 조건 (선택 없음 | 재고 소진 시 | 혜택 종료 시 | 개인화 제한 시)
+  // 추천 수급 방식 (개인화 추천형·상품형 전용) — POL-REC PG-REC-SOURCE-001 5종.
+  //  CVM 기반이면 후보·순위·근거는 CVM(추천 시스템)이 런타임 판정, 운영자는 슬롯 규칙·폴백만 설정.
+  recSource String? // (대표) 1순위 수급 방식 — null | CVM 기반 | 채널 데이터 | 룰 기반 | 운영 편성 | 수동 대체
+  // 여러 수급 방식을 우선순위로 편성 (PI-REC-SOURCE-001-001: 한 슬롯에 복수 방식 허용). JSON 배열, 1순위→폴백 순.
+  //  예: ["CVM 기반","룰 기반","수동 대체"] = CVM 우선, 후보 없으면 룰, 그래도 없으면 수동 대체. recSource=배열[0].
+  recSourcePlan String?
+  // 추천 근거(추천 사유) 카드 표시 여부 (PG-REC-CARD-001 / TM-REA-005). 값은 CVM이 런타임 제공, 여기선 표시 on/off만.
+  showRecReason Boolean @default(false)
   moreButtonUse      Boolean @default(false) // 더보기 사용 여부
   moreButtonLabel    String? // 더보기 버튼명
   moreButtonLink     String? // 더보기 랜딩 URL
@@ -125,6 +133,12 @@ model Corner {
   userMinItems     Int?    // 고객이 최소 이만큼은 노출(고정 항목 포함)
   userMaxItems     Int?    // 고객이 최대 이만큼까지 노출 가능
 
+  // 빅배너 = 코너 유형이 아니라 '배치(인스턴스) 옵션'(TM-DSP-019). 빌더에서 코너를 배치할 때 켠다.
+  //  같은 세로형 코너를 A화면은 빅배너로, B화면은 일반으로 배치 가능 → 유형이 아닌 인스턴스 단위.
+  bigBanner Boolean @default(false)
+  // 상품형 가로형(2.5배열) 카드 모양 — 정사각형(상품 이미지) | 직사각형(영화 포스터 등 세로 3:4). 빌더에서 선택.
+  cardShape String? // null=기본(직사각형) | 정사각형 | 직사각형
+  titleLines Int? // 상품 카드 제목 줄 수 (null/1=한 줄 말줄임, 2=두 줄까지 표시)
   // 빅배너(상품형 등 코너에 얹는 부속 배너)의 위치 — 빌더에서 배치 조정. 상단 | 하단 (배너형 코너는 무관)
   bannerPosition String? @default("상단")
   // 코너 유형 관리에서 불러올 때 상속받은 유형 샘플 썸네일 — 컴포넌트가 아직 없을 때 미리보기/카드에 표시
@@ -176,6 +190,14 @@ model Template {
   // 보관(soft-delete). null = 활성, 값 있으면 보관됨(목록에서 숨김, 복구 가능)
   archivedAt DateTime?
   archivedBy String?
+
+  // 폐기(삭제 대체) 승인 워크플로우 — '승인된 적 있는' 템플릿만 사용(미승인 초안은 물리 삭제 허용).
+  //  null = 정상 | REVIEW = 폐기 승인 대기 | RETIRED = 폐기됨(보관 처리). 컨테이너 폐기와 동일 개념.
+  retireStatus      String? // null | REVIEW | RETIRED
+  retireReason      String?
+  retireRequestedAt DateTime?
+  retiredBy         String?
+  retiredAt         DateTime?
 
   // 게시 중지 기록 (PG-DSP-WFL / 상태 전이표: 게시 중 → 게시 중지, 사유·실행자·실행시각 필수)
   suspendReason String? // 중지 사유
@@ -337,6 +359,7 @@ model CornerType {
   defaultMinItems       Int?    // 기본 노출 개수(하한)
   defaultMaxItems       Int?    // 최대 노출 개수 — 정책서 Corner 구성 기준(노출 순서·최대 노출 개수)
   defaultSortStrategy   String? // 기본 정렬 기준: MANUAL | PRIORITY | RECENT | POPULAR | PRICE_ASC | PRICE_DESC
+  defaultRecSource      String? // 기본 추천 수급 방식 (상품형·개인화 추천형): CVM 기반 | 채널 데이터 | 룰 기반 | 운영 편성 | 수동 대체. 코너 불러오기 시 corner.recSource로 상속.
   defaultMoreButton     Boolean @default(false) // 더보기 버튼 기본 ON 여부(라벨은 아래, 링크는 코너별 입력)
   defaultMoreButtonLabel String? // 더보기 기본 라벨(예: 더보기, 전체보기)
   // CVM 연동 필드 — 이 코너 유형이 CVM/BSS에서 자동으로 가져오는 회원 데이터(FN-EVTMSN-FORM-001). CVM_FIELDS key csv.
@@ -461,6 +484,10 @@ model EventPage {
   archivedAt DateTime?
   archivedBy String?
 
+  // 본문 빌더 통합 — 프로모션 본문을 전시 빌더 엔진(Template→Corner→Component→Atom)으로 구성.
+  //  숨김 Container(containerType='PROMOTION') 아래 Template 1개를 만들어 연결. 코너 유형은 이벤트/미션(EV*)만.
+  bodyTemplateId String?
+
   program   EventProgram       @relation("ProgramPages", fields: [programId], references: [id])
   nodes     EventNode[]
   versions  EventPageVersion[]
@@ -564,10 +591,47 @@ model EventProgram {
   defaultPageId String?    @unique
   defaultPage   EventPage? @relation("DefaultPage", fields: [defaultPageId], references: [id])
 
-  pages EventPage[] @relation("ProgramPages")
+  pages    EventPage[]    @relation("ProgramPages")
+  comments EventComment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([parentId])
+}
+
+// SB-EVT-050 프로모션 상세 · 댓글 관리 — 프로모션(EventProgram)에 작성된 FO 고객 댓글.
+//  운영자는 노출여부만 제어(노출/미노출). 답글은 대표 1건 + 총 개수를 비정규화해 목록에 요약 표기.
+model EventComment {
+  id             String       @id @default(cuid())
+  programId      String
+  program        EventProgram @relation(fields: [programId], references: [id])
+  memberChannelId String      // 멤버십 채널 ID (작성 회원 고유 ID)
+  content        String       // 댓글 내용
+  likeCount      Int          @default(0) // 좋아요 수
+  exposed        Boolean      @default(true) // 노출여부 (노출 | 미노출)
+  answered       Boolean      @default(false) // 답변여부 (답글대기 | 답변완료)
+  // 답글 요약(대표 1건 + 총 개수) — 목록 표기용 비정규화 캐시. 실제 답글은 EventCommentReply(사이드 패널에서 관리).
+  replyContent String?  // 대표(최신) 답글 내용
+  replyAuthor  String?  // 대표(최신) 답글 등록자(운영자)
+  replyCount   Int      @default(0) // 총 답글 수
+  replyAt      DateTime? // 최신 답글 등록일시
+  createdAt    DateTime @default(now()) // 등록일시
+
+  replies EventCommentReply[]
+
+  @@index([programId])
+}
+
+// SB 댓글 상세 · 답글 등록 — 운영자가 한 댓글에 남기는 답글(여러 개 가능). 각 답글은 노출여부를 가진다.
+model EventCommentReply {
+  id        String       @id @default(cuid())
+  commentId String
+  comment   EventComment @relation(fields: [commentId], references: [id])
+  content   String       // 답글 내용
+  author    String       // 답글 등록자(운영자)
+  exposed   Boolean      @default(true) // 답글 노출여부
+  createdAt DateTime      @default(now())
+
+  @@index([commentId])
 }

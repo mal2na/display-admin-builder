@@ -139,6 +139,9 @@ function LayerBadge({ role }: { role: keyof typeof LAYER_COLOR }) {
   return <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${LAYER_COLOR[role]}`}>{LAYER_LABEL[role]}</span>;
 }
 
+// 코너(섹션) 레이아웃 표기 — 전시 코너 배치 카드의 '배열' 라벨에 대응 (프로모션은 자유형 섹션이라 레이아웃으로 표기)
+const CORNER_LAYOUT_LABEL: Record<string, string> = { list: '리스트', grid: '그리드', scroll: '가로 스크롤' };
+
 // ── 드래그앤드롭 순서 변경 (구조 트리) — 고정(FIXED) 노드는 위치 잠금 ──
 function SortableGroup({ nodes, pageId, depth, selectedId, onSelect }: { nodes: NodeView[]; pageId: string; depth: number; selectedId: string | null; onSelect: (id: string) => void }) {
   const [, start] = useTransition();
@@ -207,9 +210,37 @@ function SortableRow({ node, pageId, depth, selectedId, onSelect }: { node: Node
 
   // 코너 = 하나의 그룹 박스(카드). 드래그하면 카드 전체가 한 덩어리로 이동, 코너끼리만 자리 교환.
   if (isCorner) {
+    const isGroup = node.props.cornerType === GROUP_CORNER || !node.props.cornerType;
+    const cornerTitle = node.props.title || (isGroup ? '섹션' : '코너');
+    const layoutLabel = CORNER_LAYOUT_LABEL[node.props.layout as string] ?? '리스트';
+    const compCount = node.children.length;
+    const selected = selectedId === node.id;
+    const aud = nodeAudience(node.props);
+    // 전시 '코너 배치' 카드에 대응 — 이름(강조) + 유형/배열 메타줄 + 개수. (프로모션은 자유형 섹션)
+    const cornerHeader = (
+      <div className={`flex items-start gap-1.5 px-2 py-2 ${selected ? 'bg-primary/10' : 'hover:bg-emerald-50/60'}`}>
+        <button {...attributes} {...listeners} className="mt-0.5 cursor-grab text-emerald-300 hover:text-emerald-500 active:cursor-grabbing" title="드래그로 순서 변경 (코너끼리)" onClick={(e) => e.stopPropagation()}>
+          <Icons.GripVertical className="h-3.5 w-3.5" />
+        </button>
+        <button onClick={() => onSelect(node.id)} className="min-w-0 flex-1 text-left">
+          <div className="flex items-center gap-1.5">
+            <span className={`truncate text-[12px] font-semibold ${selected ? 'text-primary' : 'text-slate-800'}`}>{cornerTitle}</span>
+            {aud !== '공통' && <span className={`shrink-0 rounded px-1 py-0.5 text-[8px] font-bold ${AUDIENCE_BADGE[aud]}`}>{aud}</span>}
+          </div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[9px] font-medium text-slate-400">
+            <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-bold text-emerald-700">{isGroup ? '섹션' : node.props.cornerType}</span>
+            <span className="text-slate-300">·</span>
+            <span>{layoutLabel}</span>
+            <span className="text-slate-300">·</span>
+            <span>컴포넌트 {compCount}</span>
+            {node.props.bigBanner ? <><span className="text-slate-300">·</span><span className="text-violet-500">빅배너</span></> : null}
+          </div>
+        </button>
+      </div>
+    );
     return (
-      <div ref={setNodeRef} style={style} className={`mb-1.5 overflow-hidden rounded-lg border bg-emerald-50/30 shadow-sm ${isDragging ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-emerald-200/70'}`}>
-        {headerRow}
+      <div ref={setNodeRef} style={style} className={`mb-1.5 overflow-hidden rounded-lg border bg-emerald-50/30 shadow-sm ${isDragging ? 'border-emerald-300 ring-2 ring-emerald-200' : selected ? 'border-primary/40 ring-1 ring-primary/20' : 'border-emerald-200/70'}`}>
+        {cornerHeader}
         {childGroup}
       </div>
     );
@@ -461,7 +492,8 @@ export function EventEditor({ meta, tree, previewTree }: { meta: Meta; tree: Nod
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border bg-slate-50 shadow-sm" onClick={() => setSelectedId(null)}>
       {/* 상단 바 — 흰 배경 없이 블렌드(가운데 디바이스 드롭다운만 떠 보이게) */}
       <div className="flex items-center gap-3 px-4 py-2.5">
-        <Link href={`/admin/events/pages/${meta.pageId}`} className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
+        {/* replace: 빌더 히스토리 항목을 상세로 '대체' → 상세에서 브라우저 뒤로가기가 빌더로 되돌아가지 않고 목록으로 가게 함 */}
+        <Link href={`/admin/events/pages/${meta.pageId}`} replace className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
           <Icons.ChevronLeft className="h-4 w-4" /> 상세
         </Link>
         <span className="text-sm font-semibold">{meta.projectName}</span>

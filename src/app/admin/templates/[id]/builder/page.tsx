@@ -46,11 +46,11 @@ export default async function BuilderPage({ params }: { params: { id: string } }
   // 보관(soft-delete) 가능 여부 — 기본/게시중/유일 템플릿은 보관 불가
   const activeSiblings = await prisma.template.count({ where: { containerId: template.containerId, archivedAt: null } });
   const archiveBlockReason = template.isDefault
-    ? '기본 템플릿은 보관할 수 없습니다. 먼저 다른 템플릿을 기본으로 지정하세요.'
+    ? '기본 템플릿은 삭제/폐기할 수 없습니다. 먼저 다른 템플릿을 기본으로 지정하세요.'
     : template.status === 'PUBLISHED'
-      ? '게시 중인 템플릿은 보관할 수 없습니다. 게시 중지 후 진행하세요.'
+      ? '게시 중인 템플릿은 삭제/폐기할 수 없습니다. 게시 중지 후 진행하세요.'
       : activeSiblings <= 1
-        ? '컨테이너의 유일한 템플릿은 보관할 수 없습니다.'
+        ? '컨테이너의 유일한 템플릿은 삭제/폐기할 수 없습니다.'
         : null;
 
   const [libCorners, libComponents, libAtoms, libBanners, libCornerTypes, libImgAtoms, libLinkAtoms, libMoreLinks, libBannerLinks] = await Promise.all([
@@ -58,7 +58,8 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     prisma.component.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, componentType: true, allowedCornerTypes: true } }),
     prisma.atom.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, atomType: true } }),
     prisma.banner.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, imageUrl: true } }),
-    prisma.cornerType.findMany({ orderBy: { typeId: 'asc' }, select: { id: true, name: true, baseCategory: true, componentType: true, typeDetail: true, bigBanner: true, sampleImageUrl: true, active: true, liveVersion: true } }),
+    // 코너 불러오기: 전시/관리 코너 유형만 (이벤트·미션 전용 계열 제외)
+    prisma.cornerType.findMany({ where: { baseCategory: { notIn: ['혜택상품형', '디스플레이형', '동작형'] } }, orderBy: { typeId: 'asc' }, select: { id: true, name: true, baseCategory: true, componentType: true, typeDetail: true, bigBanner: true, sampleImageUrl: true, active: true, liveVersion: true } }),
     // 이미지 라이브러리 재료: IMAGE/ICON Atom
     prisma.atom.findMany({
       where: { status: 'active', atomType: { in: ['ICON', 'IMAGE'] }, NOT: { imageUrl: null } },
@@ -116,6 +117,12 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     sortStrategy: tc.corner.sortStrategy,
     minItems: tc.corner.minItems,
     noDisplayCondition: tc.corner.noDisplayCondition,
+    recSource: tc.corner.recSource ?? null,
+    recSourcePlan: tc.corner.recSourcePlan ?? null,
+    showRecReason: tc.corner.showRecReason ?? false,
+    bigBanner: tc.corner.bigBanner ?? false,
+    cardShape: tc.corner.cardShape ?? null,
+    titleLines: tc.corner.titleLines ?? null,
     moreButtonUse: tc.corner.moreButtonUse,
     moreButtonLabel: tc.corner.moreButtonLabel,
     moreButtonLink: tc.corner.moreButtonLink,
@@ -183,6 +190,8 @@ export default async function BuilderPage({ params }: { params: { id: string } }
           name={template.name}
           conditionGroup={template.conditionGroup}
           isDefault={template.isDefault}
+          status={template.status}
+          retireStatus={template.retireStatus}
           versions={versions}
           archiveBlockReason={archiveBlockReason}
         />

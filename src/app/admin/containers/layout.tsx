@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function ContainersLayout({ children }: { children: React.ReactNode }) {
   const containers = await prisma.container.findMany({
+    // 프로모션 본문용 숨김 컨테이너(PROMOTION)는 전시화면 관리 목록에서 제외 — 전시/관리와 섞이지 않게.
+    where: { NOT: { containerType: 'PROMOTION' } },
     orderBy: { createdAt: 'asc' },
     select: {
       id: true,

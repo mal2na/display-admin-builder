@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { PromotionDetail, type PromotionInfo, type HistoryRow } from './promotion-detail';
+import { PromotionDetail, type PromotionInfo, type HistoryRow, type CommentRow } from './promotion-detail';
 
 export const dynamic = 'force-dynamic';
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 16) : null);
+const fmt = (d: Date | null) => (d ? d.toISOString().slice(0, 16).replace('T', ' ') : null);
 
 export default async function PromotionDetailPage({ params }: { params: { pageId: string } }) {
   const page = await prisma.eventPage.findUnique({
@@ -38,6 +39,32 @@ export default async function PromotionDetailPage({ params }: { params: { pageId
     actor: a.actor,
     reason: a.reason ?? '-',
     result: a.result ?? '-',
+  }));
+
+  const commentRows = await prisma.eventComment.findMany({
+    where: { programId: pr.id },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true, memberChannelId: true, content: true, likeCount: true, exposed: true, answered: true,
+      replyContent: true, replyAuthor: true, replyCount: true, replyAt: true, createdAt: true,
+      replies: { orderBy: { createdAt: 'asc' }, select: { id: true, content: true, author: true, exposed: true, createdAt: true } },
+    },
+  }).catch(() => []);
+  const total = commentRows.length;
+  const comments: CommentRow[] = commentRows.map((c, i) => ({
+    id: c.id,
+    no: total - i, // 고유번호 — 최신이 가장 큰 번호 (목록은 최신순)
+    memberChannelId: c.memberChannelId,
+    content: c.content,
+    likeCount: c.likeCount,
+    exposed: c.exposed,
+    answered: c.answered,
+    replyContent: c.replyContent,
+    replyAuthor: c.replyAuthor,
+    replyCount: c.replyCount,
+    replyAt: fmt(c.replyAt),
+    createdAt: fmt(c.createdAt) ?? '',
+    replies: c.replies.map((r) => ({ id: r.id, content: r.content, author: r.author, exposed: r.exposed, createdAt: fmt(r.createdAt) ?? '' })),
   }));
 
   const program: PromotionInfo = {
@@ -81,6 +108,7 @@ export default async function PromotionDetailPage({ params }: { params: { pageId
       status={page.status}
       builderHref={`/admin/events/pages/${page.id}/builder`}
       history={history}
+      comments={comments}
     />
   );
 }

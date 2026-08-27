@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Home, PencilRuler, ImageIcon, Search, X, ChevronLeft, Plus, Globe, FolderOpen, GripVertical } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ChevronRight, Home, PencilRuler, ImageIcon, Search, X, ChevronLeft, Plus, Globe, FolderOpen, GripVertical, Trash2, Signal, Wifi, BatteryFull } from 'lucide-react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -11,8 +12,11 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { updateProgramInfo } from '../../actions';
+import { updateProgramInfo, deleteProject } from '../../actions';
 import { PROGRAM_KINDS, typesForKind } from '@/lib/event-templates';
+import { CommentManager, type CommentRow } from './comment-manager';
+
+export type { CommentRow };
 
 export type PromotionInfo = {
   id: string;
@@ -88,12 +92,21 @@ function normalizeEntry(e: EntryConfig): EntryConfig {
 const fmtD = (s: string) => (s ? s.slice(0, 10).replace(/-/g, '.') : '');
 
 /** SB-EVT-027 프로모션 상세(안내형) — 좌: 라이브 미리보기(기본 정보로 채워짐) / 우: 입력 폼. 가운데는 빌더 구성영역. */
+type TabKey = 'info' | 'comments' | 'history';
+
 export function PromotionDetail({
-  program: p, pageId, status, builderHref, history,
+  program: p, pageId, status, builderHref, history, comments,
 }: {
-  program: PromotionInfo; pageId: string; status: string; builderHref: string; history: HistoryRow[];
+  program: PromotionInfo; pageId: string; status: string; builderHref: string; history: HistoryRow[]; comments: CommentRow[];
 }) {
+  const [tab, setTab] = useState<TabKey>('info');
   const [zoom, setZoom] = useState(1); // 미리보기 배율 (비율 유지)
+  const router = useRouter();
+  const [deleting, startDelete] = useTransition();
+  const onDelete = () => {
+    if (!confirm(`"${name || '이 프로모션'}"을(를) 휴지통으로 옮길까요? 목록의 휴지통에서 복원할 수 있어요.`)) return;
+    startDelete(async () => { await deleteProject(p.id); router.push('/admin/events'); });
+  };
 
   // 미리보기에 반영되는 컨트롤드 필드
   const [name, setName] = useState(p.name ?? '');
@@ -142,13 +155,47 @@ export function PromotionDetail({
             <p className="mt-1 text-sm text-muted-foreground">기본 정보를 입력하면 좌측 미리보기가 채워집니다. 가운데 본문은 빌더에서 구성합니다.</p>
           </div>
           <div className="flex shrink-0 gap-2">
-            <Button type="submit" form="promo-form" size="sm" variant="outline">임시저장</Button>
+            <Button size="sm" variant="outline" type="button" onClick={onDelete} disabled={deleting}
+              className="border-destructive/40 text-destructive hover:bg-destructive/10">
+              <Trash2 className="h-4 w-4" /> {deleting ? '삭제 중…' : '삭제'}
+            </Button>
+            {tab === 'info' && <Button type="submit" form="promo-form" size="sm" variant="outline">임시저장</Button>}
             <Link href={builderHref}><Button size="sm" variant="primary"><PencilRuler className="h-4 w-4" /> 빌더로 본문 구성</Button></Link>
           </div>
         </div>
       </div>
 
-      <form id="promo-form" action={updateProgramInfo.bind(null, p.id)} className="flex min-h-0 flex-1 flex-col">
+      {/* ── 탭: 프로모션 정보 / 댓글 관리 / 변경·승인 이력 ── */}
+      <div className="flex items-center gap-1 border-b bg-card px-6">
+        {([
+          ['info', '프로모션 정보'],
+          ['comments', `댓글 관리${comments.length ? ` (${comments.length})` : ''}`],
+          ['history', '변경/승인 이력'],
+        ] as [TabKey, string][]).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={cn(
+              '-mb-px border-b-2 px-3.5 py-2.5 text-[13px] font-semibold transition-colors',
+              tab === key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── 댓글 관리 탭 ── */}
+      {tab === 'comments' && (
+        <CommentManager pageId={pageId} programId={p.id} promotionName={name} comments={comments} />
+      )}
+
+      {/* ── 변경/승인 이력 탭 ── */}
+      {tab === 'history' && <HistoryPanel history={history} />}
+
+      {/* ── 프로모션 정보 탭 ── */}
+      <form id="promo-form" action={updateProgramInfo.bind(null, p.id)} className={cn('flex min-h-0 flex-1 flex-col', tab !== 'info' && 'hidden')}>
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-y-auto p-6 lg:grid-cols-[auto_minmax(0,1fr)]">
             {/* ── 좌: 라이브 미리보기 ── */}
             <div className="lg:sticky lg:top-0 lg:self-start">
@@ -285,6 +332,39 @@ export function PromotionDetail({
   );
 }
 
+/* ── 변경/승인 이력 탭 ── */
+function HistoryPanel({ history }: { history: HistoryRow[] }) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-6">
+      <h2 className="mb-3 text-sm font-bold">변경/승인 이력</h2>
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="w-full min-w-[560px] border-collapse text-[13px]">
+          <thead>
+            <tr className="border-b bg-muted/40 text-[12px] text-muted-foreground">
+              <th className="w-44 px-3 py-2.5 text-left font-semibold">일시</th>
+              <th className="w-32 px-3 py-2.5 text-left font-semibold">변경자</th>
+              <th className="px-3 py-2.5 text-left font-semibold">사유</th>
+              <th className="w-28 px-3 py-2.5 text-left font-semibold">결과</th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.length === 0 ? (
+              <tr><td colSpan={4} className="py-16 text-center text-muted-foreground">변경/승인 이력이 없습니다.</td></tr>
+            ) : history.map((h, i) => (
+              <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
+                <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted-foreground">{h.at}</td>
+                <td className="px-3 py-2.5">{h.actor}</td>
+                <td className="px-3 py-2.5 text-foreground">{h.reason}</td>
+                <td className="px-3 py-2.5"><span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{h.result}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 /* ── 좌측 라이브 폰 미리보기 ── */
 function PhonePreview({
   builderHref, zoom = 1, name, purpose, thumbnail, thumbnailAlt, schedule, reward, target, steps, notice,
@@ -307,7 +387,7 @@ function PhonePreview({
     <div className="mx-auto w-[248px] overflow-hidden rounded-[22px] border-[5px] border-neutral-900 bg-white shadow-xl">
       {/* 상태바 + 좌상단 빌더 접근 버튼 */}
       <div className="flex items-center justify-between bg-slate-50 px-3 pb-2 pt-2 text-[10px] text-slate-500">
-        <span className="font-semibold">9:41</span><span>••• 📶 🔋</span>
+        <span className="font-semibold">9:41</span><span className="flex items-center gap-1 text-slate-400"><Signal className="h-3 w-3" /><Wifi className="h-3 w-3" /><BatteryFull className="h-3 w-3" /></span>
       </div>
       <div className="flex items-center justify-between px-3 pb-2">
         <Link href={builderHref} title="빌더로 본문 구성"
@@ -345,19 +425,7 @@ function PhonePreview({
           </div>
         )}
 
-        {/* 빌더 구성영역 (가운데) */}
-        <Link href={builderHref} className="mt-3 flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 py-10 text-center hover:bg-primary/10">
-          <Plus className="h-5 w-5 text-primary" />
-          <span className="text-[12px] font-bold text-primary">빌더 구성영역</span>
-          <span className="text-[10px] text-primary/70">이 영역을 빌더에서 구성합니다</span>
-        </Link>
-
-        {/* 유의사항 (항상 표기) */}
-        <div className="mt-3 rounded-xl bg-slate-50 p-3">
-          <p className="mb-1 text-[12px] font-bold text-slate-700">유의사항</p>
-          <p className={cn('whitespace-pre-line text-[10px] leading-relaxed', notice.trim() ? 'text-slate-500' : 'text-slate-300')}>{notice.trim() || '유의사항을 입력하세요'}</p>
-        </div>
-        {/* 응모형: 경품/당첨 안내 카드 (고객 노출) — 응모 방식·당첨 규모는 어드민 전용이라 미노출 */}
+        {/* 응모형: 경품/당첨 안내 카드 (고객 노출) — 빌더 구성영역 바로 위. 응모 방식·당첨 규모는 어드민 전용이라 미노출 */}
         {isEntry && entry && (
           <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
             <p className="mb-1.5 text-[12px] font-bold text-slate-700">당첨/경품 안내</p>
@@ -376,6 +444,19 @@ function PhonePreview({
             </div>
           </div>
         )}
+
+        {/* 빌더 구성영역 (가운데) */}
+        <Link href={builderHref} className="mt-3 flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 py-10 text-center hover:bg-primary/10">
+          <Plus className="h-5 w-5 text-primary" />
+          <span className="text-[12px] font-bold text-primary">빌더 구성영역</span>
+          <span className="text-[10px] text-primary/70">이 영역을 빌더에서 구성합니다</span>
+        </Link>
+
+        {/* 유의사항 (항상 표기) */}
+        <div className="mt-3 rounded-xl bg-slate-50 p-3">
+          <p className="mb-1 text-[12px] font-bold text-slate-700">유의사항</p>
+          <p className={cn('whitespace-pre-line text-[10px] leading-relaxed', notice.trim() ? 'text-slate-500' : 'text-slate-300')}>{notice.trim() || '유의사항을 입력하세요'}</p>
+        </div>
         {/* CTA — 응모형: 응모하기 / 안내형: 참여하기. 둘 다 플랫폼 컬러(보라색). */}
         <div className="mt-3 flex h-10 items-center justify-center rounded-xl bg-indigo-600 text-[13px] font-semibold text-white">
           {isEntry ? (ctaLabel.trim() || '응모하기') : '참여하기'}
@@ -552,6 +633,9 @@ function ImageField({ url, alt, onUrl, onAlt, urlName, altName }: {
         <div className="flex flex-wrap items-center justify-center gap-1.5">
           <button type="button" onClick={() => setDsOpen(true)} className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10"><Globe className="h-3.5 w-3.5" /> DS포탈에서 가져오기</button>
           <button type="button" onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1 rounded-md border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary"><FolderOpen className="h-3.5 w-3.5" /> 로컬에서 가져오기</button>
+          {val && (
+            <button type="button" onClick={() => { setUrlVal(''); setAltValF(''); }} className="inline-flex items-center gap-1 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10"><Trash2 className="h-3.5 w-3.5" /> 이미지 삭제</button>
+          )}
         </div>
       </div>
       <Input name={urlName} value={val} onChange={(e) => setUrlVal(e.target.value)} placeholder="이미지 URL (https://…)" className="h-9 text-xs" />

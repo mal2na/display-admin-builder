@@ -14,6 +14,7 @@ import {
   type ComponentType,
   type CornerType,
 } from '@/lib/display-taxonomy';
+import { bssProductByKey } from '@/lib/bss-products';
 
 function rp(templateId: string) {
   revalidatePath(`/admin/templates/${templateId}`);
@@ -147,11 +148,99 @@ export async function archiveTemplate(templateId: string) {
 export async function restoreTemplate(templateId: string) {
   const t = await prisma.template.findUnique({ where: { id: templateId }, select: { containerId: true, name: true } });
   if (!t) throw new Error('Template을 찾을 수 없습니다.');
-  await prisma.template.update({ where: { id: templateId }, data: { archivedAt: null, archivedBy: null } });
+  await prisma.template.update({ where: { id: templateId }, data: { archivedAt: null, archivedBy: null, retireStatus: null, retireReason: null, retireRequestedAt: null, retiredBy: null, retiredAt: null } });
   await prisma.auditLog.create({
     data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: templateId, afterValue: JSON.stringify({ restored: true, name: t.name }), reason: '템플릿(매핑) 복구' },
   }).catch(() => {});
   revalidatePath(`/admin/containers/${t.containerId}`);
+}
+
+// ── 템플릿 폐기(삭제 대체) 승인 워크플로우 ──────────────────────
+//  '승인된 적 있는' 템플릿(APPROVED 이상)은 물리 삭제 없이 폐기 요청 → BSS 승인 시 폐기(보관 처리).
+//  아직 승인 전(초안/검수대기/반려)인 템플릿만 물리 삭제(deleteTemplate)를 허용한다.
+const TEMPLATE_UNAPPROVED = ['DRAFT', 'REVIEW', 'REJECTED']; // 아직 한 번도 승인 안 된 상태
+const TEMPLATE_RETIRE_ACTOR = 'marina.kim@sk.com';
+const TEMPLATE_RETIRE_APPROVER = 'BSS 승인자';
+// 'use server' 파일은 async 함수만 export 가능 → 내부 헬퍼는 비export
+const isTemplateApproved = (status: string) => !TEMPLATE_UNAPPROVED.includes(status);
+
+async function assertTemplateRemovable(t: { isDefault: boolean; containerId: string }) {
+  if (t.isDefault) throw new Error('기본 템플릿은 삭제/폐기할 수 없습니다. 먼저 다른 템플릿을 기본으로 지정하세요.');
+  const activeCount = await prisma.template.count({ where: { containerId: t.containerId, archivedAt: null } });
+  if (activeCount <= 1) throw new Error('컨테이너의 유일한 템플릿은 삭제/폐기할 수 없습니다.');
+}
+
+// 미승인 템플릿 완전 삭제(하드 delete) — 승인 이력이 없어 거버넌스 대상 아님.
+export async function deleteTemplate(templateId: string) {
+  const t = await prisma.template.findUnique({ where: { id: templateId }, select: { isDefault: true, status: true, containerId: true, name: true } });
+  if (!t) throw new Error('Template을 찾을 수 없습니다.');
+  if (isTemplateApproved(t.status)) throw new Error('승인된 템플릿은 완전 삭제할 수 없습니다. ‘폐기 요청’으로 진행하세요.');
+  await assertTemplateRemovable(t);
+  // 링크·버전 정리 후 템플릿 삭제 (코너/컴포넌트는 공용 라이브러리라 보존)
+  await prisma.$transaction([
+    prisma.templateCorner.deleteMany({ where: { templateId } }),
+    prisma.templateVersion.deleteMany({ where: { templateId } }),
+    prisma.template.delete({ where: { id: templateId } }),
+  ]);
+  await prisma.auditLog.create({
+    data: { actor: TEMPLATE_RETIRE_ACTOR, targetType: 'Template', targetId: templateId, beforeValue: JSON.stringify({ name: t.name, status: t.status }), reason: '미승인 템플릿 완전 삭제', result: 'DELETED' },
+  }).catch(() => {});
+  revalidatePath(`/admin/containers/${t.containerId}`);
+  redirect(`/admin/containers/${t.containerId}`);
+}
+
+// 폐기 요청 (승인된 템플릿: 정상 → 폐기 승인 대기). 사유 필수.
+export async function requestTemplateRetire(templateId: string, formData: FormData) {
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (!reason) throw new Error('폐기 사유를 입력해 주세요.');
+  const t = await prisma.template.findUnique({ where: { id: templateId }, select: { isDefault: true, status: true, containerId: true, retireStatus: true, name: true } });
+  if (!t) throw new Error('Template을 찾을 수 없습니다.');
+  if (!isTemplateApproved(t.status)) throw new Error('미승인 템플릿은 폐기 요청 대신 바로 삭제할 수 있습니다.');
+  if (t.retireStatus) throw new Error('이미 폐기 요청/처리된 템플릿입니다.');
+  await assertTemplateRemovable(t);
+  await prisma.template.update({ where: { id: templateId }, data: { retireStatus: 'REVIEW', retireReason: reason, retireRequestedAt: new Date() } });
+  await prisma.auditLog.create({
+    data: { actor: TEMPLATE_RETIRE_ACTOR, targetType: 'Template', targetId: templateId, afterValue: JSON.stringify({ retireStatus: 'REVIEW' }), reason: `템플릿 폐기 요청 · ${reason}`, result: 'RETIRE_REQUESTED' },
+  }).catch(() => {});
+  rp(templateId);
+}
+
+// 폐기 요청 취소 (폐기 승인 대기 → 정상). 운영자 철회.
+export async function cancelTemplateRetire(templateId: string) {
+  const t = await prisma.template.findUnique({ where: { id: templateId }, select: { retireStatus: true } });
+  if (t?.retireStatus !== 'REVIEW') throw new Error('폐기 승인 대기 상태에서만 취소할 수 있습니다.');
+  await prisma.template.update({ where: { id: templateId }, data: { retireStatus: null, retireReason: null, retireRequestedAt: null } });
+  await prisma.auditLog.create({
+    data: { actor: TEMPLATE_RETIRE_ACTOR, targetType: 'Template', targetId: templateId, afterValue: JSON.stringify({ retireStatus: null }), reason: '템플릿 폐기 요청 취소', result: 'RETIRE_CANCELED' },
+  }).catch(() => {});
+  rp(templateId);
+}
+
+// 폐기 승인 (폐기 승인 대기 → 폐기됨). 보관 처리(soft-delete)로 목록에서 숨김. BSS 처리.
+export async function approveTemplateRetire(templateId: string) {
+  const t = await prisma.template.findUnique({ where: { id: templateId }, select: { retireStatus: true, containerId: true, name: true } });
+  if (t?.retireStatus !== 'REVIEW') throw new Error('폐기 승인 대기 상태가 아닙니다.');
+  await prisma.template.update({
+    where: { id: templateId },
+    data: { retireStatus: 'RETIRED', retiredBy: TEMPLATE_RETIRE_APPROVER, retiredAt: new Date(), archivedAt: new Date(), archivedBy: TEMPLATE_RETIRE_APPROVER },
+  });
+  await prisma.auditLog.create({
+    data: { actor: TEMPLATE_RETIRE_APPROVER, targetType: 'Template', targetId: templateId, afterValue: JSON.stringify({ retireStatus: 'RETIRED', archived: true }), reason: '템플릿 폐기 승인 — 보관 처리(soft-delete)', result: 'RETIRED' },
+  }).catch(() => {});
+  revalidatePath(`/admin/containers/${t.containerId}`);
+  redirect(`/admin/containers/${t.containerId}`);
+}
+
+// 폐기 반려 (폐기 승인 대기 → 정상). BSS 처리.
+export async function rejectTemplateRetire(templateId: string, formData: FormData) {
+  const reason = String(formData.get('reason') ?? '').trim();
+  const t = await prisma.template.findUnique({ where: { id: templateId }, select: { retireStatus: true } });
+  if (t?.retireStatus !== 'REVIEW') throw new Error('폐기 승인 대기 상태가 아닙니다.');
+  await prisma.template.update({ where: { id: templateId }, data: { retireStatus: null, retireRequestedAt: null } });
+  await prisma.auditLog.create({
+    data: { actor: TEMPLATE_RETIRE_APPROVER, targetType: 'Template', targetId: templateId, afterValue: JSON.stringify({ retireStatus: null }), reason: `템플릿 폐기 반려${reason ? ` · ${reason}` : ''}`, result: 'RETIRE_REJECTED' },
+  }).catch(() => {});
+  rp(templateId);
 }
 
 // ── 버전 스냅샷 (임시저장 / 되돌리기 — PG-DSP-RBK-001) ──────────
@@ -181,6 +270,7 @@ async function serializeTemplate(templateId: string) {
     sortStrategy: c.sortStrategy, status: c.status, markupId: c.markupId, layoutDetail: c.layoutDetail,
     cornerLayout: c.cornerLayout, description: c.description, mainTitle: c.mainTitle, subTitle: c.subTitle,
     subTitleIcon: c.subTitleIcon, minItems: c.minItems, noDisplayCondition: c.noDisplayCondition,
+    bigBanner: c.bigBanner, bannerPosition: c.bannerPosition, cardShape: c.cardShape,
     moreButtonUse: c.moreButtonUse, moreButtonLabel: c.moreButtonLabel, moreButtonLink: c.moreButtonLink, bannerId: c.bannerId,
   });
   return {
@@ -298,11 +388,17 @@ function readCornerInfo(formData: FormData) {
     userMinItems: uMinRaw ? Number(uMinRaw) : null,
     userMaxItems: uMaxRaw ? Number(uMaxRaw) : null,
     noDisplayCondition: nn(formData, 'noDisplayCondition'),
+    recSource: nn(formData, 'recSource'), // (대표) 1순위 추천 수급 방식
+    recSourcePlan: nn(formData, 'recSourcePlan'), // 우선순위 편성(JSON 배열, 1순위→폴백)
+    showRecReason: String(formData.get('showRecReason') ?? '') === '1', // 추천 근거 표시 여부
+
     moreButtonUse: String(formData.get('moreButtonUse') ?? '') === '사용',
     moreButtonLabel: nn(formData, 'moreButtonLabel'),
     moreButtonLink: nn(formData, 'moreButtonLink'),
     markupId: nn(formData, 'markupId'),
     layoutDetail: nn(formData, 'layoutDetail'),
+    bigBanner: String(formData.get('bigBanner') ?? '') === '1', // 빅배너 = 배치(인스턴스) 옵션
+    // cardShape(카드 비율)는 '코너 구성'에서 전용 컨트롤(setCornerCardShape)로 관리 → 코너 정보 저장이 건드리지 않는다.
     bannerPosition: nn(formData, 'bannerPosition'),
     cornerLayout: nn(formData, 'cornerLayout'),
     description: nn(formData, 'description'),
@@ -459,7 +555,7 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
   }
   if (!(CORNER_TYPES as readonly string[]).includes(def.baseCategory)) throw new Error('유효한 Corner 유형이 아닙니다.');
 
-  const isComposite = def.baseCategory === '개인화 추천형';
+  const isComposite = false; // (구 개인화 추천형 복합형 라벨 제거 — 유형 7종 체계)
   const baseName = def.baseCategory; // 코너 이름 = 코너 유형과 동치(별칭 미사용)
   const nameParts = [def.typeDetail, def.bigBanner ? '빅배너' : ''].filter(Boolean);
   const name = nameParts.length ? `${baseName} · ${nameParts.join(' · ')}` : baseName;
@@ -479,6 +575,8 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
       description: def.description,
       // 노출 개수(최소/최대)는 타입에서 상속하지 않는다 — 빌더에서 코너별로 설정
       sortStrategy: def.defaultSortStrategy ?? 'MANUAL',
+      // 추천 수급 방식 기본값 상속 (상품형·개인화 추천형) — 코너별 조정 가능
+      recSource: def.defaultRecSource ?? null,
       moreButtonUse: moreOn,
       moreButtonLabel: moreOn ? (def.defaultMoreButtonLabel ?? '더보기') : null,
       // 코너 유형 관리의 유형 샘플 썸네일을 코너에 상속(카드/참고용) — 컴포넌트가 생기면 미리보기는 컴포넌트로 렌더
@@ -552,6 +650,10 @@ async function ensureCornerTypeCatalog(
   layout: string | null,
   markupId: string | null,
 ) {
+  // 전시/관리(CY*) 카탈로그에는 '전시 계열' 유형만 자동 등록한다. 이벤트/미션 계열(EV*)은 이벤트 카탈로그(시드) 소관 —
+  //  프로모션 본문 빌더에서 온 이벤트 코너가 전시/관리 코너 유형을 만들지 않도록 방지(전시/관리 영향 0).
+  const EVENT_FAMILIES = ['혜택상품형', '디스플레이형', '동작형'];
+  if (EVENT_FAMILIES.includes(baseCategory)) return;
   const detail = typeDetail?.trim() || null;
   const existing = await prisma.cornerType.findFirst({ where: { baseCategory, typeDetail: detail } });
   if (existing) return;
@@ -581,6 +683,19 @@ async function ensureCornerTypeCatalog(
 
 export async function removeCorner(templateId: string, templateCornerId: string) {
   await prisma.templateCorner.delete({ where: { id: templateCornerId } });
+  rp(templateId);
+}
+
+// 카드 비율(가로형 2.5배열) — '코너 구성'의 전용 컨트롤에서 호출. 코너 정보 저장과 독립.
+//  값: '1:1' | '3:4' | '4:3' (레거시 정사각형/직사각형은 UI에서 정규화). 빈 문자열이면 해제(null).
+export async function setCornerCardShape(templateId: string, cornerId: string, cardShape: string) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { cardShape: cardShape || null } });
+  rp(templateId);
+}
+
+// 상품 카드 제목 줄 수(1=한 줄 말줄임 | 2=두 줄) — '코너 구성' 전용 컨트롤에서 호출. 코너 정보 저장과 독립.
+export async function setCornerTitleLines(templateId: string, cornerId: string, lines: number) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { titleLines: lines === 2 ? 2 : null } });
   rp(templateId);
 }
 
@@ -731,6 +846,56 @@ export async function addBlankComponent(templateId: string, cornerId: string) {
   rp(templateId);
 }
 
+// BSS 상품(혜택 브랜드) 불러오기 — 카탈로그에서 고른 브랜드를 로고·이름·대표 혜택이 채워진 컴포넌트로 코너에 추가.
+//  아톰 구성은 코너의 첫 컴포넌트 구조를 따르되(없으면 로고+이름+혜택 기본), 값은 브랜드 정보로 채운다.
+export async function addBssProduct(templateId: string, cornerId: string, productKey: string) {
+  const product = bssProductByKey(productKey);
+  if (!product) throw new Error('상품을 찾을 수 없습니다.');
+  const corner = await prisma.corner.findUnique({
+    where: { id: cornerId },
+    select: {
+      cornerType: true,
+      cornerComponents: {
+        orderBy: { order: 'asc' },
+        take: 1,
+        include: { component: { include: { componentAtoms: { orderBy: { order: 'asc' }, include: { atom: true } } } } },
+      },
+    },
+  });
+  if (!corner) throw new Error('Corner를 찾을 수 없습니다.');
+  const first = corner.cornerComponents[0]?.component;
+  const allowed = CORNER_COMPONENT_MAP[corner.cornerType as CornerType] ?? [];
+  const componentType = first?.componentType ?? allowed[0] ?? '정보형';
+
+  const isVisual = (t: string) => t === 'ICON' || t === 'IMAGE';
+  const isText = (t: string) => ['TEXT', 'BENEFIT_TEXT', 'INFO', 'PRICE', 'CTA', 'BADGE'].includes(t);
+  const label = (t: string) => ATOM_TYPE_LABELS[t as AtomType] ?? t;
+  const baseTypes = first && first.componentAtoms.length ? first.componentAtoms.map((ca) => ca.atom.atomType) : ['ICON', 'BENEFIT_TEXT', 'INFO'];
+
+  // 값 채우기: 첫 시각 아톰=로고, 첫 텍스트=브랜드명, 다음 텍스트=대표 혜택
+  let logoUsed = false, nameUsed = false, benefitUsed = false;
+  const specs = baseTypes.map((atomType) => {
+    let content: string | null = null, imageUrl: string | null = null, altText: string | null = null, name = label(atomType);
+    if (isVisual(atomType) && !logoUsed) { imageUrl = product.logo; altText = product.name; name = '로고'; logoUsed = true; }
+    else if (isText(atomType) && !nameUsed) { content = product.name; name = '브랜드명'; nameUsed = true; }
+    else if (isText(atomType) && !benefitUsed) { content = product.benefit; name = '혜택'; benefitUsed = true; }
+    return { atomType, name, content, imageUrl, altText };
+  });
+  // 스펙에 로고/이름 자리가 없으면 최소 보강
+  if (!logoUsed) specs.unshift({ atomType: 'ICON', name: '로고', content: null, imageUrl: product.logo, altText: product.name });
+  if (!nameUsed) specs.push({ atomType: 'BENEFIT_TEXT', name: '브랜드명', content: product.name, imageUrl: null, altText: null });
+
+  const component = await prisma.component.create({ data: { name: product.name, componentType, status: 'active' } });
+  for (let i = 0; i < specs.length; i++) {
+    const s = specs[i];
+    const atom = await prisma.atom.create({ data: { name: s.name, atomType: s.atomType, status: 'active', content: s.content, imageUrl: s.imageUrl, altText: s.altText } });
+    await prisma.componentAtom.create({ data: { componentId: component.id, atomId: atom.id, order: i, isRequired: false } });
+  }
+  const order = await nextOrder('cornerComponent', { cornerId });
+  await prisma.cornerComponent.create({ data: { cornerId, componentId: component.id, order } });
+  rp(templateId);
+}
+
 export async function removeComponent(templateId: string, cornerComponentId: string) {
   await prisma.cornerComponent.delete({ where: { id: cornerComponentId } });
   rp(templateId);
@@ -828,15 +993,17 @@ export async function updateAtom(templateId: string, atomId: string, formData: F
 // 컴포넌트의 Atom들을 한 번에 저장 (개별 저장 버튼 없이 '완료'에서 일괄 처리)
 export async function saveAtoms(
   templateId: string,
-  updates: { atomId: string; componentAtomId?: string; visible?: boolean; content: string | null; imageUrl: string | null; altText: string | null; linkUrl: string | null }[],
+  updates: { atomId: string; componentAtomId?: string; visible?: boolean; atomType?: string; content: string | null; imageUrl: string | null; altText: string | null; linkUrl: string | null }[],
 ) {
   const norm = (v: string | null) => (v && v.trim().length ? v.trim() : null);
+  const ATOM_TYPES = new Set(['TEXT', 'BUTTON', 'IMAGE', 'ICON', 'BADGE', 'PRICE', 'BENEFIT_TEXT', 'CTA', 'INFO', 'BARCODE']);
   if (updates.length) {
     await prisma.$transaction([
       ...updates.map((u) =>
         prisma.atom.update({
           where: { id: u.atomId },
-          data: { content: norm(u.content), imageUrl: norm(u.imageUrl), altText: norm(u.altText), linkUrl: norm(u.linkUrl) },
+          // atomType은 아이콘↔이미지 전환(정보형 아이콘/이미지형)에서만 바뀜 — 유효값일 때만 반영
+          data: { content: norm(u.content), imageUrl: norm(u.imageUrl), altText: norm(u.altText), linkUrl: norm(u.linkUrl), ...(u.atomType && ATOM_TYPES.has(u.atomType) ? { atomType: u.atomType } : {}) },
         }),
       ),
       // 표시/숨김(visible)은 ComponentAtom(정션)에 저장

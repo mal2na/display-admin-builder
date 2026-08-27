@@ -1,7 +1,8 @@
-import { Signal, Wifi, BatteryFull, ChevronRight, Percent, ShoppingBag, User, Lock, GripVertical } from 'lucide-react';
+import { Signal, Wifi, BatteryFull, ChevronRight, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles } from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 import { resolveCvmSample, cvmBindingLabel } from '@/lib/display-taxonomy';
 import { PreviewImage } from './preview-image';
+import { cn } from '@/lib/utils';
 
 export type PreviewAtom = {
   id: string;
@@ -28,10 +29,16 @@ export type PreviewCorner = {
   subTitleIcon?: string | null;
   moreButtonUse?: boolean | null;
   moreButtonLabel?: string | null;
+  bigBanner?: boolean | null; // 배치(인스턴스) 옵션 — 상단 빅배너로 강조
+  cardShape?: string | null; // 상품형 2.5배열 카드 모양 (정사각형 | 직사각형)
+  titleLines?: number | null; // 상품 카드 제목 줄 수 (2=두 줄)
   bannerImageUrl?: string | null;
   bannerName?: string | null;
   bannerPosition?: string | null;
   sampleImageUrl?: string | null;
+  recSource?: string | null; // (대표) 1순위 추천 수급 방식 (CVM 기반이면 후보·순위·근거 런타임 판정)
+  recSourcePlan?: string | null; // 우선순위 편성(JSON 배열, 1순위→폴백)
+  showRecReason?: boolean | null; // 추천 근거(추천 사유) 카드 표시 여부
 };
 
 const byType = (atoms: PreviewAtom[], ...types: string[]) => atoms.filter((a) => types.includes(a.atomType));
@@ -107,16 +114,34 @@ function MenuListView({ component }: { component: PreviewComponent }) {
   );
 }
 
-function ProductCard({ component }: { component: PreviewComponent }) {
+function ProductCard({ component, shape, reason, titleLines }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null }) {
   const poster = first(component.atoms, 'IMAGE');
   const title = first(component.atoms, 'TEXT');
   const info = first(component.atoms, 'INFO');
+  // 카드 비율: 1:1(정사각·상품) | 3:4(세로·포스터) | 4:3(가로·와이드). 기본 3:4. (레거시 정사각형=1:1)
+  const square = shape === '1:1' || shape === '정사각형';
+  const wide = shape === '4:3';
+  const ratioCls = square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
+  const wCls = square ? 'w-[136px]' : wide ? 'w-[152px]' : 'w-[128px]';
+  // 상품명 줄 수 옵션: 2면 두 줄까지(line-clamp-2), 기본은 한 줄 말줄임(truncate)
+  const nameCls = titleLines === 2 ? 'line-clamp-2' : 'truncate';
   return (
-    <div className="w-[128px] shrink-0">
-      <ImageBox atom={poster} className="aspect-[3/4] w-full rounded-xl" />
-      <p className="mt-1.5 truncate text-[13px] font-semibold text-slate-900">{title?.content ?? component.name}</p>
+    <div className={cn('shrink-0', wCls)}>
+      <ImageBox atom={poster} className={cn('w-full rounded-xl', ratioCls)} />
+      {reason && <RecReason text={reason} />}
+      <p className={cn('mt-1.5 text-[13px] font-semibold leading-tight text-slate-900', nameCls)}>{title?.content ?? component.name}</p>
       {info && <p className="text-[11px] text-slate-400">{info.content}</p>}
     </div>
+  );
+}
+
+// 추천 근거(추천 사유) — CVM이 런타임에 내려주는 '왜 추천했는지'. 빌더 미리보기에선 예시 문구로 표시.
+function RecReason({ text }: { text: string }) {
+  // '예:' 접두 — 실제 사유는 CVM이 고객별 런타임 생성, 미리보기는 예시임을 명시.
+  return (
+    <span className="mt-1.5 inline-flex max-w-full items-center gap-0.5 truncate rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-600" title="추천 사유는 노출 시 CVM이 고객마다 자동 생성합니다 (미리보기는 예시)">
+      <Sparkles className="h-2.5 w-2.5 shrink-0" /> <span className="text-violet-400">예:</span> {text}
+    </span>
   );
 }
 
@@ -142,7 +167,7 @@ function BannerCard({ component }: { component: PreviewComponent }) {
 }
 
 // 세로 리스트 행: [로고/아이콘] + [혜택문구(굵게) / 브랜드(작게)]. 상품형·세로형, 혜택형 공용.
-function BenefitRow({ component }: { component: PreviewComponent }) {
+function BenefitRow({ component, reason }: { component: PreviewComponent; reason?: string }) {
   const logo = first(component.atoms, 'ICON', 'IMAGE');
   const texts = byType(component.atoms, 'BENEFIT_TEXT', 'TEXT', 'INFO', 'PRICE');
   const title = texts[0];
@@ -153,6 +178,7 @@ function BenefitRow({ component }: { component: PreviewComponent }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-[14px] font-semibold text-slate-900">{title?.content ?? component.name}</p>
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}
+        {reason && <RecReason text={reason} />}
       </div>
     </div>
   );
@@ -165,12 +191,37 @@ function AtomIcon({ atom, className }: { atom?: PreviewAtom; className?: string 
   return <ImageBox atom={atom} className={`rounded-xl ${className ?? ''}`} />;
 }
 
-// 상태 안내형·정보형 카드(마이 홈 아이콘형): [값(크게)+배지 / 라벨] + 우측 아이콘 원.
+// 고정·필수 노출형·정보형·프로필형: [원형 사진][이름·번호] … [나의 가입 현황 CTA]. (my-profile.png 기준)
+function ProfileCard({ component }: { component?: PreviewComponent }) {
+  const atoms = component?.atoms ?? [];
+  const avatar = first(atoms, 'ICON', 'IMAGE');
+  const name = first(atoms, 'TEXT');
+  const phone = first(atoms, 'INFO');
+  const cta = first(atoms, 'CTA', 'BUTTON');
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-slate-400">
+        {avatar ? <AtomIcon atom={avatar} className="h-6 w-6" /> : <User className="h-5 w-5" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[14px] text-slate-900">
+          <span className="font-semibold">{resolveCvmSample(name?.content) || '고객'}님</span>
+          {phone && <span className="ml-1.5 text-[12px] text-slate-400">{resolveCvmSample(phone.content)}</span>}
+        </p>
+      </div>
+      {cta && <span className="shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-600">{cta.content}</span>}
+    </div>
+  );
+}
+
+// 상태 안내형·정보형 카드(마이 홈 아이콘/이미지형): [값(크게)+배지 / 라벨] + 우측 아이콘(원형) 또는 이미지(사각 썸네일).
 function InfoCard({ component }: { component: PreviewComponent }) {
   const iconAtom = first(component.atoms, 'ICON', 'IMAGE');
   const value = first(component.atoms, 'PRICE') ?? first(component.atoms, 'TEXT');
   const badge = first(component.atoms, 'BADGE');
   const label = byType(component.atoms, 'TEXT', 'INFO').find((a) => a !== value) ?? first(component.atoms, 'INFO');
+  // 아이콘/이미지형: 아톰이 이미지면 사각 썸네일, 아이콘이면 원형 배경 — 빌더에서 아이콘/이미지 중 선택.
+  const isImage = iconAtom?.atomType === 'IMAGE';
   return (
     <div className="flex items-center gap-3">
       <div className="min-w-0 flex-1 space-y-0.5">
@@ -181,9 +232,15 @@ function InfoCard({ component }: { component: PreviewComponent }) {
         {label && <p className="truncate text-[12px] text-slate-400">{resolveCvmSample(label.content)}</p>}
       </div>
       {iconAtom && (
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-50 text-indigo-500">
-          <AtomIcon atom={iconAtom} className="h-6 w-6" />
-        </div>
+        isImage ? (
+          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-slate-50">
+            <PreviewImage src={iconAtom.imageUrl} alt={iconAtom.altText} className="h-full w-full object-cover" />
+          </div>
+        ) : (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-50 text-indigo-500">
+            <AtomIcon atom={iconAtom} className="h-6 w-6" />
+          </div>
+        )
       )}
     </div>
   );
@@ -216,7 +273,7 @@ function BarcodeCard({ component }: { component?: PreviewComponent }) {
         ))}
       </div>
       {numberText && <p className="mt-2 text-center text-[13px] font-medium tracking-[0.25em] text-slate-500">{numberText}</p>}
-      <p className="mt-1.5 text-center text-[10px] text-slate-400">회원별 발급 · {refreshMin}분 유효(자동 갱신) · 번호는 CVM 연동</p>
+      <p className="mt-1.5 text-center text-[10px] text-slate-400">회원별 발급 · {refreshMin}분 유효(자동 갱신) · 번호는 고객정보 연동</p>
     </div>
   );
 }
@@ -231,17 +288,17 @@ function DefaultCard({ component }: { component: PreviewComponent }) {
 
 type LayoutMode = 'horizontal' | 'grid' | 'single' | 'list';
 
-function ComponentView({ component, mode }: { component: PreviewComponent; mode?: LayoutMode }) {
+function ComponentView({ component, mode, cardShape, reason, titleLines }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; reason?: string; titleLines?: number | null }) {
   switch (component.componentType) {
     case '선택형':
       return <ChipsView component={component} />;
     case '상품형':
       // 세로 리스트형 코너에서는 큰 포스터 카드가 아니라 로고+문구 행 구조로 렌더 (참고 디자인)
-      return mode === 'list' ? <BenefitRow component={component} /> : <ProductCard component={component} />;
+      return mode === 'list' ? <BenefitRow component={component} reason={reason} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':
-      return <BenefitRow component={component} />;
+      return <BenefitRow component={component} reason={reason} />;
     case '정보형':
       return <InfoCard component={component} />;
     default:
@@ -281,36 +338,47 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     }
   })();
 
+  // 추천 근거(추천 사유) 표시 — 개인화 방식(CVM/채널데이터)일 때만. 문구는 런타임(CVM) 값이라 미리보기엔 예시로.
+  const recPrimary = ((): string | null => {
+    try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a) && a[0]) return a[0]; } catch { /* noop */ }
+    return corner.recSource ?? null;
+  })();
+  const showReason = !!corner.showRecReason && (recPrimary === 'CVM 기반' || recPrimary === '채널 데이터');
+  // 개인화 '근거'는 정책상 최근 행동·보유 관계·고객 상태·관심 기반 (TM-REA-003). 인기순 등 비개인화는 제외.
+  // 실제 문구는 CVM이 고객별로 런타임 생성 → 미리보기는 '예시'.
+  const REC_REASON_SAMPLES = ['최근 본 상품과 연관', '보유 요금제와 연계', '회원 등급 혜택', '관심 카테고리 기반'];
+  const reasonFor = (i: number) => (showReason ? REC_REASON_SAMPLES[i % REC_REASON_SAMPLES.length] : undefined);
+
   // 배치 모드에 맞춰 컴포넌트 묶음을 렌더
   const renderComps = (comps: PreviewComponent[], mode: LayoutMode) => {
     if (mode === 'horizontal')
       return (
         <div className="flex gap-3 overflow-x-auto pb-1">
-          {comps.map((c) => (
-            <ComponentView key={c.id} component={c} mode={mode} />
+          {comps.map((c, i) => (
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
           ))}
         </div>
       );
     if (mode === 'grid')
       return (
         <div className="grid grid-cols-2 gap-2">
-          {comps.map((c) => (
-            <ComponentView key={c.id} component={c} mode={mode} />
+          {comps.map((c, i) => (
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
           ))}
         </div>
       );
     if (mode === 'single')
       return (
         <div className="space-y-2 [&>*]:w-full">
-          {comps.map((c) => (
-            <ComponentView key={c.id} component={c} mode={mode} />
+          {comps.map((c, i) => (
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
           ))}
         </div>
       );
     return (
       <div className="divide-y divide-slate-100">
-        {comps.map((c) => (
-          <ComponentView key={c.id} component={c} mode={mode} />
+        {comps.map((c, i) => (
+          <ComponentView key={c.id} component={c} mode={mode} reason={reasonFor(i)} />
         ))}
       </div>
     );
@@ -325,6 +393,8 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 메뉴 리스트(업무 진입형 · 선택형 · 메뉴 리스트)는 칩이 아니라 세로 메뉴 리스트로 렌더 — 코너 유형 관리 와이어프레임과 일치
   const isMenuList = /메뉴\s*리스트/.test(corner.layoutDetail ?? '');
   const menuComp = corner.components.find((c) => c.componentType === '선택형') ?? corner.components[0];
+  // 프로필형(고정·필수 노출형 · 정보형 · 프로필형)은 상태카드가 아니라 프로필 행([사진][이름·번호]…[CTA])으로 렌더
+  const isProfile = /프로필/.test(corner.layoutDetail ?? '');
 
   const body =
     corner.components.length === 0 ? (
@@ -343,6 +413,8 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       )
     ) : isBarcode ? (
       <BarcodeCard component={corner.components[0]} />
+    ) : isProfile ? (
+      <ProfileCard component={corner.components[0]} />
     ) : isMenuList ? (
       <MenuListView component={menuComp} />
     ) : chipComps.length > 0 && bodyComps.length > 0 ? (
@@ -361,24 +433,59 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 코너 부속 배너. 배너형 코너는 배너가 곧 본문이라 항상 상단. 그 외(상품형 등 '빅배너')는
   // 빌더에서 정한 bannerPosition(상단/하단)에 따라 카드 위/아래로 렌더(기본 상단).
   const bannerAtTop = isBanner || corner.bannerPosition !== '하단';
-  const bannerEl = corner.bannerImageUrl ? (
-    isRenderableImg(corner.bannerImageUrl) ? (
+  // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
+  const firstImg = corner.components.flatMap((c) => c.atoms).find((a) => a.atomType === 'IMAGE' && isRenderableImg(a.imageUrl))?.imageUrl ?? null;
+  // 상단 히어로 배너는 '빅배너로 강조'(배치 옵션) 전용 — 상품형·혜택·오퍼형·콘텐츠 안내형에서 bigBanner일 때만.
+  //  · 배너형 코너는 히어로로 승격하지 않는다. 배너 자체가 본문(BannerCard 컴포넌트)으로 렌더된다.
+  //  · 빅배너를 끄면 첨부 배너 이미지가 있어도 상단 배너를 표시하지 않는다(빅배너 토글이 유일한 스위치).
+  const bannerSrc = corner.bigBanner && !isBanner ? (corner.bannerImageUrl ?? firstImg) : null;
+  const bannerEl = bannerSrc ? (
+    isRenderableImg(bannerSrc) ? (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={corner.bannerImageUrl}
+        src={bannerSrc}
         alt={corner.bannerName ?? ''}
         className="aspect-[16/7] w-full overflow-hidden rounded-2xl object-cover"
       />
     ) : (
       <div className="flex aspect-[16/7] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-200 to-slate-300 text-[10px] font-medium text-slate-600">
-        {corner.bannerName ?? corner.bannerImageUrl.split('/').pop()}
+        {corner.bannerName ?? bannerSrc.split('/').pop()}
       </div>
     )
+  ) : corner.bigBanner && !isBanner ? (
+    // 승격할 이미지가 없으면 타이틀을 얹은 그라디언트 히어로로 빅배너 표현
+    <div className="flex aspect-[16/7] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 px-4 text-center text-[15px] font-bold leading-snug text-white">
+      {corner.mainTitle || corner.name}
+    </div>
   ) : null;
 
   return (
     <section className={`space-y-2 ${wrapClass}`}>
       {bannerAtTop && bannerEl}
+      {(() => {
+        // 추천 수급 방식 배지 — 1순위 + 폴백 체인 표시 (예: CVM 개인화 추천 · 없으면 → 룰 기반 → 수동 대체)
+        let plan: string[] = [];
+        try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a)) plan = a.filter((x) => typeof x === 'string'); } catch { /* noop */ }
+        if (!plan.length && corner.recSource) plan = [corner.recSource];
+        if (!plan.length) return null;
+        const primary = plan[0];
+        const fallbacks = plan.slice(1);
+        const isCvm = primary === 'CVM 기반';
+        return (
+          <div className="rounded-lg bg-violet-50 px-2.5 py-1.5 text-violet-700" title="후보가 없으면 다음 순위(폴백)로 대체 노출됩니다">
+            <p className="flex items-center gap-1 text-[10px] font-semibold leading-tight">
+              <Sparkles className="h-3 w-3 shrink-0" />
+              <span className="min-w-0">{isCvm ? 'CVM 개인화 추천 · 고객별 순서로 자동 노출' : `${primary} 기반 노출`}</span>
+            </p>
+            {fallbacks.length > 0 && (
+              <p className="mt-0.5 pl-4 text-[10px] font-normal leading-tight text-violet-500">없으면 → {fallbacks.join(' → ')}</p>
+            )}
+            {showReason && (
+              <p className="mt-1 border-t border-violet-100 pl-4 pt-1 text-[10px] font-normal leading-tight text-violet-500">추천 사유는 노출 시 고객마다 CVM이 자동 생성 — 카드의 ‘예:’는 미리보기 예시예요</p>
+            )}
+          </div>
+        );
+      })()}
       {heading && (
         <div>
           <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>

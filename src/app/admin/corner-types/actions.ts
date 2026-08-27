@@ -92,6 +92,7 @@ function readForm(formData: FormData) {
     defaultMinItems: num('defaultMinItems'),
     defaultMaxItems: num('defaultMaxItems'),
     defaultSortStrategy: opt('defaultSortStrategy'),
+    defaultRecSource: opt('defaultRecSource'),
     defaultMoreButton: String(formData.get('defaultMoreButton') ?? '') === '1',
     defaultMoreButtonLabel: opt('defaultMoreButtonLabel'),
     cvmFields: formData.getAll('cvmFields').map(String).filter(Boolean).join(','), // CVM 연동 필드 keys
