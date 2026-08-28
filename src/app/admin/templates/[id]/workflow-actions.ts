@@ -86,7 +86,8 @@ export async function collectReviewIssues(templateId: string): Promise<ReviewIss
 
   for (const tc of t.templateCorners) {
     const c = tc.corner;
-    const cname = c.mainTitle?.split('\n')[0] || c.title || c.name;
+    // 위치 식별은 코너명 우선 — 타이틀(예: '6월 8일까지 지훈님에게만')은 어느 코너인지 알기 어려움(사용자 요청).
+    const cname = c.name || c.mainTitle?.split('\n')[0] || c.title || '코너';
 
     // 구성 컴포넌트 존재
     if (c.cornerComponents.length === 0) {

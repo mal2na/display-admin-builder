@@ -1102,7 +1102,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
             <Slot label="이미지" className="h-10 w-10 shrink-0" />
             <div className="flex-1 space-y-1">
               <Slot label="텍스트" className="h-3 w-3/4 justify-start" />
-              <Slot label="가격" className="h-3 w-1/3 justify-start" />
+              <Slot label="설명" className="h-3 w-1/3 justify-start" />
             </div>
           </div>
         ))}
@@ -1132,7 +1132,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
             <div key={i} className={cn('shrink-0 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5', cardW)}>
               <Slot label="이미지" className={cn('w-full', ratioCls)} />
               <Slot label="텍스트" className="h-3 w-full justify-start" />
-              <Slot label="가격" className="h-3 w-2/3 justify-start" />
+              <Slot label="설명" className="h-3 w-2/3 justify-start" />
             </div>
           ))}
         </div>
@@ -1147,7 +1147,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
             {/* 상품 이미지 = 세로로 긴 카드 이미지 영역 */}
             <Slot label="이미지" className="h-28 w-full" />
             <Slot label="텍스트" className="h-3 w-full justify-start" />
-            <Slot label="가격" className="h-3 w-2/3 justify-start" />
+            <Slot label="설명" className="h-3 w-2/3 justify-start" />
           </div>
         ))}
       </div>
@@ -1167,12 +1167,12 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     // 고정·필수 노출형·정보형·프로필형: [원형 사진][이름·번호] … [CTA] (my-profile.png 기준)
     body = (
       <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <Slot label="사진" className="h-9 w-9 shrink-0 rounded-full" />
+        <Slot label="이미지" className="h-9 w-9 shrink-0 rounded-full" />
         <div className="flex-1 space-y-1">
-          <Slot label="이름" className="h-3 w-1/2 justify-start" />
+          <Slot label="텍스트" className="h-3 w-1/2 justify-start" />
           <Slot label="설명" className="h-3 w-2/3 justify-start" />
         </div>
-        <Slot label="버튼(CTA)" className="h-6 w-20 rounded-full" />
+        <Slot label="CTA" className="h-6 w-20 rounded-full" />
       </div>
     );
   } else if (base === '상태 안내형' || has('아이콘', '금액형', '사용량형', '요약')) {
@@ -1181,7 +1181,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
         <div className="flex-1 space-y-1.5">
           <div className="flex items-center gap-1.5">
-            <Slot label="가격" className="h-5 w-1/2 justify-start" />
+            <Slot label="설명" className="h-5 w-1/2 justify-start" />
             <Slot label="배지" className="h-4 w-2/5" />
           </div>
           <Slot label="텍스트" className="h-3 w-2/3 justify-start" />

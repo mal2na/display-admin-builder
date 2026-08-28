@@ -24,7 +24,6 @@ import {
   cvmBindingLabel,
   resolveCvmSample,
   isCvmBinding,
-  CVM_FIELDS,
   REC_SOURCE_METHODS,
   REC_SOURCE_INFO,
   type AtomType,
@@ -66,6 +65,9 @@ import {
   swapCornerToType,
   setCornerCardShape,
   setCornerTitleLines,
+  setCornerBigBanner,
+  setCornerBannerPosition,
+  setCornerMoreButton,
   addBssProduct,
 } from '../actions';
 import { BSS_PRODUCTS, BSS_CATEGORY_LABELS, BSS_SUBCATEGORIES, type BssCategory } from '@/lib/bss-products';
@@ -168,8 +170,8 @@ function cornerTypeParts(corner: CornerNode): { base: string; rest: string; bigB
   }
   const raw = corner.layoutDetail ?? '';
   const isBannerCorner = base === '배너형';
-  // 빅배너는 인스턴스 옵션(corner.bigBanner)이 진실. 레거시 배열마커/배너연결은 폴백으로만 인정.
-  const bigBanner = !isBannerCorner && (corner.bigBanner || /배너/.test(raw) || corner.bannerId != null);
+  // 빅배너는 인스턴스 옵션(corner.bigBanner)이 유일한 진실 — 끄면 칩·상단배너·렌더 모두 사라진다(레거시 배열마커/배너연결 폴백 제거).
+  const bigBanner = !isBannerCorner && corner.bigBanner;
   const detail = raw.replace(/\s*·\s*빅배너\s*/, '').replace(/\(배너\)/, '').trim();
   const rest = [comp, detail].filter(Boolean).join(' · '); // 빅배너는 경로에서 빼고 별도 배지로
   return { base, rest, bigBanner };
@@ -795,27 +797,13 @@ function AtomRow({
             </button>
           </div>
         ) : (
-          <div className="space-y-1">
-            <Input
-              value={atom.content ?? ''}
-              onChange={(e) => onChange({ content: e.target.value })}
-              placeholder="문구 / 가격 / 설명"
-              className="h-8 text-xs"
-            />
-            <Select
-              value=""
-              onChange={(e) => e.target.value && onChange({ content: `@cvm:${e.target.value}` })}
-              className="h-7 w-full text-[11px] text-sky-700"
-              title="고객정보 가져오기"
-            >
-              <option value="">＋ BSS 고객정보 가져오기…</option>
-              {CVM_FIELDS.map((cf) => (
-                <option key={cf.key} value={cf.key}>
-                  {cf.category} · {cf.label}
-                </option>
-              ))}
-            </Select>
-          </div>
+          // 'BSS 고객정보 가져오기' 드롭다운 제거(사용자 요청) — 직접 입력만. 기존 @cvm 바인딩 값은 위 isCvmBinding 분기로 계속 표시.
+          <Input
+            value={atom.content ?? ''}
+            onChange={(e) => onChange({ content: e.target.value })}
+            placeholder="문구 / 설명"
+            className="h-8 text-xs"
+          />
         ))}
       {f.image &&
         (atom.atomType === 'ICON' ? (
@@ -1323,11 +1311,12 @@ function ComponentList({
             </SortableContext>
           </div>
         )}
-        {bodyOrdered.length > 0 && (
-          <div className="rounded-lg border bg-muted/30 p-2">
-            <p className="mb-1.5 flex items-center gap-1 px-0.5 text-[11px] font-semibold text-slate-600">
-              {bodyLabel} <span className="rounded-full bg-white px-1.5 text-[10px] text-slate-500">{bodyOrdered.length}</span>
-            </p>
+        {/* 콘텐츠 묶음 — 본문(상품·혜택 등) 컴포넌트 + 추가 버튼. 비어도 항상 노출(추가 진입점). */}
+        <div className="rounded-lg border bg-muted/30 p-2">
+          <p className="mb-1.5 flex items-center gap-1 px-0.5 text-[11px] font-semibold text-slate-600">
+            {bodyLabel} <span className="rounded-full bg-white px-1.5 text-[10px] text-slate-500">{bodyOrdered.length}</span>
+          </p>
+          {bodyOrdered.length > 0 ? (
             <SortableContext items={bodyIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-1.5">
                 {bodyOrdered.map((cc, i) => (
@@ -1335,28 +1324,29 @@ function ComponentList({
                 ))}
               </div>
             </SortableContext>
+          ) : (
+            <p className="px-0.5 pb-1 text-[11px] text-muted-foreground">아직 콘텐츠가 없습니다. 아래에서 추가하세요.</p>
+          )}
+          {/* 추가 버튼 — 빈 컴포넌트 / BSS 상품(혜택 브랜드) 불러오기. 콘텐츠 묶음 안이라 칩이 아닌 본문으로 추가됨을 명확히. */}
+          <div className="mt-2 flex gap-1.5">
+            <form action={addBlankComponent.bind(null, templateId, corner.id)} className="flex-1">
+              <button
+                type="submit"
+                className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed bg-white/70 py-2 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary"
+              >
+                <Plus className="h-3.5 w-3.5" /> 컴포넌트 추가
+              </button>
+            </form>
+            <button
+              type="button"
+              onClick={() => setBssOpen(true)}
+              className="flex flex-1 items-center justify-center gap-1 rounded-md border border-dashed border-sky-300 bg-white/70 py-2 text-xs font-medium text-sky-700 hover:border-sky-500 hover:bg-sky-50"
+            >
+              <Search className="h-3.5 w-3.5" /> BSS 상품 불러오기
+            </button>
           </div>
-        )}
+        </div>
       </DndContext>
-
-      {/* 추가 버튼 — 빈 컴포넌트 / BSS 상품(혜택 브랜드) 불러오기 */}
-      <div className="flex gap-1.5">
-        <form action={addBlankComponent.bind(null, templateId, corner.id)} className="flex-1">
-          <button
-            type="submit"
-            className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed py-2 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary"
-          >
-            <Plus className="h-3.5 w-3.5" /> 컴포넌트 추가
-          </button>
-        </form>
-        <button
-          type="button"
-          onClick={() => setBssOpen(true)}
-          className="flex flex-1 items-center justify-center gap-1 rounded-md border border-dashed border-sky-300 py-2 text-xs font-medium text-sky-700 hover:border-sky-500 hover:bg-sky-50"
-        >
-          <Search className="h-3.5 w-3.5" /> BSS 상품 불러오기
-        </button>
-      </div>
       <BssProductPickerModal
         open={bssOpen}
         pending={bssPending}
@@ -1437,45 +1427,152 @@ function CardShapeControl({ templateId, corner }: { templateId: string; corner: 
   if (!canCardShape) return null;
   const choose = (sh: string) => { setShape(sh); start(() => setCornerCardShape(templateId, corner.id, sh)); };
   const chooseLines = (n: number) => { setLines(n); start(() => setCornerTitleLines(templateId, corner.id, n)); };
+  const RATIOS: { sh: string; desc: string; w: number; h: number }[] = [
+    { sh: '1:1', desc: '정사각·상품', w: 26, h: 26 },
+    { sh: '3:4', desc: '세로·포스터', w: 21, h: 28 },
+    { sh: '4:3', desc: '가로·와이드', w: 28, h: 21 },
+  ];
   return (
-    <div className="mb-3 space-y-2.5 rounded-md border border-sky-200 bg-sky-50/40 p-2.5">
-      <div className="space-y-1.5">
-        <label className="text-[11px] font-semibold text-sky-800">카드 비율 (가로형 2.5배열)</label>
-        <div className="flex gap-1.5">
-          {([['1:1', '정사각·상품'], ['3:4', '세로·포스터'], ['4:3', '가로·와이드']] as const).map(([sh, desc]) => (
-            <button
-              key={sh}
-              type="button"
-              disabled={pending}
-              onClick={() => choose(sh)}
-              className={cn('flex-1 rounded-md border px-2 py-1.5 text-center text-xs font-medium transition', shape === sh ? 'border-sky-500 bg-sky-500 text-white' : 'hover:bg-secondary')}
-            >
-              <span className="block font-bold">{sh}</span>
-              <span className={cn('block text-[10px]', shape === sh ? 'text-white/80' : 'text-muted-foreground')}>{desc}</span>
-            </button>
-          ))}
+    <div className="mb-3 space-y-3 rounded-xl border bg-gradient-to-b from-slate-50 to-white p-3 shadow-sm">
+      {/* 카드 비율 — 실제 모양 미니 프리뷰로 표현 */}
+      <div>
+        <div className="mb-2 flex items-baseline gap-1.5">
+          <span className="text-[11px] font-semibold text-slate-700">카드 비율</span>
+          <span className="rounded bg-slate-100 px-1.5 py-px text-[9px] font-medium text-slate-500">가로형 2.5배열</span>
         </div>
-        <p className="text-[10px] text-sky-700/80">상품 카드 비율을 정합니다. 1:1(상품 이미지) · 3:4(포스터) · 4:3(와이드).</p>
-      </div>
-      {/* 상품명 줄 수 — 긴 상품명을 한 줄(말줄임) 또는 두 줄까지 표시 */}
-      <div className="space-y-1.5 border-t border-sky-100 pt-2">
-        <label className="text-[11px] font-semibold text-sky-800">상품명 줄 수</label>
-        <div className="flex gap-1.5">
-          {([[1, '한 줄 (말줄임)'], [2, '두 줄']] as const).map(([n, desc]) => (
-            <button
-              key={n}
-              type="button"
-              disabled={pending}
-              onClick={() => chooseLines(n)}
-              className={cn('flex-1 rounded-md border px-2 py-1.5 text-center text-xs font-medium transition', lines === n ? 'border-sky-500 bg-sky-500 text-white' : 'hover:bg-secondary')}
-            >
-              <span className="block font-bold">{n}줄</span>
-              <span className={cn('block text-[10px]', lines === n ? 'text-white/80' : 'text-muted-foreground')}>{desc}</span>
-            </button>
-          ))}
+        <div className="grid grid-cols-3 gap-1.5">
+          {RATIOS.map(({ sh, desc, w, h }) => {
+            const on = shape === sh;
+            return (
+              <button
+                key={sh}
+                type="button"
+                disabled={pending}
+                onClick={() => choose(sh)}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 rounded-lg border p-2 transition disabled:opacity-60',
+                  on ? 'border-primary bg-primary/5 ring-1 ring-primary/25' : 'border-slate-200 hover:border-primary/40 hover:bg-slate-50',
+                )}
+              >
+                <span className="flex h-8 items-end">
+                  <span
+                    style={{ width: w, height: h }}
+                    className={cn('rounded-[3px] border transition-colors', on ? 'border-primary/50 bg-primary/25' : 'border-slate-300 bg-slate-100')}
+                  />
+                </span>
+                <span className={cn('text-[11px] font-bold leading-none', on ? 'text-primary' : 'text-slate-700')}>{sh}</span>
+                <span className="text-[9px] leading-none text-muted-foreground">{desc}</span>
+              </button>
+            );
+          })}
         </div>
-        <p className="text-[10px] text-sky-700/80">긴 상품명(예: 주말 장보기 패스…)을 두 줄까지 보이게 합니다.</p>
       </div>
+      {/* 상품명 줄 수 — 줄 미리보기 바로 표현 */}
+      <div className="border-t border-slate-100 pt-2.5">
+        <div className="mb-2 flex items-baseline gap-1.5">
+          <span className="text-[11px] font-semibold text-slate-700">상품명 줄 수</span>
+          <span className="text-[9px] text-muted-foreground">긴 상품명 두 줄까지</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {([[1, '말줄임'], [2, '두 줄 표시']] as const).map(([n, desc]) => {
+            const on = lines === n;
+            return (
+              <button
+                key={n}
+                type="button"
+                disabled={pending}
+                onClick={() => chooseLines(n)}
+                className={cn(
+                  'flex items-center gap-2.5 rounded-lg border px-2.5 py-2 transition disabled:opacity-60',
+                  on ? 'border-primary bg-primary/5 ring-1 ring-primary/25' : 'border-slate-200 hover:border-primary/40 hover:bg-slate-50',
+                )}
+              >
+                <span className="flex w-6 flex-col gap-1">
+                  {Array.from({ length: n }).map((_, i) => (
+                    <span key={i} className={cn('h-1 rounded-full', on ? 'bg-primary/50' : 'bg-slate-300', n === 2 && i === 1 ? 'w-2/3' : 'w-full')} />
+                  ))}
+                </span>
+                <span className="text-left leading-none">
+                  <span className={cn('block text-[11px] font-bold', on ? 'text-primary' : 'text-slate-700')}>{n}줄</span>
+                  <span className="mt-0.5 block text-[9px] text-muted-foreground">{desc}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치). 상품형/혜택·오퍼형/콘텐츠 안내형에서만. 즉시 저장.
+function BigBannerControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
+  const canBigBanner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(corner.cornerType);
+  const [on, setOn] = useState(!!corner.bigBanner);
+  const [pos, setPos] = useState(corner.bannerPosition ?? '상단');
+  const [pending, start] = useTransition();
+  useEffect(() => { setOn(!!corner.bigBanner); setPos(corner.bannerPosition ?? '상단'); }, [corner.bigBanner, corner.bannerPosition, corner.templateCornerId]);
+  if (!canBigBanner) return null;
+  const toggle = () => { const next = !on; setOn(next); start(() => setCornerBigBanner(templateId, corner.id, next)); };
+  const choosePos = (p: string) => { setPos(p); start(() => setCornerBannerPosition(templateId, corner.id, p)); };
+  return (
+    <div className="mb-3 space-y-2 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
+      <label className="flex items-center justify-between gap-2">
+        <span className="flex flex-col">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-indigo-800"><ImageIcon className="h-3.5 w-3.5" /> 빅배너로 강조</span>
+          <span className="text-[10px] text-indigo-600/80">이 코너 상단에 큰 배너를 얹어요. 켜면 아래 <b>‘상단 배너’</b>에서 이미지를 등록·변경합니다.</span>
+        </span>
+        <button type="button" role="switch" aria-checked={on} disabled={pending} onClick={toggle}
+          className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', on ? 'bg-indigo-500' : 'bg-slate-300')}>
+          <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', on ? 'translate-x-4' : 'translate-x-0.5')} />
+        </button>
+      </label>
+      {on && (
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-indigo-700">빅배너 위치</label>
+          <div className="flex gap-1.5">
+            {(['상단', '하단'] as const).map((p) => (
+              <button key={p} type="button" disabled={pending} onClick={() => choosePos(p)}
+                className={cn('flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition', pos === p ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 hover:bg-secondary')}>
+                배너 {p}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// '코너 구성' 표시 옵션 — 하단 CTA(더보기/전체보기) 버튼. 리스트형 코너에서. 사용/미사용 + 문구 + 링크. 즉시 저장.
+function MoreButtonControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
+  const canMore = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(corner.cornerType);
+  const [use, setUse] = useState(corner.moreButtonUse);
+  const [label, setLabel] = useState(corner.moreButtonLabel ?? '');
+  const [link, setLink] = useState(corner.moreButtonLink ?? '');
+  const [pending, start] = useTransition();
+  useEffect(() => { setUse(corner.moreButtonUse); setLabel(corner.moreButtonLabel ?? ''); setLink(corner.moreButtonLink ?? ''); }, [corner.moreButtonUse, corner.moreButtonLabel, corner.moreButtonLink, corner.templateCornerId]);
+  if (!canMore) return null;
+  const save = (u: boolean, l: string, k: string) => start(() => setCornerMoreButton(templateId, corner.id, u, l, k));
+  return (
+    <div className="mb-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <label className="flex items-center justify-between gap-2">
+        <span className="flex flex-col">
+          <span className="text-[11px] font-semibold text-slate-700">하단 CTA 버튼 <span className="font-normal text-muted-foreground">· 전체보기/더보기</span></span>
+          <span className="text-[10px] text-muted-foreground">코너 맨 아래 ‘{label || '전체보기'} ›’ 버튼을 켜고 끕니다.</span>
+        </span>
+        <button type="button" role="switch" aria-checked={use} disabled={pending}
+          onClick={() => { const next = !use; setUse(next); save(next, label, link); }}
+          className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', use ? 'bg-primary' : 'bg-slate-300')}>
+          <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', use ? 'translate-x-4' : 'translate-x-0.5')} />
+        </button>
+      </label>
+      {use && (
+        <div className="space-y-1.5">
+          <Input value={label} onChange={(e) => setLabel(e.target.value)} onBlur={() => save(true, label, link)} placeholder="버튼 문구 (예: 기프티콘 전체보기)" className="h-8 text-xs" />
+          <Input value={link} onChange={(e) => setLink(e.target.value)} onBlur={() => save(true, label, link)} placeholder="이동 링크 (예: /shop/gifticon)" className="h-8 text-xs" />
+        </div>
+      )}
     </div>
   );
 }
@@ -1493,7 +1590,7 @@ function CornerInfoForm({
 }) {
   const [edit, setEdit] = useState(false); // 기본 view, '수정' 클릭 시 편집
   const [ct, setCt] = useState(corner.cornerType);
-  const [moreUse, setMoreUse] = useState(corner.moreButtonUse);
+  // 하단 CTA(더보기) 사용여부/문구는 '코너 구성'의 MoreButtonControl로 이동(여기선 상태 없음).
   const [loadOpen, setLoadOpen] = useState(false); // '코너 불러오기' 피커 열림
   const [resetKey, setResetKey] = useState(0); // '취소'로 폼(비제어 필드) 초기화
   const family = cornerFamily(ct);
@@ -1506,8 +1603,6 @@ function CornerInfoForm({
   const [subTitleIcon, setSubTitleIcon] = useState(corner.subTitleIcon ?? '사용안함');
   const [cornerLayout] = useState(corner.cornerLayout ?? ''); // 필드는 숨김(값 보존)
   const [layoutDetail, setLayoutDetail] = useState(corner.layoutDetail ?? '');
-  const [moreLabel, setMoreLabel] = useState(corner.moreButtonLabel ?? '');
-  const [bannerPos, setBannerPos] = useState(corner.bannerPosition ?? '상단');
   // 추천 수급 방식 — 재정렬 가능한 '주 방식 목록' + 최하단 고정 '수동 대체(폴백)' 사용여부.
   //  주 방식 = CVM/채널데이터/룰/운영편성(순위 조정). 수동 대체는 항상 마지막(폴백)이라 목록에서 분리해 토글로.
   const REC_PRIMARY_METHODS = REC_SOURCE_METHODS.filter((m) => m !== '수동 대체');
@@ -1531,13 +1626,7 @@ function CornerInfoForm({
   const [userMin, setUserMin] = useState(corner.userMinItems != null ? String(corner.userMinItems) : '');
   const [userMax, setUserMax] = useState(corner.userMaxItems != null ? String(corner.userMaxItems) : '');
   const isMenuListCorner = /메뉴\s*리스트/.test(layoutDetail);
-  // 빅배너 = 코너 유형이 아니라 '배치(인스턴스) 옵션'. 빌더에서 코너별로 켠다.
-  //  본문(리스트·카드) 위에 얹는 상단 히어로라 상품형·혜택·오퍼형·콘텐츠 안내형에서만 의미가 있다.
-  //  (배너형=배너가 곧 본문, 업무 진입형=탭, 상태 안내형 등은 제외)
-  const canBigBanner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(ct);
-  const [bigBanner, setBigBanner] = useState(corner.bigBanner || corner.bannerId != null || /배너/.test(corner.layoutDetail ?? ''));
-  const isBigBanner = canBigBanner && bigBanner;
-  // 카드 비율(가로형 2.5배열)은 '코너 구성'의 CardShapeControl로 분리 — 코너 정보 폼에서 제외.
+  // 빅배너·카드비율·상품명 줄수·하단CTA 등 표시 옵션은 '코너 구성'의 컨트롤로 분리 — 코너 정보 폼에서 제외.
 
   // 편집 중일 때만 현재 값을 미리보기로 반영(뷰 모드에선 서버 데이터 사용). pushCorner는 매 렌더 새 참조라 deps 제외.
   useEffect(() => {
@@ -1549,19 +1638,16 @@ function CornerInfoForm({
         subTitleIcon,
         cornerLayout,
         layoutDetail,
-        bigBanner: isBigBanner,
         recSource,
         recSourcePlan: recFullPlan.length ? JSON.stringify(recFullPlan) : null,
         showRecReason: recPersonalized && showRecReason,
-        moreButtonUse: moreUse,
-        moreButtonLabel: moreLabel,
-        bannerPosition: bannerPos,
+        // 빅배너·하단CTA·배너위치는 '코너 구성' 컨트롤에서 즉시 저장(revalidate로 프리뷰 반영) → 여기 draft에서 제외
       });
     } else {
       pushCorner(corner.templateCornerId, null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, isBigBanner, recSource, useManualFallback, recPrimaryPlan, recPersonalized, showRecReason, moreUse, moreLabel, bannerPos, corner.templateCornerId]);
+  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, recSource, useManualFallback, recPrimaryPlan, recPersonalized, showRecReason, corner.templateCornerId]);
 
   // 언마운트(코너 전환) 시 미리보기 정리
   useEffect(() => () => pushCorner(corner.templateCornerId, null), [corner.templateCornerId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1574,12 +1660,8 @@ function CornerInfoForm({
     setSubTitle(corner.subTitle ?? '');
     setSubTitleIcon(corner.subTitleIcon ?? '사용안함');
     setLayoutDetail(corner.layoutDetail ?? '');
-    setMoreUse(corner.moreButtonUse);
-    setMoreLabel(corner.moreButtonLabel ?? '');
-    setBannerPos(corner.bannerPosition ?? '상단');
     { const f = parseRecFull(); setRecPrimaryPlan(f.filter((m) => m !== '수동 대체')); setUseManualFallback(f.includes('수동 대체')); }
     setShowRecReason(corner.showRecReason ?? false);
-    setBigBanner(corner.bigBanner || corner.bannerId != null || /배너/.test(corner.layoutDetail ?? ''));
     setResetKey((k) => k + 1);
   };
 
@@ -1740,53 +1822,7 @@ function CornerInfoForm({
           </div>
         )}
 
-        {/* 카드 비율(가로형 2.5배열)은 '코너 구성'의 CardShapeControl로 이동 — 코너 정보에서는 관리하지 않음. */}
-
-        {/* 빅배너 = 배치(인스턴스) 옵션. 유형은 하나로 두고, 이 코너를 빅배너로 강조할지 여기서 켠다. */}
-        {canBigBanner && (
-          <div className="col-span-2 space-y-1.5 rounded-md border border-indigo-200 bg-indigo-50/40 p-2.5">
-            <label className="flex items-center justify-between gap-2">
-              <span className="flex flex-col">
-                <span className="flex items-center gap-1 text-xs font-semibold text-indigo-800"><ImageIcon className="h-3.5 w-3.5" /> 빅배너로 강조</span>
-                <span className="text-[10px] text-indigo-600/80">코너 유형(세로형 등)은 그대로 두고, 이 배치에서만 상단 빅배너로 강조해요. 배치 옵션이라 화면마다 다르게 켤 수 있어요.</span>
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={bigBanner}
-                onClick={() => setBigBanner((v) => !v)}
-                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', bigBanner ? 'bg-indigo-500' : 'bg-slate-300')}
-              >
-                <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', bigBanner ? 'translate-x-4' : 'translate-x-0.5')} />
-              </button>
-            </label>
-          </div>
-        )}
-        <input type="hidden" name="bigBanner" value={isBigBanner ? '1' : ''} />
-
-        {/* 빅배너 위치 — 빅배너로 강조한 경우 상단/하단 배치를 빌더에서 조정 */}
-        {isBigBanner && (
-          <div className="col-span-2 space-y-1">
-            <label className="text-[11px] text-muted-foreground">빅배너 위치</label>
-            <div className="flex gap-1.5">
-              {(['상단', '하단'] as const).map((pos) => (
-                <button
-                  key={pos}
-                  type="button"
-                  onClick={() => setBannerPos(pos)}
-                  className={cn(
-                    'flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition',
-                    bannerPos === pos ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-secondary',
-                  )}
-                >
-                  배너 {pos}
-                </button>
-              ))}
-            </div>
-            <input type="hidden" name="bannerPosition" value={bannerPos} />
-            <p className="text-[10px] text-muted-foreground">상품 리스트 기준 배너를 위/아래에 배치해요. (미리보기 즉시 반영)</p>
-          </div>
-        )}
+        {/* 카드 비율·빅배너·하단 CTA 등 표시 옵션은 '코너 구성'의 컨트롤로 이동 — 코너 정보에서는 관리하지 않음. */}
         {/* 코너 마크업 ID 필드는 표시하지 않음 (값은 보존) */}
         <input type="hidden" name="markupId" value={corner.markupId ?? ''} />
 
@@ -1827,19 +1863,19 @@ function CornerInfoForm({
 
         {/* 타이틀·레이아웃 — 모든 코너 유형 공통 (코너 타이틀 편집) */}
         <div className="col-span-2 space-y-1">
-          <label className="text-[11px] text-muted-foreground">타이틀 (줄바꿈 가능)</label>
-          <Textarea name="mainTitle" value={mainTitle} onChange={(e) => setMainTitle(e.target.value)} className="min-h-[44px] text-xs" />
+          <label className="text-[11px] font-medium text-foreground">타이틀 <span className="font-normal text-muted-foreground">· 코너 상단 큰 제목 (줄바꿈 가능)</span></label>
+          <Textarea name="mainTitle" value={mainTitle} onChange={(e) => setMainTitle(e.target.value)} placeholder="예: 오늘이 지나면 다시 없는 혜택이에요" className="min-h-[44px] text-xs text-foreground" />
         </div>
         <div className="space-y-1">
-          <label className="text-[11px] text-muted-foreground">서브타이틀</label>
-          <Input name="subTitle" value={subTitle} onChange={(e) => setSubTitle(e.target.value)} className="h-8 text-xs" />
+          <label className="text-[11px] font-medium text-foreground">서브타이틀 <span className="font-normal text-muted-foreground">· 제목 아래 짧은 라벨</span></label>
+          <Input name="subTitle" value={subTitle} onChange={(e) => setSubTitle(e.target.value)} placeholder="예: 구독 상품 · 제휴사별 혜택" className="h-8 text-xs" />
         </div>
         <div className="space-y-1">
-          <label className="text-[11px] text-muted-foreground">서브타이틀 아이콘</label>
+          <label className="text-[11px] font-medium text-foreground">서브타이틀 화살표</label>
           <Select name="subTitleIcon" value={subTitleIcon} onChange={(e) => setSubTitleIcon(e.target.value)} className="h-8 text-xs">
             {SUBTITLE_ICONS.map((t) => (
               <option key={t} value={t}>
-                {t}
+                {t === '화살표' ? '화살표(›) 표시' : '표시 안 함'}
               </option>
             ))}
           </Select>
@@ -1874,30 +1910,7 @@ function CornerInfoForm({
                 ))}
               </Select>
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">CTA 노출</label>
-              <Select
-                name="moreButtonUse"
-                value={moreUse ? '사용' : '미사용'}
-                onChange={(e) => setMoreUse(e.target.value === '사용')}
-                className="h-8 text-xs"
-              >
-                <option value="미사용">미사용</option>
-                <option value="사용">사용</option>
-              </Select>
-            </div>
-            {moreUse && (
-              <>
-                <div className="space-y-1">
-                  <label className="text-[11px] text-muted-foreground">CTA 문구</label>
-                  <Input name="moreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} className="h-8 text-xs" placeholder="예) 전체보기 · 더보기" />
-                </div>
-                <div className="col-span-2 space-y-1">
-                  <label className="text-[11px] text-muted-foreground">CTA 링크</label>
-                  <Input name="moreButtonLink" defaultValue={corner.moreButtonLink ?? ''} className="h-8 text-xs" placeholder="/..." />
-                </div>
-              </>
-            )}
+            {/* 하단 CTA(더보기/전체보기) 버튼은 '코너 구성'의 MoreButtonControl로 이동 — 코너 정보에서는 관리하지 않음. */}
           </>
         )}
 
@@ -2777,17 +2790,17 @@ export function BuilderEditor({
 
             {/* 기존 코너 끌어오기는 아래 '코너 정보'의 '코너 불러오기' 버튼으로 통합됨 */}
             <CornerInfoForm key={selectedCorner.templateCornerId} templateId={templateId} corner={selectedCorner} library={library} nameMap={nameMap} />
-            {/* 배너형 코너는 배너를 '코너 구성'의 배너형 컴포넌트로 관리 → 별도 패널 없음.
-                그 외 코너는 유형상세에 '배너'가 포함됐거나(예: 세로형(배너)) 이미 배너가 등록된 경우에만 상단 배너 패널 노출.
-                (예: T DAY 멤버십처럼 배너 없는 세로형에는 안 뜸) */}
-            {family !== 'banner' &&
-              ((selectedCorner.layoutDetail ?? '').includes('배너') || selectedCorner.bannerId != null) && (
-                <BannerPanel key={selectedCorner.id} templateId={templateId} corner={selectedCorner} banners={library.banners} />
-              )}
+            {/* 상단 배너(BannerPanel) = 빅배너의 배너 이미지 선택/수정 UI → '빅배너로 강조'가 켜진 코너면 항상 노출
+                (배너 미등록 코너여도 빅배너 켜면 여기서 배너를 고른다). 빅배너 끄면 사라짐. 배너형 코너는 배너가 본문이라 별도 패널 없음. */}
+            {family !== 'banner' && selectedCorner.bigBanner && (
+              <BannerPanel key={selectedCorner.id} templateId={templateId} corner={selectedCorner} banners={library.banners} />
+            )}
             <div className="rounded-lg border bg-card p-4">
               <p className="mb-0.5 text-sm font-semibold">코너 구성</p>
-              <p className="mb-2 text-[11px] text-muted-foreground">이 코너를 이루는 컴포넌트</p>
+              <p className="mb-2 text-[11px] text-muted-foreground">이 코너를 이루는 컴포넌트 · 표시 옵션</p>
+              <BigBannerControl templateId={templateId} corner={selectedCorner} />
               <CardShapeControl templateId={templateId} corner={selectedCorner} />
+              <MoreButtonControl templateId={templateId} corner={selectedCorner} />
               <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
             </div>
           </div>

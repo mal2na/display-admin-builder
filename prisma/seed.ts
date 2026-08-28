@@ -184,17 +184,17 @@ async function main() {
   const b1 = await comp('공차 음료 혜택', '상품형', [
     { name: '공차 로고', atomType: 'ICON', imageUrl: '/assets/brand-gongcha.png', altText: '공차 로고' },
     { name: '공차 혜택문구', atomType: 'BENEFIT_TEXT', content: '인기 음료 6종 50% 할인' },
-    { name: '공차 브랜드', atomType: 'TEXT', content: '공차' },
+    { name: '공차 브랜드', atomType: 'INFO', content: '공차' },
   ]);
   const b2 = await comp('뚜레쥬르 혜택', '상품형', [
     { name: '뚜레쥬르 로고', atomType: 'ICON', imageUrl: '/assets/brand-tlj.png', altText: '뚜레쥬르 로고' },
     { name: '뚜레쥬르 혜택문구', atomType: 'BENEFIT_TEXT', content: '브라우니 1개 증정' },
-    { name: '뚜레쥬르 브랜드', atomType: 'TEXT', content: '뚜레쥬르' },
+    { name: '뚜레쥬르 브랜드', atomType: 'INFO', content: '뚜레쥬르' },
   ]);
   const b3 = await comp('NOL 티켓 혜택', '상품형', [
     { name: 'NOL 로고', atomType: 'ICON', imageUrl: '/assets/brand-nol.png', altText: 'NOL 티켓 로고' },
     { name: 'NOL 혜택문구', atomType: 'BENEFIT_TEXT', content: '전시회 40% 할인' },
-    { name: 'NOL 브랜드', atomType: 'TEXT', content: 'NOL 티켓' },
+    { name: 'NOL 브랜드', atomType: 'INFO', content: 'NOL 티켓' },
   ]);
   const cornerZeroWeek = await corner(
     {
@@ -233,7 +233,7 @@ async function main() {
   const tweekBenefit = await comp('배민 치킨 혜택', '상품형', [
     { name: '배민 로고', atomType: 'ICON', imageUrl: '/assets/brand-baemin.png', altText: '배달의민족 로고' },
     { name: '배민 혜택문구', atomType: 'BENEFIT_TEXT', content: '치킨 프랜차이즈 20% 할인' },
-    { name: '배민 브랜드', atomType: 'TEXT', content: '배달의 민족' },
+    { name: '배민 브랜드', atomType: 'INFO', content: '배달의 민족' },
   ]);
   const cornerTWeek = await corner(
     {
@@ -254,12 +254,12 @@ async function main() {
   const m1 = await comp('아웃백 혜택', '상품형', [
     { name: '아웃백 로고', atomType: 'ICON', imageUrl: '/assets/brand-outback.png', altText: '아웃백 스테이크하우스 로고' },
     { name: '아웃백 혜택문구', atomType: 'BENEFIT_TEXT', content: '전 메뉴 15% 즉시 할인' },
-    { name: '아웃백 브랜드', atomType: 'TEXT', content: '아웃백 스테이크 하우스' },
+    { name: '아웃백 브랜드', atomType: 'INFO', content: '아웃백 스테이크 하우스' },
   ]);
   const m2 = await comp('티맵 충전 혜택', '상품형', [
     { name: '티맵 로고', atomType: 'ICON', imageUrl: '/assets/brand-tmap.png', altText: '티맵모빌리티 로고' },
     { name: '티맵 혜택문구', atomType: 'BENEFIT_TEXT', content: '전기차 충전 최대 10% 할인' },
-    { name: '티맵 브랜드', atomType: 'TEXT', content: '티맵모빌리티' },
+    { name: '티맵 브랜드', atomType: 'INFO', content: '티맵모빌리티' },
   ]);
   const cornerTDay = await corner(
     {
@@ -303,7 +303,7 @@ async function main() {
   const c1 = await comp('배스킨라빈스 혜택', '상품형', [
     { name: '배라 로고', atomType: 'ICON', imageUrl: '/assets/brand-br.png', altText: '배스킨라빈스 로고' },
     { name: '배라 혜택문구', atomType: 'BENEFIT_TEXT', content: '월 1회 싱글레귤러 50% 할인' },
-    { name: '배라 브랜드', atomType: 'TEXT', content: '배스킨라빈스' },
+    { name: '배라 브랜드', atomType: 'INFO', content: '배스킨라빈스' },
   ]);
   const c2 = await comp('공차 카페 혜택', '상품형', [
     { name: '공차 로고2', atomType: 'ICON', imageUrl: '/assets/brand-gongcha.png', altText: '공차 로고' },
@@ -313,7 +313,7 @@ async function main() {
   const c3 = await comp('폴바셋 혜택', '상품형', [
     { name: '폴바셋 로고', atomType: 'ICON', imageUrl: '/assets/brand-paulbassett.png', altText: '폴바셋 로고' },
     { name: '폴바셋 혜택문구', atomType: 'BENEFIT_TEXT', content: '아메리카노 20% 할인' },
-    { name: '폴바셋 브랜드', atomType: 'TEXT', content: '폴바셋' },
+    { name: '폴바셋 브랜드', atomType: 'INFO', content: '폴바셋' },
   ]);
   const cornerCategory = await corner(
     {

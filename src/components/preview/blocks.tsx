@@ -117,7 +117,10 @@ function MenuListView({ component }: { component: PreviewComponent }) {
 function ProductCard({ component, shape, reason, titleLines }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null }) {
   const poster = first(component.atoms, 'IMAGE');
   const title = first(component.atoms, 'TEXT');
-  const info = first(component.atoms, 'INFO');
+  // 설명 = INFO 또는 PRICE(가격도 라벨상 '설명'). 배지 = BADGE(할인율 등, 선택적 — 숨김 원자면 프리뷰에서 제외됨).
+  const info = first(component.atoms, 'INFO', 'PRICE');
+  const badge = first(component.atoms, 'BADGE');
+  const cta = first(component.atoms, 'CTA'); // 선택적 CTA — 숨김(미사용) 원자면 프리뷰에서 제외됨
   // 카드 비율: 1:1(정사각·상품) | 3:4(세로·포스터) | 4:3(가로·와이드). 기본 3:4. (레거시 정사각형=1:1)
   const square = shape === '1:1' || shape === '정사각형';
   const wide = shape === '4:3';
@@ -130,7 +133,16 @@ function ProductCard({ component, shape, reason, titleLines }: { component: Prev
       <ImageBox atom={poster} className={cn('w-full rounded-xl', ratioCls)} />
       {reason && <RecReason text={reason} />}
       <p className={cn('mt-1.5 text-[13px] font-semibold leading-tight text-slate-900', nameCls)}>{title?.content ?? component.name}</p>
-      {info && <p className="text-[11px] text-slate-400">{info.content}</p>}
+      {/* 배지는 설명 앞 인라인. 설명은 이름보다 연하게(위계) — 예: [20%] 235,000원 */}
+      {(badge?.content || info?.content) && (
+        <p className="mt-0.5 flex items-center gap-1">
+          {badge?.content && <span className="shrink-0 rounded bg-rose-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white">{badge.content}</span>}
+          {info?.content && <span className="truncate text-[11px] font-normal text-slate-400">{info.content}</span>}
+        </p>
+      )}
+      {cta?.content && (
+        <span className="mt-1.5 flex items-center justify-center rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700">{cta.content}</span>
+      )}
     </div>
   );
 }
@@ -172,6 +184,7 @@ function BenefitRow({ component, reason }: { component: PreviewComponent; reason
   const texts = byType(component.atoms, 'BENEFIT_TEXT', 'TEXT', 'INFO', 'PRICE');
   const title = texts[0];
   const brand = texts[1];
+  const cta = first(component.atoms, 'CTA'); // 선택적 CTA (숨김=미사용이면 프리뷰 제외)
   return (
     <div className="flex items-center gap-3 py-2">
       <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl" />
@@ -180,6 +193,9 @@ function BenefitRow({ component, reason }: { component: PreviewComponent; reason
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}
         {reason && <RecReason text={reason} />}
       </div>
+      {cta?.content && (
+        <span className="shrink-0 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700">{cta.content}</span>
+      )}
     </div>
   );
 }
