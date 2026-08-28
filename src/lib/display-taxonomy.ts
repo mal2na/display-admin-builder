@@ -33,9 +33,9 @@ export const ATOM_TYPE_LABELS: Record<AtomType, string> = {
   IMAGE: '이미지',
   ICON: '아이콘',
   BADGE: '배지',
-  PRICE: '가격',
-  BENEFIT_TEXT: '타이틀',
-  CTA: '버튼(CTA)',
+  PRICE: '설명', // 역할 중심 통일 — '가격' 라벨 미사용(값이 가격이어도 라벨은 설명)
+  BENEFIT_TEXT: '텍스트', // 역할 라벨 통일 — '타이틀' 폐지, 주 텍스트는 모두 '텍스트'
+  CTA: 'CTA',
   INFO: '설명',
   BARCODE: '바코드',
 };
@@ -285,7 +285,8 @@ export type CornerLayout = (typeof CORNER_LAYOUTS)[number];
 export const NO_DISPLAY_CONDITIONS = ['선택 없음', '재고 소진 시', '혜택 종료 시', '개인화 제한 시'] as const;
 
 // 서브 타이틀 아이콘
-export const SUBTITLE_ICONS = ['사용안함', '말줄임표', '화살표', '정보'] as const;
+// 서브타이틀 옆 '더보기' 화살표(>) 표시 여부. (렌더는 화살표 또는 없음 두 가지라 옵션도 둘로 정리 — 이전 말줄임표/정보는 렌더가 화살표와 동일했음)
+export const SUBTITLE_ICONS = ['화살표', '사용안함'] as const;
 export type SubtitleIcon = (typeof SUBTITLE_ICONS)[number];
 
 // 코너 유형을 3개 패밀리로 묶는다 (컬럼/유형상세가 패밀리별로 달라짐)

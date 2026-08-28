@@ -31,7 +31,8 @@ export function IconPickerModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="flex max-h-[82vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl"
+        // 고정 높이(h-[80vh]) — 카테고리/검색으로 결과가 바뀌어도 모달 크기 불변, 아이콘 그리드만 내부 스크롤
+        className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
@@ -65,8 +66,8 @@ export function IconPickerModal({
           ))}
         </div>
 
-        {/* 아이콘 그리드 */}
-        <div className="flex-1 overflow-y-auto border-t px-5 py-4">
+        {/* 아이콘 그리드 — 남은 공간을 채우고 내부 스크롤(min-h-0) */}
+        <div className="min-h-0 flex-1 overflow-y-auto border-t px-5 py-4">
           {sections.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</p>}
           {sections.map((c) => (
             <div key={c.key} className="mb-5">

@@ -392,14 +392,12 @@ function readCornerInfo(formData: FormData) {
     recSourcePlan: nn(formData, 'recSourcePlan'), // 우선순위 편성(JSON 배열, 1순위→폴백)
     showRecReason: String(formData.get('showRecReason') ?? '') === '1', // 추천 근거 표시 여부
 
-    moreButtonUse: String(formData.get('moreButtonUse') ?? '') === '사용',
-    moreButtonLabel: nn(formData, 'moreButtonLabel'),
-    moreButtonLink: nn(formData, 'moreButtonLink'),
+    // 하단 CTA(더보기/전체보기) 버튼은 '코너 구성'의 전용 컨트롤(setCornerMoreButton)에서 즉시 저장 → 코너 정보 저장이 건드리지 않는다.
     markupId: nn(formData, 'markupId'),
     layoutDetail: nn(formData, 'layoutDetail'),
-    bigBanner: String(formData.get('bigBanner') ?? '') === '1', // 빅배너 = 배치(인스턴스) 옵션
+    // bigBanner(빅배너로 강조)는 토글에서 즉시 저장(setCornerBigBanner) → 코너 정보 저장이 건드리지 않는다.
     // cardShape(카드 비율)는 '코너 구성'에서 전용 컨트롤(setCornerCardShape)로 관리 → 코너 정보 저장이 건드리지 않는다.
-    bannerPosition: nn(formData, 'bannerPosition'),
+    // bannerPosition(빅배너 위치)도 '코너 구성' 컨트롤에서 즉시 저장(setCornerBannerPosition) → 코너 정보 저장이 건드리지 않는다.
     cornerLayout: nn(formData, 'cornerLayout'),
     description: nn(formData, 'description'),
     mainTitle: nn(formData, 'mainTitle'),
@@ -446,7 +444,7 @@ function scaffoldSpecFor(componentType: string | null, typeDetail: string | null
     atoms: [
       { name: '상품 이미지', atomType: 'IMAGE', imageUrl: '', altText: `상품 ${i} 이미지` },
       { name: '상품명', atomType: 'TEXT', content: `상품 ${i}` },
-      { name: '가격', atomType: 'PRICE', content: '가격' },
+      { name: '설명', atomType: 'PRICE', content: '' },
     ],
   });
   const benefitComp = (i: number): ScaffoldComp => ({
@@ -699,6 +697,27 @@ export async function setCornerTitleLines(templateId: string, cornerId: string, 
   rp(templateId);
 }
 
+// 빅배너로 강조 토글 — 즉시 저장(코너 정보 저장과 독립). 켜면 곧바로 selectedCorner.bigBanner가 갱신돼 '상단 배너' 패널이 뜬다.
+export async function setCornerBigBanner(templateId: string, cornerId: string, on: boolean) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { bigBanner: on } });
+  rp(templateId);
+}
+
+// 빅배너 위치(상단/하단) — '코너 구성' 컨트롤에서 즉시 저장. 코너 정보 저장과 독립.
+export async function setCornerBannerPosition(templateId: string, cornerId: string, pos: string) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { bannerPosition: pos === '하단' ? '하단' : '상단' } });
+  rp(templateId);
+}
+
+// 하단 CTA(더보기/전체보기) 버튼 — '코너 구성' 전용 컨트롤에서 즉시 저장(사용여부·문구·링크). 코너 정보 저장과 독립.
+export async function setCornerMoreButton(templateId: string, cornerId: string, use: boolean, label: string, link: string) {
+  await prisma.corner.update({
+    where: { id: cornerId },
+    data: { moreButtonUse: use, moreButtonLabel: use ? (label.trim() || '전체보기') : null, moreButtonLink: use ? (link.trim() || null) : null },
+  });
+  rp(templateId);
+}
+
 // 코너 복제 (포탈3 복제) — 코너를 통째로 복사해 바로 뒤에 삽입
 export async function duplicateCorner(templateId: string, templateCornerId: string) {
   const tc = await prisma.templateCorner.findUnique({
@@ -814,24 +833,24 @@ export async function addBlankComponent(templateId: string, cornerId: string) {
       cornerType: true,
       cornerComponents: {
         orderBy: { order: 'asc' },
-        take: 1,
         include: { component: { include: { componentAtoms: { orderBy: { order: 'asc' }, include: { atom: true } } } } },
       },
     },
   });
   if (!corner) throw new Error('Corner를 찾을 수 없습니다.');
-  const first = corner.cornerComponents[0]?.component;
   const allowed = CORNER_COMPONENT_MAP[corner.cornerType as CornerType] ?? [];
-  const componentType = first?.componentType ?? allowed[0] ?? '정보형';
-  // 복제할 Atom 유형 구성 (첫 컴포넌트 기준, 없으면 상품형 기본: 이미지/텍스트/정보값).
+  // 콘텐츠(본문) 컴포넌트 추가 → 선택형(칩/탭)이 아니라 본문 컴포넌트 유형/구성을 따른다(칩으로 들어가지 않게).
+  const bodyComp = corner.cornerComponents.map((cc) => cc.component).find((c) => c.componentType !== '선택형');
+  const componentType = bodyComp?.componentType ?? (allowed as string[]).find((t) => t !== '선택형') ?? '상품형';
+  // 복제할 Atom 유형 구성 (본문 컴포넌트 기준, 없으면 상품형 기본: 이미지/텍스트/설명).
   // 이름은 유형 라벨로 일반화해 값 없는 "빈 항목"으로 만든다.
   const label = (t: string) => ATOM_TYPE_LABELS[t as AtomType] ?? t;
-  const atomSpec = first
-    ? first.componentAtoms.map((ca) => ({ atomType: ca.atom.atomType, name: label(ca.atom.atomType), isRequired: ca.isRequired }))
+  const atomSpec = bodyComp
+    ? bodyComp.componentAtoms.map((ca) => ({ atomType: ca.atom.atomType, name: label(ca.atom.atomType), isRequired: ca.isRequired }))
     : [
         { atomType: 'IMAGE', name: '이미지', isRequired: true },
         { atomType: 'TEXT', name: '텍스트', isRequired: true },
-        { atomType: 'INFO', name: '정보값', isRequired: true },
+        { atomType: 'INFO', name: '설명', isRequired: true },
       ];
 
   const component = await prisma.component.create({ data: { name: '새 항목', componentType, status: 'active' } });
@@ -857,20 +876,20 @@ export async function addBssProduct(templateId: string, cornerId: string, produc
       cornerType: true,
       cornerComponents: {
         orderBy: { order: 'asc' },
-        take: 1,
         include: { component: { include: { componentAtoms: { orderBy: { order: 'asc' }, include: { atom: true } } } } },
       },
     },
   });
   if (!corner) throw new Error('Corner를 찾을 수 없습니다.');
-  const first = corner.cornerComponents[0]?.component;
   const allowed = CORNER_COMPONENT_MAP[corner.cornerType as CornerType] ?? [];
-  const componentType = first?.componentType ?? allowed[0] ?? '정보형';
+  // BSS 상품 = '콘텐츠(본문)' 아이템 → 선택형(칩/탭)이 아니라 본문 컴포넌트 유형/구성을 따른다(칩으로 들어가지 않게).
+  const bodyComp = corner.cornerComponents.map((cc) => cc.component).find((c) => c.componentType !== '선택형');
+  const componentType = bodyComp?.componentType ?? (allowed as string[]).find((t) => t !== '선택형') ?? '상품형';
 
   const isVisual = (t: string) => t === 'ICON' || t === 'IMAGE';
   const isText = (t: string) => ['TEXT', 'BENEFIT_TEXT', 'INFO', 'PRICE', 'CTA', 'BADGE'].includes(t);
   const label = (t: string) => ATOM_TYPE_LABELS[t as AtomType] ?? t;
-  const baseTypes = first && first.componentAtoms.length ? first.componentAtoms.map((ca) => ca.atom.atomType) : ['ICON', 'BENEFIT_TEXT', 'INFO'];
+  const baseTypes = bodyComp && bodyComp.componentAtoms.length ? bodyComp.componentAtoms.map((ca) => ca.atom.atomType) : ['ICON', 'BENEFIT_TEXT', 'INFO'];
 
   // 값 채우기: 첫 시각 아톰=로고, 첫 텍스트=브랜드명, 다음 텍스트=대표 혜택
   let logoUsed = false, nameUsed = false, benefitUsed = false;
