@@ -1505,8 +1505,8 @@ function CardShapeControl({ templateId, corner }: { templateId: string; corner: 
   );
 }
 
-// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치). 상품형/혜택·오퍼형/콘텐츠 안내형에서만. 즉시 저장.
-function BigBannerControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
+// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치+배너 선택). 상품형/혜택·오퍼형/콘텐츠 안내형에서만. 즉시 저장.
+function BigBannerControl({ templateId, corner, banners }: { templateId: string; corner: CornerNode; banners: LibraryData['banners'] }) {
   const canBigBanner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(corner.cornerType);
   const [on, setOn] = useState(!!corner.bigBanner);
   const [pos, setPos] = useState(corner.bannerPosition ?? '상단');
@@ -1528,15 +1528,22 @@ function BigBannerControl({ templateId, corner }: { templateId: string; corner: 
         </button>
       </label>
       {on && (
-        <div className="space-y-1">
-          <label className="text-[10px] font-medium text-indigo-700">빅배너 위치</label>
-          <div className="flex gap-1.5">
-            {(['상단', '하단'] as const).map((p) => (
-              <button key={p} type="button" disabled={pending} onClick={() => choosePos(p)}
-                className={cn('flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition', pos === p ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 hover:bg-secondary')}>
-                배너 {p}
-              </button>
-            ))}
+        <div className="space-y-2.5 border-t border-indigo-100 pt-2">
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-indigo-700">빅배너 위치</label>
+            <div className="flex gap-1.5">
+              {(['상단', '하단'] as const).map((p) => (
+                <button key={p} type="button" disabled={pending} onClick={() => choosePos(p)}
+                  className={cn('flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition', pos === p ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 hover:bg-secondary')}>
+                  배너 {p}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* 배너 이미지 선택(라이브러리/직접 등록) — 빅배너 카드 안에 임베드 */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-indigo-700">배너 이미지</label>
+            <BannerPanel templateId={templateId} corner={corner} banners={banners} embedded />
           </div>
         </div>
       )}
@@ -2065,10 +2072,12 @@ function BannerPanel({
   templateId,
   corner,
   banners,
+  embedded,
 }: {
   templateId: string;
   corner: CornerNode;
   banners: LibraryData['banners'];
+  embedded?: boolean; // 빅배너 강조 카드 안에 넣을 때 = 자체 카드/제목 없이 선택 UI만
 }) {
   const [mode, setMode] = useState<'library' | 'direct'>('library');
   const [imageUrl, setImageUrl] = useState('');
@@ -2077,10 +2086,10 @@ function BannerPanel({
   const canRenderImg = (u?: string | null) => !!u && (u.startsWith('data:') || u.startsWith('http') || u.startsWith('/'));
 
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <p className="mb-0.5 text-sm font-semibold">상단 배너</p>
-      <p className="mb-2 text-[11px] text-muted-foreground">코너 상단에 크게 노출되는 배너입니다. (선택)</p>
-      <p className="mb-3 text-[11px] text-muted-foreground">
+    <div className={embedded ? 'space-y-2' : 'rounded-lg border bg-card p-4'}>
+      {!embedded && <p className="mb-0.5 text-sm font-semibold">상단 배너</p>}
+      {!embedded && <p className="mb-2 text-[11px] text-muted-foreground">코너 상단에 크게 노출되는 배너입니다. (선택)</p>}
+      <p className={cn('text-[11px] text-muted-foreground', embedded ? '' : 'mb-3')}>
         현재 배너: {corner.bannerName ? <b className="text-foreground">{corner.bannerName}</b> : '미지정'}
       </p>
 
@@ -2445,7 +2454,6 @@ export function BuilderEditor({
   for (const c of corners) if (!ids.includes(c.templateCornerId)) ordered.push(c);
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
-  const family = selectedCorner ? cornerFamily(selectedCorner.cornerType) : null;
   const nameMap = cornerTypeNameMap(library); // 기준분류 → 코너 유형 카탈로그 표시명
 
   // 편집 중인 드래프트 → 미리보기 즉시 반영 (칩 / 코너 정보 / 비-칩 Atom)
@@ -2790,15 +2798,11 @@ export function BuilderEditor({
 
             {/* 기존 코너 끌어오기는 아래 '코너 정보'의 '코너 불러오기' 버튼으로 통합됨 */}
             <CornerInfoForm key={selectedCorner.templateCornerId} templateId={templateId} corner={selectedCorner} library={library} nameMap={nameMap} />
-            {/* 상단 배너(BannerPanel) = 빅배너의 배너 이미지 선택/수정 UI → '빅배너로 강조'가 켜진 코너면 항상 노출
-                (배너 미등록 코너여도 빅배너 켜면 여기서 배너를 고른다). 빅배너 끄면 사라짐. 배너형 코너는 배너가 본문이라 별도 패널 없음. */}
-            {family !== 'banner' && selectedCorner.bigBanner && (
-              <BannerPanel key={selectedCorner.id} templateId={templateId} corner={selectedCorner} banners={library.banners} />
-            )}
+            {/* 상단 배너 선택 UI는 '코너 구성'의 BigBannerControl 카드 안에 임베드됨(별도 패널 제거). */}
             <div className="rounded-lg border bg-card p-4">
               <p className="mb-0.5 text-sm font-semibold">코너 구성</p>
               <p className="mb-2 text-[11px] text-muted-foreground">이 코너를 이루는 컴포넌트 · 표시 옵션</p>
-              <BigBannerControl templateId={templateId} corner={selectedCorner} />
+              <BigBannerControl templateId={templateId} corner={selectedCorner} banners={library.banners} />
               <CardShapeControl templateId={templateId} corner={selectedCorner} />
               <MoreButtonControl templateId={templateId} corner={selectedCorner} />
               <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
