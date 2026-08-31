@@ -1458,7 +1458,7 @@ function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateI
   const [, start] = useTransition();
   useEffect(() => { setVars(parse()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.displayVariants, corner.templateCornerId]);
   const save = (next: DisplayVariant[]) => { setVars(next); start(() => setCornerDisplayVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
-  const add = () => { if (vars.length >= 4) return; save([...vars, { label: '' }]); };
+  const add = () => { if (vars.length >= 1) return; save([...vars, { label: '' }]); };
   // 노출 타입 후보 = 카탈로그(코너 유형 관리)에서 같은 코너 유형(baseCategory)의 활성 타입. 없으면 전체 활성.
   const sameCat = cornerTypes.filter((t) => t.active && t.baseCategory === corner.cornerType);
   const options = sameCat.length ? sameCat : cornerTypes.filter((t) => t.active);
@@ -1474,7 +1474,7 @@ function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateI
           <span className="text-[11px] font-semibold text-slate-700">노출 타입 베리에이션</span>
           <span className="rounded bg-violet-100 px-1.5 py-px text-[9px] font-medium text-violet-600">CVM이 택1</span>
         </div>
-        <button type="button" onClick={add} disabled={vars.length >= 4}
+        <button type="button" onClick={add} disabled={vars.length >= 1}
           className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-40">＋ 타입</button>
       </div>
       {vars.length === 0 ? (
@@ -1582,7 +1582,7 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
   const save = (next: V[]) => { setVars(next); start(() => setCornerDisplayVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
   const pick = (i: number, id: string) => { const t = cornerTypes.find((x) => x.id === id); save(vars.map((v, j) => (j === i ? { ...v, typeId: id || undefined, typeName: t ? typeLabel(t) : undefined, label: t ? typeLabel(t) : v.label } : v))); };
   const setTarget = (i: number, target: string) => save(vars.map((v, j) => (j === i ? { ...v, target: target || undefined } : v)));
-  const add = () => { if (vars.length >= 4) return; save([...vars, { label: '' }]); };
+  const add = () => { if (vars.length >= 1) return; save([...vars, { label: '' }]); };
   // 슬롯을 항상 예약(min-w) — 노출 타입이 없어도 디바이스가 같은 위치에 있게(치우침·튐 방지). 비면 안내 자리.
   return (
     <div className="min-w-[320px] shrink-0">
@@ -1597,7 +1597,7 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
         <>
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-700"><Sparkles className="h-3.5 w-3.5" /> 추가 노출 타입 {vars.length}개 <span className="font-normal text-violet-400">클릭해 변경 · CVM 택1</span></p>
-            {vars.length < 4 && <button type="button" onClick={add} className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100"><Plus className="mr-0.5 inline h-2.5 w-2.5" />타입</button>}
+            {vars.length < 1 && <button type="button" onClick={add} className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100"><Plus className="mr-0.5 inline h-2.5 w-2.5" />타입</button>}
           </div>
           <div className="flex items-start gap-4">
             {vars.map((v, i) => {
