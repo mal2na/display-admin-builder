@@ -1442,14 +1442,23 @@ const normCardShape = (s: string | null | undefined) => (s === '정사각형' ? 
 // '코너 구성' 카드 비율 컨트롤 — 상품형 컴포넌트가 있고 배열이 2.5(가로형)일 때만 노출.
 // 노출 타입 베리에이션 — 한 코너에 노출 타입(껍데기)을 2~3개 등록. 실서비스에선 CVM이 고객마다 택1, 빌더 미리보기는 기본(첫 번째). 회의 2026-08-31.
 //  '재료(타입·문구)는 우리가, 조합은 CVM' — 즉시 저장(setCornerDisplayVariants), 코너 정보 저장과 독립.
-type DisplayVariant = { label: string; note?: string };
-function DisplayVariantsControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
+// 노출 타입 = 코너 유형 관리(카탈로그)에 등록된 유형을 참조(회의 2026-08-31: 카탈로그에서 골라 조합). typeId = CornerType.id.
+type DisplayVariant = { label: string; typeId?: string; typeName?: string; note?: string };
+function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateId: string; corner: CornerNode; cornerTypes: LibraryData['cornerTypes'] }) {
   const parse = (): DisplayVariant[] => { try { const a = JSON.parse(corner.displayVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.label === 'string'); } catch { /* noop */ } return []; };
   const [vars, setVars] = useState<DisplayVariant[]>(parse());
   const [, start] = useTransition();
   useEffect(() => { setVars(parse()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.displayVariants, corner.templateCornerId]);
   const save = (next: DisplayVariant[]) => { setVars(next); start(() => setCornerDisplayVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
-  const add = () => { if (vars.length >= 3) return; save([...vars, { label: `노출 타입 ${vars.length + 1}` }]); };
+  const add = () => { if (vars.length >= 3) return; save([...vars, { label: '' }]); };
+  // 노출 타입 후보 = 카탈로그(코너 유형 관리)에서 같은 코너 유형(baseCategory)의 활성 타입. 없으면 전체 활성.
+  const sameCat = cornerTypes.filter((t) => t.active && t.baseCategory === corner.cornerType);
+  const options = sameCat.length ? sameCat : cornerTypes.filter((t) => t.active);
+  const typeLabel = (t: LibraryData['cornerTypes'][number]) => (t.typeDetail && !t.name.includes(t.typeDetail) ? `${t.name} · ${t.typeDetail}` : t.name);
+  const pick = (i: number, id: string) => {
+    const t = cornerTypes.find((x) => x.id === id);
+    save(vars.map((v, j) => (j === i ? { ...v, typeId: id || undefined, typeName: t ? typeLabel(t) : undefined, label: t ? typeLabel(t) : v.label } : v)));
+  };
   return (
     <div className="mb-3 space-y-2 rounded-xl border bg-gradient-to-b from-slate-50 to-white p-3 shadow-sm">
       <div className="flex items-center justify-between gap-2">
@@ -1461,18 +1470,22 @@ function DisplayVariantsControl({ templateId, corner }: { templateId: string; co
           className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-40">＋ 타입</button>
       </div>
       {vars.length === 0 ? (
-        <p className="text-[10px] leading-relaxed text-muted-foreground">노출 타입이 1개예요. ＋로 2~3개 등록하면 실서비스에서 <b>CVM이 고객마다 골라</b> 노출합니다. (빌더 미리보기는 기본 타입)</p>
+        <p className="text-[10px] leading-relaxed text-muted-foreground">노출 타입이 1개예요. ＋로 <b>코너 유형 관리(카탈로그)</b>의 노출 타입을 2~3개 등록하면 실서비스에서 <b>CVM이 고객마다 골라</b> 노출합니다. (빌더 미리보기는 기본 타입)</p>
       ) : (
         <div className="space-y-1.5">
           {vars.map((v, i) => (
             <div key={i} className="flex items-center gap-1.5">
               <span className={cn('inline-flex h-7 shrink-0 items-center rounded-md px-1.5 text-[9px] font-bold', i === 0 ? 'bg-violet-600 text-white' : 'bg-slate-200 text-slate-600')}>{i === 0 ? '기본' : `타입 ${i + 1}`}</span>
-              <Input value={v.label} onChange={(e) => save(vars.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} placeholder="타입 이름 (예: 이미지 강조형)" className="h-7 min-w-0 flex-1 text-xs" />
+              {/* 노출 타입 = 카탈로그에서 선택 (코너 유형 관리에 등록된 노출 타입) */}
+              <Select value={v.typeId ?? ''} onChange={(e) => pick(i, e.target.value)} className="h-7 min-w-0 flex-1 text-xs">
+                <option value="">노출 타입 선택… (코너 유형 관리)</option>
+                {options.map((t) => <option key={t.id} value={t.id}>{typeLabel(t)}</option>)}
+              </Select>
               <button type="button" onClick={() => save(vars.filter((_, j) => j !== i))}
                 className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="타입 삭제">−</button>
             </div>
           ))}
-          <p className="text-[9px] leading-relaxed text-slate-400">미리보기는 <b>기본(첫 번째)</b> 타입 기준이에요. 실서비스에선 CVM이 고객마다 이 중 하나를 노출합니다. (껍데기는 여기, 콘텐츠 문구는 각 컴포넌트의 ‘문구 베리에이션’)</p>
+          <p className="text-[9px] leading-relaxed text-slate-400">노출 타입은 <b>코너 유형 관리</b>에 등록된 것에서 골라요. 미리보기는 <b>기본(첫 번째)</b> 타입 기준이고, 실서비스에선 CVM이 고객마다 이 중 하나를 노출합니다. (콘텐츠 문구는 각 컴포넌트의 ‘문구 베리에이션’)</p>
         </div>
       )}
     </div>
@@ -2853,7 +2866,7 @@ export function BuilderEditor({
               <BigBannerControl templateId={templateId} corner={selectedCorner} banners={library.banners} />
               <CardShapeControl templateId={templateId} corner={selectedCorner} />
               <MoreButtonControl templateId={templateId} corner={selectedCorner} />
-              <DisplayVariantsControl templateId={templateId} corner={selectedCorner} />
+              <DisplayVariantsControl templateId={templateId} corner={selectedCorner} cornerTypes={library.cornerTypes} />
               <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
             </div>
           </div>
