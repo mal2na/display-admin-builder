@@ -80,18 +80,23 @@ export function TemplateReviewBar(props: TemplateReviewData) {
         ) : canGoLive ? (
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600"><Eye className="h-3 w-3" /> 승인됨 · 게시 가능</span>
         ) : (
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><EyeOff className="h-3 w-3" /> 고객 노출 전 · BSS 승인 필요</span>
+          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><EyeOff className="h-3 w-3" /> 고객 노출 전 · 승인 필요</span>
+        )}
+
+        {/* 필수값 게이트 — 별도 줄이 아니라 상단 행에 인라인(헤더 높이 최소화). 미충족일 때만 아래 상세 목록. */}
+        {(status === 'DRAFT' || status === 'REJECTED') && !msg && gateOk && (
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600"><ShieldCheck className="h-3.5 w-3.5" /> 필수값 충족 — 승인 요청 가능</span>
         )}
 
         <div className="ml-auto flex items-center gap-1.5">
           {(status === 'DRAFT' || status === 'REJECTED' || status === 'ROLLED_BACK') && (
-            <Button size="sm" onClick={onRequest} disabled={pending || !gateOk} title="BSS로 승인 요청을 전송합니다">
+            <Button size="sm" onClick={onRequest} disabled={pending || !gateOk} title="승인 요청을 전송합니다">
               <Send className="mr-1 h-3.5 w-3.5" /> {status === 'REJECTED' ? '재승인 요청' : '승인 요청'}
             </Button>
           )}
           {status === 'REVIEW' && (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700">
-              <Hourglass className="h-3.5 w-3.5" /> BSS 심사 중
+              <Hourglass className="h-3.5 w-3.5" /> 승인 심사 중
             </span>
           )}
         </div>
@@ -112,16 +117,12 @@ export function TemplateReviewBar(props: TemplateReviewData) {
         </div>
       )}
 
-      {/* 승인 요청 전 필수값 안내 */}
-      {(status === 'DRAFT' || status === 'REJECTED') && !msg && (
-        gateOk ? (
-          <p className="mt-2 flex items-center gap-1 text-xs text-emerald-600"><ShieldCheck className="h-3.5 w-3.5" /> 필수값 충족 — 승인 요청 가능</p>
-        ) : (
-          <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
-            <p className="mb-1 flex items-center gap-1 font-semibold"><AlertTriangle className="h-3.5 w-3.5" /> 승인 요청 전 채워야 할 값 {props.issues.length}건</p>
-            <IssueList issues={props.issues} />
-          </div>
-        )
+      {/* 승인 요청 전 필수값 안내 — 미충족일 때만 상세 목록(충족 시엔 상단 행 인라인 배지) */}
+      {(status === 'DRAFT' || status === 'REJECTED') && !msg && !gateOk && (
+        <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+          <p className="mb-1 flex items-center gap-1 font-semibold"><AlertTriangle className="h-3.5 w-3.5" /> 승인 요청 전 채워야 할 값 {props.issues.length}건</p>
+          <IssueList issues={props.issues} />
+        </div>
       )}
 
       {msg && (

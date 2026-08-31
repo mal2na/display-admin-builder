@@ -26,6 +26,7 @@ import {
   isCvmBinding,
   REC_SOURCE_METHODS,
   REC_SOURCE_INFO,
+  CVM_TARGET_HINTS,
   type AtomType,
   type CornerType,
 } from '@/lib/display-taxonomy';
@@ -39,7 +40,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List } from 'lucide-react';
 import { TypeDetailPreview } from '../../corner-types/corner-type-manager';
 import {
   updateTemplateMeta,
@@ -65,6 +66,8 @@ import {
   swapCornerToType,
   setCornerCardShape,
   setCornerTitleLines,
+  setCornerDisplayVariants,
+  setCornerMainTitleVariants,
   setCornerBigBanner,
   setCornerBannerPosition,
   setCornerMoreButton,
@@ -81,6 +84,7 @@ export type AtomNode = {
   visible?: boolean; // 코너 구성 표시/숨김 토글 (숨김=미리보기·FO 제외, 삭제 아님)
   menuRole?: string; // FIXED(고정) | EDITABLE(편집가능) — 선택형·메뉴 리스트 항목 역할
   content: string | null;
+  contentVariants?: { text: string; target?: string }[]; // 문구 베리에이션 — 추가 문구 후보(+타겟 힌트). 실서비스 CVM 택1. 기본=content.
   imageUrl: string | null;
   altText: string | null;
   linkUrl: string | null;
@@ -107,6 +111,7 @@ export type CornerNode = {
   cornerLayout: string | null;
   description: string | null;
   mainTitle: string | null;
+  mainTitleVariants: string | null; // 타이틀 베리에이션 (JSON [{text,target}]) — 실서비스 CVM 택1
   subTitle: string | null;
   subTitleIcon: string | null;
   sortStrategy: string | null;
@@ -118,6 +123,7 @@ export type CornerNode = {
   bigBanner: boolean; // 빅배너 = 배치(인스턴스) 옵션 (유형 아님). 빌더에서 켠다.
   cardShape: string | null; // 상품형 2.5배열 카드 모양 (정사각형 | 직사각형)
   titleLines: number | null; // 상품 카드 제목 줄 수 (2=두 줄)
+  displayVariants: string | null; // 노출 타입 베리에이션 (JSON [{label,note}]) — 실서비스 CVM 택1
   moreButtonUse: boolean;
   moreButtonLabel: string | null;
   moreButtonLink: string | null;
@@ -361,6 +367,7 @@ function toPreviewCorner(c: CornerNode): PreviewCorner {
         name: a.name,
         atomType: a.atomType,
         content: a.content,
+        contentVariants: a.contentVariants,
         imageUrl: a.imageUrl,
         altText: a.altText,
         linkUrl: a.linkUrl,
@@ -805,6 +812,31 @@ function AtomRow({
             className="h-8 text-xs"
           />
         ))}
+      {/* 문구 베리에이션 — 문구 후보 여러 개 + 타겟 힌트. 별도 메뉴 없이 여기(콘텐츠 원장)에서. 실서비스엔 CVM이 택1(기본=위 문구). 회의 2026-08-31. */}
+      {f.content && !isCvmBinding(atom.content) && (() => {
+        const vars = atom.contentVariants ?? [];
+        return (
+          <div className="space-y-1 rounded-md border border-dashed border-violet-200 bg-violet-50/30 px-2 py-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold text-violet-700">문구 베리에이션 <span className="font-normal text-violet-400">· 타겟별 문구 · CVM 택1 (기본=위 문구)</span></span>
+              <button type="button" onClick={() => onChange({ contentVariants: [...vars, { text: '' }] })}
+                className="shrink-0 rounded border border-violet-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100">＋ 문구</button>
+            </div>
+            {vars.map((v, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <Input value={v.text} onChange={(e) => onChange({ contentVariants: vars.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)) })} placeholder="대체 문구" className="h-7 min-w-0 flex-1 text-xs" />
+                {/* 타겟 힌트 (누구에게) — 최종 매칭은 CVM */}
+                <Select value={v.target ?? ''} onChange={(e) => onChange({ contentVariants: vars.map((x, j) => (j === i ? { ...x, target: e.target.value || undefined } : x)) })} className="h-7 w-24 shrink-0 text-[10px]">
+                  <option value="">타겟 없음</option>
+                  {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
+                </Select>
+                <button type="button" onClick={() => onChange({ contentVariants: vars.filter((_, j) => j !== i) })}
+                  className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="문구 삭제">−</button>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
       {f.image &&
         (atom.atomType === 'ICON' ? (
           // 아이콘 원자 = 아이콘 라이브러리에서 글리프 선택(이미지 파일 아님)
@@ -1068,7 +1100,7 @@ function ComponentCard({
       startSave(async () => {
         await saveAtoms(
           templateId,
-          atomsRef.current.map((a) => ({ atomId: a.id, componentAtomId: a.componentAtomId, visible: a.visible !== false, atomType: a.atomType, content: a.content, imageUrl: a.imageUrl, altText: a.altText, linkUrl: a.linkUrl })),
+          atomsRef.current.map((a) => ({ atomId: a.id, componentAtomId: a.componentAtomId, visible: a.visible !== false, atomType: a.atomType, content: a.content, contentVariants: a.contentVariants && a.contentVariants.length ? JSON.stringify(a.contentVariants) : null, imageUrl: a.imageUrl, altText: a.altText, linkUrl: a.linkUrl })),
         );
         setEdit(false);
       });
@@ -1185,7 +1217,7 @@ function BssProductPickerModal({ open, onClose, onPick, pending }: { open: boole
       {/* 고정 높이(h-[80vh]) — 카테고리 전환 시에도 모달 크기 불변, 리스트만 내부 스크롤 */}
       <div className="flex h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
-          <h2 className="text-sm font-semibold">BSS 상품 불러오기</h2>
+          <h2 className="text-sm font-semibold">상품 불러오기</h2>
           <span className="text-xs text-muted-foreground">혜택 브랜드에서 로고·이름·대표 혜택을 코너에 추가</span>
           <button type="button" onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
@@ -1342,7 +1374,7 @@ function ComponentList({
               onClick={() => setBssOpen(true)}
               className="flex flex-1 items-center justify-center gap-1 rounded-md border border-dashed border-sky-300 bg-white/70 py-2 text-xs font-medium text-sky-700 hover:border-sky-500 hover:bg-sky-50"
             >
-              <Search className="h-3.5 w-3.5" /> BSS 상품 불러오기
+              <Search className="h-3.5 w-3.5" /> 상품 불러오기
             </button>
           </div>
         </div>
@@ -1416,6 +1448,206 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
 const normCardShape = (s: string | null | undefined) => (s === '정사각형' ? '1:1' : s === '직사각형' ? '3:4' : s || '3:4');
 
 // '코너 구성' 카드 비율 컨트롤 — 상품형 컴포넌트가 있고 배열이 2.5(가로형)일 때만 노출.
+// 노출 타입 베리에이션 — 한 코너에 노출 타입(껍데기)을 2~3개 등록. 실서비스에선 CVM이 고객마다 택1, 빌더 미리보기는 기본(첫 번째). 회의 2026-08-31.
+//  '재료(타입·문구)는 우리가, 조합은 CVM' — 즉시 저장(setCornerDisplayVariants), 코너 정보 저장과 독립.
+// 노출 타입 = 코너 유형 관리(카탈로그)에 등록된 유형을 참조(회의 2026-08-31: 카탈로그에서 골라 조합). typeId = CornerType.id.
+type DisplayVariant = { label: string; typeId?: string; typeName?: string; note?: string };
+function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateId: string; corner: CornerNode; cornerTypes: LibraryData['cornerTypes'] }) {
+  const parse = (): DisplayVariant[] => { try { const a = JSON.parse(corner.displayVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.label === 'string'); } catch { /* noop */ } return []; };
+  const [vars, setVars] = useState<DisplayVariant[]>(parse());
+  const [, start] = useTransition();
+  useEffect(() => { setVars(parse()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.displayVariants, corner.templateCornerId]);
+  const save = (next: DisplayVariant[]) => { setVars(next); start(() => setCornerDisplayVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
+  const add = () => { if (vars.length >= 1) return; save([...vars, { label: '' }]); };
+  // 노출 타입 후보 = 카탈로그(코너 유형 관리)에서 같은 코너 유형(baseCategory)의 활성 타입. 없으면 전체 활성.
+  const sameCat = cornerTypes.filter((t) => t.active && t.baseCategory === corner.cornerType);
+  const options = sameCat.length ? sameCat : cornerTypes.filter((t) => t.active);
+  const typeLabel = (t: LibraryData['cornerTypes'][number]) => (t.typeDetail && !t.name.includes(t.typeDetail) ? `${t.name} · ${t.typeDetail}` : t.name);
+  const pick = (i: number, id: string) => {
+    const t = cornerTypes.find((x) => x.id === id);
+    save(vars.map((v, j) => (j === i ? { ...v, typeId: id || undefined, typeName: t ? typeLabel(t) : undefined, label: t ? typeLabel(t) : v.label } : v)));
+  };
+  return (
+    <div className="mb-3 space-y-2 rounded-xl border bg-gradient-to-b from-slate-50 to-white p-3 shadow-sm">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[11px] font-semibold text-slate-700">노출 타입 베리에이션</span>
+          <span className="rounded bg-violet-100 px-1.5 py-px text-[9px] font-medium text-violet-600">CVM이 택1</span>
+        </div>
+        <button type="button" onClick={add} disabled={vars.length >= 1}
+          className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-40">＋ 타입</button>
+      </div>
+      {vars.length === 0 ? (
+        <p className="text-[10px] leading-relaxed text-muted-foreground">노출 타입이 1개예요. ＋로 <b>코너 유형 관리(카탈로그)</b>의 노출 타입을 2~3개 등록하면 실서비스에서 <b>CVM이 고객마다 골라</b> 노출합니다. (빌더 미리보기는 기본 타입)</p>
+      ) : (
+        <div className="space-y-1.5">
+          {vars.map((v, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <span className={cn('inline-flex h-7 shrink-0 items-center rounded-md px-1.5 text-[9px] font-bold', i === 0 ? 'bg-violet-600 text-white' : 'bg-slate-200 text-slate-600')}>{i === 0 ? '기본' : `타입 ${i + 1}`}</span>
+              {/* 노출 타입 = 카탈로그에서 선택 (코너 유형 관리에 등록된 노출 타입) */}
+              <Select value={v.typeId ?? ''} onChange={(e) => pick(i, e.target.value)} className="h-7 min-w-0 flex-1 text-xs">
+                <option value="">노출 타입 선택… (코너 유형 관리)</option>
+                {options.map((t) => <option key={t.id} value={t.id}>{typeLabel(t)}</option>)}
+              </Select>
+              <button type="button" onClick={() => save(vars.filter((_, j) => j !== i))}
+                className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="타입 삭제">−</button>
+            </div>
+          ))}
+          <p className="text-[9px] leading-relaxed text-slate-400">노출 타입은 <b>코너 유형 관리</b>에 등록된 것에서 골라요. 미리보기는 <b>기본(첫 번째)</b> 타입 기준이고, 실서비스에선 CVM이 고객마다 이 중 하나를 노출합니다. (콘텐츠 문구는 각 컴포넌트의 ‘문구 베리에이션’)</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 문구 한눈에 보기 — 이 코너의 모든 문구(타이틀 + 텍스트 아톰)와 타겟별 대체 문구를 한 화면에 모아 본다. (별도 메뉴 아님 — 코너 편집 내 정리 뷰)
+//  타이틀 베리에이션은 여기서 직접 편집(즉시 저장). 아톰 문구는 컴포넌트 ‘수정’에서.
+function CopyOverview({ templateId, corner }: { templateId: string; corner: CornerNode }) {
+  type TV = { text: string; target?: string };
+  const parseTitle = (): TV[] => { try { const a = JSON.parse(corner.mainTitleVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.text === 'string'); } catch { /* noop */ } return []; };
+  const [tvars, setTvars] = useState<TV[]>(parseTitle());
+  const [, start] = useTransition();
+  useEffect(() => { setTvars(parseTitle()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.mainTitleVariants, corner.templateCornerId]);
+  const saveTitle = (next: TV[]) => { setTvars(next); start(() => setCornerMainTitleVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
+
+  const atomRows: { label: string; base: string | null; variants: TV[] }[] = [];
+  corner.components.forEach((cp) => cp.atoms.forEach((a) => {
+    const isText = !['IMAGE', 'ICON', 'BARCODE'].includes(a.atomType);
+    if (isText && (a.content || (a.contentVariants?.length ?? 0) > 0))
+      atomRows.push({ label: `${cp.name} · ${ATOM_TYPE_LABELS[a.atomType as AtomType] ?? a.atomType}`, base: a.content, variants: a.contentVariants ?? [] });
+  }));
+  const hasTitle = !!corner.mainTitle;
+  if (!hasTitle && atomRows.length === 0) return null;
+  const totalVars = tvars.length + atomRows.reduce((n, r) => n + r.variants.length, 0);
+  return (
+    <details className="mb-3 rounded-xl border bg-card">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-slate-700">
+        <List className="h-3.5 w-3.5 text-violet-500" /> 문구 한눈에 보기 <span className="font-normal text-slate-400">· 문구 {atomRows.length + (hasTitle ? 1 : 0)}종 · 타겟별 대체 {totalVars}개</span>
+      </summary>
+      <div className="space-y-2.5 border-t p-3">
+        {/* 타이틀 — 편집 가능(타겟별 대체 타이틀 = 타이틀 베리에이션) */}
+        {hasTitle && (
+          <div className="space-y-1 rounded-lg bg-violet-50/50 p-2">
+            <p className="text-[10px] font-semibold text-violet-600">타이틀 · 타겟별 대체(CVM 택1)</p>
+            <div className="flex items-start gap-1.5">
+              <span className="inline-flex h-5 shrink-0 items-center rounded bg-slate-200 px-1.5 text-[9px] font-bold text-slate-600">기본</span>
+              <span className="flex-1 whitespace-pre-line text-[11px] text-slate-800">{corner.mainTitle}</span>
+            </div>
+            {tvars.map((v, j) => (
+              <div key={j} className="flex items-center gap-1.5">
+                <Select value={v.target ?? ''} onChange={(e) => saveTitle(tvars.map((t, k) => (k === j ? { ...t, target: e.target.value || undefined } : t)))} className="h-6 w-[92px] shrink-0 text-[10px]">
+                  <option value="">타겟…</option>
+                  {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
+                </Select>
+                <Input value={v.text} onChange={(e) => setTvars(tvars.map((t, k) => (k === j ? { ...t, text: e.target.value } : t)))} onBlur={() => saveTitle(tvars)} placeholder="이 타겟에게 보일 타이틀" className="h-6 flex-1 text-[11px]" />
+                <button type="button" onClick={() => saveTitle(tvars.filter((_, k) => k !== j))} className="flex h-6 w-5 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="삭제">−</button>
+              </div>
+            ))}
+            <button type="button" onClick={() => saveTitle([...tvars, { text: '' }])} className="inline-flex items-center gap-0.5 rounded-md border border-violet-300 bg-white px-2 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-50"><Plus className="h-2.5 w-2.5" /> 타이틀 후보</button>
+          </div>
+        )}
+        {/* 아톰 문구 — 읽기 전용(편집은 컴포넌트 수정에서) */}
+        {atomRows.map((r, i) => (
+          <div key={i} className="space-y-1">
+            <p className="text-[10px] font-semibold text-slate-500">{r.label}</p>
+            <div className="flex items-start gap-1.5">
+              <span className="inline-flex h-5 shrink-0 items-center rounded bg-slate-200 px-1.5 text-[9px] font-bold text-slate-600">기본</span>
+              <span className="flex-1 whitespace-pre-line text-[11px] text-slate-800">{r.base || <span className="text-slate-400">—</span>}</span>
+            </div>
+            {r.variants.map((v, j) => (
+              <div key={j} className="flex items-start gap-1.5">
+                <span className="inline-flex h-5 shrink-0 items-center rounded bg-rose-100 px-1.5 text-[9px] font-bold text-rose-600">{v.target || '타겟없음'}</span>
+                <span className="flex-1 text-[11px] text-rose-700">{v.text || <span className="text-slate-400">(빈 문구)</span>}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+        <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">타이틀 베리에이션은 여기서 편집. 아톰 문구는 각 컴포넌트 ‘수정’ → 문구 베리에이션에서. 타겟은 CVM이 참고하는 힌트(최종 매칭은 CVM).</p>
+      </div>
+    </details>
+  );
+}
+
+// 캔버스식 — 디바이스 옆에 '추가 노출 타입'만 렌더. 각 타입 카드에서 노출 타입(카탈로그)을 직접 변경. 기본은 디바이스에서 편집.
+function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateId: string; corner: CornerNode; preview: PreviewCorner; cornerTypes: LibraryData['cornerTypes'] }) {
+  type V = { label: string; typeId?: string; typeName?: string; target?: string };
+  const parse = (): V[] => { try { const a = JSON.parse(corner.displayVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.label === 'string'); } catch { /* noop */ } return []; };
+  // 타이틀 베리에이션 — target별 대체 타이틀. withTarget에서 pc.mainTitle을 이걸로 치환.
+  const titleVars: { text: string; target?: string }[] = (() => { try { const a = JSON.parse(corner.mainTitleVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.text === 'string'); } catch { /* noop */ } return []; })();
+  const [vars, setVars] = useState<V[]>(parse());
+  const [, start] = useTransition();
+  useEffect(() => { setVars(parse()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.displayVariants, corner.templateCornerId]);
+  const options = cornerTypes.filter((t) => t.active && t.baseCategory === corner.cornerType);
+  const typeLabel = (t: LibraryData['cornerTypes'][number]) => (t.typeDetail && !t.name.includes(t.typeDetail) ? `${t.name} · ${t.typeDetail}` : t.name);
+  const save = (next: V[]) => { setVars(next); start(() => setCornerDisplayVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
+  const pick = (i: number, id: string) => { const t = cornerTypes.find((x) => x.id === id); save(vars.map((v, j) => (j === i ? { ...v, typeId: id || undefined, typeName: t ? typeLabel(t) : undefined, label: t ? typeLabel(t) : v.label } : v))); };
+  const setTarget = (i: number, target: string) => save(vars.map((v, j) => (j === i ? { ...v, target: target || undefined } : v)));
+  const add = () => { if (vars.length >= 1) return; save([...vars, { label: '' }]); };
+  // 슬롯을 항상 예약(min-w) — 노출 타입이 없어도 디바이스가 같은 위치에 있게(치우침·튐 방지). 비면 안내 자리.
+  return (
+    <div className="min-w-[320px] shrink-0">
+      {vars.length === 0 ? (
+        <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-5 text-center">
+          <Layers className="mb-2 h-6 w-6 text-slate-300" />
+          <p className="text-[11px] font-medium text-slate-500">노출 타입 베리에이션</p>
+          <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">추가하면 여기에 나란히 떠서<br />CVM이 고객마다 택1합니다</p>
+          <button type="button" onClick={add} className="mt-2.5 inline-flex items-center gap-0.5 rounded-md border border-violet-300 bg-white px-2.5 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-50"><Plus className="h-3 w-3" /> 노출 타입 추가</button>
+        </div>
+      ) : (
+        <>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-700"><Sparkles className="h-3.5 w-3.5" /> 추가 노출 타입 {vars.length}개 <span className="font-normal text-violet-400">클릭해 변경 · CVM 택1</span></p>
+            {vars.length < 1 && <button type="button" onClick={add} className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100"><Plus className="mr-0.5 inline h-2.5 w-2.5" />타입</button>}
+          </div>
+          <div className="flex items-start gap-4">
+            {vars.map((v, i) => {
+              // 각 타입 = 자기 노출 타입(카탈로그) 레이아웃 + 타겟이 있으면 그 타겟 문구로 치환 → 껍데기·문구 모두 타입별로 다르게.
+              const vType = v.typeId ? cornerTypes.find((t) => t.id === v.typeId) : null;
+              const withTarget = (pc: PreviewCorner): PreviewCorner => {
+                if (!v.target) return pc;
+                const tHit = titleVars.find((t) => t.target === v.target && t.text);
+                return {
+                  ...pc,
+                  mainTitle: tHit ? tHit.text : pc.mainTitle,
+                  components: pc.components.map((c) => ({ ...c, atoms: c.atoms.map((a) => { const hit = a.contentVariants?.find((cv) => cv.target === v.target && cv.text); return hit ? { ...a, content: hit.text } : a; }) })),
+                };
+              };
+              const vPreview: PreviewCorner = withTarget(vType
+                ? { ...preview, cornerLayout: null, layoutDetail: vType.typeDetail ?? preview.layoutDetail, bigBanner: vType.bigBanner ?? false }
+                : preview);
+              return (
+              <div key={i} className="w-[300px] shrink-0">
+                <div className="mb-1 flex items-center gap-1">
+                  <span className="inline-flex h-6 shrink-0 items-center rounded bg-amber-100 px-1.5 text-[10px] font-bold text-amber-700">타입 {i + 2}</span>
+                  <Select value={v.typeId ?? ''} onChange={(e) => pick(i, e.target.value)} className="h-6 min-w-0 flex-1 text-[11px]">
+                    <option value="">노출 타입 선택…</option>
+                    {options.map((t) => <option key={t.id} value={t.id}>{typeLabel(t)}</option>)}
+                  </Select>
+                  <button type="button" onClick={() => save(vars.filter((_, j) => j !== i))} className="flex h-6 w-5 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="타입 삭제">−</button>
+                </div>
+                {/* 타겟 힌트 — '누구에게'(연령대·방문이력·위치 등). 최종 매칭은 CVM. 회의 md 반영. */}
+                <div className="mb-1.5 flex items-center gap-1">
+                  <span className="w-8 shrink-0 text-[9px] text-muted-foreground">타겟</span>
+                  <Select value={v.target ?? ''} onChange={(e) => setTarget(i, e.target.value)} className="h-6 min-w-0 flex-1 text-[11px]">
+                    <option value="">힌트 없음 (CVM 자동 분류)</option>
+                    {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key} · {t.axis}</option>)}
+                  </Select>
+                </div>
+                <div className="relative overflow-hidden rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
+                  {v.target && <span className="absolute right-2 top-2 z-10 rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">{v.target}</span>}
+                  <CornerBlock corner={vPreview} />
+                </div>
+                <p className="mt-1 text-center text-[9px] text-amber-600">{vType ? `노출 타입: ${vType.typeDetail || vType.name}` : '노출 타입을 선택하면 그 레이아웃으로 렌더'}{v.target ? ` · 타겟 ${v.target} 문구` : ''}</p>
+              </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 //  코너 정보 저장과 분리(전용 액션 setCornerCardShape). 저장 후 revalidate로 미리보기 반영.
 function CardShapeControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
   const hasProductComp = corner.components.some((c) => c.componentType === '상품형');
@@ -1627,9 +1859,9 @@ function CornerInfoForm({
   const recFullPlan = [...recPrimaryPlan, '운영 편성'];
   const recSource = recFullPlan[0] ?? ''; // 대표(1순위)
   const recPersonalized = recSource === 'CVM 기반'; // 개인화 방식(CVM)이면 '미리보기=폴백' 안내 표시
-  // 추천 수급 방식은 '추천 슬롯'인 코너에만 의미 있음 — 상품/혜택 추천을 나열하는 유형만.
-  //  상태 안내형·고정·필수 노출형(프로필·바코드)·업무 진입형·배너형은 고객정보/기능이라 추천(CVM) 섹션 제외.
-  const isRecCorner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(ct);
+  // 추천 수급 방식은 '추천 슬롯'인 코너에만 의미 있음 — 상품/혜택 추천 + CVM 타겟 배너(TM-DSP-018).
+  //  배너형도 CVM 타겟 배너로 지정 가능(회의 2026-08-31). 상태 안내형·업무 진입형 등 고객정보/기능 코너는 제외.
+  const isRecCorner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형', '배너형'].includes(ct);
   // FO 사용자 설정(고객 커스터마이즈) — 메뉴 리스트 코너
   const [userCustom, setUserCustom] = useState(corner.userCustomizable ?? false);
   const [userMin, setUserMin] = useState(corner.userMinItems != null ? String(corner.userMinItems) : '');
@@ -2409,6 +2641,10 @@ export function BuilderEditor({
   const [zoom, setZoom] = useState(1); // 미리보기 배율 (비율 유지)
   const [rightW, setRightW] = useState(440); // 우측 상세 패널 너비(px), 드래그로 조절
   const [leftW, setLeftW] = useState(300); // 좌측 코너 리스트 너비(px), 드래그로 조절
+  const [leftOpen, setLeftOpen] = useState(true); // 좌측 패널 펼침/접힘
+  const [rightOpen, setRightOpen] = useState(true); // 우측 패널 펼침/접힘
+  // 캔버스 빈 영역 클릭 = 둘 다 토글(하나라도 열려 있으면 둘 다 접고, 둘 다 접혀 있으면 둘 다 펼침)
+  const toggleBothPanels = () => { const anyOpen = leftOpen || rightOpen; setLeftOpen(!anyOpen); setRightOpen(!anyOpen); };
   const [loadCornerOpen, setLoadCornerOpen] = useState(false); // '코너 불러오기' 모달
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -2573,11 +2809,11 @@ export function BuilderEditor({
       onCreated={(id) => selectCorner(id)}
     />
     <div
-      className="grid flex-1 overflow-hidden"
-      style={{ gridTemplateColumns: `${leftW}px minmax(0,1fr) ${rightW}px` }}
+      className="grid flex-1 overflow-hidden transition-[grid-template-columns] duration-200"
+      style={{ gridTemplateColumns: `${leftOpen ? leftW : 0}px minmax(0,1fr) ${rightOpen ? rightW : 0}px` }}
     >
-      {/* 좌측: 고정 코너 리스트 + 유형 추가 (드래그로 너비 조절) */}
-      <div className="relative flex flex-col overflow-hidden border-r bg-card">
+      {/* 좌측: 고정 코너 리스트 + 유형 추가 (드래그로 너비 조절). 접히면 폭 0. */}
+      <div className={cn('relative flex flex-col overflow-hidden border-r bg-card', !leftOpen && 'pointer-events-none opacity-0')}>
         <div
           onPointerDown={(e) => startResize('left', e)}
           title="드래그로 패널 너비 조절"
@@ -2721,25 +2957,42 @@ export function BuilderEditor({
 
       {/* 가운데: 실시간 디바이스 미리보기 */}
       <div className="flex flex-col overflow-hidden bg-background">
-        <div className="flex items-center justify-center gap-2 py-2">
-          <select
-            value={device.key}
-            onChange={(e) => setDevice(DEVICES.find((d) => d.key === e.target.value) ?? DEVICES[0])}
-            className="rounded-md border bg-white px-3 py-1.5 text-sm font-medium"
-          >
-            {DEVICES.map((d) => (
-              <option key={d.key} value={d.key}>{d.label} · {d.w}×{d.h}</option>
-            ))}
-          </select>
-          <div className="flex items-center gap-1 rounded-md border bg-white p-0.5">
-            <button type="button" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))} disabled={zoom <= 0.5} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-30" title="축소">−</button>
-            <button type="button" onClick={() => setZoom(1)} className="min-w-[42px] rounded px-1 text-center text-[11px] font-semibold tabular-nums text-muted-foreground hover:bg-muted" title="기본 크기(100%)">{Math.round(zoom * 100)}%</button>
-            <button type="button" onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))} disabled={zoom >= 1.5} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-30" title="확대">＋</button>
+        <div className="flex items-center justify-between gap-2 px-3 py-2">
+          {/* 좌측 패널 접기/펼치기 */}
+          <button type="button" onClick={() => setLeftOpen((v) => !v)} title={leftOpen ? '좌측 패널 접기' : '좌측 패널 펼치기'}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-white text-muted-foreground hover:bg-muted">
+            {leftOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={device.key}
+              onChange={(e) => setDevice(DEVICES.find((d) => d.key === e.target.value) ?? DEVICES[0])}
+              className="rounded-md border bg-white px-3 py-1.5 text-sm font-medium"
+            >
+              {DEVICES.map((d) => (
+                <option key={d.key} value={d.key}>{d.label} · {d.w}×{d.h}</option>
+              ))}
+            </select>
+            <div className="flex items-center gap-1 rounded-md border bg-white p-0.5">
+              <button type="button" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))} disabled={zoom <= 0.5} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-30" title="축소">−</button>
+              <button type="button" onClick={() => setZoom(1)} className="min-w-[42px] rounded px-1 text-center text-[11px] font-semibold tabular-nums text-muted-foreground hover:bg-muted" title="기본 크기(100%)">{Math.round(zoom * 100)}%</button>
+              <button type="button" onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))} disabled={zoom >= 1.5} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-30" title="확대">＋</button>
+            </div>
           </div>
+          {/* 우측 패널 접기/펼치기 */}
+          <button type="button" onClick={() => setRightOpen((v) => !v)} title={rightOpen ? '우측 패널 접기' : '우측 패널 펼치기'}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-white text-muted-foreground hover:bg-muted">
+            {rightOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+          </button>
         </div>
-        <div className="flex-1 overflow-auto bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] p-6 [background-size:16px_16px]">
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) toggleBothPanels(); }}
+          title="빈 캔버스를 클릭하면 좌우 패널이 접히거나 펼쳐집니다"
+          className="flex-1 overflow-auto bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] p-6 [background-size:16px_16px]"
+        >
           {/* zoom(CSS)은 레이아웃까지 축소 → mx-auto가 항상 정확히 중앙 정렬(폭이 캔버스보다 클 때만 스크롤). */}
-          <div className="mx-auto w-fit" style={{ zoom }}>
+          {/* 디바이스 + 노출타입 슬롯(항상 예약)을 함께 중앙 정렬 — 슬롯 폭이 고정이라 코너 전환 시 디바이스가 안 튐. */}
+          <div className="mx-auto flex w-fit items-start gap-8" style={{ zoom }}>
             <DeviceFrame width={device.w} bodyHeight={device.h - 150} headerLabel={meta.containerName}>
               {previewCorners.length === 0 ? (
                 <div className="flex h-full items-center justify-center rounded-xl border-2 border-dashed border-slate-300 p-6 text-center text-sm text-slate-400">
@@ -2761,12 +3014,17 @@ export function BuilderEditor({
                 ))
               )}
             </DeviceFrame>
+            {/* 캔버스식 — 선택 코너의 '추가 노출 타입'만 디바이스 옆에 렌더 + 클릭해 변경. 기본은 디바이스에서 편집. */}
+            {selectedCorner && (() => {
+              const selPv = previewCorners.find((c) => c.id === selectedCorner.templateCornerId);
+              return selPv ? <VariantSpread templateId={templateId} corner={selectedCorner} preview={selPv} cornerTypes={library.cornerTypes} /> : null;
+            })()}
           </div>
         </div>
       </div>
 
-      {/* 우측: 선택 코너 상세 (드래그로 너비 조절) */}
-      <div className="relative overflow-y-auto border-l bg-background p-4">
+      {/* 우측: 선택 코너 상세 (드래그로 너비 조절). 접히면 폭 0. */}
+      <div className={cn('relative overflow-y-auto border-l bg-background p-4', !rightOpen && 'pointer-events-none opacity-0')}>
         <div
           onPointerDown={(e) => startResize('right', e)}
           title="드래그로 패널 너비 조절"
@@ -2790,6 +3048,8 @@ export function BuilderEditor({
               <BigBannerControl templateId={templateId} corner={selectedCorner} banners={library.banners} />
               <CardShapeControl templateId={templateId} corner={selectedCorner} />
               <MoreButtonControl templateId={templateId} corner={selectedCorner} />
+              <DisplayVariantsControl templateId={templateId} corner={selectedCorner} cornerTypes={library.cornerTypes} />
+              <CopyOverview templateId={templateId} corner={selectedCorner} />
               <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
             </div>
           </div>

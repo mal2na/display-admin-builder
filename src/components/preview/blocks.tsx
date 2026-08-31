@@ -9,6 +9,7 @@ export type PreviewAtom = {
   name: string;
   atomType: string;
   content: string | null;
+  contentVariants?: { text: string; target?: string }[]; // 문구 베리에이션(+타겟) — 변형 렌더에서 타겟 문구 치환용
   imageUrl: string | null;
   altText: string | null;
   linkUrl: string | null;
@@ -56,11 +57,12 @@ function ImageBox({ atom, className }: { atom?: PreviewAtom; className?: string 
 function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const twoRows = component.chipRows === 2;
+  // 퀵메뉴(선택형 칩)는 무조건 1줄 또는 2줄까지만. 2줄 모드는 3줄+로 넘치지 않게 '2행 그리드 + 가로 스크롤'로 고정.
   return (
     <div
       className={
         twoRows
-          ? 'flex flex-wrap items-start gap-1.5'
+          ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-1.5 overflow-x-auto pb-1'
           : 'flex flex-nowrap items-start gap-1.5 overflow-x-auto pb-1'
       }
     >
@@ -132,7 +134,7 @@ function ProductCard({ component, shape, reason, titleLines }: { component: Prev
     <div className={cn('shrink-0', wCls)}>
       <ImageBox atom={poster} className={cn('w-full rounded-xl', ratioCls)} />
       {reason && <RecReason text={reason} />}
-      <p className={cn('mt-1.5 text-[13px] font-semibold leading-tight text-slate-900', nameCls)}>{title?.content ?? component.name}</p>
+      <p className={cn('mt-1.5 font-semibold leading-tight text-slate-900 text-[13px]', nameCls)}>{title?.content ?? component.name}</p>
       {/* 배지는 설명 앞 인라인. 설명은 이름보다 연하게(위계) — 예: [20%] 235,000원 */}
       {(badge?.content || info?.content) && (
         <p className="mt-0.5 flex items-center gap-1">
@@ -189,7 +191,7 @@ function BenefitRow({ component, reason }: { component: PreviewComponent; reason
     <div className="flex items-center gap-3 py-2">
       <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-semibold text-slate-900">{title?.content ?? component.name}</p>
+        <p className={cn('truncate text-[14px] font-semibold text-slate-900')}>{title?.content ?? component.name}</p>
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}
         {reason && <RecReason text={reason} />}
       </div>
@@ -487,19 +489,14 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         const isCvm = primary === 'CVM 기반';
         const personalized = isCvm; // 개인화 방식(CVM)이면 실제 노출이 미리보기(폴백)와 달라짐
         return (
-          <div className="rounded-lg bg-violet-50 px-2.5 py-1.5 text-violet-700" title="후보가 없으면 다음 순위(폴백)로 대체 노출됩니다">
-            <p className="flex items-center gap-1 text-[10px] font-semibold leading-tight">
-              <Sparkles className="h-3 w-3 shrink-0" />
-              <span className="min-w-0">{isCvm ? 'CVM 개인화 추천 · 고객별 순서로 자동 노출' : `${primary} 기반 노출`}</span>
-            </p>
-            {fallbacks.length > 0 && (
-              <p className="mt-0.5 pl-4 text-[10px] font-normal leading-tight text-violet-500">없으면 → {fallbacks.join(' → ')}</p>
-            )}
-            {personalized && (
-              <p className="mt-1 border-t border-violet-100 pl-4 pt-1 text-[10px] font-normal leading-tight text-violet-500">
-                미리보기는 <b className="font-semibold">폴백(운영자 편성)</b> 상태예요 — 실제는 고객마다 CVM 추천으로 다르게 노출됩니다
-              </p>
-            )}
+          <div
+            className="flex items-center gap-1 rounded-lg bg-violet-50 px-2.5 py-1 text-[10px] font-semibold leading-tight text-violet-600"
+            title={personalized
+              ? `CVM이 고객마다 후보·순위를 생성해 노출. 미리보기는 폴백(운영자 편성) 상태 — 실제는 고객마다 다르게 노출됩니다.${fallbacks.length ? ` 없으면 → ${fallbacks.join(' → ')}.` : ''}`
+              : `${primary} 기반 노출.${fallbacks.length ? ` 없으면 → ${fallbacks.join(' → ')}.` : ''}`}
+          >
+            <Sparkles className="h-3 w-3 shrink-0" />
+            <span className="truncate">{isCvm ? 'CVM 개인화 · 미리보기는 폴백' : `${primary} 기반`}</span>
           </div>
         );
       })()}

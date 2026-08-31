@@ -697,6 +697,19 @@ export async function setCornerTitleLines(templateId: string, cornerId: string, 
   rp(templateId);
 }
 
+// 노출 타입 베리에이션 — '코너 구성' 전용 컨트롤에서 즉시 저장. 한 코너에 노출 타입 2~3개 등록,
+//  실서비스에선 CVM이 고객마다 택1(빌더 미리보기는 첫 번째=기본만 표시). 회의 2026-08-31. JSON [{label,note}].
+export async function setCornerDisplayVariants(templateId: string, cornerId: string, variantsJson: string) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { displayVariants: variantsJson && variantsJson.trim() ? variantsJson : null } });
+  rp(templateId);
+}
+
+// 타이틀 베리에이션 — 타겟별 대체 타이틀 JSON [{text,target}] 즉시 저장. 실서비스 CVM 택1(기본=mainTitle).
+export async function setCornerMainTitleVariants(templateId: string, cornerId: string, variantsJson: string) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { mainTitleVariants: variantsJson && variantsJson.trim() ? variantsJson : null } });
+  rp(templateId);
+}
+
 // 빅배너로 강조 토글 — 즉시 저장(코너 정보 저장과 독립). 켜면 곧바로 selectedCorner.bigBanner가 갱신돼 '상단 배너' 패널이 뜬다.
 export async function setCornerBigBanner(templateId: string, cornerId: string, on: boolean) {
   await prisma.corner.update({ where: { id: cornerId }, data: { bigBanner: on } });
@@ -1012,7 +1025,7 @@ export async function updateAtom(templateId: string, atomId: string, formData: F
 // 컴포넌트의 Atom들을 한 번에 저장 (개별 저장 버튼 없이 '완료'에서 일괄 처리)
 export async function saveAtoms(
   templateId: string,
-  updates: { atomId: string; componentAtomId?: string; visible?: boolean; atomType?: string; content: string | null; imageUrl: string | null; altText: string | null; linkUrl: string | null }[],
+  updates: { atomId: string; componentAtomId?: string; visible?: boolean; atomType?: string; content: string | null; contentVariants?: string | null; imageUrl: string | null; altText: string | null; linkUrl: string | null }[],
 ) {
   const norm = (v: string | null) => (v && v.trim().length ? v.trim() : null);
   const ATOM_TYPES = new Set(['TEXT', 'BUTTON', 'IMAGE', 'ICON', 'BADGE', 'PRICE', 'BENEFIT_TEXT', 'CTA', 'INFO', 'BARCODE']);
@@ -1021,8 +1034,8 @@ export async function saveAtoms(
       ...updates.map((u) =>
         prisma.atom.update({
           where: { id: u.atomId },
-          // atomType은 아이콘↔이미지 전환(정보형 아이콘/이미지형)에서만 바뀜 — 유효값일 때만 반영
-          data: { content: norm(u.content), imageUrl: norm(u.imageUrl), altText: norm(u.altText), linkUrl: norm(u.linkUrl), ...(u.atomType && ATOM_TYPES.has(u.atomType) ? { atomType: u.atomType } : {}) },
+          // atomType은 아이콘↔이미지 전환(정보형 아이콘/이미지형)에서만 바뀜 — 유효값일 때만 반영. contentVariants=문구 베리에이션(JSON).
+          data: { content: norm(u.content), contentVariants: u.contentVariants ?? undefined, imageUrl: norm(u.imageUrl), altText: norm(u.altText), linkUrl: norm(u.linkUrl), ...(u.atomType && ATOM_TYPES.has(u.atomType) ? { atomType: u.atomType } : {}) },
         }),
       ),
       // 표시/숨김(visible)은 ComponentAtom(정션)에 저장

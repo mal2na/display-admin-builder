@@ -112,6 +112,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     cornerLayout: tc.corner.cornerLayout,
     description: tc.corner.description,
     mainTitle: tc.corner.mainTitle,
+    mainTitleVariants: tc.corner.mainTitleVariants ?? null,
     subTitle: tc.corner.subTitle,
     subTitleIcon: tc.corner.subTitleIcon,
     sortStrategy: tc.corner.sortStrategy,
@@ -123,6 +124,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     bigBanner: tc.corner.bigBanner ?? false,
     cardShape: tc.corner.cardShape ?? null,
     titleLines: tc.corner.titleLines ?? null,
+    displayVariants: tc.corner.displayVariants ?? null,
     moreButtonUse: tc.corner.moreButtonUse,
     moreButtonLabel: tc.corner.moreButtonLabel,
     moreButtonLink: tc.corner.moreButtonLink,
@@ -155,6 +157,15 @@ export default async function BuilderPage({ params }: { params: { id: string } }
         visible: ca.visible,
         menuRole: ca.menuRole,
         content: ca.atom.content,
+        contentVariants: (() => {
+          try {
+            const a = JSON.parse(ca.atom.contentVariants ?? '');
+            if (!Array.isArray(a)) return [] as { text: string; target?: string }[];
+            return a
+              .map((x: unknown) => (typeof x === 'string' ? { text: x } : (x && typeof (x as { text?: unknown }).text === 'string' ? { text: (x as { text: string }).text, target: (x as { target?: string }).target } : null)))
+              .filter(Boolean) as { text: string; target?: string }[];
+          } catch { return [] as { text: string; target?: string }[]; }
+        })(),
         imageUrl: ca.atom.imageUrl,
         altText: ca.atom.altText,
         linkUrl: ca.atom.linkUrl,

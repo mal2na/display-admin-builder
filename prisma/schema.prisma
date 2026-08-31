@@ -25,7 +25,10 @@ model Atom {
   name     String // 운영자용 식별명
   atomType String // TEXT | BUTTON | IMAGE | ICON | INFO  (display-taxonomy.ATOM_TYPES)
 
-  content String? // 문구/가격/혜택문구/정보값 등 텍스트성 값
+  content String? // 문구/가격/혜택문구/정보값 등 텍스트성 값 (기본=미리보기에 노출)
+  // 문구 베리에이션 (회의 2026-08-31) — 운영자가 문구 후보를 여러 개 등록하고, 실서비스에선 CVM이 고객마다 택1.
+  //  JSON 문자열 배열. 빌더 미리보기는 폴백이라 기본(content)만 노출. '재료는 우리가, 조합은 CVM'.
+  contentVariants String?
   imageUrl String? // IMAGE / ICON 의 에셋 경로
   altText String? // 대체텍스트. IMAGE/ICON이면 draft는 허용하되 review 전환은 차단 (PI-DSP-CMP-004)
   linkUrl String? // 랜딩/버튼 링크
@@ -105,6 +108,8 @@ model Corner {
   cornerLayout String? // 코너 레이아웃 (예: 가로 SWIPE형)
   description  String? // 코너 설명
   mainTitle    String? // 메인 타이틀 (줄바꿈 \n 허용)
+  // 타이틀 베리에이션 — 타겟별 대체 타이틀. JSON [{text,target}]. 실서비스 CVM이 택1(기본=mainTitle). 회의 2026-08-31.
+  mainTitleVariants String?
   subTitle     String? // 서브 타이틀
   subTitleIcon String? // 서브 타이틀 아이콘 (사용안함 | 말줄임표 | 화살표 | 정보)
 
@@ -138,6 +143,9 @@ model Corner {
   // 상품형 가로형(2.5배열) 카드 모양 — 정사각형(상품 이미지) | 직사각형(영화 포스터 등 세로 3:4). 빌더에서 선택.
   cardShape String? // null=기본(직사각형) | 정사각형 | 직사각형
   titleLines Int? // 상품 카드 제목 줄 수 (null/1=한 줄 말줄임, 2=두 줄까지 표시)
+  // 노출 타입 베리에이션 (회의 2026-08-31) — 한 코너에 디자인/노출 타입을 2~3개 등록하고, 실서비스에선 CVM이 고객마다 택1.
+  //  JSON 배열 [{label, note}]. 빌더 미리보기는 폴백이라 기본(첫 번째) 타입만 표시. '껍데기 베리에이션'.
+  displayVariants String?
   // 빅배너(상품형 등 코너에 얹는 부속 배너)의 위치 — 빌더에서 배치 조정. 상단 | 하단 (배너형 코너는 무관)
   bannerPosition String? @default("상단")
   // 코너 유형 관리에서 불러올 때 상속받은 유형 샘플 썸네일 — 컴포넌트가 아직 없을 때 미리보기/카드에 표시
