@@ -1317,38 +1317,13 @@ async function patchVariantDemo() {
     });
   }
 
-  // 0 Week 혜택문구 3종 — 타겟별 문구 후보(원장). 6타겟 전부, 기준값 항상 갱신.
-  const zeroAtomVariants: Record<string, { target: string; text: string }[]> = {
-    '공차 혜택문구': [
-      { target: '시니어', text: '어르신께 딱! 인기 음료 반값' },
-      { target: '2030', text: '요즘 핫한 음료 6종 반값' },
-      { target: '재방문', text: '또 오셨네요, 인기 음료 6종 반값' },
-      { target: '위치 인근', text: '근처 공차에서 인기 음료 반값' },
-      { target: '혜택 보유', text: '보유 쿠폰으로 음료 6종 반값' },
-      { target: '신규', text: '첫 방문 기념, 인기 음료 반값' },
-    ],
-    '뚜레쥬르 혜택문구': [
-      { target: '시니어', text: '달콤한 브라우니 1개 그냥 드려요' },
-      { target: '2030', text: '인증각 브라우니 1개 무료' },
-      { target: '재방문', text: '또 오셨으니 브라우니 1개 더' },
-      { target: '위치 인근', text: '근처 뚜레쥬르 브라우니 1개 증정' },
-      { target: '혜택 보유', text: '보유 혜택에 브라우니 1개 추가' },
-      { target: '신규', text: '첫 방문 브라우니 1개 증정' },
-    ],
-    'NOL 혜택문구': [
-      { target: '시니어', text: '여유롭게 즐기는 전시, 40% 할인' },
-      { target: '2030', text: '이번 주 전시 40% 할인' },
-      { target: '재방문', text: '다시 찾은 전시 40% 할인' },
-      { target: '위치 인근', text: '근처 전시회 40% 할인' },
-      { target: '혜택 보유', text: '보유 혜택으로 전시 40% 할인' },
-      { target: '신규', text: '첫 전시 나들이 40% 할인' },
-    ],
-  };
-  for (const [name, variants] of Object.entries(zeroAtomVariants)) {
+  // 0 Week 혜택문구 3종(공차·뚜레쥬르·NOL)은 '타이틀만' 예시로 두기 위해 문구 변형 제거(우측 패널 정리).
+  //   문구 후보를 다시 붙이려면 각 컴포넌트 '수정' → 문구 베리에이션에서 등록한다(별도 관리 메뉴 없음).
+  for (const name of ['공차 혜택문구', '뚜레쥬르 혜택문구', 'NOL 혜택문구']) {
     const atom = await prisma.atom.findFirst({ where: { name }, select: { id: true } });
-    if (atom) await prisma.atom.update({ where: { id: atom.id }, data: { contentVariants: JSON.stringify(variants) } });
+    if (atom) await prisma.atom.update({ where: { id: atom.id }, data: { contentVariants: null } });
   }
-  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매 · 0 Week 6타겟 · 문구 3종)');
+  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매 · 0 Week 타이틀 6타겟 · 문구변형 제거)');
 }
 
 main()
