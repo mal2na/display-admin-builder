@@ -1291,35 +1291,64 @@ async function patchVariantDemo() {
     });
   }
 
-  // 0 Week (혜택·오퍼형) — 타입 2 = 시니어
-  const zero = await prisma.corner.findFirst({ where: { name: '0 Week' }, select: { id: true, displayVariants: true, mainTitleVariants: true } });
+  // 0 Week (혜택·오퍼형) — '모든 타겟 문구가 다 바뀌는' 기준 예시.
+  //   타이틀·문구는 6타겟 전부 채워 '기준값으로 항상 갱신'(데모 원장). 카드 구성(displayVariants)은
+  //   운영자 편집 보존을 위해 비어 있을 때만 시니어 1장 채운다.
+  const zero = await prisma.corner.findFirst({ where: { name: '0 Week' }, select: { id: true, displayVariants: true } });
   const zeroType = await findType('혜택·오퍼형', '세로형');
-  if (zero && zeroType && !zero.displayVariants && !zero.mainTitleVariants) {
+  if (zero) {
     await prisma.corner.update({
       where: { id: zero.id },
       data: {
-        mainTitleVariants: JSON.stringify([{ target: '시니어', text: '지훈님만 받는 혜택,\n6월 8일까지예요' }]),
-        displayVariants: JSON.stringify([{ label: zeroType.name, typeId: zeroType.id, typeName: zeroType.name, target: '시니어' }]),
+        // 타이틀 — 6타겟 (기준값 항상 갱신)
+        mainTitleVariants: JSON.stringify([
+          { target: '시니어', text: '지훈님만 받는 혜택,\n6월 8일까지예요' },
+          { target: '2030', text: '지훈님 전용 혜택 오픈!\n6/8까지' },
+          { target: '재방문', text: '다시 오신 지훈님께,\n6월 8일까지 특별 혜택' },
+          { target: '위치 인근', text: '지금 근처 매장에서\n6/8까지 쓰는 혜택' },
+          { target: '혜택 보유', text: '보유 혜택에 더해\n6/8까지 추가 혜택' },
+          { target: '신규', text: '처음 오신 지훈님께,\n6월 8일까지 첫 혜택' },
+        ]),
+        // 카드 구성 — 비어 있을 때만 시니어 1장(운영자 편집 보존)
+        ...(zeroType && !zero.displayVariants
+          ? { displayVariants: JSON.stringify([{ label: zeroType.name, typeId: zeroType.id, typeName: zeroType.name, target: '시니어' }]) }
+          : {}),
       },
     });
   }
 
-  // 공차 혜택문구 — 타겟별 문구 후보(원장)
-  const gongcha = await prisma.atom.findFirst({ where: { name: '공차 혜택문구' }, select: { id: true, contentVariants: true } });
-  if (gongcha && !gongcha.contentVariants) {
-    await prisma.atom.update({
-      where: { id: gongcha.id },
-      data: {
-        contentVariants: JSON.stringify([
-          { target: '시니어', text: '어르신께 딱! 인기 음료 반값' },
-          { target: '2030', text: '요즘 핫한 음료 6종 반값' },
-          { target: '재방문', text: '또 오셨네요, 인기 음료 6종 반값' },
-          { target: '혜택 보유', text: '보유 쿠폰으로 음료 6종 반값' },
-        ]),
-      },
-    });
+  // 0 Week 혜택문구 3종 — 타겟별 문구 후보(원장). 6타겟 전부, 기준값 항상 갱신.
+  const zeroAtomVariants: Record<string, { target: string; text: string }[]> = {
+    '공차 혜택문구': [
+      { target: '시니어', text: '어르신께 딱! 인기 음료 반값' },
+      { target: '2030', text: '요즘 핫한 음료 6종 반값' },
+      { target: '재방문', text: '또 오셨네요, 인기 음료 6종 반값' },
+      { target: '위치 인근', text: '근처 공차에서 인기 음료 반값' },
+      { target: '혜택 보유', text: '보유 쿠폰으로 음료 6종 반값' },
+      { target: '신규', text: '첫 방문 기념, 인기 음료 반값' },
+    ],
+    '뚜레쥬르 혜택문구': [
+      { target: '시니어', text: '달콤한 브라우니 1개 그냥 드려요' },
+      { target: '2030', text: '인증각 브라우니 1개 무료' },
+      { target: '재방문', text: '또 오셨으니 브라우니 1개 더' },
+      { target: '위치 인근', text: '근처 뚜레쥬르 브라우니 1개 증정' },
+      { target: '혜택 보유', text: '보유 혜택에 브라우니 1개 추가' },
+      { target: '신규', text: '첫 방문 브라우니 1개 증정' },
+    ],
+    'NOL 혜택문구': [
+      { target: '시니어', text: '여유롭게 즐기는 전시, 40% 할인' },
+      { target: '2030', text: '이번 주 전시 40% 할인' },
+      { target: '재방문', text: '다시 찾은 전시 40% 할인' },
+      { target: '위치 인근', text: '근처 전시회 40% 할인' },
+      { target: '혜택 보유', text: '보유 혜택으로 전시 40% 할인' },
+      { target: '신규', text: '첫 전시 나들이 40% 할인' },
+    ],
+  };
+  for (const [name, variants] of Object.entries(zeroAtomVariants)) {
+    const atom = await prisma.atom.findFirst({ where: { name }, select: { id: true } });
+    if (atom) await prisma.atom.update({ where: { id: atom.id }, data: { contentVariants: JSON.stringify(variants) } });
   }
-  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매·0 Week·공차 문구)');
+  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매 · 0 Week 6타겟 · 문구 3종)');
 }
 
 main()
