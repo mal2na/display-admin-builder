@@ -114,7 +114,7 @@ export type CornerNode = {
   noDisplayCondition: string | null;
   recSource: string | null; // (대표) 1순위 추천 수급 방식
   recSourcePlan: string | null; // 우선순위 편성 (JSON 배열, 1순위→폴백)
-  showRecReason: boolean; // 추천 근거(추천 사유) 카드 표시 여부
+  showRecReason: boolean; // (레거시) 추천 근거 표시 여부 — 미표시
   bigBanner: boolean; // 빅배너 = 배치(인스턴스) 옵션 (유형 아님). 빌더에서 켠다.
   cardShape: string | null; // 상품형 2.5배열 카드 모양 (정사각형 | 직사각형)
   titleLines: number | null; // 상품 카드 제목 줄 수 (2=두 줄)
@@ -1505,8 +1505,8 @@ function CardShapeControl({ templateId, corner }: { templateId: string; corner: 
   );
 }
 
-// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치). 상품형/혜택·오퍼형/콘텐츠 안내형에서만. 즉시 저장.
-function BigBannerControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
+// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치+배너 선택). 상품형/혜택·오퍼형/콘텐츠 안내형에서만. 즉시 저장.
+function BigBannerControl({ templateId, corner, banners }: { templateId: string; corner: CornerNode; banners: LibraryData['banners'] }) {
   const canBigBanner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(corner.cornerType);
   const [on, setOn] = useState(!!corner.bigBanner);
   const [pos, setPos] = useState(corner.bannerPosition ?? '상단');
@@ -1528,15 +1528,22 @@ function BigBannerControl({ templateId, corner }: { templateId: string; corner: 
         </button>
       </label>
       {on && (
-        <div className="space-y-1">
-          <label className="text-[10px] font-medium text-indigo-700">빅배너 위치</label>
-          <div className="flex gap-1.5">
-            {(['상단', '하단'] as const).map((p) => (
-              <button key={p} type="button" disabled={pending} onClick={() => choosePos(p)}
-                className={cn('flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition', pos === p ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 hover:bg-secondary')}>
-                배너 {p}
-              </button>
-            ))}
+        <div className="space-y-2.5 border-t border-indigo-100 pt-2">
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-indigo-700">빅배너 위치</label>
+            <div className="flex gap-1.5">
+              {(['상단', '하단'] as const).map((p) => (
+                <button key={p} type="button" disabled={pending} onClick={() => choosePos(p)}
+                  className={cn('flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition', pos === p ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 hover:bg-secondary')}>
+                  배너 {p}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* 배너 이미지 선택(라이브러리/직접 등록) — 빅배너 카드 안에 임베드 */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-indigo-700">배너 이미지</label>
+            <BannerPanel templateId={templateId} corner={corner} banners={banners} embedded />
           </div>
         </div>
       )}
@@ -1603,21 +1610,23 @@ function CornerInfoForm({
   const [subTitleIcon, setSubTitleIcon] = useState(corner.subTitleIcon ?? '사용안함');
   const [cornerLayout] = useState(corner.cornerLayout ?? ''); // 필드는 숨김(값 보존)
   const [layoutDetail, setLayoutDetail] = useState(corner.layoutDetail ?? '');
-  // 추천 수급 방식 — 재정렬 가능한 '주 방식 목록' + 최하단 고정 '수동 대체(폴백)' 사용여부.
-  //  주 방식 = CVM/채널데이터/룰/운영편성(순위 조정). 수동 대체는 항상 마지막(폴백)이라 목록에서 분리해 토글로.
-  const REC_PRIMARY_METHODS = REC_SOURCE_METHODS.filter((m) => m !== '수동 대체');
+  // 추천 수급 방식 — 재정렬 가능한 '자동 방식'(CVM/룰) + 항상 최하단 고정 '운영자 편성'(운영자가 코너 구성에 직접 짠 항목 = 폴백).
+  //  운영자 편성은 정책상 대체 전시(PI-DSP-PER-002) 필수라 끌 수 없고, 운영자가 짠 항목이 곧 폴백이라 늘 켜져 있어야 함(빈 코너 방지). (2026-08-31 사용자 결정)
+  const REC_AUTO_METHODS: string[] = ['CVM 기반']; // 수급 자동 방식 = CVM만 (룰 기반은 타겟팅 축이라 제거)
+  const normalizeMethod = (m: string) => (m === '채널 데이터' ? 'CVM 기반' : m); // 폐기된 '채널 데이터'는 CVM으로 흡수
   const parseRecFull = (): string[] => {
-    try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a) && a.length) return a.filter((x) => typeof x === 'string'); } catch { /* noop */ }
-    return corner.recSource ? [corner.recSource] : [];
+    try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a) && a.length) return a.filter((x) => typeof x === 'string').map(normalizeMethod); } catch { /* noop */ }
+    return corner.recSource ? [normalizeMethod(corner.recSource)] : [];
   };
   const initFull = parseRecFull();
-  const [recPrimaryPlan, setRecPrimaryPlan] = useState<string[]>(initFull.filter((m) => m !== '수동 대체'));
-  const [useManualFallback, setUseManualFallback] = useState(initFull.includes('수동 대체'));
-  // 저장/미리보기용 전체 편성 = 주 방식 + (사용 시) 수동 대체(최하단 고정)
-  const recFullPlan = useManualFallback ? [...recPrimaryPlan, '수동 대체'] : recPrimaryPlan;
+  // 자동 방식(재정렬) — 중복 제거(채널데이터→CVM 흡수로 겹칠 수 있음)
+  const [recPrimaryPlan, setRecPrimaryPlan] = useState<string[]>(
+    initFull.filter((m) => REC_AUTO_METHODS.includes(m)).filter((m, i, a) => a.indexOf(m) === i),
+  );
+  // 운영자 편성(직접 구성)은 항상 최하단 폴백 — 토글 아님. '운영 편성'으로 정규화해 늘 append.
+  const recFullPlan = [...recPrimaryPlan, '운영 편성'];
   const recSource = recFullPlan[0] ?? ''; // 대표(1순위)
-  const recPersonalized = recSource === 'CVM 기반' || recSource === '채널 데이터'; // 개인화 방식이면 추천 근거 표시 의미 있음
-  const [showRecReason, setShowRecReason] = useState(corner.showRecReason ?? false);
+  const recPersonalized = recSource === 'CVM 기반'; // 개인화 방식(CVM)이면 '미리보기=폴백' 안내 표시
   // 추천 수급 방식은 '추천 슬롯'인 코너에만 의미 있음 — 상품/혜택 추천을 나열하는 유형만.
   //  상태 안내형·고정·필수 노출형(프로필·바코드)·업무 진입형·배너형은 고객정보/기능이라 추천(CVM) 섹션 제외.
   const isRecCorner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(ct);
@@ -1640,14 +1649,13 @@ function CornerInfoForm({
         layoutDetail,
         recSource,
         recSourcePlan: recFullPlan.length ? JSON.stringify(recFullPlan) : null,
-        showRecReason: recPersonalized && showRecReason,
         // 빅배너·하단CTA·배너위치는 '코너 구성' 컨트롤에서 즉시 저장(revalidate로 프리뷰 반영) → 여기 draft에서 제외
       });
     } else {
       pushCorner(corner.templateCornerId, null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, recSource, useManualFallback, recPrimaryPlan, recPersonalized, showRecReason, corner.templateCornerId]);
+  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, recSource, recPrimaryPlan, recPersonalized, corner.templateCornerId]);
 
   // 언마운트(코너 전환) 시 미리보기 정리
   useEffect(() => () => pushCorner(corner.templateCornerId, null), [corner.templateCornerId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1660,8 +1668,7 @@ function CornerInfoForm({
     setSubTitle(corner.subTitle ?? '');
     setSubTitleIcon(corner.subTitleIcon ?? '사용안함');
     setLayoutDetail(corner.layoutDetail ?? '');
-    { const f = parseRecFull(); setRecPrimaryPlan(f.filter((m) => m !== '수동 대체')); setUseManualFallback(f.includes('수동 대체')); }
-    setShowRecReason(corner.showRecReason ?? false);
+    { const f = parseRecFull(); setRecPrimaryPlan(f.filter((m) => REC_AUTO_METHODS.includes(m)).filter((m, i, a) => a.indexOf(m) === i)); }
     setResetKey((k) => k + 1);
   };
 
@@ -1746,19 +1753,19 @@ function CornerInfoForm({
           </div>
         </div>
 
-        {/* 추천 수급 방식 — 여러 방식을 '우선순위(폴백)'로 편성. 1순위 주 방식, 후보 없으면 다음 순위로. (POL-REC PG-REC-SOURCE-001 / PG-REC-FALLBACK-001) */}
+        {/* 추천 수급 방식 — 자동 방식(CVM/룰)을 우선순위로 편성 + 운영자 편성(최하단 고정 폴백). (정책 근거: CVM 개인화 / 룰=노출조건 PI-DSP-RUL-001 / 대체 전시 PI-DSP-PER-002) */}
         {isRecCorner && (
           <div className="col-span-2 space-y-2 rounded-md border border-violet-200 bg-violet-50/40 p-2.5">
-            <label className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-700">추천 수급 방식 <span className="font-normal text-violet-400">· 후보 없으면 다음 순위로</span></label>
-            {/* 폼 제출값: 대표(1순위) + 전체 편성 JSON (주 방식 + 사용 시 수동대체 최하단) */}
+            <label className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-700">추천 수급 방식 <span className="font-normal text-violet-400">· 자동 우선 → 없으면 운영자 편성</span></label>
+            {/* 폼 제출값: 대표(1순위) + 전체 편성 JSON(자동 방식 + 운영자 편성 최하단) */}
             <input type="hidden" name="recSource" value={recSource} />
             <input type="hidden" name="recSourcePlan" value={recFullPlan.length ? JSON.stringify(recFullPlan) : ''} />
             {recPrimaryPlan.length === 0 ? (
-              <p className="text-[10px] text-muted-foreground">주 방식 없음 — {useManualFallback ? '수동 대체(직접 구성 항목)만 노출됩니다.' : '아래에서 직접 구성한 항목이 그대로 노출됩니다. (자동 추천 없음)'}</p>
+              <p className="text-[10px] text-muted-foreground">자동 추천 방식 없음 — 운영자 편성(아래에서 직접 구성한 항목)만 노출됩니다.</p>
             ) : (
               <div className="space-y-1.5">
                 {recPrimaryPlan.map((m, i) => {
-                  const others = REC_PRIMARY_METHODS.filter((x) => x === m || !recPrimaryPlan.includes(x)); // 중복 방지(자기 자신 포함)
+                  const others = REC_AUTO_METHODS.filter((x) => x === m || !recPrimaryPlan.includes(x)); // 중복 방지(자기 자신 포함)
                   return (
                     <div key={i} className="flex items-center gap-1.5">
                       <span className={cn('inline-flex h-7 shrink-0 items-center rounded-md px-1.5 text-[10px] font-bold', i === 0 ? 'bg-violet-600 text-white' : 'bg-slate-200 text-slate-600')}>
@@ -1778,46 +1785,31 @@ function CornerInfoForm({
                 })}
               </div>
             )}
-            {/* 주 방식 추가 (수동 대체 제외 — 남은 것 중 첫 번째) */}
-            {(() => { const rest = REC_PRIMARY_METHODS.filter((x) => !recPrimaryPlan.includes(x)); return rest.length > 0 && (
+            {/* 자동 방식 추가 (CVM/룰 중 남은 것) */}
+            {(() => { const rest = REC_AUTO_METHODS.filter((x) => !recPrimaryPlan.includes(x)); return rest.length > 0 && (
               <button type="button" onClick={() => setRecPrimaryPlan((p) => [...p, rest[0]])}
                 className="inline-flex items-center gap-0.5 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100">
-                + 방식 추가{recPrimaryPlan.length ? ' (폴백)' : ''}
+                + 자동 방식 추가{recPrimaryPlan.length ? ' (폴백)' : ''}
               </button>
             ); })()}
-            {/* 최종 폴백(수동 대체) — 항상 최하단 고정 · 사용 여부 토글 */}
-            <label className="flex items-center justify-between gap-2 rounded-md border border-dashed border-violet-300 bg-white px-2.5 py-2">
+            {/* 운영자 편성 — 항상 최하단 폴백(토글 아님). 정책상 대체 전시(PI-DSP-PER-002) 필수 + 운영자가 코너 구성에 짠 항목이 곧 폴백이라 늘 켜짐(빈 코너 방지). */}
+            <div className="flex items-start gap-2 rounded-md border border-violet-200 bg-violet-50/60 px-2.5 py-2">
+              <span className="mt-0.5 inline-flex h-4 shrink-0 items-center rounded bg-violet-600 px-1.5 text-[9px] font-bold text-white">최종 폴백</span>
               <span className="flex flex-col">
-                <span className="text-[11px] font-semibold text-violet-800">최종 폴백 · 수동 대체 <span className="ml-0.5 rounded bg-violet-100 px-1 text-[9px] font-medium text-violet-500">최하단 고정</span></span>
-                <span className="text-[10px] text-violet-500/80">위 방식에 후보가 없을 때 <b>아래 직접 구성한 항목</b>을 최종적으로 노출해요.</span>
+                <span className="text-[11px] font-semibold text-violet-800">운영자 편성 · 직접 구성 <span className="ml-0.5 rounded bg-violet-100 px-1 text-[9px] font-medium text-violet-500">항상 최하단 고정</span></span>
+                <span className="text-[10px] text-violet-500/80">자동 방식에 후보가 없으면 <b>아래에서 직접 구성한 항목</b>이 폴백으로 노출돼요. 대체 전시는 필수라 항상 켜져 있어요(빈 코너 방지). 특정 상황에 숨기려면 ‘미 노출 조건’으로 처리해요.</span>
               </span>
-              <button type="button" role="switch" aria-checked={useManualFallback} onClick={() => setUseManualFallback((v) => !v)}
-                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', useManualFallback ? 'bg-violet-500' : 'bg-slate-300')}>
-                <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', useManualFallback ? 'translate-x-4' : 'translate-x-0.5')} />
-              </button>
-            </label>
-            {/* 개인화 표기 안내 — 1순위가 개인화일 때만 */}
+            </div>
+            {/* 개인화 표기 안내 — 1순위가 개인화(CVM)일 때만 */}
             {recPersonalized && (
-              <p className="text-[10px] leading-relaxed text-violet-600/90">1순위가 개인화 방식이라, 로그인·동의 시에만 개인화 추천으로 표기돼요.</p>
+              <p className="text-[10px] leading-relaxed text-violet-600/90">1순위가 개인화(CVM) 방식이라, 로그인·동의 시에만 개인화 추천으로 표기돼요.</p>
             )}
-            {/* 추천 근거(추천 사유) 표시 — 개인화 방식일 때만. 값은 CVM이 런타임 제공, 여기선 표시 여부만 (PG-REC-CARD-001) */}
-            <input type="hidden" name="showRecReason" value={recPersonalized && showRecReason ? '1' : ''} />
+            {/* 카드별 추천 근거는 표시 안 함 — 빌더는 실제 고객이 없어 '폴백(운영자 편성)' 상태를 보여준다.
+                추천 근거(왜 추천했는지)는 런타임에 CVM이 고객별로 생성하는 값이라 빌더 미리보기에는 표시하지 않는다. */}
             {recPersonalized && (
-              <label className="flex items-center justify-between gap-2 rounded-md border border-violet-200 bg-white px-2.5 py-2">
-                <span className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-violet-800">추천 근거(추천 사유) 표시</span>
-                  <span className="text-[10px] text-violet-500/80">CVM이 만든 ‘왜 추천했는지’를 카드에 표시 (문구는 런타임).</span>
-                </span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={showRecReason}
-                  onClick={() => setShowRecReason((v) => !v)}
-                  className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', showRecReason ? 'bg-violet-500' : 'bg-slate-300')}
-                >
-                  <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', showRecReason ? 'translate-x-4' : 'translate-x-0.5')} />
-                </button>
-              </label>
+              <p className="rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-1.5 text-[10px] leading-relaxed text-violet-600/90">
+                빌더 미리보기는 <b className="font-semibold">폴백(운영자 편성)</b> 상태예요. 실제 노출은 고객마다 이 방식으로 추천되고, 추천 근거도 그때 CVM이 만들어요.
+              </p>
             )}
           </div>
         )}
@@ -2065,10 +2057,12 @@ function BannerPanel({
   templateId,
   corner,
   banners,
+  embedded,
 }: {
   templateId: string;
   corner: CornerNode;
   banners: LibraryData['banners'];
+  embedded?: boolean; // 빅배너 강조 카드 안에 넣을 때 = 자체 카드/제목 없이 선택 UI만
 }) {
   const [mode, setMode] = useState<'library' | 'direct'>('library');
   const [imageUrl, setImageUrl] = useState('');
@@ -2077,10 +2071,10 @@ function BannerPanel({
   const canRenderImg = (u?: string | null) => !!u && (u.startsWith('data:') || u.startsWith('http') || u.startsWith('/'));
 
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <p className="mb-0.5 text-sm font-semibold">상단 배너</p>
-      <p className="mb-2 text-[11px] text-muted-foreground">코너 상단에 크게 노출되는 배너입니다. (선택)</p>
-      <p className="mb-3 text-[11px] text-muted-foreground">
+    <div className={embedded ? 'space-y-2' : 'rounded-lg border bg-card p-4'}>
+      {!embedded && <p className="mb-0.5 text-sm font-semibold">상단 배너</p>}
+      {!embedded && <p className="mb-2 text-[11px] text-muted-foreground">코너 상단에 크게 노출되는 배너입니다. (선택)</p>}
+      <p className={cn('text-[11px] text-muted-foreground', embedded ? '' : 'mb-3')}>
         현재 배너: {corner.bannerName ? <b className="text-foreground">{corner.bannerName}</b> : '미지정'}
       </p>
 
@@ -2445,7 +2439,6 @@ export function BuilderEditor({
   for (const c of corners) if (!ids.includes(c.templateCornerId)) ordered.push(c);
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
-  const family = selectedCorner ? cornerFamily(selectedCorner.cornerType) : null;
   const nameMap = cornerTypeNameMap(library); // 기준분류 → 코너 유형 카탈로그 표시명
 
   // 편집 중인 드래프트 → 미리보기 즉시 반영 (칩 / 코너 정보 / 비-칩 Atom)
@@ -2790,15 +2783,11 @@ export function BuilderEditor({
 
             {/* 기존 코너 끌어오기는 아래 '코너 정보'의 '코너 불러오기' 버튼으로 통합됨 */}
             <CornerInfoForm key={selectedCorner.templateCornerId} templateId={templateId} corner={selectedCorner} library={library} nameMap={nameMap} />
-            {/* 상단 배너(BannerPanel) = 빅배너의 배너 이미지 선택/수정 UI → '빅배너로 강조'가 켜진 코너면 항상 노출
-                (배너 미등록 코너여도 빅배너 켜면 여기서 배너를 고른다). 빅배너 끄면 사라짐. 배너형 코너는 배너가 본문이라 별도 패널 없음. */}
-            {family !== 'banner' && selectedCorner.bigBanner && (
-              <BannerPanel key={selectedCorner.id} templateId={templateId} corner={selectedCorner} banners={library.banners} />
-            )}
+            {/* 상단 배너 선택 UI는 '코너 구성'의 BigBannerControl 카드 안에 임베드됨(별도 패널 제거). */}
             <div className="rounded-lg border bg-card p-4">
               <p className="mb-0.5 text-sm font-semibold">코너 구성</p>
               <p className="mb-2 text-[11px] text-muted-foreground">이 코너를 이루는 컴포넌트 · 표시 옵션</p>
-              <BigBannerControl templateId={templateId} corner={selectedCorner} />
+              <BigBannerControl templateId={templateId} corner={selectedCorner} banners={library.banners} />
               <CardShapeControl templateId={templateId} corner={selectedCorner} />
               <MoreButtonControl templateId={templateId} corner={selectedCorner} />
               <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
