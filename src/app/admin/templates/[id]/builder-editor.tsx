@@ -26,6 +26,7 @@ import {
   isCvmBinding,
   REC_SOURCE_METHODS,
   REC_SOURCE_INFO,
+  CVM_TARGET_HINTS,
   type AtomType,
   type CornerType,
 } from '@/lib/display-taxonomy';
@@ -1494,7 +1495,7 @@ function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateI
 
 // 캔버스식 — 디바이스 옆에 '추가 노출 타입'만 렌더. 각 타입 카드에서 노출 타입(카탈로그)을 직접 변경. 기본은 디바이스에서 편집.
 function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateId: string; corner: CornerNode; preview: PreviewCorner; cornerTypes: LibraryData['cornerTypes'] }) {
-  type V = { label: string; typeId?: string; typeName?: string };
+  type V = { label: string; typeId?: string; typeName?: string; target?: string };
   const parse = (): V[] => { try { const a = JSON.parse(corner.displayVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.label === 'string'); } catch { /* noop */ } return []; };
   const [vars, setVars] = useState<V[]>(parse());
   const [, start] = useTransition();
@@ -1503,6 +1504,7 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
   const typeLabel = (t: LibraryData['cornerTypes'][number]) => (t.typeDetail && !t.name.includes(t.typeDetail) ? `${t.name} · ${t.typeDetail}` : t.name);
   const save = (next: V[]) => { setVars(next); start(() => setCornerDisplayVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
   const pick = (i: number, id: string) => { const t = cornerTypes.find((x) => x.id === id); save(vars.map((v, j) => (j === i ? { ...v, typeId: id || undefined, typeName: t ? typeLabel(t) : undefined, label: t ? typeLabel(t) : v.label } : v))); };
+  const setTarget = (i: number, target: string) => save(vars.map((v, j) => (j === i ? { ...v, target: target || undefined } : v)));
   const add = () => { if (vars.length >= 3) return; save([...vars, { label: '' }]); };
   // 슬롯을 항상 예약(min-w) — 노출 타입이 없어도 디바이스가 같은 위치에 있게(치우침·튐 방지). 비면 안내 자리.
   return (
@@ -1523,7 +1525,7 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
           <div className="flex items-start gap-4">
             {vars.map((v, i) => (
               <div key={i} className="w-[300px] shrink-0">
-                <div className="mb-1.5 flex items-center gap-1">
+                <div className="mb-1 flex items-center gap-1">
                   <span className="inline-flex h-6 shrink-0 items-center rounded bg-amber-100 px-1.5 text-[10px] font-bold text-amber-700">타입 {i + 2}</span>
                   <Select value={v.typeId ?? ''} onChange={(e) => pick(i, e.target.value)} className="h-6 min-w-0 flex-1 text-[11px]">
                     <option value="">노출 타입 선택…</option>
@@ -1531,10 +1533,19 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
                   </Select>
                   <button type="button" onClick={() => save(vars.filter((_, j) => j !== i))} className="flex h-6 w-5 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="타입 삭제">−</button>
                 </div>
-                <div className="rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
+                {/* 타겟 힌트 — '누구에게'(연령대·방문이력·위치 등). 최종 매칭은 CVM. 회의 md 반영. */}
+                <div className="mb-1.5 flex items-center gap-1">
+                  <span className="w-8 shrink-0 text-[9px] text-muted-foreground">타겟</span>
+                  <Select value={v.target ?? ''} onChange={(e) => setTarget(i, e.target.value)} className="h-6 min-w-0 flex-1 text-[11px]">
+                    <option value="">힌트 없음 (CVM 자동 분류)</option>
+                    {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key} · {t.axis}</option>)}
+                  </Select>
+                </div>
+                <div className="relative rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
+                  {v.target && <span className="absolute right-2 top-2 z-10 rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">{v.target}</span>}
                   <CornerBlock corner={preview} />
                 </div>
-                <p className="mt-1 text-center text-[9px] text-amber-600">CVM 후보 · 프로토타입은 동일 콘텐츠</p>
+                <p className="mt-1 text-center text-[9px] text-amber-600">{v.target ? `${v.target} 타겟 힌트 · ${CVM_TARGET_HINTS.find((t) => t.key === v.target)?.note ?? ''}` : 'CVM 후보 · 프로토타입은 동일 콘텐츠'}</p>
               </div>
             ))}
           </div>
