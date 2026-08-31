@@ -201,7 +201,7 @@ async function main() {
       name: '0 Week',
       cornerType: '혜택·오퍼형', // (구 개인화 추천형 → 7종 체계에서 혜택·오퍼형 + 추천 수급 CVM) · 배열=세로형
       recSource: 'CVM 기반', // 개인화 추천 = CVM 후보·순위·근거 런타임 판정
-      recSourcePlan: JSON.stringify(['CVM 기반', '룰 기반', '수동 대체']), // 폴백 편성: CVM 없으면 룰 → 최종 수동 대체(직접 구성 항목)
+      recSourcePlan: JSON.stringify(['CVM 기반', '운영 편성']), // 수급 2축: CVM 우선, 없으면 운영자 편성(직접 구성 폴백). (룰 기반·채널 데이터 폐기 2026-08-31)
       showRecReason: true, // 추천 근거(추천 사유) 카드 표시 — CVM이 런타임 제공
 
       maxItems: 6,

@@ -65,6 +65,7 @@ import {
   swapCornerToType,
   setCornerCardShape,
   setCornerTitleLines,
+  setCornerDisplayVariants,
   setCornerBigBanner,
   setCornerBannerPosition,
   setCornerMoreButton,
@@ -81,6 +82,7 @@ export type AtomNode = {
   visible?: boolean; // 코너 구성 표시/숨김 토글 (숨김=미리보기·FO 제외, 삭제 아님)
   menuRole?: string; // FIXED(고정) | EDITABLE(편집가능) — 선택형·메뉴 리스트 항목 역할
   content: string | null;
+  contentVariants?: string[]; // 문구 베리에이션 — 추가 문구 후보(실서비스 CVM 택1). 기본=content.
   imageUrl: string | null;
   altText: string | null;
   linkUrl: string | null;
@@ -118,6 +120,7 @@ export type CornerNode = {
   bigBanner: boolean; // 빅배너 = 배치(인스턴스) 옵션 (유형 아님). 빌더에서 켠다.
   cardShape: string | null; // 상품형 2.5배열 카드 모양 (정사각형 | 직사각형)
   titleLines: number | null; // 상품 카드 제목 줄 수 (2=두 줄)
+  displayVariants: string | null; // 노출 타입 베리에이션 (JSON [{label,note}]) — 실서비스 CVM 택1
   moreButtonUse: boolean;
   moreButtonLabel: string | null;
   moreButtonLink: string | null;
@@ -805,6 +808,27 @@ function AtomRow({
             className="h-8 text-xs"
           />
         ))}
+      {/* 문구 베리에이션 — 문구 후보 여러 개 등록, 실서비스엔 CVM이 택1(기본=위 문구). 회의 2026-08-31. */}
+      {f.content && !isCvmBinding(atom.content) && (() => {
+        const vars = atom.contentVariants ?? [];
+        return (
+          <div className="space-y-1 rounded-md border border-dashed border-violet-200 bg-violet-50/30 px-2 py-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold text-violet-700">문구 베리에이션 <span className="font-normal text-violet-400">· 실서비스엔 CVM이 택1 (기본=위 문구)</span></span>
+              <button type="button" onClick={() => onChange({ contentVariants: [...vars, ''] })}
+                className="shrink-0 rounded border border-violet-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100">＋ 문구</button>
+            </div>
+            {vars.map((v, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <span className="w-3 shrink-0 text-center text-[9px] text-violet-400">{i + 2}</span>
+                <Input value={v} onChange={(e) => onChange({ contentVariants: vars.map((x, j) => (j === i ? e.target.value : x)) })} placeholder="대체 문구" className="h-7 min-w-0 flex-1 text-xs" />
+                <button type="button" onClick={() => onChange({ contentVariants: vars.filter((_, j) => j !== i) })}
+                  className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="문구 삭제">−</button>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
       {f.image &&
         (atom.atomType === 'ICON' ? (
           // 아이콘 원자 = 아이콘 라이브러리에서 글리프 선택(이미지 파일 아님)
@@ -1068,7 +1092,7 @@ function ComponentCard({
       startSave(async () => {
         await saveAtoms(
           templateId,
-          atomsRef.current.map((a) => ({ atomId: a.id, componentAtomId: a.componentAtomId, visible: a.visible !== false, atomType: a.atomType, content: a.content, imageUrl: a.imageUrl, altText: a.altText, linkUrl: a.linkUrl })),
+          atomsRef.current.map((a) => ({ atomId: a.id, componentAtomId: a.componentAtomId, visible: a.visible !== false, atomType: a.atomType, content: a.content, contentVariants: a.contentVariants && a.contentVariants.length ? JSON.stringify(a.contentVariants) : null, imageUrl: a.imageUrl, altText: a.altText, linkUrl: a.linkUrl })),
         );
         setEdit(false);
       });
@@ -1185,7 +1209,7 @@ function BssProductPickerModal({ open, onClose, onPick, pending }: { open: boole
       {/* 고정 높이(h-[80vh]) — 카테고리 전환 시에도 모달 크기 불변, 리스트만 내부 스크롤 */}
       <div className="flex h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
-          <h2 className="text-sm font-semibold">BSS 상품 불러오기</h2>
+          <h2 className="text-sm font-semibold">상품 불러오기</h2>
           <span className="text-xs text-muted-foreground">혜택 브랜드에서 로고·이름·대표 혜택을 코너에 추가</span>
           <button type="button" onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
@@ -1342,7 +1366,7 @@ function ComponentList({
               onClick={() => setBssOpen(true)}
               className="flex flex-1 items-center justify-center gap-1 rounded-md border border-dashed border-sky-300 bg-white/70 py-2 text-xs font-medium text-sky-700 hover:border-sky-500 hover:bg-sky-50"
             >
-              <Search className="h-3.5 w-3.5" /> BSS 상품 불러오기
+              <Search className="h-3.5 w-3.5" /> 상품 불러오기
             </button>
           </div>
         </div>
@@ -1416,6 +1440,45 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
 const normCardShape = (s: string | null | undefined) => (s === '정사각형' ? '1:1' : s === '직사각형' ? '3:4' : s || '3:4');
 
 // '코너 구성' 카드 비율 컨트롤 — 상품형 컴포넌트가 있고 배열이 2.5(가로형)일 때만 노출.
+// 노출 타입 베리에이션 — 한 코너에 노출 타입(껍데기)을 2~3개 등록. 실서비스에선 CVM이 고객마다 택1, 빌더 미리보기는 기본(첫 번째). 회의 2026-08-31.
+//  '재료(타입·문구)는 우리가, 조합은 CVM' — 즉시 저장(setCornerDisplayVariants), 코너 정보 저장과 독립.
+type DisplayVariant = { label: string; note?: string };
+function DisplayVariantsControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
+  const parse = (): DisplayVariant[] => { try { const a = JSON.parse(corner.displayVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.label === 'string'); } catch { /* noop */ } return []; };
+  const [vars, setVars] = useState<DisplayVariant[]>(parse());
+  const [, start] = useTransition();
+  useEffect(() => { setVars(parse()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.displayVariants, corner.templateCornerId]);
+  const save = (next: DisplayVariant[]) => { setVars(next); start(() => setCornerDisplayVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
+  const add = () => { if (vars.length >= 3) return; save([...vars, { label: `노출 타입 ${vars.length + 1}` }]); };
+  return (
+    <div className="mb-3 space-y-2 rounded-xl border bg-gradient-to-b from-slate-50 to-white p-3 shadow-sm">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[11px] font-semibold text-slate-700">노출 타입 베리에이션</span>
+          <span className="rounded bg-violet-100 px-1.5 py-px text-[9px] font-medium text-violet-600">CVM이 택1</span>
+        </div>
+        <button type="button" onClick={add} disabled={vars.length >= 3}
+          className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-40">＋ 타입</button>
+      </div>
+      {vars.length === 0 ? (
+        <p className="text-[10px] leading-relaxed text-muted-foreground">노출 타입이 1개예요. ＋로 2~3개 등록하면 실서비스에서 <b>CVM이 고객마다 골라</b> 노출합니다. (빌더 미리보기는 기본 타입)</p>
+      ) : (
+        <div className="space-y-1.5">
+          {vars.map((v, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <span className={cn('inline-flex h-7 shrink-0 items-center rounded-md px-1.5 text-[9px] font-bold', i === 0 ? 'bg-violet-600 text-white' : 'bg-slate-200 text-slate-600')}>{i === 0 ? '기본' : `타입 ${i + 1}`}</span>
+              <Input value={v.label} onChange={(e) => save(vars.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} placeholder="타입 이름 (예: 이미지 강조형)" className="h-7 min-w-0 flex-1 text-xs" />
+              <button type="button" onClick={() => save(vars.filter((_, j) => j !== i))}
+                className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="타입 삭제">−</button>
+            </div>
+          ))}
+          <p className="text-[9px] leading-relaxed text-slate-400">미리보기는 <b>기본(첫 번째)</b> 타입 기준이에요. 실서비스에선 CVM이 고객마다 이 중 하나를 노출합니다. (껍데기는 여기, 콘텐츠 문구는 각 컴포넌트의 ‘문구 베리에이션’)</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 //  코너 정보 저장과 분리(전용 액션 setCornerCardShape). 저장 후 revalidate로 미리보기 반영.
 function CardShapeControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
   const hasProductComp = corner.components.some((c) => c.componentType === '상품형');
@@ -1627,9 +1690,9 @@ function CornerInfoForm({
   const recFullPlan = [...recPrimaryPlan, '운영 편성'];
   const recSource = recFullPlan[0] ?? ''; // 대표(1순위)
   const recPersonalized = recSource === 'CVM 기반'; // 개인화 방식(CVM)이면 '미리보기=폴백' 안내 표시
-  // 추천 수급 방식은 '추천 슬롯'인 코너에만 의미 있음 — 상품/혜택 추천을 나열하는 유형만.
-  //  상태 안내형·고정·필수 노출형(프로필·바코드)·업무 진입형·배너형은 고객정보/기능이라 추천(CVM) 섹션 제외.
-  const isRecCorner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(ct);
+  // 추천 수급 방식은 '추천 슬롯'인 코너에만 의미 있음 — 상품/혜택 추천 + CVM 타겟 배너(TM-DSP-018).
+  //  배너형도 CVM 타겟 배너로 지정 가능(회의 2026-08-31). 상태 안내형·업무 진입형 등 고객정보/기능 코너는 제외.
+  const isRecCorner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형', '배너형'].includes(ct);
   // FO 사용자 설정(고객 커스터마이즈) — 메뉴 리스트 코너
   const [userCustom, setUserCustom] = useState(corner.userCustomizable ?? false);
   const [userMin, setUserMin] = useState(corner.userMinItems != null ? String(corner.userMinItems) : '');
@@ -2790,6 +2853,7 @@ export function BuilderEditor({
               <BigBannerControl templateId={templateId} corner={selectedCorner} banners={library.banners} />
               <CardShapeControl templateId={templateId} corner={selectedCorner} />
               <MoreButtonControl templateId={templateId} corner={selectedCorner} />
+              <DisplayVariantsControl templateId={templateId} corner={selectedCorner} />
               <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
             </div>
           </div>
