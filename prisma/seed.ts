@@ -1278,15 +1278,24 @@ async function patchVariantDemo() {
   const findType = (base: string, detail: string) =>
     prisma.cornerType.findFirst({ where: { baseCategory: base, typeDetail: detail, active: true }, select: { id: true, name: true } });
 
-  // 영화 예매 (콘텐츠 안내형) — 타입 2 = 2030
-  const movie = await prisma.corner.findFirst({ where: { name: '영화 예매' }, select: { id: true, displayVariants: true, mainTitleVariants: true } });
+  // 영화 예매 (콘텐츠 안내형) — 타이틀을 6타겟 전부(기준값 항상 갱신). 카드는 비어 있을 때만 2030 1장.
+  const movie = await prisma.corner.findFirst({ where: { name: '영화 예매' }, select: { id: true, displayVariants: true } });
   const movieType = await findType('콘텐츠 안내형', '가로형(2.5배열)');
-  if (movie && movieType && !movie.displayVariants && !movie.mainTitleVariants) {
+  if (movie) {
     await prisma.corner.update({
       where: { id: movie.id },
       data: {
-        mainTitleVariants: JSON.stringify([{ target: '2030', text: '불금 각 🎬 명동 CGV\n무료 영화 지금 예매!' }]),
-        displayVariants: JSON.stringify([{ label: movieType.name, typeId: movieType.id, typeName: movieType.name, target: '2030' }]),
+        mainTitleVariants: JSON.stringify([
+          { target: '시니어', text: '명동 CGV에서 오늘\n무료 영화 편하게 보세요' },
+          { target: '2030', text: '불금 각 🎬 명동 CGV\n무료 영화 지금 예매!' },
+          { target: '재방문', text: '지난번 그 명동 CGV,\n오늘도 무료 예매 열렸어요' },
+          { target: '위치 인근', text: '지금 근처 명동 CGV\n무료 영화 예매하세요' },
+          { target: '혜택 보유', text: '보유 쿠폰으로 명동 CGV\n무료 영화 지금 바로' },
+          { target: '신규', text: '첫 방문 선물, 명동 CGV\n무료 영화 예매하세요' },
+        ]),
+        ...(movieType && !movie.displayVariants
+          ? { displayVariants: JSON.stringify([{ label: movieType.name, typeId: movieType.id, typeName: movieType.name, target: '2030' }]) }
+          : {}),
       },
     });
   }
@@ -1323,7 +1332,7 @@ async function patchVariantDemo() {
     const atom = await prisma.atom.findFirst({ where: { name }, select: { id: true } });
     if (atom) await prisma.atom.update({ where: { id: atom.id }, data: { contentVariants: null } });
   }
-  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매 · 0 Week 타이틀 6타겟 · 문구변형 제거)');
+  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매·0 Week 타이틀 6타겟 · 문구변형 제거)');
 }
 
 main()
