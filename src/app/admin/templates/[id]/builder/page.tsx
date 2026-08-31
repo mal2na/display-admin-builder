@@ -156,7 +156,15 @@ export default async function BuilderPage({ params }: { params: { id: string } }
         visible: ca.visible,
         menuRole: ca.menuRole,
         content: ca.atom.content,
-        contentVariants: (() => { try { const a = JSON.parse(ca.atom.contentVariants ?? ''); return Array.isArray(a) ? a.filter((x: unknown) => typeof x === 'string') as string[] : []; } catch { return [] as string[]; } })(),
+        contentVariants: (() => {
+          try {
+            const a = JSON.parse(ca.atom.contentVariants ?? '');
+            if (!Array.isArray(a)) return [] as { text: string; target?: string }[];
+            return a
+              .map((x: unknown) => (typeof x === 'string' ? { text: x } : (x && typeof (x as { text?: unknown }).text === 'string' ? { text: (x as { text: string }).text, target: (x as { target?: string }).target } : null)))
+              .filter(Boolean) as { text: string; target?: string }[];
+          } catch { return [] as { text: string; target?: string }[]; }
+        })(),
         imageUrl: ca.atom.imageUrl,
         altText: ca.atom.altText,
         linkUrl: ca.atom.linkUrl,

@@ -83,7 +83,7 @@ export type AtomNode = {
   visible?: boolean; // 코너 구성 표시/숨김 토글 (숨김=미리보기·FO 제외, 삭제 아님)
   menuRole?: string; // FIXED(고정) | EDITABLE(편집가능) — 선택형·메뉴 리스트 항목 역할
   content: string | null;
-  contentVariants?: string[]; // 문구 베리에이션 — 추가 문구 후보(실서비스 CVM 택1). 기본=content.
+  contentVariants?: { text: string; target?: string }[]; // 문구 베리에이션 — 추가 문구 후보(+타겟 힌트). 실서비스 CVM 택1. 기본=content.
   imageUrl: string | null;
   altText: string | null;
   linkUrl: string | null;
@@ -365,6 +365,7 @@ function toPreviewCorner(c: CornerNode): PreviewCorner {
         name: a.name,
         atomType: a.atomType,
         content: a.content,
+        contentVariants: a.contentVariants,
         imageUrl: a.imageUrl,
         altText: a.altText,
         linkUrl: a.linkUrl,
@@ -809,20 +810,24 @@ function AtomRow({
             className="h-8 text-xs"
           />
         ))}
-      {/* 문구 베리에이션 — 문구 후보 여러 개 등록, 실서비스엔 CVM이 택1(기본=위 문구). 회의 2026-08-31. */}
+      {/* 문구 베리에이션 — 문구 후보 여러 개 + 타겟 힌트. 별도 메뉴 없이 여기(콘텐츠 원장)에서. 실서비스엔 CVM이 택1(기본=위 문구). 회의 2026-08-31. */}
       {f.content && !isCvmBinding(atom.content) && (() => {
         const vars = atom.contentVariants ?? [];
         return (
           <div className="space-y-1 rounded-md border border-dashed border-violet-200 bg-violet-50/30 px-2 py-1.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold text-violet-700">문구 베리에이션 <span className="font-normal text-violet-400">· 실서비스엔 CVM이 택1 (기본=위 문구)</span></span>
-              <button type="button" onClick={() => onChange({ contentVariants: [...vars, ''] })}
+              <span className="text-[10px] font-semibold text-violet-700">문구 베리에이션 <span className="font-normal text-violet-400">· 타겟별 문구 · CVM 택1 (기본=위 문구)</span></span>
+              <button type="button" onClick={() => onChange({ contentVariants: [...vars, { text: '' }] })}
                 className="shrink-0 rounded border border-violet-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100">＋ 문구</button>
             </div>
             {vars.map((v, i) => (
               <div key={i} className="flex items-center gap-1">
-                <span className="w-3 shrink-0 text-center text-[9px] text-violet-400">{i + 2}</span>
-                <Input value={v} onChange={(e) => onChange({ contentVariants: vars.map((x, j) => (j === i ? e.target.value : x)) })} placeholder="대체 문구" className="h-7 min-w-0 flex-1 text-xs" />
+                <Input value={v.text} onChange={(e) => onChange({ contentVariants: vars.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)) })} placeholder="대체 문구" className="h-7 min-w-0 flex-1 text-xs" />
+                {/* 타겟 힌트 (누구에게) — 최종 매칭은 CVM */}
+                <Select value={v.target ?? ''} onChange={(e) => onChange({ contentVariants: vars.map((x, j) => (j === i ? { ...x, target: e.target.value || undefined } : x)) })} className="h-7 w-24 shrink-0 text-[10px]">
+                  <option value="">타겟 없음</option>
+                  {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
+                </Select>
                 <button type="button" onClick={() => onChange({ contentVariants: vars.filter((_, j) => j !== i) })}
                   className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="문구 삭제">−</button>
               </div>
@@ -1524,11 +1529,14 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
           </div>
           <div className="flex items-start gap-4">
             {vars.map((v, i) => {
-              // 각 타입은 자기 노출 타입(카탈로그)의 레이아웃으로 렌더 — cornerLayout을 비우고 layoutDetail(=타입 상세)이 배치 모드를 결정하게 함(콘텐츠는 동일, 껍데기만 다름)
+              // 각 타입 = 자기 노출 타입(카탈로그) 레이아웃 + 타겟이 있으면 그 타겟 문구로 치환 → 껍데기·문구 모두 타입별로 다르게.
               const vType = v.typeId ? cornerTypes.find((t) => t.id === v.typeId) : null;
-              const vPreview: PreviewCorner = vType
+              const withTarget = (pc: PreviewCorner): PreviewCorner => v.target
+                ? { ...pc, components: pc.components.map((c) => ({ ...c, atoms: c.atoms.map((a) => { const hit = a.contentVariants?.find((cv) => cv.target === v.target && cv.text); return hit ? { ...a, content: hit.text } : a; }) })) }
+                : pc;
+              const vPreview: PreviewCorner = withTarget(vType
                 ? { ...preview, cornerLayout: null, layoutDetail: vType.typeDetail ?? preview.layoutDetail, bigBanner: vType.bigBanner ?? false }
-                : preview;
+                : preview);
               return (
               <div key={i} className="w-[300px] shrink-0">
                 <div className="mb-1 flex items-center gap-1">
@@ -1551,7 +1559,7 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
                   {v.target && <span className="absolute right-2 top-2 z-10 rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">{v.target}</span>}
                   <CornerBlock corner={vPreview} />
                 </div>
-                <p className="mt-1 text-center text-[9px] text-amber-600">{vType ? `노출 타입: ${vType.typeDetail || vType.name}` : '노출 타입을 선택하면 그 레이아웃으로 렌더'}{v.target ? ` · 타겟 ${v.target}` : ''}</p>
+                <p className="mt-1 text-center text-[9px] text-amber-600">{vType ? `노출 타입: ${vType.typeDetail || vType.name}` : '노출 타입을 선택하면 그 레이아웃으로 렌더'}{v.target ? ` · 타겟 ${v.target} 문구` : ''}</p>
               </div>
               );
             })}
