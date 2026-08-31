@@ -39,7 +39,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles } from 'lucide-react';
 import { TypeDetailPreview } from '../../corner-types/corner-type-manager';
 import {
   updateTemplateMeta,
@@ -1492,6 +1492,44 @@ function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateI
   );
 }
 
+// 캔버스식 — 디바이스 옆에 '추가 노출 타입'만 렌더. 각 타입 카드에서 노출 타입(카탈로그)을 직접 변경. 기본은 디바이스에서 편집.
+function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateId: string; corner: CornerNode; preview: PreviewCorner; cornerTypes: LibraryData['cornerTypes'] }) {
+  type V = { label: string; typeId?: string; typeName?: string };
+  const parse = (): V[] => { try { const a = JSON.parse(corner.displayVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.label === 'string'); } catch { /* noop */ } return []; };
+  const [vars, setVars] = useState<V[]>(parse());
+  const [, start] = useTransition();
+  useEffect(() => { setVars(parse()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.displayVariants, corner.templateCornerId]);
+  const options = cornerTypes.filter((t) => t.active && t.baseCategory === corner.cornerType);
+  const typeLabel = (t: LibraryData['cornerTypes'][number]) => (t.typeDetail && !t.name.includes(t.typeDetail) ? `${t.name} · ${t.typeDetail}` : t.name);
+  const save = (next: V[]) => { setVars(next); start(() => setCornerDisplayVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
+  const pick = (i: number, id: string) => { const t = cornerTypes.find((x) => x.id === id); save(vars.map((v, j) => (j === i ? { ...v, typeId: id || undefined, typeName: t ? typeLabel(t) : undefined, label: t ? typeLabel(t) : v.label } : v))); };
+  if (vars.length === 0) return null;
+  return (
+    <div className="shrink-0">
+      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-violet-700"><Sparkles className="h-3.5 w-3.5" /> 추가 노출 타입 {vars.length}개 <span className="font-normal text-violet-400">· 클릭해 변경 · CVM이 고객마다 택1</span></p>
+      <div className="flex items-start gap-4">
+        {vars.map((v, i) => (
+          <div key={i} className="w-[300px] shrink-0">
+            <div className="mb-1.5 flex items-center gap-1">
+              <span className="inline-flex h-6 shrink-0 items-center rounded bg-amber-100 px-1.5 text-[10px] font-bold text-amber-700">타입 {i + 2}</span>
+              {/* 노출 타입 변경 (카탈로그) */}
+              <Select value={v.typeId ?? ''} onChange={(e) => pick(i, e.target.value)} className="h-6 min-w-0 flex-1 text-[11px]">
+                <option value="">노출 타입 선택…</option>
+                {options.map((t) => <option key={t.id} value={t.id}>{typeLabel(t)}</option>)}
+              </Select>
+              <button type="button" onClick={() => save(vars.filter((_, j) => j !== i))} className="flex h-6 w-5 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="타입 삭제">−</button>
+            </div>
+            <div className="rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
+              <CornerBlock corner={preview} />
+            </div>
+            <p className="mt-1 text-center text-[9px] text-amber-600">CVM 후보 · 프로토타입은 동일 콘텐츠</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 //  코너 정보 저장과 분리(전용 액션 setCornerCardShape). 저장 후 revalidate로 미리보기 반영.
 function CardShapeControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
   const hasProductComp = corner.components.some((c) => c.componentType === '상품형');
@@ -2515,6 +2553,8 @@ export function BuilderEditor({
   for (const c of corners) if (!ids.includes(c.templateCornerId)) ordered.push(c);
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
+  // 선택 코너에 '추가 노출 타입'이 있으면 캔버스를 좌측 정렬(옆 패널이 보이게), 없으면 디바이스 중앙 정렬.
+  const spreadN = (() => { try { const a = JSON.parse(selectedCorner?.displayVariants ?? ''); return Array.isArray(a) ? a.filter((x) => x && typeof x.label === 'string').length : 0; } catch { return 0; } })();
   const nameMap = cornerTypeNameMap(library); // 기준분류 → 코너 유형 카탈로그 표시명
 
   // 편집 중인 드래프트 → 미리보기 즉시 반영 (칩 / 코너 정보 / 비-칩 Atom)
@@ -2815,7 +2855,7 @@ export function BuilderEditor({
         </div>
         <div className="flex-1 overflow-auto bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] p-6 [background-size:16px_16px]">
           {/* zoom(CSS)은 레이아웃까지 축소 → mx-auto가 항상 정확히 중앙 정렬(폭이 캔버스보다 클 때만 스크롤). */}
-          <div className="mx-auto w-fit" style={{ zoom }}>
+          <div className={cn('flex w-fit items-start gap-8', spreadN > 0 ? '' : 'mx-auto')} style={{ zoom }}>
             <DeviceFrame width={device.w} bodyHeight={device.h - 150} headerLabel={meta.containerName}>
               {previewCorners.length === 0 ? (
                 <div className="flex h-full items-center justify-center rounded-xl border-2 border-dashed border-slate-300 p-6 text-center text-sm text-slate-400">
@@ -2837,6 +2877,11 @@ export function BuilderEditor({
                 ))
               )}
             </DeviceFrame>
+            {/* 캔버스식 — 선택 코너의 '추가 노출 타입'만 디바이스 옆에 렌더 + 클릭해 변경. 기본은 디바이스에서 편집. */}
+            {selectedCorner && (() => {
+              const selPv = previewCorners.find((c) => c.id === selectedCorner.templateCornerId);
+              return selPv ? <VariantSpread templateId={templateId} corner={selectedCorner} preview={selPv} cornerTypes={library.cornerTypes} /> : null;
+            })()}
           </div>
         </div>
       </div>
