@@ -1523,7 +1523,13 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
             {vars.length < 3 && <button type="button" onClick={add} className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100"><Plus className="mr-0.5 inline h-2.5 w-2.5" />타입</button>}
           </div>
           <div className="flex items-start gap-4">
-            {vars.map((v, i) => (
+            {vars.map((v, i) => {
+              // 각 타입은 자기 노출 타입(카탈로그)의 레이아웃으로 렌더 — cornerLayout을 비우고 layoutDetail(=타입 상세)이 배치 모드를 결정하게 함(콘텐츠는 동일, 껍데기만 다름)
+              const vType = v.typeId ? cornerTypes.find((t) => t.id === v.typeId) : null;
+              const vPreview: PreviewCorner = vType
+                ? { ...preview, cornerLayout: null, layoutDetail: vType.typeDetail ?? preview.layoutDetail, bigBanner: vType.bigBanner ?? false }
+                : preview;
+              return (
               <div key={i} className="w-[300px] shrink-0">
                 <div className="mb-1 flex items-center gap-1">
                   <span className="inline-flex h-6 shrink-0 items-center rounded bg-amber-100 px-1.5 text-[10px] font-bold text-amber-700">타입 {i + 2}</span>
@@ -1543,11 +1549,12 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
                 </div>
                 <div className="relative rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
                   {v.target && <span className="absolute right-2 top-2 z-10 rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">{v.target}</span>}
-                  <CornerBlock corner={preview} />
+                  <CornerBlock corner={vPreview} />
                 </div>
-                <p className="mt-1 text-center text-[9px] text-amber-600">{v.target ? `${v.target} 타겟 힌트 · ${CVM_TARGET_HINTS.find((t) => t.key === v.target)?.note ?? ''}` : 'CVM 후보 · 프로토타입은 동일 콘텐츠'}</p>
+                <p className="mt-1 text-center text-[9px] text-amber-600">{vType ? `노출 타입: ${vType.typeDetail || vType.name}` : '노출 타입을 선택하면 그 레이아웃으로 렌더'}{v.target ? ` · 타겟 ${v.target}` : ''}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
