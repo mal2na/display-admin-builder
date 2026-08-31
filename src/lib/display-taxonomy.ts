@@ -120,9 +120,8 @@ export type ComponentType = (typeof COMPONENT_TYPES)[number];
 //  후보·순위·근거는 CVM(추천 시스템)이 산출하고, 운영자는 슬롯 규칙(최대 노출·정렬·폴백)만 정한다.
 // CVM 타겟 힌트 (2026-08-31 회의) — 베리에이션(노출 타입·문구)이 '누구에게'를 향하는지 운영자가 붙이는 힌트.
 //  최종 매칭·분류는 CVM(C360 세그/인텐트). 재료·타겟 후보는 우리가, 조합은 CVM. 축: 연령대/방문이력/위치/보유/세그먼트(회의 md).
-//  scale = 그 타겟 렌더 배율(시니어는 폰트·이미지 확대). 미지정=1.
-export const CVM_TARGET_HINTS: { key: string; axis: string; note: string; scale?: number }[] = [
-  { key: '시니어', axis: '연령대', note: '폰트 확대·큰 이미지', scale: 1.25 },
+export const CVM_TARGET_HINTS: { key: string; axis: string; note: string }[] = [
+  { key: '시니어', axis: '연령대', note: '쉬운 표현·명확한 안내' },
   { key: '2030', axis: '연령대', note: '트렌디한 소구' },
   { key: '재방문', axis: '방문 이력', note: '이어보기·재구매' },
   { key: '위치 인근', axis: '위치', note: '매장 바코드 동반' },

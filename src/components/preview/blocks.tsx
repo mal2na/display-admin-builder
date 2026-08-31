@@ -116,7 +116,7 @@ function MenuListView({ component }: { component: PreviewComponent }) {
   );
 }
 
-function ProductCard({ component, shape, reason, titleLines, textBoost }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null; textBoost?: boolean }) {
+function ProductCard({ component, shape, reason, titleLines }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null }) {
   const poster = first(component.atoms, 'IMAGE');
   const title = first(component.atoms, 'TEXT');
   // 설명 = INFO 또는 PRICE(가격도 라벨상 '설명'). 배지 = BADGE(할인율 등, 선택적 — 숨김 원자면 프리뷰에서 제외됨).
@@ -134,7 +134,7 @@ function ProductCard({ component, shape, reason, titleLines, textBoost }: { comp
     <div className={cn('shrink-0', wCls)}>
       <ImageBox atom={poster} className={cn('w-full rounded-xl', ratioCls)} />
       {reason && <RecReason text={reason} />}
-      <p className={cn('mt-1.5 font-semibold leading-tight text-slate-900', textBoost ? 'text-[16px]' : 'text-[13px]', nameCls)}>{title?.content ?? component.name}</p>
+      <p className={cn('mt-1.5 font-semibold leading-tight text-slate-900 text-[13px]', nameCls)}>{title?.content ?? component.name}</p>
       {/* 배지는 설명 앞 인라인. 설명은 이름보다 연하게(위계) — 예: [20%] 235,000원 */}
       {(badge?.content || info?.content) && (
         <p className="mt-0.5 flex items-center gap-1">
@@ -181,7 +181,7 @@ function BannerCard({ component }: { component: PreviewComponent }) {
 }
 
 // 세로 리스트 행: [로고/아이콘] + [혜택문구(굵게) / 브랜드(작게)]. 상품형·세로형, 혜택형 공용.
-function BenefitRow({ component, reason, textBoost }: { component: PreviewComponent; reason?: string; textBoost?: boolean }) {
+function BenefitRow({ component, reason }: { component: PreviewComponent; reason?: string }) {
   const logo = first(component.atoms, 'ICON', 'IMAGE');
   const texts = byType(component.atoms, 'BENEFIT_TEXT', 'TEXT', 'INFO', 'PRICE');
   const title = texts[0];
@@ -191,7 +191,7 @@ function BenefitRow({ component, reason, textBoost }: { component: PreviewCompon
     <div className="flex items-center gap-3 py-2">
       <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl" />
       <div className="min-w-0 flex-1">
-        <p className={cn('font-semibold text-slate-900', textBoost ? 'text-[18px] leading-snug' : 'truncate text-[14px]')}>{title?.content ?? component.name}</p>
+        <p className={cn('truncate text-[14px] font-semibold text-slate-900')}>{title?.content ?? component.name}</p>
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}
         {reason && <RecReason text={reason} />}
       </div>
@@ -306,17 +306,17 @@ function DefaultCard({ component }: { component: PreviewComponent }) {
 
 type LayoutMode = 'horizontal' | 'grid' | 'single' | 'list';
 
-function ComponentView({ component, mode, cardShape, reason, titleLines, textBoost }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; reason?: string; titleLines?: number | null; textBoost?: boolean }) {
+function ComponentView({ component, mode, cardShape, reason, titleLines }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; reason?: string; titleLines?: number | null }) {
   switch (component.componentType) {
     case '선택형':
       return <ChipsView component={component} />;
     case '상품형':
       // 세로 리스트형 코너에서는 큰 포스터 카드가 아니라 로고+문구 행 구조로 렌더 (참고 디자인)
-      return mode === 'list' ? <BenefitRow component={component} reason={reason} textBoost={textBoost} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} textBoost={textBoost} />;
+      return mode === 'list' ? <BenefitRow component={component} reason={reason} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':
-      return <BenefitRow component={component} reason={reason} textBoost={textBoost} />;
+      return <BenefitRow component={component} reason={reason} />;
     case '정보형':
       return <InfoCard component={component} />;
     default:
@@ -325,7 +325,7 @@ function ComponentView({ component, mode, cardShape, reason, titleLines, textBoo
 }
 
 /** 한 Corner를 화면 영역으로 렌더 (프리뷰/빌더 공용) */
-export function CornerBlock({ corner, textBoost }: { corner: PreviewCorner; textBoost?: boolean }) {
+export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const isBanner = corner.cornerType === '배너형';
   const heading = corner.mainTitle ?? corner.title;
   const sub = corner.subTitle ?? corner.name;
@@ -371,7 +371,7 @@ export function CornerBlock({ corner, textBoost }: { corner: PreviewCorner; text
       return (
         <div className="flex gap-3 overflow-x-auto pb-1">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} textBoost={textBoost} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
           ))}
         </div>
       );
@@ -379,7 +379,7 @@ export function CornerBlock({ corner, textBoost }: { corner: PreviewCorner; text
       return (
         <div className="grid grid-cols-2 gap-2">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} textBoost={textBoost} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
           ))}
         </div>
       );
@@ -387,7 +387,7 @@ export function CornerBlock({ corner, textBoost }: { corner: PreviewCorner; text
       return (
         <div className="space-y-2 [&>*]:w-full">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} textBoost={textBoost} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
           ))}
         </div>
       );
@@ -502,7 +502,7 @@ export function CornerBlock({ corner, textBoost }: { corner: PreviewCorner; text
       })()}
       {heading && (
         <div>
-          <h3 className={cn('whitespace-pre-line font-bold leading-snug text-slate-900', textBoost ? 'text-[22px]' : 'text-[16px]')}>{heading}</h3>
+          <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
           {sub && (
             <p className="mt-0.5 flex items-center gap-0.5 text-[12px] text-slate-400">
               {sub} {showChevron && <ChevronRight className="h-3 w-3" />}
