@@ -112,6 +112,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     cornerLayout: tc.corner.cornerLayout,
     description: tc.corner.description,
     mainTitle: tc.corner.mainTitle,
+    mainTitleVariants: tc.corner.mainTitleVariants ?? null,
     subTitle: tc.corner.subTitle,
     subTitleIcon: tc.corner.subTitleIcon,
     sortStrategy: tc.corner.sortStrategy,

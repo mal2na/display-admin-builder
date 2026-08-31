@@ -704,6 +704,12 @@ export async function setCornerDisplayVariants(templateId: string, cornerId: str
   rp(templateId);
 }
 
+// 타이틀 베리에이션 — 타겟별 대체 타이틀 JSON [{text,target}] 즉시 저장. 실서비스 CVM 택1(기본=mainTitle).
+export async function setCornerMainTitleVariants(templateId: string, cornerId: string, variantsJson: string) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { mainTitleVariants: variantsJson && variantsJson.trim() ? variantsJson : null } });
+  rp(templateId);
+}
+
 // 빅배너로 강조 토글 — 즉시 저장(코너 정보 저장과 독립). 켜면 곧바로 selectedCorner.bigBanner가 갱신돼 '상단 배너' 패널이 뜬다.
 export async function setCornerBigBanner(templateId: string, cornerId: string, on: boolean) {
   await prisma.corner.update({ where: { id: cornerId }, data: { bigBanner: on } });

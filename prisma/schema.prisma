@@ -108,6 +108,8 @@ model Corner {
   cornerLayout String? // 코너 레이아웃 (예: 가로 SWIPE형)
   description  String? // 코너 설명
   mainTitle    String? // 메인 타이틀 (줄바꿈 \n 허용)
+  // 타이틀 베리에이션 — 타겟별 대체 타이틀. JSON [{text,target}]. 실서비스 CVM이 택1(기본=mainTitle). 회의 2026-08-31.
+  mainTitleVariants String?
   subTitle     String? // 서브 타이틀
   subTitleIcon String? // 서브 타이틀 아이콘 (사용안함 | 말줄임표 | 화살표 | 정보)
 
