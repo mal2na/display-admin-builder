@@ -2553,8 +2553,6 @@ export function BuilderEditor({
   for (const c of corners) if (!ids.includes(c.templateCornerId)) ordered.push(c);
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
-  // 선택 코너에 '추가 노출 타입'이 있으면 캔버스를 좌측 정렬(옆 패널이 보이게), 없으면 디바이스 중앙 정렬.
-  const spreadN = (() => { try { const a = JSON.parse(selectedCorner?.displayVariants ?? ''); return Array.isArray(a) ? a.filter((x) => x && typeof x.label === 'string').length : 0; } catch { return 0; } })();
   const nameMap = cornerTypeNameMap(library); // 기준분류 → 코너 유형 카탈로그 표시명
 
   // 편집 중인 드래프트 → 미리보기 즉시 반영 (칩 / 코너 정보 / 비-칩 Atom)
@@ -2855,7 +2853,8 @@ export function BuilderEditor({
         </div>
         <div className="flex-1 overflow-auto bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] p-6 [background-size:16px_16px]">
           {/* zoom(CSS)은 레이아웃까지 축소 → mx-auto가 항상 정확히 중앙 정렬(폭이 캔버스보다 클 때만 스크롤). */}
-          <div className={cn('flex w-fit items-start gap-8', spreadN > 0 ? '' : 'mx-auto')} style={{ zoom }}>
+          {/* 캔버스 콘텐츠는 항상 좌측 정렬(아트보드가 좌상단) — 노출 타입이 생겨도 디바이스가 안 튐. */}
+          <div className="flex w-fit items-start gap-8" style={{ zoom }}>
             <DeviceFrame width={device.w} bodyHeight={device.h - 150} headerLabel={meta.containerName}>
               {previewCorners.length === 0 ? (
                 <div className="flex h-full items-center justify-center rounded-xl border-2 border-dashed border-slate-300 p-6 text-center text-sm text-slate-400">
