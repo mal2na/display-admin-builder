@@ -26,6 +26,8 @@ import {
   isCvmBinding,
   REC_SOURCE_METHODS,
   REC_SOURCE_INFO,
+  RULE_CONDITION_TYPES,
+  RULE_CONDITION_OPS,
   type AtomType,
   type CornerType,
 } from '@/lib/display-taxonomy';
@@ -114,7 +116,8 @@ export type CornerNode = {
   noDisplayCondition: string | null;
   recSource: string | null; // (대표) 1순위 추천 수급 방식
   recSourcePlan: string | null; // 우선순위 편성 (JSON 배열, 1순위→폴백)
-  showRecReason: boolean; // 추천 근거(추천 사유) 카드 표시 여부
+  recRule: string | null; // 룰 기반 조건 (JSON 배열 [{type,op,value}])
+  showRecReason: boolean; // (레거시) 추천 근거 표시 여부 — 미표시
   bigBanner: boolean; // 빅배너 = 배치(인스턴스) 옵션 (유형 아님). 빌더에서 켠다.
   cardShape: string | null; // 상품형 2.5배열 카드 모양 (정사각형 | 직사각형)
   titleLines: number | null; // 상품 카드 제목 줄 수 (2=두 줄)
@@ -1394,6 +1397,22 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
           } />
         );
       })()}
+      {corner.recRule && (() => {
+        let conds: { type?: string; op?: string; value?: string }[] = [];
+        try { const a = JSON.parse(corner.recRule ?? ''); if (Array.isArray(a)) conds = a; } catch { /* noop */ }
+        if (!conds.length) return null;
+        return (
+          <InfoRow label="룰 조건" value={
+            <span className="inline-flex flex-wrap gap-1">
+              {conds.map((c, i) => (
+                <span key={i} className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600">
+                  {c.type} <b className="mx-0.5 font-semibold">{c.op}</b> {c.value || '—'}
+                </span>
+              ))}
+            </span>
+          } />
+        );
+      })()}
       {fam === 'product' && corner.sortStrategy && <InfoRow label="상품 노출 순서" value={corner.sortStrategy} />}
       {fam === 'product' && corner.noDisplayCondition && <InfoRow label="미 노출 조건" value={corner.noDisplayCondition} />}
       {fam === 'product' && (
@@ -1610,20 +1629,32 @@ function CornerInfoForm({
   const [subTitleIcon, setSubTitleIcon] = useState(corner.subTitleIcon ?? '사용안함');
   const [cornerLayout] = useState(corner.cornerLayout ?? ''); // 필드는 숨김(값 보존)
   const [layoutDetail, setLayoutDetail] = useState(corner.layoutDetail ?? '');
-  // 추천 수급 방식 — 재정렬 가능한 '주 방식 목록' + 최하단 고정 '수동 대체(폴백)' 사용여부.
-  //  주 방식 = CVM/채널데이터/룰/운영편성(순위 조정). 수동 대체는 항상 마지막(폴백)이라 목록에서 분리해 토글로.
-  const REC_PRIMARY_METHODS = REC_SOURCE_METHODS.filter((m) => m !== '수동 대체');
+  // 추천 수급 방식 — 재정렬 가능한 '자동 방식'(CVM/룰) + 항상 최하단 고정 '운영자 편성'(운영자가 코너 구성에 직접 짠 항목 = 폴백).
+  //  운영자 편성은 정책상 대체 전시(PI-DSP-PER-002) 필수라 끌 수 없고, 운영자가 짠 항목이 곧 폴백이라 늘 켜져 있어야 함(빈 코너 방지). (2026-08-31 사용자 결정)
+  const REC_AUTO_METHODS: string[] = ['CVM 기반', '룰 기반'];
+  const normalizeMethod = (m: string) => (m === '채널 데이터' ? 'CVM 기반' : m); // 폐기된 '채널 데이터'는 CVM으로 흡수
   const parseRecFull = (): string[] => {
-    try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a) && a.length) return a.filter((x) => typeof x === 'string'); } catch { /* noop */ }
-    return corner.recSource ? [corner.recSource] : [];
+    try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a) && a.length) return a.filter((x) => typeof x === 'string').map(normalizeMethod); } catch { /* noop */ }
+    return corner.recSource ? [normalizeMethod(corner.recSource)] : [];
   };
   const initFull = parseRecFull();
-  const [recPrimaryPlan, setRecPrimaryPlan] = useState<string[]>(initFull.filter((m) => m !== '수동 대체'));
-  const [useManualFallback, setUseManualFallback] = useState(initFull.includes('수동 대체'));
-  // 저장/미리보기용 전체 편성 = 주 방식 + (사용 시) 수동 대체(최하단 고정)
-  const recFullPlan = useManualFallback ? [...recPrimaryPlan, '수동 대체'] : recPrimaryPlan;
+  // 자동 방식(재정렬) — 중복 제거(채널데이터→CVM 흡수로 겹칠 수 있음)
+  const [recPrimaryPlan, setRecPrimaryPlan] = useState<string[]>(
+    initFull.filter((m) => REC_AUTO_METHODS.includes(m)).filter((m, i, a) => a.indexOf(m) === i),
+  );
+  // 운영자 편성(직접 구성)은 항상 최하단 폴백 — 토글 아님. '운영 편성'으로 정규화해 늘 append.
+  const recFullPlan = [...recPrimaryPlan, '운영 편성'];
   const recSource = recFullPlan[0] ?? ''; // 대표(1순위)
-  const recPersonalized = recSource === 'CVM 기반' || recSource === '채널 데이터'; // 개인화 방식이면 '미리보기=폴백' 안내 표시
+  const recPersonalized = recSource === 'CVM 기반'; // 개인화 방식(CVM)이면 '미리보기=폴백' 안내 표시
+  const usesRule = recPrimaryPlan.includes('룰 기반'); // 룰 기반이 편성에 있으면 조건 설정 UI 노출
+  // 룰 기반 조건 — [{type,op,value}]. 정책 PI-DSP-RUL-001 필수값(조건 유형+포함/제외+값).
+  type RuleCond = { type: string; op: string; value: string };
+  const parseRule = (): RuleCond[] => {
+    try { const a = JSON.parse(corner.recRule ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.type === 'string'); } catch { /* noop */ }
+    return [];
+  };
+  const [ruleConds, setRuleConds] = useState<RuleCond[]>(parseRule());
+  const recRuleJson = usesRule && ruleConds.length ? JSON.stringify(ruleConds) : '';
   // 추천 수급 방식은 '추천 슬롯'인 코너에만 의미 있음 — 상품/혜택 추천을 나열하는 유형만.
   //  상태 안내형·고정·필수 노출형(프로필·바코드)·업무 진입형·배너형은 고객정보/기능이라 추천(CVM) 섹션 제외.
   const isRecCorner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(ct);
@@ -1652,7 +1683,7 @@ function CornerInfoForm({
       pushCorner(corner.templateCornerId, null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, recSource, useManualFallback, recPrimaryPlan, recPersonalized, corner.templateCornerId]);
+  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, recSource, recPrimaryPlan, recPersonalized, corner.templateCornerId]);
 
   // 언마운트(코너 전환) 시 미리보기 정리
   useEffect(() => () => pushCorner(corner.templateCornerId, null), [corner.templateCornerId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1665,7 +1696,7 @@ function CornerInfoForm({
     setSubTitle(corner.subTitle ?? '');
     setSubTitleIcon(corner.subTitleIcon ?? '사용안함');
     setLayoutDetail(corner.layoutDetail ?? '');
-    { const f = parseRecFull(); setRecPrimaryPlan(f.filter((m) => m !== '수동 대체')); setUseManualFallback(f.includes('수동 대체')); }
+    { const f = parseRecFull(); setRecPrimaryPlan(f.filter((m) => REC_AUTO_METHODS.includes(m)).filter((m, i, a) => a.indexOf(m) === i)); setRuleConds(parseRule()); }
     setResetKey((k) => k + 1);
   };
 
@@ -1750,19 +1781,20 @@ function CornerInfoForm({
           </div>
         </div>
 
-        {/* 추천 수급 방식 — 여러 방식을 '우선순위(폴백)'로 편성. 1순위 주 방식, 후보 없으면 다음 순위로. (POL-REC PG-REC-SOURCE-001 / PG-REC-FALLBACK-001) */}
+        {/* 추천 수급 방식 — 자동 방식(CVM/룰)을 우선순위로 편성 + 운영자 편성(최하단 고정 폴백). (정책 근거: CVM 개인화 / 룰=노출조건 PI-DSP-RUL-001 / 대체 전시 PI-DSP-PER-002) */}
         {isRecCorner && (
           <div className="col-span-2 space-y-2 rounded-md border border-violet-200 bg-violet-50/40 p-2.5">
-            <label className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-700">추천 수급 방식 <span className="font-normal text-violet-400">· 후보 없으면 다음 순위로</span></label>
-            {/* 폼 제출값: 대표(1순위) + 전체 편성 JSON (주 방식 + 사용 시 수동대체 최하단) */}
+            <label className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-700">추천 수급 방식 <span className="font-normal text-violet-400">· 자동 우선 → 없으면 운영자 편성</span></label>
+            {/* 폼 제출값: 대표(1순위) + 전체 편성 JSON(자동 방식 + 사용 시 운영자 편성 최하단) + 룰 조건 JSON */}
             <input type="hidden" name="recSource" value={recSource} />
             <input type="hidden" name="recSourcePlan" value={recFullPlan.length ? JSON.stringify(recFullPlan) : ''} />
+            <input type="hidden" name="recRule" value={recRuleJson} />
             {recPrimaryPlan.length === 0 ? (
-              <p className="text-[10px] text-muted-foreground">주 방식 없음 — {useManualFallback ? '수동 대체(직접 구성 항목)만 노출됩니다.' : '아래에서 직접 구성한 항목이 그대로 노출됩니다. (자동 추천 없음)'}</p>
+              <p className="text-[10px] text-muted-foreground">자동 추천 방식 없음 — 운영자 편성(아래에서 직접 구성한 항목)만 노출됩니다.</p>
             ) : (
               <div className="space-y-1.5">
                 {recPrimaryPlan.map((m, i) => {
-                  const others = REC_PRIMARY_METHODS.filter((x) => x === m || !recPrimaryPlan.includes(x)); // 중복 방지(자기 자신 포함)
+                  const others = REC_AUTO_METHODS.filter((x) => x === m || !recPrimaryPlan.includes(x)); // 중복 방지(자기 자신 포함)
                   return (
                     <div key={i} className="flex items-center gap-1.5">
                       <span className={cn('inline-flex h-7 shrink-0 items-center rounded-md px-1.5 text-[10px] font-bold', i === 0 ? 'bg-violet-600 text-white' : 'bg-slate-200 text-slate-600')}>
@@ -1782,29 +1814,66 @@ function CornerInfoForm({
                 })}
               </div>
             )}
-            {/* 주 방식 추가 (수동 대체 제외 — 남은 것 중 첫 번째) */}
-            {(() => { const rest = REC_PRIMARY_METHODS.filter((x) => !recPrimaryPlan.includes(x)); return rest.length > 0 && (
+            {/* 자동 방식 추가 (CVM/룰 중 남은 것) */}
+            {(() => { const rest = REC_AUTO_METHODS.filter((x) => !recPrimaryPlan.includes(x)); return rest.length > 0 && (
               <button type="button" onClick={() => setRecPrimaryPlan((p) => [...p, rest[0]])}
                 className="inline-flex items-center gap-0.5 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100">
-                + 방식 추가{recPrimaryPlan.length ? ' (폴백)' : ''}
+                + 자동 방식 추가{recPrimaryPlan.length ? ' (폴백)' : ''}
               </button>
             ); })()}
-            {/* 최종 폴백(수동 대체) — 항상 최하단 고정 · 사용 여부 토글 */}
-            <label className="flex items-center justify-between gap-2 rounded-md border border-dashed border-violet-300 bg-white px-2.5 py-2">
-              <span className="flex flex-col">
-                <span className="text-[11px] font-semibold text-violet-800">최종 폴백 · 수동 대체 <span className="ml-0.5 rounded bg-violet-100 px-1 text-[9px] font-medium text-violet-500">최하단 고정</span></span>
-                <span className="text-[10px] text-violet-500/80">위 방식에 후보가 없을 때 <b>아래 직접 구성한 항목</b>을 최종적으로 노출해요.</span>
-              </span>
-              <button type="button" role="switch" aria-checked={useManualFallback} onClick={() => setUseManualFallback((v) => !v)}
-                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', useManualFallback ? 'bg-violet-500' : 'bg-slate-300')}>
-                <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', useManualFallback ? 'translate-x-4' : 'translate-x-0.5')} />
-              </button>
-            </label>
-            {/* 개인화 표기 안내 — 1순위가 개인화일 때만 */}
-            {recPersonalized && (
-              <p className="text-[10px] leading-relaxed text-violet-600/90">1순위가 개인화 방식이라, 로그인·동의 시에만 개인화 추천으로 표기돼요.</p>
+            {/* 룰 기반 조건 설정 — '룰 기반'이 편성에 있을 때. 운영자는 조건만 정하고, 실제 값은 노출 시 CVM/BSS가 판정. (PI-DSP-RUL-001 필수값) */}
+            {usesRule && (
+              <div className="space-y-1.5 rounded-md border border-violet-200 bg-white p-2">
+                <p className="text-[10px] font-semibold text-violet-700">룰 조건 <span className="font-normal text-violet-400">· 운영자가 조건만 정하고, 실제 값은 노출 시 CVM·BSS가 판정</span></p>
+                {ruleConds.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground">아직 조건이 없어요. 추가하면 그 조건을 만족하는 고객에게만 노출됩니다.</p>
+                )}
+                {ruleConds.map((rc, i) => {
+                  const meta = RULE_CONDITION_TYPES.find((t) => t.key === rc.type);
+                  return (
+                    <div key={i} className="flex items-center gap-1">
+                      {/* 유형 변경 시 값 초기화(유형마다 유효 값이 달라짐) */}
+                      <Select value={rc.type} onChange={(e) => setRuleConds((cs) => cs.map((x, j) => (j === i ? { ...x, type: e.target.value, value: '' } : x)))} className="h-7 w-32 shrink-0 text-xs">
+                        {RULE_CONDITION_TYPES.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
+                      </Select>
+                      <Select value={rc.op} onChange={(e) => setRuleConds((cs) => cs.map((x, j) => (j === i ? { ...x, op: e.target.value } : x)))} className="h-7 w-20 shrink-0 text-xs">
+                        {RULE_CONDITION_OPS.map((op) => <option key={op} value={op}>{op}</option>)}
+                      </Select>
+                      {/* 값 — 값이 자명한 유형은 잠정 드롭다운(정책 아님·연동 시 대체), 나머지는 자유 입력 */}
+                      {meta?.values ? (
+                        <Select value={rc.value} onChange={(e) => setRuleConds((cs) => cs.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} className="h-7 min-w-0 flex-1 text-xs">
+                          <option value="">값 선택…</option>
+                          {meta.values.map((v) => <option key={v} value={v}>{v}</option>)}
+                        </Select>
+                      ) : (
+                        <Input value={rc.value} onChange={(e) => setRuleConds((cs) => cs.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} placeholder={`값 (예: ${meta?.ex ?? 'VIP'})`} className="h-7 min-w-0 flex-1 text-xs" />
+                      )}
+                      <span className="shrink-0 rounded bg-slate-100 px-1 text-[9px] text-slate-500" title="이 조건의 실제 판정 데이터 출처">{meta?.source ?? 'CVM'}</span>
+                      <button type="button" onClick={() => setRuleConds((cs) => cs.filter((_, j) => j !== i))}
+                        className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="조건 삭제">−</button>
+                    </div>
+                  );
+                })}
+                <button type="button" onClick={() => setRuleConds((cs) => [...cs, { type: RULE_CONDITION_TYPES[0].key, op: '포함', value: '' }])}
+                  className="inline-flex items-center gap-0.5 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100">
+                  + 조건 추가
+                </button>
+                <p className="text-[9px] leading-relaxed text-slate-400">값 목록은 <b className="font-semibold">가정(정책 아님)</b>이에요 — CVM/BSS 연동 시 실제 승인 값으로 대체됩니다. (정책 <span className="font-mono">PI-DSP-PER-001</span>: 값 임의 입력 불가)</p>
+              </div>
             )}
-            {/* 카드별 추천 근거 토글 제거 — 빌더는 실제 고객이 없어 '폴백(운영자 편성)' 상태를 보여준다.
+            {/* 운영자 편성 — 항상 최하단 폴백(토글 아님). 정책상 대체 전시(PI-DSP-PER-002) 필수 + 운영자가 코너 구성에 짠 항목이 곧 폴백이라 늘 켜짐(빈 코너 방지). */}
+            <div className="flex items-start gap-2 rounded-md border border-violet-200 bg-violet-50/60 px-2.5 py-2">
+              <span className="mt-0.5 inline-flex h-4 shrink-0 items-center rounded bg-violet-600 px-1.5 text-[9px] font-bold text-white">최종 폴백</span>
+              <span className="flex flex-col">
+                <span className="text-[11px] font-semibold text-violet-800">운영자 편성 · 직접 구성 <span className="ml-0.5 rounded bg-violet-100 px-1 text-[9px] font-medium text-violet-500">항상 최하단 고정</span></span>
+                <span className="text-[10px] text-violet-500/80">자동 방식에 후보가 없으면 <b>아래에서 직접 구성한 항목</b>이 폴백으로 노출돼요. 대체 전시는 필수라 항상 켜져 있어요(빈 코너 방지). 특정 상황에 숨기려면 ‘미 노출 조건’으로 처리해요.</span>
+              </span>
+            </div>
+            {/* 개인화 표기 안내 — 1순위가 개인화(CVM)일 때만 */}
+            {recPersonalized && (
+              <p className="text-[10px] leading-relaxed text-violet-600/90">1순위가 개인화(CVM) 방식이라, 로그인·동의 시에만 개인화 추천으로 표기돼요.</p>
+            )}
+            {/* 카드별 추천 근거는 표시 안 함 — 빌더는 실제 고객이 없어 '폴백(운영자 편성)' 상태를 보여준다.
                 추천 근거(왜 추천했는지)는 런타임에 CVM이 고객별로 생성하는 값이라 빌더 미리보기에는 표시하지 않는다. */}
             {recPersonalized && (
               <p className="rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-1.5 text-[10px] leading-relaxed text-violet-600/90">

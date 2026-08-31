@@ -485,7 +485,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         const primary = plan[0];
         const fallbacks = plan.slice(1);
         const isCvm = primary === 'CVM 기반';
-        const personalized = isCvm || primary === '채널 데이터'; // 개인화 방식이면 실제 노출이 미리보기(폴백)와 달라짐
+        const personalized = isCvm; // 개인화 방식(CVM)이면 실제 노출이 미리보기(폴백)와 달라짐
         return (
           <div className="rounded-lg bg-violet-50 px-2.5 py-1.5 text-violet-700" title="후보가 없으면 다음 순위(폴백)로 대체 노출됩니다">
             <p className="flex items-center gap-1 text-[10px] font-semibold leading-tight">
@@ -497,7 +497,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
             )}
             {personalized && (
               <p className="mt-1 border-t border-violet-100 pl-4 pt-1 text-[10px] font-normal leading-tight text-violet-500">
-                미리보기는 <b className="font-semibold">폴백(운영자 편성)</b> 상태예요 — 실제는 고객마다 {isCvm ? 'CVM' : '채널 데이터'} 추천으로 다르게 노출됩니다
+                미리보기는 <b className="font-semibold">폴백(운영자 편성)</b> 상태예요 — 실제는 고객마다 CVM 추천으로 다르게 노출됩니다
               </p>
             )}
           </div>
