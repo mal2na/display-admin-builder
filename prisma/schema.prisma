@@ -111,14 +111,11 @@ model Corner {
   // ── 상품형 코너 전용 컬럼 (코너3·코너4 참고) ──
   minItems           Int?    // 최소 노출 개수
   noDisplayCondition String? // 미 노출 조건 (선택 없음 | 재고 소진 시 | 혜택 종료 시 | 개인화 제한 시)
-  // 추천 수급 방식 (개인화 추천형·상품형 전용) — 정책 근거: CVM(개인화)·룰(노출 조건 PI-DSP-RUL)·대체 전시(PI-DSP-PER-002).
-  //  자동 방식 = CVM 기반 / 룰 기반. 운영자 편성(=운영 편성·수동 대체)은 항상 최하단 폴백. ('채널 데이터'는 CVM 개인화에 흡수·폐기)
-  recSource String? // (대표) 1순위 수급 방식 — null | CVM 기반 | 룰 기반 | 운영 편성 | 수동 대체
-  // 여러 수급 방식을 우선순위로 편성 (한 슬롯에 복수 방식 허용). JSON 배열, 1순위→폴백 순.
-  //  예: ["CVM 기반","룰 기반","운영 편성"] = CVM 우선, 후보 없으면 룰, 그래도 없으면 운영자 편성(직접 구성). recSource=배열[0].
+  // 추천 수급 방식 (개인화 추천형·상품형 전용) — '콘텐츠를 어디서 가져오나'의 축. CVM(개인화) / 운영자 편성(직접 구성 폴백) 둘뿐.
+  //  ('채널 데이터'는 CVM에 흡수, '룰 기반'은 타겟팅 축이라 Template 분기·코너 노출 조건으로 분리 — 수급에서 제거)
+  recSource String? // (대표) 1순위 수급 방식 — null | CVM 기반 | 운영 편성 | 수동 대체
+  // 여러 수급 방식을 우선순위로 편성. JSON 배열, 1순위→폴백 순. 예: ["CVM 기반","운영 편성"] = CVM 우선, 없으면 운영자 편성(직접 구성).
   recSourcePlan String?
-  // 룰 기반 조건 (노출 조건 PI-DSP-RUL-001). JSON 배열 [{type,op,value}]. 운영자가 조건만 정하고 실제 값은 런타임에 CVM/BSS가 판정.
-  recRule String?
   // 추천 근거(추천 사유) 카드 표시 여부 (PG-REC-CARD-001 / TM-REA-005). 값은 CVM이 런타임 제공, 여기선 표시 on/off만.
   showRecReason Boolean @default(false)
   moreButtonUse      Boolean @default(false) // 더보기 사용 여부

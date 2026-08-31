@@ -119,7 +119,6 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     noDisplayCondition: tc.corner.noDisplayCondition,
     recSource: tc.corner.recSource ?? null,
     recSourcePlan: tc.corner.recSourcePlan ?? null,
-    recRule: tc.corner.recRule ?? null,
     showRecReason: tc.corner.showRecReason ?? false,
     bigBanner: tc.corner.bigBanner ?? false,
     cardShape: tc.corner.cardShape ?? null,

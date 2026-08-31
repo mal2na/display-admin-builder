@@ -390,7 +390,6 @@ function readCornerInfo(formData: FormData) {
     noDisplayCondition: nn(formData, 'noDisplayCondition'),
     recSource: nn(formData, 'recSource'), // (대표) 1순위 추천 수급 방식
     recSourcePlan: nn(formData, 'recSourcePlan'), // 우선순위 편성(JSON 배열, 1순위→폴백)
-    recRule: nn(formData, 'recRule'), // 룰 기반 조건(JSON 배열 [{type,op,value}]) — PI-DSP-RUL-001
     showRecReason: String(formData.get('showRecReason') ?? '') === '1', // 추천 근거 표시 여부(레거시·미표시)
 
     // 하단 CTA(더보기/전체보기) 버튼은 '코너 구성'의 전용 컨트롤(setCornerMoreButton)에서 즉시 저장 → 코너 정보 저장이 건드리지 않는다.

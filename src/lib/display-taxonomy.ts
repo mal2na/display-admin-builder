@@ -118,9 +118,11 @@ export type ComponentType = (typeof COMPONENT_TYPES)[number];
 // ── 추천 수급 방식 (POL-REC PG-REC-SOURCE-001) ──────────────────────────────
 //  '이 코너를 무엇을 기준으로 채우는가.' 통합채널(전시)은 추천을 '생성'하지 않고 '전시·제어'만 한다.
 //  후보·순위·근거는 CVM(추천 시스템)이 산출하고, 운영자는 슬롯 규칙(최대 노출·정렬·폴백)만 정한다.
-// 추천 수급 방식 — 자동(CVM/룰) + 운영자 편성(운영 편성·수동 대체=최하단 폴백).
-//  '채널 데이터'(행동 기반)는 정책상 독립 출처가 아니라 CVM 개인화의 일부(PI-DSP-PER-001 '최근 행동은 CVM 판정값')라 CVM 기반에 흡수·폐기(2026-08-31 사용자 결정).
-export const REC_SOURCE_METHODS = ['CVM 기반', '룰 기반', '운영 편성', '수동 대체'] as const;
+// 추천 수급 방식 — '콘텐츠를 어디서 가져오나'의 축. 딱 둘: CVM(시스템 개인화) / 운영자 편성(직접 구성=최하단 폴백).
+//  · '채널 데이터'(행동 기반) = CVM 개인화의 일부(PI-DSP-PER-001)라 CVM에 흡수·폐기.
+//  · '룰 기반'(노출 조건) = '누구에게 보여주나'의 타겟팅 축이라 수급이 아님 → Template 분기·코너 노출 조건(PI-DSP-RUL)에서 다룸. 수급에서 제거(2026-08-31 사용자 결정).
+//  · '운영 편성'/'수동 대체'는 운영자 편성(직접 구성 폴백)으로 묶어 최하단 고정.
+export const REC_SOURCE_METHODS = ['CVM 기반', '운영 편성', '수동 대체'] as const;
 export type RecSourceMethod = (typeof REC_SOURCE_METHODS)[number];
 // 각 방식: 짧은 태그 + '어떻게 골라 보여주는지' 친절 설명 + 개인화 표기 여부.
 export const REC_SOURCE_INFO: Record<string, { tag: string; how: string; personalized: boolean }> = {
@@ -128,11 +130,6 @@ export const REC_SOURCE_INFO: Record<string, { tag: string; how: string; persona
     tag: '개인화 추천 시스템',
     how: 'CVM(세일즈포스 기반 추천 시스템)이 고객 한 명 한 명에게 맞는 상품을 계산해 “추천 후보 + 순위 + 추천 근거”를 내려줍니다. 고객 상태·보유 상품뿐 아니라 최근 본 상품·클릭 같은 행동·성향도 CVM이 함께 반영해요. 화면은 그 순위대로 카드를 나열하고, 운영자는 최대 노출 개수·정렬(=CVM 순위 따름)·대체안(폴백)만 정합니다. 로그인·동의가 충족될 때만 ‘개인화 추천’으로 표기됩니다.',
     personalized: true,
-  },
-  '룰 기반': {
-    tag: '조건 기반',
-    how: '운영자가 고객 상태·보유 상품·등급·세그먼트 같은 “조건”을 정하면, 실제 값은 런타임에 CVM·BSS가 판정해 맞는 고객에게만 노출합니다. (예: VIP 등급만, 특정 요금제 보유자만) 운영자는 조건을 정하고 데이터는 넣지 않습니다.',
-    personalized: false,
   },
   '운영 편성': {
     tag: '운영자 지정',
@@ -145,23 +142,6 @@ export const REC_SOURCE_INFO: Record<string, { tag: string; how: string; persona
     personalized: false,
   },
 };
-
-// 룰(노출 조건) 유형 — 정책 PI-DSP-RUL-001 조건 유형. source = 실제 판정 데이터 출처(운영자는 조건만 설정). ex = 값 칸 예시.
-//  values = 값이 자명한 유형의 잠정 목록(드롭다운). 정책 PI-DSP-PER-001상 값은 자유 입력 불가 → CVM/BSS 연동 시 승인 값 목록으로 대체.
-//  values 없는 유형(세그먼트·보유상품·오퍼 등)은 실제 ID/코드가 시스템에 있어 지금은 자유 입력(연동 후 목록화).
-export const RULE_CONDITION_TYPES: { key: string; source: 'CVM' | 'BSS' | '채널' | '운영'; ex: string; values?: string[] }[] = [
-  { key: '멤버십 등급', source: 'CVM', ex: 'VIP', values: ['VIP', '골드', '실버', '일반'] },
-  { key: '보유 상품', source: 'BSS', ex: '5G 프리미엄 요금제' },
-  { key: '세그먼트', source: 'CVM', ex: '2030 직장인' },
-  { key: '오퍼 대상', source: 'CVM', ex: '6월 사전예약 오퍼' },
-  { key: '여정 단계', source: 'CVM', ex: '가입 검토' },
-  { key: '로그인 여부', source: 'CVM', ex: '로그인', values: ['로그인', '비로그인'] },
-  { key: '채널·OS', source: '채널', ex: 'iOS', values: ['앱', '웹', 'iOS', 'Android'] },
-  { key: '기간', source: '운영', ex: '2026-06-01~06-08' },
-  { key: '빈도', source: 'CVM', ex: '주 3회 이하' },
-  { key: '권한', source: 'CVM', ex: '멤버십 회원' },
-];
-export const RULE_CONDITION_OPS = ['포함', '제외'] as const;
 
 // ── Corner 유형 (7종) ───────────────────────────────────────
 // 개인화 추천형은 별도 유형이 아니라, 각 유형의 '추천 수급 방식(CVM 등)' 설정으로 흡수됨.
