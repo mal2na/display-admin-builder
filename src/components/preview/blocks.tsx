@@ -57,11 +57,12 @@ function ImageBox({ atom, className }: { atom?: PreviewAtom; className?: string 
 function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const twoRows = component.chipRows === 2;
+  // 퀵메뉴(선택형 칩)는 무조건 1줄 또는 2줄까지만. 2줄 모드는 3줄+로 넘치지 않게 '2행 그리드 + 가로 스크롤'로 고정.
   return (
     <div
       className={
         twoRows
-          ? 'flex flex-wrap items-start gap-1.5'
+          ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-1.5 overflow-x-auto pb-1'
           : 'flex flex-nowrap items-start gap-1.5 overflow-x-auto pb-1'
       }
     >
@@ -115,7 +116,7 @@ function MenuListView({ component }: { component: PreviewComponent }) {
   );
 }
 
-function ProductCard({ component, shape, reason, titleLines }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null }) {
+function ProductCard({ component, shape, reason, titleLines, textBoost }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null; textBoost?: boolean }) {
   const poster = first(component.atoms, 'IMAGE');
   const title = first(component.atoms, 'TEXT');
   // 설명 = INFO 또는 PRICE(가격도 라벨상 '설명'). 배지 = BADGE(할인율 등, 선택적 — 숨김 원자면 프리뷰에서 제외됨).
@@ -133,7 +134,7 @@ function ProductCard({ component, shape, reason, titleLines }: { component: Prev
     <div className={cn('shrink-0', wCls)}>
       <ImageBox atom={poster} className={cn('w-full rounded-xl', ratioCls)} />
       {reason && <RecReason text={reason} />}
-      <p className={cn('mt-1.5 text-[13px] font-semibold leading-tight text-slate-900', nameCls)}>{title?.content ?? component.name}</p>
+      <p className={cn('mt-1.5 font-semibold leading-tight text-slate-900', textBoost ? 'text-[16px]' : 'text-[13px]', nameCls)}>{title?.content ?? component.name}</p>
       {/* 배지는 설명 앞 인라인. 설명은 이름보다 연하게(위계) — 예: [20%] 235,000원 */}
       {(badge?.content || info?.content) && (
         <p className="mt-0.5 flex items-center gap-1">
@@ -180,7 +181,7 @@ function BannerCard({ component }: { component: PreviewComponent }) {
 }
 
 // 세로 리스트 행: [로고/아이콘] + [혜택문구(굵게) / 브랜드(작게)]. 상품형·세로형, 혜택형 공용.
-function BenefitRow({ component, reason }: { component: PreviewComponent; reason?: string }) {
+function BenefitRow({ component, reason, textBoost }: { component: PreviewComponent; reason?: string; textBoost?: boolean }) {
   const logo = first(component.atoms, 'ICON', 'IMAGE');
   const texts = byType(component.atoms, 'BENEFIT_TEXT', 'TEXT', 'INFO', 'PRICE');
   const title = texts[0];
@@ -190,7 +191,7 @@ function BenefitRow({ component, reason }: { component: PreviewComponent; reason
     <div className="flex items-center gap-3 py-2">
       <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-semibold text-slate-900">{title?.content ?? component.name}</p>
+        <p className={cn('font-semibold text-slate-900', textBoost ? 'text-[18px] leading-snug' : 'truncate text-[14px]')}>{title?.content ?? component.name}</p>
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}
         {reason && <RecReason text={reason} />}
       </div>
@@ -305,17 +306,17 @@ function DefaultCard({ component }: { component: PreviewComponent }) {
 
 type LayoutMode = 'horizontal' | 'grid' | 'single' | 'list';
 
-function ComponentView({ component, mode, cardShape, reason, titleLines }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; reason?: string; titleLines?: number | null }) {
+function ComponentView({ component, mode, cardShape, reason, titleLines, textBoost }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; reason?: string; titleLines?: number | null; textBoost?: boolean }) {
   switch (component.componentType) {
     case '선택형':
       return <ChipsView component={component} />;
     case '상품형':
       // 세로 리스트형 코너에서는 큰 포스터 카드가 아니라 로고+문구 행 구조로 렌더 (참고 디자인)
-      return mode === 'list' ? <BenefitRow component={component} reason={reason} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} />;
+      return mode === 'list' ? <BenefitRow component={component} reason={reason} textBoost={textBoost} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} textBoost={textBoost} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':
-      return <BenefitRow component={component} reason={reason} />;
+      return <BenefitRow component={component} reason={reason} textBoost={textBoost} />;
     case '정보형':
       return <InfoCard component={component} />;
     default:
@@ -324,7 +325,7 @@ function ComponentView({ component, mode, cardShape, reason, titleLines }: { com
 }
 
 /** 한 Corner를 화면 영역으로 렌더 (프리뷰/빌더 공용) */
-export function CornerBlock({ corner }: { corner: PreviewCorner }) {
+export function CornerBlock({ corner, textBoost }: { corner: PreviewCorner; textBoost?: boolean }) {
   const isBanner = corner.cornerType === '배너형';
   const heading = corner.mainTitle ?? corner.title;
   const sub = corner.subTitle ?? corner.name;
@@ -370,7 +371,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       return (
         <div className="flex gap-3 overflow-x-auto pb-1">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} textBoost={textBoost} />
           ))}
         </div>
       );
@@ -378,7 +379,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       return (
         <div className="grid grid-cols-2 gap-2">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} textBoost={textBoost} />
           ))}
         </div>
       );
@@ -386,7 +387,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       return (
         <div className="space-y-2 [&>*]:w-full">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} textBoost={textBoost} />
           ))}
         </div>
       );
@@ -488,25 +489,20 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         const isCvm = primary === 'CVM 기반';
         const personalized = isCvm; // 개인화 방식(CVM)이면 실제 노출이 미리보기(폴백)와 달라짐
         return (
-          <div className="rounded-lg bg-violet-50 px-2.5 py-1.5 text-violet-700" title="후보가 없으면 다음 순위(폴백)로 대체 노출됩니다">
-            <p className="flex items-center gap-1 text-[10px] font-semibold leading-tight">
-              <Sparkles className="h-3 w-3 shrink-0" />
-              <span className="min-w-0">{isCvm ? 'CVM 개인화 추천 · 고객별 순서로 자동 노출' : `${primary} 기반 노출`}</span>
-            </p>
-            {fallbacks.length > 0 && (
-              <p className="mt-0.5 pl-4 text-[10px] font-normal leading-tight text-violet-500">없으면 → {fallbacks.join(' → ')}</p>
-            )}
-            {personalized && (
-              <p className="mt-1 border-t border-violet-100 pl-4 pt-1 text-[10px] font-normal leading-tight text-violet-500">
-                미리보기는 <b className="font-semibold">폴백(운영자 편성)</b> 상태예요 — 실제는 고객마다 CVM 추천으로 다르게 노출됩니다
-              </p>
-            )}
+          <div
+            className="flex items-center gap-1 rounded-lg bg-violet-50 px-2.5 py-1 text-[10px] font-semibold leading-tight text-violet-600"
+            title={personalized
+              ? `CVM이 고객마다 후보·순위를 생성해 노출. 미리보기는 폴백(운영자 편성) 상태 — 실제는 고객마다 다르게 노출됩니다.${fallbacks.length ? ` 없으면 → ${fallbacks.join(' → ')}.` : ''}`
+              : `${primary} 기반 노출.${fallbacks.length ? ` 없으면 → ${fallbacks.join(' → ')}.` : ''}`}
+          >
+            <Sparkles className="h-3 w-3 shrink-0" />
+            <span className="truncate">{isCvm ? 'CVM 개인화 · 미리보기는 폴백' : `${primary} 기반`}</span>
           </div>
         );
       })()}
       {heading && (
         <div>
-          <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
+          <h3 className={cn('whitespace-pre-line font-bold leading-snug text-slate-900', textBoost ? 'text-[22px]' : 'text-[16px]')}>{heading}</h3>
           {sub && (
             <p className="mt-0.5 flex items-center gap-0.5 text-[12px] text-slate-400">
               {sub} {showChevron && <ChevronRight className="h-3 w-3" />}

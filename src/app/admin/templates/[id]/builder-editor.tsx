@@ -1596,8 +1596,8 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
                   </Select>
                 </div>
                 <div className="relative overflow-hidden rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
-                  {v.target && <span className="absolute right-2 top-2 z-10 rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">{v.target}{targetScale > 1 ? ' · 크게' : ''}</span>}
-                  <div style={{ zoom: targetScale }}><CornerBlock corner={vPreview} /></div>
+                  {v.target && <span className="absolute right-2 top-2 z-10 rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">{v.target}{targetScale > 1 ? ' · 큰 글씨' : ''}</span>}
+                  <CornerBlock corner={vPreview} textBoost={targetScale > 1} />
                 </div>
                 <p className="mt-1 text-center text-[9px] text-amber-600">{vType ? `노출 타입: ${vType.typeDetail || vType.name}` : '노출 타입을 선택하면 그 레이아웃으로 렌더'}{v.target ? ` · 타겟 ${v.target} 문구` : ''}</p>
               </div>
