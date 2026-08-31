@@ -354,16 +354,14 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     }
   })();
 
-  // 추천 근거(추천 사유) 표시 — 개인화 방식(CVM/채널데이터)일 때만. 문구는 런타임(CVM) 값이라 미리보기엔 예시로.
+  // 추천 수급 방식의 1순위(코너 상단 리본 표기용).
   const recPrimary = ((): string | null => {
     try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a) && a[0]) return a[0]; } catch { /* noop */ }
     return corner.recSource ?? null;
   })();
-  const showReason = !!corner.showRecReason && (recPrimary === 'CVM 기반' || recPrimary === '채널 데이터');
-  // 개인화 '근거'는 정책상 최근 행동·보유 관계·고객 상태·관심 기반 (TM-REA-003). 인기순 등 비개인화는 제외.
-  // 실제 문구는 CVM이 고객별로 런타임 생성 → 미리보기는 '예시'.
-  const REC_REASON_SAMPLES = ['최근 본 상품과 연관', '보유 요금제와 연계', '회원 등급 혜택', '관심 카테고리 기반'];
-  const reasonFor = (i: number) => (showReason ? REC_REASON_SAMPLES[i % REC_REASON_SAMPLES.length] : undefined);
+  // ★ 빌더 미리보기 = '폴백(운영자 편성)' 상태 — 실제 고객이 없어 CVM/채널데이터가 계산할 수 없으므로,
+  //   카드별 개인화 추천 근거(예: '최근 본 상품과 연관')는 표시하지 않는다. (근거는 런타임에 CVM이 고객별로 생성)
+  const reasonFor = (_i: number): string | undefined => undefined;
 
   // 배치 모드에 맞춰 컴포넌트 묶음을 렌더
   const renderComps = (comps: PreviewComponent[], mode: LayoutMode) => {
@@ -487,6 +485,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         const primary = plan[0];
         const fallbacks = plan.slice(1);
         const isCvm = primary === 'CVM 기반';
+        const personalized = isCvm || primary === '채널 데이터'; // 개인화 방식이면 실제 노출이 미리보기(폴백)와 달라짐
         return (
           <div className="rounded-lg bg-violet-50 px-2.5 py-1.5 text-violet-700" title="후보가 없으면 다음 순위(폴백)로 대체 노출됩니다">
             <p className="flex items-center gap-1 text-[10px] font-semibold leading-tight">
@@ -496,8 +495,10 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
             {fallbacks.length > 0 && (
               <p className="mt-0.5 pl-4 text-[10px] font-normal leading-tight text-violet-500">없으면 → {fallbacks.join(' → ')}</p>
             )}
-            {showReason && (
-              <p className="mt-1 border-t border-violet-100 pl-4 pt-1 text-[10px] font-normal leading-tight text-violet-500">추천 사유는 노출 시 고객마다 CVM이 자동 생성 — 카드의 ‘예:’는 미리보기 예시예요</p>
+            {personalized && (
+              <p className="mt-1 border-t border-violet-100 pl-4 pt-1 text-[10px] font-normal leading-tight text-violet-500">
+                미리보기는 <b className="font-semibold">폴백(운영자 편성)</b> 상태예요 — 실제는 고객마다 {isCvm ? 'CVM' : '채널 데이터'} 추천으로 다르게 노출됩니다
+              </p>
             )}
           </div>
         );

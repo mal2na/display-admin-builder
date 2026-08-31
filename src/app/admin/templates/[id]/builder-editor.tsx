@@ -1623,8 +1623,7 @@ function CornerInfoForm({
   // 저장/미리보기용 전체 편성 = 주 방식 + (사용 시) 수동 대체(최하단 고정)
   const recFullPlan = useManualFallback ? [...recPrimaryPlan, '수동 대체'] : recPrimaryPlan;
   const recSource = recFullPlan[0] ?? ''; // 대표(1순위)
-  const recPersonalized = recSource === 'CVM 기반' || recSource === '채널 데이터'; // 개인화 방식이면 추천 근거 표시 의미 있음
-  const [showRecReason, setShowRecReason] = useState(corner.showRecReason ?? false);
+  const recPersonalized = recSource === 'CVM 기반' || recSource === '채널 데이터'; // 개인화 방식이면 '미리보기=폴백' 안내 표시
   // 추천 수급 방식은 '추천 슬롯'인 코너에만 의미 있음 — 상품/혜택 추천을 나열하는 유형만.
   //  상태 안내형·고정·필수 노출형(프로필·바코드)·업무 진입형·배너형은 고객정보/기능이라 추천(CVM) 섹션 제외.
   const isRecCorner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(ct);
@@ -1647,14 +1646,13 @@ function CornerInfoForm({
         layoutDetail,
         recSource,
         recSourcePlan: recFullPlan.length ? JSON.stringify(recFullPlan) : null,
-        showRecReason: recPersonalized && showRecReason,
         // 빅배너·하단CTA·배너위치는 '코너 구성' 컨트롤에서 즉시 저장(revalidate로 프리뷰 반영) → 여기 draft에서 제외
       });
     } else {
       pushCorner(corner.templateCornerId, null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, recSource, useManualFallback, recPrimaryPlan, recPersonalized, showRecReason, corner.templateCornerId]);
+  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, recSource, useManualFallback, recPrimaryPlan, recPersonalized, corner.templateCornerId]);
 
   // 언마운트(코너 전환) 시 미리보기 정리
   useEffect(() => () => pushCorner(corner.templateCornerId, null), [corner.templateCornerId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1668,7 +1666,6 @@ function CornerInfoForm({
     setSubTitleIcon(corner.subTitleIcon ?? '사용안함');
     setLayoutDetail(corner.layoutDetail ?? '');
     { const f = parseRecFull(); setRecPrimaryPlan(f.filter((m) => m !== '수동 대체')); setUseManualFallback(f.includes('수동 대체')); }
-    setShowRecReason(corner.showRecReason ?? false);
     setResetKey((k) => k + 1);
   };
 
@@ -1807,24 +1804,12 @@ function CornerInfoForm({
             {recPersonalized && (
               <p className="text-[10px] leading-relaxed text-violet-600/90">1순위가 개인화 방식이라, 로그인·동의 시에만 개인화 추천으로 표기돼요.</p>
             )}
-            {/* 추천 근거(추천 사유) 표시 — 개인화 방식일 때만. 값은 CVM이 런타임 제공, 여기선 표시 여부만 (PG-REC-CARD-001) */}
-            <input type="hidden" name="showRecReason" value={recPersonalized && showRecReason ? '1' : ''} />
+            {/* 카드별 추천 근거 토글 제거 — 빌더는 실제 고객이 없어 '폴백(운영자 편성)' 상태를 보여준다.
+                추천 근거(왜 추천했는지)는 런타임에 CVM이 고객별로 생성하는 값이라 빌더 미리보기에는 표시하지 않는다. */}
             {recPersonalized && (
-              <label className="flex items-center justify-between gap-2 rounded-md border border-violet-200 bg-white px-2.5 py-2">
-                <span className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-violet-800">추천 근거(추천 사유) 표시</span>
-                  <span className="text-[10px] text-violet-500/80">CVM이 만든 ‘왜 추천했는지’를 카드에 표시 (문구는 런타임).</span>
-                </span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={showRecReason}
-                  onClick={() => setShowRecReason((v) => !v)}
-                  className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', showRecReason ? 'bg-violet-500' : 'bg-slate-300')}
-                >
-                  <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', showRecReason ? 'translate-x-4' : 'translate-x-0.5')} />
-                </button>
-              </label>
+              <p className="rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-1.5 text-[10px] leading-relaxed text-violet-600/90">
+                빌더 미리보기는 <b className="font-semibold">폴백(운영자 편성)</b> 상태예요. 실제 노출은 고객마다 이 방식으로 추천되고, 추천 근거도 그때 CVM이 만들어요.
+              </p>
             )}
           </div>
         )}
