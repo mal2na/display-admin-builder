@@ -1270,7 +1270,60 @@ async function main() {
   await seedEvents(prisma);
 }
 
+// ── 노출 타입/타이틀/문구 베리에이션 데모 (회의 2026-08-31) ──
+//   시드 스킵 가드와 무관하게 '매 배포마다' 도는 멱등 패치. 기존 운영 DB(첫 배포 후 재시드 스킵)에도
+//   데모가 반영되도록. 값이 이미 있으면 건드리지 않는다(운영자 편집 보존). typeId는 DB마다 달라
+//   baseCategory+typeDetail로 조회해 붙인다. '재료·타겟 후보는 우리가, 최종 매칭은 CVM'.
+async function patchVariantDemo() {
+  const findType = (base: string, detail: string) =>
+    prisma.cornerType.findFirst({ where: { baseCategory: base, typeDetail: detail, active: true }, select: { id: true, name: true } });
+
+  // 영화 예매 (콘텐츠 안내형) — 타입 2 = 2030
+  const movie = await prisma.corner.findFirst({ where: { name: '영화 예매' }, select: { id: true, displayVariants: true, mainTitleVariants: true } });
+  const movieType = await findType('콘텐츠 안내형', '가로형(2.5배열)');
+  if (movie && movieType && !movie.displayVariants && !movie.mainTitleVariants) {
+    await prisma.corner.update({
+      where: { id: movie.id },
+      data: {
+        mainTitleVariants: JSON.stringify([{ target: '2030', text: '불금 각 🎬 명동 CGV\n무료 영화 지금 예매!' }]),
+        displayVariants: JSON.stringify([{ label: movieType.name, typeId: movieType.id, typeName: movieType.name, target: '2030' }]),
+      },
+    });
+  }
+
+  // 0 Week (혜택·오퍼형) — 타입 2 = 시니어
+  const zero = await prisma.corner.findFirst({ where: { name: '0 Week' }, select: { id: true, displayVariants: true, mainTitleVariants: true } });
+  const zeroType = await findType('혜택·오퍼형', '세로형');
+  if (zero && zeroType && !zero.displayVariants && !zero.mainTitleVariants) {
+    await prisma.corner.update({
+      where: { id: zero.id },
+      data: {
+        mainTitleVariants: JSON.stringify([{ target: '시니어', text: '지훈님만 받는 혜택,\n6월 8일까지예요' }]),
+        displayVariants: JSON.stringify([{ label: zeroType.name, typeId: zeroType.id, typeName: zeroType.name, target: '시니어' }]),
+      },
+    });
+  }
+
+  // 공차 혜택문구 — 타겟별 문구 후보(원장)
+  const gongcha = await prisma.atom.findFirst({ where: { name: '공차 혜택문구' }, select: { id: true, contentVariants: true } });
+  if (gongcha && !gongcha.contentVariants) {
+    await prisma.atom.update({
+      where: { id: gongcha.id },
+      data: {
+        contentVariants: JSON.stringify([
+          { target: '시니어', text: '어르신께 딱! 인기 음료 반값' },
+          { target: '2030', text: '요즘 핫한 음료 6종 반값' },
+          { target: '재방문', text: '또 오셨네요, 인기 음료 6종 반값' },
+          { target: '혜택 보유', text: '보유 쿠폰으로 음료 6종 반값' },
+        ]),
+      },
+    });
+  }
+  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매·0 Week·공차 문구)');
+}
+
 main()
+  .then(() => patchVariantDemo())
   .then(() => prisma.$disconnect())
   .catch(async (e) => {
     console.error(e);
