@@ -39,7 +39,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import { TypeDetailPreview } from '../../corner-types/corner-type-manager';
 import {
   updateTemplateMeta,
@@ -1503,29 +1503,43 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
   const typeLabel = (t: LibraryData['cornerTypes'][number]) => (t.typeDetail && !t.name.includes(t.typeDetail) ? `${t.name} · ${t.typeDetail}` : t.name);
   const save = (next: V[]) => { setVars(next); start(() => setCornerDisplayVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
   const pick = (i: number, id: string) => { const t = cornerTypes.find((x) => x.id === id); save(vars.map((v, j) => (j === i ? { ...v, typeId: id || undefined, typeName: t ? typeLabel(t) : undefined, label: t ? typeLabel(t) : v.label } : v))); };
-  if (vars.length === 0) return null;
+  const add = () => { if (vars.length >= 3) return; save([...vars, { label: '' }]); };
+  // 슬롯을 항상 예약(min-w) — 노출 타입이 없어도 디바이스가 같은 위치에 있게(치우침·튐 방지). 비면 안내 자리.
   return (
-    <div className="shrink-0">
-      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-violet-700"><Sparkles className="h-3.5 w-3.5" /> 추가 노출 타입 {vars.length}개 <span className="font-normal text-violet-400">· 클릭해 변경 · CVM이 고객마다 택1</span></p>
-      <div className="flex items-start gap-4">
-        {vars.map((v, i) => (
-          <div key={i} className="w-[300px] shrink-0">
-            <div className="mb-1.5 flex items-center gap-1">
-              <span className="inline-flex h-6 shrink-0 items-center rounded bg-amber-100 px-1.5 text-[10px] font-bold text-amber-700">타입 {i + 2}</span>
-              {/* 노출 타입 변경 (카탈로그) */}
-              <Select value={v.typeId ?? ''} onChange={(e) => pick(i, e.target.value)} className="h-6 min-w-0 flex-1 text-[11px]">
-                <option value="">노출 타입 선택…</option>
-                {options.map((t) => <option key={t.id} value={t.id}>{typeLabel(t)}</option>)}
-              </Select>
-              <button type="button" onClick={() => save(vars.filter((_, j) => j !== i))} className="flex h-6 w-5 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="타입 삭제">−</button>
-            </div>
-            <div className="rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
-              <CornerBlock corner={preview} />
-            </div>
-            <p className="mt-1 text-center text-[9px] text-amber-600">CVM 후보 · 프로토타입은 동일 콘텐츠</p>
+    <div className="min-w-[320px] shrink-0">
+      {vars.length === 0 ? (
+        <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-5 text-center">
+          <Layers className="mb-2 h-6 w-6 text-slate-300" />
+          <p className="text-[11px] font-medium text-slate-500">노출 타입 베리에이션</p>
+          <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">추가하면 여기에 나란히 떠서<br />CVM이 고객마다 택1합니다</p>
+          <button type="button" onClick={add} className="mt-2.5 inline-flex items-center gap-0.5 rounded-md border border-violet-300 bg-white px-2.5 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-50"><Plus className="h-3 w-3" /> 노출 타입 추가</button>
+        </div>
+      ) : (
+        <>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-700"><Sparkles className="h-3.5 w-3.5" /> 추가 노출 타입 {vars.length}개 <span className="font-normal text-violet-400">클릭해 변경 · CVM 택1</span></p>
+            {vars.length < 3 && <button type="button" onClick={add} className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100"><Plus className="mr-0.5 inline h-2.5 w-2.5" />타입</button>}
           </div>
-        ))}
-      </div>
+          <div className="flex items-start gap-4">
+            {vars.map((v, i) => (
+              <div key={i} className="w-[300px] shrink-0">
+                <div className="mb-1.5 flex items-center gap-1">
+                  <span className="inline-flex h-6 shrink-0 items-center rounded bg-amber-100 px-1.5 text-[10px] font-bold text-amber-700">타입 {i + 2}</span>
+                  <Select value={v.typeId ?? ''} onChange={(e) => pick(i, e.target.value)} className="h-6 min-w-0 flex-1 text-[11px]">
+                    <option value="">노출 타입 선택…</option>
+                    {options.map((t) => <option key={t.id} value={t.id}>{typeLabel(t)}</option>)}
+                  </Select>
+                  <button type="button" onClick={() => save(vars.filter((_, j) => j !== i))} className="flex h-6 w-5 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="타입 삭제">−</button>
+                </div>
+                <div className="rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
+                  <CornerBlock corner={preview} />
+                </div>
+                <p className="mt-1 text-center text-[9px] text-amber-600">CVM 후보 · 프로토타입은 동일 콘텐츠</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -2523,6 +2537,10 @@ export function BuilderEditor({
   const [zoom, setZoom] = useState(1); // 미리보기 배율 (비율 유지)
   const [rightW, setRightW] = useState(440); // 우측 상세 패널 너비(px), 드래그로 조절
   const [leftW, setLeftW] = useState(300); // 좌측 코너 리스트 너비(px), 드래그로 조절
+  const [leftOpen, setLeftOpen] = useState(true); // 좌측 패널 펼침/접힘
+  const [rightOpen, setRightOpen] = useState(true); // 우측 패널 펼침/접힘
+  // 캔버스 빈 영역 클릭 = 둘 다 토글(하나라도 열려 있으면 둘 다 접고, 둘 다 접혀 있으면 둘 다 펼침)
+  const toggleBothPanels = () => { const anyOpen = leftOpen || rightOpen; setLeftOpen(!anyOpen); setRightOpen(!anyOpen); };
   const [loadCornerOpen, setLoadCornerOpen] = useState(false); // '코너 불러오기' 모달
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -2687,11 +2705,11 @@ export function BuilderEditor({
       onCreated={(id) => selectCorner(id)}
     />
     <div
-      className="grid flex-1 overflow-hidden"
-      style={{ gridTemplateColumns: `${leftW}px minmax(0,1fr) ${rightW}px` }}
+      className="grid flex-1 overflow-hidden transition-[grid-template-columns] duration-200"
+      style={{ gridTemplateColumns: `${leftOpen ? leftW : 0}px minmax(0,1fr) ${rightOpen ? rightW : 0}px` }}
     >
-      {/* 좌측: 고정 코너 리스트 + 유형 추가 (드래그로 너비 조절) */}
-      <div className="relative flex flex-col overflow-hidden border-r bg-card">
+      {/* 좌측: 고정 코너 리스트 + 유형 추가 (드래그로 너비 조절). 접히면 폭 0. */}
+      <div className={cn('relative flex flex-col overflow-hidden border-r bg-card', !leftOpen && 'pointer-events-none opacity-0')}>
         <div
           onPointerDown={(e) => startResize('left', e)}
           title="드래그로 패널 너비 조절"
@@ -2835,26 +2853,42 @@ export function BuilderEditor({
 
       {/* 가운데: 실시간 디바이스 미리보기 */}
       <div className="flex flex-col overflow-hidden bg-background">
-        <div className="flex items-center justify-center gap-2 py-2">
-          <select
-            value={device.key}
-            onChange={(e) => setDevice(DEVICES.find((d) => d.key === e.target.value) ?? DEVICES[0])}
-            className="rounded-md border bg-white px-3 py-1.5 text-sm font-medium"
-          >
-            {DEVICES.map((d) => (
-              <option key={d.key} value={d.key}>{d.label} · {d.w}×{d.h}</option>
-            ))}
-          </select>
-          <div className="flex items-center gap-1 rounded-md border bg-white p-0.5">
-            <button type="button" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))} disabled={zoom <= 0.5} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-30" title="축소">−</button>
-            <button type="button" onClick={() => setZoom(1)} className="min-w-[42px] rounded px-1 text-center text-[11px] font-semibold tabular-nums text-muted-foreground hover:bg-muted" title="기본 크기(100%)">{Math.round(zoom * 100)}%</button>
-            <button type="button" onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))} disabled={zoom >= 1.5} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-30" title="확대">＋</button>
+        <div className="flex items-center justify-between gap-2 px-3 py-2">
+          {/* 좌측 패널 접기/펼치기 */}
+          <button type="button" onClick={() => setLeftOpen((v) => !v)} title={leftOpen ? '좌측 패널 접기' : '좌측 패널 펼치기'}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-white text-muted-foreground hover:bg-muted">
+            {leftOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={device.key}
+              onChange={(e) => setDevice(DEVICES.find((d) => d.key === e.target.value) ?? DEVICES[0])}
+              className="rounded-md border bg-white px-3 py-1.5 text-sm font-medium"
+            >
+              {DEVICES.map((d) => (
+                <option key={d.key} value={d.key}>{d.label} · {d.w}×{d.h}</option>
+              ))}
+            </select>
+            <div className="flex items-center gap-1 rounded-md border bg-white p-0.5">
+              <button type="button" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))} disabled={zoom <= 0.5} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-30" title="축소">−</button>
+              <button type="button" onClick={() => setZoom(1)} className="min-w-[42px] rounded px-1 text-center text-[11px] font-semibold tabular-nums text-muted-foreground hover:bg-muted" title="기본 크기(100%)">{Math.round(zoom * 100)}%</button>
+              <button type="button" onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))} disabled={zoom >= 1.5} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-30" title="확대">＋</button>
+            </div>
           </div>
+          {/* 우측 패널 접기/펼치기 */}
+          <button type="button" onClick={() => setRightOpen((v) => !v)} title={rightOpen ? '우측 패널 접기' : '우측 패널 펼치기'}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-white text-muted-foreground hover:bg-muted">
+            {rightOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+          </button>
         </div>
-        <div className="flex-1 overflow-auto bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] p-6 [background-size:16px_16px]">
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) toggleBothPanels(); }}
+          title="빈 캔버스를 클릭하면 좌우 패널이 접히거나 펼쳐집니다"
+          className="flex-1 overflow-auto bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] p-6 [background-size:16px_16px]"
+        >
           {/* zoom(CSS)은 레이아웃까지 축소 → mx-auto가 항상 정확히 중앙 정렬(폭이 캔버스보다 클 때만 스크롤). */}
-          {/* 캔버스 콘텐츠는 항상 좌측 정렬(아트보드가 좌상단) — 노출 타입이 생겨도 디바이스가 안 튐. */}
-          <div className="flex w-fit items-start gap-8" style={{ zoom }}>
+          {/* 디바이스 + 노출타입 슬롯(항상 예약)을 함께 중앙 정렬 — 슬롯 폭이 고정이라 코너 전환 시 디바이스가 안 튐. */}
+          <div className="mx-auto flex w-fit items-start gap-8" style={{ zoom }}>
             <DeviceFrame width={device.w} bodyHeight={device.h - 150} headerLabel={meta.containerName}>
               {previewCorners.length === 0 ? (
                 <div className="flex h-full items-center justify-center rounded-xl border-2 border-dashed border-slate-300 p-6 text-center text-sm text-slate-400">
@@ -2885,8 +2919,8 @@ export function BuilderEditor({
         </div>
       </div>
 
-      {/* 우측: 선택 코너 상세 (드래그로 너비 조절) */}
-      <div className="relative overflow-y-auto border-l bg-background p-4">
+      {/* 우측: 선택 코너 상세 (드래그로 너비 조절). 접히면 폭 0. */}
+      <div className={cn('relative overflow-y-auto border-l bg-background p-4', !rightOpen && 'pointer-events-none opacity-0')}>
         <div
           onPointerDown={(e) => startResize('right', e)}
           title="드래그로 패널 너비 조절"
