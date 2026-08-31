@@ -40,7 +40,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List } from 'lucide-react';
 import { TypeDetailPreview } from '../../corner-types/corner-type-manager';
 import {
   updateTemplateMeta,
@@ -1498,6 +1498,44 @@ function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateI
   );
 }
 
+// 문구 한눈에 보기 — 이 코너의 모든 문구(타이틀 + 텍스트 아톰)와 타겟별 대체 문구를 한 화면에 모아 본다. (별도 메뉴 아님 — 코너 편집 내 정리 뷰)
+function CopyOverview({ corner }: { corner: CornerNode }) {
+  const rows: { label: string; base: string | null; variants: { text: string; target?: string }[] }[] = [];
+  if (corner.mainTitle) rows.push({ label: '타이틀', base: corner.mainTitle, variants: [] });
+  corner.components.forEach((cp) => cp.atoms.forEach((a) => {
+    const isText = !['IMAGE', 'ICON', 'BARCODE'].includes(a.atomType);
+    if (isText && (a.content || (a.contentVariants?.length ?? 0) > 0))
+      rows.push({ label: `${cp.name} · ${ATOM_TYPE_LABELS[a.atomType as AtomType] ?? a.atomType}`, base: a.content, variants: a.contentVariants ?? [] });
+  }));
+  if (rows.length === 0) return null;
+  const totalVars = rows.reduce((n, r) => n + r.variants.length, 0);
+  return (
+    <details className="mb-3 rounded-xl border bg-card">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-slate-700">
+        <List className="h-3.5 w-3.5 text-violet-500" /> 문구 한눈에 보기 <span className="font-normal text-slate-400">· 문구 {rows.length}종 · 타겟별 대체 {totalVars}개</span>
+      </summary>
+      <div className="space-y-2.5 border-t p-3">
+        {rows.map((r, i) => (
+          <div key={i} className="space-y-1">
+            <p className="text-[10px] font-semibold text-slate-500">{r.label}</p>
+            <div className="flex items-start gap-1.5">
+              <span className="inline-flex h-5 shrink-0 items-center rounded bg-slate-200 px-1.5 text-[9px] font-bold text-slate-600">기본</span>
+              <span className="flex-1 whitespace-pre-line text-[11px] text-slate-800">{r.base || <span className="text-slate-400">—</span>}</span>
+            </div>
+            {r.variants.map((v, j) => (
+              <div key={j} className="flex items-start gap-1.5">
+                <span className="inline-flex h-5 shrink-0 items-center rounded bg-rose-100 px-1.5 text-[9px] font-bold text-rose-600">{v.target || '타겟없음'}</span>
+                <span className="flex-1 text-[11px] text-rose-700">{v.text || <span className="text-slate-400">(빈 문구)</span>}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+        <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">문구 편집은 각 컴포넌트 ‘수정’ → 문구 베리에이션에서. 타겟은 CVM이 참고하는 힌트(최종 매칭은 CVM).</p>
+      </div>
+    </details>
+  );
+}
+
 // 캔버스식 — 디바이스 옆에 '추가 노출 타입'만 렌더. 각 타입 카드에서 노출 타입(카탈로그)을 직접 변경. 기본은 디바이스에서 편집.
 function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateId: string; corner: CornerNode; preview: PreviewCorner; cornerTypes: LibraryData['cornerTypes'] }) {
   type V = { label: string; typeId?: string; typeName?: string; target?: string };
@@ -1537,6 +1575,8 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
               const vPreview: PreviewCorner = withTarget(vType
                 ? { ...preview, cornerLayout: null, layoutDetail: vType.typeDetail ?? preview.layoutDetail, bigBanner: vType.bigBanner ?? false }
                 : preview);
+              // 타겟 배율 — 시니어는 폰트·이미지 확대(zoom)로 '크게' 렌더
+              const targetScale = CVM_TARGET_HINTS.find((t) => t.key === v.target)?.scale ?? 1;
               return (
               <div key={i} className="w-[300px] shrink-0">
                 <div className="mb-1 flex items-center gap-1">
@@ -1555,9 +1595,9 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
                     {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key} · {t.axis}</option>)}
                   </Select>
                 </div>
-                <div className="relative rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
-                  {v.target && <span className="absolute right-2 top-2 z-10 rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">{v.target}</span>}
-                  <CornerBlock corner={vPreview} />
+                <div className="relative overflow-hidden rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
+                  {v.target && <span className="absolute right-2 top-2 z-10 rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">{v.target}{targetScale > 1 ? ' · 크게' : ''}</span>}
+                  <div style={{ zoom: targetScale }}><CornerBlock corner={vPreview} /></div>
                 </div>
                 <p className="mt-1 text-center text-[9px] text-amber-600">{vType ? `노출 타입: ${vType.typeDetail || vType.name}` : '노출 타입을 선택하면 그 레이아웃으로 렌더'}{v.target ? ` · 타겟 ${v.target} 문구` : ''}</p>
               </div>
@@ -2971,6 +3011,7 @@ export function BuilderEditor({
               <CardShapeControl templateId={templateId} corner={selectedCorner} />
               <MoreButtonControl templateId={templateId} corner={selectedCorner} />
               <DisplayVariantsControl templateId={templateId} corner={selectedCorner} cornerTypes={library.cornerTypes} />
+              <CopyOverview corner={selectedCorner} />
               <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
             </div>
           </div>
