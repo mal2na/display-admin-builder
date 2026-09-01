@@ -9,14 +9,23 @@ import { CVM_TARGET_HINTS } from '@/lib/display-taxonomy';
 import { toggleTitleVariant, toggleAtomVariant, addTitleVariant, addAtomVariant } from './actions';
 
 export type MsgVariant = { text: string; target?: string; enabled: boolean; index: number };
-export type Slot = { kind: 'title' | 'atom'; holderId: string; label: string; sub: string; base: string; variants: MsgVariant[] };
+export type Slot = { kind: 'title' | 'atom'; holderId: string; label: string; sub: string; use: string; base: string; variants: MsgVariant[] };
+export type LibEntry = { text: string; use: string; target?: string; sources: string[] };
+
+// 용도별 표기 규칙(권장) — 표기 검증 PG-DSP-ACC-001. 라이브러리·추가에서 가이드로 표시.
+const USE_RULE: Record<string, { max: number; hint: string }> = {
+  '타이틀': { max: 40, hint: '핵심 메시지 · 2줄 이내 권장' },
+  'CTA': { max: 14, hint: '행동 유도 · 아주 짧게' },
+  '텍스트': { max: 30, hint: '한 줄 권장' },
+  '설명': { max: 40, hint: '값·조건 간결히' },
+};
 export type CornerNode = {
   cornerId: string; cornerName: string; cornerType: string;
   container: string; template: string; editHref: string;
   slots: Slot[]; variantCount: number; excludedCount: number;
 };
 
-export function MessagesCatalog({ corners, library }: { corners: CornerNode[]; library: string[] }) {
+export function MessagesCatalog({ corners, library }: { corners: CornerNode[]; library: LibEntry[] }) {
   const [q, setQ] = useState('');
   const [onlyWith, setOnlyWith] = useState(true);
   const [selId, setSelId] = useState<string | null>(null);
@@ -125,7 +134,7 @@ export function MessagesCatalog({ corners, library }: { corners: CornerNode[]; l
   );
 }
 
-function CornerDetail({ corner, onToggle, library }: { corner: CornerNode; onToggle: (cornerId: string, slot: Slot, i: number) => void; library: string[] }) {
+function CornerDetail({ corner, onToggle, library }: { corner: CornerNode; onToggle: (cornerId: string, slot: Slot, i: number) => void; library: LibEntry[] }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-start gap-3 border-b p-5">
@@ -212,13 +221,16 @@ function aiSuggest(base: string, target?: string): string[] {
   return [...new Set(out.filter((s) => s && s !== b))].slice(0, 3);
 }
 
-function AddVariant({ slot, cornerId, library }: { slot: Slot; cornerId: string; library: string[] }) {
+function AddVariant({ slot, cornerId, library }: { slot: Slot; cornerId: string; library: LibEntry[] }) {
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState('');
   const [text, setText] = useState('');
   const [mode, setMode] = useState<null | 'lib' | 'ai'>(null);
   const [libQ, setLibQ] = useState('');
   const [, start] = useTransition();
+
+  const rule = USE_RULE[slot.use];
+  const over = rule ? text.trim().length > rule.max : false;
 
   const add = (t?: string) => {
     const val = (t ?? text).trim();
@@ -230,7 +242,11 @@ function AddVariant({ slot, cornerId, library }: { slot: Slot; cornerId: string;
     setText(''); setMode(null); setOpen(false);
   };
 
-  const libHits = library.filter((p) => p.toLowerCase().includes(libQ.trim().toLowerCase())).slice(0, 30);
+  // 규칙: 같은 용도만 재사용. 현재 슬롯과 동일 문구는 제외.
+  const own = new Set([slot.base, ...slot.variants.map((v) => v.text)]);
+  const libHits = library
+    .filter((e) => e.use === slot.use && !own.has(e.text) && e.text.toLowerCase().includes(libQ.trim().toLowerCase()))
+    .slice(0, 40);
   const aiHits = aiSuggest(slot.base, target || undefined);
 
   if (!open) {
@@ -247,24 +263,34 @@ function AddVariant({ slot, cornerId, library }: { slot: Slot; cornerId: string;
           <option value="">타겟 없음</option>
           {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
         </select>
-        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} placeholder="문구 직접 입력 / 아래에서 불러오기" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-[12px] outline-none focus:ring-2 focus:ring-violet-200" />
+        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !over) add(); }} placeholder="문구 직접 입력 / 아래에서 불러오기" className={cn('h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-[12px] outline-none focus:ring-2', over ? 'border-rose-300 focus:ring-rose-200' : 'focus:ring-violet-200')} />
         <button type="button" onClick={() => setMode(mode === 'lib' ? null : 'lib')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'lib' ? 'border-violet-400 bg-white text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50')} title="문구 라이브러리에서 불러오기"><Library className="h-3.5 w-3.5" /> 라이브러리</button>
         <button type="button" onClick={() => setMode(mode === 'ai' ? null : 'ai')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'ai' ? 'border-violet-400 bg-white text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50')} title="AI 문구 제안(예시)"><Wand2 className="h-3.5 w-3.5" /> AI 제안</button>
-        <button type="button" onClick={() => add()} disabled={!text.trim()} className="h-8 shrink-0 rounded-md bg-violet-600 px-3 text-[11px] font-semibold text-white disabled:opacity-40">추가</button>
+        <button type="button" onClick={() => add()} disabled={!text.trim() || over} className="h-8 shrink-0 rounded-md bg-violet-600 px-3 text-[11px] font-semibold text-white disabled:opacity-40">추가</button>
         <button type="button" onClick={() => { setOpen(false); setMode(null); }} className="grid h-8 w-7 shrink-0 place-items-center rounded-md border bg-white text-slate-400 hover:text-slate-600"><X className="h-3.5 w-3.5" /></button>
       </div>
+      {/* 용도 규칙(표기 검증 가이드) */}
+      {rule && (
+        <p className={cn('mt-1.5 pl-1 text-[10px]', over ? 'text-rose-500' : 'text-muted-foreground')}>
+          용도 <b>{slot.use}</b> · {rule.hint} · {text.trim().length}/{rule.max}자{over ? ' — 권장 길이 초과' : ''}
+        </p>
+      )}
 
       {mode === 'lib' && (
         <div className="mt-2 rounded-md border bg-white p-2">
           <div className="mb-1.5 flex items-center gap-1.5">
             <Library className="h-3.5 w-3.5 text-violet-500" />
-            <span className="text-[10px] font-semibold text-slate-500">문구 라이브러리 <span className="font-normal text-slate-400">· 우리가 만든 문구 재사용</span></span>
+            <span className="text-[10px] font-semibold text-slate-500">문구 라이브러리 <span className="font-normal text-slate-400">· 같은 용도(<b className="text-violet-600">{slot.use}</b>)만 재사용</span></span>
             <input value={libQ} onChange={(e) => setLibQ(e.target.value)} placeholder="검색" className="ml-auto h-6 w-32 rounded border px-2 text-[11px] outline-none" />
           </div>
-          <div className="max-h-40 space-y-0.5 overflow-y-auto">
-            {libHits.length === 0 && <p className="py-2 text-center text-[11px] text-slate-400">일치하는 문구 없음</p>}
-            {libHits.map((p, i) => (
-              <button key={i} type="button" onClick={() => setText(p)} className="block w-full truncate rounded px-2 py-1 text-left text-[12px] text-slate-700 hover:bg-violet-50">{p}</button>
+          <div className="max-h-44 space-y-0.5 overflow-y-auto">
+            {libHits.length === 0 && <p className="py-2 text-center text-[11px] text-slate-400">이 용도의 재사용 가능한 문구가 없어요</p>}
+            {libHits.map((e, i) => (
+              <button key={i} type="button" onClick={() => setText(e.text)} className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-violet-50">
+                <span className="min-w-0 flex-1 truncate text-[12px] text-slate-700">{e.text}</span>
+                {e.target && <span className="shrink-0 rounded bg-rose-100 px-1 text-[9px] font-bold text-rose-600">{e.target}</span>}
+                <span className="shrink-0 text-[9px] text-slate-400">{e.sources[0]}{e.sources.length > 1 ? ` 외 ${e.sources.length - 1}` : ''}</span>
+              </button>
             ))}
           </div>
         </div>
