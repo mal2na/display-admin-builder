@@ -576,7 +576,7 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
       // 추천 수급 방식 기본값 상속 (상품형·개인화 추천형) — 코너별 조정 가능
       recSource: def.defaultRecSource ?? null,
       moreButtonUse: moreOn,
-      moreButtonLabel: moreOn ? (def.defaultMoreButtonLabel ?? '더보기') : null,
+      moreButtonLabel: moreOn ? (def.defaultMoreButtonLabel ?? '전체보기') : null,
       // 코너 유형 관리의 유형 샘플 썸네일을 코너에 상속(카드/참고용) — 컴포넌트가 생기면 미리보기는 컴포넌트로 렌더
       sampleImageUrl: def.sampleImageUrl,
       // 사용처 추적: 이 코너가 생성된 원본 코너 유형(카탈로그) id

@@ -170,7 +170,7 @@ async function main() {
       sortStrategy: '인기순',
       noDisplayCondition: '선택 없음',
       moreButtonUse: true,
-      moreButtonLabel: '영화 전체보기',
+      moreButtonLabel: '전체보기', // CTA는 일반 라벨. 특정 코너명이 다른 코너로 새지 않도록.
       moreButtonLink: '/movie',
     },
     [
@@ -1096,7 +1096,7 @@ async function main() {
         defaultMaxItems: rep.maxItems ?? null,
         defaultSortStrategy: rep.sortStrategy && rep.sortStrategy !== 'MANUAL' ? rep.sortStrategy : null,
         defaultMoreButton: rep.moreButtonUse ?? false,
-        defaultMoreButtonLabel: rep.moreButtonUse ? rep.moreButtonLabel : null,
+        defaultMoreButtonLabel: rep.moreButtonUse ? '전체보기' : null, // 유형 기본 CTA는 일반 라벨(대표 코너명 상속 금지)
       },
     });
     typeIdx += 1;
@@ -1332,7 +1332,27 @@ async function patchVariantDemo() {
     const atom = await prisma.atom.findFirst({ where: { name }, select: { id: true } });
     if (atom) await prisma.atom.update({ where: { id: atom.id }, data: { contentVariants: null } });
   }
-  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매·0 Week 타이틀 6타겟 · 문구변형 제거)');
+  // ── 하단 CTA(더보기/전체보기) 라벨 표준화 ──
+  //   코너 유형의 기본 라벨이 대표 코너명('영화 전체보기')을 물고 있어, 그 유형을 불러오면 상품 코너에도
+  //   '영화 전체보기'가 새는 문제. 유형 기본값·스냅샷·기존 인스턴스를 전부 일반 CTA '전체보기'로 통일.
+  const CTA = '전체보기';
+  // 1) 유형 기본 라벨 — 비어있지 않은 건 전부 일반 CTA로
+  await prisma.cornerType.updateMany({ where: { defaultMoreButtonLabel: { not: null } }, data: { defaultMoreButtonLabel: CTA } });
+  // 2) 유형 라이브 스냅샷(JSON) 안의 defaultMoreButtonLabel도 교정
+  const snaps = await prisma.cornerType.findMany({ where: { liveSnapshot: { not: null } }, select: { id: true, liveSnapshot: true } });
+  for (const s of snaps) {
+    try {
+      const j = JSON.parse(s.liveSnapshot as string);
+      if (j && j.defaultMoreButtonLabel && j.defaultMoreButtonLabel !== CTA) {
+        j.defaultMoreButtonLabel = CTA;
+        await prisma.cornerType.update({ where: { id: s.id }, data: { liveSnapshot: JSON.stringify(j) } });
+      }
+    } catch { /* noop */ }
+  }
+  // 3) 이미 새어나간 인스턴스 — 특정 코너명 라벨('영화 전체보기')을 일반 CTA로 교정(운영자 커스텀 라벨은 보존)
+  await prisma.corner.updateMany({ where: { moreButtonUse: true, moreButtonLabel: '영화 전체보기' }, data: { moreButtonLabel: CTA } });
+
+  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매·0 Week 타이틀 6타겟 · 문구변형 제거 · CTA 라벨 표준화)');
 }
 
 main()
