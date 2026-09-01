@@ -2,10 +2,11 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Search, PenLine, Type, AlignLeft, Sparkles, BarChart3, ChevronRight, LayoutGrid } from 'lucide-react';
+import { Search, PenLine, Type, AlignLeft, Sparkles, BarChart3, ChevronRight, LayoutGrid, Plus, Library, Wand2, X } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
-import { toggleTitleVariant, toggleAtomVariant } from './actions';
+import { CVM_TARGET_HINTS } from '@/lib/display-taxonomy';
+import { toggleTitleVariant, toggleAtomVariant, addTitleVariant, addAtomVariant } from './actions';
 
 export type MsgVariant = { text: string; target?: string; enabled: boolean; index: number };
 export type Slot = { kind: 'title' | 'atom'; holderId: string; label: string; sub: string; base: string; variants: MsgVariant[] };
@@ -15,7 +16,7 @@ export type CornerNode = {
   slots: Slot[]; variantCount: number; excludedCount: number;
 };
 
-export function MessagesCatalog({ corners }: { corners: CornerNode[] }) {
+export function MessagesCatalog({ corners, library }: { corners: CornerNode[]; library: string[] }) {
   const [q, setQ] = useState('');
   const [onlyWith, setOnlyWith] = useState(true);
   const [selId, setSelId] = useState<string | null>(null);
@@ -116,7 +117,7 @@ export function MessagesCatalog({ corners }: { corners: CornerNode[] }) {
           {!selected ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">왼쪽에서 코너를 선택하세요.</div>
           ) : (
-            <CornerDetail corner={selected} onToggle={toggle} />
+            <CornerDetail corner={selected} onToggle={toggle} library={library} />
           )}
         </div>
       </div>
@@ -124,7 +125,7 @@ export function MessagesCatalog({ corners }: { corners: CornerNode[] }) {
   );
 }
 
-function CornerDetail({ corner, onToggle }: { corner: CornerNode; onToggle: (cornerId: string, slot: Slot, i: number) => void }) {
+function CornerDetail({ corner, onToggle, library }: { corner: CornerNode; onToggle: (cornerId: string, slot: Slot, i: number) => void; library: string[] }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-start gap-3 border-b p-5">
@@ -154,9 +155,7 @@ function CornerDetail({ corner, onToggle }: { corner: CornerNode; onToggle: (cor
                 <span className="whitespace-pre-line text-[13px] text-slate-800">{s.base || <span className="text-slate-400">(기본 문구 없음)</span>}</span>
               </div>
               {/* 타겟별 후보 */}
-              {s.variants.length === 0 ? (
-                <p className="rounded-lg border border-dashed py-3 text-center text-[11px] text-muted-foreground">타겟 후보 없음 · <Link href={corner.editHref} className="text-violet-600 underline">빌더에서 추가</Link></p>
-              ) : (
+              {s.variants.length > 0 && (
                 <div className="overflow-hidden rounded-lg border">
                   <table className="w-full text-[12px]">
                     <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400">
@@ -181,14 +180,112 @@ function CornerDetail({ corner, onToggle }: { corner: CornerNode; onToggle: (cor
                   </table>
                 </div>
               )}
+              {/* 후보 추가 — 직접입력 / 라이브러리 불러오기 / AI 제안 */}
+              <AddVariant slot={s} cornerId={corner.cornerId} library={library} />
             </div>
           </section>
         ))}
         <p className="flex items-center gap-1.5 pt-1 text-[11px] leading-relaxed text-muted-foreground">
           <Sparkles className="h-3.5 w-3.5 shrink-0 text-violet-400" />
-          <span><b>노출/제외</b>는 채널 통제(삭제 아님) — 제외 후보는 CVM 매칭에서 빠지고 기본으로 폴백. 문구 추가·수정은 <b>빌더</b>, 세그 매칭·성과는 <b>CVM</b>.</span>
+          <span>텍스트는 채널이 <b>author</b>(직접입력·라이브러리 재사용·AI 제안) — CVM은 텍스트를 주지 않고 <b>세그 매칭·성과</b>만. <b>노출/제외</b>는 채널 통제(삭제 아님), 제외 시 기본으로 폴백.</span>
         </p>
       </div>
+    </div>
+  );
+}
+
+// 타겟별 목소리 힌트 → AI 제안(예시) 접두. 실서비스는 정책 US-DSP-AI-001의 AI가 생성.
+const TARGET_TONE: Record<string, string> = {
+  '시니어': '어르신도 편하게', '2030': '요즘 뜨는', '재방문': '다시 오신 김에',
+  '위치 인근': '지금 근처에서', '혜택 보유': '보유 혜택으로', '신규': '처음이라면',
+};
+function aiSuggest(base: string, target?: string): string[] {
+  const b = (base || '').replace(/\r?\n/g, ' ').trim();
+  if (!b) return [];
+  const tone = target ? TARGET_TONE[target] : '';
+  const head = b.split(/[.!?·,]/)[0].trim();
+  const out = [
+    tone ? `${tone}, ${b}` : `${b} 지금 확인하세요`,
+    target ? `${head} · ${target} 맞춤` : head,
+    `${head}, 놓치지 마세요`,
+  ];
+  return [...new Set(out.filter((s) => s && s !== b))].slice(0, 3);
+}
+
+function AddVariant({ slot, cornerId, library }: { slot: Slot; cornerId: string; library: string[] }) {
+  const [open, setOpen] = useState(false);
+  const [target, setTarget] = useState('');
+  const [text, setText] = useState('');
+  const [mode, setMode] = useState<null | 'lib' | 'ai'>(null);
+  const [libQ, setLibQ] = useState('');
+  const [, start] = useTransition();
+
+  const add = (t?: string) => {
+    const val = (t ?? text).trim();
+    if (!val) return;
+    start(() => {
+      if (slot.kind === 'title') addTitleVariant(cornerId, val, target || undefined);
+      else addAtomVariant(slot.holderId, val, target || undefined);
+    });
+    setText(''); setMode(null); setOpen(false);
+  };
+
+  const libHits = library.filter((p) => p.toLowerCase().includes(libQ.trim().toLowerCase())).slice(0, 30);
+  const aiHits = aiSuggest(slot.base, target || undefined);
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="mt-2 inline-flex items-center gap-1 rounded-md border border-violet-300 bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100">
+        <Plus className="h-3 w-3" /> 후보 추가
+      </button>
+    );
+  }
+  return (
+    <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50/40 p-2.5">
+      <div className="flex items-center gap-1.5">
+        <select value={target} onChange={(e) => setTarget(e.target.value)} className="h-8 w-28 shrink-0 rounded-md border bg-white px-1.5 text-[11px]">
+          <option value="">타겟 없음</option>
+          {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
+        </select>
+        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} placeholder="문구 직접 입력 / 아래에서 불러오기" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-[12px] outline-none focus:ring-2 focus:ring-violet-200" />
+        <button type="button" onClick={() => setMode(mode === 'lib' ? null : 'lib')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'lib' ? 'border-violet-400 bg-white text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50')} title="문구 라이브러리에서 불러오기"><Library className="h-3.5 w-3.5" /> 라이브러리</button>
+        <button type="button" onClick={() => setMode(mode === 'ai' ? null : 'ai')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'ai' ? 'border-violet-400 bg-white text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50')} title="AI 문구 제안(예시)"><Wand2 className="h-3.5 w-3.5" /> AI 제안</button>
+        <button type="button" onClick={() => add()} disabled={!text.trim()} className="h-8 shrink-0 rounded-md bg-violet-600 px-3 text-[11px] font-semibold text-white disabled:opacity-40">추가</button>
+        <button type="button" onClick={() => { setOpen(false); setMode(null); }} className="grid h-8 w-7 shrink-0 place-items-center rounded-md border bg-white text-slate-400 hover:text-slate-600"><X className="h-3.5 w-3.5" /></button>
+      </div>
+
+      {mode === 'lib' && (
+        <div className="mt-2 rounded-md border bg-white p-2">
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <Library className="h-3.5 w-3.5 text-violet-500" />
+            <span className="text-[10px] font-semibold text-slate-500">문구 라이브러리 <span className="font-normal text-slate-400">· 우리가 만든 문구 재사용</span></span>
+            <input value={libQ} onChange={(e) => setLibQ(e.target.value)} placeholder="검색" className="ml-auto h-6 w-32 rounded border px-2 text-[11px] outline-none" />
+          </div>
+          <div className="max-h-40 space-y-0.5 overflow-y-auto">
+            {libHits.length === 0 && <p className="py-2 text-center text-[11px] text-slate-400">일치하는 문구 없음</p>}
+            {libHits.map((p, i) => (
+              <button key={i} type="button" onClick={() => setText(p)} className="block w-full truncate rounded px-2 py-1 text-left text-[12px] text-slate-700 hover:bg-violet-50">{p}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {mode === 'ai' && (
+        <div className="mt-2 rounded-md border bg-white p-2">
+          <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-500"><Wand2 className="h-3.5 w-3.5 text-violet-500" /> AI 제안 <span className="font-normal text-slate-400">· {target || '타겟없음'} 기준 · 예시(실서비스는 AI 생성) · 클릭해 채택</span></p>
+          {aiHits.length === 0 ? (
+            <p className="py-2 text-center text-[11px] text-slate-400">기본 문구가 있어야 제안할 수 있어요</p>
+          ) : (
+            <div className="space-y-0.5">
+              {aiHits.map((p, i) => (
+                <button key={i} type="button" onClick={() => setText(p)} className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[12px] text-slate-700 hover:bg-violet-50">
+                  <Sparkles className="h-3 w-3 shrink-0 text-violet-400" /> <span className="truncate">{p}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

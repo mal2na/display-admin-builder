@@ -82,5 +82,14 @@ export default async function MessagesPage() {
 
   // 후보 많은 코너 → 위로 (관리 우선순위)
   const corners = [...byCorner.values()].sort((a, b) => b.variantCount - a.variantCount);
-  return <MessagesCatalog corners={corners} />;
+
+  // 문구 라이브러리 — 우리가 이미 author한 문구(기본+후보) 풀. 후보 추가 시 '불러오기'로 재사용.
+  const libSet = new Set<string>();
+  for (const c of corners) for (const s of c.slots) {
+    if (s.base) libSet.add(s.base);
+    for (const v of s.variants) if (v.text) libSet.add(v.text);
+  }
+  const library = [...libSet].sort((a, b) => a.localeCompare(b, 'ko'));
+
+  return <MessagesCatalog corners={corners} library={library} />;
 }
