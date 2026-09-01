@@ -21,7 +21,8 @@ export type MessageRow = {
 
 export function MessagesCatalog({ rows }: { rows: MessageRow[] }) {
   const [q, setQ] = useState('');
-  const [onlyVariants, setOnlyVariants] = useState(false);
+  // 기본은 '후보(베리에이션) 있는 문구'만 — 통제할 대상만 노출(단일 문구는 인컨텍스트 편집).
+  const [onlyVariants, setOnlyVariants] = useState(true);
   const [, start] = useTransition();
 
   const filtered = useMemo(() => {
@@ -36,6 +37,7 @@ export function MessagesCatalog({ rows }: { rows: MessageRow[] }) {
 
   const totalVars = rows.reduce((n, r) => n + r.variants.length, 0);
   const excluded = rows.reduce((n, r) => n + r.variants.filter((v) => !v.enabled).length, 0);
+  const rowsWithVar = rows.filter((r) => r.variants.length > 0).length;
 
   const toggle = (r: MessageRow, index: number) => {
     start(() => {
@@ -45,19 +47,19 @@ export function MessagesCatalog({ rows }: { rows: MessageRow[] }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6">
       <PageHeader
         trail={['전시 관리', '문구 관리']}
         title="문구 관리"
         subtitle={
-          <>전 코너의 문구 후보를 한 화면에서 조망하고 <b>노출/제외</b>를 통제합니다. 문구 <b>편집</b>은 각 코너·컴포넌트에서, 최종 매칭·성과는 CVM.</>
+          <>타겟 <b>후보(베리에이션)가 있는 문구</b>만 여기서 통제합니다 — 노출/제외. 세그먼트 매칭은 CVM이 하므로 문구×세그로 늘지 않습니다. 편집은 코너·컴포넌트, 성과 원장은 CVM.</>
         }
       />
 
       {/* 요약 + 필터 */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3">
         <div className="flex items-center gap-4 text-sm">
-          <span className="flex items-center gap-1.5 font-semibold"><List className="h-4 w-4 text-violet-500" /> 문구 {rows.length}종</span>
+          <span className="flex items-center gap-1.5 font-semibold"><List className="h-4 w-4 text-violet-500" /> 후보 문구 {rowsWithVar}종</span>
           <span className="text-muted-foreground">타겟 후보 {totalVars}개</span>
           <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> 노출 {totalVars - excluded}</span>
           <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-slate-400" /> 제외 {excluded}</span>
@@ -65,7 +67,7 @@ export function MessagesCatalog({ rows }: { rows: MessageRow[] }) {
         <div className="ml-auto flex items-center gap-2">
           <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
             <input type="checkbox" checked={onlyVariants} onChange={(e) => setOnlyVariants(e.target.checked)} className="accent-violet-600" />
-            베리에이션 있는 것만
+            후보 있는 것만 <span className="text-slate-400">(끄면 전체 {rows.length})</span>
           </label>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
