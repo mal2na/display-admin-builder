@@ -1,8 +1,8 @@
-// SB-DSP-MSG-001 문구 관리(카탈로그) — 채널 통제 판.
-//  전 코너·템플릿의 문구 후보(타이틀·아톰)를 한 화면에서 조망하고 노출/제외를 통제한다.
-//  편집(문구 텍스트)은 코너/컴포넌트 인컨텍스트(회의 2026-08-31 결정), 여기선 통제만.
+// SB-DSP-MSG-001 문구 관리 — 채널 통제 판.
+//  '전부 나열'이 아니라 화면(코너)별로 드릴다운. 코너를 고르면 그 코너의 문구만(소량) 통제.
+//  편집(문구 텍스트)은 코너/컴포넌트 인컨텍스트, 세그 매칭·성과는 CVM.
 import { prisma } from '@/lib/prisma';
-import { MessagesCatalog, type MessageRow, type MsgVariant } from './messages-catalog';
+import { MessagesCatalog, type CornerNode, type Slot, type MsgVariant } from './messages-catalog';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,15 +20,14 @@ export default async function MessagesPage() {
   const templates = await prisma.template.findMany({
     orderBy: { createdAt: 'asc' },
     select: {
-      id: true,
-      name: true,
+      id: true, name: true,
       container: { select: { name: true } },
       templateCorners: {
         orderBy: { order: 'asc' },
         select: {
           corner: {
             select: {
-              id: true, name: true, mainTitle: true, mainTitleVariants: true,
+              id: true, name: true, cornerType: true, mainTitle: true, mainTitleVariants: true,
               cornerComponents: {
                 select: {
                   component: {
@@ -49,50 +48,39 @@ export default async function MessagesPage() {
     },
   });
 
-  const titleMap = new Map<string, MessageRow>();
-  const atomMap = new Map<string, MessageRow>();
-  const addUsage = (row: MessageRow, label: string, tid: string) => {
-    if (!row.usages.includes(label)) row.usages.push(label);
-    if (!row.editHref) row.editHref = `/admin/templates/${tid}/builder`;
-  };
-
+  const byCorner = new Map<string, CornerNode>();
   for (const t of templates) {
-    const usageLabel = `${t.container?.name ?? '컨테이너'} · ${t.name}`;
     for (const tc of t.templateCorners) {
       const c = tc.corner;
       if (!c) continue;
-      // 타이틀 문구
-      if (c.mainTitle) {
-        let row = titleMap.get(c.id);
-        if (!row) {
-          row = { kind: 'title', holderId: c.id, label: c.name, sub: '코너 타이틀', base: c.mainTitle, variants: toChips(c.mainTitleVariants), usages: [], editHref: '' };
-          titleMap.set(c.id, row);
-        }
-        addUsage(row, usageLabel, t.id);
-      }
-      // 아톰 문구
-      for (const cc of c.cornerComponents) {
-        for (const ca of cc.component.componentAtoms) {
-          const a = ca.atom;
-          const isText = !['IMAGE', 'ICON', 'BARCODE'].includes(a.atomType);
-          const chips = toChips(a.contentVariants);
-          if (isText && (a.content || chips.length)) {
-            let row = atomMap.get(a.id);
-            if (!row) {
-              row = { kind: 'atom', holderId: a.id, label: a.name, sub: `${cc.component.name}`, base: a.content ?? '', variants: chips, usages: [], editHref: '' };
-              atomMap.set(a.id, row);
+      let node = byCorner.get(c.id);
+      if (!node) {
+        const slots: Slot[] = [];
+        if (c.mainTitle) slots.push({ kind: 'title', holderId: c.id, label: '코너 타이틀', sub: '타이틀', base: c.mainTitle, variants: toChips(c.mainTitleVariants) });
+        for (const cc of c.cornerComponents) {
+          for (const ca of cc.component.componentAtoms) {
+            const a = ca.atom;
+            const isText = !['IMAGE', 'ICON', 'BARCODE'].includes(a.atomType);
+            const chips = toChips(a.contentVariants);
+            if (isText && (a.content || chips.length)) {
+              slots.push({ kind: 'atom', holderId: a.id, label: a.name, sub: cc.component.name, base: a.content ?? '', variants: chips });
             }
-            addUsage(row, usageLabel, t.id);
           }
         }
+        node = {
+          cornerId: c.id, cornerName: c.name, cornerType: c.cornerType,
+          container: t.container?.name ?? '컨테이너', template: t.name,
+          editHref: `/admin/templates/${t.id}/builder`,
+          slots,
+          variantCount: slots.reduce((n, s) => n + s.variants.length, 0),
+          excludedCount: slots.reduce((n, s) => n + s.variants.filter((v) => !v.enabled).length, 0),
+        };
+        byCorner.set(c.id, node);
       }
     }
   }
 
-  // 베리에이션(후보) 있는 문구를 위로
-  const rows = [...titleMap.values(), ...atomMap.values()].sort(
-    (a, b) => (b.variants.length > 0 ? 1 : 0) - (a.variants.length > 0 ? 1 : 0),
-  );
-
-  return <MessagesCatalog rows={rows} />;
+  // 후보 많은 코너 → 위로 (관리 우선순위)
+  const corners = [...byCorner.values()].sort((a, b) => b.variantCount - a.variantCount);
+  return <MessagesCatalog corners={corners} />;
 }
