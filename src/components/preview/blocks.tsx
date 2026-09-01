@@ -9,7 +9,7 @@ export type PreviewAtom = {
   name: string;
   atomType: string;
   content: string | null;
-  contentVariants?: { text: string; target?: string }[]; // 문구 베리에이션(+타겟) — 변형 렌더에서 타겟 문구 치환용
+  contentVariants?: { text: string; target?: string; enabled?: boolean }[]; // 문구 베리에이션(+타겟, +노출 통제). enabled=false면 CVM 매칭 제외
   imageUrl: string | null;
   altText: string | null;
   linkUrl: string | null;
