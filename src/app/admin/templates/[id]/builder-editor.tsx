@@ -84,7 +84,7 @@ export type AtomNode = {
   visible?: boolean; // 코너 구성 표시/숨김 토글 (숨김=미리보기·FO 제외, 삭제 아님)
   menuRole?: string; // FIXED(고정) | EDITABLE(편집가능) — 선택형·메뉴 리스트 항목 역할
   content: string | null;
-  contentVariants?: { text: string; target?: string }[]; // 문구 베리에이션 — 추가 문구 후보(+타겟 힌트). 실서비스 CVM 택1. 기본=content.
+  contentVariants?: { text: string; target?: string; enabled?: boolean }[]; // 문구 후보(+타겟 힌트, +노출 통제). enabled=false면 노출 제외(삭제 아님). 실서비스 CVM 택1. 기본=content.
   imageUrl: string | null;
   altText: string | null;
   linkUrl: string | null;
@@ -822,18 +822,25 @@ function AtomRow({
               <button type="button" onClick={() => onChange({ contentVariants: [...vars, { text: '' }] })}
                 className="shrink-0 rounded border border-violet-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100">＋ 문구</button>
             </div>
-            {vars.map((v, i) => (
-              <div key={i} className="flex items-center gap-1">
+            {vars.map((v, i) => {
+              const on = v.enabled !== false; // 기본 노출(활성)
+              return (
+              <div key={i} className={cn('flex items-center gap-1', !on && 'opacity-55')}>
                 <Input value={v.text} onChange={(e) => onChange({ contentVariants: vars.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)) })} placeholder="대체 문구" className="h-7 min-w-0 flex-1 text-xs" />
                 {/* 타겟 힌트 (누구에게) — 최종 매칭은 CVM */}
                 <Select value={v.target ?? ''} onChange={(e) => onChange({ contentVariants: vars.map((x, j) => (j === i ? { ...x, target: e.target.value || undefined } : x)) })} className="h-7 w-24 shrink-0 text-[10px]">
                   <option value="">타겟 없음</option>
                   {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
                 </Select>
+                {/* 노출 통제(채널 권한) — 노출 가능/제외. 삭제 아님, CVM 매칭 대상에서만 빠짐. */}
+                <button type="button" onClick={() => onChange({ contentVariants: vars.map((x, j) => (j === i ? { ...x, enabled: !on } : x)) })}
+                  className={cn('flex h-7 w-11 shrink-0 items-center justify-center rounded border text-[10px] font-semibold', on ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-slate-100 text-slate-500')}
+                  title={on ? '노출 가능 — 클릭하면 제외' : '노출 제외 — 클릭하면 노출'}>{on ? '노출' : '제외'}</button>
                 <button type="button" onClick={() => onChange({ contentVariants: vars.filter((_, j) => j !== i) })}
                   className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="문구 삭제">−</button>
               </div>
-            ))}
+              );
+            })}
           </div>
         );
       })()}
@@ -1503,7 +1510,7 @@ function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateI
 // 문구 한눈에 보기 — 이 코너의 모든 문구(타이틀 + 텍스트 아톰)와 타겟별 대체 문구를 한 화면에 모아 본다. (별도 메뉴 아님 — 코너 편집 내 정리 뷰)
 //  타이틀 베리에이션은 여기서 직접 편집(즉시 저장). 아톰 문구는 컴포넌트 ‘수정’에서.
 function CopyOverview({ templateId, corner }: { templateId: string; corner: CornerNode }) {
-  type TV = { text: string; target?: string };
+  type TV = { text: string; target?: string; enabled?: boolean };
   const parseTitle = (): TV[] => { try { const a = JSON.parse(corner.mainTitleVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.text === 'string'); } catch { /* noop */ } return []; };
   const [tvars, setTvars] = useState<TV[]>(parseTitle());
   const [, start] = useTransition();
@@ -1533,16 +1540,23 @@ function CopyOverview({ templateId, corner }: { templateId: string; corner: Corn
               <span className="inline-flex h-5 shrink-0 items-center rounded bg-slate-200 px-1.5 text-[9px] font-bold text-slate-600">기본</span>
               <span className="flex-1 whitespace-pre-line text-[11px] text-slate-800">{corner.mainTitle}</span>
             </div>
-            {tvars.map((v, j) => (
-              <div key={j} className="flex items-center gap-1.5">
-                <Select value={v.target ?? ''} onChange={(e) => saveTitle(tvars.map((t, k) => (k === j ? { ...t, target: e.target.value || undefined } : t)))} className="h-6 w-[92px] shrink-0 text-[10px]">
+            {tvars.map((v, j) => {
+              const on = v.enabled !== false;
+              return (
+              <div key={j} className={cn('flex items-center gap-1.5', !on && 'opacity-55')}>
+                <Select value={v.target ?? ''} onChange={(e) => saveTitle(tvars.map((t, k) => (k === j ? { ...t, target: e.target.value || undefined } : t)))} className="h-6 w-[84px] shrink-0 text-[10px]">
                   <option value="">타겟…</option>
                   {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
                 </Select>
                 <Input value={v.text} onChange={(e) => setTvars(tvars.map((t, k) => (k === j ? { ...t, text: e.target.value } : t)))} onBlur={() => saveTitle(tvars)} placeholder="이 타겟에게 보일 타이틀" className="h-6 flex-1 text-[11px]" />
+                {/* 노출 통제(채널 권한) — 노출 가능/제외. 삭제 아님. */}
+                <button type="button" onClick={() => saveTitle(tvars.map((t, k) => (k === j ? { ...t, enabled: !on } : t)))}
+                  className={cn('flex h-6 w-9 shrink-0 items-center justify-center rounded border text-[9px] font-semibold', on ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-slate-100 text-slate-500')}
+                  title={on ? '노출 가능 — 클릭하면 제외' : '노출 제외 — 클릭하면 노출'}>{on ? '노출' : '제외'}</button>
                 <button type="button" onClick={() => saveTitle(tvars.filter((_, k) => k !== j))} className="flex h-6 w-5 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="삭제">−</button>
               </div>
-            ))}
+              );
+            })}
             <button type="button" onClick={() => saveTitle([...tvars, { text: '' }])} className="inline-flex items-center gap-0.5 rounded-md border border-violet-300 bg-white px-2 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-50"><Plus className="h-2.5 w-2.5" /> 타이틀 후보</button>
           </div>
         )}
@@ -1554,12 +1568,16 @@ function CopyOverview({ templateId, corner }: { templateId: string; corner: Corn
               <span className="inline-flex h-5 shrink-0 items-center rounded bg-slate-200 px-1.5 text-[9px] font-bold text-slate-600">기본</span>
               <span className="flex-1 whitespace-pre-line text-[11px] text-slate-800">{r.base || <span className="text-slate-400">—</span>}</span>
             </div>
-            {r.variants.map((v, j) => (
-              <div key={j} className="flex items-start gap-1.5">
+            {r.variants.map((v, j) => {
+              const on = v.enabled !== false;
+              return (
+              <div key={j} className={cn('flex items-start gap-1.5', !on && 'opacity-55')}>
                 <span className="inline-flex h-5 shrink-0 items-center rounded bg-rose-100 px-1.5 text-[9px] font-bold text-rose-600">{v.target || '타겟없음'}</span>
                 <span className="flex-1 text-[11px] text-rose-700">{v.text || <span className="text-slate-400">(빈 문구)</span>}</span>
+                {!on && <span className="shrink-0 rounded bg-slate-200 px-1 text-[9px] font-semibold text-slate-500">제외</span>}
               </div>
-            ))}
+              );
+            })}
           </div>
         ))}
         <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">타이틀 베리에이션은 여기서 편집. 아톰 문구는 각 컴포넌트 ‘수정’ → 문구 베리에이션에서. 타겟은 CVM이 참고하는 힌트(최종 매칭은 CVM).</p>
@@ -1573,7 +1591,7 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
   type V = { label: string; typeId?: string; typeName?: string; target?: string };
   const parse = (): V[] => { try { const a = JSON.parse(corner.displayVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.label === 'string'); } catch { /* noop */ } return []; };
   // 타이틀 베리에이션 — target별 대체 타이틀. withTarget에서 pc.mainTitle을 이걸로 치환.
-  const titleVars: { text: string; target?: string }[] = (() => { try { const a = JSON.parse(corner.mainTitleVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.text === 'string'); } catch { /* noop */ } return []; })();
+  const titleVars: { text: string; target?: string; enabled?: boolean }[] = (() => { try { const a = JSON.parse(corner.mainTitleVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.text === 'string'); } catch { /* noop */ } return []; })();
   const [vars, setVars] = useState<V[]>(parse());
   const [, start] = useTransition();
   useEffect(() => { setVars(parse()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.displayVariants, corner.templateCornerId]);
@@ -1605,11 +1623,12 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
               const vType = v.typeId ? cornerTypes.find((t) => t.id === v.typeId) : null;
               const withTarget = (pc: PreviewCorner): PreviewCorner => {
                 if (!v.target) return pc;
-                const tHit = titleVars.find((t) => t.target === v.target && t.text);
+                // 노출 제외(enabled=false)된 후보는 매칭에서 빠지고 기본(base)으로 폴백 — 채널 통제 권한 반영.
+                const tHit = titleVars.find((t) => t.target === v.target && t.text && t.enabled !== false);
                 return {
                   ...pc,
                   mainTitle: tHit ? tHit.text : pc.mainTitle,
-                  components: pc.components.map((c) => ({ ...c, atoms: c.atoms.map((a) => { const hit = a.contentVariants?.find((cv) => cv.target === v.target && cv.text); return hit ? { ...a, content: hit.text } : a; }) })),
+                  components: pc.components.map((c) => ({ ...c, atoms: c.atoms.map((a) => { const hit = a.contentVariants?.find((cv) => cv.target === v.target && cv.text && cv.enabled !== false); return hit ? { ...a, content: hit.text } : a; }) })),
                 };
               };
               const vPreview: PreviewCorner = withTarget(vType

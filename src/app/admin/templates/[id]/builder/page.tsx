@@ -158,13 +158,14 @@ export default async function BuilderPage({ params }: { params: { id: string } }
         menuRole: ca.menuRole,
         content: ca.atom.content,
         contentVariants: (() => {
+          type CV = { text: string; target?: string; enabled?: boolean };
           try {
             const a = JSON.parse(ca.atom.contentVariants ?? '');
-            if (!Array.isArray(a)) return [] as { text: string; target?: string }[];
+            if (!Array.isArray(a)) return [] as CV[];
             return a
-              .map((x: unknown) => (typeof x === 'string' ? { text: x } : (x && typeof (x as { text?: unknown }).text === 'string' ? { text: (x as { text: string }).text, target: (x as { target?: string }).target } : null)))
-              .filter(Boolean) as { text: string; target?: string }[];
-          } catch { return [] as { text: string; target?: string }[]; }
+              .map((x: unknown): CV | null => (typeof x === 'string' ? { text: x } : (x && typeof (x as { text?: unknown }).text === 'string' ? { text: (x as { text: string }).text, target: (x as { target?: string }).target, enabled: (x as { enabled?: boolean }).enabled } : null)))
+              .filter(Boolean) as CV[];
+          } catch { return [] as CV[]; }
         })(),
         imageUrl: ca.atom.imageUrl,
         altText: ca.atom.altText,
