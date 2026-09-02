@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Download, ChevronLeft, ChevronRight, Star, ShieldAlert, ShieldOff, Home, ChevronRight as Chev, Flag } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Download, ChevronLeft, ChevronRight, ShieldAlert, ShieldOff, Flag, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
+import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 
 // ── 공통 ──
@@ -36,47 +38,30 @@ type TabKey = typeof TABS[number]['key'];
 
 export function CommentAdmin() {
   const [tab, setTab] = useState<TabKey>('comment');
+  const [detailOpen, setDetailOpen] = useState(false); // 상세 진입 시 상단 탭 숨김
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-card">
-      <MetaBar />
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[#f7f8fb]">
-        <div className="mx-auto max-w-[1500px] px-8 py-6">
-          <nav className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Home className="h-3.5 w-3.5" /> <Chev className="h-3 w-3 opacity-50" /> <span className="font-medium text-foreground">댓글·리뷰 관리</span>
-          </nav>
-          <h1 className="text-2xl font-bold tracking-tight">댓글·리뷰 관리</h1>
-          <p className="mt-1 text-sm text-muted-foreground">상품 상세·프로모션에 달린 댓글/리뷰를 조회·통제·답글하고, 신고 접수와 사용자 차단을 관리합니다.</p>
+    <div className="p-6">
+      <PageHeader
+        trail={['프로모션 관리', '댓글·리뷰 관리']}
+        title="댓글·리뷰 관리"
+        subtitle="상품 상세·프로모션에 달린 댓글/리뷰를 조회·통제·답글하고, 신고 접수와 사용자 차단을 관리합니다."
+      />
 
-          {/* 탭 */}
-          <div className="mt-4 flex gap-1 border-b">
-            {TABS.map((t) => (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className={cn('-mb-px border-b-2 px-4 py-2 text-[14px] font-medium', tab === t.key ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600')}>{t.label}</button>
-            ))}
-          </div>
-
-          <div className="mt-5">
-            {tab === 'comment' && <CommentsTab />}
-            {tab === 'review' && <ReviewsTab />}
-            {tab === 'block' && <BlockTab />}
-          </div>
+      {/* 탭 — 목록에서만 표시(상세 진입 시 숨김) */}
+      {!detailOpen && (
+        <div className="mt-4 flex gap-1 border-b">
+          {TABS.map((t) => (
+            <button key={t.key} onClick={() => { setTab(t.key); setDetailOpen(false); }}
+              className={cn('-mb-px border-b-2 px-4 py-2 text-[14px] font-medium', tab === t.key ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600')}>{t.label}</button>
+          ))}
         </div>
-      </div>
-    </div>
-  );
-}
+      )}
 
-function MetaBar() {
-  const cell = (k: string, v: string) => (
-    <div className="flex items-stretch">
-      <span className="flex w-24 shrink-0 items-center bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-500">{k}</span>
-      <span className="flex flex-1 items-center px-2 py-1.5 text-[12px] text-slate-700">{v}</span>
-    </div>
-  );
-  return (
-    <div className="grid grid-cols-[repeat(5,minmax(0,1fr))_1.2fr] divide-x divide-y border-b [&>div]:border-slate-100">
-      {cell('SB 버전', '1')}{cell('화면ID', 'SB-ETC-089')}{cell('구현유형', 'page')}{cell('상태', 'new')}{cell('화면명', '댓글관리')}{cell('작성일', '26.08.31')}
-      {cell('정책서 버전', '—')}{cell('정책서ID', 'AIM')}{cell('화면유형', '목록')}{cell('참고 정책서', '—')}{cell('경로', '홈 > 댓글관리')}{cell('작성자', 'P217129')}
+      <div className="mt-5">
+        {tab === 'comment' && <CommentsTab onDetail={setDetailOpen} />}
+        {tab === 'review' && <ReviewsTab />}
+        {tab === 'block' && <BlockTab />}
+      </div>
     </div>
   );
 }
@@ -96,10 +81,11 @@ const COMMENTS: Comment[] = [
   { no: 1110, ch: '35D29519I8F9Y0', promo: 'ENV123447', type: '반응', content: '감사합니다', likes: 1, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '미노출' },
 ];
 
-function CommentsTab() {
+function CommentsTab({ onDetail }: { onDetail: (open: boolean) => void }) {
   const [sel, setSel] = useState<Comment | null>(null);
   const [checked, setChecked] = useState<Set<number>>(new Set());
-  if (sel) return <CommentDetail comment={sel} onBack={() => setSel(null)} />;
+  const open = (c: Comment) => { setSel(c); onDetail(true); };
+  if (sel) return <CommentDetail comment={sel} onBack={() => { setSel(null); onDetail(false); }} />;
 
   const toggle = (no: number) => setChecked((s) => { const n = new Set(s); n.has(no) ? n.delete(no) : n.add(no); return n; });
   return (
@@ -130,11 +116,13 @@ function CommentsTab() {
           </thead>
           <tbody className="divide-y">
             {COMMENTS.map((c) => (
-              <tr key={c.no} className="cursor-pointer hover:bg-violet-50/40" onClick={() => setSel(c)}>
+              <tr key={c.no} className="cursor-pointer hover:bg-violet-50/40" onClick={() => open(c)}>
                 <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={checked.has(c.no)} onChange={() => toggle(c.no)} className="h-4 w-4 accent-violet-600" /></td>
                 <td className="px-3 py-2.5 text-slate-500">{c.no}</td>
                 <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{c.ch.slice(0, 10)}…</span></td>
-                <td className="px-3 py-2.5"><span className="text-violet-600 underline">{c.promo}</span></td>
+                <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                  <Link href="/admin/events" className="inline-flex items-center gap-0.5 text-violet-600 underline hover:text-violet-800" title="프로모션 관리로 이동">{c.promo}<ExternalLink className="h-3 w-3" /></Link>
+                </td>
                 <td className="px-3 py-2.5"><Pill>{c.type}</Pill></td>
                 <td className="max-w-[220px] truncate px-3 py-2.5 text-slate-700">{c.content}</td>
                 <td className="px-3 py-2.5 text-slate-500">{c.likes}</td>
@@ -165,9 +153,12 @@ function CommentDetail({ comment, onBack }: { comment: Comment; onBack: () => vo
   return (
     <div className="space-y-5">
       <section className="rounded-xl border bg-card p-5">
-        <p className="mb-3 text-[15px] font-bold">• 프로모션 기본정보</p>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-[15px] font-bold">• 프로모션 기본정보</p>
+          <Link href="/admin/events"><Button variant="outline" size="sm"><ExternalLink className="mr-1 h-3.5 w-3.5" /> 프로모션 관리에서 열기</Button></Link>
+        </div>
         <div className="grid grid-cols-2 gap-x-10">
-          <Field label="프로모션 ID"><span className="text-[13px] text-violet-600 underline">{comment.promo}</span></Field>
+          <Field label="프로모션 ID"><Link href="/admin/events" className="inline-flex items-center gap-0.5 text-[13px] text-violet-600 underline hover:text-violet-800">{comment.promo}<ExternalLink className="h-3 w-3" /></Link></Field>
           <Field label="프로모션 명"><span className="text-[13px]">스타벅스 기프티콘 증정 이벤트</span></Field>
           <Field label="이벤트 유형"><Select defaultValue="응모형" className="h-9"><option>응모형</option><option>참여형</option></Select></Field>
           <Field label="전시여부"><div className="flex gap-4 pt-1.5 text-[13px]"><Radio name="disp" label="사용" checked /><Radio name="disp" label="미사용" /></div></Field>

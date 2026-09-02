@@ -10,7 +10,7 @@ import { usePathname } from 'next/navigation';
 export function AdminMain({ children }: { children: React.ReactNode }) {
   const path = usePathname() ?? '';
   // 프로모션 목록(/admin/events)은 코너유형처럼 흰 패널에 담고, 그 하위(빌더·미리보기·새 프로모션)만 풀블리드
-  const fullBleed = path.includes('/builder') || path.startsWith('/admin/containers') || path.startsWith('/admin/comments') || (path.startsWith('/admin/events') && path !== '/admin/events');
+  const fullBleed = path.includes('/builder') || path.startsWith('/admin/containers') || (path.startsWith('/admin/events') && path !== '/admin/events');
 
   if (fullBleed) {
     // 컨테이너 영역은 자체 레이아웃에서 라벤더+라운드를 처리 → 여백 없이 그대로.
