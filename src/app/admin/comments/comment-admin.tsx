@@ -116,7 +116,7 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
         <table className="w-full min-w-[1140px] text-[12px]">
           <thead className="bg-slate-50 text-[12px] text-slate-700">
             <tr className="border-b-2 border-slate-200 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3 [&>th]:font-bold">
-              <th className="w-8"></th><th>번호</th><th className="text-left">멤버십 채널 ID</th><th>프로모션 ID</th><th>댓글유형</th><th className="text-left">댓글내용</th><th>좋아요 수</th><th>등록일시</th><th className="text-left">답글내용</th><th>답글 등록자</th><th>총 답글 수</th><th>답변여부</th><th>노출여부</th>
+              <th className="w-8"></th><th>번호</th><th className="text-left">멤버십 채널 ID</th><th>프로모션 ID</th><th>댓글유형</th><th className="text-left">댓글내용</th><th>노출여부</th><th>좋아요 수</th><th>등록일시</th><th className="text-left">답글내용</th><th>답글 등록자</th><th>총 답글 수</th><th>답변여부</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -130,13 +130,13 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
                 </td>
                 <td className="px-3 py-2.5"><Pill>{c.type}</Pill></td>
                 <td className="max-w-[220px] truncate px-3 py-2.5 text-left text-slate-700">{c.content}</td>
+                <td className="px-3 py-2.5"><Pill>{c.visible}</Pill></td>
                 <td className="px-3 py-2.5 text-slate-600">{c.likes}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.at}</td>
                 <td className="max-w-[220px] truncate px-3 py-2.5 text-left text-slate-500">{c.reply || '-'}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.replyBy || '-'}</td>
                 <td className="px-3 py-2.5 text-slate-500">{c.replyCount || '-'}</td>
                 <td className="px-3 py-2.5"><Pill>{c.answered}</Pill></td>
-                <td className="px-3 py-2.5"><Pill>{c.visible}</Pill></td>
               </tr>
             ))}
           </tbody>
