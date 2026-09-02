@@ -56,6 +56,9 @@ export default async function PromotionDetailPage({ params }: { params: { pageId
     no: total - i, // 고유번호 — 최신이 가장 큰 번호 (목록은 최신순)
     memberChannelId: c.memberChannelId,
     content: c.content,
+    // 댓글유형(문의/반응)은 별도 컬럼이 없어 내용에서 파생 — 질문형이면 문의, 그 외 반응.
+    type: /[?？]|문의|어떻게|하나요|되나요|인가요|langid/.test(c.content) ? '문의' as const : '반응' as const,
+    status: c.exposed ? '노출' as const : '미노출' as const, // 노출여부(3상태). 검수 중은 추후 금칙어·LLM 판정 연동.
     likeCount: c.likeCount,
     exposed: c.exposed,
     answered: c.answered,

@@ -22,8 +22,10 @@ export type CommentRow = {
   no: number; // 고유번호
   memberChannelId: string;
   content: string;
+  type: '문의' | '반응'; // 댓글유형 (SB-ETC-089 정책서 필터셋)
+  status: '노출' | '미노출' | '검수 중'; // 노출여부(3상태) — 검수 중은 금칙어·LLM 판단 대기
   likeCount: number;
-  exposed: boolean; // 노출여부
+  exposed: boolean; // 노출여부(레거시 boolean, 노출여부 변경 액션용)
   answered: boolean; // 답변여부
   replyContent: string | null;
   replyAuthor: string | null;
@@ -34,15 +36,17 @@ export type CommentRow = {
 };
 
 const PAGE_SIZE = 10;
-type ExposeFilter = '전체' | '노출' | '미노출';
-type AnswerFilter = '전체' | '답변완료' | '답글대기';
-type DateField = '등록일' | '답글 등록일';
+type ExposeFilter = '전체' | '노출' | '미노출' | '검수 중';
+type TypeFilter = '전체' | '문의' | '반응';
+type AnswerFilter = '전체' | '답변완료' | '답변대기';
+type DateField = '등록일시' | '답글 등록일';
 type SearchField = '전체' | '댓글내용' | '답글내용' | '멤버십 채널 ID';
 
 const DEFAULTS = {
   expose: '전체' as ExposeFilter,
+  type: '전체' as TypeFilter,
   answer: '전체' as AnswerFilter,
-  dateField: '등록일' as DateField,
+  dateField: '등록일시' as DateField,
   from: '',
   to: '',
   searchField: '전체' as SearchField,
@@ -70,11 +74,12 @@ export function CommentManager({
     const from = a.from ? a.from : null;
     const to = a.to ? a.to : null;
     return comments.filter((c) => {
-      if (a.expose !== '전체' && (a.expose === '노출') !== c.exposed) return false;
+      if (a.expose !== '전체' && c.status !== a.expose) return false;
+      if (a.type !== '전체' && c.type !== a.type) return false;
       if (a.answer !== '전체' && (a.answer === '답변완료') !== c.answered) return false;
-      // 기간 (등록일 | 답글 등록일)
+      // 기간 (등록일시 | 답글 등록일)
       if (from || to) {
-        const raw = a.dateField === '등록일' ? c.createdAt : c.replyAt;
+        const raw = a.dateField === '등록일시' ? c.createdAt : c.replyAt;
         const day = raw ? raw.slice(0, 10) : null;
         if (!day) return false;
         if (from && day < from) return false;
@@ -149,7 +154,7 @@ export function CommentManager({
       lines.push([
         c.no, c.memberChannelId, c.content, c.likeCount, c.createdAt,
         c.replyContent ?? '', c.replyAuthor ?? '', c.replyCount, c.replyAt ?? '',
-        c.answered ? '답변완료' : '답글대기', c.exposed ? '노출' : '미노출',
+        c.answered ? '답변완료' : '답변대기', c.exposed ? '노출' : '미노출',
       ].map(esc).join(','));
     }
     const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
@@ -168,18 +173,23 @@ export function CommentManager({
         <div className="grid gap-x-4 gap-y-3 p-4 md:grid-cols-2 xl:grid-cols-4">
           <FilterCell label="노출여부">
             <Select value={f.expose} onChange={(e) => setF((s) => ({ ...s, expose: e.target.value as ExposeFilter }))} className="h-9 w-full">
-              {(['전체', '노출', '미노출'] as ExposeFilter[]).map((o) => <option key={o} value={o}>{o}</option>)}
+              {(['전체', '노출', '미노출', '검수 중'] as ExposeFilter[]).map((o) => <option key={o} value={o}>{o}</option>)}
+            </Select>
+          </FilterCell>
+          <FilterCell label="댓글유형">
+            <Select value={f.type} onChange={(e) => setF((s) => ({ ...s, type: e.target.value as TypeFilter }))} className="h-9 w-full">
+              {(['전체', '문의', '반응'] as TypeFilter[]).map((o) => <option key={o} value={o}>{o}</option>)}
             </Select>
           </FilterCell>
           <FilterCell label="답변여부">
             <Select value={f.answer} onChange={(e) => setF((s) => ({ ...s, answer: e.target.value as AnswerFilter }))} className="h-9 w-full">
-              {(['전체', '답변완료', '답글대기'] as AnswerFilter[]).map((o) => <option key={o} value={o}>{o}</option>)}
+              {(['전체', '답변완료', '답변대기'] as AnswerFilter[]).map((o) => <option key={o} value={o}>{o}</option>)}
             </Select>
           </FilterCell>
-          <FilterCell label="기간" className="xl:col-span-2">
+          <FilterCell label="기간" className="xl:col-span-4">
             <div className="flex flex-wrap items-center gap-1.5">
               <Select value={f.dateField} onChange={(e) => setF((s) => ({ ...s, dateField: e.target.value as DateField }))} className="h-9 w-32 shrink-0">
-                {(['등록일', '답글 등록일'] as DateField[]).map((o) => <option key={o} value={o}>{o}</option>)}
+                {(['등록일시', '답글 등록일'] as DateField[]).map((o) => <option key={o} value={o}>{o}</option>)}
               </Select>
               <Input type="date" value={f.from} onChange={(e) => setF((s) => ({ ...s, from: e.target.value }))} className="h-9 w-40" />
               <span className="text-muted-foreground">~</span>
@@ -251,7 +261,7 @@ export function CommentManager({
                 <Td className="text-center tabular-nums">{c.replyCount}</Td>
                 <Td className="whitespace-nowrap text-[12px] text-muted-foreground">{c.replyAt ?? '-'}</Td>
                 <Td className="text-center">
-                  <StatusPill on={c.answered} onLabel="답변완료" offLabel="답글대기" tone={c.answered ? 'green' : 'amber'} />
+                  <StatusPill on={c.answered} onLabel="답변완료" offLabel="답변대기" tone={c.answered ? 'green' : 'amber'} />
                 </Td>
                 <Td className="text-center">
                   <StatusPill on={c.exposed} onLabel="노출" offLabel="미노출" tone={c.exposed ? 'green' : 'rose'} />

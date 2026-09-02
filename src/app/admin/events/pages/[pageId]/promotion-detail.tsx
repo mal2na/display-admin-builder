@@ -469,14 +469,15 @@ function PhonePreview({
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section><h2 className="mb-2 text-sm font-bold">{title}</h2><div className="rounded-lg border">{children}</div></section>;
+  return <section><h2 className="mb-2 text-sm font-bold">{title}</h2><div className="overflow-hidden rounded-lg border border-slate-200">{children}</div></section>;
 }
 
+// 폼 테이블 행 — 회색 라벨셀 + 값셀 격자 (댓글 상세와 동일 디자인).
 function Row({ label, req, children }: { label: string; req?: boolean; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[120px_minmax(0,1fr)] items-start gap-3 border-b px-4 py-3 last:border-0">
-      <label className="pt-1.5 text-[13px] font-semibold text-muted-foreground">{label}{req && <span className="text-destructive"> *</span>}</label>
-      <div className="min-w-0">{children}</div>
+    <div className="grid grid-cols-[160px_minmax(0,1fr)] border-b border-slate-200 last:border-0">
+      <label className="flex items-start border-r border-slate-200 bg-slate-50 px-3 py-3 text-[13px] font-medium text-slate-600">{label}{req && <span className="text-destructive"> *</span>}</label>
+      <div className="min-w-0 px-3 py-2.5">{children}</div>
     </div>
   );
 }

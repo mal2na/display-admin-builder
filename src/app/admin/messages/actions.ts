@@ -41,3 +41,21 @@ export async function toggleAtomVariant(atomId: string, index: number) {
   await prisma.atom.update({ where: { id: atomId }, data: { contentVariants: JSON.stringify(arr) } });
   revalidateAll();
 }
+
+// ── 후보 추가 (직접입력 / 라이브러리 불러오기 / AI 제안 채택 — 텍스트는 채널이 author) ──
+export async function addTitleVariant(cornerId: string, text: string, target?: string) {
+  if (!text.trim()) return;
+  const c = await prisma.corner.findUnique({ where: { id: cornerId }, select: { mainTitleVariants: true } });
+  const arr = parseVariants(c?.mainTitleVariants ?? null);
+  arr.push({ text: text.trim(), target: target || undefined, enabled: true });
+  await prisma.corner.update({ where: { id: cornerId }, data: { mainTitleVariants: JSON.stringify(arr) } });
+  revalidateAll();
+}
+export async function addAtomVariant(atomId: string, text: string, target?: string) {
+  if (!text.trim()) return;
+  const a = await prisma.atom.findUnique({ where: { id: atomId }, select: { contentVariants: true } });
+  const arr = parseVariants(a?.contentVariants ?? null);
+  arr.push({ text: text.trim(), target: target || undefined, enabled: true });
+  await prisma.atom.update({ where: { id: atomId }, data: { contentVariants: JSON.stringify(arr) } });
+  revalidateAll();
+}
