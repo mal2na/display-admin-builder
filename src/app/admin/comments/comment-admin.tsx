@@ -9,10 +9,10 @@ import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 
 // ── 공통 ──
-const box = 'h-9 w-full rounded-lg border bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-violet-200';
+const box = 'h-9 w-full rounded-lg border bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-indigo-200';
 const TONE: Record<string, string> = {
   노출: 'bg-emerald-100 text-emerald-700', 미노출: 'bg-rose-100 text-rose-600', '검수 중': 'bg-amber-100 text-amber-700', 검수중: 'bg-amber-100 text-amber-700',
-  답변완료: 'bg-violet-100 text-violet-700', 답변대기: 'bg-slate-100 text-slate-500',
+  답변완료: 'bg-indigo-100 text-indigo-700', 답변대기: 'bg-slate-100 text-slate-500',
   접수: 'bg-amber-100 text-amber-700', 처리완료: 'bg-emerald-100 text-emerald-700', 반려: 'bg-slate-100 text-slate-500',
   차단중: 'bg-rose-100 text-rose-600', 해제: 'bg-slate-100 text-slate-500',
   문의: 'bg-sky-100 text-sky-700', 반응: 'bg-slate-100 text-slate-500',
@@ -52,7 +52,7 @@ export function CommentAdmin({ promoHref = '/admin/events' }: { promoHref?: stri
         <div className="mt-4 flex gap-1 border-b">
           {TABS.map((t) => (
             <button key={t.key} onClick={() => { setTab(t.key); setDetailOpen(false); }}
-              className={cn('-mb-px border-b-2 px-4 py-2 text-[14px] font-medium', tab === t.key ? 'border-violet-600 text-violet-700' : 'border-transparent text-slate-400 hover:text-slate-600')}>{t.label}</button>
+              className={cn('-mb-px border-b-2 px-4 py-2 text-[14px] font-medium', tab === t.key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-400 hover:text-slate-600')}>{t.label}</button>
           ))}
         </div>
       )}
@@ -116,12 +116,12 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
           </thead>
           <tbody className="divide-y">
             {COMMENTS.map((c) => (
-              <tr key={c.no} className="cursor-pointer hover:bg-violet-50/40" onClick={() => open(c)}>
-                <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={checked.has(c.no)} onChange={() => toggle(c.no)} className="h-4 w-4 accent-violet-600" /></td>
+              <tr key={c.no} className="cursor-pointer hover:bg-indigo-50/40" onClick={() => open(c)}>
+                <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={checked.has(c.no)} onChange={() => toggle(c.no)} className="h-4 w-4 accent-indigo-600" /></td>
                 <td className="px-3 py-2.5 text-slate-500">{c.no}</td>
                 <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{c.ch.slice(0, 10)}…</span></td>
                 <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                  <Link href={promoHref} className="inline-flex items-center gap-0.5 text-violet-600 underline hover:text-violet-800" title="프로모션 상세로 이동">{c.promo}<ExternalLink className="h-3 w-3" /></Link>
+                  <Link href={promoHref} className="inline-flex items-center gap-0.5 text-indigo-600 underline hover:text-indigo-800" title="프로모션 상세로 이동">{c.promo}<ExternalLink className="h-3 w-3" /></Link>
                 </td>
                 <td className="px-3 py-2.5"><Pill>{c.type}</Pill></td>
                 <td className="max-w-[220px] truncate px-3 py-2.5 text-slate-700">{c.content}</td>
@@ -158,14 +158,14 @@ function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBac
           <Link href={promoHref}><Button variant="outline" size="sm"><ExternalLink className="mr-1 h-3.5 w-3.5" /> 프로모션 상세 열기</Button></Link>
         </div>
         <div className="grid grid-cols-2 gap-x-10">
-          <Field label="프로모션 ID"><Link href={promoHref} className="inline-flex items-center gap-0.5 text-[13px] text-violet-600 underline hover:text-violet-800">{comment.promo}<ExternalLink className="h-3 w-3" /></Link></Field>
-          <Field label="프로모션 명"><Link href={promoHref} className="inline-flex items-center gap-0.5 text-[13px] text-violet-600 underline hover:text-violet-800">룰렛 응모 이벤트<ExternalLink className="h-3 w-3" /></Link></Field>
+          <Field label="프로모션 ID"><Link href={promoHref} className="inline-flex items-center gap-0.5 text-[13px] text-indigo-600 underline hover:text-indigo-800">{comment.promo}<ExternalLink className="h-3 w-3" /></Link></Field>
+          <Field label="프로모션 명"><Link href={promoHref} className="inline-flex items-center gap-0.5 text-[13px] text-indigo-600 underline hover:text-indigo-800">룰렛 응모 이벤트<ExternalLink className="h-3 w-3" /></Link></Field>
           <Field label="이벤트 유형"><Select defaultValue="응모형" className="h-9"><option>응모형</option><option>참여형</option></Select></Field>
           <Field label="전시여부"><div className="flex gap-4 pt-1.5 text-[13px]"><Radio name="disp" label="사용" checked /><Radio name="disp" label="미사용" /></div></Field>
           <Field label="전시기간"><span className="text-[13px] text-slate-600">26.08.01 ~ 26.08.30</span></Field>
           <Field label="활성기간"><span className="text-[13px] text-slate-600">26.08.05 ~ 26.08.19</span></Field>
           <Field label="댓글 차단여부"><div className="flex gap-4 pt-1.5 text-[13px]"><Radio name="blk" label="사용" /><Radio name="blk" label="미사용" checked /></div></Field>
-          <Field label="댓글 차단기간"><div className="flex items-center gap-2 text-[13px] text-slate-600">26.08.05 ~ 26.08.19 <label className="ml-2 flex items-center gap-1"><input type="checkbox" className="h-4 w-4 accent-violet-600" /> 항상</label></div></Field>
+          <Field label="댓글 차단기간"><div className="flex items-center gap-2 text-[13px] text-slate-600">26.08.05 ~ 26.08.19 <label className="ml-2 flex items-center gap-1"><input type="checkbox" className="h-4 w-4 accent-indigo-600" /> 항상</label></div></Field>
         </div>
       </section>
 
@@ -180,7 +180,7 @@ function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBac
 
       <section className="rounded-xl border bg-card p-5">
         <p className="mb-3 text-[15px] font-bold">• 답글정보</p>
-        <Field label="답글내용"><textarea className="min-h-[90px] w-full rounded-lg border bg-white p-3 text-[13px] outline-none focus:ring-2 focus:ring-violet-200" placeholder="답글을 작성해주세요." defaultValue={comment.reply} /></Field>
+        <Field label="답글내용"><textarea className="min-h-[90px] w-full rounded-lg border bg-white p-3 text-[13px] outline-none focus:ring-2 focus:ring-indigo-200" placeholder="답글을 작성해주세요." defaultValue={comment.reply} /></Field>
         <div className="flex justify-end"><Button variant="outline" size="sm">추가</Button></div>
       </section>
 
@@ -228,7 +228,7 @@ function ReviewsTab() {
           </thead>
           <tbody className="divide-y">
             {REVIEWS.map((r) => (
-              <tr key={r.no} className="hover:bg-violet-50/40">
+              <tr key={r.no} className="hover:bg-indigo-50/40">
                 <td className="px-3 py-2.5 text-slate-500">{r.no}</td>
                 <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{r.ch.slice(0, 10)}…</span></td>
                 <td className="px-3 py-2.5 text-slate-700">{r.product}</td>
@@ -267,7 +267,7 @@ function BlockTab() {
     <div className="space-y-4">
       <div className="flex gap-1 rounded-lg border bg-white p-0.5 text-[13px]">
         {([['report', '신고 접수', ShieldAlert], ['history', '차단 이력', ShieldOff]] as const).map(([k, l, Icon]) => (
-          <button key={k} onClick={() => setSub(k)} className={cn('inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium', sub === k ? 'bg-violet-600 text-white' : 'text-slate-500 hover:text-slate-700')}><Icon className="h-3.5 w-3.5" /> {l}</button>
+          <button key={k} onClick={() => setSub(k)} className={cn('inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium', sub === k ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-700')}><Icon className="h-3.5 w-3.5" /> {l}</button>
         ))}
       </div>
 
@@ -281,7 +281,7 @@ function BlockTab() {
             </thead>
             <tbody className="divide-y">
               {REPORTS.map((r) => (
-                <tr key={r.no} className="hover:bg-violet-50/40">
+                <tr key={r.no} className="hover:bg-indigo-50/40">
                   <td className="px-3 py-2.5 text-slate-500">{r.no}</td>
                   <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{r.target.slice(0, 10)}…</span></td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{r.where}</td>
@@ -306,7 +306,7 @@ function BlockTab() {
             </thead>
             <tbody className="divide-y">
               {BLOCKS.map((b) => (
-                <tr key={b.no} className="hover:bg-violet-50/40">
+                <tr key={b.no} className="hover:bg-indigo-50/40">
                   <td className="px-3 py-2.5 text-slate-500">{b.no}</td>
                   <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{b.member}</span></td>
                   <td className="px-3 py-2.5 text-slate-700">{b.reason}</td>
@@ -335,13 +335,13 @@ function LabeledSelect({ label, opts }: { label: string; opts: string[] }) {
   );
 }
 function Radio({ name, label, checked }: { name: string; label: string; checked?: boolean }) {
-  return <label className="flex cursor-pointer items-center gap-1.5"><input type="radio" name={name} defaultChecked={checked} className="h-4 w-4 accent-violet-600" /> {label}</label>;
+  return <label className="flex cursor-pointer items-center gap-1.5"><input type="radio" name={name} defaultChecked={checked} className="h-4 w-4 accent-indigo-600" /> {label}</label>;
 }
 function Pagination() {
   return (
     <div className="flex items-center gap-1 text-[12px] text-slate-500">
       <button className="grid h-7 w-7 place-items-center rounded border hover:bg-slate-50"><ChevronLeft className="h-3.5 w-3.5" /></button>
-      {[1, 2, 3, 4, 5].map((n) => <button key={n} className={cn('grid h-7 w-7 place-items-center rounded', n === 1 ? 'bg-violet-600 text-white' : 'border hover:bg-slate-50')}>{n}</button>)}
+      {[1, 2, 3, 4, 5].map((n) => <button key={n} className={cn('grid h-7 w-7 place-items-center rounded', n === 1 ? 'bg-indigo-600 text-white' : 'border hover:bg-slate-50')}>{n}</button>)}
       <button className="grid h-7 w-7 place-items-center rounded border hover:bg-slate-50"><ChevronRight className="h-3.5 w-3.5" /></button>
     </div>
   );
