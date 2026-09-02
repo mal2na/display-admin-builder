@@ -159,7 +159,7 @@ function CommentDetail({ comment, onBack }: { comment: Comment; onBack: () => vo
         </div>
         <div className="grid grid-cols-2 gap-x-10">
           <Field label="프로모션 ID"><Link href="/admin/events" className="inline-flex items-center gap-0.5 text-[13px] text-violet-600 underline hover:text-violet-800">{comment.promo}<ExternalLink className="h-3 w-3" /></Link></Field>
-          <Field label="프로모션 명"><span className="text-[13px]">스타벅스 기프티콘 증정 이벤트</span></Field>
+          <Field label="프로모션 명"><Link href="/admin/events" className="inline-flex items-center gap-0.5 text-[13px] text-violet-600 underline hover:text-violet-800">스타벅스 기프티콘 증정 이벤트<ExternalLink className="h-3 w-3" /></Link></Field>
           <Field label="이벤트 유형"><Select defaultValue="응모형" className="h-9"><option>응모형</option><option>참여형</option></Select></Field>
           <Field label="전시여부"><div className="flex gap-4 pt-1.5 text-[13px]"><Radio name="disp" label="사용" checked /><Radio name="disp" label="미사용" /></div></Field>
           <Field label="전시기간"><span className="text-[13px] text-slate-600">26.08.01 ~ 26.08.30</span></Field>
