@@ -82,24 +82,29 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
   const toggle = (no: number) => setChecked((s) => { const n = new Set(s); n.has(no) ? n.delete(no) : n.add(no); return n; });
   return (
     <div className="space-y-4">
-      {/* 검색 */}
-      <div className="rounded-xl border bg-card p-3">
-        <div className="grid grid-cols-[repeat(4,minmax(0,1fr))] gap-x-4 gap-y-2">
-          <LabeledSelect label="노출여부" opts={['전체', '노출', '미노출', '검수 중']} />
-          <LabeledSelect label="댓글유형" opts={['전체', '문의', '반응']} />
-          <LabeledSelect label="답변여부" opts={['전체', '답변완료', '답변대기']} />
-          <LabeledSelect label="기간" opts={['등록일시', '답글 등록일']} />
+      {/* 검색 — 목업(SB-ETC-089): 노출여부·댓글유형·답변여부·기간(+날짜) / 검색 + 초기화·조회 */}
+      <div className="rounded-xl border bg-card p-4">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <Filt label="노출여부"><LabelSel opts={['전체', '노출', '미노출', '검수 중']} /></Filt>
+          <Filt label="댓글유형"><LabelSel opts={['전체', '문의', '반응']} /></Filt>
+          <Filt label="답변여부"><LabelSel opts={['전체', '답변완료', '답변대기']} /></Filt>
+          <Filt label="기간">
+            <LabelSel opts={['등록일시', '답글 등록일']} w="w-28" />
+            <input type="date" className="h-9 w-36 rounded-lg border bg-white px-2 text-[13px] text-slate-500 outline-none focus:ring-2 focus:ring-indigo-200" />
+            <span className="text-slate-400">~</span>
+            <input type="date" className="h-9 w-36 rounded-lg border bg-white px-2 text-[13px] text-slate-500 outline-none focus:ring-2 focus:ring-indigo-200" />
+          </Filt>
         </div>
-        <div className="mt-2 flex items-end gap-3">
-          <div className="w-48"><LabeledSelect label="검색" opts={['전체', '댓글내용', '답글내용', '멤버십 채널 ID']} /></div>
-          <input className={box} placeholder="내용을 입력하세요." />
+        <div className="mt-3 flex items-center gap-3">
+          <Filt label="검색"><LabelSel opts={['전체', '댓글내용', '답글내용', '멤버십 채널 ID']} /></Filt>
+          <input className={box + ' flex-1'} placeholder="내용을 입력하세요." />
           <Button variant="outline" size="sm">초기화</Button>
           <Button variant="primary" size="sm"><Search className="mr-1 h-3.5 w-3.5" /> 조회</Button>
         </div>
       </div>
 
-      {/* 목록 — 목업(SB-ETC-089) 테이블 스타일: 흰 헤더 + 굵은 라벨 + 하단 굵은 선, 답글내용은 회색 박스 */}
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      {/* 목록 — 목업(SB-ETC-089): 좌우 보더 없이 가로줄만, 흰 헤더 + 굵은 라벨 + 하단 굵은 선 */}
+      <div className="overflow-x-auto">
         <table className="w-full min-w-[1140px] text-[12px]">
           <thead className="text-[12px] text-slate-700">
             <tr className="border-b-2 border-slate-200 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3 [&>th]:font-bold">
@@ -263,10 +268,10 @@ function ReviewsTab() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <div className="overflow-x-auto">
         <table className="w-full min-w-[1000px] text-[12px]">
-          <thead className="bg-slate-50 text-[11px] text-slate-500">
-            <tr className="[&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-semibold">
+          <thead className="text-[12px] text-slate-700">
+              <tr className="border-b-2 border-slate-200 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold">
               <th>번호</th><th>멤버십 채널 ID</th><th>상품</th><th>별점</th><th>리뷰내용</th><th>사진</th><th>좋아요</th><th>등록일시</th><th>신고</th><th>노출여부</th>
             </tr>
           </thead>
@@ -316,10 +321,10 @@ function BlockTab() {
       </div>
 
       {sub === 'report' ? (
-        <div className="overflow-x-auto rounded-xl border bg-card">
+        <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-[12px]">
-            <thead className="bg-slate-50 text-[11px] text-slate-500">
-              <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-semibold">
+            <thead className="text-[12px] text-slate-700">
+              <tr className="border-b-2 border-slate-200 [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold">
                 <th>번호</th><th>대상(작성자)</th><th>위치</th><th>내용</th><th>신고 사유</th><th>신고자</th><th>접수일시</th><th>상태</th><th className="text-center">처리</th>
               </tr>
             </thead>
@@ -341,10 +346,10 @@ function BlockTab() {
           </table>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-card">
+        <div className="overflow-x-auto">
           <table className="w-full min-w-[800px] text-[12px]">
-            <thead className="bg-slate-50 text-[11px] text-slate-500">
-              <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-semibold">
+            <thead className="text-[12px] text-slate-700">
+              <tr className="border-b-2 border-slate-200 [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold">
                 <th>번호</th><th>차단 사용자(멤버십 채널 ID)</th><th>차단 사유</th><th>차단 기간</th><th>처리자</th><th>상태</th><th className="text-center">관리</th>
               </tr>
             </thead>
@@ -377,6 +382,13 @@ function LabeledSelect({ label, opts }: { label: string; opts: string[] }) {
       <Select className="h-9 flex-1">{opts.map((o) => <option key={o}>{o}</option>)}</Select>
     </div>
   );
+}
+// 인라인 필터(라벨 + 컨트롤) — 목업 검색영역 스타일
+function Filt({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="flex items-center gap-2"><span className="shrink-0 text-[13px] font-medium text-slate-600">{label}</span>{children}</div>;
+}
+function LabelSel({ opts, w }: { opts: string[]; w?: string }) {
+  return <Select className={cn('h-9', w ?? 'w-36')}>{opts.map((o) => <option key={o}>{o}</option>)}</Select>;
 }
 function Radio({ name, label, checked }: { name: string; label: string; checked?: boolean }) {
   return <label className="flex cursor-pointer items-center gap-1.5"><input type="radio" name={name} defaultChecked={checked} className="h-4 w-4 accent-indigo-600" /> {label}</label>;
