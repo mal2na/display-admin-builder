@@ -36,7 +36,7 @@ const TABS = [
 ] as const;
 type TabKey = typeof TABS[number]['key'];
 
-export function CommentAdmin() {
+export function CommentAdmin({ promoHref = '/admin/events' }: { promoHref?: string }) {
   const [tab, setTab] = useState<TabKey>('comment');
   const [detailOpen, setDetailOpen] = useState(false); // 상세 진입 시 상단 탭 숨김
   return (
@@ -58,7 +58,7 @@ export function CommentAdmin() {
       )}
 
       <div className="mt-5">
-        {tab === 'comment' && <CommentsTab onDetail={setDetailOpen} />}
+        {tab === 'comment' && <CommentsTab onDetail={setDetailOpen} promoHref={promoHref} />}
         {tab === 'review' && <ReviewsTab />}
         {tab === 'block' && <BlockTab />}
       </div>
@@ -81,11 +81,11 @@ const COMMENTS: Comment[] = [
   { no: 1110, ch: '35D29519I8F9Y0', promo: 'ENV123447', type: '반응', content: '감사합니다', likes: 1, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '미노출' },
 ];
 
-function CommentsTab({ onDetail }: { onDetail: (open: boolean) => void }) {
+function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => void; promoHref: string }) {
   const [sel, setSel] = useState<Comment | null>(null);
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const open = (c: Comment) => { setSel(c); onDetail(true); };
-  if (sel) return <CommentDetail comment={sel} onBack={() => { setSel(null); onDetail(false); }} />;
+  if (sel) return <CommentDetail comment={sel} onBack={() => { setSel(null); onDetail(false); }} promoHref={promoHref} />;
 
   const toggle = (no: number) => setChecked((s) => { const n = new Set(s); n.has(no) ? n.delete(no) : n.add(no); return n; });
   return (
@@ -121,7 +121,7 @@ function CommentsTab({ onDetail }: { onDetail: (open: boolean) => void }) {
                 <td className="px-3 py-2.5 text-slate-500">{c.no}</td>
                 <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{c.ch.slice(0, 10)}…</span></td>
                 <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                  <Link href="/admin/events" className="inline-flex items-center gap-0.5 text-violet-600 underline hover:text-violet-800" title="프로모션 관리로 이동">{c.promo}<ExternalLink className="h-3 w-3" /></Link>
+                  <Link href={promoHref} className="inline-flex items-center gap-0.5 text-violet-600 underline hover:text-violet-800" title="프로모션 상세로 이동">{c.promo}<ExternalLink className="h-3 w-3" /></Link>
                 </td>
                 <td className="px-3 py-2.5"><Pill>{c.type}</Pill></td>
                 <td className="max-w-[220px] truncate px-3 py-2.5 text-slate-700">{c.content}</td>
@@ -149,17 +149,17 @@ function CommentsTab({ onDetail }: { onDetail: (open: boolean) => void }) {
   );
 }
 
-function CommentDetail({ comment, onBack }: { comment: Comment; onBack: () => void }) {
+function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBack: () => void; promoHref: string }) {
   return (
     <div className="space-y-5">
       <section className="rounded-xl border bg-card p-5">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-[15px] font-bold">• 프로모션 기본정보</p>
-          <Link href="/admin/events"><Button variant="outline" size="sm"><ExternalLink className="mr-1 h-3.5 w-3.5" /> 프로모션 관리에서 열기</Button></Link>
+          <Link href={promoHref}><Button variant="outline" size="sm"><ExternalLink className="mr-1 h-3.5 w-3.5" /> 프로모션 상세 열기</Button></Link>
         </div>
         <div className="grid grid-cols-2 gap-x-10">
-          <Field label="프로모션 ID"><Link href="/admin/events" className="inline-flex items-center gap-0.5 text-[13px] text-violet-600 underline hover:text-violet-800">{comment.promo}<ExternalLink className="h-3 w-3" /></Link></Field>
-          <Field label="프로모션 명"><Link href="/admin/events" className="inline-flex items-center gap-0.5 text-[13px] text-violet-600 underline hover:text-violet-800">스타벅스 기프티콘 증정 이벤트<ExternalLink className="h-3 w-3" /></Link></Field>
+          <Field label="프로모션 ID"><Link href={promoHref} className="inline-flex items-center gap-0.5 text-[13px] text-violet-600 underline hover:text-violet-800">{comment.promo}<ExternalLink className="h-3 w-3" /></Link></Field>
+          <Field label="프로모션 명"><Link href={promoHref} className="inline-flex items-center gap-0.5 text-[13px] text-violet-600 underline hover:text-violet-800">룰렛 응모 이벤트<ExternalLink className="h-3 w-3" /></Link></Field>
           <Field label="이벤트 유형"><Select defaultValue="응모형" className="h-9"><option>응모형</option><option>참여형</option></Select></Field>
           <Field label="전시여부"><div className="flex gap-4 pt-1.5 text-[13px]"><Radio name="disp" label="사용" checked /><Radio name="disp" label="미사용" /></div></Field>
           <Field label="전시기간"><span className="text-[13px] text-slate-600">26.08.01 ~ 26.08.30</span></Field>
