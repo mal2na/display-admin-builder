@@ -72,17 +72,15 @@ export async function seedEvents(prisma: PrismaClient) {
     const built = tpl.build();
     const nodes: NodeSpec[] = built.length ? toPromotionSkeleton(built) : built;
     await insertNodes(prisma as any, page.id, nodes);
-    // 안내형(제휴사 안내)에 댓글 샘플 — 댓글 관리 탭 데모용
-    if (s.template === 'info-partner') {
-      await prisma.eventProgram.update({ where: { id: project.id }, data: { commentUse: true } });
-      // 답글이 있는 댓글은 개별 생성해 EventCommentReply까지 함께 시딩(대표 답글=denormalized 캐시와 일치)
-      for (const cm of sampleComments(project.id)) {
-        const created = await prisma.eventComment.create({ data: cm });
-        if (cm.replyContent) {
-          await prisma.eventCommentReply.create({
-            data: { commentId: created.id, content: cm.replyContent, author: cm.replyAuthor ?? '운영자(P217129)', exposed: true, createdAt: cm.replyAt ?? cm.createdAt },
-          });
-        }
+    // 댓글 샘플 — 모든 이벤트의 댓글 관리 탭에 데이터가 있도록 시딩(데모용).
+    await prisma.eventProgram.update({ where: { id: project.id }, data: { commentUse: true } });
+    // 답글이 있는 댓글은 개별 생성해 EventCommentReply까지 함께 시딩(대표 답글=denormalized 캐시와 일치)
+    for (const cm of sampleComments(project.id)) {
+      const created = await prisma.eventComment.create({ data: cm });
+      if (cm.replyContent) {
+        await prisma.eventCommentReply.create({
+          data: { commentId: created.id, content: cm.replyContent, author: cm.replyAuthor ?? '운영자(P217129)', exposed: true, createdAt: cm.replyAt ?? cm.createdAt },
+        });
       }
     }
   }
