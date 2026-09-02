@@ -20,15 +20,6 @@ const TONE: Record<string, string> = {
 function Pill({ children }: { children: string }) {
   return <span className={cn('inline-block rounded px-1.5 py-0.5 text-[11px] font-semibold', TONE[children] ?? 'bg-slate-100 text-slate-500')}>{children}</span>;
 }
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start gap-3 py-2">
-      <span className="w-28 shrink-0 pt-1.5 text-[13px] text-muted-foreground">{label}</span>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
-  );
-}
-
 const TABS = [
   { key: 'comment', label: '댓글 관리' },
   { key: 'review', label: '리뷰 관리' },
@@ -149,42 +140,93 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
   );
 }
 
+// ── 폼 테이블 소품 (라벨셀 + 값셀 격자) ──
+function FT({ children }: { children: React.ReactNode }) {
+  return <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)] overflow-hidden rounded-lg border-l border-t border-slate-200 text-[13px]">{children}</div>;
+}
+function L({ children, span }: { children?: React.ReactNode; span?: string }) {
+  return <div className={cn('flex items-center border-b border-r border-slate-200 bg-slate-50 px-3 py-2.5 font-medium text-slate-600', span)}>{children}</div>;
+}
+function C({ children, span }: { children?: React.ReactNode; span?: string }) {
+  return <div className={cn('flex items-center gap-2 border-b border-r border-slate-200 bg-white px-3 py-2', span)}>{children}</div>;
+}
+const roBox = 'h-8 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-[13px] text-slate-600 flex items-center';
+
 function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBack: () => void; promoHref: string }) {
   return (
-    <div className="space-y-5">
-      <section className="rounded-xl border bg-card p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-[15px] font-bold">• 프로모션 기본정보</p>
-          <Link href={promoHref}><Button variant="outline" size="sm"><ExternalLink className="mr-1 h-3.5 w-3.5" /> 프로모션 상세 열기</Button></Link>
-        </div>
-        <div className="grid grid-cols-2 gap-x-10">
-          <Field label="프로모션 ID"><Link href={promoHref} className="inline-flex items-center gap-0.5 text-[13px] text-indigo-600 underline hover:text-indigo-800">{comment.promo}<ExternalLink className="h-3 w-3" /></Link></Field>
-          <Field label="프로모션 명"><Link href={promoHref} className="inline-flex items-center gap-0.5 text-[13px] text-indigo-600 underline hover:text-indigo-800">룰렛 응모 이벤트<ExternalLink className="h-3 w-3" /></Link></Field>
-          <Field label="이벤트 유형"><Select defaultValue="응모형" className="h-9"><option>응모형</option><option>참여형</option></Select></Field>
-          <Field label="전시여부"><div className="flex gap-4 pt-1.5 text-[13px]"><Radio name="disp" label="사용" checked /><Radio name="disp" label="미사용" /></div></Field>
-          <Field label="전시기간"><span className="text-[13px] text-slate-600">26.08.01 ~ 26.08.30</span></Field>
-          <Field label="활성기간"><span className="text-[13px] text-slate-600">26.08.05 ~ 26.08.19</span></Field>
-          <Field label="댓글 차단여부"><div className="flex gap-4 pt-1.5 text-[13px]"><Radio name="blk" label="사용" /><Radio name="blk" label="미사용" checked /></div></Field>
-          <Field label="댓글 차단기간"><div className="flex items-center gap-2 text-[13px] text-slate-600">26.08.05 ~ 26.08.19 <label className="ml-2 flex items-center gap-1"><input type="checkbox" className="h-4 w-4 accent-indigo-600" /> 항상</label></div></Field>
-        </div>
+    <div className="space-y-6">
+      {/* 1. 프로모션 정보 */}
+      <section>
+        <p className="mb-2.5 text-[15px] font-bold">• 프로모션 정보</p>
+        <FT>
+          <L>프로모션 ID</L>
+          <C><Link href={promoHref} className={cn(roBox, 'text-indigo-600 underline hover:text-indigo-800')}>{comment.promo}</Link></C>
+          <L>프로모션 명</L>
+          <C><Link href={promoHref} className={cn(roBox, 'text-indigo-600 underline hover:text-indigo-800')}>룰렛 응모 이벤트</Link></C>
+
+          <L>프로모션 유형</L>
+          <C><Select defaultValue="이벤트" className="h-8 w-28"><option>이벤트</option></Select><Select defaultValue="응모형" className="h-8 w-28"><option>응모형</option><option>참여형</option></Select></C>
+          <L>전시여부</L>
+          <C><Radio name="disp" label="사용" checked /><Radio name="disp" label="미사용" /></C>
+
+          <L>전시기간</L>
+          <C><span className={cn(roBox, 'w-32 justify-center')}>26.08.01</span><span className="text-slate-400">~</span><span className={cn(roBox, 'w-32 justify-center')}>26.08.30</span></C>
+          <L>참여기간</L>
+          <C><span className={cn(roBox, 'w-32 justify-center')}>26.08.05</span><span className="text-slate-400">~</span><span className={cn(roBox, 'w-32 justify-center')}>26.08.19</span></C>
+
+          <L>댓글 사용여부</L>
+          <C><Radio name="cuse" label="노출" checked /><Radio name="cuse" label="미노출" /></C>
+          <L>댓글 차단여부</L>
+          <C><Radio name="blk" label="사용" /><Radio name="blk" label="미사용" checked /></C>
+
+          <L> </L>
+          <C> </C>
+          <L>댓글 차단기간</L>
+          <C><span className={cn(roBox, 'w-32 justify-center')}>26.08.05</span><span className="text-slate-400">~</span><span className={cn(roBox, 'w-32 justify-center')}>26.08.19</span></C>
+        </FT>
       </section>
 
-      <section className="rounded-xl border bg-card p-5">
-        <p className="mb-3 text-[15px] font-bold">• 댓글정보</p>
-        <Field label="멤버십 채널 ID"><span className="font-mono text-[13px] text-slate-600">{comment.ch}</span></Field>
-        <Field label="댓글유형"><span className="text-[13px]">{comment.type}</span></Field>
-        <Field label="댓글 작성일시"><span className="text-[13px] text-slate-600">{comment.at}</span></Field>
-        <Field label="댓글내용"><div className="min-h-[80px] whitespace-pre-line rounded-lg border bg-slate-50 p-3 text-[13px] text-slate-700">{comment.content}</div></Field>
-        <Field label="댓글 노출여부"><div className="flex gap-4 pt-1.5 text-[13px]"><Radio name="vis" label="사용(노출)" checked={comment.visible === '노출'} /><Radio name="vis" label="검수중" checked={comment.visible === '검수 중'} /><Radio name="vis" label="미사용(미노출)" checked={comment.visible === '미노출'} /></div></Field>
+      {/* 2. 댓글정보 */}
+      <section>
+        <p className="mb-2.5 text-[15px] font-bold">• 댓글정보</p>
+        <FT>
+          <L>멤버십 채널 ID</L>
+          <C><span className={cn(roBox, 'w-full font-mono')}>{comment.ch}…</span></C>
+          <L>댓글유형</L>
+          <C><span className={cn(roBox, 'w-40')}>{comment.type}</span></C>
+
+          <L>등록일시</L>
+          <C><span className={cn(roBox, 'w-48')}>{comment.at}</span></C>
+          <L>좋아요 수</L>
+          <C><span className={cn(roBox, 'w-40')}>{comment.likes}</span></C>
+
+          <L span="row-span-1">댓글내용</L>
+          <C span="col-span-3">
+            <div className="min-h-[80px] w-full whitespace-pre-line rounded-md border border-slate-200 bg-slate-50 p-3 text-[13px] text-slate-700">{comment.content}</div>
+          </C>
+
+          <L>노출여부</L>
+          <C span="col-span-3">
+            <Radio name="vis" label="사용" checked={comment.visible === '노출'} />
+            <Radio name="vis" label="검수중" checked={comment.visible === '검수 중'} />
+            <Radio name="vis" label="미사용" checked={comment.visible === '미노출'} />
+          </C>
+        </FT>
       </section>
 
-      <section className="rounded-xl border bg-card p-5">
-        <p className="mb-3 text-[15px] font-bold">• 답글정보</p>
-        <Field label="답글내용"><textarea className="min-h-[90px] w-full rounded-lg border bg-white p-3 text-[13px] outline-none focus:ring-2 focus:ring-indigo-200" placeholder="답글을 작성해주세요." defaultValue={comment.reply} /></Field>
-        <div className="flex justify-end"><Button variant="outline" size="sm">추가</Button></div>
+      {/* 3. 답글정보 */}
+      <section>
+        <p className="mb-2.5 text-[15px] font-bold">• 답글정보</p>
+        <FT>
+          <L>답글내용</L>
+          <C span="col-span-3">
+            <textarea className="min-h-[90px] w-full rounded-md border border-slate-200 bg-white p-3 text-[13px] outline-none focus:ring-2 focus:ring-indigo-200" placeholder="답글을 작성해주세요." defaultValue={comment.reply} />
+          </C>
+        </FT>
+        <div className="mt-2 flex justify-end"><Button variant="outline" size="sm">추가</Button></div>
       </section>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-t pt-4">
         <Button variant="outline" size="sm" onClick={onBack}>목록</Button>
         <Button variant="primary" size="sm">저장</Button>
       </div>
