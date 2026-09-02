@@ -33,11 +33,19 @@ export function CommentAdmin({ promoHref = '/admin/events' }: { promoHref?: stri
   const [detailOpen, setDetailOpen] = useState(false); // 상세 진입 시 상단 탭 숨김
   return (
     <div className="p-6">
-      <PageHeader
-        trail={['프로모션 관리', '댓글·리뷰 관리']}
-        title="댓글·리뷰 관리"
-        subtitle="상품 상세·프로모션에 달린 댓글/리뷰를 조회·통제·답글하고, 신고 접수와 사용자 차단을 관리합니다."
-      />
+      {detailOpen ? (
+        <PageHeader
+          trail={['프로모션 관리', '댓글·리뷰 관리', '댓글 상세']}
+          title="댓글 상세"
+          subtitle="목록에서 선택한 댓글의 상세 페이지로 댓글의 노출여부 수정 및 답글을 등록/수정 할 수 있는 화면입니다."
+        />
+      ) : (
+        <PageHeader
+          trail={['프로모션 관리', '댓글·리뷰 관리']}
+          title="댓글·리뷰 관리"
+          subtitle="상품 상세·프로모션에 달린 댓글/리뷰를 조회·통제·답글하고, 신고 접수와 사용자 차단을 관리합니다."
+        />
+      )}
 
       {/* 탭 — 목록에서만 표시(상세 진입 시 숨김) */}
       {!detailOpen && (
@@ -124,7 +132,7 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
                 <td className="max-w-[220px] truncate px-3 py-2.5 text-left text-slate-700">{c.content}</td>
                 <td className="px-3 py-2.5 text-slate-600">{c.likes}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.at}</td>
-                <td className="px-3 py-2 text-left"><div className="flex min-h-[30px] max-w-[220px] items-center truncate rounded-md border border-slate-200 bg-slate-50 px-2.5 text-[12px] text-slate-600">{c.reply}</div></td>
+                <td className="max-w-[220px] truncate px-3 py-2.5 text-left text-slate-500">{c.reply || '-'}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.replyBy || '-'}</td>
                 <td className="px-3 py-2.5 text-slate-500">{c.replyCount || '-'}</td>
                 <td className="px-3 py-2.5"><Pill>{c.answered}</Pill></td>
