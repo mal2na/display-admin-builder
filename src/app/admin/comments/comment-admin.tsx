@@ -180,7 +180,7 @@ function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBac
           <C><Link href={promoHref} className={cn(roBox, 'text-indigo-600 underline hover:text-indigo-800')}>룰렛 응모 이벤트</Link></C>
 
           <L>프로모션 유형</L>
-          <C><Select defaultValue="이벤트" className="h-8 w-28"><option>이벤트</option></Select><Select defaultValue="응모형" className="h-8 w-28"><option>응모형</option><option>참여형</option></Select></C>
+          <C><span className={cn(roBox, 'w-28 justify-center')}>이벤트</span><span className={cn(roBox, 'w-28 justify-center')}>응모형</span></C>
           <L>전시여부</L>
           <C><Radio name="disp" label="사용" checked disabled /><Radio name="disp" label="미사용" disabled /></C>
 
@@ -191,11 +191,11 @@ function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBac
 
           <L>댓글 사용여부</L>
           <C><Radio name="cuse" label="노출" checked disabled /><Radio name="cuse" label="미노출" disabled /></C>
-          <L>댓글 차단여부</L>
-          <C><Radio name="blk" label="사용" disabled /><Radio name="blk" label="미사용" checked disabled /></C>
-
           <L> </L>
           <C> </C>
+
+          <L>댓글 차단여부</L>
+          <C><Radio name="blk" label="사용" disabled /><Radio name="blk" label="미사용" checked disabled /></C>
           <L>댓글 차단기간</L>
           <C><span className={cn(roBox, 'w-32 justify-center')}>26.08.05</span><span className="text-slate-400">~</span><span className={cn(roBox, 'w-32 justify-center')}>26.08.19</span></C>
         </FT>
