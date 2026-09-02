@@ -106,7 +106,7 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
       {/* 목록 — 목업(SB-ETC-089): 좌우 보더 없이 가로줄만, 흰 헤더 + 굵은 라벨 + 하단 굵은 선 */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1140px] text-[12px]">
-          <thead className="text-[12px] text-slate-700">
+          <thead className="bg-slate-50 text-[12px] text-slate-700">
             <tr className="border-b-2 border-slate-200 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3 [&>th]:font-bold">
               <th className="w-8"></th><th>번호</th><th className="text-left">멤버십 채널 ID</th><th>프로모션 ID</th><th>댓글유형</th><th className="text-left">댓글내용</th><th>좋아요 수</th><th>등록일시</th><th className="text-left">답글내용</th><th>답글 등록자</th><th>총 답글 수</th><th>답변여부</th><th>노출여부</th>
             </tr>
@@ -270,7 +270,7 @@ function ReviewsTab() {
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1000px] text-[12px]">
-          <thead className="text-[12px] text-slate-700">
+          <thead className="bg-slate-50 text-[12px] text-slate-700">
               <tr className="border-b-2 border-slate-200 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold">
               <th>번호</th><th>멤버십 채널 ID</th><th>상품</th><th>별점</th><th>리뷰내용</th><th>사진</th><th>좋아요</th><th>등록일시</th><th>신고</th><th>노출여부</th>
             </tr>
@@ -323,7 +323,7 @@ function BlockTab() {
       {sub === 'report' ? (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-[12px]">
-            <thead className="text-[12px] text-slate-700">
+            <thead className="bg-slate-50 text-[12px] text-slate-700">
               <tr className="border-b-2 border-slate-200 [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold">
                 <th>번호</th><th>대상(작성자)</th><th>위치</th><th>내용</th><th>신고 사유</th><th>신고자</th><th>접수일시</th><th>상태</th><th className="text-center">처리</th>
               </tr>
@@ -348,7 +348,7 @@ function BlockTab() {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px] text-[12px]">
-            <thead className="text-[12px] text-slate-700">
+            <thead className="bg-slate-50 text-[12px] text-slate-700">
               <tr className="border-b-2 border-slate-200 [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold">
                 <th>번호</th><th>차단 사용자(멤버십 채널 ID)</th><th>차단 사유</th><th>차단 기간</th><th>처리자</th><th>상태</th><th className="text-center">관리</th>
               </tr>
