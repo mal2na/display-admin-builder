@@ -10,15 +10,16 @@ import { cn } from '@/lib/utils';
 
 // ── 공통 ──
 const box = 'h-9 w-full rounded-lg border bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-indigo-200';
+// 칩 색 — 목업(SB-ETC-089) 기준: 문의 앰버 / 반응 블루 / 답변완료·노출 그린 / 답변대기 앰버 / 미노출 레드 / 검수중 오렌지
 const TONE: Record<string, string> = {
-  노출: 'bg-emerald-100 text-emerald-700', 미노출: 'bg-rose-100 text-rose-600', '검수 중': 'bg-amber-100 text-amber-700', 검수중: 'bg-amber-100 text-amber-700',
-  답변완료: 'bg-indigo-100 text-indigo-700', 답변대기: 'bg-slate-100 text-slate-500',
-  접수: 'bg-amber-100 text-amber-700', 처리완료: 'bg-emerald-100 text-emerald-700', 반려: 'bg-slate-100 text-slate-500',
-  차단중: 'bg-rose-100 text-rose-600', 해제: 'bg-slate-100 text-slate-500',
-  문의: 'bg-sky-100 text-sky-700', 반응: 'bg-slate-100 text-slate-500',
+  노출: 'bg-emerald-50 text-emerald-600', 미노출: 'bg-rose-50 text-rose-500', '검수 중': 'bg-orange-50 text-orange-600', 검수중: 'bg-orange-50 text-orange-600',
+  답변완료: 'bg-emerald-50 text-emerald-600', 답변대기: 'bg-amber-50 text-amber-600',
+  접수: 'bg-amber-50 text-amber-600', 처리완료: 'bg-emerald-50 text-emerald-600', 반려: 'bg-slate-100 text-slate-500',
+  차단중: 'bg-rose-50 text-rose-500', 해제: 'bg-slate-100 text-slate-500',
+  문의: 'bg-amber-50 text-amber-600', 반응: 'bg-blue-50 text-blue-600',
 };
 function Pill({ children }: { children: string }) {
-  return <span className={cn('inline-block rounded px-1.5 py-0.5 text-[11px] font-semibold', TONE[children] ?? 'bg-slate-100 text-slate-500')}>{children}</span>;
+  return <span className={cn('inline-block rounded-md px-2 py-1 text-[11px] font-semibold', TONE[children] ?? 'bg-slate-100 text-slate-500')}>{children}</span>;
 }
 const TABS = [
   { key: 'comment', label: '댓글 관리' },
@@ -97,29 +98,30 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
         </div>
       </div>
 
-      {/* 목록 */}
+      {/* 목록 — 목업(SB-ETC-089) 테이블 스타일: 흰 헤더 + 굵은 라벨 + 하단 굵은 선, 답글내용은 회색 박스 */}
       <div className="overflow-x-auto rounded-xl border bg-card">
-        <table className="w-full min-w-[1100px] text-[12px]">
-          <thead className="bg-slate-50 text-[11px] text-slate-500">
-            <tr className="[&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-semibold">
-              <th className="w-8"></th><th>번호</th><th>멤버십 채널 ID</th><th>프로모션 ID</th><th>유형</th><th>댓글내용</th><th>좋아요</th><th>등록일시</th><th>답글내용</th><th>총답글</th><th>답변여부</th><th>노출여부</th>
+        <table className="w-full min-w-[1140px] text-[12px]">
+          <thead className="text-[12px] text-slate-700">
+            <tr className="border-b-2 border-slate-200 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3 [&>th]:font-bold">
+              <th className="w-8"></th><th>번호</th><th className="text-left">멤버십 채널 ID</th><th>프로모션 ID</th><th>댓글유형</th><th className="text-left">댓글내용</th><th>좋아요 수</th><th>등록일시</th><th className="text-left">답글내용</th><th>답글 등록자</th><th>총 답글 수</th><th>답변여부</th><th>노출여부</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-slate-100">
             {COMMENTS.map((c) => (
-              <tr key={c.no} className="cursor-pointer hover:bg-indigo-50/40" onClick={() => open(c)}>
+              <tr key={c.no} className="cursor-pointer text-center hover:bg-indigo-50/40" onClick={() => open(c)}>
                 <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={checked.has(c.no)} onChange={() => toggle(c.no)} className="h-4 w-4 accent-indigo-600" /></td>
-                <td className="px-3 py-2.5 text-slate-500">{c.no}</td>
-                <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{c.ch.slice(0, 10)}…</span></td>
+                <td className="px-3 py-2.5 text-slate-600">{c.no}</td>
+                <td className="px-3 py-2.5 text-left"><span className="font-mono text-[11px] text-slate-500">{c.ch.slice(0, 10)}…</span></td>
                 <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                  <Link href={promoHref} className="inline-flex items-center gap-0.5 text-indigo-600 underline hover:text-indigo-800" title="프로모션 상세로 이동">{c.promo}<ExternalLink className="h-3 w-3" /></Link>
+                  <Link href={promoHref} className="text-indigo-600 underline hover:text-indigo-800" title="프로모션 상세로 이동">{c.promo}</Link>
                 </td>
                 <td className="px-3 py-2.5"><Pill>{c.type}</Pill></td>
-                <td className="max-w-[220px] truncate px-3 py-2.5 text-slate-700">{c.content}</td>
-                <td className="px-3 py-2.5 text-slate-500">{c.likes}</td>
+                <td className="max-w-[220px] truncate px-3 py-2.5 text-left text-slate-700">{c.content}</td>
+                <td className="px-3 py-2.5 text-slate-600">{c.likes}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.at}</td>
-                <td className="max-w-[200px] truncate px-3 py-2.5 text-slate-500">{c.reply || '-'}</td>
-                <td className="px-3 py-2.5 text-center text-slate-500">{c.replyCount || '-'}</td>
+                <td className="px-3 py-2 text-left"><div className="flex min-h-[30px] max-w-[220px] items-center truncate rounded-md border border-slate-200 bg-slate-50 px-2.5 text-[12px] text-slate-600">{c.reply}</div></td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.replyBy || '-'}</td>
+                <td className="px-3 py-2.5 text-slate-500">{c.replyCount || '-'}</td>
                 <td className="px-3 py-2.5"><Pill>{c.answered}</Pill></td>
                 <td className="px-3 py-2.5"><Pill>{c.visible}</Pill></td>
               </tr>
