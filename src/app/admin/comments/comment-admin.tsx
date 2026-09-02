@@ -182,7 +182,7 @@ function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBac
           <L>프로모션 유형</L>
           <C><Select defaultValue="이벤트" className="h-8 w-28"><option>이벤트</option></Select><Select defaultValue="응모형" className="h-8 w-28"><option>응모형</option><option>참여형</option></Select></C>
           <L>전시여부</L>
-          <C><Radio name="disp" label="사용" checked /><Radio name="disp" label="미사용" /></C>
+          <C><Radio name="disp" label="사용" checked disabled /><Radio name="disp" label="미사용" disabled /></C>
 
           <L>전시기간</L>
           <C><span className={cn(roBox, 'w-32 justify-center')}>26.08.01</span><span className="text-slate-400">~</span><span className={cn(roBox, 'w-32 justify-center')}>26.08.30</span></C>
@@ -190,9 +190,9 @@ function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBac
           <C><span className={cn(roBox, 'w-32 justify-center')}>26.08.05</span><span className="text-slate-400">~</span><span className={cn(roBox, 'w-32 justify-center')}>26.08.19</span></C>
 
           <L>댓글 사용여부</L>
-          <C><Radio name="cuse" label="노출" checked /><Radio name="cuse" label="미노출" /></C>
+          <C><Radio name="cuse" label="노출" checked disabled /><Radio name="cuse" label="미노출" disabled /></C>
           <L>댓글 차단여부</L>
-          <C><Radio name="blk" label="사용" /><Radio name="blk" label="미사용" checked /></C>
+          <C><Radio name="blk" label="사용" disabled /><Radio name="blk" label="미사용" checked disabled /></C>
 
           <L> </L>
           <C> </C>
@@ -215,16 +215,17 @@ function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBac
           <L>좋아요 수</L>
           <C><span className={cn(roBox, 'w-40')}>{comment.likes}</span></C>
 
-          <L span="row-span-1">댓글내용</L>
-          <C span="col-span-3">
+          <L>댓글내용</L>
+          <C>
             <div className="min-h-[80px] w-full whitespace-pre-line rounded-md border border-slate-200 bg-slate-50 p-3 text-[13px] text-slate-700">{comment.content}</div>
           </C>
-
           <L>노출여부</L>
-          <C span="col-span-3">
-            <Radio name="vis" label="사용" checked={comment.visible === '노출'} />
-            <Radio name="vis" label="검수중" checked={comment.visible === '검수 중'} />
-            <Radio name="vis" label="미사용" checked={comment.visible === '미노출'} />
+          <C>
+            <div className="flex flex-col gap-2">
+              <Radio name="vis" label="사용" checked={comment.visible === '노출'} />
+              <Radio name="vis" label="검수중" checked={comment.visible === '검수 중'} />
+              <Radio name="vis" label="미사용" checked={comment.visible === '미노출'} />
+            </div>
           </C>
         </FT>
       </section>
@@ -398,8 +399,8 @@ function Filt({ label, children }: { label: string; children: React.ReactNode })
 function LabelSel({ opts, w }: { opts: string[]; w?: string }) {
   return <Select className={cn('h-9', w ?? 'w-36')}>{opts.map((o) => <option key={o}>{o}</option>)}</Select>;
 }
-function Radio({ name, label, checked }: { name: string; label: string; checked?: boolean }) {
-  return <label className="flex cursor-pointer items-center gap-1.5"><input type="radio" name={name} defaultChecked={checked} className="h-4 w-4 accent-indigo-600" /> {label}</label>;
+function Radio({ name, label, checked, disabled }: { name: string; label: string; checked?: boolean; disabled?: boolean }) {
+  return <label className={cn('flex items-center gap-1.5', disabled ? 'cursor-default text-slate-400' : 'cursor-pointer')}><input type="radio" name={name} defaultChecked={checked} disabled={disabled} className="h-4 w-4 accent-indigo-600 disabled:accent-slate-300" /> {label}</label>;
 }
 function Pagination() {
   return (
