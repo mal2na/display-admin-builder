@@ -216,16 +216,14 @@ function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBac
           <C><span className={cn(roBox, 'w-40')}>{comment.likes}</span></C>
 
           <L>댓글내용</L>
-          <C>
+          <C span="col-span-3">
             <div className="min-h-[80px] w-full whitespace-pre-line rounded-md border border-slate-200 bg-slate-50 p-3 text-[13px] text-slate-700">{comment.content}</div>
           </C>
           <L>노출여부</L>
-          <C>
-            <div className="flex flex-col gap-2">
-              <Radio name="vis" label="사용" checked={comment.visible === '노출'} />
-              <Radio name="vis" label="검수중" checked={comment.visible === '검수 중'} />
-              <Radio name="vis" label="미사용" checked={comment.visible === '미노출'} />
-            </div>
+          <C span="col-span-3">
+            <Radio name="vis" label="사용" checked={comment.visible === '노출'} />
+            <Radio name="vis" label="검수중" checked={comment.visible === '검수 중'} />
+            <Radio name="vis" label="미사용" checked={comment.visible === '미노출'} />
           </C>
         </FT>
       </section>
