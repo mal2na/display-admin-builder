@@ -19,6 +19,9 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         {/* 프로모션 관리 */}
         {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">프로모션 관리</p>}
         <NavLink href="/admin/events" icon={<Ticket className="h-4 w-4" />} label="프로모션 관리" collapsed={collapsed} />
+
+        {/* 운영 관리 */}
+        {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">운영 관리</p>}
         <NavLink href="/admin/comments" icon={<MessagesSquare className="h-4 w-4" />} label="댓글·리뷰 관리" collapsed={collapsed} />
       </nav>
 
