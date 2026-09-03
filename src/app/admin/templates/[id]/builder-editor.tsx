@@ -18,6 +18,7 @@ import {
   NO_DISPLAY_CONDITIONS,
   cornerFamily,
   cornerTypeChipClass,
+  cornerTypePurpose,
   ATOM_TYPES,
   ATOM_TYPE_LABELS,
   ATOM_TYPE_FIELDS,
@@ -1536,9 +1537,9 @@ function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateI
   useEffect(() => { setVars(parse()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.displayVariants, corner.templateCornerId]);
   const save = (next: DisplayVariant[]) => { setVars(next); start(() => setCornerDisplayVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
   const add = () => { if (vars.length >= 4) return; save([...vars, { label: '' }]); };
-  // 노출 타입 후보 = 카탈로그(코너 유형 관리)에서 같은 코너 유형(baseCategory)의 활성 타입. 없으면 전체 활성.
-  const sameCat = cornerTypes.filter((t) => t.active && t.baseCategory === corner.cornerType);
-  const options = sameCat.length ? sameCat : cornerTypes.filter((t) => t.active);
+  // 노출 타입 후보 = 카탈로그(코너 유형 관리)에서 '같은 코너 유형(baseCategory)'의 활성 타입만.
+  //  거버넌스: 노출 타입은 쉐입(배열)만 다른 같은 유형이어야 한다 → 다른 유형으로 폴백하지 않는다.
+  const options = cornerTypes.filter((t) => t.active && t.baseCategory === corner.cornerType);
   const typeLabel = (t: LibraryData['cornerTypes'][number]) => (t.typeDetail && !t.name.includes(t.typeDetail) ? `${t.name} · ${t.typeDetail}` : t.name);
   const pick = (i: number, id: string) => {
     const t = cornerTypes.find((x) => x.id === id);
@@ -1551,11 +1552,14 @@ function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateI
           <span className="text-[11px] font-semibold text-slate-700">노출 타입 베리에이션</span>
           <span className="rounded bg-violet-100 px-1.5 py-px text-[9px] font-medium text-violet-600">CVM이 택1</span>
         </div>
-        <button type="button" onClick={add} disabled={vars.length >= 4}
+        <button type="button" onClick={add} disabled={vars.length >= 4 || options.length === 0}
+          title={options.length === 0 ? `‘${corner.cornerType}’ 유형에 등록된 노출 타입(쉐입)이 하나뿐이에요. 코너 유형 관리에서 이 유형의 쉐입을 더 등록하세요.` : undefined}
           className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-40">＋ 타입</button>
       </div>
-      {vars.length === 0 ? (
-        <p className="text-[10px] leading-relaxed text-muted-foreground">노출 타입이 1개예요. ＋로 <b>코너 유형 관리(카탈로그)</b>의 노출 타입을 2~3개 등록하면 실서비스에서 <b>CVM이 고객마다 골라</b> 노출합니다. (빌더 미리보기는 기본 타입)</p>
+      {options.length === 0 ? (
+        <p className="text-[10px] leading-relaxed text-muted-foreground">이 코너는 <b className="text-slate-600">{corner.cornerType}</b> 유형이고, 이 유형에 등록된 쉐입이 하나뿐이라 노출 타입을 더 추가할 수 없어요. <b>코너 유형 관리</b>에서 이 유형의 쉐입(배열)을 더 등록하면 여기서 고를 수 있습니다.</p>
+      ) : vars.length === 0 ? (
+        <p className="text-[10px] leading-relaxed text-muted-foreground">노출 타입이 1개예요. ＋로 <b>{corner.cornerType}</b> 유형의 노출 타입(쉐입)을 2~3개 등록하면 실서비스에서 <b>CVM이 고객마다 골라</b> 노출합니다. (빌더 미리보기는 기본 타입)</p>
       ) : (
         <div className="space-y-1.5">
           {vars.map((v, i) => (
@@ -2026,14 +2030,23 @@ function CornerInfoForm({
               <form action={swapCornerToType.bind(null, templateId, corner.templateCornerId)} className="flex gap-1">
                 <Select name="cornerTypeId" defaultValue="" className="h-8 flex-1 text-xs">
                   <option value="" disabled>
-                    코너 유형 관리에서 선택…
+                    코너 유형(쉐입)에서 선택…
                   </option>
-                  {library.cornerTypes.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {(nameMap[t.baseCategory] ?? t.baseCategory)}
-                      {t.typeDetail ? ` · ${t.typeDetail}` : ''}
-                    </option>
-                  ))}
+                  {/* 유형(7)별 optgroup → 쉐입(상세) 옵션. 코너 유형 관리 거버넌스와 동일 구조. */}
+                  {(() => {
+                    const order = CORNER_TYPES as readonly string[];
+                    const byBase = new Map<string, typeof library.cornerTypes>();
+                    for (const t of library.cornerTypes) (byBase.get(t.baseCategory) ?? byBase.set(t.baseCategory, []).get(t.baseCategory)!).push(t);
+                    return [...byBase.keys()]
+                      .sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); })
+                      .map((bc) => (
+                        <optgroup key={bc} label={nameMap[bc] ?? bc}>
+                          {byBase.get(bc)!.map((t) => (
+                            <option key={t.id} value={t.id}>{t.typeDetail || t.componentType || '기본'}</option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()}
                 </Select>
                 <Button type="submit" size="sm" variant="secondary">
                   적용
@@ -2642,29 +2655,52 @@ function CornerLoadModal({
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="코너 유형 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
               </div>
             </div>
-            <div className="flex-1 space-y-1 overflow-y-auto px-3 pb-3">
+            <div className="flex-1 space-y-3 overflow-y-auto px-3 pb-3">
               {list.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</p>}
-              {list.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setSelId(t.id)}
-                  className={cn(
-                    'flex w-full items-center gap-1.5 rounded-md border px-2.5 py-2 text-left',
-                    selId === t.id ? 'border-primary bg-accent' : 'hover:bg-muted/50',
-                  )}
-                >
-                  {isImgSrc(t.sampleImageUrl?.split('\n')[0]) && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={t.sampleImageUrl!.split('\n')[0]} alt="" className="h-8 w-12 shrink-0 rounded border object-cover object-top" />
-                  )}
-                  <span className={cn('inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold', cornerTypeChipClass(t.base))}>
-                    {t.base}
-                  </span>
-                  {t.rest && <span className="truncate text-xs text-muted-foreground">· {t.rest}</span>}
-                  {t.bigBanner && <BigBannerBadge className="ml-auto shrink-0" />}
-                </button>
-              ))}
+              {/* 7 상위 유형 → 쉐입 그룹 (코너 유형 관리 거버넌스와 동일 구조) */}
+              {(() => {
+                const order = CORNER_TYPES as readonly string[];
+                const bases = [...new Set(list.map((t) => t.base))].sort((a, b) => {
+                  const ia = order.indexOf(a), ib = order.indexOf(b);
+                  return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+                });
+                return bases.map((bc) => {
+                  const items = list.filter((t) => t.base === bc);
+                  const purpose = cornerTypePurpose(bc);
+                  return (
+                    <div key={bc}>
+                      <div className="mb-1 flex items-center gap-2 px-0.5">
+                        <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold', cornerTypeChipClass(bc))}>{bc}</span>
+                        <span className="text-[10px] font-medium tabular-nums text-muted-foreground">쉐입 {items.length}</span>
+                        {purpose && <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground/70">{purpose}</span>}
+                      </div>
+                      <div className="space-y-1">
+                        {items.map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setSelId(t.id)}
+                            className={cn(
+                              'flex w-full items-center gap-2 rounded-md border px-2.5 py-2 text-left',
+                              selId === t.id ? 'border-primary bg-accent' : 'hover:bg-muted/50',
+                            )}
+                          >
+                            {isImgSrc(t.sampleImageUrl?.split('\n')[0]) && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={t.sampleImageUrl!.split('\n')[0]} alt="" className="h-8 w-12 shrink-0 rounded border object-cover object-top" />
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[13px] font-medium text-foreground">{t.detail || t.component || '기본'}</span>
+                              {t.component && t.detail && <span className="block truncate text-[10px] text-muted-foreground">{t.component}</span>}
+                            </span>
+                            {t.bigBanner && <BigBannerBadge className="shrink-0" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
           {/* 미리보기 */}
