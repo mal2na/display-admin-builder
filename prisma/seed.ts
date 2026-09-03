@@ -1326,11 +1326,37 @@ async function patchVariantDemo() {
     });
   }
 
-  // 0 Week 혜택문구 3종(공차·뚜레쥬르·NOL)은 '타이틀만' 예시로 두기 위해 문구 변형 제거(우측 패널 정리).
-  //   문구 후보를 다시 붙이려면 각 컴포넌트 '수정' → 문구 베리에이션에서 등록한다(별도 관리 메뉴 없음).
-  for (const name of ['공차 혜택문구', '뚜레쥬르 혜택문구', 'NOL 혜택문구']) {
-    const atom = await prisma.atom.findFirst({ where: { name }, select: { id: true } });
-    if (atom) await prisma.atom.update({ where: { id: atom.id }, data: { contentVariants: null } });
+  // ── 나머지 개인화 코너 타이틀 — 6타겟 케이스(시니어/2030/재방문/위치 인근/혜택 보유/신규). ──
+  const T = (s1: string, s2: string, s3: string, s4: string, s5: string, s6: string) => JSON.stringify([
+    { target: '시니어', text: s1 }, { target: '2030', text: s2 }, { target: '재방문', text: s3 },
+    { target: '위치 인근', text: s4 }, { target: '혜택 보유', text: s5 }, { target: '신규', text: s6 },
+  ]);
+  const titleCases: Record<string, string> = {
+    'T Week 소멸 혜택': T('오늘 지나면 사라져요\n지금 편하게 챙기세요', '오늘 마감! 놓치면\n다시 없는 혜택', '다시 오셨네요,\n오늘까지만 주는 혜택', '지금 근처에서\n오늘까지 쓰는 혜택', '보유 혜택에 더해\n오늘까지 소멸 혜택', '첫 방문 선물,\n오늘까지만 드려요'),
+    'T DAY 멤버십': T('오늘의 멤버십 혜택,\n편하게 받으세요', '오늘의 T DAY 혜택\n지금 바로 챙겨요', '다시 오신 김에\n오늘의 멤버십 혜택', '지금 근처에서 쓰는\n오늘의 T DAY 혜택', '보유 멤버십에 더한\n오늘의 T DAY 혜택', '처음이라면\n오늘의 멤버십 혜택부터'),
+    '카테고리별 혜택': T('지훈님께 드리는\n최대 할인 혜택', 'VIP 지훈님\n요즘 뜨는 할인만 모음', '다시 오신 지훈님께\n최대 할인 혜택', '지금 근처에서 쓰는\n최대 할인 혜택', '보유 혜택에 더해\n최대 할인만 모았어요', '처음 오신 지훈님께\n최대 할인 혜택'),
+    '추천 상품': T('지훈님께 맞춘 추천', '요즘 뜨는 추천', '다시 보는 추천', '지금 근처 인기 추천', '보유 혜택 맞춤 추천', '첫 방문 추천'),
+    '단말기 추천': T('관심 두신 아이폰,\n혜택으로 편하게', '최근 본 아이폰\n혜택으로 겟!', '다시 보신 아이폰\n이번엔 혜택으로', '근처 매장에서\n아이폰 혜택 받기', '보유 혜택으로\n아이폰 더 저렴하게', '첫 구매 혜택으로\n아이폰 만나보세요'),
+    '약정 만료 요금제': T('위약금 없이 편하게\n이어가는 요금제', '약정 끝! 위약금 없이\n갈아타는 요금제', '다시 확인한 그 요금제\n위약금 없이 이어가요', '가까운 매장에서\n위약금 없이 이어가요', '보유 혜택 유지하며\n위약금 없이 이어가요', '처음이라면\n위약금 없는 요금제부터'),
+    '데이터 요금제 안내': T('데이터, 얼마나\n필요하신가요?', '내 데이터 사용량\n딱 맞게 골라요', '다시 보는 데이터 요금제\n얼마나 필요하세요?', '지금 여기서\n데이터 요금제 확인', '보유 혜택에 맞는\n데이터 요금제', '처음이라면\n데이터부터 골라봐요'),
+    '기프티콘 추천': T('더 저렴한 기프티콘,\n편하게 받으세요', '더 싸게 사는\n기프티콘 떴어요', '다시 오신 김에\n더 저렴한 기프티콘', '근처에서 쓰는\n더 저렴한 기프티콘', '보유 혜택으로\n기프티콘 더 저렴하게', '첫 구매 기프티콘\n더 저렴하게'),
+    '구독 혜택': T('SKT만의 구독 혜택,\n편하게 누리세요', 'SKT에만 있는\n구독 혜택 챙겨요', '다시 오신 김에\nSKT 구독 혜택', '지금 여기서\nSKT 구독 혜택', '보유 혜택에 더한\nSKT 구독 혜택', '처음이라면\nSKT 구독 혜택부터'),
+  };
+  for (const [name, variants] of Object.entries(titleCases)) {
+    const c = await prisma.corner.findFirst({ where: { name }, select: { id: true } });
+    if (c) await prisma.corner.update({ where: { id: c.id }, data: { mainTitleVariants: variants } });
+  }
+
+  // ── 혜택문구(BENEFIT_TEXT) — 6타겟 프레이밍 배리에이션 채움(모든 케이스). ──
+  const frame = (b: string, t: string) => (({
+    '시니어': `어르신께 딱! ${b}`, '2030': `요즘 핫한 ${b}`, '재방문': `또 오셨네요, ${b}`,
+    '위치 인근': `근처 매장에서 ${b}`, '혜택 보유': `보유 혜택에 더해 ${b}`, '신규': `첫 방문 기념, ${b}`,
+  }) as Record<string, string>)[t] ?? b;
+  const benefitAtoms = await prisma.atom.findMany({ where: { atomType: 'BENEFIT_TEXT', content: { not: null } }, select: { id: true, content: true } });
+  for (const a of benefitAtoms) {
+    const b = (a.content ?? '').trim();
+    if (!b) continue;
+    await prisma.atom.update({ where: { id: a.id }, data: { contentVariants: JSON.stringify(['시니어', '2030', '재방문', '위치 인근', '혜택 보유', '신규'].map((t) => ({ target: t, text: frame(b, t) }))) } });
   }
   // ── 하단 CTA(더보기/전체보기) 라벨 표준화 ──
   //   코너 유형의 기본 라벨이 대표 코너명('영화 전체보기')을 물고 있어, 그 유형을 불러오면 상품 코너에도
