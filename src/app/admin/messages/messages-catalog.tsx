@@ -6,7 +6,7 @@ import { Search, PenLine, Type, AlignLeft, Sparkles, BarChart3, ChevronRight, Pl
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 import { CVM_TARGET_HINTS } from '@/lib/display-taxonomy';
-import { toggleTitleVariant, toggleAtomVariant, addTitleVariant, addAtomVariant, importMessages } from './actions';
+import { toggleTitleVariant, toggleAtomVariant, addTitleVariant, addAtomVariant, importMessages, setTitleBase, setAtomBase } from './actions';
 
 export type MsgVariant = { text: string; target?: string; enabled: boolean; index: number };
 export type LibEntry = { text: string; use: string; target?: string; sources: string[] };
@@ -220,6 +220,11 @@ function Matrix({ groups, onOpen }: { groups: [string, MsgItem[]][]; onOpen: (id
 
 function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: MsgItem, i: number) => void; library: LibEntry[] }) {
   const rule = USE_RULE[item.use];
+  const [, startBase] = useTransition();
+  const saveBase = (text: string) => {
+    if (text.trim() === (item.base ?? '').trim()) return;
+    startBase(() => { if (item.kind === 'title') setTitleBase(item.cornerId, text); else setAtomBase(item.id, text); });
+  };
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-start gap-3 border-b p-5">
@@ -228,14 +233,15 @@ function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: Msg
           <p className="text-[15px] font-bold text-foreground">{item.label} <span className="text-[12px] font-normal text-muted-foreground">· {item.use}</span></p>
           {rule && <p className="mt-0.5 text-[11px] text-muted-foreground">표기 제한: {rule.hint} · 최대 {rule.max}자</p>}
         </div>
-        <Link href={item.editHref} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border px-3 text-[12px] font-medium text-muted-foreground hover:bg-secondary"><PenLine className="h-3.5 w-3.5" /> 빌더에서 편집</Link>
+        <Link href={item.editHref} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border px-3 text-[12px] font-medium text-muted-foreground hover:bg-secondary"><PenLine className="h-3.5 w-3.5" /> 빌더에서 보기</Link>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-5">
-        {/* 기본(폴백) */}
-        <div className="mb-4 rounded-lg border bg-slate-50 p-3">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">기본 <span className="font-normal normal-case text-slate-400">· CVM 미매칭·실패 시 폴백</span></p>
-          <p className="whitespace-pre-line text-[13px] text-slate-800">{item.base || <span className="text-slate-400">(기본 문구 없음)</span>}</p>
+        {/* 기본(폴백) — 여기(문구 관리)가 편집 장소. 빌더는 가져오기만. */}
+        <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3">
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">기본 <span className="font-normal normal-case text-slate-400">· CVM 미매칭·실패 시 폴백 · 여기서 편집</span></p>
+          <textarea key={item.id} defaultValue={item.base} onBlur={(e) => saveBase(e.target.value)} placeholder="기본 문구를 입력하세요"
+            className="min-h-[52px] w-full resize-y whitespace-pre-line rounded-md border border-slate-200 bg-slate-50 p-2.5 text-[13px] text-slate-800 outline-none focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-200" />
         </div>
 
         {/* 타겟별 배리에이션 */}

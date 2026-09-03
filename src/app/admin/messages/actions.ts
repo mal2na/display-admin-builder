@@ -107,3 +107,13 @@ export async function importMessages(csv: string): Promise<{ ok: boolean; update
   revalidateAll();
   return { ok: true, updated, skipped };
 }
+
+// ── 기본 문구 편집 — 문구 관리를 문구 author(원장)로. 빌더는 가져오기(참조)만. ──
+export async function setTitleBase(cornerId: string, text: string) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { mainTitle: text.trim() || null } });
+  revalidateAll();
+}
+export async function setAtomBase(atomId: string, text: string) {
+  await prisma.atom.update({ where: { id: atomId }, data: { content: text.trim() || null } });
+  revalidateAll();
+}
