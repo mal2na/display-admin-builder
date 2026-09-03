@@ -2691,7 +2691,8 @@ function CornerLoadModal({
                             )}
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-[13px] font-medium text-foreground">{t.detail || t.component || '기본'}</span>
-                              {t.component && t.detail && <span className="block truncate text-[10px] text-muted-foreground">{t.component}</span>}
+                              {/* 컴포넌트 표시는 유형과 다를 때만(‘상품형 안에 상품형’ 중복 제거) */}
+                              {t.component && t.detail && t.component !== t.base && <span className="block truncate text-[10px] text-muted-foreground">{t.component}</span>}
                             </span>
                             {t.bigBanner && <BigBannerBadge className="shrink-0" />}
                           </button>

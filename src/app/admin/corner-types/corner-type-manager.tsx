@@ -148,6 +148,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
   // 뷰 모드 — 유형별(7 상위 유형 → 쉐입) 그룹 뷰 ↔ 전체 목록(평면). 거버넌스는 유형 기준, 쉐입은 하위.
   const [view, setView] = useState<'group' | 'list'>(sp.get('view') === 'list' ? 'list' : 'group');
+  // 유형별 그룹 펼침(아코디언) — 클릭한 유형만 쉐입을 펼친다(기본 접힘 → 7줄 개요).
+  const [openTypes, setOpenTypes] = useState<Set<string>>(new Set());
+  const toggleType = (bc: string) => setOpenTypes((p) => { const n = new Set(p); n.has(bc) ? n.delete(bc) : n.add(bc); return n; });
 
   // 상위 분기(도메인)로 코너 유형을 먼저 나눈다: 전시/관리(전시 8종) vs 이벤트/미션(전용 계열)
   const inDomain = (t: CornerTypeRow) => (domain === '이벤트/미션' ? isEventCornerFamily(t.baseCategory) : !isEventCornerFamily(t.baseCategory));
@@ -339,6 +342,15 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             : <>검색결과: <b className="text-foreground">{filtered.length}개</b></>}
         </p>
         <div className="flex items-center gap-2">
+          {view === 'group' && (() => {
+            const allBases = domain === '전시/관리' ? (CORNER_TYPES as readonly string[]) : [...new Set(domainTypes.map((t) => t.baseCategory))];
+            const allOpen = allBases.length > 0 && allBases.every((b) => openTypes.has(b));
+            return (
+              <button onClick={() => setOpenTypes(allOpen ? new Set() : new Set(allBases))} className="rounded-lg border bg-white px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary">
+                {allOpen ? '모두 접기' : '모두 펼치기'}
+              </button>
+            );
+          })()}
           {/* 뷰 토글 — 유형별(7 상위 → 쉐입) ↔ 목록(평면) */}
           <div className="flex rounded-lg border bg-white p-0.5 text-xs">
             <button onClick={() => setView('group')} className={cn('rounded-md px-2.5 py-1 font-medium', view === 'group' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary')}>유형별</button>
@@ -367,38 +379,43 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               const gov = cornerTypeGovernance(bc);
               const regDetails = new Set(rows.map((r) => r.typeDetail).filter(Boolean));
               const missing = cornerTypeDetails(bc).filter((d) => !regDetails.has(d));
+              const isOpen = openTypes.has(bc) || groupBases.length === 1;
+              const usingCount = rows.filter((r) => r.liveVersion != null && r.active).length;
               return (
                 <div key={bc} className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                  {/* ── 유형 헤더: 유형명 + 목적, 오른쪽에 쉐입 수·추가 ── */}
-                  <div className="border-b px-5 py-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className={cn('inline-flex items-center rounded-md border px-2.5 py-1 text-[13px] font-bold', cornerTypeChipClass(bc))}>{bc}</span>
-                        </div>
-                        {purpose && <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{purpose}</p>}
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold tabular-nums text-muted-foreground">쉐입 {rows.length}</span>
-                        <Link href={`/admin/corner-types/new?base=${encodeURIComponent(bc)}`} className="inline-flex items-center gap-1 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-primary shadow-sm transition hover:bg-secondary"><Plus className="h-3.5 w-3.5" /> 쉐입 추가</Link>
-                      </div>
-                    </div>
-                    {/* 거버넌스 패널 — 담을 수 있는 컴포넌트 + 규칙 문장 */}
-                    {(gov || allowed.length > 0) && (
-                      <div className="mt-3 rounded-xl bg-surface-subtle px-3.5 py-3">
-                        {allowed.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[11px] font-semibold text-foreground">담을 수 있는 컴포넌트</span>
-                            {allowed.map((c) => <span key={c} className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{c}</span>)}
-                            <span className="ml-1 text-[10px] text-muted-foreground/70">PI-DSP-CMP-003 · 유형 기준(쉐입 무관)</span>
-                          </div>
-                        )}
-                        {gov && <p className="mt-2 border-t border-dashed pt-2 text-[12.5px] leading-relaxed text-muted-foreground">{gov}</p>}
-                      </div>
-                    )}
+                  {/* ── 유형 헤더(클릭 = 펼치기/접기) ── */}
+                  <div
+                    onClick={() => toggleType(bc)}
+                    className={cn('flex cursor-pointer items-center gap-3 px-4 py-3.5 transition hover:bg-muted/30', isOpen && 'border-b')}
+                  >
+                    <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', isOpen && 'rotate-180')} />
+                    <span className={cn('inline-flex shrink-0 items-center rounded-md border px-2.5 py-1 text-[13px] font-bold', cornerTypeChipClass(bc))}>{bc}</span>
+                    <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">쉐입 {rows.length}</span>
+                    {usingCount > 0 && <span className="shrink-0 text-[11px] font-medium text-emerald-600">사용 {usingCount}</span>}
+                    {purpose && <span className="min-w-0 flex-1 truncate text-[12.5px] text-muted-foreground">{purpose}</span>}
+                    <Link
+                      href={`/admin/corner-types/new?base=${encodeURIComponent(bc)}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-primary shadow-sm transition hover:bg-secondary"
+                    ><Plus className="h-3.5 w-3.5" /> 쉐입 추가</Link>
                   </div>
-                  {/* ── 쉐입(배열) 목록 ── */}
-                  {rows.length === 0 ? (
+
+                  {/* 거버넌스 패널 — 펼쳤을 때만 */}
+                  {isOpen && (gov || allowed.length > 0) && (
+                    <div className="border-b bg-surface-subtle/60 px-5 py-3">
+                      {allowed.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] font-semibold text-foreground">담을 수 있는 컴포넌트</span>
+                          {allowed.map((c) => <span key={c} className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{c}</span>)}
+                          <span className="ml-1 text-[10px] text-muted-foreground/70">PI-DSP-CMP-003 · 유형 기준(쉐입 무관)</span>
+                        </div>
+                      )}
+                      {gov && <p className="mt-2 border-t border-dashed pt-2 text-[12.5px] leading-relaxed text-muted-foreground">{gov}</p>}
+                    </div>
+                  )}
+
+                  {/* ── 쉐입(배열) 목록 — 펼쳤을 때만 ── */}
+                  {isOpen && (rows.length === 0 ? (
                     <p className="px-5 py-4 text-[13px] text-muted-foreground">등록된 쉐입이 없습니다. <b className="text-foreground">쉐입 추가</b>로 이 유형의 첫 배열을 등록하세요.</p>
                   ) : (
                     <ul className="divide-y">
@@ -417,7 +434,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-[14px] font-semibold text-foreground">{t.typeDetail ?? '(상세 없음)'}</span>
                                 {t.bigBanner && <span className="inline-flex items-center rounded border border-dashed border-indigo-400 bg-indigo-50/60 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">빅배너</span>}
-                                {t.componentType && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{t.componentType}</span>}
+                                {/* 컴포넌트 태그는 유형과 다를 때만(‘상품형 안에 상품형’ 중복 제거) */}
+                                {t.componentType && t.componentType !== bc && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{t.componentType}</span>}
                               </div>
                               <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground/70">{t.typeId}</span>
                             </div>
@@ -432,9 +450,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                         );
                       })}
                     </ul>
-                  )}
-                  {/* 카탈로그에 있으나 미등록인 쉐입 — 추가 유도 */}
-                  {missing.length > 0 && (
+                  ))}
+                  {/* 카탈로그에 있으나 미등록인 쉐입 — 추가 유도 (펼쳤을 때만) */}
+                  {isOpen && missing.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 border-t bg-surface-subtle/40 px-5 py-2.5">
                       <span className="text-[11px] font-medium text-muted-foreground">추가 가능한 쉐입</span>
                       {missing.map((d) => (
