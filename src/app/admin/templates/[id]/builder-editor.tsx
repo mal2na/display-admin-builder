@@ -40,7 +40,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download } from 'lucide-react';
 import { TypeDetailPreview } from '../../corner-types/corner-type-manager';
 import {
   updateTemplateMeta,
@@ -150,6 +150,7 @@ export type LibraryData = {
   cornerTypes: { id: string; name: string; baseCategory: string; componentType?: string | null; typeDetail?: string | null; bigBanner?: boolean; sampleImageUrl?: string | null; active: boolean; liveVersion?: number | null }[];
   images: { url: string; alt: string | null; name: string }[];
   links: { url: string; label: string }[];
+  messages: { text: string; use: string }[];
 };
 
 /** 코너 유형 카탈로그 → 기준분류(baseCategory) → 표시명 맵. 카탈로그 우선, 없으면 원래 값. */
@@ -735,20 +736,79 @@ function IconPickField({
 // ── 한 Atom 인라인 편집 행 (라벨 + 인풋) ───────────────
 // 제어형: 값 변경을 즉시 부모(AtomManager)로 올려 미리보기에 반영. 저장은 상단 '완료'에서 일괄 처리.
 // 이미지/이동 URL은 직접 타이핑 대신 라이브러리에서 "불러오기"로 선택한다.
+// 문구 불러오기 — 문구 원장(문구 관리)에서 같은 용도(use)의 문구를 골라 아톰에 채운다. 빌더는 생성 안 함.
+function MessagePickerModal({
+  use,
+  messages,
+  onPick,
+  onClose,
+}: {
+  use: string;
+  messages: LibraryData['messages'];
+  onPick: (text: string) => void;
+  onClose: () => void;
+}) {
+  const [q, setQ] = useState('');
+  const [scope, setScope] = useState<'use' | 'all'>('use');
+  const kw = q.trim().toLowerCase();
+  const list = messages.filter((m) => (scope === 'all' || m.use === use) && (!kw || m.text.toLowerCase().includes(kw)));
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="flex max-h-[70vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">문구 불러오기</p>
+            <p className="text-[11px] text-muted-foreground">문구 관리 원장에서 선택 · 용도: {use}</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded p-1 text-muted-foreground hover:bg-secondary"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="flex items-center gap-2 border-b px-4 py-2">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="문구 검색" className="h-8 pl-7 text-xs" autoFocus />
+          </div>
+          <button type="button" onClick={() => setScope(scope === 'use' ? 'all' : 'use')}
+            className={cn('shrink-0 rounded-md border px-2 py-1 text-[11px] font-medium', scope === 'use' ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-muted-foreground')}>
+            {scope === 'use' ? `${use}만` : '전체 용도'}
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {list.length === 0 ? (
+            <p className="px-2 py-6 text-center text-xs text-muted-foreground">문구 없음 · 문구 관리에서 먼저 등록하세요</p>
+          ) : list.map((m, i) => (
+            <button key={i} type="button" onClick={() => onPick(m.text)}
+              className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] text-slate-800 hover:bg-indigo-50">
+              <span className="min-w-0 flex-1 truncate">{m.text}</span>
+              {scope === 'all' && <span className="shrink-0 rounded bg-slate-100 px-1 py-px text-[9px] font-medium text-slate-500">{m.use}</span>}
+            </button>
+          ))}
+        </div>
+        <div className="border-t px-4 py-2 text-right">
+          <a href="/admin/messages" className="text-[11px] font-medium text-indigo-600 hover:underline">＋ 문구 관리에서 새 문구 만들기 ↗</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AtomRow({
   templateId,
   atom,
   images,
   links,
+  messages,
   onChange,
 }: {
   templateId: string;
   atom: AtomNode;
   images: LibraryData['images'];
   links: LibraryData['links'];
+  messages: LibraryData['messages'];
   onChange: (patch: Partial<AtomNode>) => void;
 }) {
   const f = ATOM_TYPE_FIELDS[atom.atomType as AtomType] ?? { content: true, image: false, link: false };
+  const msgUse = ATOM_TYPE_LABELS[atom.atomType as AtomType] ?? '텍스트';
+  const [pickOpen, setPickOpen] = useState(false);
   const altMissing = (atom.atomType === 'IMAGE' || atom.atomType === 'ICON') && !atom.altText;
   // 이미지는 카드의 핵심 시각요소 → 개별 표시/숨김 토글을 두지 않는다(항상 노출).
   const noToggle = atom.atomType === 'IMAGE';
@@ -804,46 +864,55 @@ function AtomRow({
             </button>
           </div>
         ) : (
-          // 'BSS 고객정보 가져오기' 드롭다운 제거(사용자 요청) — 직접 입력만. 기존 @cvm 바인딩 값은 위 isCvmBinding 분기로 계속 표시.
-          <Input
-            value={atom.content ?? ''}
-            onChange={(e) => onChange({ content: e.target.value })}
-            placeholder="문구 / 설명"
-            className="h-8 text-xs"
-          />
+          // 빌더는 문구를 '불러오기'만 한다(생성·편집은 문구 관리). 직접 타이핑 대신 원장에서 선택.
+          <div className="flex items-stretch gap-1">
+            <div className={cn('flex h-8 min-w-0 flex-1 items-center rounded-md border px-2.5 text-xs', atom.content ? 'border-slate-200 bg-slate-50 text-slate-800' : 'border-dashed border-slate-300 bg-white text-slate-400')}>
+              <span className="truncate">{atom.content || '문구 미선택 — 불러오기'}</span>
+            </div>
+            <button type="button" onClick={() => setPickOpen(true)}
+              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100">
+              <Download className="h-3 w-3" /> 불러오기
+            </button>
+            {atom.content && (
+              <button type="button" onClick={() => onChange({ content: '' })} title="선택 해제"
+                className="flex w-6 shrink-0 items-center justify-center rounded-md border text-muted-foreground hover:bg-secondary">
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         ))}
-      {/* 문구 베리에이션 — 문구 후보 여러 개 + 타겟 힌트. 별도 메뉴 없이 여기(콘텐츠 원장)에서. 실서비스엔 CVM이 택1(기본=위 문구). 회의 2026-08-31. */}
+      {/* 문구 베리에이션 — 타겟별 후보. 편집은 문구 관리(원장), 빌더는 참조만. 실서비스엔 CVM이 택1(기본=위 문구). 회의 2026-08-31. */}
       {f.content && !isCvmBinding(atom.content) && (() => {
         const vars = atom.contentVariants ?? [];
         return (
           <div className="space-y-1 rounded-md border border-dashed border-violet-200 bg-violet-50/30 px-2 py-1.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold text-violet-700">문구 베리에이션 <span className="font-normal text-violet-400">· 타겟별 문구 · CVM 택1 (기본=위 문구)</span></span>
-              <button type="button" onClick={() => onChange({ contentVariants: [...vars, { text: '' }] })}
-                className="shrink-0 rounded border border-violet-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100">＋ 문구</button>
+              <span className="text-[10px] font-semibold text-violet-700">문구 베리에이션 <span className="font-normal text-violet-400">· 타겟별 · CVM 택1 · 편집은 문구 관리</span></span>
+              <a href="/admin/messages" className="shrink-0 rounded border border-violet-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100">문구 관리 ↗</a>
             </div>
-            {vars.map((v, i) => {
-              const on = v.enabled !== false; // 기본 노출(활성)
+            {vars.length === 0 ? (
+              <p className="text-[10px] text-violet-400">등록된 타겟 문구 없음 — 문구 관리에서 추가</p>
+            ) : vars.map((v, i) => {
+              const on = v.enabled !== false;
               return (
-              <div key={i} className={cn('flex items-center gap-1', !on && 'opacity-55')}>
-                <Input value={v.text} onChange={(e) => onChange({ contentVariants: vars.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)) })} placeholder="대체 문구" className="h-7 min-w-0 flex-1 text-xs" />
-                {/* 타겟 힌트 (누구에게) — 최종 매칭은 CVM */}
-                <Select value={v.target ?? ''} onChange={(e) => onChange({ contentVariants: vars.map((x, j) => (j === i ? { ...x, target: e.target.value || undefined } : x)) })} className="h-7 w-24 shrink-0 text-[10px]">
-                  <option value="">타겟 없음</option>
-                  {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
-                </Select>
-                {/* 노출 통제(채널 권한) — 노출 가능/제외. 삭제 아님, CVM 매칭 대상에서만 빠짐. */}
-                <button type="button" onClick={() => onChange({ contentVariants: vars.map((x, j) => (j === i ? { ...x, enabled: !on } : x)) })}
-                  className={cn('flex h-7 w-11 shrink-0 items-center justify-center rounded border text-[10px] font-semibold', on ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-slate-100 text-slate-500')}
-                  title={on ? '노출 가능 — 클릭하면 제외' : '노출 제외 — 클릭하면 노출'}>{on ? '노출' : '제외'}</button>
-                <button type="button" onClick={() => onChange({ contentVariants: vars.filter((_, j) => j !== i) })}
-                  className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="문구 삭제">−</button>
-              </div>
+                <div key={i} className={cn('flex items-center gap-1.5 text-[11px]', !on && 'opacity-55')}>
+                  <span className="min-w-0 flex-1 truncate text-slate-700">{v.text || <span className="text-slate-400">(빈 문구)</span>}</span>
+                  {v.target && <span className="shrink-0 rounded bg-white px-1 py-px text-[9px] font-medium text-violet-600 ring-1 ring-inset ring-violet-200">{v.target}</span>}
+                  <span className={cn('shrink-0 rounded px-1 py-px text-[9px] font-semibold', on ? 'bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-200' : 'bg-slate-100 text-slate-400 ring-1 ring-inset ring-slate-200')}>{on ? '노출' : '제외'}</span>
+                </div>
               );
             })}
           </div>
         );
       })()}
+      {pickOpen && (
+        <MessagePickerModal
+          use={msgUse}
+          messages={messages}
+          onPick={(text) => { onChange({ content: text }); setPickOpen(false); }}
+          onClose={() => setPickOpen(false)}
+        />
+      )}
       {f.image &&
         (atom.atomType === 'ICON' ? (
           // 아이콘 원자 = 아이콘 라이브러리에서 글리프 선택(이미지 파일 아님)
@@ -999,6 +1068,7 @@ function AtomManager({
           atom={a}
           images={library.images}
           links={library.links}
+          messages={library.messages}
           onChange={(patch) => editAtom(a.componentAtomId, patch)}
         />
       ))}
@@ -1513,9 +1583,7 @@ function CopyOverview({ templateId, corner }: { templateId: string; corner: Corn
   type TV = { text: string; target?: string; enabled?: boolean };
   const parseTitle = (): TV[] => { try { const a = JSON.parse(corner.mainTitleVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.text === 'string'); } catch { /* noop */ } return []; };
   const [tvars, setTvars] = useState<TV[]>(parseTitle());
-  const [, start] = useTransition();
   useEffect(() => { setTvars(parseTitle()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.mainTitleVariants, corner.templateCornerId]);
-  const saveTitle = (next: TV[]) => { setTvars(next); start(() => setCornerMainTitleVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
 
   const atomRows: { label: string; base: string | null; variants: TV[] }[] = [];
   corner.components.forEach((cp) => cp.atoms.forEach((a) => {
@@ -1530,9 +1598,10 @@ function CopyOverview({ templateId, corner }: { templateId: string; corner: Corn
     <details className="mb-3 rounded-xl border bg-card">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-slate-700">
         <List className="h-3.5 w-3.5 text-violet-500" /> 문구 한눈에 보기 <span className="font-normal text-slate-400">· 문구 {atomRows.length + (hasTitle ? 1 : 0)}종 · 타겟별 대체 {totalVars}개</span>
+        <a href="/admin/messages" onClick={(e) => e.stopPropagation()} className="ml-auto rounded border border-violet-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-50">문구 관리에서 편집 ↗</a>
       </summary>
       <div className="space-y-2.5 border-t p-3">
-        {/* 타이틀 — 편집 가능(타겟별 대체 타이틀 = 타이틀 베리에이션) */}
+        {/* 타이틀 — 읽기 전용(편집은 문구 관리에서). 타겟별 대체 = 타이틀 베리에이션 */}
         {hasTitle && (
           <div className="space-y-1 rounded-lg bg-violet-50/50 p-2">
             <p className="text-[10px] font-semibold text-violet-600">타이틀 · 타겟별 대체(CVM 택1)</p>
@@ -1543,24 +1612,16 @@ function CopyOverview({ templateId, corner }: { templateId: string; corner: Corn
             {tvars.map((v, j) => {
               const on = v.enabled !== false;
               return (
-              <div key={j} className={cn('flex items-center gap-1.5', !on && 'opacity-55')}>
-                <Select value={v.target ?? ''} onChange={(e) => saveTitle(tvars.map((t, k) => (k === j ? { ...t, target: e.target.value || undefined } : t)))} className="h-6 w-[84px] shrink-0 text-[10px]">
-                  <option value="">타겟…</option>
-                  {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
-                </Select>
-                <Input value={v.text} onChange={(e) => setTvars(tvars.map((t, k) => (k === j ? { ...t, text: e.target.value } : t)))} onBlur={() => saveTitle(tvars)} placeholder="이 타겟에게 보일 타이틀" className="h-6 flex-1 text-[11px]" />
-                {/* 노출 통제(채널 권한) — 노출 가능/제외. 삭제 아님. */}
-                <button type="button" onClick={() => saveTitle(tvars.map((t, k) => (k === j ? { ...t, enabled: !on } : t)))}
-                  className={cn('flex h-6 w-9 shrink-0 items-center justify-center rounded border text-[9px] font-semibold', on ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-slate-100 text-slate-500')}
-                  title={on ? '노출 가능 — 클릭하면 제외' : '노출 제외 — 클릭하면 노출'}>{on ? '노출' : '제외'}</button>
-                <button type="button" onClick={() => saveTitle(tvars.filter((_, k) => k !== j))} className="flex h-6 w-5 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="삭제">−</button>
-              </div>
+                <div key={j} className={cn('flex items-start gap-1.5', !on && 'opacity-55')}>
+                  <span className="inline-flex h-5 shrink-0 items-center rounded bg-rose-100 px-1.5 text-[9px] font-bold text-rose-600">{v.target || '타겟없음'}</span>
+                  <span className="flex-1 text-[11px] text-rose-700">{v.text || <span className="text-slate-400">(빈 문구)</span>}</span>
+                  {!on && <span className="shrink-0 rounded bg-slate-200 px-1 text-[9px] font-semibold text-slate-500">제외</span>}
+                </div>
               );
             })}
-            <button type="button" onClick={() => saveTitle([...tvars, { text: '' }])} className="inline-flex items-center gap-0.5 rounded-md border border-violet-300 bg-white px-2 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-50"><Plus className="h-2.5 w-2.5" /> 타이틀 후보</button>
           </div>
         )}
-        {/* 아톰 문구 — 읽기 전용(편집은 컴포넌트 수정에서) */}
+        {/* 아톰 문구 — 읽기 전용(편집은 문구 관리에서) */}
         {atomRows.map((r, i) => (
           <div key={i} className="space-y-1">
             <p className="text-[10px] font-semibold text-slate-500">{r.label}</p>
@@ -1580,7 +1641,7 @@ function CopyOverview({ templateId, corner }: { templateId: string; corner: Corn
             })}
           </div>
         ))}
-        <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">타이틀 베리에이션은 여기서 편집. 아톰 문구는 각 컴포넌트 ‘수정’ → 문구 베리에이션에서. 타겟은 CVM이 참고하는 힌트(최종 매칭은 CVM).</p>
+        <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">문구·타겟별 대체는 <b>문구 관리</b>에서 편집합니다(빌더는 보기·불러오기만). 타겟은 CVM이 참고하는 힌트로, 최종 매칭은 CVM이 수행.</p>
       </div>
     </details>
   );
