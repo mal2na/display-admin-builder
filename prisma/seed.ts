@@ -1358,6 +1358,37 @@ async function patchVariantDemo() {
     if (!b) continue;
     await prisma.atom.update({ where: { id: a.id }, data: { contentVariants: JSON.stringify(['시니어', '2030', '재방문', '위치 인근', '혜택 보유', '신규'].map((t) => ({ target: t, text: frame(b, t) }))) } });
   }
+  // ── 유형별 배리에이션 예시 — CTA·배지·설명(정보값)에도 후보를 채워 각 유형 칩에 예시가 보이게. ──
+  //   후보에는 '속성(힌트)' 태그만 붙인다(세그 매핑·택1은 CVM). 표기 제한 감안(CTA 짧게·배지 짧게·설명 간결).
+  const setVars = async (name: string, vars: { target: string; text: string }[]) => {
+    const a = await prisma.atom.findFirst({ where: { name, status: 'active' }, select: { id: true } });
+    if (a) await prisma.atom.update({ where: { id: a.id }, data: { contentVariants: JSON.stringify(vars) } });
+  };
+  // CTA — 행동 유도, 아주 짧게
+  await setVars('가입현황 CTA', [
+    { target: '재방문', text: '이어서 확인' },
+    { target: '신규', text: '가입 현황 보기' },
+    { target: '혜택 보유', text: '내 혜택 확인' },
+  ]);
+  // 배지 — 짧은 강조(프로모션 성격)
+  await setVars('기프티콘1 배지', [{ target: '신규', text: '첫구매 20%' }, { target: '재방문', text: '재구매 20%' }]);
+  await setVars('단말기1 배지', [{ target: '혜택 보유', text: 'VIP 7%' }, { target: '위치 인근', text: '매장 7%' }]);
+  await setVars('구독3 배지', [{ target: '신규', text: '첫달 20%' }, { target: '2030', text: '핫딜 20%' }]);
+  // 설명(정보값) — 값·조건 간결히
+  await setVars('요금제1 설명', [
+    { target: '2030', text: '넷플릭스까지 한 번에 · 데이터 500GB' },
+    { target: '시니어', text: '데이터 500GB · 넷플릭스 제공, 크게 보기' },
+    { target: '재방문', text: '쓰던 혜택 그대로 · 데이터 500GB' },
+  ]);
+  await setVars('데이터1 설명', [
+    { target: '2030', text: '완전 무제한 · 월 69,000원부터' },
+    { target: '시니어', text: '넉넉한 무제한 · 월 69,000원부터' },
+  ]);
+  await setVars('에어팟 서브', [
+    { target: '신규', text: '지금 가입하고 사전예약 혜택' },
+    { target: '혜택 보유', text: '멤버십으로 사전예약 우선 참여' },
+  ]);
+
   // ── 하단 CTA(더보기/전체보기) 라벨 표준화 ──
   //   코너 유형의 기본 라벨이 대표 코너명('영화 전체보기')을 물고 있어, 그 유형을 불러오면 상품 코너에도
   //   '영화 전체보기'가 새는 문제. 유형 기본값·스냅샷·기존 인스턴스를 전부 일반 CTA '전체보기'로 통일.
@@ -1378,7 +1409,7 @@ async function patchVariantDemo() {
   // 3) 이미 새어나간 인스턴스 — 특정 코너명 라벨('영화 전체보기')을 일반 CTA로 교정(운영자 커스텀 라벨은 보존)
   await prisma.corner.updateMany({ where: { moreButtonUse: true, moreButtonLabel: '영화 전체보기' }, data: { moreButtonLabel: CTA } });
 
-  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매·0 Week 타이틀 6타겟 · 문구변형 제거 · CTA 라벨 표준화)');
+  console.log('✅ 베리에이션 데모 패치 완료 (타이틀 6타겟 · 혜택문구 프레이밍 · CTA/배지/설명 유형별 예시 · CTA 라벨 표준화)');
 }
 
 main()
