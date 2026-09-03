@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useState, useTransition, Fragment } from 'react';
 import Link from 'next/link';
-import { Search, PenLine, Type, AlignLeft, Sparkles, BarChart3, ChevronRight, Plus, Library, Wand2, X, MapPin } from 'lucide-react';
+import { Search, PenLine, Type, AlignLeft, Sparkles, BarChart3, ChevronRight, ChevronLeft, Plus, Library, Wand2, X, MapPin, Grid3x3, List } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 import { CVM_TARGET_HINTS } from '@/lib/display-taxonomy';
@@ -29,6 +29,7 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
   const [useF, setUseF] = useState('전체');
   const [onlyVar, setOnlyVar] = useState(true);
   const [selId, setSelId] = useState<string | null>(null);
+  const [mode, setMode] = useState<'matrix' | 'edit'>('matrix'); // 매트릭스(타겟 커버리지) ↔ 편집
   const [, start] = useTransition();
 
   const uses = useMemo(() => ['전체', ...Array.from(new Set(items.map((i) => i.use)))], [items]);
@@ -79,6 +80,11 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> 노출 {totalVars - excluded}</span>
         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-slate-400" /> 제외 {excluded}</span>
         <div className="ml-auto flex items-center gap-2">
+          {/* 뷰 토글 — 매트릭스(타겟 커버리지) ↔ 편집 */}
+          <div className="flex rounded-lg border bg-white p-0.5">
+            <button onClick={() => setMode('matrix')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'matrix' ? 'bg-indigo-600 text-white' : 'text-slate-500')} title="매트릭스"><Grid3x3 className="h-3.5 w-3.5" /> 매트릭스</button>
+            <button onClick={() => setMode('edit')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'edit' ? 'bg-indigo-600 text-white' : 'text-slate-500')} title="편집"><List className="h-3.5 w-3.5" /> 편집</button>
+          </div>
           <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
             <input type="checkbox" checked={onlyVar} onChange={(e) => setOnlyVar(e.target.checked)} className="accent-indigo-600" />
             배리에이션 있는 것만 <span className="text-slate-400">(끄면 전체 {items.length})</span>
@@ -90,43 +96,92 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
         </div>
       </div>
 
-      {/* 좌: 문구(유형별) / 우: 상세 */}
-      <div className="mt-4 grid min-h-0 flex-1 grid-cols-[340px_minmax(0,1fr)] gap-4">
-        <div className="min-h-0 space-y-3 overflow-y-auto pr-1">
-          {groups.length === 0 && <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">문구가 없습니다.</div>}
-          {groups.map(([g, its]) => (
-            <div key={g}>
-              <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">{g} <span className="text-slate-300">{its.length}</span></p>
-              <div className="space-y-1.5">
-                {its.map((it) => {
-                  const Icon = useIcon(it.kind);
-                  const sel = selected?.id === it.id;
-                  const off = it.variants.filter((v) => !v.enabled).length;
-                  return (
-                    <button key={it.id} onClick={() => setSelId(it.id)}
-                      className={cn('flex w-full items-start gap-2 rounded-xl border p-2.5 text-left transition-colors', sel ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-200' : 'bg-card hover:border-slate-300')}>
-                      <span className={cn('mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md', it.kind === 'title' ? 'bg-indigo-100 text-indigo-600' : 'bg-sky-100 text-sky-600')}><Icon className="h-3.5 w-3.5" /></span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-semibold text-foreground">{it.base || it.label}</span>
-                        <span className="mt-0.5 flex items-center gap-2 text-[10px]">
-                          {it.variants.length > 0 && <span className="text-indigo-600">후보 {it.variants.length}</span>}
-                          {off > 0 && <span className="text-slate-400">제외 {off}</span>}
-                          <span className="flex items-center gap-0.5 text-muted-foreground"><MapPin className="h-2.5 w-2.5" />{it.usages.length}곳</span>
+      {mode === 'matrix' ? (
+        <Matrix groups={groups} onOpen={(id) => { setSelId(id); setMode('edit'); }} />
+      ) : (
+        <div className="mt-4 grid min-h-0 flex-1 grid-cols-[340px_minmax(0,1fr)] gap-4">
+          <div className="min-h-0 space-y-3 overflow-y-auto pr-1">
+            {groups.length === 0 && <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">문구가 없습니다.</div>}
+            {groups.map(([g, its]) => (
+              <div key={g}>
+                <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">{g} <span className="text-slate-300">{its.length}</span></p>
+                <div className="space-y-1.5">
+                  {its.map((it) => {
+                    const Icon = useIcon(it.kind);
+                    const sel = selected?.id === it.id;
+                    const off = it.variants.filter((v) => !v.enabled).length;
+                    return (
+                      <button key={it.id} onClick={() => setSelId(it.id)}
+                        className={cn('flex w-full items-start gap-2 rounded-xl border p-2.5 text-left transition-colors', sel ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-200' : 'bg-card hover:border-slate-300')}>
+                        <span className={cn('mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md', it.kind === 'title' ? 'bg-indigo-100 text-indigo-600' : 'bg-sky-100 text-sky-600')}><Icon className="h-3.5 w-3.5" /></span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-semibold text-foreground">{it.base || it.label}</span>
+                          <span className="mt-0.5 flex items-center gap-2 text-[10px]">
+                            {it.variants.length > 0 && <span className="text-indigo-600">후보 {it.variants.length}</span>}
+                            {off > 0 && <span className="text-slate-400">제외 {off}</span>}
+                            <span className="flex items-center gap-0.5 text-muted-foreground"><MapPin className="h-2.5 w-2.5" />{it.usages.length}곳</span>
+                          </span>
                         </span>
-                      </span>
-                      <ChevronRight className={cn('mt-1.5 h-4 w-4 shrink-0', sel ? 'text-indigo-400' : 'text-slate-300')} />
-                    </button>
-                  );
-                })}
+                        <ChevronRight className={cn('mt-1.5 h-4 w-4 shrink-0', sel ? 'text-indigo-400' : 'text-slate-300')} />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <div className="min-h-0 overflow-y-auto rounded-xl border bg-card">
-          {!selected ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground">왼쪽에서 문구를 선택하세요.</div> : <Detail item={selected} onToggle={toggle} library={library} />}
+          <div className="min-h-0 overflow-y-auto rounded-xl border bg-card">
+            {!selected ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground">왼쪽에서 문구를 선택하세요.</div> : <Detail item={selected} onToggle={toggle} library={library} />}
+          </div>
         </div>
-      </div>
+      )}
+    </div>
+  );
+}
+
+// ── 매트릭스 뷰 — 행=문구(유형별 그룹), 열=6타겟. 커버리지·내용을 한눈에. 행 클릭 → 편집. ──
+const TARGET_COLS = ['시니어', '2030', '재방문', '위치 인근', '혜택 보유', '신규'];
+function Matrix({ groups, onOpen }: { groups: [string, MsgItem[]][]; onOpen: (id: string) => void }) {
+  return (
+    <div className="mt-4 min-h-0 flex-1 overflow-auto rounded-xl border bg-card">
+      <table className="w-full min-w-[1180px] border-separate border-spacing-0 text-[12px]">
+        <thead className="sticky top-0 z-10">
+          <tr className="[&>th]:border-b-2 [&>th]:border-slate-200 [&>th]:bg-slate-50 [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold [&>th]:text-slate-600">
+            <th className="sticky left-0 z-20 min-w-[240px]">문구</th>
+            <th className="min-w-[160px]">기본</th>
+            {TARGET_COLS.map((c) => <th key={c} className="min-w-[150px]">{c}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {groups.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-sm text-muted-foreground">문구가 없습니다.</td></tr>}
+          {groups.map(([g, its]) => (
+            <Fragment key={g}>
+              <tr><td colSpan={8} className="border-b bg-slate-100/60 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">{g} · {its.length}</td></tr>
+              {its.map((it) => {
+                const byT = new Map(it.variants.map((v) => [v.target, v]));
+                return (
+                  <tr key={it.id} className="group cursor-pointer" onClick={() => onOpen(it.id)}>
+                    <td className="sticky left-0 z-10 max-w-[240px] border-b border-slate-100 bg-white px-3 py-2 align-top group-hover:bg-indigo-50/40">
+                      <span className="block truncate font-semibold text-slate-800">{it.label}</span>
+                      <span className="block truncate text-[10px] text-slate-400">{it.base || '—'}</span>
+                    </td>
+                    <td className="max-w-[160px] truncate border-b border-slate-100 px-3 py-2 align-top text-slate-500 group-hover:bg-indigo-50/40">{it.base || '—'}</td>
+                    {TARGET_COLS.map((c) => {
+                      const v = byT.get(c);
+                      return (
+                        <td key={c} className={cn('max-w-[150px] border-b border-l border-slate-100 px-3 py-2 align-top group-hover:bg-indigo-50/40', v ? (v.enabled ? 'text-slate-700' : 'text-slate-400') : 'text-slate-300')}>
+                          {v ? <span className={cn('line-clamp-2 whitespace-pre-line', !v.enabled && 'line-through')}>{v.text}</span> : '—'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
