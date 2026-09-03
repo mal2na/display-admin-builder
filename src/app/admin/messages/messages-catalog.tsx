@@ -200,7 +200,7 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
   return (
     <div className="mt-4 flex min-h-0 flex-1 flex-col">
       <p className="mb-1.5 px-1 text-[11px] text-muted-foreground">
-        <span className="font-semibold text-slate-500">타겟 컬럼</span> = 문구에 실제 쓰인 세그먼트(<b className="text-indigo-600">CVM 세그 참조 · 예시</b>) · 고정 스키마 아님 — 실제 매칭은 CVM
+        <span className="font-semibold text-slate-500">열 = 후보 속성(성격·맥락 힌트, 소수)</span> · CVM이 고객 세그(수천~수만)를 이 속성에 매핑해 후보를 택1. <b className="text-indigo-600">세그를 문구마다 매핑하지 않음</b> — 채널은 후보 풀만 관리.
       </p>
       <div className="min-h-0 flex-1 overflow-auto rounded-xl border bg-card">
         <table className="w-full border-separate border-spacing-0 text-[12px]" style={{ minWidth: 400 + targetCols.length * 150 }}>
@@ -274,17 +274,17 @@ function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: Msg
         </div>
 
         {/* 타겟별 배리에이션 */}
-        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-indigo-700"><Sparkles className="h-3.5 w-3.5" /> 타겟별 배리에이션 <span className="font-normal text-indigo-400">· 타겟 = CVM 세그 참조(예시) · 매칭·택1은 CVM</span></p>
+        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-indigo-700"><Sparkles className="h-3.5 w-3.5" /> 문구 후보 <span className="font-normal text-indigo-400">· 속성(힌트)만 태그 · CVM이 세그(수만) 매핑해 택1 · 세그 열거 아님</span></p>
         {item.variants.length > 0 && (
           <div className="overflow-hidden rounded-lg border">
             <table className="w-full text-[12px]">
               <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400">
-                <tr className="[&>th]:px-3 [&>th]:py-1.5 [&>th]:text-left [&>th]:font-semibold"><th className="w-24">타겟</th><th>문구</th><th className="w-36">성과</th><th className="w-16 text-center">노출</th></tr>
+                <tr className="[&>th]:px-3 [&>th]:py-1.5 [&>th]:text-left [&>th]:font-semibold"><th className="w-24">속성(힌트)</th><th>문구</th><th className="w-36">성과</th><th className="w-16 text-center">노출</th></tr>
               </thead>
               <tbody className="divide-y">
                 {item.variants.map((v) => (
                   <tr key={v.index} className={cn(!v.enabled && 'bg-slate-50/60 opacity-60')}>
-                    <td className="px-3 py-2">{v.target ? <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-500">{v.target}</span> : <span className="text-[11px] text-slate-400">타겟없음</span>}</td>
+                    <td className="px-3 py-2">{v.target ? <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-500">{v.target}</span> : <span className="text-[11px] text-slate-400">속성 없음</span>}</td>
                     <td className="px-3 py-2 text-slate-700">{v.text || <span className="text-slate-400">(빈 문구)</span>}</td>
                     <td className="px-3 py-2"><span className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-400"><BarChart3 className="h-3 w-3" /> CVM 연동 예정</span></td>
                     <td className="px-3 py-2 text-center"><button onClick={() => onToggle(item, v.index)} className={cn('rounded px-2 py-1 text-[10px] font-bold', v.enabled ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-200 text-slate-500 hover:bg-slate-300')}>{v.enabled ? '노출' : '제외'}</button></td>
@@ -304,7 +304,7 @@ function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: Msg
           </div>
         </div>
 
-        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">문구 텍스트는 채널이 author(직접입력·라이브러리 재사용·AI 제안), <b>노출/제외</b>는 채널 통제 — 세그 매칭·성과 원장은 CVM. (정책 PI-DSP-CMP-001 · FN-DSP-CMP-001 · PI-DSP-AI-001)</p>
+        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">채널은 <b>후보 몇 개(배리에이션 수)와 속성·표기·노출/제외</b>만 관리하고, 수만 세그 각각에 어느 후보를 붙일지는 <b>CVM이 매핑</b>한다 — <b>세그를 문구마다 매핑하지 않는다.</b> 문구는 직접입력·라이브러리·AI 제안으로 author. (정책 PI-DSP-CMP-001 · PI-DSP-PER-001 · PI-DSP-AI-001)</p>
       </div>
     </div>
   );
@@ -343,7 +343,7 @@ function AddVariant({ item, library }: { item: MsgItem; library: LibEntry[] }) {
   return (
     <div className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50/40 p-2.5">
       <div className="flex items-center gap-1.5">
-        <select value={target} onChange={(e) => setTarget(e.target.value)} className="h-8 w-28 shrink-0 rounded-md border bg-white px-1.5 text-[11px]"><option value="">타겟 없음</option>{CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}</select>
+        <select value={target} onChange={(e) => setTarget(e.target.value)} className="h-8 w-28 shrink-0 rounded-md border bg-white px-1.5 text-[11px]"><option value="">속성 없음</option>{CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}</select>
         <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !over) add(); }} placeholder="문구 직접 입력 / 아래에서 불러오기" className={cn('h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-[12px] outline-none focus:ring-2', over ? 'border-rose-300 focus:ring-rose-200' : 'focus:ring-indigo-200')} />
         <button type="button" onClick={() => setMode(mode === 'lib' ? null : 'lib')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'lib' ? 'border-indigo-400 bg-white text-indigo-700' : 'bg-white text-slate-600 hover:bg-slate-50')}><Library className="h-3.5 w-3.5" /> 라이브러리</button>
         <button type="button" onClick={() => setMode(mode === 'ai' ? null : 'ai')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'ai' ? 'border-indigo-400 bg-white text-indigo-700' : 'bg-white text-slate-600 hover:bg-slate-50')}><Wand2 className="h-3.5 w-3.5" /> AI 제안</button>
@@ -362,7 +362,7 @@ function AddVariant({ item, library }: { item: MsgItem; library: LibEntry[] }) {
       )}
       {mode === 'ai' && (
         <div className="mt-2 rounded-md border bg-white p-2">
-          <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-500"><Wand2 className="h-3.5 w-3.5 text-indigo-500" /> AI 제안 <span className="font-normal text-slate-400">· {target || '타겟없음'} · 예시(실서비스는 AI 생성) · 클릭해 채택</span></p>
+          <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-500"><Wand2 className="h-3.5 w-3.5 text-indigo-500" /> AI 제안 <span className="font-normal text-slate-400">· {target || '속성 없음'} · 예시(실서비스는 AI 생성) · 클릭해 채택</span></p>
           {aiHits.length === 0 ? <p className="py-2 text-center text-[11px] text-slate-400">기본 문구가 있어야 제안</p> : <div className="space-y-0.5">{aiHits.map((p, i) => <button key={i} type="button" onClick={() => setText(p)} className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[12px] text-slate-700 hover:bg-indigo-50"><Sparkles className="h-3 w-3 shrink-0 text-indigo-400" /> <span className="truncate">{p}</span></button>)}</div>}
         </div>
       )}
