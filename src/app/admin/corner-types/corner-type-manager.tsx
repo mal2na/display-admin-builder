@@ -12,8 +12,10 @@ import {
   deriveCornerTypeUsage,
   CORNER_TYPES,
   cornerTypePurpose,
+  cornerTypeGovernance,
   cornerTypeChipClass,
   componentTypesForCorner,
+  cornerTypeDetails,
   componentLayoutDetails,
   PRODUCT_SORT_OPTIONS,
   REC_SOURCE_METHODS,
@@ -144,6 +146,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const [q, setQ] = useState(sp.get('q') ?? '');
   const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 10);
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
+  // 뷰 모드 — 유형별(7 상위 유형 → 쉐입) 그룹 뷰 ↔ 전체 목록(평면). 거버넌스는 유형 기준, 쉐입은 하위.
+  const [view, setView] = useState<'group' | 'list'>(sp.get('view') === 'list' ? 'list' : 'group');
 
   // 상위 분기(도메인)로 코너 유형을 먼저 나눈다: 전시/관리(전시 8종) vs 이벤트/미션(전용 계열)
   const inDomain = (t: CornerTypeRow) => (domain === '이벤트/미션' ? isEventCornerFamily(t.baseCategory) : !isEventCornerFamily(t.baseCategory));
@@ -183,10 +187,11 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
     if (q.trim()) p.set('q', q.trim());
     if (perPage !== 10) p.set('pp', String(perPage));
     if (curPage !== 1) p.set('p', String(curPage));
+    if (view !== 'group') p.set('view', view);
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domain, base, detail, useOn, useOff, statusSel, field, q, perPage, curPage]);
+  }, [domain, base, detail, useOn, useOff, statusSel, field, q, perPage, curPage, view]);
 
   const selectCls = 'h-9 rounded-lg border bg-white px-2.5 text-sm';
   const chk = 'flex items-center gap-1.5 text-sm cursor-pointer';
@@ -328,12 +333,115 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">검색결과: <b className="text-foreground">{filtered.length}개</b></p>
-        <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="h-8 rounded-md border bg-white px-2 text-xs">
-          {[10, 20, 50].map((n) => <option key={n} value={n}>{n}개씩</option>)}
-        </select>
+        <p className="text-sm text-muted-foreground">
+          {view === 'group'
+            ? <>상위 유형 <b className="text-foreground">{(domain === '전시/관리' ? CORNER_TYPES.length : new Set(filtered.map((t) => t.baseCategory)).size)}</b> · 쉐입 <b className="text-foreground">{filtered.length}개</b></>
+            : <>검색결과: <b className="text-foreground">{filtered.length}개</b></>}
+        </p>
+        <div className="flex items-center gap-2">
+          {/* 뷰 토글 — 유형별(7 상위 → 쉐입) ↔ 목록(평면) */}
+          <div className="flex rounded-lg border bg-white p-0.5 text-xs">
+            <button onClick={() => setView('group')} className={cn('rounded-md px-2.5 py-1 font-medium', view === 'group' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary')}>유형별</button>
+            <button onClick={() => setView('list')} className={cn('rounded-md px-2.5 py-1 font-medium', view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary')}>목록</button>
+          </div>
+          {view === 'list' && (
+            <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="h-8 rounded-md border bg-white px-2 text-xs">
+              {[10, 20, 50].map((n) => <option key={n} value={n}>{n}개씩</option>)}
+            </select>
+          )}
+        </div>
       </div>
 
+      {/* ── 유형별 그룹 뷰 — 7 상위 유형 → 쉐입(배열). 거버넌스(허용 컴포넌트)는 유형 헤더에 한 번, 쉐입은 하위 행. ── */}
+      {view === 'group' && (
+        <div className="space-y-3">
+          {(() => {
+            const groupBases = domain === '전시/관리'
+              ? (CORNER_TYPES as readonly string[]).filter((bc) => base === '전체' || bc === base)
+              : [...new Set(filtered.map((t) => t.baseCategory))];
+            if (groupBases.length === 0) return <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">조건에 맞는 코너 유형이 없습니다.</div>;
+            return groupBases.map((bc) => {
+              const rows = filtered.filter((t) => t.baseCategory === bc);
+              const allowed = componentTypesForCorner(bc);
+              const purpose = cornerTypePurpose(bc);
+              const gov = cornerTypeGovernance(bc);
+              const regDetails = new Set(rows.map((r) => r.typeDetail).filter(Boolean));
+              const missing = cornerTypeDetails(bc).filter((d) => !regDetails.has(d));
+              return (
+                <div key={bc} className="overflow-hidden rounded-xl border bg-card">
+                  {/* 유형 헤더: 유형 + 목적 + 허용 컴포넌트(거버넌스 · 쉐입 무관) */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-surface-subtle px-4 py-3">
+                    <span className={cn('inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold', cornerTypeChipClass(bc))}>{bc}</span>
+                    <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">쉐입 {rows.length}</span>
+                    {purpose && <span className="min-w-[200px] flex-1 text-xs text-muted-foreground">{purpose}</span>}
+                    <Link href={`/admin/corner-types/new?base=${encodeURIComponent(bc)}`} className="inline-flex items-center gap-1 rounded-md border bg-white px-2.5 py-1 text-xs font-medium text-primary hover:bg-secondary"><Plus className="h-3.5 w-3.5" /> 쉐입 추가</Link>
+                    {(gov || allowed.length > 0) && (
+                      <div className="w-full space-y-1.5 border-t border-dashed pt-2">
+                        {gov && (
+                          <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+                            <span className="mr-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">거버넌스</span>
+                            {gov}
+                          </p>
+                        )}
+                        {allowed.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[11px] font-medium text-muted-foreground">허용 컴포넌트</span>
+                            {allowed.map((c) => <span key={c} className="rounded border bg-white px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{c}</span>)}
+                            <span className="text-[10px] text-muted-foreground/60">· PI-DSP-CMP-003 (유형 기준, 쉐입과 무관)</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* 쉐입(배열) 행 */}
+                  {rows.length === 0 ? (
+                    <p className="px-4 py-3 text-xs text-muted-foreground">등록된 쉐입이 없습니다. <b>쉐입 추가</b>로 이 유형의 첫 배열을 등록하세요.</p>
+                  ) : (
+                    <ul className="divide-y">
+                      {rows.map((t) => {
+                        const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
+                        const srcs = t.sampleImageUrl ? t.sampleImageUrl.split('\n').filter(Boolean) : [];
+                        return (
+                          <li key={t.id} onClick={() => router.push(`/admin/corner-types/${t.id}`)} className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 hover:bg-muted/40">
+                            {srcs.length > 0 ? (
+                              <button type="button" onClick={(e) => { e.stopPropagation(); setPreview(srcs); }} onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHoverThumb({ src: srcs[0], x: r.left, y: r.top }); }} onMouseLeave={() => setHoverThumb(null)} className="shrink-0 rounded-lg transition hover:ring-2 hover:ring-primary/50">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={srcs[0]} alt="샘플" className="h-8 w-12 rounded-lg border object-cover object-top [filter:contrast(1.08)_saturate(1.15)]" />
+                              </button>
+                            ) : <span className="grid h-8 w-12 shrink-0 place-items-center rounded-lg border text-[9px] text-muted-foreground/40">없음</span>}
+                            <span className="text-sm font-medium text-foreground">{t.typeDetail ?? '(상세 없음)'}</span>
+                            {t.bigBanner && <span className="inline-flex items-center rounded border border-dashed border-indigo-400 bg-indigo-50/60 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">빅배너</span>}
+                            {t.componentType && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{t.componentType}</span>}
+                            <span className="font-mono text-[11px] text-muted-foreground">{t.typeId}</span>
+                            <span className="ml-auto flex items-center gap-1.5">
+                              {t.liveVersion != null && t.active
+                                ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
+                                : <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">미사용</span>}
+                              <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span>
+                              {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {/* 카탈로그에 있으나 미등록인 쉐입 — 추가 유도 (CORNER_TYPE_DETAILS) */}
+                  {missing.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 border-t bg-surface-subtle/40 px-4 py-2">
+                      <span className="text-[11px] text-muted-foreground">추가 가능한 쉐입</span>
+                      {missing.map((d) => (
+                        <Link key={d} href={`/admin/corner-types/new?base=${encodeURIComponent(bc)}&detail=${encodeURIComponent(d)}`} className="rounded-full border border-dashed px-2 py-0.5 text-[11px] text-muted-foreground transition hover:border-primary hover:text-primary">+ {d}</Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            });
+          })()}
+        </div>
+      )}
+
+      {view === 'list' && (
       <div className="overflow-x-auto border">
         <table className="w-full text-sm">
           <thead className="border-b bg-surface-subtle text-xs text-muted-foreground">
@@ -433,9 +541,10 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           </tbody>
         </table>
       </div>
+      )}
 
       {/* 페이지네이션 */}
-      {totalPages > 1 && (
+      {view === 'list' && totalPages > 1 && (
         <div className="flex items-center justify-center gap-1 text-sm">
           <button onClick={() => setPage(Math.max(1, curPage - 1))} disabled={curPage <= 1} className="rounded-md border px-2.5 py-1.5 disabled:opacity-40 hover:bg-secondary">‹</button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (

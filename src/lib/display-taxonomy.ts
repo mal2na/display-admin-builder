@@ -182,6 +182,22 @@ export function cornerTypePurpose(cornerType?: string | null): string {
   return (CORNER_TYPE_PURPOSE as Record<string, string>)[cornerType] ?? '';
 }
 
+// 코너 유형별 '거버넌스' — 이 유형이 가진 규칙을 사람이 읽는 한 문장으로. (허용 컴포넌트 + 성격/제약)
+//  규칙 근거: 허용 컴포넌트 = CORNER_COMPONENT_MAP(PI-DSP-CMP-003). 쉐입(배열)은 이 규칙과 무관하게 하위에서 여러 개.
+export const CORNER_TYPE_GOVERNANCE: Record<CornerType, string> = {
+  상품형: '상품 카드(상품형)만 담고, 상단 카테고리 탭(선택형)까지 허용. 정렬·최대 노출 개수·추천 수급(CVM/운영 편성)을 가진다.',
+  배너형: '배너(배너형) 컴포넌트만 담는다. 캠페인 소재·기간·랜딩을 노출하고, 빅배너 구분자를 둘 수 있다.',
+  '혜택·오퍼형': '혜택형을 중심으로 정보·행동·배너·상품·선택형까지 폭넓게 담는다(혜택 홈 조합 지원).',
+  '업무 진입형': '선택형(탭·메뉴)만 담는다. 조회·변경·신청·납부 같은 업무로 이동시키는 진입 코너.',
+  '상태 안내형': '정보형·행동형만 담는다. 요금·포인트·잔여량처럼 고객 상태·진행을 안내한다.',
+  '콘텐츠 안내형': '정보·행동·배너·상품형을 담는다. 가이드·설명·추천 콘텐츠에 쓴다(예: 영화 예매).',
+  '고정·필수 노출형': '정보형·행동형만 담는다. 필수 고지·바코드·프로필처럼 항상 유지되는 정보에 쓴다.',
+};
+export function cornerTypeGovernance(cornerType?: string | null): string {
+  if (!cornerType) return '';
+  return (CORNER_TYPE_GOVERNANCE as Record<string, string>)[cornerType] ?? '';
+}
+
 // 코너 유형(8종) → Chip 색상. 같은 유형이면 코너 유형 관리·빌더 어디서든 같은 색으로 보이게 하는 SSOT.
 // 부드러운 톤(bg-50/text-700/border-200) — BSS UI 라벤더/인디고 크롬과 충돌하지 않는 8색.
 export const CORNER_TYPE_CHIP: Record<CornerType, string> = {

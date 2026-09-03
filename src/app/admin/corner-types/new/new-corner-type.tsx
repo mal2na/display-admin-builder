@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import { CORNER_TYPES, componentTypesForCorner, componentLayoutDetails } from '@/lib/display-taxonomy';
+import { isEventCornerFamily } from '@/lib/event-taxonomy';
 import {
   CornerTypeForm,
   EMPTY_CORNER_TYPE,
@@ -17,10 +19,20 @@ import {
  */
 export function NewCornerType({ builtOptions, registered = [] }: { builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[] }) {
   const router = useRouter();
-  // 등록 시작값: 정책 8종 중 첫 번째(상품형)로 초기화
+  // 등록 시작값 — 유형별 그룹 뷰의 '쉐입 추가'에서 넘어온 유형/쉐입(base·detail)으로 prefill.
+  const sp = useSearchParams();
+  const preBase = sp.get('base');
+  const preDetail = sp.get('detail');
+  const baseValid = preBase && ((CORNER_TYPES as readonly string[]).includes(preBase) || isEventCornerFamily(preBase));
+  // 쉐입(detail)을 담을 수 있는 컴포넌트 유형을 추론 → detail 라디오까지 prefill되게(base→컴포넌트→상세 캐스케이드).
+  const preComp = baseValid && preDetail
+    ? componentTypesForCorner(preBase!).find((c) => componentLayoutDetails(c).includes(preDetail)) ?? null
+    : null;
   const createRow: CornerTypeRow = {
     ...EMPTY_CORNER_TYPE,
-    typeDetail: null,
+    baseCategory: baseValid ? preBase! : EMPTY_CORNER_TYPE.baseCategory,
+    componentType: preComp ?? EMPTY_CORNER_TYPE.componentType,
+    typeDetail: baseValid && preDetail ? preDetail : null,
   };
 
   return (
