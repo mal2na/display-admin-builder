@@ -728,7 +728,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const canBigBanner = compValid === '상품형';
   const bigBannerOn = canBigBanner && bigBanner;
   // 코너 유형 명 = [코너 유형 · 컴포넌트 · 배열 (· 빅배너)] 자동 구성
-  const derivedName = [base, compValid, detailValid, bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
+  // 코너 유형 명 = 유형 · (컴포넌트) · 배열. 컴포넌트가 유형과 같으면 생략(‘상품형 · 상품형’ 중복 제거).
+  const derivedName = [base, compValid !== base ? compValid : '', detailValid, bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
   const channels = row.channels.split(',').filter(Boolean);
   const platforms = row.platforms.split(',').filter(Boolean);
   const action = isNew ? createCornerType : updateCornerType.bind(null, row.id);
@@ -1382,7 +1383,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     <div className="rounded-md border bg-slate-50 p-3">
       <p className="mb-2 text-xs font-medium text-muted-foreground">
         미리보기 · {base}
-        {c ? ` › ${c}` : ''}
+        {c && c !== base ? ` › ${c}` : ''}
         {detail ? ` › ${detail}` : ''}
         {bigBanner ? ' · 빅배너' : ''}
       </p>
