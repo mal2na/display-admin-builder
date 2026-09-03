@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState, useTransition, Fragment } from 'react';
+import { useMemo, useState, useTransition, useRef, Fragment } from 'react';
 import Link from 'next/link';
-import { Search, PenLine, Type, AlignLeft, Sparkles, BarChart3, ChevronRight, ChevronLeft, Plus, Library, Wand2, X, MapPin, Grid3x3, List } from 'lucide-react';
+import { Search, PenLine, Type, AlignLeft, Sparkles, BarChart3, ChevronRight, Plus, Library, Wand2, X, MapPin, Grid3x3, List, Download, Upload } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 import { CVM_TARGET_HINTS } from '@/lib/display-taxonomy';
-import { toggleTitleVariant, toggleAtomVariant, addTitleVariant, addAtomVariant } from './actions';
+import { toggleTitleVariant, toggleAtomVariant, addTitleVariant, addAtomVariant, importMessages } from './actions';
 
 export type MsgVariant = { text: string; target?: string; enabled: boolean; index: number };
 export type LibEntry = { text: string; use: string; target?: string; sources: string[] };
@@ -61,6 +61,34 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
     else toggleAtomVariant(it.id, index);
   });
 
+  // ── 엑셀(CSV) 다운로드 — 현재 목록을 문구ID + 기본 + 6타겟 열로 ──
+  const exportCsv = () => {
+    const cols = ['문구ID', '유형', '사용처', '기본', ...TARGET_COLS];
+    const esc = (v: string) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [cols.map(esc).join(',')];
+    for (const it of list) {
+      const byT = new Map(it.variants.map((v) => [v.target, v.text]));
+      lines.push([it.id, it.use, it.usages.join(' | '), it.base, ...TARGET_COLS.map((c) => byT.get(c) ?? '')].map(esc).join(','));
+    }
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `문구_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  };
+  // ── 엑셀(CSV) 업로드 — 밀어넣기 ──
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; e.target.value = '';
+    if (!f) return;
+    setBusy(true);
+    try {
+      const res = await importMessages(await f.text());
+      alert(res.ok ? `문구 ${res.updated}개 반영${res.skipped ? ` · ${res.skipped}개 건너뜀` : ''}` : '업로드 실패 — CSV 형식(문구ID·타겟 열)을 확인하세요.');
+    } finally { setBusy(false); }
+  };
+
   return (
     <div className="flex h-full flex-col p-6">
       <PageHeader
@@ -80,6 +108,10 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> 노출 {totalVars - excluded}</span>
         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-slate-400" /> 제외 {excluded}</span>
         <div className="ml-auto flex items-center gap-2">
+          {/* 엑셀 업/다운로드 — 대량 관리 */}
+          <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={onFile} />
+          <button onClick={() => fileRef.current?.click()} disabled={busy} className="inline-flex h-8 items-center gap-1 rounded-lg border bg-white px-2.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Upload className="h-3.5 w-3.5" /> {busy ? '반영 중…' : '엑셀 업로드'}</button>
+          <button onClick={exportCsv} className="inline-flex h-8 items-center gap-1 rounded-lg border bg-white px-2.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"><Download className="h-3.5 w-3.5" /> 엑셀 다운로드</button>
           {/* 뷰 토글 — 매트릭스(타겟 커버리지) ↔ 편집 */}
           <div className="flex rounded-lg border bg-white p-0.5">
             <button onClick={() => setMode('matrix')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'matrix' ? 'bg-indigo-600 text-white' : 'text-slate-500')} title="매트릭스"><Grid3x3 className="h-3.5 w-3.5" /> 매트릭스</button>
