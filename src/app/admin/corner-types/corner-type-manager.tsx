@@ -640,9 +640,8 @@ function StepHead({ n, title, required, hint }: { n: number; title: string; requ
 // ── 코너 유형 등록/수정 폼 (BO 대표 유형 화면 · 등록 폼 패턴) ─────────────
 export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; onClose: () => void }) {
   const isNew = !row.id;
-  // 3단 계층: ① 코너 유형(base) → ② 구성 컴포넌트 유형(comp) → ③ 배열/레이아웃 상세(detail)
+  // 2단 분류: ① 코너 유형(base) → ② 쉐입/배열(detail). 구성 컴포넌트는 쉐입에서 자동 도출.
   const [base, setBase] = useState(row.baseCategory);
-  const [comp, setComp] = useState(row.componentType ?? '');
   const [detail, setDetail] = useState(row.typeDetail ?? '');
   const [bigBanner, setBigBanner] = useState(row.bigBanner ?? false); // ④ 빅배너 구분자
   const [active, setActive] = useState(row.active);
@@ -661,36 +660,32 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
     useMoreButton: row.useMoreButton,
   });
 
-  // ② 컴포넌트 / ③ 배열은 "그 코너 유형에 실제 등록된 조합"으로 좁힌다.
-  //   등록이 하나도 없는 코너 유형이면 정책 SSOT(CORNER_COMPONENT_MAP / COMPONENT_LAYOUT_DETAILS)로 폴백.
-  const regComponentsFor = (b: string) =>
-    [...new Set(registered.filter((r) => r.baseCategory === b).map((r) => r.componentType).filter(Boolean) as string[])];
-  const regDetailsFor = (b: string, c: string) =>
-    [...new Set(registered.filter((r) => r.baseCategory === b && (r.componentType ?? '') === c).map((r) => r.typeDetail).filter(Boolean) as string[])];
-
-  // ① 코너 유형 = 정책서 8종 고정(PI-DSP-CMP-003 / TM-DSP-021). 수정 시 레거시 값 보존.
+  // ① 코너 유형 = 정책서 7종 고정(PI-DSP-CMP-003 / TM-DSP-021). 수정 시 레거시 값 보존.
   const baseOptions = Array.from(
     new Set<string>([...CORNER_TYPES, ...(!isNew && row.baseCategory ? [row.baseCategory] : [])]),
   );
-  // 레거시(기존 저장값) 보존은 '원래 그 조합에 머물러 있을 때'만 — base/comp를 바꾸면 원래 값은 새 유형과 무관하므로 버린다.
-  //   (예: 혜택·오퍼형(상품형) 상세에서 ①을 배너형으로 바꾸면 ②는 등록 기준 '배너형'만 남아야 함. 상품형 레거시 주입 금지)
   const onOrigBase = !isNew && base === row.baseCategory;
-  // ② 구성 컴포넌트 유형 — 등록된 것 우선, 없으면 정책 허용치. 원래 base일 때만 레거시 보존.
-  const regComps = regComponentsFor(base);
-  const ruleComps = regComps.length ? regComps : [...componentTypesForCorner(base)];
-  const legacyComp = onOrigBase && row.componentType && !ruleComps.includes(row.componentType) ? [row.componentType] : [];
-  const compOptions = Array.from(new Set<string>([...ruleComps, ...legacyComp]));
-  const compValid = compOptions.includes(comp) ? comp : (compOptions[0] ?? '');
-  // ③ 배열/레이아웃 상세 — 등록된 것 우선, 없으면 정책 허용치. 원래 base·comp일 때만 레거시 보존.
-  const onOrigCombo = onOrigBase && compValid === (row.componentType ?? '');
-  const regDetails = regDetailsFor(base, compValid);
-  const ruleDetails = regDetails.length ? regDetails : [...componentLayoutDetails(compValid)];
-  const legacyDetail = onOrigCombo && row.typeDetail && !ruleDetails.includes(row.typeDetail) ? [row.typeDetail] : [];
-  const detailOptions = Array.from(new Set<string>([...ruleDetails, ...legacyDetail]));
-  const allowEmptyDetail = detailOptions.length === 0;
-  // 전환 시 초기값 (등록된 것 우선)
-  const defaultCompFor = (b: string) => regComponentsFor(b)[0] ?? componentTypesForCorner(b)[0] ?? '';
-  const defaultDetailFor = (b: string, c: string) => regDetailsFor(b, c)[0] ?? componentLayoutDetails(c)[0] ?? '';
+
+  // ── 분류는 '유형 → 쉐입(배열)' 2단. 구성 컴포넌트 유형은 별도 단계 없이 쉐입에서 자동 도출한다. ──
+  //  쉐입 카탈로그 = 이 유형에 등록된 상세 ∪ 정책 세부 유형(cornerTypeDetails). 컴포넌트 = 쉐입→컴포넌트 결정(허용치 내).
+  const compForShape = (b: string, d: string): string => {
+    const reg = registered.find((r) => r.baseCategory === b && (r.typeDetail ?? '') === d);
+    if (reg?.componentType) return reg.componentType; // 등록된 조합 우선
+    for (const c of componentTypesForCorner(b)) if (componentLayoutDetails(c).includes(d)) return c; // 이 쉐입을 제공하는 허용 컴포넌트
+    return componentTypesForCorner(b)[0] ?? '';
+  };
+  const typeShapes = (() => {
+    const seen = new Set<string>(); const out: string[] = [];
+    for (const r of registered.filter((x) => x.baseCategory === base)) if (r.typeDetail && !seen.has(r.typeDetail)) { seen.add(r.typeDetail); out.push(r.typeDetail); }
+    for (const d of cornerTypeDetails(base)) if (!seen.has(d)) { seen.add(d); out.push(d); }
+    if (onOrigBase && row.typeDetail && !seen.has(row.typeDetail)) { seen.add(row.typeDetail); out.push(row.typeDetail); }
+    return out;
+  })();
+  const allowEmptyDetail = typeShapes.length === 0;
+  const defaultShapeFor = (b: string): string => {
+    const reg = registered.find((r) => r.baseCategory === b && r.typeDetail);
+    return reg?.typeDetail ?? cornerTypeDetails(b)[0] ?? '';
+  };
   // 유형 샘플 이미지 — 로컬에서 직접 등록(data URI)
   const [sampleImage, setSampleImage] = useState(row.sampleImageUrl ?? '');
   const sampleFileRef = useRef<HTMLInputElement>(null);
@@ -701,7 +696,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
     reader.onload = () => setSampleImage(String(reader.result));
     reader.readAsDataURL(f);
   };
-  const detailValid = detailOptions.includes(detail) ? detail : allowEmptyDetail ? '' : (detailOptions[0] ?? '');
+  const detailValid = typeShapes.includes(detail) ? detail : (allowEmptyDetail ? '' : (typeShapes[0] ?? ''));
+  const compValid = compForShape(base, detailValid); // 컴포넌트는 쉐입에서 자동 도출
 
   // ── 세부 항목 적용 가능 여부 (유형별) ──
   // 카테고리 탭/고정형 탭/배너/아이콘형 등은 코너 타이틀·서브타이틀이 없다(미리보기 noHeader와 동일 기준).
@@ -761,7 +757,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2">
               <span className="flex items-center gap-1.5 text-[11px] text-indigo-700">
                 <Info className="h-3.5 w-3.5 shrink-0" />
-                <span><b className="font-semibold">3단계</b>로 코너를 정의해요 — 코너 유형 → 담을 모듈 → 배열</span>
+                <span><b className="font-semibold">2단계</b>로 코너를 정의해요 — 코너 유형 → 쉐입(배열)</span>
               </span>
               <span className="text-[11px] text-slate-500">
                 코너 유형 ID <span className="ml-0.5 rounded border bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-700">{row.typeId}</span>
@@ -780,10 +776,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
                       value={c}
                       checked={base === c}
                       onChange={() => {
-                        const comp0 = defaultCompFor(c);
                         setBase(c);
-                        setComp(comp0);
-                        setDetail(defaultDetailFor(c, comp0));
+                        setDetail(defaultShapeFor(c));
                       }}
                       className="peer sr-only"
                     />
@@ -801,34 +795,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
               )}
             </div>
 
-            {/* ② 구성 컴포넌트 유형 */}
-            <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-              <StepHead n={2} title="구성 컴포넌트 유형" hint="코너 안에 담기는 모듈 · 코너 유형에 맞는 것만 나와요" />
-              <div className="flex flex-wrap gap-1.5">
-                {compOptions.map((c) => (
-                  <label key={c} className="cursor-pointer">
-                    <input
-                      type="radio"
-                      name="componentType"
-                      value={c}
-                      checked={compValid === c}
-                      onChange={() => {
-                        setComp(c);
-                        setDetail(defaultDetailFor(base, c));
-                      }}
-                      className="peer sr-only"
-                    />
-                    <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">
-                      {c}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
+            {/* 구성 컴포넌트 유형은 쉐입에서 자동 도출 → 별도 단계 없이 hidden으로만 저장(거버넌스는 유형 기준 유지) */}
+            <input type="hidden" name="componentType" value={compValid} />
 
-            {/* ③ 배열·레이아웃 상세 */}
+            {/* ② 쉐입(배열·레이아웃) */}
             <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-              <StepHead n={3} title="배열·레이아웃 상세" hint="그 모듈을 어떻게 배열해 보여줄지예요" />
+              <StepHead n={2} title="쉐입 (배열·레이아웃)" hint="이 유형을 어떤 형태로 보여줄지 골라요" />
               <div className="flex flex-wrap gap-1.5">
                 {allowEmptyDetail && (
                   <label className="cursor-pointer">
@@ -838,7 +810,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
                     </span>
                   </label>
                 )}
-                {detailOptions.map((d) => (
+                {typeShapes.map((d) => (
                   <label key={d} className="cursor-pointer">
                     <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
                     <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">
