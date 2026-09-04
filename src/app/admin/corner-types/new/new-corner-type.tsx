@@ -19,12 +19,12 @@ import {
  */
 export function NewCornerType({ builtOptions, registered = [] }: { builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[] }) {
   const router = useRouter();
-  // 등록 시작값 — 유형별 그룹 뷰의 '쉐입 추가'에서 넘어온 유형/쉐입(base·detail)으로 prefill.
+  // 등록 시작값 — 유형별 그룹 뷰의 '배열·레이아웃 추가'에서 넘어온 유형/배열·레이아웃(base·detail)으로 prefill.
   const sp = useSearchParams();
   const preBase = sp.get('base');
   const preDetail = sp.get('detail');
   const baseValid = preBase && ((CORNER_TYPES as readonly string[]).includes(preBase) || isEventCornerFamily(preBase));
-  // 쉐입(detail)을 담을 수 있는 컴포넌트 유형을 추론 → detail 라디오까지 prefill되게(base→컴포넌트→상세 캐스케이드).
+  // 배열·레이아웃(detail)을 담을 수 있는 컴포넌트 유형을 추론 → detail 라디오까지 prefill되게(base→컴포넌트→상세 캐스케이드).
   const preComp = baseValid && preDetail
     ? componentTypesForCorner(preBase!).find((c) => componentLayoutDetails(c).includes(preDetail)) ?? null
     : null;

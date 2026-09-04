@@ -183,7 +183,7 @@ export function cornerTypePurpose(cornerType?: string | null): string {
 }
 
 // 코너 유형별 '거버넌스' — 이 유형이 가진 규칙을 사람이 읽는 한 문장으로. (허용 컴포넌트 + 성격/제약)
-//  규칙 근거: 허용 컴포넌트 = CORNER_COMPONENT_MAP(PI-DSP-CMP-003). 쉐입(배열)은 이 규칙과 무관하게 하위에서 여러 개.
+//  규칙 근거: 허용 컴포넌트 = CORNER_COMPONENT_MAP(PI-DSP-CMP-003). 배열·레이아웃은 이 규칙과 무관하게 하위에서 여러 개.
 export const CORNER_TYPE_GOVERNANCE: Record<CornerType, string> = {
   상품형: '상품 카드(상품형)만 담고, 상단 카테고리 탭(선택형)까지 허용. 정렬·최대 노출 개수·추천 수급(CVM/운영 편성)을 가진다.',
   배너형: '배너(배너형) 컴포넌트만 담는다. 캠페인 소재·기간·랜딩을 노출하고, 빅배너 구분자를 둘 수 있다.',

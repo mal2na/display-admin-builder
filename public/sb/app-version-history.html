@@ -1,0 +1,829 @@
+<title>APP 버전 승인이력 개정안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap">
+
+<style>
+/* ── 토큰 : light가 기본. 프로젝트 tokens.css의 neutral/t-blue 램프를 그대로 가져옴 ── */
+:root{
+  --ground:#f1f3f5;
+  --surface:#ffffff;
+  --surface-sub:#f8f9fb;
+  --line:#dce0e5;
+  --line-soft:#e8ecef;
+  --ink:#1c1f23;
+  --ink-2:#454f59;
+  --ink-3:#697582;
+  --ink-4:#8b949e;
+  --accent:#502dfb;
+  --accent-ink:#3617ce;
+  --accent-wash:#f1f2ff;
+  --accent-line:#d0d2ff;
+  --on-accent:#ffffff;
+  --scrim:rgba(28,31,35,.45);
+
+  --ok-bg:#e3f5ec;   --ok-fg:#0f6b4a;
+  --warn-bg:#fff2d6; --warn-fg:#8a5300;
+  --neg-bg:#fde8e6;  --neg-fg:#a52a1f;
+  --mute-bg:#e8ecef; --mute-fg:#5a6672;
+
+  --strike:#c02b2b;
+  --shadow:0 1px 2px rgba(28,31,35,.06), 0 8px 24px -12px rgba(28,31,35,.18);
+  --shadow-lg:0 24px 60px -20px rgba(28,31,35,.45);
+
+  --f-sans:'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
+  --f-mono:'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#101216;
+    --surface:#191c21;
+    --surface-sub:#1f232a;
+    --line:#2e343d;
+    --line-soft:#262b33;
+    --ink:#e8ecef;
+    --ink-2:#c4c9cf;
+    --ink-3:#98a2ae;
+    --ink-4:#7d8794;
+    --accent:#9a9dff;
+    --accent-ink:#b4b7ff;
+    --accent-wash:#20213a;
+    --accent-line:#3a3b6b;
+    --on-accent:#14121f;
+    --scrim:rgba(0,0,0,.62);
+
+    --ok-bg:#12352a;   --ok-fg:#68d3a7;
+    --warn-bg:#3a2c0e; --warn-fg:#f0c265;
+    --neg-bg:#3b1e1b;  --neg-fg:#f2a49b;
+    --mute-bg:#282d35; --mute-fg:#a3adb9;
+
+    --strike:#e88b82;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+    --shadow-lg:0 28px 70px -20px rgba(0,0,0,.85);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101216;
+  --surface:#191c21;
+  --surface-sub:#1f232a;
+  --line:#2e343d;
+  --line-soft:#262b33;
+  --ink:#e8ecef;
+  --ink-2:#c4c9cf;
+  --ink-3:#98a2ae;
+  --ink-4:#7d8794;
+  --accent:#9a9dff;
+  --accent-ink:#b4b7ff;
+  --accent-wash:#20213a;
+  --accent-line:#3a3b6b;
+  --on-accent:#14121f;
+  --scrim:rgba(0,0,0,.62);
+
+  --ok-bg:#12352a;   --ok-fg:#68d3a7;
+  --warn-bg:#3a2c0e; --warn-fg:#f0c265;
+  --neg-bg:#3b1e1b;  --neg-fg:#f2a49b;
+  --mute-bg:#282d35; --mute-fg:#a3adb9;
+
+  --strike:#e88b82;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  --shadow-lg:0 28px 70px -20px rgba(0,0,0,.85);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--f-sans);
+  font-size:15px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1140px;margin:0 auto;padding:40px 24px 96px;display:flex;flex-direction:column;gap:44px}
+
+/* ── 헤더 ── */
+.masthead{display:flex;flex-direction:column;gap:14px;padding-bottom:26px;border-bottom:1px solid var(--line)}
+.sbmeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--ink-3)}
+.sbmeta .tag{border:1px solid var(--line);border-radius:3px;padding:2px 7px;background:var(--surface)}
+.sbmeta .tag.rev{border-color:var(--accent-line);background:var(--accent-wash);color:var(--accent-ink)}
+h1{margin:0;font-size:clamp(28px,4.2vw,40px);font-weight:700;letter-spacing:-.02em;line-height:1.2;text-wrap:balance}
+.dek{margin:0;max-width:64ch;color:var(--ink-2);font-size:16px;font-weight:300}
+.dek b{font-weight:600;color:var(--ink)}
+.dek code{font-family:var(--f-mono);font-size:12.5px}
+
+/* ── 섹션 공통 ── */
+section{display:flex;flex-direction:column;gap:18px}
+.shead{display:flex;flex-direction:column;gap:5px}
+.eyebrow{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink)}
+h2{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em}
+.snote{margin:0;max-width:72ch;color:var(--ink-3);font-size:14px}
+.snote b{color:var(--ink)}
+
+/* ── 변경점 대조 ── */
+.deltas{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.delta{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.delta h3{margin:0;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.ba{display:flex;flex-direction:column;gap:7px;font-size:13.5px}
+.ba div{display:grid;grid-template-columns:38px 1fr;gap:9px;align-items:start}
+.ba span.k{font-family:var(--f-mono);font-size:10px;font-weight:600;letter-spacing:.06em;padding-top:3px}
+.ba .before .k{color:var(--ink-4)}
+.ba .before p{color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--strike);text-decoration-thickness:1px}
+.ba .after .k{color:var(--accent-ink)}
+.ba .after p{color:var(--ink);font-weight:500}
+.ba p{margin:0}
+.why{margin:0;padding-top:11px;border-top:1px dashed var(--line);color:var(--ink-3);font-size:13px}
+.why b{color:var(--ink-2);font-weight:600}
+
+/* ── 사유 방식 비교표 ── */
+.cmp{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:var(--shadow)}
+.cmp table{min-width:760px;width:100%;border-collapse:collapse;font-size:13px}
+.cmp th,.cmp td{padding:10px 13px;border-bottom:1px solid var(--line-soft);text-align:left;vertical-align:top}
+.cmp thead th{background:var(--surface-sub);font-size:11.5px;font-weight:600;color:var(--ink-3);border-bottom:1px solid var(--line)}
+.cmp thead th.pick{background:var(--accent-wash);color:var(--accent-ink)}
+.cmp tbody tr:last-child td{border-bottom:0}
+.cmp td:first-child{font-weight:600;white-space:nowrap;color:var(--ink-2)}
+.cmp td.pick{background:var(--accent-wash)}
+.mark{font-family:var(--f-mono);font-weight:600;font-size:12px;margin-right:5px}
+.mark.y{color:var(--ok-fg)}
+.mark.n{color:var(--neg-fg)}
+.mark.m{color:var(--warn-fg)}
+.cmp .sub{display:block;color:var(--ink-3);font-size:12px;font-weight:400}
+
+.verdict{border:1px solid var(--accent-line);background:var(--accent-wash);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.verdict h3{margin:0;font-size:14px;font-weight:600;color:var(--accent-ink)}
+.verdict p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.verdict ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:4px}
+.verdict b{color:var(--ink)}
+
+/* ── 화면 프레임 ── */
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);position:relative}
+.frame-bar{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line-soft);background:var(--surface-sub)}
+.frame-bar .crumb{font-size:11.5px;color:var(--ink-4);font-family:var(--f-mono);letter-spacing:.02em}
+.frame-body{padding:20px 18px 24px}
+.screen-h{display:flex;align-items:baseline;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.screen-h h3{margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em}
+.screen-h em{font-style:normal;font-size:12px;color:var(--ink-4)}
+
+/* ── 방식 전환 스위치 ── */
+.switcher{display:flex;flex-wrap:wrap;align-items:center;gap:11px;padding:11px 13px;border:1px dashed var(--accent-line);background:var(--accent-wash);border-radius:9px;margin-bottom:16px}
+.switcher .lbl{font-size:12.5px;font-weight:600;color:var(--accent-ink)}
+.seg{display:inline-flex;border:1px solid var(--accent-line);border-radius:7px;overflow:hidden;background:var(--surface)}
+.segbtn{appearance:none;border:0;background:none;padding:6px 14px;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink-3);cursor:pointer}
+.segbtn+.segbtn{border-left:1px solid var(--accent-line)}
+.segbtn[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.segbtn:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.switcher .hint{font-size:12px;color:var(--ink-3);flex:1;min-width:200px}
+
+/* ── 폼 컨트롤 ── */
+.filters{display:flex;flex-wrap:wrap;gap:9px;align-items:center;padding:13px 14px;border:1px solid var(--line);border-radius:9px;background:var(--surface-sub);margin-bottom:14px;font-size:12.5px;color:var(--ink-3)}
+.filters .fl{font-weight:600;color:var(--ink-2)}
+.ctl{height:31px;display:inline-flex;align-items:center;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink-3);font-size:12.5px;font-family:inherit}
+.ctl.grow{flex:1;min-width:200px;color:var(--ink-4)}
+.btn{height:31px;display:inline-flex;align-items:center;gap:5px;padding:0 15px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:var(--surface);border-color:var(--line);color:var(--ink-2)}
+.btn.ghost:hover{border-color:var(--ink-4)}
+.btn.sm{height:26px;padding:0 10px;font-size:11.5px;border-radius:5px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.count{font-size:12.5px;color:var(--ink-3);margin:0 0 9px}
+.count b{color:var(--ink);font-weight:600}
+
+/* ── 이력 테이블 ── */
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+table.hist{width:100%;min-width:1150px;border-collapse:collapse;font-size:12.5px}
+.hist thead th{
+  text-align:left;font-weight:600;font-size:11.5px;color:var(--ink-3);
+  background:var(--surface-sub);border-bottom:1px solid var(--line);
+  padding:10px 12px;white-space:nowrap;
+}
+.hist thead th.mng{text-align:right}
+.hist tbody td{padding:11px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.hist tbody tr:last-child td{border-bottom:0}
+.hist tr.open td{background:var(--surface-sub)}
+.hist td.mng{text-align:right;white-space:nowrap}
+.mono{font-family:var(--f-mono);font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--ink-3);white-space:nowrap}
+.idlink{font-family:var(--f-mono);font-size:11.5px;color:var(--accent-ink);text-decoration:underline;text-underline-offset:2px}
+.ver{font-weight:600;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.pill{display:inline-flex;align-items:center;border-radius:11px;padding:2px 9px;font-size:11px;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok-fg)}
+.pill.warn{background:var(--warn-bg);color:var(--warn-fg)}
+.pill.neg{background:var(--neg-bg);color:var(--neg-fg)}
+.pill.mute{background:var(--mute-bg);color:var(--mute-fg)}
+
+/* 사유 셀 : 두 방식 공통으로 2줄 인라인 */
+.reason-cell{min-width:250px;max-width:330px}
+.rbtn{display:block;width:100%;text-align:left;appearance:none;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;border-radius:4px}
+.rbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rlabel{display:block;font-size:10px;font-weight:600;letter-spacing:.03em;color:var(--ink-4);margin-bottom:2px}
+.rclamp{margin:0;font-size:12.5px;color:var(--ink-2);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rbtn:hover .rclamp{color:var(--ink)}
+.rmore{display:inline-flex;align-items:center;gap:3px;margin-top:4px;font-size:11px;font-weight:600;color:var(--accent-ink)}
+.rmore svg{transition:transform .18s ease}
+tr.open .rmore svg{transform:rotate(180deg)}
+.dash{color:var(--ink-4)}
+
+/* 행 확장 패널 (방식 A) */
+tr.detail>td{padding:0;background:var(--surface-sub);border-bottom:1px solid var(--line-soft)}
+.panel{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);padding:4px 12px 18px}
+@media (max-width:760px){.panel{grid-template-columns:1fr}}
+.pblock{min-width:0}
+.pttl{margin:0 0 7px;font-size:10.5px;font-weight:600;letter-spacing:.05em;color:var(--ink-4)}
+.pttl span{font-weight:400}
+.difftbl{border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
+.diffrow{display:grid;grid-template-columns:96px minmax(0,1fr) minmax(0,1fr);font-size:11.5px}
+.diffrow+.diffrow{border-top:1px solid var(--line-soft)}
+.diffrow>div{padding:6px 10px}
+.diffhead{background:var(--surface-sub);font-size:10.5px;font-weight:600;color:var(--ink-4)}
+.diffrow .f{font-weight:600;color:var(--ink-3)}
+.diffrow .b{color:var(--strike);text-decoration:line-through;text-decoration-thickness:1px}
+.diffrow .a{font-weight:600;color:var(--ink)}
+.rfull{position:relative;border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:11px 40px 11px 12px;font-size:12px;line-height:1.7;color:var(--ink-2);white-space:pre-wrap}
+.copy{position:absolute;top:7px;right:7px;appearance:none;border:1px solid var(--line);background:var(--surface-sub);border-radius:5px;width:26px;height:26px;display:grid;place-items:center;cursor:pointer;color:var(--ink-4)}
+.copy:hover{color:var(--ink);border-color:var(--ink-4)}
+.copy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.copy.done{color:var(--ok-fg);border-color:var(--ok-fg)}
+
+.pager{display:flex;gap:4px;justify-content:center;align-items:center;padding-top:14px;font-family:var(--f-mono);font-size:11.5px;color:var(--ink-4)}
+.pager b{background:var(--accent);color:var(--on-accent);border-radius:4px;padding:2px 7px;font-weight:600}
+
+/* ── 모달 (방식 B · 취소 사유 입력) ── */
+.scrim{position:fixed;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60}
+.modal{width:100%;max-width:600px;max-height:82vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);overflow:hidden}
+.modal-h{display:flex;align-items:center;gap:9px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.modal-h h3{margin:0;font-size:14.5px;font-weight:600}
+.modal-h .x{margin-left:auto;appearance:none;border:0;background:none;color:var(--ink-4);cursor:pointer;width:28px;height:28px;display:grid;place-items:center;border-radius:6px}
+.modal-h .x:hover{background:var(--surface-sub);color:var(--ink)}
+.modal-h .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.modal-b{padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:13px}
+.modal-f{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--surface-sub)}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 16px;padding:12px 13px;border:1px solid var(--line-soft);border-radius:8px;background:var(--surface-sub)}
+.meta dt{font-size:10.5px;font-weight:600;color:var(--ink-4);margin-bottom:2px}
+.meta dd{margin:0;font-size:12.5px}
+.body-text{margin:0;font-size:13px;line-height:1.85;color:var(--ink-2);white-space:pre-wrap}
+.warnbox{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:8px;background:var(--warn-bg);color:var(--warn-fg);font-size:12.5px}
+.warnbox b{font-weight:600}
+.ta{width:100%;min-height:120px;resize:vertical;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-family:inherit;font-size:13px;line-height:1.7}
+.ta:focus-visible{outline:2px solid var(--accent);outline-offset:0}
+.fld-l{display:block;font-size:12px;font-weight:600;color:var(--ink-3);margin-bottom:6px}
+.req{color:var(--neg-fg)}
+.charc{text-align:right;font-size:11px;color:var(--ink-4);font-variant-numeric:tabular-nums}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);z-index:70}
+
+/* ── 규칙표 / 컬럼표 ── */
+.rules{display:grid;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+.rule{display:grid;grid-template-columns:112px minmax(0,1fr);gap:16px;padding:14px 16px;font-size:13.5px}
+.rule+.rule{border-top:1px solid var(--line-soft)}
+.rule dt{margin:0}
+.rule dd{margin:0;color:var(--ink-2)}
+.rule dd code{font-family:var(--f-mono);font-size:11.5px;background:var(--surface-sub);border:1px solid var(--line-soft);border-radius:4px;padding:1px 5px;color:var(--ink-2)}
+
+.coldefs{overflow-x:auto;border:1px solid var(--line);border-radius:9px;background:var(--surface);box-shadow:var(--shadow)}
+.coldefs table{min-width:720px;width:100%;border-collapse:collapse;font-size:13px}
+.coldefs th{padding:10px 12px;text-align:left;background:var(--surface-sub);font-size:11.5px;font-weight:600;color:var(--ink-3);border-bottom:1px solid var(--line)}
+.coldefs td{padding:10px 12px;border-bottom:1px solid var(--line-soft)}
+.coldefs tr:last-child td{border-bottom:0}
+.coldefs td:first-child{font-weight:600;white-space:nowrap}
+.coldefs td:nth-child(2){color:var(--ink-2)}
+.coldefs td:last-child{color:var(--ink-3);font-size:12.5px}
+
+footer{border-top:1px solid var(--line);padding-top:18px;color:var(--ink-4);font-size:12px;font-family:var(--f-mono);letter-spacing:.03em}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="sbmeta">
+      <span class="tag">SB-DSP-APV-001</span>
+      <span class="tag">전시관리 &rsaquo; App 버전 관리</span>
+      <span class="tag rev">개정 · 이력 화면</span>
+    </div>
+    <h1>APP 버전 관리 — 변경/승인 이력</h1>
+    <p class="dek">
+      승인대기는 <b>동시에 여러 건</b> 존재할 수 있으므로 승인 요청 취소는 <b>행별 액션</b>으로 두되,
+      날짜 컬럼과 섞지 않고 맨 오른쪽 <b>관리</b> 컬럼으로 분리합니다.
+      사유는 <b>행 펼침</b>과 <b>모달</b> 두 방식을 아래 화면에서 직접 전환해 비교할 수 있습니다.
+    </p>
+  </header>
+
+  <!-- ── 개정 요지 ── -->
+  <section>
+    <div class="shead">
+      <span class="eyebrow">개정 요지</span>
+      <h2>세 가지를 바꿨습니다</h2>
+    </div>
+    <div class="deltas">
+
+      <article class="delta">
+        <h3>취소 버튼 — 날짜 컬럼에서 관리 컬럼으로</h3>
+        <div class="ba">
+          <div class="before"><span class="k">현행</span><p><b>승인 요청 취소</b> 컬럼 하나에 처리 일시와 버튼이 함께 들어감</p></div>
+          <div class="after"><span class="k">개정</span><p>행별 액션은 유지. 맨 오른쪽 <b>관리</b> 컬럼으로 분리하고, 승인대기 행에만 노출</p></div>
+        </div>
+        <p class="why"><b>왜:</b> 한 컬럼에는 한 종류의 값만 들어가야 헤더가 의미를 갖습니다. 날짜와 버튼이 섞이면 <code style="font-family:var(--f-mono);font-size:11.5px">승인 요청 취소</code>가 취소 일시인지 취소 버튼인지 헤더만 봐서는 알 수 없고, 엑셀 항목 정의로 옮길 때도 깨집니다. 액션은 관례대로 <b>맨 오른쪽 고정</b>이 스캔에도 유리합니다.</p>
+      </article>
+
+      <article class="delta">
+        <h3>사유 — 버튼 대신 텍스트를 노출</h3>
+        <div class="ba">
+          <div class="before"><span class="k">현행</span><p>셀에 <b>취소 사유 / 반려 사유</b> 버튼만. 표에서는 내용을 전혀 알 수 없음</p></div>
+          <div class="after"><span class="k">개정</span><p>사유 <b>텍스트를 2줄로</b> 노출. 클릭하면 전문 &mdash; 펼침 또는 모달(선택)</p></div>
+        </div>
+        <p class="why"><b>왜:</b> 모달 자체가 문제가 아니라 <b>셀에 버튼만 있는 것</b>이 문제입니다. 첫 두 줄만 보여도 “무슨 사유인지”는 대부분 판별되고, 사유가 목록 데이터로 잡히니 엑셀 다운로드에서도 빠지지 않습니다.</p>
+      </article>
+
+      <article class="delta">
+        <h3>컬럼 정리 — 한 컬럼 = 한 의미</h3>
+        <div class="ba">
+          <div class="before"><span class="k">현행</span><p>처리일시와 승인 요청 취소가 같은 값을 두 번 표시. 사유 컬럼명이 <b>취소/반려</b>로 이중</p></div>
+          <div class="after"><span class="k">개정</span><p>처리일시 하나로 통합, 컬럼명은 <b>사유</b>. 취소인지 반려인지는 상태 뱃지가 이미 말해줌</p></div>
+        </div>
+        <p class="why"><b>왜:</b> 같은 정보를 두 열에 두면 어느 쪽이 정답인지 운영자가 매번 되묻게 됩니다. 셀 안에 <code style="font-family:var(--f-mono);font-size:11.5px">반려 사유</code>/<code style="font-family:var(--f-mono);font-size:11.5px">취소 사유</code> 라벨을 작게 달아 두면 컬럼명은 <b>사유</b> 하나로 충분합니다.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ── 사유 표기 방식 검토 ── -->
+  <section>
+    <div class="shead">
+      <span class="eyebrow">검토</span>
+      <h2>사유 전문, 모달로 해도 되나</h2>
+      <p class="snote">결론부터 — <b>됩니다.</b> 다만 “버튼만 두는 현행”은 어느 쪽으로 가든 바꿔야 합니다. 셀에 2줄 인라인을 남기는 것을 전제로 두 방식을 비교했습니다.</p>
+    </div>
+
+    <div class="cmp">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:170px">기준</th>
+            <th style="width:27%">현행 · 버튼 → 모달</th>
+            <th style="width:27%">A · 인라인 → 행 펼침</th>
+            <th class="pick" style="width:27%">B · 인라인 → 모달</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>표에서 사유 파악</td>
+            <td><span class="mark n">✕</span>버튼만 보임<span class="sub">열어야 알 수 있음</span></td>
+            <td><span class="mark y">○</span>2줄 노출</td>
+            <td class="pick"><span class="mark y">○</span>2줄 노출</td>
+          </tr>
+          <tr>
+            <td>여러 건 동시 비교</td>
+            <td><span class="mark n">✕</span>불가</td>
+            <td><span class="mark y">○</span>여러 행 동시 펼침<span class="sub">반려 패턴 분석에 유리</span></td>
+            <td class="pick"><span class="mark m">△</span>한 번에 1건<span class="sub">2줄 요약으로는 비교 가능</span></td>
+          </tr>
+          <tr>
+            <td>전문 가독 폭</td>
+            <td><span class="mark y">○</span>넓음</td>
+            <td><span class="mark y">○</span>행 전체 폭 사용</td>
+            <td class="pick"><span class="mark y">○</span>넓음 · 스크롤 자유</td>
+          </tr>
+          <tr>
+            <td>첨부·서식 확장</td>
+            <td><span class="mark y">○</span></td>
+            <td><span class="mark m">△</span>패널이 길어지면 표가 무너짐</td>
+            <td class="pick"><span class="mark y">○</span>캡처·링크·이전 반려 이력까지 수용</td>
+          </tr>
+          <tr>
+            <td>표 리듬 유지</td>
+            <td><span class="mark y">○</span></td>
+            <td><span class="mark n">✕</span>펼칠 때마다 행 위치가 밀림</td>
+            <td class="pick"><span class="mark y">○</span>표는 그대로</td>
+          </tr>
+          <tr>
+            <td>정렬·페이징과의 충돌</td>
+            <td><span class="mark y">○</span>없음</td>
+            <td><span class="mark m">△</span>펼친 상태 유지 처리 필요</td>
+            <td class="pick"><span class="mark y">○</span>없음</td>
+          </tr>
+          <tr>
+            <td>엑셀 다운로드 정합</td>
+            <td><span class="mark n">✕</span>사유가 상세 API로 빠지기 쉬움</td>
+            <td><span class="mark y">○</span>목록 데이터에 포함</td>
+            <td class="pick"><span class="mark y">○</span>목록 데이터에 포함</td>
+          </tr>
+          <tr>
+            <td>구현·QA 비용</td>
+            <td><span class="mark y">○</span>낮음</td>
+            <td><span class="mark m">△</span>행 상태 관리 추가</td>
+            <td class="pick"><span class="mark y">○</span>낮음 · 기존 모달 재사용</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="verdict">
+      <h3>결론 — 모달(B)로 가도 좋습니다</h3>
+      <p>제가 처음에 모달을 반대한 근거는 “사유를 표에서 전혀 볼 수 없다”였는데, 그건 <b>모달의 문제가 아니라 버튼의 문제</b>였습니다. 셀에 2줄만 남겨 두면 모달의 단점은 대부분 사라지고, 표 리듬·정렬·첨부 확장에서는 오히려 모달이 낫습니다.</p>
+      <ul>
+        <li><b>다만 조건 하나</b> — 트리거는 버튼이 아니라 <b>사유 텍스트 자체</b>여야 합니다. 버튼을 다시 두면 컬럼 폭을 버튼이 먹고 원점으로 돌아갑니다.</li>
+        <li><b>행 펼침(A)이 유리한 경우</b> — 반려 사유의 <b>패턴을 모아 보는</b> 업무가 실제로 있다면. 여러 건을 동시에 펼쳐 비교할 수 있는 건 A뿐입니다.</li>
+        <li>반려 사유에 <b>캡처·링크·이전 반려 이력</b>을 붙일 계획이 있다면 망설임 없이 B입니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ── 개정안 화면 ── -->
+  <section>
+    <div class="shead">
+      <span class="eyebrow">개정안 화면</span>
+      <h2>두 방식을 직접 눌러 보세요</h2>
+      <p class="snote">실제로 동작합니다. 사유 셀을 클릭하면 선택한 방식대로 열리고, 승인대기 행의 <b>취소</b>를 누르면 사유 입력 모달을 거쳐 그 행이 요청취소로 바뀝니다.</p>
+    </div>
+
+    <div class="frame">
+      <div class="frame-bar">
+        <span class="crumb">홈 › 전시관리 › App 버전 관리 › 변경/승인 이력</span>
+      </div>
+      <div class="frame-body">
+        <div class="screen-h">
+          <h3>APP 버전 관리</h3>
+          <em>T 우주 (SKT Universe) · 현재 게시 v2.0.0</em>
+        </div>
+
+        <div class="switcher">
+          <span class="lbl">사유 전문 보기</span>
+          <div class="seg" role="group" aria-label="사유 표기 방식">
+            <button class="segbtn" type="button" data-mode="expand" aria-pressed="false">A · 행 펼침</button>
+            <button class="segbtn" type="button" data-mode="modal" aria-pressed="true">B · 모달</button>
+          </div>
+          <span class="hint" id="modeHint"></span>
+        </div>
+
+        <div class="filters">
+          <span class="fl">승인 요청일시</span>
+          <span class="ctl">2026.05.01</span><span>~</span><span class="ctl">2026.08.28</span>
+          <span class="fl">승인상태</span>
+          <span class="ctl">전체</span>
+          <span class="ctl grow">버전, 승인 ID 또는 승인요청자를 입력하세요</span>
+          <button class="btn ghost" type="button">초기화</button>
+          <button class="btn" type="button">조회</button>
+        </div>
+
+        <p class="count">전체 <b id="cnt">9</b>건 · 승인대기 <b id="cntPend">3</b>건</p>
+
+        <div class="tscroll">
+          <table class="hist">
+            <colgroup>
+              <col style="width:70px"><col style="width:84px"><col style="width:88px">
+              <col style="width:128px"><col style="width:126px"><col style="width:128px">
+              <col style="width:126px"><col><col style="width:112px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>버전</th><th>승인 ID</th><th>승인상태</th><th>승인요청자</th>
+                <th>승인요청일시</th><th>승인 담당자</th><th>처리일시</th><th>사유</th>
+                <th class="mng">관리</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="pager">‹ <b>1</b> 2 ›</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 컬럼 정의 ── -->
+  <section>
+    <div class="shead">
+      <span class="eyebrow">컬럼 정의</span>
+      <h2>8개 데이터 컬럼 + 관리 컬럼</h2>
+    </div>
+    <div class="coldefs">
+      <table>
+        <thead><tr><th style="width:120px">컬럼</th><th style="width:42%">값</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td>버전</td><td>승인완료 건에만 확정 버전이 표시</td><td>그 외 상태는 <span class="dash">-</span> — 버전은 승인 시점에 확정</td></tr>
+          <tr><td>승인 ID</td><td>승인 요청 1건의 식별자</td><td>사유 열기와 무관한 순수 식별자</td></tr>
+          <tr><td>승인상태</td><td>승인대기 / 승인완료 / 승인반려 / 요청취소</td><td>취소·반려 구분을 이 뱃지가 전담</td></tr>
+          <tr><td>승인요청자</td><td>요청자 명 (P사번)</td><td>취소 권한 판정 기준</td></tr>
+          <tr><td>승인요청일시</td><td>요청 등록 시각</td><td>검색 기간 조건의 기준</td></tr>
+          <tr><td>승인 담당자</td><td>배정된 검수자 (P사번)</td><td>—</td></tr>
+          <tr><td>처리일시</td><td>승인·반려·취소가 확정된 시각</td><td>승인대기면 <span class="dash">-</span>. 현행의 중복 컬럼을 여기로 통합</td></tr>
+          <tr><td>사유</td><td>반려 사유 또는 취소 사유 (2줄 노출 + 전문 링크)</td><td>승인반려·요청취소에만 값이 있음. 엑셀 항목에 <b>포함</b></td></tr>
+          <tr><td>관리</td><td>승인대기 행에만 <b>취소</b> 버튼</td><td>맨 오른쪽 고정. 엑셀 항목에서는 <b>제외</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 규칙 ── -->
+  <section>
+    <div class="shead">
+      <span class="eyebrow">판정 규칙</span>
+      <h2>액션과 사유의 규칙</h2>
+    </div>
+    <dl class="rules">
+      <div class="rule">
+        <dt style="font-size:12px;font-weight:600;color:var(--ink-3);padding-top:2px">관리 컬럼</dt>
+        <dd><b>승인대기</b> 행에만 <code>취소</code>가 노출되고, 나머지 상태는 <span class="dash">-</span>. 승인대기가 여러 건이면 각 행에서 개별 취소할 수 있습니다.</dd>
+      </div>
+      <div class="rule">
+        <dt style="font-size:12px;font-weight:600;color:var(--ink-3);padding-top:2px">취소 권한</dt>
+        <dd><b>요청자 본인</b>만 실행 가능. 타인의 요청 행은 버튼이 <b>비활성</b>으로 보이고 사유가 툴팁으로 안내됩니다 &mdash; 아래 표에서 김지훈 요청 건이 그 예입니다.</dd>
+      </div>
+      <div class="rule">
+        <dt><span class="pill neg">승인반려</span></dt>
+        <dd>사유 <b>필수</b>. 작성자는 승인 담당자. 사유 없이는 반려 처리 불가.</dd>
+      </div>
+      <div class="rule">
+        <dt><span class="pill mute">요청취소</span></dt>
+        <dd>사유 <b>필수</b>(10자 이상). 작성자는 요청자 본인. 취소 후 되돌릴 수 없고, 재요청은 <b>새 승인 ID</b>로 생성됩니다.</dd>
+      </div>
+      <div class="rule">
+        <dt style="font-size:12px;font-weight:600;color:var(--ink-3);padding-top:2px">모달 사용</dt>
+        <dd>사유 <b>입력</b>은 언제나 모달(되돌릴 수 없는 실행의 확인). 사유 <b>열람</b>은 A/B 중 택일 &mdash; 어느 쪽이든 셀의 2줄 인라인은 유지합니다.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <footer>SB-DSP-APV-001 · 개정 2026.08.28 · 근거 PI-DSP-AUD-002 (감사 로그)</footer>
+</div>
+
+<div id="overlay"></div>
+
+<script>
+const ME = '신지솔 (P123451)';   // 로그인 사용자 — 취소 권한 판정용
+
+const ROWS = [
+  { id:'a1', ver:null, aid:'164312', req:'신지솔 (P123451)', at:'2026.08.26 09:10',
+    st:'승인대기', apv:'김찬미 (P132316)', done:null, reason:null, by:null,
+    changes:[['앱 버전','2.0.0','2.0.1'],['최소 지원 버전','1.8.0','1.8.2'],['업데이트 유형','선택 업데이트','강제 업데이트']] },
+
+  { id:'a2', ver:null, aid:'164313', req:'김지훈 (P153213)', at:'2026.08.25 14:22',
+    st:'승인대기', apv:'정지솔 (P123441)', done:null, reason:null, by:null,
+    changes:[['앱 버전','2.0.0','2.1.0'],['릴리즈 노트','—','우주패스 개편 반영']] },
+
+  { id:'a3', ver:null, aid:'164314', req:'신지솔 (P123451)', at:'2026.08.25 09:40',
+    st:'승인대기', apv:'김찬미 (P132316)', done:null, reason:null, by:null,
+    changes:[['최소 지원 버전','1.8.0','1.9.0']] },
+
+  { id:'a4', ver:null, aid:'164311', req:'김지훈 (P153213)', at:'2026.08.22 17:45',
+    st:'승인반려', apv:'김찬미 (P132316)', done:'2026.08.23 10:02', by:'김찬미 (P132316)',
+    reason:'업데이트 안내 문구와 실제 반영 범위가 일치하지 않습니다. 요청서에는 "결제 수단 추가 및 버그 수정"으로 기재되어 있으나, 첨부된 릴리즈 노트에는 홈 화면 전시 영역 개편과 푸시 발송 정책 변경이 함께 포함되어 있습니다.\n\n전시 영역 개편은 전시관리 승인 건(DSP-2026-0714)과 노출 기간이 겹쳐 동일 슬롯 충돌이 발생할 수 있어, 해당 항목을 분리하거나 전시 승인 건의 종료 시각을 조정한 뒤 재요청 부탁드립니다.\n\n또한 최소 지원 버전을 1.8.2로 올리는 변경은 강제 업데이트 대상 고객 규모(약 4.2만)에 대한 사전 공지가 확인되지 않아 함께 보완이 필요합니다.',
+    changes:[['앱 버전','2.0.0','2.0.1'],['최소 지원 버전','1.8.0','1.8.2'],['릴리즈 노트','—','결제 수단 추가 및 버그 수정 (외 2건)']] },
+
+  { id:'a5', ver:null, aid:'154321', req:'김지훈 (P153213)', at:'2026.08.18 11:30',
+    st:'요청취소', apv:'김찬미 (P132316)', done:'2026.08.18 14:12', by:'김지훈 (P153213)',
+    reason:'스토어 심사 반려로 빌드가 교체되어 요청을 취소합니다. iOS 심사에서 ATT(App Tracking Transparency) 안내 문구 누락으로 반려되었고, 해당 문구를 추가한 2.0.1 빌드로 재업로드 예정입니다.\n\n동일 버전 번호로 재요청 시 이력이 중복되므로 이번 건은 취소 처리하고, 심사 통과 후 새 승인 ID로 다시 요청하겠습니다.',
+    changes:[['앱 버전','2.0.0','2.0.1']] },
+
+  { id:'a6', ver:'2.0.0', aid:'154320', req:'신지솔 (P123451)', at:'2026.07.22 09:10',
+    st:'승인완료', apv:'김찬미 (P132316)', done:'2026.07.22 15:00', reason:null, by:null,
+    changes:[['앱 버전','1.9.4','2.0.0']] },
+
+  { id:'a7', ver:null, aid:'154319', req:'신지솔 (P123451)', at:'2026.07.19 16:20',
+    st:'승인반려', apv:'정지솔 (P123441)', done:'2026.07.20 09:41', by:'정지솔 (P123441)',
+    reason:'릴리즈 노트 국문/영문 표기 불일치. 영문 노트 보완 후 재요청 바랍니다.',
+    changes:[['릴리즈 노트','—','2.0.0 신규 기능 안내']] },
+
+  { id:'a8', ver:null, aid:'143210', req:'김지훈 (P153213)', at:'2026.07.11 13:05',
+    st:'요청취소', apv:'정지솔 (P123441)', done:'2026.07.11 13:40', by:'김지훈 (P153213)',
+    reason:'배포 일정이 다음 스프린트로 연기되어 요청을 취소합니다.',
+    changes:[['앱 버전','1.9.4','2.0.0']] },
+
+  { id:'a9', ver:null, aid:'143208', req:'김지훈 (P153213)', at:'2026.06.10 15:22',
+    st:'승인반려', apv:'정지솔 (P123441)', done:'2026.06.11 08:55', by:'정지솔 (P123441)',
+    reason:'강제 업데이트 대상 고객군 정의가 누락되었습니다. OS 버전·단말 모델별 지원 범위와, 업데이트 미이행 고객에 대한 안내 문구 및 유예 기간을 함께 기재해 재요청 바랍니다.',
+    changes:[['업데이트 유형','선택 업데이트','강제 업데이트']] }
+];
+
+const TONE = { '승인완료':'ok', '승인대기':'warn', '승인반려':'neg', '요청취소':'mute' };
+const CLAMP_AT = 70;
+const HINT = {
+  expand: '표 안에서 아래로 펼쳐집니다. 여러 행을 동시에 펼쳐 사유를 나란히 비교해 보세요.',
+  modal:  '모달로 열립니다. 표 리듬이 흐트러지지 않고, 첨부·서식을 붙일 여지가 있습니다.'
+};
+
+let MODE = 'modal';
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rlabel = st => st === '승인반려' ? '반려 사유' : '취소 사유';
+const CHEV = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+const XICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+const COPYICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
+const tbody  = document.getElementById('tbody');
+const overlay = document.getElementById('overlay');
+
+const diffHtml = changes => changes.map(([f,b,a]) =>
+  '<div class="diffrow"><div class="f">' + esc(f) + '</div><div class="b">' + esc(b) + '</div><div class="a">' + esc(a) + '</div></div>'
+).join('');
+
+/* ── 표 렌더 ─────────────────────────────────────────────────── */
+function reasonCell(r){
+  if (!r.reason) return '<span class="dash">-</span>';
+  const more = r.reason.length > CLAMP_AT
+    ? '<span class="rmore"><span class="rmore-t">' + (MODE === 'modal' ? '전문 보기' : '전체 보기') + '</span>' + CHEV + '</span>'
+    : '';
+  return '<button class="rbtn" type="button" data-reason="' + r.id + '">'
+       + '<span class="rlabel">' + rlabel(r.st) + '</span>'
+       + '<p class="rclamp">' + esc(r.reason.replace(/\n+/g, ' ')) + '</p>' + more
+       + '</button>';
+}
+
+function mngCell(r){
+  if (r.st !== '승인대기') return '<span class="dash">-</span>';
+  const mine = r.req === ME;
+  return '<button class="btn ghost sm" type="button" data-cancel="' + r.id + '"'
+       + (mine ? '' : ' disabled title="본인이 요청한 건만 취소할 수 있습니다"')
+       + '>취소</button>';
+}
+
+function render(){
+  const opened = new Set([...tbody.querySelectorAll('tr.open')].map(t => t.dataset.id));
+  tbody.innerHTML = ROWS.map(r =>
+    '<tr data-id="' + r.id + '">'
+    + '<td class="ver">' + (r.ver ? 'v' + r.ver : '<span class="dash">-</span>') + '</td>'
+    + '<td><span class="idlink">' + r.aid + '</span></td>'
+    + '<td><span class="pill ' + TONE[r.st] + '">' + r.st + '</span></td>'
+    + '<td>' + esc(r.req) + '</td>'
+    + '<td class="mono">' + r.at + '</td>'
+    + '<td>' + esc(r.apv) + '</td>'
+    + '<td class="mono">' + (r.done || '<span class="dash">-</span>') + '</td>'
+    + '<td class="reason-cell">' + reasonCell(r) + '</td>'
+    + '<td class="mng">' + mngCell(r) + '</td>'
+    + '</tr>'
+  ).join('');
+
+  if (MODE === 'expand') opened.forEach(id => {
+    const tr = tbody.querySelector('tr[data-id="' + id + '"]');
+    if (tr) expandRow(tr);
+  });
+
+  document.getElementById('cnt').textContent = ROWS.length;
+  document.getElementById('cntPend').textContent = ROWS.filter(r => r.st === '승인대기').length;
+}
+
+/* ── 방식 A : 행 펼침 ────────────────────────────────────────── */
+function expandRow(tr){
+  const id = tr.dataset.id;
+  const r  = ROWS.find(x => x.id === id);
+  const open = tr.classList.toggle('open');
+  const hint = tr.querySelector('.rmore-t');
+  if (hint) hint.textContent = open ? '접기' : '전체 보기';
+
+  const existing = tbody.querySelector('[data-detail="' + id + '"]');
+  if (!open) { if (existing) existing.remove(); return; }
+  if (existing) return;
+
+  tr.insertAdjacentHTML('afterend',
+    '<tr class="detail" data-detail="' + id + '"><td colspan="9"><div class="panel">'
+    + '<div class="pblock"><p class="pttl">변경 항목 (' + r.changes.length + ')</p>'
+    +   '<div class="difftbl"><div class="diffrow diffhead"><div>항목</div><div>변경 전</div><div>변경 후</div></div>' + diffHtml(r.changes) + '</div></div>'
+    + '<div class="pblock"><p class="pttl">' + rlabel(r.st)
+    +   ' <span>· ' + esc(r.by) + ' · ' + esc(r.done) + '</span></p>'
+    +   '<div class="rfull">' + esc(r.reason)
+    +     '<button class="copy" type="button" data-copy="' + id + '" title="사유 복사" aria-label="사유 복사">' + COPYICON + '</button>'
+    +   '</div></div>'
+    + '</div></td></tr>'
+  );
+}
+
+/* ── 방식 B : 사유 열람 모달 ─────────────────────────────────── */
+let lastFocus = null;
+
+function closeOverlay(){
+  overlay.innerHTML = '';
+  document.removeEventListener('keydown', onEsc);
+  if (lastFocus) { lastFocus.focus(); lastFocus = null; }
+}
+function onEsc(e){ if (e.key === 'Escape') closeOverlay(); }
+
+function openOverlay(html, focusSel){
+  lastFocus = document.activeElement;
+  overlay.innerHTML = html;
+  document.addEventListener('keydown', onEsc);
+  overlay.querySelector('.scrim').addEventListener('mousedown', e => {
+    if (e.target.classList.contains('scrim')) closeOverlay();
+  });
+  overlay.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeOverlay));
+  const f = overlay.querySelector(focusSel);
+  if (f) f.focus();
+}
+
+function openReasonModal(id){
+  const r = ROWS.find(x => x.id === id);
+  openOverlay(
+    '<div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="' + rlabel(r.st) + '">'
+    + '<div class="modal-h"><span class="pill ' + TONE[r.st] + '">' + r.st + '</span>'
+    +   '<h3>' + rlabel(r.st) + '</h3>'
+    +   '<span class="mono">#' + r.aid + '</span>'
+    +   '<button class="x" type="button" data-close aria-label="닫기">' + XICON + '</button></div>'
+    + '<div class="modal-b">'
+    +   '<dl class="meta">'
+    +     '<div><dt>작성자</dt><dd>' + esc(r.by) + '</dd></div>'
+    +     '<div><dt>처리일시</dt><dd class="mono">' + esc(r.done) + '</dd></div>'
+    +     '<div><dt>승인요청자</dt><dd>' + esc(r.req) + '</dd></div>'
+    +     '<div><dt>승인요청일시</dt><dd class="mono">' + esc(r.at) + '</dd></div>'
+    +   '</dl>'
+    +   '<p class="body-text">' + esc(r.reason) + '</p>'
+    +   '<div><p class="pttl">요청 변경 항목 (' + r.changes.length + ')</p>'
+    +     '<div class="difftbl"><div class="diffrow diffhead"><div>항목</div><div>변경 전</div><div>변경 후</div></div>' + diffHtml(r.changes) + '</div></div>'
+    + '</div>'
+    + '<div class="modal-f">'
+    +   '<button class="btn ghost" type="button" id="copyReason">사유 복사</button>'
+    +   '<button class="btn" type="button" data-close>닫기</button>'
+    + '</div></div></div>',
+    '.x'
+  );
+  overlay.querySelector('#copyReason').addEventListener('click', function(){
+    navigator.clipboard?.writeText(r.reason).then(() => { this.textContent = '복사됨'; }).catch(() => {});
+  });
+}
+
+/* ── 취소 사유 입력 모달 (열람과 무관하게 항상 모달) ─────────── */
+function openCancelModal(id){
+  const r = ROWS.find(x => x.id === id);
+  openOverlay(
+    '<div class="scrim"><div class="modal" style="max-width:520px" role="dialog" aria-modal="true" aria-label="승인 요청 취소">'
+    + '<div class="modal-h"><h3>승인 요청 취소</h3><span class="mono">#' + r.aid + '</span>'
+    +   '<button class="x" type="button" data-close aria-label="닫기">' + XICON + '</button></div>'
+    + '<div class="modal-b">'
+    +   '<div class="warnbox"><b>되돌릴 수 없습니다.</b>&nbsp;취소한 요청은 복구되지 않고, 사유는 이력에 그대로 남습니다. 재요청은 새 승인 ID로 생성됩니다.</div>'
+    +   '<div><label class="fld-l" for="cta">취소 사유 <span class="req">*</span></label>'
+    +     '<textarea class="ta" id="cta" placeholder="취소 사유를 10자 이상 입력하세요. (예: 스토어 심사 반려로 빌드 교체 예정)"></textarea>'
+    +     '<p class="charc"><span id="cc">0</span>자 / 최소 10자</p></div>'
+    + '</div>'
+    + '<div class="modal-f">'
+    +   '<button class="btn ghost" type="button" data-close>닫기</button>'
+    +   '<button class="btn" type="button" id="doCancel" disabled>요청 취소</button>'
+    + '</div></div></div>',
+    '#cta'
+  );
+
+  const ta = overlay.querySelector('#cta');
+  const cc = overlay.querySelector('#cc');
+  const ok = overlay.querySelector('#doCancel');
+  ta.addEventListener('input', () => {
+    const n = ta.value.trim().length;
+    cc.textContent = n;
+    ok.disabled = n < 10;
+  });
+  ok.addEventListener('click', () => {
+    r.st = '요청취소';
+    r.done = '2026.08.28 14:05';
+    r.reason = ta.value.trim();
+    r.by = r.req;
+    closeOverlay();
+    render();
+    toast('승인 요청을 취소했습니다. 사유가 이력에 기록됩니다.');
+  });
+}
+
+let toastTimer = null;
+function toast(msg){
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.setAttribute('role', 'status');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.remove(), 3000);
+}
+
+/* ── 이벤트 ───────────────────────────────────────────────────── */
+tbody.addEventListener('click', e => {
+  const copy = e.target.closest('.copy');
+  if (copy) {
+    const r = ROWS.find(x => x.id === copy.dataset.copy);
+    navigator.clipboard?.writeText(r.reason || '').then(() => {
+      copy.classList.add('done');
+      setTimeout(() => copy.classList.remove('done'), 1400);
+    }).catch(() => {});
+    return;
+  }
+  const cancel = e.target.closest('[data-cancel]');
+  if (cancel && !cancel.disabled) { openCancelModal(cancel.dataset.cancel); return; }
+
+  const rb = e.target.closest('[data-reason]');
+  if (rb) {
+    if (MODE === 'modal') openReasonModal(rb.dataset.reason);
+    else expandRow(rb.closest('tr'));
+  }
+});
+
+document.querySelectorAll('.segbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    MODE = btn.dataset.mode;
+    document.querySelectorAll('.segbtn').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+    document.getElementById('modeHint').textContent = HINT[MODE];
+    tbody.querySelectorAll('tr.detail').forEach(t => t.remove());
+    tbody.querySelectorAll('tr.open').forEach(t => t.classList.remove('open'));
+    render();
+  });
+});
+
+document.getElementById('modeHint').textContent = HINT[MODE];
+render();
+</script>

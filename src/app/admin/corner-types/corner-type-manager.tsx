@@ -146,9 +146,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const [q, setQ] = useState(sp.get('q') ?? '');
   const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 10);
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
-  // 뷰 모드 — 유형별(7 상위 유형 → 쉐입) 그룹 뷰 ↔ 전체 목록(평면). 거버넌스는 유형 기준, 쉐입은 하위.
+  // 뷰 모드 — 유형별(7 상위 유형 → 배열·레이아웃) 그룹 뷰 ↔ 전체 목록(평면). 거버넌스는 유형 기준, 배열·레이아웃은 하위.
   const [view, setView] = useState<'group' | 'list'>(sp.get('view') === 'list' ? 'list' : 'group');
-  // 유형별 그룹 펼침(아코디언) — 클릭한 유형만 쉐입을 펼친다(기본 접힘 → 7줄 개요).
+  // 유형별 그룹 펼침(아코디언) — 클릭한 유형만 배열·레이아웃을 펼친다(기본 접힘 → 7줄 개요).
   const [openTypes, setOpenTypes] = useState<Set<string>>(new Set());
   const toggleType = (bc: string) => setOpenTypes((p) => { const n = new Set(p); n.has(bc) ? n.delete(bc) : n.add(bc); return n; });
 
@@ -338,7 +338,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {view === 'group'
-            ? <>상위 유형 <b className="text-foreground">{(domain === '전시/관리' ? CORNER_TYPES.length : new Set(filtered.map((t) => t.baseCategory)).size)}</b> · 쉐입 <b className="text-foreground">{filtered.length}개</b></>
+            ? <>상위 유형 <b className="text-foreground">{(domain === '전시/관리' ? CORNER_TYPES.length : new Set(filtered.map((t) => t.baseCategory)).size)}</b> · 배열·레이아웃 <b className="text-foreground">{filtered.length}개</b></>
             : <>검색결과: <b className="text-foreground">{filtered.length}개</b></>}
         </p>
         <div className="flex items-center gap-2">
@@ -351,7 +351,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               </button>
             );
           })()}
-          {/* 뷰 토글 — 유형별(7 상위 → 쉐입) ↔ 목록(평면) */}
+          {/* 뷰 토글 — 유형별(7 상위 → 배열·레이아웃) ↔ 목록(평면) */}
           <div className="flex rounded-lg border bg-white p-0.5 text-xs">
             <button onClick={() => setView('group')} className={cn('rounded-md px-2.5 py-1 font-medium', view === 'group' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary')}>유형별</button>
             <button onClick={() => setView('list')} className={cn('rounded-md px-2.5 py-1 font-medium', view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary')}>목록</button>
@@ -364,7 +364,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         </div>
       </div>
 
-      {/* ── 유형별 그룹 뷰 — 7 상위 유형 → 쉐입(배열). 거버넌스(허용 컴포넌트)는 유형 헤더에 한 번, 쉐입은 하위 행. ── */}
+      {/* ── 유형별 그룹 뷰 — 7 상위 유형 → 배열·레이아웃. 거버넌스(허용 컴포넌트)는 유형 헤더에 한 번, 배열·레이아웃은 하위 행. ── */}
       {view === 'group' && (
         <div className="space-y-4">
           {(() => {
@@ -390,14 +390,14 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   >
                     <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', isOpen && 'rotate-180')} />
                     <span className={cn('inline-flex shrink-0 items-center rounded-md border px-2.5 py-1 text-[13px] font-bold', cornerTypeChipClass(bc))}>{bc}</span>
-                    <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">쉐입 {rows.length}</span>
+                    <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">배열·레이아웃 {rows.length}</span>
                     {usingCount > 0 && <span className="shrink-0 text-[11px] font-medium text-emerald-600">사용 {usingCount}</span>}
                     {purpose && <span className="min-w-0 flex-1 truncate text-[12.5px] text-muted-foreground">{purpose}</span>}
                     <Link
                       href={`/admin/corner-types/new?base=${encodeURIComponent(bc)}`}
                       onClick={(e) => e.stopPropagation()}
                       className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-primary shadow-sm transition hover:bg-secondary"
-                    ><Plus className="h-3.5 w-3.5" /> 쉐입 추가</Link>
+                    ><Plus className="h-3.5 w-3.5" /> 배열·레이아웃 추가</Link>
                   </div>
 
                   {/* 거버넌스 패널 — 펼쳤을 때만 */}
@@ -407,16 +407,16 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="text-[11px] font-semibold text-foreground">담을 수 있는 컴포넌트</span>
                           {allowed.map((c) => <span key={c} className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{c}</span>)}
-                          <span className="ml-1 text-[10px] text-muted-foreground/70">PI-DSP-CMP-003 · 유형 기준(쉐입 무관)</span>
+                          <span className="ml-1 text-[10px] text-muted-foreground/70">PI-DSP-CMP-003 · 유형 기준(배열·레이아웃 무관)</span>
                         </div>
                       )}
                       {gov && <p className="mt-2 border-t border-dashed pt-2 text-[12.5px] leading-relaxed text-muted-foreground">{gov}</p>}
                     </div>
                   )}
 
-                  {/* ── 쉐입(배열) 목록 — 펼쳤을 때만 ── */}
+                  {/* ── 배열·레이아웃 목록 — 펼쳤을 때만 ── */}
                   {isOpen && (rows.length === 0 ? (
-                    <p className="px-5 py-4 text-[13px] text-muted-foreground">등록된 쉐입이 없습니다. <b className="text-foreground">쉐입 추가</b>로 이 유형의 첫 배열을 등록하세요.</p>
+                    <p className="px-5 py-4 text-[13px] text-muted-foreground">등록된 배열·레이아웃이 없습니다. <b className="text-foreground">배열·레이아웃 추가</b>로 이 유형의 첫 배열을 등록하세요.</p>
                   ) : (
                     <ul className="divide-y">
                       {rows.map((t) => {
@@ -451,10 +451,10 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                       })}
                     </ul>
                   ))}
-                  {/* 카탈로그에 있으나 미등록인 쉐입 — 추가 유도 (펼쳤을 때만) */}
+                  {/* 카탈로그에 있으나 미등록인 배열·레이아웃 — 추가 유도 (펼쳤을 때만) */}
                   {isOpen && missing.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 border-t bg-surface-subtle/40 px-5 py-2.5">
-                      <span className="text-[11px] font-medium text-muted-foreground">추가 가능한 쉐입</span>
+                      <span className="text-[11px] font-medium text-muted-foreground">추가 가능한 배열·레이아웃</span>
                       {missing.map((d) => (
                         <Link key={d} href={`/admin/corner-types/new?base=${encodeURIComponent(bc)}&detail=${encodeURIComponent(d)}`} className="rounded-full border border-dashed px-2.5 py-0.5 text-[11px] text-muted-foreground transition hover:border-primary hover:bg-white hover:text-primary">+ {d}</Link>
                       ))}
@@ -640,7 +640,7 @@ function StepHead({ n, title, required, hint }: { n: number; title: string; requ
 // ── 코너 유형 등록/수정 폼 (BO 대표 유형 화면 · 등록 폼 패턴) ─────────────
 export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; onClose: () => void }) {
   const isNew = !row.id;
-  // 2단 분류: ① 코너 유형(base) → ② 쉐입/배열(detail). 구성 컴포넌트는 쉐입에서 자동 도출.
+  // 2단 분류: ① 코너 유형(base) → ② 배열·레이아웃(detail). 구성 컴포넌트는 배열·레이아웃에서 자동 도출.
   const [base, setBase] = useState(row.baseCategory);
   const [detail, setDetail] = useState(row.typeDetail ?? '');
   const [bigBanner, setBigBanner] = useState(row.bigBanner ?? false); // ④ 빅배너 구분자
@@ -666,12 +666,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   );
   const onOrigBase = !isNew && base === row.baseCategory;
 
-  // ── 분류는 '유형 → 쉐입(배열)' 2단. 구성 컴포넌트 유형은 별도 단계 없이 쉐입에서 자동 도출한다. ──
-  //  쉐입 카탈로그 = 이 유형에 등록된 상세 ∪ 정책 세부 유형(cornerTypeDetails). 컴포넌트 = 쉐입→컴포넌트 결정(허용치 내).
+  // ── 분류는 '유형 → 배열·레이아웃' 2단. 구성 컴포넌트 유형은 별도 단계 없이 배열·레이아웃에서 자동 도출한다. ──
+  //  배열·레이아웃 카탈로그 = 이 유형에 등록된 상세 ∪ 정책 세부 유형(cornerTypeDetails). 컴포넌트 = 배열·레이아웃→컴포넌트 결정(허용치 내).
   const compForShape = (b: string, d: string): string => {
     const reg = registered.find((r) => r.baseCategory === b && (r.typeDetail ?? '') === d);
     if (reg?.componentType) return reg.componentType; // 등록된 조합 우선
-    for (const c of componentTypesForCorner(b)) if (componentLayoutDetails(c).includes(d)) return c; // 이 쉐입을 제공하는 허용 컴포넌트
+    for (const c of componentTypesForCorner(b)) if (componentLayoutDetails(c).includes(d)) return c; // 이 배열·레이아웃을 제공하는 허용 컴포넌트
     return componentTypesForCorner(b)[0] ?? '';
   };
   const typeShapes = (() => {
@@ -697,7 +697,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
     reader.readAsDataURL(f);
   };
   const detailValid = typeShapes.includes(detail) ? detail : (allowEmptyDetail ? '' : (typeShapes[0] ?? ''));
-  const compValid = compForShape(base, detailValid); // 컴포넌트는 쉐입에서 자동 도출
+  const compValid = compForShape(base, detailValid); // 컴포넌트는 배열·레이아웃에서 자동 도출
 
   // ── 세부 항목 적용 가능 여부 (유형별) ──
   // 카테고리 탭/고정형 탭/배너/아이콘형 등은 코너 타이틀·서브타이틀이 없다(미리보기 noHeader와 동일 기준).
@@ -757,7 +757,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2">
               <span className="flex items-center gap-1.5 text-[11px] text-indigo-700">
                 <Info className="h-3.5 w-3.5 shrink-0" />
-                <span><b className="font-semibold">2단계</b>로 코너를 정의해요 — 코너 유형 → 쉐입(배열)</span>
+                <span><b className="font-semibold">2단계</b>로 코너를 정의해요 — 코너 유형 → 배열·레이아웃</span>
               </span>
               <span className="text-[11px] text-slate-500">
                 코너 유형 ID <span className="ml-0.5 rounded border bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-700">{row.typeId}</span>
@@ -795,12 +795,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
               )}
             </div>
 
-            {/* 구성 컴포넌트 유형은 쉐입에서 자동 도출 → 별도 단계 없이 hidden으로만 저장(거버넌스는 유형 기준 유지) */}
+            {/* 구성 컴포넌트 유형은 배열·레이아웃에서 자동 도출 → 별도 단계 없이 hidden으로만 저장(거버넌스는 유형 기준 유지) */}
             <input type="hidden" name="componentType" value={compValid} />
 
-            {/* ② 쉐입(배열·레이아웃) */}
+            {/* ② 배열·레이아웃 */}
             <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-              <StepHead n={2} title="쉐입 (배열·레이아웃)" hint="이 유형을 어떤 형태로 보여줄지 골라요" />
+              <StepHead n={2} title="배열·레이아웃" hint="이 유형을 어떤 형태로 보여줄지 골라요" />
               <div className="flex flex-wrap gap-1.5">
                 {allowEmptyDetail && (
                   <label className="cursor-pointer">
