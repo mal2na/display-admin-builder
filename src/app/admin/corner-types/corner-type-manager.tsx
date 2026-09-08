@@ -403,7 +403,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             key={t.id}
                             type="button"
                             onClick={() => router.push(`/admin/corner-types/${t.id}`)}
-                            className="group flex w-[264px] shrink-0 flex-col overflow-hidden rounded-xl border bg-white text-left shadow-sm transition hover:border-primary/50 hover:shadow-md"
+                            className="group flex w-[300px] shrink-0 flex-col overflow-hidden rounded-xl border bg-white text-left shadow-sm transition hover:border-primary/50 hover:shadow-md"
                           >
                             {/* 상단 고정: 배열·레이아웃 이름 + ID (미리보기 높이와 무관하게 정렬) */}
                             <div className="border-b px-3 py-2.5">
@@ -414,7 +414,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                               <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
                             </div>
                             {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임). 고정 높이 + 넘치면 클립 → 카드 사이즈 통일·소형화 */}
-                            <div className="h-[220px] shrink-0 overflow-hidden bg-slate-50 p-2">
+                            <div className="h-[252px] shrink-0 overflow-hidden bg-slate-50 p-2">
                               <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} compact />
                             </div>
                             {/* 하단 고정: 상태 */}
