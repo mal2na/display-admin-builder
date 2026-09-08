@@ -772,18 +772,21 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
                 {typeShapes.map((d) => {
                   const isReg = registered.some((r) => r.baseCategory === base && (r.typeDetail ?? '') === d); // 이 유형·배열이 이미 등록됐나
                   return (
-                  <label key={d} className="inline-flex cursor-pointer items-center gap-1">
+                  <label key={d} className="cursor-pointer" title={isReg ? '이미 등록된 유형·배열이에요(다시 등록해도 됩니다)' : undefined}>
                     <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
-                    <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">
+                    <span className={cn(
+                      'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white',
+                      isReg && 'border-emerald-300 bg-emerald-50/60', // 등록된 건 알약 자체를 초록 톤으로
+                    )}>
                       {layoutLabel(d)}
+                      {isReg && <span className="inline-flex items-center rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold leading-none text-white">등록됨</span>}
                     </span>
-                    {isReg && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700" title="이 유형·배열은 이미 등록돼 있어요(다시 등록해도 됩니다)">등록됨</span>}
                   </label>
                   );
                 })}
               </div>
               <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                배열은 <b>형태(레이아웃)</b>만 정합니다. <b className="text-emerald-700">등록됨</b> 표시는 이미 같은 유형·배열이 있다는 뜻(다시 등록 가능). <b>노출 개수</b>는 빌더에서 코너별로 조정.
+                배열은 <b>형태(레이아웃)</b>만 정합니다. 알약 안 <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span> 표시는 그 배열이 이미 등록돼 있다는 뜻(다시 등록 가능). <b>노출 개수</b>는 빌더에서 코너별로 조정.
               </p>
             </div>
 

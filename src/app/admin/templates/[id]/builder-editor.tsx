@@ -2041,43 +2041,16 @@ function CornerInfoForm({
         <CornerInfoView corner={corner} nameMap={nameMap} />
       ) : (
       <>
-      {/* 코너 불러오기: 코너 유형 관리 카탈로그에서 고른 유형으로 이 슬롯 교체 */}
-      {loadOpen && (
-        <div className="mb-3 rounded-md border border-dashed bg-muted/20 p-2">
-          {library.cornerTypes.length > 0 ? (
-            <>
-              <form action={swapCornerToType.bind(null, templateId, corner.templateCornerId)} className="flex gap-1">
-                <Select name="cornerTypeId" defaultValue="" className="h-8 flex-1 text-xs">
-                  <option value="" disabled>
-                    코너 유형(배열·레이아웃)에서 선택…
-                  </option>
-                  {/* 유형(7)별 optgroup → 배열·레이아웃(상세) 옵션. 코너 유형 관리 거버넌스와 동일 구조. */}
-                  {(() => {
-                    const order = CORNER_TYPES as readonly string[];
-                    const byBase = new Map<string, typeof library.cornerTypes>();
-                    for (const t of library.cornerTypes) (byBase.get(t.baseCategory) ?? byBase.set(t.baseCategory, []).get(t.baseCategory)!).push(t);
-                    return [...byBase.keys()]
-                      .sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); })
-                      .map((bc) => (
-                        <optgroup key={bc} label={nameMap[bc] ?? bc}>
-                          {byBase.get(bc)!.map((t) => (
-                            <option key={t.id} value={t.id}>{layoutLabel(t.typeDetail) || componentLabel(t.componentType) || '기본'}</option>
-                          ))}
-                        </optgroup>
-                      ));
-                  })()}
-                </Select>
-                <Button type="submit" size="sm" variant="secondary">
-                  적용
-                </Button>
-              </form>
-              <p className="mt-1 text-[10px] text-muted-foreground">코너 유형 관리에서 만든 유형(형태·레이아웃)을 그대로 이 슬롯으로 불러옵니다.</p>
-            </>
-          ) : (
-            <p className="text-[11px] text-muted-foreground">코너 유형 관리에 등록된 코너가 없습니다.</p>
-          )}
-        </div>
-      )}
+      {/* 코너 불러오기: 코너 추가와 동일한 그룹형 모달(코너 유형 관리 기준)로 이 슬롯 유형을 교체 */}
+      <CornerLoadModal
+        open={loadOpen}
+        onClose={() => setLoadOpen(false)}
+        templateId={templateId}
+        cornerTypes={library.cornerTypes}
+        nameMap={nameMap}
+        swapCornerId={corner.templateCornerId}
+        current={{ base: corner.cornerType, detail: (corner.layoutDetail ?? '').replace(/\s*·\s*빅배너\s*$/, '') }}
+      />
 
       <form key={resetKey} action={updateCornerMeta.bind(null, templateId, corner.id)} className="grid grid-cols-2 gap-3">
         {/* 공통 */}
@@ -2619,6 +2592,7 @@ function CornerListRow({
 }
 
 // ── 코너 불러오기 모달 — 코너 유형(상품형·단일강조 등)에서 선택 + 유형 미리보기 ───
+//  두 용도 공용: (1) 새 코너 추가(createCornerFromType), (2) 기존 슬롯 유형 교체(swapCornerId 지정 → swapCornerToType).
 function CornerLoadModal({
   open,
   onClose,
@@ -2626,6 +2600,8 @@ function CornerLoadModal({
   cornerTypes,
   nameMap,
   onCreated,
+  swapCornerId,
+  current,
 }: {
   open: boolean;
   onClose: () => void;
@@ -2633,11 +2609,14 @@ function CornerLoadModal({
   cornerTypes: LibraryData['cornerTypes'];
   nameMap: Record<string, string>;
   onCreated?: (templateCornerId: string) => void;
+  swapCornerId?: string; // 지정 시 '교체' 모드 (이 templateCornerId 슬롯의 유형을 교체)
+  current?: { base: string; detail: string } | null; // 현재 슬롯 유형(교체 모드에서 목록에 '현재' 표시)
 }) {
   const [q, setQ] = useState('');
   const [selId, setSelId] = useState<string | null>(null);
   const [pending, start] = useTransition();
   if (!open) return null;
+  const isSwap = !!swapCornerId;
 
   // 정책상 '사용(active) + 승인·반영된(liveVersion)' 코너 유형만 불러올 수 있다.
   //  TM-DSP-021(미사용 제외) + PI-DSP-WFL-002/004(승인 완료 전 노출 후보 제외).
@@ -2664,13 +2643,18 @@ function CornerLoadModal({
 
   const doAdd = () => {
     if (!sel) return;
-    // 등록된 코너 유형 전체 스펙(레이아웃/마크업 등)을 상속해 추가
+    // 등록된 코너 유형 전체 스펙(레이아웃/마크업 등)을 상속해 추가하거나(추가), 기존 슬롯을 교체(swap).
     const fd = new FormData();
     fd.set('cornerTypeId', sel.id);
     start(async () => {
-      const newId = await createCornerFromType(templateId, fd);
-      onClose();
-      if (newId) onCreated?.(newId);
+      if (swapCornerId) {
+        await swapCornerToType(templateId, swapCornerId, fd);
+        onClose();
+      } else {
+        const newId = await createCornerFromType(templateId, fd);
+        onClose();
+        if (newId) onCreated?.(newId);
+      }
     });
   };
 
@@ -2679,8 +2663,8 @@ function CornerLoadModal({
       <div className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <Copy className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold">코너 불러오기</h2>
-          <span className="text-xs text-muted-foreground">코너 유형에서 선택하면 미리보기가 표시됩니다</span>
+          <h2 className="text-sm font-semibold">{isSwap ? '코너 유형 교체' : '코너 불러오기'}</h2>
+          <span className="text-xs text-muted-foreground">{isSwap ? '다른 유형·배열을 고르면 이 슬롯이 교체됩니다' : '코너 유형에서 선택하면 미리보기가 표시됩니다'}</span>
           <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="닫기">
             <X className="h-4 w-4" />
           </button>
@@ -2714,14 +2698,16 @@ function CornerLoadModal({
                         {purpose && <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground/70">{purpose}</span>}
                       </div>
                       <div className="space-y-1">
-                        {items.map((t) => (
+                        {items.map((t) => {
+                          const isCurrent = !!current && current.base === t.base && current.detail === (t.detail ?? ''); // 교체 모드: 현재 슬롯 유형
+                          return (
                           <button
                             key={t.id}
                             type="button"
                             onClick={() => setSelId(t.id)}
                             className={cn(
                               'flex w-full items-center gap-2 rounded-md border px-2.5 py-2 text-left',
-                              selId === t.id ? 'border-primary bg-accent' : 'hover:bg-muted/50',
+                              selId === t.id ? 'border-primary bg-accent' : isCurrent ? 'border-slate-300 bg-slate-50' : 'hover:bg-muted/50',
                             )}
                           >
                             {isImgSrc(t.sampleImageUrl?.split('\n')[0]) && (
@@ -2730,12 +2716,12 @@ function CornerLoadModal({
                             )}
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-[13px] font-medium text-foreground">{layoutLabel(t.detail) || componentLabel(t.component) || '기본'}</span>
-                              {/* 컴포넌트 표시는 유형과 다를 때만(‘상품형 안에 상품형’ 중복 제거) */}
-                              
                             </span>
+                            {isCurrent && <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600">현재</span>}
                             {t.bigBanner && <BigBannerBadge className="shrink-0" />}
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -2764,7 +2750,7 @@ function CornerLoadModal({
                 )}
                 <TypeDetailPreview base={sel.base} component={sel.component} detail={sel.detail} bigBanner={sel.bigBanner} />
                 <Button type="button" onClick={doAdd} disabled={pending} className="w-full">
-                  {pending ? '추가 중…' : '이 유형으로 코너 추가'}
+                  {pending ? (isSwap ? '교체 중…' : '추가 중…') : isSwap ? '이 유형으로 교체' : '이 유형으로 코너 추가'}
                 </Button>
               </div>
             ) : (
