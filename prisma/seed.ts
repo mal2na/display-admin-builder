@@ -1412,6 +1412,11 @@ async function patchVariantDemo() {
   // ── 배열·레이아웃 정합 — 배너형은 '이미지형'으로 통일(단일 stray '팝업배너형' 정규화) ──
   await prisma.corner.updateMany({ where: { cornerType: '배너형', layoutDetail: '팝업배너형' }, data: { layoutDetail: '이미지형' } });
 
+  // ── 세로형(카테고리탭) 폐지 — 상단 탭은 별도 배열이 아니라 선택형 컴포넌트(빌더 토글). ──
+  //   코너는 세로형으로 바꾸고(탭은 기존 선택형 컴포넌트가 그대로 렌더), 카탈로그 유형은 삭제.
+  await prisma.corner.updateMany({ where: { layoutDetail: '세로형(카테고리탭)' }, data: { layoutDetail: '세로형' } });
+  await prisma.cornerType.deleteMany({ where: { typeDetail: '세로형(카테고리탭)' } });
+
   // ── 하단 CTA(더보기/전체보기) 라벨 표준화 ──
   //   코너 유형의 기본 라벨이 대표 코너명('영화 전체보기')을 물고 있어, 그 유형을 불러오면 상품 코너에도
   //   '영화 전체보기'가 새는 문제. 유형 기본값·스냅샷·기존 인스턴스를 전부 일반 CTA '전체보기'로 통일.
