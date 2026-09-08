@@ -1417,6 +1417,23 @@ async function patchVariantDemo() {
   await prisma.corner.updateMany({ where: { layoutDetail: '세로형(카테고리탭)' }, data: { layoutDetail: '세로형' } });
   await prisma.cornerType.deleteMany({ where: { typeDetail: '세로형(카테고리탭)' } });
 
+  // ── 추천 수급 방식 정규화 — '운영 편성'·'수동 대체'(같은 직접 구성 폴백)를 '운영자 편성' 하나로 통합. '채널 데이터'→CVM. ──
+  //   (정책·회의 2026-08-31: 운영자 직접 구성분이 곧 최하단 폴백이라 별도 '수동 대체' 없음. taxonomy.normalizeRecSource와 동일 규칙)
+  await prisma.corner.updateMany({ where: { recSource: { in: ['운영 편성', '수동 대체'] } }, data: { recSource: '운영자 편성' } });
+  await prisma.corner.updateMany({ where: { recSource: '채널 데이터' }, data: { recSource: 'CVM 기반' } });
+  await prisma.cornerType.updateMany({ where: { defaultRecSource: { in: ['운영 편성', '수동 대체'] } }, data: { defaultRecSource: '운영자 편성' } });
+  const recPlans = await prisma.corner.findMany({ where: { recSourcePlan: { not: null } }, select: { id: true, recSourcePlan: true } });
+  for (const c of recPlans) {
+    try {
+      const arr = JSON.parse(c.recSourcePlan as string);
+      if (Array.isArray(arr)) {
+        const norm = arr.map((m) => (m === '채널 데이터' ? 'CVM 기반' : m === '운영 편성' || m === '수동 대체' ? '운영자 편성' : m));
+        const next = JSON.stringify(norm);
+        if (next !== c.recSourcePlan) await prisma.corner.update({ where: { id: c.id }, data: { recSourcePlan: next } });
+      }
+    } catch { /* noop */ }
+  }
+
   // ── 하단 CTA(더보기/전체보기) 라벨 표준화 ──
   //   코너 유형의 기본 라벨이 대표 코너명('영화 전체보기')을 물고 있어, 그 유형을 불러오면 상품 코너에도
   //   '영화 전체보기'가 새는 문제. 유형 기본값·스냅샷·기존 인스턴스를 전부 일반 CTA '전체보기'로 통일.

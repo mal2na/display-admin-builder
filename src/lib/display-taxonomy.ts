@@ -129,12 +129,18 @@ export const CVM_TARGET_HINTS: { key: string; axis: string; note: string }[] = [
   { key: '신규', axis: '세그먼트', note: '온보딩·첫 방문' },
 ];
 
-// 추천 수급 방식 — '콘텐츠를 어디서 가져오나'의 축. 딱 둘: CVM(시스템 개인화) / 운영자 편성(직접 구성=최하단 폴백).
+// 추천 수급 방식 — '콘텐츠를 어디서 가져오나(출처)'의 축. 딱 둘: CVM(시스템 개인화) / 운영자 편성(직접 구성=최하단 폴백).
 //  · '채널 데이터'(행동 기반) = CVM 개인화의 일부(PI-DSP-PER-001)라 CVM에 흡수·폐기.
 //  · '룰 기반'(노출 조건) = '누구에게 보여주나'의 타겟팅 축이라 수급이 아님 → Template 분기·코너 노출 조건(PI-DSP-RUL)에서 다룸. 수급에서 제거(2026-08-31 사용자 결정).
-//  · '운영 편성'/'수동 대체'는 운영자 편성(직접 구성 폴백)으로 묶어 최하단 고정.
-export const REC_SOURCE_METHODS = ['CVM 기반', '운영 편성', '수동 대체'] as const;
+//  · '운영 편성'/'수동 대체'는 결국 같은 동작(운영자가 직접 고른 항목 노출)이고, 정책상 그게 곧 최하단 폴백(대체 전시 필수 PI-DSP-PER-002, 토글 아님)이라 '운영자 편성' 하나로 통합. (legacy 값 '운영 편성'·'수동 대체'는 normalizeRecSource로 흡수)
+export const REC_SOURCE_METHODS = ['CVM 기반', '운영자 편성'] as const;
 export type RecSourceMethod = (typeof REC_SOURCE_METHODS)[number];
+// legacy 저장값('운영 편성'·'수동 대체'·'채널 데이터')을 현행 두 방식으로 정규화.
+export function normalizeRecSource(m: string): string {
+  if (m === '채널 데이터') return 'CVM 기반'; // 행동 기반 → CVM에 흡수
+  if (m === '운영 편성' || m === '수동 대체') return '운영자 편성'; // 직접 구성 폴백으로 통합
+  return m;
+}
 // 각 방식: 짧은 태그 + '어떻게 골라 보여주는지' 친절 설명 + 개인화 표기 여부.
 export const REC_SOURCE_INFO: Record<string, { tag: string; how: string; personalized: boolean }> = {
   'CVM 기반': {
@@ -142,14 +148,9 @@ export const REC_SOURCE_INFO: Record<string, { tag: string; how: string; persona
     how: 'CVM(세일즈포스 기반 추천 시스템)이 고객 한 명 한 명에게 맞는 상품을 계산해 “추천 후보 + 순위 + 추천 근거”를 내려줍니다. 고객 상태·보유 상품뿐 아니라 최근 본 상품·클릭 같은 행동·성향도 CVM이 함께 반영해요. 화면은 그 순위대로 카드를 나열하고, 운영자는 최대 노출 개수·정렬(=CVM 순위 따름)·대체안(폴백)만 정합니다. 로그인·동의가 충족될 때만 ‘개인화 추천’으로 표기됩니다.',
     personalized: true,
   },
-  '운영 편성': {
-    tag: '운영자 지정',
-    how: '운영자가 직접 고른 상품·혜택·캠페인을 지정한 순서대로 보여줍니다. (기획전·시즌 프로모션 등 — 개인화 아님)',
-    personalized: false,
-  },
-  '수동 대체': {
-    tag: '폴백(대체안)',
-    how: '추천 후보가 없거나 조건이 안 맞을 때 대신 보여줄, 운영자가 지정한 대체안입니다.',
+  '운영자 편성': {
+    tag: '운영자 직접 구성 · 폴백 겸용',
+    how: '운영자가 직접 고른 상품·혜택·캠페인을 지정한 순서대로 보여줍니다(기획전·시즌 프로모션 등 — 개인화 아님). 정책상 이 직접 구성분이 곧 CVM 추천이 없을 때의 최하단 대체안(폴백)이라, 별도의 “수동 대체” 없이 하나로 운영합니다.',
     personalized: false,
   },
 };

@@ -21,6 +21,7 @@ import {
   PRODUCT_SORT_OPTIONS,
   REC_SOURCE_METHODS,
   REC_SOURCE_INFO,
+  normalizeRecSource,
 } from '@/lib/display-taxonomy';
 import { isEventCornerFamily } from '@/lib/event-taxonomy';
 import { cn } from '@/lib/utils';
@@ -892,11 +893,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
       <section className="overflow-hidden rounded-md border border-violet-200">
         <div className="flex items-center gap-2 border-b border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-xs font-semibold text-violet-700">
           추천 수급 방식 · 기본값
-          <span className="font-normal text-violet-400">이 코너를 ‘무엇을 기준으로’ 채울지의 기본값 · 실제 선택은 빌더에서 코너별로</span>
+          <span className="font-normal text-violet-400">콘텐츠 <b className="font-semibold">출처</b>(무엇으로 채우나)의 기본값 · 형태는 위 ‘노출·구성’에서 · 실제 선택은 빌더에서 코너별로</span>
         </div>
         <div className="space-y-2 p-3">
-          <select name="defaultRecSource" defaultValue={row.defaultRecSource ?? ''} className="h-8 w-full max-w-xs rounded-md border border-violet-200 bg-background px-2 text-xs">
-            <option value="">미지정 (직접 구성한 항목을 그대로 노출)</option>
+          <select name="defaultRecSource" defaultValue={row.defaultRecSource ? normalizeRecSource(row.defaultRecSource) : ''} className="h-8 w-full max-w-xs rounded-md border border-violet-200 bg-background px-2 text-xs">
+            <option value="">기본값 미지정 — 빌더에서 코너별로 선택</option>
             {REC_SOURCE_METHODS.map((s) => (
               <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
             ))}

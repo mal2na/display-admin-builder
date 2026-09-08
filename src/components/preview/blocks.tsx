@@ -482,7 +482,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     <section className={`space-y-2 ${wrapClass}`}>
       {bannerAtTop && bannerEl}
       {(() => {
-        // 추천 수급 방식 배지 — 1순위 + 폴백 체인 표시 (예: CVM 개인화 추천 · 없으면 → 룰 기반 → 수동 대체)
+        // 추천 수급 방식 배지 — 1순위 + 폴백 체인 표시 (예: CVM 개인화 추천 · 없으면 → 운영자 편성)
         let plan: string[] = [];
         try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a)) plan = a.filter((x) => typeof x === 'string'); } catch { /* noop */ }
         if (!plan.length && corner.recSource) plan = [corner.recSource];

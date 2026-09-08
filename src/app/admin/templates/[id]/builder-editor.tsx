@@ -30,6 +30,7 @@ import {
   isCvmBinding,
   REC_SOURCE_METHODS,
   REC_SOURCE_INFO,
+  normalizeRecSource,
   CVM_TARGET_HINTS,
   type AtomType,
   type CornerType,
@@ -1947,7 +1948,7 @@ function CornerInfoForm({
   // 추천 수급 방식 — 재정렬 가능한 '자동 방식'(CVM/룰) + 항상 최하단 고정 '운영자 편성'(운영자가 코너 구성에 직접 짠 항목 = 폴백).
   //  운영자 편성은 정책상 대체 전시(PI-DSP-PER-002) 필수라 끌 수 없고, 운영자가 짠 항목이 곧 폴백이라 늘 켜져 있어야 함(빈 코너 방지). (2026-08-31 사용자 결정)
   const REC_AUTO_METHODS: string[] = ['CVM 기반']; // 수급 자동 방식 = CVM만 (룰 기반은 타겟팅 축이라 제거)
-  const normalizeMethod = (m: string) => (m === '채널 데이터' ? 'CVM 기반' : m); // 폐기된 '채널 데이터'는 CVM으로 흡수
+  const normalizeMethod = normalizeRecSource; // 폐기·legacy 값('채널 데이터'→CVM, '운영 편성'·'수동 대체'→운영자 편성) 흡수
   const parseRecFull = (): string[] => {
     try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a) && a.length) return a.filter((x) => typeof x === 'string').map(normalizeMethod); } catch { /* noop */ }
     return corner.recSource ? [normalizeMethod(corner.recSource)] : [];
@@ -1957,8 +1958,8 @@ function CornerInfoForm({
   const [recPrimaryPlan, setRecPrimaryPlan] = useState<string[]>(
     initFull.filter((m) => REC_AUTO_METHODS.includes(m)).filter((m, i, a) => a.indexOf(m) === i),
   );
-  // 운영자 편성(직접 구성)은 항상 최하단 폴백 — 토글 아님. '운영 편성'으로 정규화해 늘 append.
-  const recFullPlan = [...recPrimaryPlan, '운영 편성'];
+  // 운영자 편성(직접 구성)은 항상 최하단 폴백 — 토글 아님. '운영자 편성'으로 정규화해 늘 append.
+  const recFullPlan = [...recPrimaryPlan, '운영자 편성'];
   const recSource = recFullPlan[0] ?? ''; // 대표(1순위)
   const recPersonalized = recSource === 'CVM 기반'; // 개인화 방식(CVM)이면 '미리보기=폴백' 안내 표시
   // 추천 수급 방식은 '추천 슬롯'인 코너에만 의미 있음 — 상품/혜택 추천 + CVM 타겟 배너(TM-DSP-018).
