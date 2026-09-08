@@ -719,27 +719,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
         <div className="border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">기본 정보</div>
         {/* 상단: 좌측 미리보기(고정 폭) + 우측 핵심 필드(코너 유형 ID · 코너 유형 · 유형 상세) */}
         <div className="grid grid-cols-1 items-start gap-5 border-b p-3 md:grid-cols-[460px_minmax(0,1fr)]">
-          {/* 미리보기 — 등록된 유형 샘플 이미지가 있으면 그걸 보여주고, 없으면 와이어프레임(스켈레톤). */}
-          {(() => {
-            const srcs = sampleImage.split('\n').filter(Boolean);
-            const isImg = !!srcs[0] && /^(data:image|https?:|\/)/.test(srcs[0]);
-            if (!isImg) return <TypeDetailPreview base={base} component={compValid} detail={detailValid} bigBanner={bigBannerOn} useTitle={useTitle} useSub={useSub} useMore={eff('useMoreButton')} />;
-            return (
-              <div className="space-y-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={srcs[0]} alt="유형 미리보기" className="w-full rounded-xl border object-cover object-top [filter:contrast(1.05)_saturate(1.1)]" />
-                {srcs.length > 1 && (
-                  <div className="flex gap-1.5">
-                    {srcs.slice(1, 4).map((src, i) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img key={i} src={src} alt="" className="h-14 w-20 rounded-md border object-cover object-top" />
-                    ))}
-                  </div>
-                )}
-                <p className="text-[10px] text-muted-foreground">등록된 유형 샘플 이미지 · 아래 <b>유형 샘플</b>에서 교체할 수 있어요</p>
-              </div>
-            );
-          })()}
+          <TypeDetailPreview base={base} component={compValid} detail={detailValid} bigBanner={bigBannerOn} useTitle={useTitle} useSub={useSub} useMore={eff('useMoreButton')} />
           <div className="space-y-3">
             {/* 코너 유형 명은 [코너 유형 · 컴포넌트 · 배열]로 자동 구성 · 코너 레이아웃은 값 보존 */}
             <input type="hidden" name="name" value={derivedName} />
