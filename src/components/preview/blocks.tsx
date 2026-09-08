@@ -116,7 +116,7 @@ function MenuListView({ component }: { component: PreviewComponent }) {
   );
 }
 
-function ProductCard({ component, shape, reason, titleLines }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null }) {
+function ProductCard({ component, shape, reason, titleLines, emphasis = false }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null; emphasis?: boolean }) {
   const poster = first(component.atoms, 'IMAGE');
   const title = first(component.atoms, 'TEXT');
   // 설명 = INFO 또는 PRICE(가격도 라벨상 '설명'). 배지 = BADGE(할인율 등, 선택적 — 숨김 원자면 프리뷰에서 제외됨).
@@ -126,15 +126,16 @@ function ProductCard({ component, shape, reason, titleLines }: { component: Prev
   // 카드 비율: 1:1(정사각·상품) | 3:4(세로·포스터) | 4:3(가로·와이드). 기본 3:4. (레거시 정사각형=1:1)
   const square = shape === '1:1' || shape === '정사각형';
   const wide = shape === '4:3';
-  const ratioCls = square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
-  const wCls = square ? 'w-[136px]' : wide ? 'w-[152px]' : 'w-[128px]';
+  // 단일강조(1.5배열)는 카드를 크게(≈1.5장 노출), 가로 와이드 비율로 하나를 강조. 2.5배열(기본)은 작은 카드 캐러셀.
+  const ratioCls = emphasis ? 'aspect-[16/10]' : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
+  const wCls = emphasis ? 'w-[224px]' : square ? 'w-[136px]' : wide ? 'w-[152px]' : 'w-[128px]';
   // 상품명 줄 수 옵션: 2면 두 줄까지(line-clamp-2), 기본은 한 줄 말줄임(truncate)
   const nameCls = titleLines === 2 ? 'line-clamp-2' : 'truncate';
   return (
     <div className={cn('shrink-0', wCls)}>
       <ImageBox atom={poster} className={cn('w-full rounded-xl', ratioCls)} />
       {reason && <RecReason text={reason} />}
-      <p className={cn('mt-1.5 font-semibold leading-tight text-slate-900 text-[13px]', nameCls)}>{title?.content ?? component.name}</p>
+      <p className={cn('mt-1.5 font-semibold leading-tight text-slate-900', nameCls, emphasis ? 'text-[15px]' : 'text-[13px]')}>{title?.content ?? component.name}</p>
       {/* 배지는 설명 앞 인라인. 설명은 이름보다 연하게(위계) — 예: [20%] 235,000원 */}
       {(badge?.content || info?.content) && (
         <p className="mt-0.5 flex items-center gap-1">
@@ -304,7 +305,8 @@ function DefaultCard({ component }: { component: PreviewComponent }) {
   );
 }
 
-type LayoutMode = 'horizontal' | 'grid' | 'single' | 'list';
+// emphasis = 단일강조(1.5배열): 큰 카드 1.5장(하나 강조). horizontal(2.5배열)보다 카드가 크다.
+type LayoutMode = 'horizontal' | 'emphasis' | 'grid' | 'single' | 'list';
 
 function ComponentView({ component, mode, cardShape, reason, titleLines }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; reason?: string; titleLines?: number | null }) {
   switch (component.componentType) {
@@ -312,7 +314,7 @@ function ComponentView({ component, mode, cardShape, reason, titleLines }: { com
       return <ChipsView component={component} />;
     case '상품형':
       // 세로 리스트형 코너에서는 큰 포스터 카드가 아니라 로고+문구 행 구조로 렌더 (참고 디자인)
-      return mode === 'list' ? <BenefitRow component={component} reason={reason} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} />;
+      return mode === 'list' ? <BenefitRow component={component} reason={reason} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':
@@ -346,6 +348,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       default: {
         // 코너 레이아웃이 비어 있으면 유형 상세로 배치를 추론
         const d = corner.layoutDetail ?? '';
+        if (d.includes('단일강조') || d.includes('1.5')) return 'emphasis'; // 단일강조(1.5배열) = 큰 카드 강조
         if (d.includes('그리드')) return 'grid';
         if (d.includes('상품카드') || d.includes('가로') || d.includes('2.5') || d.includes('SWIPE')) return 'horizontal';
         if (d.includes('세로') || d.includes('리스트')) return 'list';
@@ -367,7 +370,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
 
   // 배치 모드에 맞춰 컴포넌트 묶음을 렌더
   const renderComps = (comps: PreviewComponent[], mode: LayoutMode) => {
-    if (mode === 'horizontal')
+    if (mode === 'horizontal' || mode === 'emphasis') // 둘 다 가로 스크롤. emphasis는 카드가 커서 ~1.5장 노출.
       return (
         <div className="flex gap-3 overflow-x-auto pb-1">
           {comps.map((c, i) => (

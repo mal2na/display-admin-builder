@@ -1230,7 +1230,23 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         <p className="text-[9px] leading-relaxed text-slate-400">같은 가로형(2.5배열)이라도 콘텐츠에 따라 비율이 달라요(1:1 상품·3:4 포스터·4:3 와이드). 실제 비율은 빌더에서 코너별로 선택합니다.</p>
       </div>
     );
-  } else if (isProduct || has('가로', '1.5', '단일강조')) {
+  } else if (has('단일강조', '1.5')) {
+    // 단일강조(1.5배열) — 큰 카드 1.5장(하나를 크게 강조 + 다음 카드 살짝). 2.5배열보다 카드가 크다.
+    body = (
+      <div className="space-y-1">
+        <div className="flex gap-2 overflow-hidden">
+          {[0, 1].map((i) => (
+            <div key={i} className="w-[66%] shrink-0 space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2">
+              <Slot label="이미지" className="aspect-[16/10] w-full" />
+              <Slot label="텍스트" className="h-4 w-3/4 justify-start" />
+              <Slot label="설명" className="h-3 w-1/2 justify-start" />
+            </div>
+          ))}
+        </div>
+        <p className="text-[9px] leading-relaxed text-slate-400">단일강조(1.5배열) — 큰 카드 하나를 강조하고 다음 카드가 살짝 보입니다. (2.5배열은 작은 카드 캐러셀)</p>
+      </div>
+    );
+  } else if (isProduct || has('가로')) {
     body = (
       <div className="flex gap-2 overflow-hidden">
         {[0, 1, 2].map((i) => (
