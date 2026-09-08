@@ -384,9 +384,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                     <div className="border-b bg-surface-subtle/60 px-5 py-3">
                       {allowed.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[11px] font-semibold text-foreground">담을 수 있는 컴포넌트</span>
+                          <span className="text-[11px] font-semibold text-foreground">담을 수 있는 컴포넌트(모듈)</span>
                           {allowed.map((c) => <span key={c} className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{componentLabel(c)}</span>)}
-                          <span className="ml-1 text-[10px] text-muted-foreground/70">PI-DSP-CMP-003 · 유형 기준(배열·레이아웃 무관)</span>
+                          <span className="ml-1 text-[10px] text-muted-foreground/70">빌더에서 이 코너에 붙일 수 있는 구성 모듈 · PI-DSP-CMP-003</span>
                         </div>
                       )}
                       {gov && <p className="mt-2 border-t border-dashed pt-2 text-[12.5px] leading-relaxed text-muted-foreground">{gov}</p>}
