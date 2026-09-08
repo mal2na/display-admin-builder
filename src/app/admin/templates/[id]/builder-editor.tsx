@@ -19,8 +19,6 @@ import {
   cornerFamily,
   cornerTypeChipClass,
   cornerTypePurpose,
-  cornerTypeGovernance,
-  componentTypesForCorner,
   layoutLabel,
   componentLabel,
   ATOM_TYPES,
@@ -216,25 +214,15 @@ function CornerTypeChip({ corner, className }: { corner: CornerNode; className?:
   );
 }
 
-// 코너 거버넌스 패널 — 이 코너(유형)가 가진 규칙을 빌더에서도 보여준다(코너 유형 관리와 동일 SSOT).
-//  혜택·상품·마이 등 모든 화면의 코너에 반영: 목적 + 담을 수 있는 컴포넌트(PI-DSP-CMP-003) + 배열·레이아웃.
+// 코너 거버넌스 패널 — 이 코너의 목적 + 배열·레이아웃만. (담을 수 있는 컴포넌트 표시는 제외 — 제약은
+//  CORNER_COMPONENT_MAP으로 컴포넌트 추가 시 강제. 유형=컴포넌트 중복 표기가 어색해 숨김.)
 function CornerGovernance({ base, layoutDetail }: { base: string; layoutDetail?: string | null }) {
   const purpose = cornerTypePurpose(base);
-  const gov = cornerTypeGovernance(base);
-  const allowed = componentTypesForCorner(base);
-  if (!purpose && !gov && allowed.length === 0) return null;
+  if (!purpose && !layoutDetail) return null;
   return (
     <div className="mt-1.5 space-y-1.5 rounded-md border border-slate-200 bg-slate-50/70 p-2">
       {purpose && <p className="text-[10.5px] leading-relaxed text-slate-600"><span className="font-semibold text-slate-500">목적</span> · {purpose}</p>}
-      {allowed.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1">
-          <span className="text-[10px] font-semibold text-slate-500">담을 수 있는 컴포넌트</span>
-          {allowed.map((c) => <span key={c} className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary">{componentLabel(c)}</span>)}
-          <span className="text-[9px] text-slate-400">· PI-DSP-CMP-003</span>
-        </div>
-      )}
       {layoutDetail && <p className="text-[10px] text-slate-500">배열·레이아웃 · <b className="text-slate-700">{layoutLabel(layoutDetail)}</b></p>}
-      {gov && <p className="border-t border-dashed border-slate-200 pt-1.5 text-[10px] leading-relaxed text-slate-500">{gov}</p>}
     </div>
   );
 }
