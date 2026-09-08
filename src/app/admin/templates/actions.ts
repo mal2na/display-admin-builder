@@ -388,6 +388,11 @@ function readCornerInfo(formData: FormData) {
     userMinItems: uMinRaw ? Number(uMinRaw) : null,
     userMaxItems: uMaxRaw ? Number(uMaxRaw) : null,
     noDisplayCondition: nn(formData, 'noDisplayCondition'),
+    // 코너별 표시 항목(상품 카드 요소 on/off) — 체크박스 hidden 값 '1'/''
+    showImage: String(formData.get('showImage') ?? '') === '1',
+    showPrice: String(formData.get('showPrice') ?? '') === '1',
+    showBadge: String(formData.get('showBadge') ?? '') === '1',
+    showDesc: String(formData.get('showDesc') ?? '') === '1',
     recSource: nn(formData, 'recSource'), // (대표) 1순위 추천 수급 방식
     recSourcePlan: nn(formData, 'recSourcePlan'), // 우선순위 편성(JSON 배열, 1순위→폴백)
     showRecReason: String(formData.get('showRecReason') ?? '') === '1', // 추천 근거 표시 여부(레거시·미표시)
@@ -429,22 +434,26 @@ export async function createCorner(templateId: string, formData: FormData) {
 type ScaffoldAtom = { name: string; atomType: string; content?: string; imageUrl?: string; altText?: string; linkUrl?: string };
 type ScaffoldComp = { name: string; componentType: ComponentType; atoms: ScaffoldAtom[]; chipRows?: number; selectedIndex?: number };
 
-function scaffoldSpecFor(componentType: string | null, typeDetail: string | null): ScaffoldComp[] {
+function scaffoldSpecFor(componentType: string | null, typeDetail: string | null, feats: { badge?: boolean; image?: boolean; price?: boolean; desc?: boolean } = {}): ScaffoldComp[] {
   const ct = (componentType ?? '') as ComponentType | '';
   const d = typeDetail ?? '';
+  const { badge = false, image = true, price = true, desc = true } = feats; // 유형 세부 항목(표시 항목) — 켜진 항목만 스캐폴드에 넣는다
   const tabComp: ScaffoldComp = {
     name: '카테고리 탭',
     componentType: '선택형',
     selectedIndex: 0,
     atoms: ['전체', '카테고리1', '카테고리2', '카테고리3'].map((c) => ({ name: c, atomType: 'TEXT', content: c })),
   };
+  const badgeAtom = (label: string): ScaffoldComp['atoms'] => (badge ? [{ name: '배지', atomType: 'BADGE', content: label }] : []); // 유형 세부 항목 '배지' ON일 때만
   const productComp = (i: number): ScaffoldComp => ({
     name: `상품 ${i}`,
     componentType: '상품형',
     atoms: [
-      { name: '상품 이미지', atomType: 'IMAGE', imageUrl: '', altText: `상품 ${i} 이미지` },
+      ...(image ? [{ name: '상품 이미지', atomType: 'IMAGE' as const, imageUrl: '', altText: `상품 ${i} 이미지` }] : []), // 상품 이미지 ON
       { name: '상품명', atomType: 'TEXT', content: `상품 ${i}` },
-      { name: '설명', atomType: 'PRICE', content: '' },
+      ...badgeAtom('NEW'), // 배지는 가격 앞에 붙는다(정책 상품 Set: 가격·배지 인접)
+      ...(price ? [{ name: '가격', atomType: 'PRICE' as const, content: '' }] : []), // 가격 ON
+      ...(desc ? [{ name: '설명', atomType: 'INFO' as const, content: '' }] : []), // 설명(부가/흐린 글씨) ON — 정보값 Atom
     ],
   });
   const benefitComp = (i: number): ScaffoldComp => ({
@@ -452,6 +461,7 @@ function scaffoldSpecFor(componentType: string | null, typeDetail: string | null
     componentType: '혜택형',
     atoms: [
       { name: '로고', atomType: 'ICON', imageUrl: '', altText: `브랜드 ${i}` },
+      ...badgeAtom('혜택'),
       { name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: `혜택 ${i} 문구를 입력하세요` },
       { name: '브랜드', atomType: 'INFO', content: `브랜드 ${i}` },
     ],
@@ -577,6 +587,11 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
       recSource: def.defaultRecSource ?? null,
       moreButtonUse: moreOn,
       moreButtonLabel: moreOn ? (def.defaultMoreButtonLabel ?? '전체보기') : null,
+      // 표시 항목(코너 유형 세부 항목) → 코너별 오버라이드 초기값 상속
+      showImage: def.useImage ?? true,
+      showPrice: def.usePrice ?? true,
+      showBadge: def.useBadge ?? true,
+      showDesc: def.useDesc ?? true,
       // 코너 유형 관리의 유형 샘플 썸네일을 코너에 상속(카드/참고용) — 컴포넌트가 생기면 미리보기는 컴포넌트로 렌더
       sampleImageUrl: def.sampleImageUrl,
       // 사용처 추적: 이 코너가 생성된 원본 코너 유형(카탈로그) id
@@ -588,7 +603,7 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
     },
   });
   // 유형의 컴포넌트 유형·배열에 맞춰 '코너 구성'을 스캐폴딩(불러오면 코너 정보 + 코너 구성이 실제로 채워짐)
-  await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail));
+  await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail, { badge: def.useBadge, image: def.useImage, price: def.usePrice, desc: def.useDesc }));
   return corner;
 }
 
@@ -930,6 +945,27 @@ export async function addBssProduct(templateId: string, cornerId: string, produc
 
 export async function removeComponent(templateId: string, cornerComponentId: string) {
   await prisma.cornerComponent.delete({ where: { id: cornerComponentId } });
+  rp(templateId);
+}
+
+// 상단 카테고리 탭 토글 — 탭 = 선택형 컴포넌트. 있으면 제거(끄기), 없으면 카테고리 탭 스캐폴드 추가(켜기).
+export async function toggleCornerTab(templateId: string, cornerId: string) {
+  const corner = await prisma.corner.findUnique({
+    where: { id: cornerId },
+    select: { cornerType: true, cornerComponents: { include: { component: { select: { componentType: true } } } } },
+  });
+  if (!corner) throw new Error('Corner를 찾을 수 없습니다.');
+  const tabCC = corner.cornerComponents.find((cc) => cc.component.componentType === '선택형');
+  if (tabCC) {
+    await prisma.cornerComponent.delete({ where: { id: tabCC.id } }); // 끄기
+  } else {
+    if (!isComponentAllowedInCorner(corner.cornerType as CornerType, '선택형')) {
+      throw new Error(`${corner.cornerType} 유형은 상단 카테고리 탭(선택형)을 담을 수 없습니다.`);
+    }
+    await createScaffoldComponents(cornerId, corner.cornerType, [
+      { name: '카테고리 탭', componentType: '선택형', selectedIndex: 0, atoms: ['전체', '카테고리1', '카테고리2', '카테고리3'].map((c) => ({ name: c, atomType: 'TEXT', content: c })) },
+    ]);
+  }
   rp(templateId);
 }
 

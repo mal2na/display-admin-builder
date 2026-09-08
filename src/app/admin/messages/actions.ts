@@ -59,3 +59,61 @@ export async function addAtomVariant(atomId: string, text: string, target?: stri
   await prisma.atom.update({ where: { id: atomId }, data: { contentVariants: JSON.stringify(arr) } });
   revalidateAll();
 }
+
+// ── 엑셀(CSV) 대량 업로드 — 문구 배리에이션 밀어넣기 ──
+//  타겟 6열(시니어/2030/재방문/위치 인근/혜택 보유/신규)을 읽어 각 문구의 배리에이션으로 저장.
+//  문구ID: 'title:<cornerId>'는 코너 타이틀, 그 외는 atomId. 회의 '처음 100개 입력' 대량 세팅 지원.
+const TARGET_ORDER = ['시니어', '2030', '재방문', '위치 인근', '혜택 보유', '신규'];
+
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [], cur = '', inQ = false;
+  const t = text.replace(/^﻿/, '');
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (inQ) {
+      if (ch === '"') { if (t[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+      else cur += ch;
+    } else if (ch === '"') inQ = true;
+    else if (ch === ',') { row.push(cur); cur = ''; }
+    else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (ch === '\r') { /* skip */ }
+    else cur += ch;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+
+export async function importMessages(csv: string): Promise<{ ok: boolean; updated: number; skipped: number }> {
+  const rows = parseCSV(csv).filter((r) => r.some((c) => c.trim() !== ''));
+  if (rows.length < 2) return { ok: false, updated: 0, skipped: 0 };
+  const header = rows[0].map((h) => h.trim());
+  const tIdx = TARGET_ORDER.map((t) => header.indexOf(t));
+  let updated = 0, skipped = 0;
+  for (const r of rows.slice(1)) {
+    const id = (r[0] ?? '').trim();
+    if (!id) { skipped++; continue; }
+    const variants = TARGET_ORDER
+      .map((t, k) => ({ target: t, text: (tIdx[k] >= 0 ? (r[tIdx[k]] ?? '') : '').trim() }))
+      .filter((v) => v.text)
+      .map((v) => ({ ...v, enabled: true }));
+    const json = variants.length ? JSON.stringify(variants) : null;
+    try {
+      if (id.startsWith('title:')) await prisma.corner.update({ where: { id: id.slice(6) }, data: { mainTitleVariants: json } });
+      else await prisma.atom.update({ where: { id }, data: { contentVariants: json } });
+      updated++;
+    } catch { skipped++; }
+  }
+  revalidateAll();
+  return { ok: true, updated, skipped };
+}
+
+// ── 기본 문구 편집 — 문구 관리를 문구 author(원장)로. 빌더는 가져오기(참조)만. ──
+export async function setTitleBase(cornerId: string, text: string) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { mainTitle: text.trim() || null } });
+  revalidateAll();
+}
+export async function setAtomBase(atomId: string, text: string) {
+  await prisma.atom.update({ where: { id: atomId }, data: { content: text.trim() || null } });
+  revalidateAll();
+}

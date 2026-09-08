@@ -1326,12 +1326,117 @@ async function patchVariantDemo() {
     });
   }
 
-  // 0 Week 혜택문구 3종(공차·뚜레쥬르·NOL)은 '타이틀만' 예시로 두기 위해 문구 변형 제거(우측 패널 정리).
-  //   문구 후보를 다시 붙이려면 각 컴포넌트 '수정' → 문구 베리에이션에서 등록한다(별도 관리 메뉴 없음).
-  for (const name of ['공차 혜택문구', '뚜레쥬르 혜택문구', 'NOL 혜택문구']) {
-    const atom = await prisma.atom.findFirst({ where: { name }, select: { id: true } });
-    if (atom) await prisma.atom.update({ where: { id: atom.id }, data: { contentVariants: null } });
+  // ── 나머지 개인화 코너 타이틀 — 6타겟 케이스(시니어/2030/재방문/위치 인근/혜택 보유/신규). ──
+  const T = (s1: string, s2: string, s3: string, s4: string, s5: string, s6: string) => JSON.stringify([
+    { target: '시니어', text: s1 }, { target: '2030', text: s2 }, { target: '재방문', text: s3 },
+    { target: '위치 인근', text: s4 }, { target: '혜택 보유', text: s5 }, { target: '신규', text: s6 },
+  ]);
+  const titleCases: Record<string, string> = {
+    'T Week 소멸 혜택': T('오늘 지나면 사라져요\n지금 편하게 챙기세요', '오늘 마감! 놓치면\n다시 없는 혜택', '다시 오셨네요,\n오늘까지만 주는 혜택', '지금 근처에서\n오늘까지 쓰는 혜택', '보유 혜택에 더해\n오늘까지 소멸 혜택', '첫 방문 선물,\n오늘까지만 드려요'),
+    'T DAY 멤버십': T('오늘의 멤버십 혜택,\n편하게 받으세요', '오늘의 T DAY 혜택\n지금 바로 챙겨요', '다시 오신 김에\n오늘의 멤버십 혜택', '지금 근처에서 쓰는\n오늘의 T DAY 혜택', '보유 멤버십에 더한\n오늘의 T DAY 혜택', '처음이라면\n오늘의 멤버십 혜택부터'),
+    '카테고리별 혜택': T('지훈님께 드리는\n최대 할인 혜택', 'VIP 지훈님\n요즘 뜨는 할인만 모음', '다시 오신 지훈님께\n최대 할인 혜택', '지금 근처에서 쓰는\n최대 할인 혜택', '보유 혜택에 더해\n최대 할인만 모았어요', '처음 오신 지훈님께\n최대 할인 혜택'),
+    '추천 상품': T('지훈님께 맞춘 추천', '요즘 뜨는 추천', '다시 보는 추천', '지금 근처 인기 추천', '보유 혜택 맞춤 추천', '첫 방문 추천'),
+    '단말기 추천': T('관심 두신 아이폰,\n혜택으로 편하게', '최근 본 아이폰\n혜택으로 겟!', '다시 보신 아이폰\n이번엔 혜택으로', '근처 매장에서\n아이폰 혜택 받기', '보유 혜택으로\n아이폰 더 저렴하게', '첫 구매 혜택으로\n아이폰 만나보세요'),
+    '약정 만료 요금제': T('위약금 없이 편하게\n이어가는 요금제', '약정 끝! 위약금 없이\n갈아타는 요금제', '다시 확인한 그 요금제\n위약금 없이 이어가요', '가까운 매장에서\n위약금 없이 이어가요', '보유 혜택 유지하며\n위약금 없이 이어가요', '처음이라면\n위약금 없는 요금제부터'),
+    '데이터 요금제 안내': T('데이터, 얼마나\n필요하신가요?', '내 데이터 사용량\n딱 맞게 골라요', '다시 보는 데이터 요금제\n얼마나 필요하세요?', '지금 여기서\n데이터 요금제 확인', '보유 혜택에 맞는\n데이터 요금제', '처음이라면\n데이터부터 골라봐요'),
+    '기프티콘 추천': T('더 저렴한 기프티콘,\n편하게 받으세요', '더 싸게 사는\n기프티콘 떴어요', '다시 오신 김에\n더 저렴한 기프티콘', '근처에서 쓰는\n더 저렴한 기프티콘', '보유 혜택으로\n기프티콘 더 저렴하게', '첫 구매 기프티콘\n더 저렴하게'),
+    '구독 혜택': T('SKT만의 구독 혜택,\n편하게 누리세요', 'SKT에만 있는\n구독 혜택 챙겨요', '다시 오신 김에\nSKT 구독 혜택', '지금 여기서\nSKT 구독 혜택', '보유 혜택에 더한\nSKT 구독 혜택', '처음이라면\nSKT 구독 혜택부터'),
+  };
+  for (const [name, variants] of Object.entries(titleCases)) {
+    const c = await prisma.corner.findFirst({ where: { name }, select: { id: true } });
+    if (c) await prisma.corner.update({ where: { id: c.id }, data: { mainTitleVariants: variants } });
   }
+
+  // ── 혜택문구(BENEFIT_TEXT) — 6타겟 프레이밍 배리에이션 채움(모든 케이스). ──
+  const frame = (b: string, t: string) => (({
+    '시니어': `어르신께 딱! ${b}`, '2030': `요즘 핫한 ${b}`, '재방문': `또 오셨네요, ${b}`,
+    '위치 인근': `근처 매장에서 ${b}`, '혜택 보유': `보유 혜택에 더해 ${b}`, '신규': `첫 방문 기념, ${b}`,
+  }) as Record<string, string>)[t] ?? b;
+  const benefitAtoms = await prisma.atom.findMany({ where: { atomType: 'BENEFIT_TEXT', content: { not: null } }, select: { id: true, content: true } });
+  for (const a of benefitAtoms) {
+    const b = (a.content ?? '').trim();
+    if (!b) continue;
+    await prisma.atom.update({ where: { id: a.id }, data: { contentVariants: JSON.stringify(['시니어', '2030', '재방문', '위치 인근', '혜택 보유', '신규'].map((t) => ({ target: t, text: frame(b, t) }))) } });
+  }
+  // ── 유형별 배리에이션 예시 — CTA·배지·설명(정보값)에도 후보를 채워 각 유형 칩에 예시가 보이게. ──
+  //   후보에는 '속성(힌트)' 태그만 붙인다(세그 매핑·택1은 CVM). 표기 제한 감안(CTA 짧게·배지 짧게·설명 간결).
+  const setVars = async (name: string, vars: { target: string; text: string }[]) => {
+    const a = await prisma.atom.findFirst({ where: { name, status: 'active' }, select: { id: true } });
+    if (a) await prisma.atom.update({ where: { id: a.id }, data: { contentVariants: JSON.stringify(vars) } });
+  };
+  // CTA — 행동 유도, 아주 짧게
+  await setVars('가입현황 CTA', [
+    { target: '재방문', text: '이어서 확인' },
+    { target: '신규', text: '가입 현황 보기' },
+    { target: '혜택 보유', text: '내 혜택 확인' },
+  ]);
+  // (배지는 프론트가 다는 할인율·상태값 = 사실값이라 문구 배리에이션 대상 아님 → 아래에서 일괄 정리)
+  // 설명(정보값) — 값·조건 간결히
+  await setVars('요금제1 설명', [
+    { target: '2030', text: '넷플릭스까지 한 번에 · 데이터 500GB' },
+    { target: '시니어', text: '데이터 500GB · 넷플릭스 제공, 크게 보기' },
+    { target: '재방문', text: '쓰던 혜택 그대로 · 데이터 500GB' },
+  ]);
+  await setVars('데이터1 설명', [
+    { target: '2030', text: '완전 무제한 · 월 69,000원부터' },
+    { target: '시니어', text: '넉넉한 무제한 · 월 69,000원부터' },
+  ]);
+  await setVars('에어팟 서브', [
+    { target: '신규', text: '지금 가입하고 사전예약 혜택' },
+    { target: '혜택 보유', text: '멤버십으로 사전예약 우선 참여' },
+  ]);
+
+  // ── 메시지형 문구 일괄 채움 — 제목·서브·프로모션 배지 등 '광고 문구'에만 타겟 후보 생성. ──
+  //   사실값(가격·브랜드명·탭·라벨·CVM 자동값)은 고정이라 제외. 후보엔 속성(힌트)만(매칭은 CVM).
+  const T6 = (s1: string, s2: string, s3: string, s4: string, s5: string, s6: string) => [
+    { target: '시니어', text: s1 }, { target: '2030', text: s2 }, { target: '재방문', text: s3 },
+    { target: '위치 인근', text: s4 }, { target: '혜택 보유', text: s5 }, { target: '신규', text: s6 },
+  ];
+  // 배너·제휴 제목(혜택 홈)
+  await setVars('가족나들이 제목', T6('이번 주말, 가족과 나들이 가기 좋은 혜택', '주말 나들이각! 이번 주 쓰기 좋은 혜택', '지난 주말처럼, 이번에도 나들이 혜택', '지금 근처에서 쓰는 주말 나들이 혜택', '보유 혜택으로 이번 주말 나들이', '첫 나들이 혜택, 이번 주말에 써보세요'));
+  await setVars('에어팟 제목', T6('AirPods Max3, 사전 예약하고 편하게 받으세요', 'AirPods Max3 사전 예약 각! 지금 예약', '다시 보신 AirPods Max3, 사전 예약하세요', '지금 근처 매장에서 AirPods Max3 사전 예약', '보유 혜택으로 AirPods Max3 사전 예약', '첫 사전 예약, AirPods Max3부터'));
+  // 사전예약 배너 제목·서브(쇼핑 홈)
+  await setVars('iPhone20 사전예약 타이틀', T6('iPhone 20 사전 예약하면\n에어팟 프로를 드려요', 'iPhone 20 예약각!\n에어팟 프로까지 증정', '다시 보신 iPhone 20\n예약하면 에어팟 프로 증정', '근처 매장에서 iPhone 20 예약\n에어팟 프로 증정', '보유 혜택에 더해 iPhone 20 예약\n에어팟 프로 증정', '첫 예약 선물, iPhone 20\n에어팟 프로 증정'));
+  await setVars('iPhone20 사전예약 서브', [{ target: '신규', text: '지금 가입하고 사전예약 혜택' }, { target: '혜택 보유', text: '멤버십으로 사전예약 우선 참여' }]);
+  // 데이터 요금제 안내 — 사용 성향 제목(쇼핑 홈)
+  await setVars('데이터1 제목', [{ target: '시니어', text: '데이터 걱정 없이 편하게 쓰세요' }, { target: '2030', text: '데이터 걱정 0, 마음껏 달려요' }, { target: '재방문', text: '다시 봐도 데이터 무제한이 딱' }, { target: '신규', text: '처음이라면 데이터 무제한부터' }]);
+  await setVars('데이터2 제목', [{ target: '시니어', text: '영상도 편하게, 여유 있게 쓰세요' }, { target: '2030', text: '영상 정주행도 여유 있게' }, { target: '재방문', text: '다시 봐도 딱 맞는 여유 데이터' }, { target: '신규', text: '처음이라면 여유 데이터로 시작' }]);
+  await setVars('데이터3 제목', [{ target: '시니어', text: '메신저 위주로 가볍고 알뜰하게' }, { target: '2030', text: '톡 위주면 가볍게 이거면 충분' }, { target: '재방문', text: '다시 봐도 가벼운 사용엔 이게 딱' }, { target: '신규', text: '처음이라면 가벼운 요금제부터' }]);
+  await setVars('데이터4 제목', [{ target: '시니어', text: '원하는 요금제, 직접 편하게 찾기' }, { target: '2030', text: '내 맘대로 요금제 직접 골라요' }, { target: '재방문', text: '다시 보며 원하는 요금제 찾기' }, { target: '신규', text: '처음이라면 직접 골라보기' }]);
+  // 요금제2 설명 — 요금제1 설명과 동일 후보(쇼핑 홈)
+  await setVars('요금제2 설명', [{ target: '2030', text: '넷플릭스까지 한 번에 · 데이터 500GB' }, { target: '시니어', text: '데이터 500GB · 넷플릭스 제공, 크게 보기' }, { target: '재방문', text: '쓰던 혜택 그대로 · 데이터 500GB' }]);
+  // 배지(할인율·상태)는 프론트가 상품 데이터에서 계산해 다는 '사실값' → 문구 배리에이션 대상 아님.
+  //   이전 예시로 넣었던 배지 변형까지 전부 정리(모든 BADGE 아톰의 후보 제거).
+  await prisma.atom.updateMany({ where: { atomType: 'BADGE' }, data: { contentVariants: null } });
+
+  // ── 배열·레이아웃 정합 — 배너형은 '이미지형'으로 통일(단일 stray '팝업배너형' 정규화) ──
+  await prisma.corner.updateMany({ where: { cornerType: '배너형', layoutDetail: '팝업배너형' }, data: { layoutDetail: '이미지형' } });
+
+  // ── 세로형(카테고리탭) 폐지 — 상단 탭은 별도 배열이 아니라 선택형 컴포넌트(빌더 토글). ──
+  //   코너는 세로형으로 바꾸고(탭은 기존 선택형 컴포넌트가 그대로 렌더), 카탈로그 유형은 삭제.
+  await prisma.corner.updateMany({ where: { layoutDetail: '세로형(카테고리탭)' }, data: { layoutDetail: '세로형' } });
+  await prisma.cornerType.deleteMany({ where: { typeDetail: '세로형(카테고리탭)' } });
+
+  // ── 배지 세부 항목 데모 — 상품형 코너 유형은 배지(NEW/할인 등)를 기본 노출로 켜 미리보기·스캐폴드에 반영. ──
+  await prisma.cornerType.updateMany({ where: { baseCategory: '상품형' }, data: { useBadge: true } });
+
+  // ── 추천 수급 방식 정규화 — '운영 편성'·'수동 대체'(같은 직접 구성 폴백)를 '운영자 편성' 하나로 통합. '채널 데이터'→CVM. ──
+  //   (정책·회의 2026-08-31: 운영자 직접 구성분이 곧 최하단 폴백이라 별도 '수동 대체' 없음. taxonomy.normalizeRecSource와 동일 규칙)
+  await prisma.corner.updateMany({ where: { recSource: { in: ['운영 편성', '수동 대체'] } }, data: { recSource: '운영자 편성' } });
+  await prisma.corner.updateMany({ where: { recSource: '채널 데이터' }, data: { recSource: 'CVM 기반' } });
+  await prisma.cornerType.updateMany({ where: { defaultRecSource: { in: ['운영 편성', '수동 대체'] } }, data: { defaultRecSource: '운영자 편성' } });
+  const recPlans = await prisma.corner.findMany({ where: { recSourcePlan: { not: null } }, select: { id: true, recSourcePlan: true } });
+  for (const c of recPlans) {
+    try {
+      const arr = JSON.parse(c.recSourcePlan as string);
+      if (Array.isArray(arr)) {
+        const norm = arr.map((m) => (m === '채널 데이터' ? 'CVM 기반' : m === '운영 편성' || m === '수동 대체' ? '운영자 편성' : m));
+        const next = JSON.stringify(norm);
+        if (next !== c.recSourcePlan) await prisma.corner.update({ where: { id: c.id }, data: { recSourcePlan: next } });
+      }
+    } catch { /* noop */ }
+  }
+
   // ── 하단 CTA(더보기/전체보기) 라벨 표준화 ──
   //   코너 유형의 기본 라벨이 대표 코너명('영화 전체보기')을 물고 있어, 그 유형을 불러오면 상품 코너에도
   //   '영화 전체보기'가 새는 문제. 유형 기본값·스냅샷·기존 인스턴스를 전부 일반 CTA '전체보기'로 통일.
@@ -1352,7 +1457,7 @@ async function patchVariantDemo() {
   // 3) 이미 새어나간 인스턴스 — 특정 코너명 라벨('영화 전체보기')을 일반 CTA로 교정(운영자 커스텀 라벨은 보존)
   await prisma.corner.updateMany({ where: { moreButtonUse: true, moreButtonLabel: '영화 전체보기' }, data: { moreButtonLabel: CTA } });
 
-  console.log('✅ 베리에이션 데모 패치 완료 (영화 예매·0 Week 타이틀 6타겟 · 문구변형 제거 · CTA 라벨 표준화)');
+  console.log('✅ 베리에이션 데모 패치 완료 (타이틀 6타겟 · 혜택문구 프레이밍 · 메시지형 제목/서브/CTA/설명 후보 · 배지는 사실값이라 제외 · CTA 라벨 표준화)');
 }
 
 main()

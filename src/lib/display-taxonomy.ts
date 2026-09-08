@@ -129,12 +129,18 @@ export const CVM_TARGET_HINTS: { key: string; axis: string; note: string }[] = [
   { key: '신규', axis: '세그먼트', note: '온보딩·첫 방문' },
 ];
 
-// 추천 수급 방식 — '콘텐츠를 어디서 가져오나'의 축. 딱 둘: CVM(시스템 개인화) / 운영자 편성(직접 구성=최하단 폴백).
+// 추천 수급 방식 — '콘텐츠를 어디서 가져오나(출처)'의 축. 딱 둘: CVM(시스템 개인화) / 운영자 편성(직접 구성=최하단 폴백).
 //  · '채널 데이터'(행동 기반) = CVM 개인화의 일부(PI-DSP-PER-001)라 CVM에 흡수·폐기.
 //  · '룰 기반'(노출 조건) = '누구에게 보여주나'의 타겟팅 축이라 수급이 아님 → Template 분기·코너 노출 조건(PI-DSP-RUL)에서 다룸. 수급에서 제거(2026-08-31 사용자 결정).
-//  · '운영 편성'/'수동 대체'는 운영자 편성(직접 구성 폴백)으로 묶어 최하단 고정.
-export const REC_SOURCE_METHODS = ['CVM 기반', '운영 편성', '수동 대체'] as const;
+//  · '운영 편성'/'수동 대체'는 결국 같은 동작(운영자가 직접 고른 항목 노출)이고, 정책상 그게 곧 최하단 폴백(대체 전시 필수 PI-DSP-PER-002, 토글 아님)이라 '운영자 편성' 하나로 통합. (legacy 값 '운영 편성'·'수동 대체'는 normalizeRecSource로 흡수)
+export const REC_SOURCE_METHODS = ['CVM 기반', '운영자 편성'] as const;
 export type RecSourceMethod = (typeof REC_SOURCE_METHODS)[number];
+// legacy 저장값('운영 편성'·'수동 대체'·'채널 데이터')을 현행 두 방식으로 정규화.
+export function normalizeRecSource(m: string): string {
+  if (m === '채널 데이터') return 'CVM 기반'; // 행동 기반 → CVM에 흡수
+  if (m === '운영 편성' || m === '수동 대체') return '운영자 편성'; // 직접 구성 폴백으로 통합
+  return m;
+}
 // 각 방식: 짧은 태그 + '어떻게 골라 보여주는지' 친절 설명 + 개인화 표기 여부.
 export const REC_SOURCE_INFO: Record<string, { tag: string; how: string; personalized: boolean }> = {
   'CVM 기반': {
@@ -142,14 +148,9 @@ export const REC_SOURCE_INFO: Record<string, { tag: string; how: string; persona
     how: 'CVM(세일즈포스 기반 추천 시스템)이 고객 한 명 한 명에게 맞는 상품을 계산해 “추천 후보 + 순위 + 추천 근거”를 내려줍니다. 고객 상태·보유 상품뿐 아니라 최근 본 상품·클릭 같은 행동·성향도 CVM이 함께 반영해요. 화면은 그 순위대로 카드를 나열하고, 운영자는 최대 노출 개수·정렬(=CVM 순위 따름)·대체안(폴백)만 정합니다. 로그인·동의가 충족될 때만 ‘개인화 추천’으로 표기됩니다.',
     personalized: true,
   },
-  '운영 편성': {
-    tag: '운영자 지정',
-    how: '운영자가 직접 고른 상품·혜택·캠페인을 지정한 순서대로 보여줍니다. (기획전·시즌 프로모션 등 — 개인화 아님)',
-    personalized: false,
-  },
-  '수동 대체': {
-    tag: '폴백(대체안)',
-    how: '추천 후보가 없거나 조건이 안 맞을 때 대신 보여줄, 운영자가 지정한 대체안입니다.',
+  '운영자 편성': {
+    tag: '운영자 직접 구성 · 폴백 겸용',
+    how: '운영자가 직접 고른 상품·혜택·캠페인을 지정한 순서대로 보여줍니다(기획전·시즌 프로모션 등 — 개인화 아님). 정책상 이 직접 구성분이 곧 CVM 추천이 없을 때의 최하단 대체안(폴백)이라, 별도의 “수동 대체” 없이 하나로 운영합니다.',
     personalized: false,
   },
 };
@@ -180,6 +181,22 @@ export const CORNER_TYPE_PURPOSE: Record<CornerType, string> = {
 export function cornerTypePurpose(cornerType?: string | null): string {
   if (!cornerType) return '';
   return (CORNER_TYPE_PURPOSE as Record<string, string>)[cornerType] ?? '';
+}
+
+// 코너 유형별 '거버넌스' — 이 유형이 가진 규칙을 사람이 읽는 한 문장으로. (허용 컴포넌트 + 성격/제약)
+//  규칙 근거: 허용 컴포넌트 = CORNER_COMPONENT_MAP(PI-DSP-CMP-003). 배열·레이아웃은 이 규칙과 무관하게 하위에서 여러 개.
+export const CORNER_TYPE_GOVERNANCE: Record<CornerType, string> = {
+  상품형: '정책: 상품형. 상세설계 확장으로 선택형(상단 카테고리 탭)까지. 상품·요금제·단말·부가서비스 후보를 탐색.',
+  배너형: '정책: 배너형 컴포넌트만. 기간성 이벤트·공지·프로모션을 노출한다. 서비스 전체 캠페인은 배너 관리에서 캠페인 단위로.',
+  '혜택·오퍼형': '정책 허용: 혜택형·정보형·행동형·배너형. 상세설계 확장으로 상품형·선택형까지(제휴·기프티콘·구독 상품 카드, 카테고리 탭). 혜택·쿠폰·오퍼를 제안.',
+  '업무 진입형': '정책 허용: 행동형·정보형·선택형. 조회·변경·신청·납부 같은 업무로 바로 이동시키는 진입 코너(탭·메뉴·바로가기).',
+  '상태 안내형': '정책: 정보형·행동형. 요금·포인트·잔여량처럼 고객 상태·보유·진행·제한 사유를 안내.',
+  '콘텐츠 안내형': '정책 허용: 정보형·행동형·배너형. 상세설계 확장으로 상품형까지(영화 예매 등 콘텐츠+상품 카드). 이용 가이드·설명·추천 콘텐츠.',
+  '고정·필수 노출형': '정책: 정보형·행동형. 필수 고지·장애·보안 안내처럼 안정적으로 유지할 정보(바코드·프로필).',
+};
+export function cornerTypeGovernance(cornerType?: string | null): string {
+  if (!cornerType) return '';
+  return (CORNER_TYPE_GOVERNANCE as Record<string, string>)[cornerType] ?? '';
 }
 
 // 코너 유형(8종) → Chip 색상. 같은 유형이면 코너 유형 관리·빌더 어디서든 같은 색으로 보이게 하는 SSOT.
@@ -246,11 +263,22 @@ export const OPERATION_PLATFORMS = ['전체', '모바일', 'PC'] as const;
 // 코너 유형 세부 항목(항목별 사용여부) 정의 — 폼/표기 공용
 // 노출 개수(최소/최대)는 코너 유형이 아니라 빌더에서 코너별로 조정한다 → 세부 항목에서 제외.
 // 더보기 → 'CTA 노출'로 일반화(전체보기·바로가기 등 포함, moreButton* 필드 재사용).
+// 정책서 Atom/상품 Component Set 기반 세부 항목 — "대표 이미지, 상품명, 가격, 배지, 혜택 문구/정보값, CTA" (POL-DSP).
+//  카드 본문은 케이스마다 조합이 달라 세 요소(텍스트=상품명 · 가격 · 설명=흐린 글씨)를 각각 둔다:
+//  · 가격 = 가격 Atom(예: 12,900원) · 설명 = 혜택 문구/정보값 Atom(예: '데이터 500', 흐린 글씨 부가 정보).
+//    같은 자리라도 어떤 코너는 가격, 어떤 코너는 설명이라 하나로 '가격'이라 못 박지 않는다.
+//  · 배지는 가격 앞에 붙는 라벨(할인·NEW 등)이라 가격에 종속(가격 없으면 배지 없음).
+//  · 상품 이미지·가격·설명·배지는 상품형 카드 한정(featureApplies). '순위 숫자'는 정책 노출 Set에 없어 제외.
+//  · '미노출 조건'은 '표시 항목'(어떤 요소를 보여줄지)이 아니라 '언제 숨길지'의 행동 규칙 + 코너별(빌드 시점) 결정이라
+//    코너 유형이 아니라 빌더에서 코너별로 관리한다(Corner.noDisplayCondition). 여기 세부 항목에서는 제외.
 export const CORNER_TYPE_FEATURES = [
+  { key: 'useImage', label: '상품 이미지' },
   { key: 'useMainTitle', label: '타이틀' },
   { key: 'useSubTitle', label: '서브타이틀' },
-  { key: 'useNoDisplay', label: '미 노출 기준' },
-  { key: 'useMoreButton', label: 'CTA 노출' },
+  { key: 'useBadge', label: '배지' },
+  { key: 'usePrice', label: '가격' },
+  { key: 'useDesc', label: '설명' },
+  { key: 'useMoreButton', label: 'CTA' },
 ] as const;
 
 // 우리 8분류(CORNER_TYPES) → T우주 이미지의 코너 유형 표기명 매핑.
@@ -343,19 +371,23 @@ export function compositeBodyLayout(layoutDetail?: string | null): 'grid' | 'hor
 // 상품 노출 순서 (상품형 코너 전용 컬럼 — img9 참고)
 export const PRODUCT_SORT_OPTIONS = ['낮은 가격순', '높은 가격순', '최신순', '인기순', '수동(배치 순서)'] as const;
 
-// ── corner_type → 허용 component_type 매핑 (PI-DSP-CMP-003) ──
-// 정책서 baseline. Corner 유형을 고르면 여기 없는 Component 유형은 붙일 수 없다.
+// ── corner_type → 허용 component_type 매핑 (PI-DSP-CMP-003 · 정책서 "Corner 유형 예시 표") ──
+//  Corner 유형을 고르면 여기 없는 Component 유형은 붙일 수 없다.
+//  정책 baseline을 앞에 두고, 상세설계 확장은 뒤에 명시(주석에 근거).
 export const CORNER_COMPONENT_MAP: Record<CornerType, readonly ComponentType[]> = {
-  // 상품형: 상품 컴포넌트 + 상단 카테고리 탭(선택형) 허용 — '세로형(카테고리탭)' 유형 지원
+  // 정책: 상품형. (+선택형 = 상단 카테고리 탭 결합, 상세설계 확장)
   상품형: ['상품형', '선택형'],
+  // 정책: 배너형. 기간성 이벤트·공지·프로모션. (일치)
   배너형: ['배너형'],
-  // 혜택·오퍼형: 혜택 홈 정리(카테고리 탭+제휴 상품 카드)처럼 상품형·선택형 결합 허용 — 상세설계 확정(정책 baseline 확장)
+  // 정책: 혜택형·정보형·행동형·배너형. (+상품형·선택형 = 제휴·기프티콘·구독 상품 카드/카테고리 탭, 상세설계 확장)
   '혜택·오퍼형': ['혜택형', '정보형', '행동형', '배너형', '상품형', '선택형'],
-  // 업무 진입형: 상단 탭·메뉴 등 '선택/이동' 컴포넌트만 담는다 → 선택형 단일
-  '업무 진입형': ['선택형'],
+  // 정책: 행동형·정보형·선택형. 조회·변경·신청·납부 업무 진입. (기존 선택형 단일 → 정책대로 확대)
+  '업무 진입형': ['행동형', '정보형', '선택형'],
+  // 정책: 정보형·행동형. (일치)
   '상태 안내형': ['정보형', '행동형'],
-  // 콘텐츠 안내형: 레퍼런스(영화 예매 혜택 등)처럼 상품형 카드 결합 허용 — 상세설계 확정(정책 baseline 확장)
+  // 정책: 정보형·행동형·배너형. (+상품형 = 영화 예매 등 콘텐츠+상품 카드, 상세설계 확장)
   '콘텐츠 안내형': ['정보형', '행동형', '배너형', '상품형'],
+  // 정책: 정보형·행동형. (일치)
   '고정·필수 노출형': ['정보형', '행동형'],
 };
 
@@ -372,17 +404,43 @@ export function isComponentAllowedInCorner(
 //  · 그러나 '세부 유형'은 정책서가 "상세 설계에서 확정한다"고만 규정 → 정책서에 고정값이 없다.
 //    따라서 아래 목록이 우리 서비스의 세부 유형 확정 카탈로그(상세 설계 산출물)다.
 //    새 세부 유형은 반드시 여기 추가한 뒤 코너 등록/빌더에서 사용한다(임의 문자열 금지).
+//  실제 사용/등록과 일치시킨 '정리된' 카탈로그 (2026-09 정합 — 안 쓰는 배열·레이아웃 제외).
+//   각 유형이 실제로 갖는 배열·레이아웃만 남긴다. 새 배열이 필요하면 여기 추가 후 등록해 사용.
+//  콘텐츠/상품 계열(상품형·혜택·오퍼형·콘텐츠 안내형)은 '만들 수 있는 배열' 풀셋을 공유.
+//   상단 카테고리 탭은 별도 배열이 아니라 빌더에서 얹는 선택형 컴포넌트(토글) → 세로형(카테고리탭) 제거.
+const GENERAL_LAYOUTS = ['가로형(2.5배열)', '가로형(1.5배열)', '세로형', '그리드형'] as const; // 순서: 가로2.5 → 가로1.5 → 세로 → 그리드
 export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
-  상품형: ['가로형(2.5배열)', '세로형', '단일강조(1.5배열)', '세로형(배너)', '세로형(카테고리탭)', '단일 상품'],
-  배너형: ['이미지형', '이미지형/빅배너', '팝업배너형', '띠배너형'],
-  '혜택·오퍼형': ['세로형', '그리드형'],
-  '업무 진입형': ['고정형(탭)', '세로 리스트형', '메뉴 리스트'],
-  '상태 안내형': ['금액형', '사용량형', '카드형'],
-  '콘텐츠 안내형': ['리스트형', '아코디언형'],
-  '고정·필수 노출형': ['프로필형', '바코드', '고지형'],
+  상품형: [...GENERAL_LAYOUTS],
+  '혜택·오퍼형': [...GENERAL_LAYOUTS],
+  '콘텐츠 안내형': [...GENERAL_LAYOUTS],
+  // ── 특이케이스: 목적별 특정 배열만 ──
+  배너형: ['이미지형'],
+  '업무 진입형': ['카테고리 탭', '메뉴 리스트'],
+  '상태 안내형': ['아이콘/이미지형'],
+  '고정·필수 노출형': ['프로필형', '바코드'],
 };
 export function cornerTypeDetails(cornerType: string): readonly string[] {
   return (CORNER_TYPE_DETAILS as Record<string, readonly string[]>)[cornerType] ?? [];
+}
+
+// ── 표시명 통일(2026-09) — 저장값(typeDetail)은 유지하고 화면 표기만 '형태 기준'으로 정리. ──
+//  콘텐츠 이름(카테고리 탭·바코드…)을 형태명(탭형·바코드형…)으로. 매처/DB는 원값 그대로라 안전.
+const LAYOUT_LABEL: Record<string, string> = {
+  '세로형(카테고리탭)': '세로형(탭)',
+  '카테고리 탭': '탭형',
+  '메뉴 리스트': '리스트형',
+  '아이콘/이미지형': '카드형',
+  '바코드': '바코드형',
+};
+export function layoutLabel(detail?: string | null): string {
+  if (!detail) return '';
+  return LAYOUT_LABEL[detail] ?? detail;
+}
+// 컴포넌트 표시명 — 정책명(선택형)은 유지하되, 애매한 '선택형'은 화면에서 '선택형(탭·메뉴)'로 명확히.
+const COMPONENT_LABEL: Record<string, string> = { '선택형': '선택형(탭·메뉴)' };
+export function componentLabel(c?: string | null): string {
+  if (!c) return '';
+  return COMPONENT_LABEL[c] ?? c;
 }
 
 // ── 3단 계층 ③: 구성 컴포넌트 유형(②) → 배열/레이아웃 상세 SSOT ──

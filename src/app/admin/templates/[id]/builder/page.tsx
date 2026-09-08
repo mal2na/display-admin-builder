@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { DISPLAY_STATUS_LABEL, type DisplayStatusKey } from '@/lib/display-taxonomy';
+import { DISPLAY_STATUS_LABEL, type DisplayStatusKey, ATOM_TYPE_LABELS, type AtomType } from '@/lib/display-taxonomy';
 import { BuilderEditor } from '../builder-editor';
 import { TemplateReviewBar } from '../template-review-bar';
 import { collectReviewIssues } from '../workflow-actions';
@@ -98,6 +98,33 @@ export default async function BuilderPage({ params }: { params: { id: string } }
   for (const b of libBannerLinks) if (b.linkUrl && !linkMap.has(b.linkUrl)) linkMap.set(b.linkUrl, { url: b.linkUrl, label: b.name });
   const links = [...linkMap.values()];
 
+  // 문구 원장(재사용 풀) — 빌더는 여기서 '불러오기'만. 생성·편집은 문구 관리(SB-DSP-MSG-001).
+  //  텍스트 Atom content/변형 + 코너 타이틀/변형을 용도(use)별로 모아 중복 제거.
+  const [msgAtomsRaw, msgCornersRaw] = await Promise.all([
+    prisma.atom.findMany({ where: { status: 'active', atomType: { notIn: ['ICON', 'IMAGE', 'BARCODE'] } }, select: { atomType: true, content: true, contentVariants: true } }),
+    prisma.corner.findMany({ where: { status: 'active', NOT: { mainTitle: null } }, select: { mainTitle: true, mainTitleVariants: true } }),
+  ]);
+  const msgMap = new Map<string, { text: string; use: string }>();
+  const addMsg = (use: string, text: string | null | undefined) => {
+    const t = (text ?? '').trim();
+    if (!t || t.startsWith('@cvm:')) return; // 고객정보 바인딩 제외
+    const key = `${use}::${t}`;
+    if (!msgMap.has(key)) msgMap.set(key, { text: t, use });
+  };
+  const variantTexts = (json: string | null): string[] => {
+    try { const a = JSON.parse(json ?? ''); return Array.isArray(a) ? a.map((x) => (typeof x === 'string' ? x : x?.text)).filter((s): s is string => typeof s === 'string') : []; } catch { return []; }
+  };
+  for (const a of msgAtomsRaw) {
+    const use = ATOM_TYPE_LABELS[a.atomType as AtomType] ?? '텍스트';
+    addMsg(use, a.content);
+    for (const v of variantTexts(a.contentVariants)) addMsg(use, v);
+  }
+  for (const c of msgCornersRaw) {
+    addMsg('타이틀', c.mainTitle);
+    for (const v of variantTexts(c.mainTitleVariants)) addMsg('타이틀', v);
+  }
+  const messages = [...msgMap.values()].sort((a, b) => a.use.localeCompare(b.use, 'ko') || a.text.localeCompare(b.text, 'ko'));
+
 
   const corners = template.templateCorners.map((tc) => ({
     templateCornerId: tc.id,
@@ -128,6 +155,10 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     moreButtonUse: tc.corner.moreButtonUse,
     moreButtonLabel: tc.corner.moreButtonLabel,
     moreButtonLink: tc.corner.moreButtonLink,
+    showImage: tc.corner.showImage ?? true,
+    showPrice: tc.corner.showPrice ?? true,
+    showBadge: tc.corner.showBadge ?? true,
+    showDesc: tc.corner.showDesc ?? true,
     bannerId: tc.corner.bannerId,
     bannerName: tc.corner.banner?.name ?? null,
     bannerImageUrl: tc.corner.banner?.imageUrl ?? null,
@@ -188,6 +219,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     cornerTypes: libCornerTypes,
     images,
     links,
+    messages,
   };
 
   return (

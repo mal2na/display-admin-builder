@@ -40,6 +40,11 @@ export type PreviewCorner = {
   recSource?: string | null; // (대표) 1순위 추천 수급 방식 (CVM 기반이면 후보·순위·근거 런타임 판정)
   recSourcePlan?: string | null; // 우선순위 편성(JSON 배열, 1순위→폴백)
   showRecReason?: boolean | null; // 추천 근거(추천 사유) 카드 표시 여부
+  // 코너별 표시 항목(상품 카드 요소 on/off) — 끄면 미리보기에서 해당 아톰을 숨김(비파괴적). 기본 노출.
+  showImage?: boolean | null;
+  showPrice?: boolean | null;
+  showBadge?: boolean | null;
+  showDesc?: boolean | null;
 };
 
 const byType = (atoms: PreviewAtom[], ...types: string[]) => atoms.filter((a) => types.includes(a.atomType));
@@ -116,25 +121,33 @@ function MenuListView({ component }: { component: PreviewComponent }) {
   );
 }
 
-function ProductCard({ component, shape, reason, titleLines }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null }) {
-  const poster = first(component.atoms, 'IMAGE');
+function ProductCard({ component, shape, reason, titleLines, emphasis = false, parts }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null; emphasis?: boolean; parts?: CardParts }) {
+  // 코너별 표시 항목 — 끈 요소는 렌더하지 않는다(미지정=노출). 배지는 가격에 종속(가격 꺼지면 배지도 숨김).
+  const showImg = parts?.image !== false;
+  const showPrice = parts?.price !== false;
+  const showBadge = parts?.badge !== false && showPrice;
+  const showDesc = parts?.desc !== false;
+  const poster = showImg ? first(component.atoms, 'IMAGE') : undefined;
   const title = first(component.atoms, 'TEXT');
-  // 설명 = INFO 또는 PRICE(가격도 라벨상 '설명'). 배지 = BADGE(할인율 등, 선택적 — 숨김 원자면 프리뷰에서 제외됨).
-  const info = first(component.atoms, 'INFO', 'PRICE');
-  const badge = first(component.atoms, 'BADGE');
+  // 가격 = PRICE, 설명 = INFO(정보값). 각각 표시 항목 토글로 노출 제어.
+  const priceAtom = showPrice ? first(component.atoms, 'PRICE') : null;
+  const descAtom = showDesc ? first(component.atoms, 'INFO') : null;
+  const info = priceAtom ?? descAtom; // 가격 우선, 없으면 설명
+  const badge = showBadge ? first(component.atoms, 'BADGE') : null;
   const cta = first(component.atoms, 'CTA'); // 선택적 CTA — 숨김(미사용) 원자면 프리뷰에서 제외됨
   // 카드 비율: 1:1(정사각·상품) | 3:4(세로·포스터) | 4:3(가로·와이드). 기본 3:4. (레거시 정사각형=1:1)
   const square = shape === '1:1' || shape === '정사각형';
   const wide = shape === '4:3';
-  const ratioCls = square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
-  const wCls = square ? 'w-[136px]' : wide ? 'w-[152px]' : 'w-[128px]';
+  // 단일강조(1.5배열)는 카드를 크게(≈1.5장 노출), 가로 와이드 비율로 하나를 강조. 2.5배열(기본)은 작은 카드 캐러셀.
+  const ratioCls = emphasis ? 'aspect-[16/10]' : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
+  const wCls = emphasis ? 'w-[224px]' : square ? 'w-[136px]' : wide ? 'w-[152px]' : 'w-[128px]';
   // 상품명 줄 수 옵션: 2면 두 줄까지(line-clamp-2), 기본은 한 줄 말줄임(truncate)
   const nameCls = titleLines === 2 ? 'line-clamp-2' : 'truncate';
   return (
     <div className={cn('shrink-0', wCls)}>
-      <ImageBox atom={poster} className={cn('w-full rounded-xl', ratioCls)} />
+      {showImg && <ImageBox atom={poster} className={cn('w-full rounded-xl', ratioCls)} />}
       {reason && <RecReason text={reason} />}
-      <p className={cn('mt-1.5 font-semibold leading-tight text-slate-900 text-[13px]', nameCls)}>{title?.content ?? component.name}</p>
+      <p className={cn('mt-1.5 font-semibold leading-tight text-slate-900', nameCls, emphasis ? 'text-[15px]' : 'text-[13px]')}>{title?.content ?? component.name}</p>
       {/* 배지는 설명 앞 인라인. 설명은 이름보다 연하게(위계) — 예: [20%] 235,000원 */}
       {(badge?.content || info?.content) && (
         <p className="mt-0.5 flex items-center gap-1">
@@ -181,15 +194,19 @@ function BannerCard({ component }: { component: PreviewComponent }) {
 }
 
 // 세로 리스트 행: [로고/아이콘] + [혜택문구(굵게) / 브랜드(작게)]. 상품형·세로형, 혜택형 공용.
-function BenefitRow({ component, reason }: { component: PreviewComponent; reason?: string }) {
-  const logo = first(component.atoms, 'ICON', 'IMAGE');
-  const texts = byType(component.atoms, 'BENEFIT_TEXT', 'TEXT', 'INFO', 'PRICE');
+function BenefitRow({ component, reason, parts }: { component: PreviewComponent; reason?: string; parts?: CardParts }) {
+  // 코너별 표시 항목 — 이미지 로고(상품형), 가격(PRICE)/설명(INFO) 텍스트 노출 제어(미지정=노출).
+  const logoRaw = first(component.atoms, 'ICON', 'IMAGE');
+  const logo = parts?.image === false && logoRaw?.atomType === 'IMAGE' ? undefined : logoRaw;
+  const texts = byType(component.atoms, 'BENEFIT_TEXT', 'TEXT', 'INFO', 'PRICE').filter(
+    (a) => !((a.atomType === 'PRICE' && parts?.price === false) || (a.atomType === 'INFO' && parts?.desc === false)),
+  );
   const title = texts[0];
   const brand = texts[1];
   const cta = first(component.atoms, 'CTA'); // 선택적 CTA (숨김=미사용이면 프리뷰 제외)
   return (
     <div className="flex items-center gap-3 py-2">
-      <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl" />
+      {logo && <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl" />}
       <div className="min-w-0 flex-1">
         <p className={cn('truncate text-[14px] font-semibold text-slate-900')}>{title?.content ?? component.name}</p>
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}
@@ -304,15 +321,18 @@ function DefaultCard({ component }: { component: PreviewComponent }) {
   );
 }
 
-type LayoutMode = 'horizontal' | 'grid' | 'single' | 'list';
+// emphasis = 단일강조(1.5배열): 큰 카드 1.5장(하나 강조). horizontal(2.5배열)보다 카드가 크다.
+type LayoutMode = 'horizontal' | 'emphasis' | 'grid' | 'single' | 'list';
+// 코너별 표시 항목(상품 카드 요소 on/off) — 미지정(undefined)은 노출로 본다.
+type CardParts = { image?: boolean; price?: boolean; badge?: boolean; desc?: boolean };
 
-function ComponentView({ component, mode, cardShape, reason, titleLines }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; reason?: string; titleLines?: number | null }) {
+function ComponentView({ component, mode, cardShape, reason, titleLines, parts }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; reason?: string; titleLines?: number | null; parts?: CardParts }) {
   switch (component.componentType) {
     case '선택형':
       return <ChipsView component={component} />;
     case '상품형':
       // 세로 리스트형 코너에서는 큰 포스터 카드가 아니라 로고+문구 행 구조로 렌더 (참고 디자인)
-      return mode === 'list' ? <BenefitRow component={component} reason={reason} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} />;
+      return mode === 'list' ? <BenefitRow component={component} reason={reason} parts={parts} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} parts={parts} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':
@@ -346,6 +366,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       default: {
         // 코너 레이아웃이 비어 있으면 유형 상세로 배치를 추론
         const d = corner.layoutDetail ?? '';
+        if (d.includes('단일강조') || d.includes('1.5')) return 'emphasis'; // 단일강조(1.5배열) = 큰 카드 강조
         if (d.includes('그리드')) return 'grid';
         if (d.includes('상품카드') || d.includes('가로') || d.includes('2.5') || d.includes('SWIPE')) return 'horizontal';
         if (d.includes('세로') || d.includes('리스트')) return 'list';
@@ -365,13 +386,22 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   //   카드별 개인화 추천 근거(예: '최근 본 상품과 연관')는 표시하지 않는다. (근거는 런타임에 CVM이 고객별로 생성)
   const reasonFor = (_i: number): string | undefined => undefined;
 
+  // 코너별 표시 항목(상품 카드 요소 on/off) — 끈 요소는 미리보기에서 렌더하지 않는다(비파괴적, 상품형 카드 한정).
+  //  이미지=IMAGE, 가격=PRICE, 배지=BADGE(가격 앞), 설명=INFO(정보값). 기본 노출(undefined=true).
+  const parts: CardParts = {
+    image: corner.showImage !== false,
+    price: corner.showPrice !== false,
+    badge: corner.showBadge !== false,
+    desc: corner.showDesc !== false,
+  };
+
   // 배치 모드에 맞춰 컴포넌트 묶음을 렌더
   const renderComps = (comps: PreviewComponent[], mode: LayoutMode) => {
-    if (mode === 'horizontal')
+    if (mode === 'horizontal' || mode === 'emphasis') // 둘 다 가로 스크롤. emphasis는 카드가 커서 ~1.5장 노출.
       return (
         <div className="flex gap-3 overflow-x-auto pb-1">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} parts={parts} />
           ))}
         </div>
       );
@@ -379,7 +409,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       return (
         <div className="grid grid-cols-2 gap-2">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} parts={parts} />
           ))}
         </div>
       );
@@ -387,14 +417,14 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       return (
         <div className="space-y-2 [&>*]:w-full">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} parts={parts} />
           ))}
         </div>
       );
     return (
       <div className="divide-y divide-slate-100">
         {comps.map((c, i) => (
-          <ComponentView key={c.id} component={c} mode={mode} reason={reasonFor(i)} />
+          <ComponentView key={c.id} component={c} mode={mode} reason={reasonFor(i)} parts={parts} />
         ))}
       </div>
     );
@@ -479,7 +509,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     <section className={`space-y-2 ${wrapClass}`}>
       {bannerAtTop && bannerEl}
       {(() => {
-        // 추천 수급 방식 배지 — 1순위 + 폴백 체인 표시 (예: CVM 개인화 추천 · 없으면 → 룰 기반 → 수동 대체)
+        // 추천 수급 방식 배지 — 1순위 + 폴백 체인 표시 (예: CVM 개인화 추천 · 없으면 → 운영자 편성)
         let plan: string[] = [];
         try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a)) plan = a.filter((x) => typeof x === 'string'); } catch { /* noop */ }
         if (!plan.length && corner.recSource) plan = [corner.recSource];

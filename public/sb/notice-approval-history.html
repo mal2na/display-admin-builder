@@ -1,0 +1,640 @@
+<title>통합 공지사항 승인이력</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap">
+
+<style>
+:root{
+  --ground:#f1f3f5;
+  --surface:#ffffff;
+  --surface-sub:#f8f9fb;
+  --line:#dce0e5;
+  --line-soft:#e8ecef;
+  --ink:#1c1f23;
+  --ink-2:#454f59;
+  --ink-3:#697582;
+  --ink-4:#8b949e;
+  --accent:#502dfb;
+  --accent-ink:#3617ce;
+  --accent-wash:#f1f2ff;
+  --accent-line:#d0d2ff;
+  --on-accent:#ffffff;
+  --scrim:rgba(28,31,35,.45);
+
+  --st-wait:#c47700;
+  --st-done:#0f9d58;
+  --st-cancel:#5a6672;
+  --st-reject:#e0342c;
+
+  --ok-bg:#e3f5ec;   --ok-fg:#0f6b4a;
+  --warn-bg:#fff2d6; --warn-fg:#8a5300;
+  --neg-bg:#fde8e6;  --neg-fg:#a52a1f;
+
+  --strike:#c02b2b;
+  --shadow:0 1px 2px rgba(28,31,35,.06), 0 8px 24px -12px rgba(28,31,35,.18);
+  --shadow-lg:0 24px 60px -20px rgba(28,31,35,.45);
+
+  --f-sans:'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
+  --f-mono:'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#101216; --surface:#191c21; --surface-sub:#1f232a;
+    --line:#2e343d; --line-soft:#262b33;
+    --ink:#e8ecef; --ink-2:#c4c9cf; --ink-3:#98a2ae; --ink-4:#7d8794;
+    --accent:#9a9dff; --accent-ink:#b4b7ff; --accent-wash:#20213a; --accent-line:#3a3b6b;
+    --on-accent:#14121f; --scrim:rgba(0,0,0,.62);
+    --st-wait:#f0b95e; --st-done:#5ccf9c; --st-cancel:#a3adb9; --st-reject:#ff8a80;
+    --ok-bg:#12352a;   --ok-fg:#68d3a7;
+    --warn-bg:#3a2c0e; --warn-fg:#f0c265;
+    --neg-bg:#3b1e1b;  --neg-fg:#f2a49b;
+    --strike:#e88b82;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+    --shadow-lg:0 28px 70px -20px rgba(0,0,0,.85);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101216; --surface:#191c21; --surface-sub:#1f232a;
+  --line:#2e343d; --line-soft:#262b33;
+  --ink:#e8ecef; --ink-2:#c4c9cf; --ink-3:#98a2ae; --ink-4:#7d8794;
+  --accent:#9a9dff; --accent-ink:#b4b7ff; --accent-wash:#20213a; --accent-line:#3a3b6b;
+  --on-accent:#14121f; --scrim:rgba(0,0,0,.62);
+  --st-wait:#f0b95e; --st-done:#5ccf9c; --st-cancel:#a3adb9; --st-reject:#ff8a80;
+  --ok-bg:#12352a;   --ok-fg:#68d3a7;
+  --warn-bg:#3a2c0e; --warn-fg:#f0c265;
+  --neg-bg:#3b1e1b;  --neg-fg:#f2a49b;
+  --strike:#e88b82;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  --shadow-lg:0 28px 70px -20px rgba(0,0,0,.85);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-sans);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 24px 96px;display:flex;flex-direction:column;gap:42px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* 헤더 */
+.masthead{display:flex;flex-direction:column;gap:13px;padding-bottom:26px;border-bottom:1px solid var(--line)}
+.sbmeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--ink-3)}
+.sbmeta .tag{border:1px solid var(--line);border-radius:3px;padding:2px 7px;background:var(--surface)}
+.sbmeta .tag.rev{border-color:var(--accent-line);background:var(--accent-wash);color:var(--accent-ink)}
+h1{margin:0;font-size:clamp(28px,4.2vw,38px);font-weight:700;letter-spacing:-.02em;line-height:1.2;text-wrap:balance}
+.dek{margin:0;max-width:64ch;color:var(--ink-2);font-size:16px;font-weight:300}
+.dek b{font-weight:600;color:var(--ink)}
+
+section{display:flex;flex-direction:column;gap:16px}
+.shead{display:flex;flex-direction:column;gap:5px}
+.eyebrow{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink)}
+h2{margin:0;font-size:21px;font-weight:600;letter-spacing:-.01em}
+.snote{margin:0;max-width:74ch;color:var(--ink-3);font-size:14px}
+.snote b{color:var(--ink)}
+
+/* 화면 프레임 */
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.frame-bar{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line-soft);background:var(--surface-sub)}
+.frame-bar .crumb{font-size:11.5px;color:var(--ink-4);font-family:var(--f-mono);letter-spacing:.02em}
+.frame-body{padding:20px 18px 24px}
+.screen-h{margin-bottom:18px}
+.screen-h h3{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.screen-h p{margin:3px 0 0;font-size:12.5px;color:var(--ink-3)}
+
+.tabs{display:flex;gap:26px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tab{appearance:none;background:none;border:0;border-bottom:2px solid transparent;padding:0 0 10px;font-family:inherit;font-size:14px;font-weight:600;color:var(--ink-4);cursor:pointer}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+/* 이력 테이블 — SB 12컬럼 */
+.tscroll{overflow-x:auto;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+table.hist{width:100%;min-width:1340px;border-collapse:collapse;font-size:12.5px}
+.hist thead th{
+  text-align:left;font-weight:600;font-size:11.5px;color:var(--ink-2);
+  background:var(--surface-sub);border-bottom:1px solid var(--line);
+  padding:11px 10px;white-space:nowrap;
+}
+.hist tbody td{padding:10px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+.hist tbody tr:last-child td{border-bottom:0}
+.hist tbody tr:hover td{background:var(--surface-sub)}
+.hist td.c{text-align:center}
+.no{color:var(--ink-3);font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono);font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.aid{font-family:var(--f-mono);font-size:12px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* 승인상태 — SB 기준 컬러 텍스트 */
+.st{font-weight:600}
+.st.wait{color:var(--st-wait)}
+.st.done{color:var(--st-done)}
+.st.cancel{color:var(--st-cancel)}
+.st.reject{color:var(--st-reject)}
+
+/* 표 안 액션 버튼 */
+.tbtn{
+  appearance:none;font-family:inherit;font-size:11.5px;font-weight:500;
+  height:26px;padding:0 11px;border-radius:13px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-2);cursor:pointer;white-space:nowrap;
+}
+.tbtn:hover:not(:disabled){border-color:var(--ink-4);color:var(--ink)}
+.tbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tbtn:disabled{color:var(--ink-4);background:var(--surface-sub);border-color:var(--line-soft);cursor:not-allowed}
+.tbtn.warnish:not(:disabled){border-color:var(--warn-fg);color:var(--warn-fg)}
+.tbtn.warnish:hover:not(:disabled){background:var(--warn-bg)}
+.dash{color:var(--ink-4)}
+
+/* 모달 */
+.scrim{position:fixed;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60}
+.modal{width:100%;max-width:620px;max-height:84vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);overflow:hidden}
+.modal.sm{max-width:520px}
+.modal-h{display:flex;align-items:center;gap:9px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.modal-h h3{margin:0;font-size:14.5px;font-weight:600}
+.modal-h .x{margin-left:auto;appearance:none;border:0;background:none;color:var(--ink-4);cursor:pointer;width:28px;height:28px;display:grid;place-items:center;border-radius:6px}
+.modal-h .x:hover{background:var(--surface-sub);color:var(--ink)}
+.modal-h .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.modal-b{padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.modal-f{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--surface-sub)}
+.btn{height:32px;display:inline-flex;align-items:center;gap:5px;padding:0 16px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:var(--surface);border-color:var(--line);color:var(--ink-2)}
+.btn.ghost:hover{border-color:var(--ink-4)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 16px;padding:12px 13px;border:1px solid var(--line-soft);border-radius:8px;background:var(--surface-sub);margin:0}
+.meta dt{font-size:10.5px;font-weight:600;color:var(--ink-4);margin-bottom:2px}
+.meta dd{margin:0;font-size:12.5px}
+.body-text{margin:0;font-size:13px;line-height:1.85;color:var(--ink-2);white-space:pre-wrap}
+.blk-t{margin:0 0 7px;font-size:10.5px;font-weight:600;letter-spacing:.05em;color:var(--ink-4)}
+.blk-t span{font-weight:400}
+
+.difftbl{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.diffrow{display:grid;grid-template-columns:118px minmax(0,1fr) minmax(0,1fr);font-size:12px}
+.diffrow+.diffrow{border-top:1px solid var(--line-soft)}
+.diffrow>div{padding:8px 11px;word-break:break-word}
+.diffhead{background:var(--surface-sub);font-size:10.5px;font-weight:600;color:var(--ink-4)}
+.diffrow .f{font-weight:600;color:var(--ink-3)}
+.diffrow .b{color:var(--strike);text-decoration:line-through;text-decoration-thickness:1px}
+.diffrow .a{font-weight:600;color:var(--ink)}
+
+.warnbox{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:8px;background:var(--warn-bg);color:var(--warn-fg);font-size:12.5px}
+.warnbox b{font-weight:600}
+.ta{width:100%;min-height:118px;resize:vertical;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-family:inherit;font-size:13px;line-height:1.7}
+.ta:focus-visible{outline:2px solid var(--accent)}
+.fld-l{display:block;font-size:12px;font-weight:600;color:var(--ink-3);margin-bottom:6px}
+.req{color:var(--neg-fg)}
+.charc{text-align:right;font-size:11px;color:var(--ink-4);font-variant-numeric:tabular-nums;margin:6px 0 0}
+
+/* 노출화면 모달 */
+.exposure{display:grid;gap:14px;grid-template-columns:180px minmax(0,1fr)}
+@media (max-width:560px){.exposure{grid-template-columns:1fr}}
+.device{border:1px solid var(--line);border-radius:14px;background:var(--surface-sub);padding:9px;display:flex;flex-direction:column;gap:6px}
+.device .bar{height:5px;width:38px;border-radius:3px;background:var(--line);margin:0 auto 3px}
+.device .card{background:var(--surface);border:1px solid var(--line-soft);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:5px}
+.device .kicker{font-size:9px;font-weight:600;letter-spacing:.06em;color:var(--accent-ink);background:var(--accent-wash);border-radius:3px;padding:2px 5px;align-self:flex-start}
+.device .ttl{font-size:11px;font-weight:600;line-height:1.45;color:var(--ink)}
+.device .sub{font-size:9.5px;color:var(--ink-4)}
+.device .ph{height:7px;border-radius:3px;background:var(--line-soft)}
+.device .ph.s{width:62%}
+.exp-list{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.exp-item{border:1px solid var(--line-soft);border-radius:8px;padding:9px 11px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;background:var(--surface-sub)}
+.exp-item .ch{font-family:var(--f-mono);font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--accent-ink);background:var(--accent-wash);border:1px solid var(--accent-line);border-radius:3px;padding:1px 6px}
+.exp-item .pos{font-weight:600;color:var(--ink)}
+.exp-item .per{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--ink-3)}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);z-index:70}
+
+/* 컬럼 정의표 */
+.coldefs{overflow-x:auto;border:1px solid var(--line);border-radius:9px;background:var(--surface);box-shadow:var(--shadow)}
+.coldefs table{min-width:780px;width:100%;border-collapse:collapse;font-size:13px}
+.coldefs th{padding:10px 12px;text-align:left;background:var(--surface-sub);font-size:11.5px;font-weight:600;color:var(--ink-3);border-bottom:1px solid var(--line)}
+.coldefs td{padding:10px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.coldefs tr:last-child td{border-bottom:0}
+.coldefs td:first-child{font-family:var(--f-mono);font-size:11px;color:var(--ink-4);white-space:nowrap}
+.coldefs td:nth-child(2){font-weight:600;white-space:nowrap}
+.coldefs td:nth-child(3){color:var(--ink-2)}
+.coldefs td:last-child{color:var(--ink-3);font-size:12.5px}
+
+/* 확인 필요 */
+.checks{display:flex;flex-direction:column;gap:10px}
+.check{display:grid;grid-template-columns:26px minmax(0,1fr);gap:11px;padding:14px 16px;border:1px solid var(--line);border-left:3px solid var(--warn-fg);border-radius:9px;background:var(--surface);box-shadow:var(--shadow)}
+.check .n{font-family:var(--f-mono);font-size:11px;font-weight:600;color:var(--warn-fg);padding-top:2px}
+.check h3{margin:0 0 4px;font-size:14px;font-weight:600}
+.check p{margin:0;font-size:13px;color:var(--ink-3)}
+.check p+p{margin-top:5px}
+.check b{color:var(--ink-2)}
+.check code{font-family:var(--f-mono);font-size:11.5px;background:var(--surface-sub);border:1px solid var(--line-soft);border-radius:4px;padding:1px 5px}
+
+footer{border-top:1px solid var(--line);padding-top:18px;color:var(--ink-4);font-size:12px;font-family:var(--f-mono);letter-spacing:.03em}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="sbmeta">
+      <span class="tag">SB-NTC-APV-001</span>
+      <span class="tag">공지사항 관리 &rsaquo; 통합 공지사항</span>
+      <span class="tag rev">변경/승인 이력</span>
+    </div>
+    <h1>통합 공지사항 상세 — 변경/승인 이력</h1>
+    <p class="dek">
+      SB의 <b>12개 컬럼을 그대로</b> 구현했습니다. <b>승인 요청 취소</b>는 승인대기 행에서만 눌리고,
+      <b>취소/반려 사유 · 변경사항 · 노출화면</b>은 클릭하면 모달로 열립니다. 실제로 동작하니 눌러 보세요.
+    </p>
+  </header>
+
+  <!-- ── 화면 ── -->
+  <section>
+    <div class="frame">
+      <div class="frame-bar">
+        <span class="crumb">홈 › 공지사항 관리 › 통합 공지사항 › 통합 공지사항 상세</span>
+      </div>
+      <div class="frame-body">
+        <div class="screen-h">
+          <h3>통합 공지사항 상세</h3>
+          <p>공지 기본정보와 노출·콘텐츠 설정, 승인 진행 현황 및 등록·수정 이력을 조회합니다.</p>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" aria-selected="false">공지 정보</button>
+          <button class="tab" role="tab" aria-selected="true">변경/승인 이력</button>
+        </div>
+
+        <div class="tscroll">
+          <table class="hist">
+            <colgroup>
+              <col style="width:48px"><col style="width:86px"><col style="width:82px">
+              <col style="width:132px"><col style="width:150px"><col style="width:134px">
+              <col style="width:150px"><col style="width:116px"><col style="width:106px">
+              <col style="width:90px"><col style="width:94px"><col style="width:62px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th><span class="sr">번호</span></th>
+                <th>승인 ID</th>
+                <th>승인상태</th>
+                <th>승인 요청자</th>
+                <th>승인 요청일시</th>
+                <th>승인 담당자</th>
+                <th>처리일시</th>
+                <th>승인 요청 취소</th>
+                <th>취소/반려 사유</th>
+                <th>변경사항</th>
+                <th>노출화면</th>
+                <th>버전</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 컬럼 정의 ── -->
+  <section>
+    <div class="shead">
+      <span class="eyebrow">컬럼 정의</span>
+      <h2>12개 컬럼</h2>
+      <p class="snote">SB 주석 번호(1-1 ~ 1-10) 기준입니다. 액션 컬럼 4개는 엑셀 다운로드 항목에서 제외합니다.</p>
+    </div>
+    <div class="coldefs">
+      <table>
+        <thead><tr><th style="width:56px">주석</th><th style="width:118px">컬럼</th><th style="width:38%">값</th><th>노출 조건 · 동작</th></tr></thead>
+        <tbody>
+          <tr><td>—</td><td>번호</td><td>이력 순번 (내림차순)</td><td>헤더 없음. 등록 순번이며 요청 삭제 시 건너뜀</td></tr>
+          <tr><td>1-1</td><td>승인 ID</td><td>승인 요청 1건의 식별자</td><td>표시 전용 텍스트. 상세는 1-8·1-9·1-10 버튼이 담당 <b>(확인 필요 03)</b></td></tr>
+          <tr><td>1-2</td><td>승인상태</td><td>승인대기 / 승인완료 / 요청취소 / 승인반려</td><td>상태별 컬러 텍스트. 취소·반려 구분의 기준</td></tr>
+          <tr><td>1-3</td><td>승인 요청자</td><td>요청자 명 (사번)</td><td>취소 권한 판정 기준</td></tr>
+          <tr><td>1-4</td><td>승인 요청일시</td><td>요청 등록 시각 (초 단위)</td><td>—</td></tr>
+          <tr><td>1-5</td><td>승인 담당자</td><td>배정된 검수자 (사번)</td><td>승인대기면 <span class="dash">-</span></td></tr>
+          <tr><td>1-6</td><td>처리일시</td><td>승인·반려·취소가 확정된 시각</td><td>승인대기면 <span class="dash">-</span></td></tr>
+          <tr><td>1-7</td><td>승인 요청 취소</td><td>버튼</td><td><b>승인대기 + 요청자 본인</b>일 때만 활성. 그 외 비활성</td></tr>
+          <tr><td>1-8</td><td>취소/반려 사유</td><td>버튼</td><td><b>요청취소·승인반려</b>일 때만 노출 → 사유 모달</td></tr>
+          <tr><td>1-9</td><td>변경사항</td><td>버튼</td><td>모든 행에 노출 → 변경 전/후 비교 모달</td></tr>
+          <tr><td>1-10</td><td>노출화면</td><td>버튼</td><td><b>승인완료</b>일 때만 노출 → 실제 노출 채널·위치·기간 모달</td></tr>
+          <tr><td>1-10</td><td>버전</td><td><span class="mono">V.1</span> 형식</td><td><b>승인완료</b>일 때만 확정. 그 외는 빈 값</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 확인 필요 ── -->
+  <section>
+    <div class="shead">
+      <span class="eyebrow">확인 필요</span>
+      <h2>SB에서 걸린 것 네 가지</h2>
+      <p class="snote">화면 구조가 아니라 <b>예시 데이터</b> 쪽입니다. 개발 스펙으로 넘어가기 전에 정리해 두는 게 좋겠습니다.</p>
+    </div>
+    <div class="checks">
+
+      <article class="check">
+        <span class="n">01</span>
+        <div>
+          <h3>요청취소 행에 “반려 사유” 버튼이 달려 있습니다</h3>
+          <p>SB의 <b>2번 행(164312)</b>은 상태가 <code>요청취소</code>인데 버튼 라벨은 <code>반려 사유</code>입니다. 반대로 <b>1번 행(164311)</b>은 <code>승인반려</code>인데 사유 버튼이 없습니다. 두 행이 서로 바뀐 것으로 보입니다.</p>
+          <p>이 페이지에서는 <b>요청취소 → 취소 사유</b>, <b>승인반려 → 반려 사유</b>로 맞춰 두었습니다.</p>
+        </div>
+      </article>
+
+      <article class="check">
+        <span class="n">02</span>
+        <div>
+          <h3>처리일시가 승인 요청일시보다 빠릅니다</h3>
+          <p>세 행 모두 처리일시가 <code>2026.07.21 12:00:04</code>로 같은데, 요청일시는 <code>07.22</code> · <code>07.23</code> 입니다. 요청보다 처리가 먼저 일어난 셈이라 검수자가 보면 바로 걸립니다.</p>
+          <p>이 페이지에서는 <b>요청일시 &lt; 처리일시</b>가 성립하도록 값을 정리했습니다.</p>
+        </div>
+      </article>
+
+      <article class="check">
+        <span class="n">03</span>
+        <div>
+          <h3>승인 ID가 링크로 그려져 있는데, 갈 곳이 없습니다</h3>
+          <p>SB에서 승인 ID(<code>164315</code> 등)는 파란 밑줄 링크입니다. 그런데 링크가 열어야 할 “승인 상세”의 내용 &mdash; 요청자·일시·담당자·상태·버전은 <b>이미 같은 행에 다 있고</b>, 사유·변경사항·노출화면은 <b>1-8 · 1-9 · 1-10 버튼</b>이 이미 담당합니다. 링크를 만들면 같은 정보로 가는 길이 두 개가 됩니다.</p>
+          <p>그래서 이 페이지에서는 승인 ID를 <b>표시 전용 텍스트</b>로 두었습니다. 만약 링크의 목적지가 <b>다른 시스템</b>(예: 전자결재 상세, 승인 요청 원본)이라면 그 목적지를 정의해 주시면 링크로 되돌리겠습니다.</p>
+        </div>
+      </article>
+
+      <article class="check">
+        <span class="n">04</span>
+        <div>
+          <h3>순번이 5 · 3 · 2 · 1 로 4가 비어 있습니다</h3>
+          <p>의도한 것이라면(임시저장 건 제외 등) 문제없지만, <b>순번의 정의</b>를 컬럼 정의에 명시해 두는 게 좋겠습니다 &mdash; 이력 행의 순번인지, 승인 요청의 일련번호인지에 따라 결번 처리 방식이 달라집니다.</p>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <footer>SB-NTC-APV-001 · 2026.08.28 · 근거 PI-DSP-AUD-002 (감사 로그)</footer>
+</div>
+
+<div id="overlay"></div>
+
+<script>
+const ME = '김지훈 (SSP2332)';   // 로그인 사용자 — 취소 권한 판정용
+
+const ROWS = [
+  {
+    no:5, id:'r5', aid:'164315', st:'승인대기',
+    req:'김지훈 (SSP2332)', at:'2026.07.28 11:24:11',
+    apv:'-', done:null, ver:null, reason:null, by:null,
+    changes:[
+      ['공지 제목','[안내] 7월 정기 점검','[안내] 7월 정기 점검 일정 변경'],
+      ['노출 기간','2026.07.29 ~ 2026.08.05','2026.08.01 ~ 2026.08.08'],
+      ['노출 채널','앱','앱, 웹']
+    ],
+    exposure:null
+  },
+  {
+    no:3, id:'r3', aid:'164313', st:'승인완료',
+    req:'김지훈 (SSP2332)', at:'2026.07.23 15:22:03',
+    apv:'정지솔 (SSP12344)', done:'2026.07.24 12:00:04', ver:'V.1', reason:null, by:null,
+    changes:[
+      ['공지 제목','—','[안내] 7월 정기 점검'],
+      ['노출 기간','—','2026.07.29 ~ 2026.08.05'],
+      ['노출 채널','—','앱'],
+      ['고정 여부','미고정','상단 고정']
+    ],
+    exposure:{
+      title:'[안내] 7월 정기 점검',
+      period:'2026.07.29 10:00 ~ 2026.08.05 23:59',
+      items:[
+        {ch:'APP', pos:'메인 홈 › 공지 배너', per:'07.29 ~ 08.05'},
+        {ch:'APP', pos:'전체메뉴 › 공지사항 목록 (상단 고정)', per:'07.29 ~ 08.05'},
+        {ch:'WEB', pos:'고객센터 › 공지사항 목록', per:'07.29 ~ 08.05'}
+      ]
+    }
+  },
+  {
+    no:2, id:'r2', aid:'164312', st:'요청취소',
+    req:'김지훈 (SSP2332)', at:'2026.07.22 10:21:04',
+    apv:'정지솔 (SSP12344)', done:'2026.07.22 14:35:12', ver:null,
+    by:'김지훈 (SSP2332)',
+    reason:'점검 일정이 확정되지 않아 요청을 취소합니다. 인프라팀 협의 결과 7월 29일 예정이던 정기 점검이 8월 1일로 연기될 가능성이 있어, 공지 본문의 일자와 노출 기간을 확정한 뒤 다시 요청하겠습니다.\n\n이미 승인 요청을 올린 상태에서 본문 일자만 수정하면 승인 이력과 실제 노출 내용이 어긋나므로, 이번 건은 취소 처리하고 일정 확정 후 새 승인 ID로 재요청하는 것이 맞다고 판단했습니다.',
+    changes:[
+      ['공지 제목','[안내] 7월 정기 점검','[안내] 7월 정기 점검 (일정 조정 중)'],
+      ['노출 기간','2026.07.29 ~ 2026.08.05','미정']
+    ],
+    exposure:null
+  },
+  {
+    no:1, id:'r1', aid:'164311', st:'승인반려',
+    req:'김지훈 (SSP2332)', at:'2026.06.30 08:30:08',
+    apv:'정지솔 (SSP12344)', done:'2026.06.30 17:12:40', ver:null,
+    by:'정지솔 (SSP12344)',
+    reason:'공지 본문과 노출 설정이 서로 맞지 않습니다. 본문에는 점검 시간이 "07월 29일 02:00 ~ 06:00"으로 기재되어 있으나, 노출 기간은 07월 29일 10:00부터로 설정되어 있어 정작 점검이 진행되는 시간대에는 고객에게 공지가 보이지 않습니다.\n\n또한 웹 채널 노출이 체크되어 있지 않은데 본문에는 "홈페이지 및 앱에서 확인하실 수 있습니다"라는 문구가 포함되어 있습니다. 채널 설정을 추가하거나 문구를 수정해 주세요.\n\n마지막으로 상단 고정 여부가 지정되지 않았습니다. 정기 점검 공지는 노출 기간 동안 상단 고정이 원칙(공지 운영 가이드 3.2)이니 함께 반영 부탁드립니다.',
+    changes:[
+      ['공지 제목','—','[안내] 7월 정기 점검'],
+      ['노출 기간','—','2026.07.29 10:00 ~ 2026.08.05 23:59'],
+      ['노출 채널','—','앱'],
+      ['고정 여부','—','미지정']
+    ],
+    exposure:null
+  }
+];
+
+const ST_CLASS = { '승인대기':'wait', '승인완료':'done', '요청취소':'cancel', '승인반려':'reject' };
+const REASON_LABEL = { '요청취소':'취소 사유', '승인반려':'반려 사유' };
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const XICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+const tbody = document.getElementById('tbody');
+const overlay = document.getElementById('overlay');
+
+const diffHtml = ch =>
+  '<div class="difftbl"><div class="diffrow diffhead"><div>항목</div><div>변경 전</div><div>변경 후</div></div>'
+  + ch.map(([f,b,a]) => '<div class="diffrow"><div class="f">' + esc(f) + '</div><div class="b">' + esc(b) + '</div><div class="a">' + esc(a) + '</div></div>').join('')
+  + '</div>';
+
+/* ── 표 렌더 ─────────────────────────────────────────────── */
+function render(){
+  tbody.innerHTML = ROWS.map(r => {
+    const canCancel = r.st === '승인대기' && r.req === ME;
+    const cancelTitle = r.st !== '승인대기'
+      ? '이미 처리된 요청입니다'
+      : (r.req === ME ? '' : '본인이 요청한 건만 취소할 수 있습니다');
+    const hasReason = !!REASON_LABEL[r.st];
+
+    return '<tr data-id="' + r.id + '">'
+      + '<td class="no c">' + r.no + '</td>'
+      + '<td><span class="aid">' + r.aid + '</span></td>'
+      + '<td><span class="st ' + ST_CLASS[r.st] + '">' + r.st + '</span></td>'
+      + '<td>' + esc(r.req) + '</td>'
+      + '<td class="mono">' + r.at + '</td>'
+      + '<td>' + esc(r.apv) + '</td>'
+      + '<td class="mono">' + (r.done || '<span class="dash">-</span>') + '</td>'
+      + '<td class="c"><button class="tbtn warnish" type="button" data-cancel="' + r.id + '"'
+      +   (canCancel ? '' : ' disabled') + (cancelTitle ? ' title="' + cancelTitle + '"' : '') + '>승인 요청 취소</button></td>'
+      + '<td class="c">' + (hasReason
+          ? '<button class="tbtn" type="button" data-reason="' + r.id + '">' + REASON_LABEL[r.st] + '</button>'
+          : '<span class="dash">-</span>') + '</td>'
+      + '<td class="c"><button class="tbtn" type="button" data-changes="' + r.id + '">변경사항</button></td>'
+      + '<td class="c">' + (r.exposure
+          ? '<button class="tbtn" type="button" data-exposure="' + r.id + '">노출화면</button>'
+          : '<span class="dash">-</span>') + '</td>'
+      + '<td class="c mono">' + (r.ver || '<span class="dash">-</span>') + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+/* ── 모달 공통 ───────────────────────────────────────────── */
+let lastFocus = null;
+
+function closeOverlay(){
+  overlay.innerHTML = '';
+  document.removeEventListener('keydown', onEsc);
+  if (lastFocus) { lastFocus.focus(); lastFocus = null; }
+}
+function onEsc(e){ if (e.key === 'Escape') closeOverlay(); }
+
+function openOverlay(html, focusSel){
+  lastFocus = document.activeElement;
+  overlay.innerHTML = html;
+  document.addEventListener('keydown', onEsc);
+  overlay.querySelector('.scrim').addEventListener('mousedown', e => {
+    if (e.target.classList.contains('scrim')) closeOverlay();
+  });
+  overlay.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeOverlay));
+  const f = overlay.querySelector(focusSel);
+  if (f) f.focus();
+}
+
+const modalShell = (title, badge, aid, bodyHtml, footHtml, sm) =>
+  '<div class="scrim"><div class="modal' + (sm ? ' sm' : '') + '" role="dialog" aria-modal="true" aria-label="' + title + '">'
+  + '<div class="modal-h">' + (badge || '') + '<h3>' + title + '</h3>'
+  +   (aid ? '<span class="mono">#' + aid + '</span>' : '')
+  +   '<button class="x" type="button" data-close aria-label="닫기">' + XICON + '</button></div>'
+  + '<div class="modal-b">' + bodyHtml + '</div>'
+  + '<div class="modal-f">' + footHtml + '</div>'
+  + '</div></div>';
+
+const metaHtml = r =>
+  '<dl class="meta">'
+  + '<div><dt>승인상태</dt><dd><span class="st ' + ST_CLASS[r.st] + '">' + r.st + '</span></dd></div>'
+  + '<div><dt>승인 요청자</dt><dd>' + esc(r.req) + '</dd></div>'
+  + '<div><dt>승인 요청일시</dt><dd class="mono">' + esc(r.at) + '</dd></div>'
+  + '<div><dt>승인 담당자</dt><dd>' + esc(r.apv) + '</dd></div>'
+  + '<div><dt>처리일시</dt><dd class="mono">' + esc(r.done || '-') + '</dd></div>'
+  + '<div><dt>버전</dt><dd class="mono">' + esc(r.ver || '-') + '</dd></div>'
+  + '</dl>';
+
+/* ── 1-8 취소/반려 사유 ──────────────────────────────────── */
+function openReason(id){
+  const r = ROWS.find(x => x.id === id);
+  const label = REASON_LABEL[r.st];
+  openOverlay(modalShell(
+    label, '<span class="st ' + ST_CLASS[r.st] + '">' + r.st + '</span>', r.aid,
+    '<dl class="meta">'
+    + '<div><dt>작성자</dt><dd>' + esc(r.by) + '</dd></div>'
+    + '<div><dt>처리일시</dt><dd class="mono">' + esc(r.done) + '</dd></div>'
+    + '<div><dt>승인 요청자</dt><dd>' + esc(r.req) + '</dd></div>'
+    + '<div><dt>승인 요청일시</dt><dd class="mono">' + esc(r.at) + '</dd></div>'
+    + '</dl>'
+    + '<div><p class="blk-t">' + label + ' 전문</p><p class="body-text">' + esc(r.reason) + '</p></div>',
+    '<button class="btn ghost" type="button" id="copyReason">사유 복사</button>'
+    + '<button class="btn" type="button" data-close>닫기</button>'
+  ), '.x');
+  overlay.querySelector('#copyReason').addEventListener('click', function(){
+    navigator.clipboard?.writeText(r.reason).then(() => { this.textContent = '복사됨'; }).catch(() => {});
+  });
+}
+
+/* ── 1-9 변경사항 ────────────────────────────────────────── */
+function openChanges(id){
+  const r = ROWS.find(x => x.id === id);
+  openOverlay(modalShell(
+    '변경사항', '<span class="st ' + ST_CLASS[r.st] + '">' + r.st + '</span>', r.aid,
+    metaHtml(r)
+    + '<div><p class="blk-t">변경 항목 <span>(' + r.changes.length + ')</span></p>' + diffHtml(r.changes) + '</div>',
+    '<button class="btn" type="button" data-close>닫기</button>'
+  ), '.x');
+}
+
+/* ── 1-10 노출화면 ───────────────────────────────────────── */
+function openExposure(id){
+  const r = ROWS.find(x => x.id === id);
+  const e = r.exposure;
+  openOverlay(modalShell(
+    '노출화면', '<span class="st done">' + r.ver + '</span>', r.aid,
+    '<div class="exposure">'
+    + '<div class="device"><div class="bar"></div>'
+    +   '<div class="card"><span class="kicker">공지</span>'
+    +     '<span class="ttl">' + esc(e.title) + '</span>'
+    +     '<span class="sub">' + esc(e.period.split(' ~ ')[0]) + ' 부터</span></div>'
+    +   '<div class="card"><div class="ph"></div><div class="ph s"></div></div>'
+    +   '<div class="card"><div class="ph"></div><div class="ph s"></div></div>'
+    + '</div>'
+    + '<div><p class="blk-t">노출 채널 · 위치 <span>(' + e.items.length + ')</span></p>'
+    +   '<ul class="exp-list">'
+    +   e.items.map(i => '<li class="exp-item"><span class="ch">' + i.ch + '</span>'
+    +     '<span class="pos">' + esc(i.pos) + '</span><span class="per">' + esc(i.per) + '</span></li>').join('')
+    +   '</ul>'
+    +   '<p class="blk-t" style="margin-top:13px">노출 기간</p>'
+    +   '<p class="body-text mono" style="font-size:12px">' + esc(e.period) + '</p>'
+    + '</div></div>',
+    '<button class="btn" type="button" data-close>닫기</button>'
+  ), '.x');
+}
+
+/* ── 1-7 승인 요청 취소 ──────────────────────────────────── */
+function openCancel(id){
+  const r = ROWS.find(x => x.id === id);
+  openOverlay(modalShell(
+    '승인 요청 취소', '', r.aid,
+    '<div class="warnbox"><b>되돌릴 수 없습니다.</b>&nbsp;취소한 요청은 복구되지 않고, 사유는 이력에 그대로 남습니다. 재요청은 새 승인 ID로 생성됩니다.</div>'
+    + '<div><label class="fld-l" for="cta">취소 사유 <span class="req">*</span></label>'
+    +   '<textarea class="ta" id="cta" placeholder="취소 사유를 10자 이상 입력하세요. (예: 점검 일정 미확정으로 노출 기간 재설정 필요)"></textarea>'
+    +   '<p class="charc"><span id="cc">0</span>자 / 최소 10자</p></div>',
+    '<button class="btn ghost" type="button" data-close>닫기</button>'
+    + '<button class="btn" type="button" id="doCancel" disabled>요청 취소</button>',
+    true
+  ), '#cta');
+
+  const ta = overlay.querySelector('#cta');
+  const cc = overlay.querySelector('#cc');
+  const ok = overlay.querySelector('#doCancel');
+  ta.addEventListener('input', () => {
+    const n = ta.value.trim().length;
+    cc.textContent = n;
+    ok.disabled = n < 10;
+  });
+  ok.addEventListener('click', () => {
+    r.st = '요청취소';
+    r.done = '2026.08.28 14:05:11';
+    r.apv = r.apv === '-' ? '정지솔 (SSP12344)' : r.apv;
+    r.reason = ta.value.trim();
+    r.by = r.req;
+    closeOverlay();
+    render();
+    toast('승인 요청을 취소했습니다. 사유가 이력에 기록됩니다.');
+  });
+}
+
+let toastTimer = null;
+function toast(msg){
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.setAttribute('role', 'status');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.remove(), 3000);
+}
+
+/* ── 이벤트 위임 ─────────────────────────────────────────── */
+tbody.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || b.disabled) return;
+  if (b.dataset.cancel)   return openCancel(b.dataset.cancel);
+  if (b.dataset.reason)   return openReason(b.dataset.reason);
+  if (b.dataset.changes)  return openChanges(b.dataset.changes);
+  if (b.dataset.exposure) return openExposure(b.dataset.exposure);
+});
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x === btn)));
+  });
+});
+
+render();
+</script>
