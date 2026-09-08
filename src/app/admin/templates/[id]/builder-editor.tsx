@@ -183,7 +183,7 @@ function cornerTypeParts(corner: CornerNode): { base: string; rest: string; bigB
   // 빅배너는 인스턴스 옵션(corner.bigBanner)이 유일한 진실 — 끄면 칩·상단배너·렌더 모두 사라진다(레거시 배열마커/배너연결 폴백 제거).
   const bigBanner = !isBannerCorner && corner.bigBanner;
   const detail = raw.replace(/\s*·\s*빅배너\s*/, '').replace(/\(배너\)/, '').trim();
-  const rest = [componentLabel(comp), layoutLabel(detail)].filter(Boolean).join(' · '); // 빅배너는 경로에서 빼고 별도 배지로
+  const rest = layoutLabel(detail); // 컴포넌트 제외 — 유형 › 배열·레이아웃만. 빅배너는 별도 배지
   return { base, rest, bigBanner };
 }
 
@@ -2626,7 +2626,7 @@ function CornerLoadModal({
     .map((t) => {
       const component = t.componentType ?? '';
       const bigBanner = !!t.bigBanner;
-      const rest = [componentLabel(component), layoutLabel(t.typeDetail)].filter(Boolean).join(' · '); // 빅배너는 배지로 분리
+      const rest = layoutLabel(t.typeDetail); // 컴포넌트 제외 — 배열·레이아웃만. 빅배너는 배지로 분리
       return {
         id: t.id,
         base: t.baseCategory,
@@ -2711,7 +2711,7 @@ function CornerLoadModal({
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-[13px] font-medium text-foreground">{layoutLabel(t.detail) || componentLabel(t.component) || '기본'}</span>
                               {/* 컴포넌트 표시는 유형과 다를 때만(‘상품형 안에 상품형’ 중복 제거) */}
-                              {t.component && t.detail && t.component !== t.base && <span className="block truncate text-[10px] text-muted-foreground">{componentLabel(t.component)}</span>}
+                              
                             </span>
                             {t.bigBanner && <BigBannerBadge className="shrink-0" />}
                           </button>

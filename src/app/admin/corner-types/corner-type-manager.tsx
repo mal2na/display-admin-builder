@@ -394,7 +394,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             <div className="border-b px-3 py-2.5">
                               <div className="flex flex-wrap items-center gap-1.5">
                                 <span className="text-[14px] font-semibold text-foreground">{layoutLabel(t.typeDetail) || '(상세 없음)'}</span>
-                                {t.componentType && t.componentType !== bc && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{componentLabel(t.componentType)}</span>}
                               </div>
                               <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
                             </div>
@@ -679,8 +678,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const canBigBanner = compValid === '상품형';
   const bigBannerOn = canBigBanner && bigBanner;
   // 코너 유형 명 = [코너 유형 · 컴포넌트 · 배열 (· 빅배너)] 자동 구성
-  // 코너 유형 명 = 유형 · (컴포넌트) · 배열. 컴포넌트가 유형과 같으면 생략(‘상품형 · 상품형’ 중복 제거).
-  const derivedName = [base, compValid !== base ? compValid : '', detailValid, bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
+  // 코너 유형 명 = 유형 · 배열·레이아웃 (컴포넌트는 표기에서 제외 — UI에서 컴포넌트 노출 안 함).
+  const derivedName = [base, detailValid, bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
   const channels = row.channels.split(',').filter(Boolean);
   const platforms = row.platforms.split(',').filter(Boolean);
   const action = isNew ? createCornerType : updateCornerType.bind(null, row.id);
@@ -1329,7 +1328,6 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       {!compact && (
         <p className="mb-2 text-xs font-medium text-muted-foreground">
           미리보기 · {base}
-          {c && c !== base ? ` › ${componentLabel(c)}` : ''}
           {detail ? ` › ${layoutLabel(detail)}` : ''}
           {bigBanner ? ' · 빅배너' : ''}
         </p>
