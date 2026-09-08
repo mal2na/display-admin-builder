@@ -405,23 +405,25 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             onClick={() => router.push(`/admin/corner-types/${t.id}`)}
                             className="group flex flex-col overflow-hidden rounded-xl border bg-white text-left shadow-sm transition hover:border-primary/50 hover:shadow-md"
                           >
-                            {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임) — 사진 대신 구조를 보여준다 */}
-                            <div className="border-b bg-slate-50 p-2">
-                              <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} compact />
-                            </div>
-                            <div className="flex flex-1 flex-col gap-1 p-3">
+                            {/* 상단 고정: 배열·레이아웃 이름 + ID (미리보기 높이와 무관하게 정렬) */}
+                            <div className="border-b px-3 py-2.5">
                               <div className="flex flex-wrap items-center gap-1.5">
                                 <span className="text-[14px] font-semibold text-foreground">{t.typeDetail ?? '(상세 없음)'}</span>
                                 {t.componentType && t.componentType !== bc && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{t.componentType}</span>}
                               </div>
-                              <span className="font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
-                              <div className="mt-auto flex flex-wrap items-center gap-1 pt-1.5">
-                                {t.liveVersion != null && t.active
-                                  ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
-                                  : <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">미사용</span>}
-                                <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span>
-                                {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
-                              </div>
+                              <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
+                            </div>
+                            {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임) — 사진 대신 구조를 보여준다 */}
+                            <div className="bg-slate-50 p-2">
+                              <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} compact />
+                            </div>
+                            {/* 하단 고정: 상태 (mt-auto로 카드 바닥 정렬) */}
+                            <div className="mt-auto flex flex-wrap items-center gap-1 border-t px-3 py-2.5">
+                              {t.liveVersion != null && t.active
+                                ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
+                                : <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">미사용</span>}
+                              <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span>
+                              {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
                             </div>
                           </button>
                         );
