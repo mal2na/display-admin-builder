@@ -1170,6 +1170,19 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         ))}
       </div>
     );
+  } else if (has('그리드')) {
+    // 그리드형 — 2열 그리드로 카드 배치(정사각 카드).
+    body = (
+      <div className="grid grid-cols-2 gap-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
+            <Slot label="이미지" className="aspect-square w-full" />
+            <Slot label="텍스트" className="h-3 w-3/4 justify-start" />
+            <Slot label="설명" className="h-3 w-1/2 justify-start" />
+          </div>
+        ))}
+      </div>
+    );
   } else if (has('2.5')) {
     // 가로형(2.5배열) — 카드 비율 1:1(상품)/3:4(포스터)/4:3(와이드)을 뷰 토글로 전환해 미리본다(빌더에서 코너별 선택).
     const ratioCls = shapeView === '1:1' ? 'aspect-square' : shapeView === '4:3' ? 'aspect-[4/3]' : 'aspect-[3/4]';
@@ -1204,7 +1217,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       </div>
     );
   } else if (has('단일강조', '1.5')) {
-    // 단일강조(1.5배열) — 큰 카드 1.5장(하나를 크게 강조 + 다음 카드 살짝). 2.5배열보다 카드가 크다.
+    // 가로형(1.5배열) — 큰 카드 1.5장(하나를 크게 강조 + 다음 카드 살짝). 2.5배열보다 카드가 크다.
     body = (
       <div className="space-y-1">
         <div className="flex gap-2 overflow-hidden">
@@ -1216,7 +1229,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
             </div>
           ))}
         </div>
-        <p className="text-[9px] leading-relaxed text-slate-400">단일강조(1.5배열) — 큰 카드 하나를 강조하고 다음 카드가 살짝 보입니다. (2.5배열은 작은 카드 캐러셀)</p>
+        <p className="text-[9px] leading-relaxed text-slate-400">가로형(1.5배열) — 큰 카드 하나를 강조하고 다음 카드가 살짝 보입니다. (2.5배열은 작은 카드 캐러셀)</p>
       </div>
     );
   } else if (isProduct || has('가로')) {

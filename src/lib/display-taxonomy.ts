@@ -396,7 +396,7 @@ export function isComponentAllowedInCorner(
 //   각 유형이 실제로 갖는 배열·레이아웃만 남긴다. 새 배열이 필요하면 여기 추가 후 등록해 사용.
 //  콘텐츠/상품 계열(상품형·혜택·오퍼형·콘텐츠 안내형)은 '만들 수 있는 배열' 풀셋을 공유.
 //   상단 카테고리 탭은 별도 배열이 아니라 빌더에서 얹는 선택형 컴포넌트(토글) → 세로형(카테고리탭) 제거.
-const GENERAL_LAYOUTS = ['가로형(2.5배열)', '세로형', '그리드형', '단일강조(1.5배열)', '단일 상품'] as const;
+const GENERAL_LAYOUTS = ['가로형(2.5배열)', '가로형(1.5배열)', '세로형', '그리드형'] as const;
 export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
   상품형: [...GENERAL_LAYOUTS],
   '혜택·오퍼형': [...GENERAL_LAYOUTS],
