@@ -2220,8 +2220,12 @@ function CornerInfoForm({
         {family === 'product' && (
           <>
             <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">상품 노출 순서</label>
-              <Select name="sortStrategy" defaultValue={corner.sortStrategy ?? ''} className="h-8 text-xs">
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                상품 노출 순서
+                {recPersonalized && <span className="rounded bg-violet-100 px-1 py-[1px] text-[9px] font-semibold text-violet-600" title="CVM 수급이라 노출 순서를 CVM이 고객마다 결정합니다">CVM이 결정 · 선택 불가</span>}
+              </label>
+              {/* CVM(1순위 개인화) 수급이면 정렬을 CVM이 결정 → 선택 불가. 운영자 편성이면 직접 정렬. (유형 관리의 '노출 구성' 잠금과 동일 규칙) */}
+              <Select name="sortStrategy" defaultValue={corner.sortStrategy ?? ''} disabled={recPersonalized} className="h-8 text-xs disabled:cursor-not-allowed disabled:opacity-60">
                 {PRODUCT_SORT_OPTIONS.map((t) => (
                   <option key={t} value={t}>
                     {t}

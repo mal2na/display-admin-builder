@@ -693,6 +693,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const imageOn = featureApplies('useImage') ? features.useImage : true;
   const priceOn = featureApplies('usePrice') ? features.usePrice : true;
   const rankOn = eff('useRank'); // 순위는 상품형에서만 · 기본 false
+  // 추천 수급 방식 + 노출 구성 = 한 섹션. CVM 수급이면 노출 구성(정렬·CTA)은 CVM이 결정 → 선택 불가.
+  const isRecEligible = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(base);
+  const cvmChosen = recSource === 'CVM 기반';
 
   // ④ 빅배너 구분자는 '상품형' 모듈(상품·혜택 리스트/카드) 위에 얹는 것만 의미가 있다 → 상품형일 때만 노출/적용.
   const canBigBanner = compValid === '상품형';
@@ -910,80 +913,78 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
           </div>
       </section>
 
-      {/* 추천 수급 방식 — 추천 슬롯 유형(상품형·혜택·오퍼형·콘텐츠 안내형)에만. 상태 안내형·프로필·바코드 등 고객정보 카드는 제외 (CVM=추천이지 고객정보 아님) */}
-      {['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(base) && (
+      {/* 추천 수급 · 노출 구성 = 한 섹션. 콘텐츠 출처(수급 방식)를 먼저 정하고, 그에 따라 노출 구성(정렬·CTA)을 설정.
+          CVM 수급이면 정렬·구성을 CVM이 고객마다 결정하므로 노출 구성은 '선택 불가'(비활성)로 잠근다. */}
+      {(isRecEligible || isListType) && (
       <section className="overflow-hidden rounded-md border border-violet-200">
         <div className="flex items-center gap-2 border-b border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-xs font-semibold text-violet-700">
-          추천 수급 방식 · 기본값
-          <span className="font-normal text-violet-400">콘텐츠 <b className="font-semibold">출처</b>(무엇으로 채우나) · CVM이면 정렬·구성을 CVM이 결정, 운영자 편성이면 아래 ‘노출·구성 기본값’에서 설정</span>
+          추천 수급 · 노출 구성 기본값
+          <span className="font-normal text-violet-400">콘텐츠 <b className="font-semibold">출처</b>를 먼저 정하고 노출 구성을 설정 · 빌더에서 코너별로 조정 가능</span>
         </div>
-        <div className="space-y-2 p-3">
-          <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-8 w-full max-w-xs rounded-md border border-violet-200 bg-background px-2 text-xs">
-            <option value="">기본값 미지정 — 빌더에서 코너별로 선택</option>
-            {REC_SOURCE_METHODS.map((s) => (
-              <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
-            ))}
-          </select>
-          <p className="rounded-md bg-violet-50/70 px-2.5 py-1.5 text-[10px] leading-relaxed text-violet-700/90">
-            추천은 <b>통합채널이 만드는 게 아니라</b>, CVM(세일즈포스 기반 추천 시스템)이 후보·순위·근거를 내려주면 화면이 그 순서대로 전시합니다. 운영자는 최대 노출 개수·정렬·대체안(폴백)만 정해요. <b>여기선 기본값만</b> 두고, 실제 방식은 코너를 배치할 때 빌더에서 고릅니다.
-          </p>
-          {/* 각 수급 방식 설명 (SSOT: REC_SOURCE_INFO) */}
-          <dl className="space-y-1 rounded-md bg-violet-50/50 p-2.5 text-[10px] leading-relaxed">
-            {REC_SOURCE_METHODS.map((k) => (
-              <div key={k} className="flex gap-1.5">
-                <dt className="w-24 shrink-0 font-semibold text-violet-700">{k} <span className="font-normal text-violet-400">· {REC_SOURCE_INFO[k].tag}</span></dt>
-                <dd className="min-w-0 flex-1 text-muted-foreground">{REC_SOURCE_INFO[k].how}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-      )}
-
-      {/* 노출·구성 기본값 (빌더 상속) — 정렬/CTA 기본값. 노출 개수는 빌더에서만 조정(타입에 두지 않음).
-          CVM 수급이면 정렬·구성을 CVM이 결정하므로 이 섹션을 숨기고, '운영자 편성(사용자 지정)'일 때만 노출한다. */}
-      {isListType && recSource === 'CVM 기반' && (
-        <section className="overflow-hidden rounded-md border border-violet-200 bg-violet-50/40">
-          <div className="flex items-center gap-2 px-3.5 py-2.5 text-[11px] leading-relaxed text-violet-700">
-            <Info className="h-3.5 w-3.5 shrink-0 text-violet-500" />
-            <span><b>CVM 수급</b>이라 정렬·노출 구성을 <b>CVM이 고객마다 자동 결정</b>합니다. 노출·구성 기본값(정렬·CTA)은 <b>운영자 편성(사용자 지정)</b>일 때만 설정해요.</span>
-          </div>
-        </section>
-      )}
-      {isListType && recSource !== 'CVM 기반' && (
-        <section className="overflow-hidden rounded-md border">
-          <div className="flex items-center gap-2 border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
-            노출·구성 기본값
-            <span className="font-normal text-slate-400">운영자 편성 시 기본값 · 빌더에서 코너별로 조정 가능</span>
-          </div>
-          <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">정렬 기준 기본값</label>
-              <select name="defaultSortStrategy" defaultValue={row.defaultSortStrategy ?? ''} className="h-8 w-full rounded-md border bg-background px-2 text-xs">
-                <option value="">미지정(수동)</option>
-                {PRODUCT_SORT_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+        <div className="space-y-3 p-3">
+          {/* ① 추천 수급 방식 (출처) — 상품형·혜택·오퍼형·콘텐츠 안내형에만 */}
+          {isRecEligible && (
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold text-violet-700">① 추천 수급 방식 <span className="font-normal text-violet-400">· 무엇으로 채우나(출처)</span></label>
+              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-8 w-full max-w-xs rounded-md border border-violet-200 bg-background px-2 text-xs">
+                <option value="">기본값 미지정 — 빌더에서 코너별로 선택</option>
+                {REC_SOURCE_METHODS.map((s) => (
+                  <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
                 ))}
               </select>
+              <dl className="space-y-1 rounded-md bg-violet-50/50 p-2.5 text-[10px] leading-relaxed">
+                {REC_SOURCE_METHODS.map((k) => (
+                  <div key={k} className="flex gap-1.5">
+                    <dt className="w-24 shrink-0 font-semibold text-violet-700">{k} <span className="font-normal text-violet-400">· {REC_SOURCE_INFO[k].tag}</span></dt>
+                    <dd className="min-w-0 flex-1 text-muted-foreground">{REC_SOURCE_INFO[k].how}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
-            {eff('useMoreButton') && (
-              <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">CTA 노출 기본</label>
-                <label className="flex h-8 items-center gap-1.5 rounded-md border bg-background px-2 text-xs">
-                  <input type="checkbox" checked={moreDefault} onChange={(e) => setMoreDefault(e.target.checked)} className="accent-indigo-600" />
-                  기본 노출
-                </label>
-                <input type="hidden" name="defaultMoreButton" value={moreDefault ? '1' : ''} />
+          )}
+          {/* ② 노출 구성 (정렬·CTA) — CVM 수급이면 CVM이 결정하므로 비활성(선택 불가) */}
+          {isListType && (
+            <div className={cn('space-y-2', isRecEligible && 'border-t border-violet-100 pt-3')}>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-[11px] font-semibold text-slate-700">② 노출 구성 <span className="font-normal text-slate-400">· 정렬·CTA 기본값</span></label>
+                {cvmChosen && <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-600">CVM이 자동 결정 · 선택 불가</span>}
               </div>
-            )}
-            {eff('useMoreButton') && moreDefault && (
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-[11px] text-muted-foreground">CTA 기본 문구</label>
-                <Input name="defaultMoreButtonLabel" defaultValue={row.defaultMoreButtonLabel ?? ''} placeholder="예: 전체보기 / 더보기 / 바로가기 (링크는 코너별로 입력)" className="h-8 text-xs" />
+              {cvmChosen && (
+                <p className="rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-1.5 text-[10px] leading-relaxed text-violet-600/90">
+                  <b>CVM 수급</b>이라 정렬·노출 구성을 <b>CVM이 고객마다 자동 결정</b>합니다. 노출 구성은 <b>운영자 편성</b>일 때만 설정할 수 있어요.
+                </p>
+              )}
+              <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4', cvmChosen && 'opacity-50')} aria-disabled={cvmChosen}>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-muted-foreground">정렬 기준 기본값</label>
+                  <select name="defaultSortStrategy" defaultValue={row.defaultSortStrategy ?? ''} disabled={cvmChosen} className="h-8 w-full rounded-md border bg-background px-2 text-xs disabled:cursor-not-allowed disabled:opacity-60">
+                    <option value="">미지정(수동)</option>
+                    {PRODUCT_SORT_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                {eff('useMoreButton') && (
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-muted-foreground">CTA 노출 기본</label>
+                    <label className={cn('flex h-8 items-center gap-1.5 rounded-md border bg-background px-2 text-xs', cvmChosen && 'cursor-not-allowed')}>
+                      <input type="checkbox" checked={moreDefault && !cvmChosen} disabled={cvmChosen} onChange={(e) => setMoreDefault(e.target.checked)} className="accent-indigo-600" />
+                      기본 노출
+                    </label>
+                    {!cvmChosen && <input type="hidden" name="defaultMoreButton" value={moreDefault ? '1' : ''} />}
+                  </div>
+                )}
+                {eff('useMoreButton') && moreDefault && !cvmChosen && (
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="text-[11px] text-muted-foreground">CTA 기본 문구</label>
+                    <Input name="defaultMoreButtonLabel" defaultValue={row.defaultMoreButtonLabel ?? ''} placeholder="예: 전체보기 / 더보기 / 바로가기 (링크는 코너별로 입력)" className="h-8 text-xs" />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </section>
+            </div>
+          )}
+        </div>
+      </section>
       )}
 
       {/* (제거됨) 고객정보 연동 필드 — 코너 유형 단계에선 실제 바인딩을 하지 않아 삭제.
