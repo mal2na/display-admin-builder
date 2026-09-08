@@ -269,7 +269,8 @@ export const OPERATION_PLATFORMS = ['전체', '모바일', 'PC'] as const;
 //    같은 자리라도 어떤 코너는 가격, 어떤 코너는 설명이라 하나로 '가격'이라 못 박지 않는다.
 //  · 배지는 가격 앞에 붙는 라벨(할인·NEW 등)이라 가격에 종속(가격 없으면 배지 없음).
 //  · 상품 이미지·가격·설명·배지는 상품형 카드 한정(featureApplies). '순위 숫자'는 정책 노출 Set에 없어 제외.
-//  · 미노출 조건 = 표시 데이터가 없거나(재고 소진·후보 없음) 노출 조건(TM-DSP-008: 로그인·기간·상품 상태 등)에 안 맞을 때 숨기는 기준.
+//  · '미노출 조건'은 '표시 항목'(어떤 요소를 보여줄지)이 아니라 '언제 숨길지'의 행동 규칙 + 코너별(빌드 시점) 결정이라
+//    코너 유형이 아니라 빌더에서 코너별로 관리한다(Corner.noDisplayCondition). 여기 세부 항목에서는 제외.
 export const CORNER_TYPE_FEATURES = [
   { key: 'useImage', label: '상품 이미지' },
   { key: 'useMainTitle', label: '타이틀' },
@@ -278,7 +279,6 @@ export const CORNER_TYPE_FEATURES = [
   { key: 'usePrice', label: '가격' },
   { key: 'useDesc', label: '설명' },
   { key: 'useMoreButton', label: 'CTA' },
-  { key: 'useNoDisplay', label: '미노출 조건' },
 ] as const;
 
 // 우리 8분류(CORNER_TYPES) → T우주 이미지의 코너 유형 표기명 매핑.

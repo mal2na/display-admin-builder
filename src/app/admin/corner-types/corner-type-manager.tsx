@@ -682,7 +682,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
     if (key === 'useMainTitle' || key === 'useSubTitle') return !noHeaderType;
     if (key === 'useMoreButton') return isListType; // CTA 노출은 리스트형에서 의미
     if (key === 'useImage' || key === 'usePrice' || key === 'useBadge' || key === 'useDesc') return compValid === '상품형'; // 상품 이미지·가격·설명·배지는 상품형 카드에서만
-    return true; // 미 노출 기준은 어떤 코너에서도 설정 가능
+    return true; // 그 외 표시 항목은 기본 노출 (미노출 조건은 세부 항목이 아니라 빌더에서 코너별로 관리)
   };
   // 실제 적용값 = 토글 ON && 유형에 적용 가능
   const eff = (key: keyof typeof features) => featureApplies(key) && features[key];
@@ -910,9 +910,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
             <ul className="space-y-1.5 text-[11px] leading-relaxed text-slate-500">
               {[
                 ['타이틀·서브타이틀', '미리보기 상단에 표시돼요 · 빌더에서도 코너별로 수정 가능 (서브타이틀은 타이틀 없이 못 켜요)'],
-                ['배지·가격', '정책상 배지는 가격 앞에 붙어요(할인·NEW 등). 함께 묶여 노출됩니다.'],
-                ['CTA', '아래 ‘② 노출 구성’의 CTA 기본 문구가 버튼 텍스트로 노출 → 빌더에서 코너별로 문구·링크 조정'],
-                ['미노출 조건', '표시할 데이터가 없거나(재고 소진·추천 후보 없음) 노출 조건(로그인·기간·상품 상태 등, TM-DSP-008)에 안 맞을 때 이 항목/코너를 숨기는 기준이에요. (정책: 추천 Corner는 데이터가 없을 때 대체 전시 또는 미노출을 사전 지정)'],
+                ['배지·가격', '정책상 배지는 가격 앞에 붙어요(할인·NEW 등). 배지는 가격에 종속(가격 없으면 배지 없음).'],
+                ['가격·설명', '같은 자리라도 코너에 따라 가격이거나 설명(흐린 글씨, 예 ‘데이터 500’)이라 따로 둡니다.'],
+                ['CTA', 'CTA를 켜면 바로 옆 ‘CTA 문구’가 버튼 텍스트로 노출 → 빌더에서 코너별로 문구·링크 조정'],
+                ['미노출 조건은 여기 없어요', '‘언제 숨길지’는 표시 항목이 아니라 코너별(빌드 시점) 규칙이라 빌더에서 정합니다(재고 소진·혜택 종료·개인화 제한 등).'],
               ].map(([k, v]) => (
                 <li key={k} className="flex items-start gap-1.5">
                   <span className="mt-[5px] h-1 w-1 shrink-0 rounded-full bg-indigo-300" />

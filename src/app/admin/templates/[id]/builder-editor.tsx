@@ -1523,7 +1523,7 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
         );
       })()}
       {fam === 'product' && corner.sortStrategy && <InfoRow label="상품 노출 순서" value={corner.sortStrategy} />}
-      {fam === 'product' && corner.noDisplayCondition && <InfoRow label="미 노출 조건" value={corner.noDisplayCondition} />}
+      {corner.noDisplayCondition && corner.noDisplayCondition !== '선택 없음' && <InfoRow label="미 노출 조건" value={corner.noDisplayCondition} />}
       {fam === 'product' && (
         <InfoRow
           label="CTA"
@@ -2216,36 +2216,37 @@ function CornerInfoForm({
         <input type="hidden" name="minItems" value={corner.minItems ?? ''} />
         <input type="hidden" name="maxItems" value={corner.maxItems ?? ''} />
 
-        {/* 상품형 전용: 상품 노출 순서 · 미 노출 조건 · 더보기 */}
+        {/* 상품형 전용: 상품 노출 순서 */}
         {family === 'product' && (
-          <>
-            <div className="space-y-1">
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                상품 노출 순서
-                {recPersonalized && <span className="rounded bg-violet-100 px-1 py-[1px] text-[9px] font-semibold text-violet-600" title="CVM 수급이라 노출 순서를 CVM이 고객마다 결정합니다">CVM이 결정 · 선택 불가</span>}
-              </label>
-              {/* CVM(1순위 개인화) 수급이면 정렬을 CVM이 결정 → 선택 불가. 운영자 편성이면 직접 정렬. (유형 관리의 '노출 구성' 잠금과 동일 규칙) */}
-              <Select name="sortStrategy" defaultValue={corner.sortStrategy ?? ''} disabled={recPersonalized} className="h-8 text-xs disabled:cursor-not-allowed disabled:opacity-60">
-                {PRODUCT_SORT_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">미 노출 조건</label>
-              <Select name="noDisplayCondition" defaultValue={corner.noDisplayCondition ?? '선택 없음'} className="h-8 text-xs">
-                {NO_DISPLAY_CONDITIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            {/* 하단 CTA(더보기/전체보기) 버튼은 '코너 구성'의 MoreButtonControl로 이동 — 코너 정보에서는 관리하지 않음. */}
-          </>
+          <div className="space-y-1">
+            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              상품 노출 순서
+              {recPersonalized && <span className="rounded bg-violet-100 px-1 py-[1px] text-[9px] font-semibold text-violet-600" title="CVM 수급이라 노출 순서를 CVM이 고객마다 결정합니다">CVM이 결정 · 선택 불가</span>}
+            </label>
+            {/* CVM(1순위 개인화) 수급이면 정렬을 CVM이 결정 → 선택 불가. 운영자 편성이면 직접 정렬. (유형 관리의 '노출 구성' 잠금과 동일 규칙) */}
+            <Select name="sortStrategy" defaultValue={corner.sortStrategy ?? ''} disabled={recPersonalized} className="h-8 text-xs disabled:cursor-not-allowed disabled:opacity-60">
+              {PRODUCT_SORT_OPTIONS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </Select>
+          </div>
         )}
+        {/* 미 노출 조건 — 코너 유형이 아니라 '빌드 시점(코너별)'에 정한다(정책: 추천 Corner는 데이터 없을 때 대체/미노출 사전 지정 · TM-DSP-008 노출 조건). 추천 코너 전반에서 설정 가능. */}
+        {isRecCorner && (
+          <div className="space-y-1">
+            <label className="text-[11px] text-muted-foreground">미 노출 조건 <span className="text-muted-foreground/60">· 데이터 없음/조건 미충족 시 숨김</span></label>
+            <Select name="noDisplayCondition" defaultValue={corner.noDisplayCondition ?? '선택 없음'} className="h-8 text-xs">
+              {NO_DISPLAY_CONDITIONS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
+        {/* 하단 CTA(더보기/전체보기) 버튼은 '코너 구성'의 MoreButtonControl로 이동 — 코너 정보에서는 관리하지 않음. */}
 
         {/* 코너 설명 (공통) */}
         <div className="col-span-2 space-y-1">
