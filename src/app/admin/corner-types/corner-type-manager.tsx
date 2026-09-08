@@ -398,7 +398,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                     <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
                       {rows.map((t) => {
                         const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
-                        const srcs = t.sampleImageUrl ? t.sampleImageUrl.split('\n').filter(Boolean) : [];
                         return (
                           <button
                             key={t.id}
@@ -406,12 +405,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             onClick={() => router.push(`/admin/corner-types/${t.id}`)}
                             className="group flex flex-col overflow-hidden rounded-xl border bg-white text-left shadow-sm transition hover:border-primary/50 hover:shadow-md"
                           >
-                            <div className="relative aspect-[16/10] w-full overflow-hidden border-b bg-slate-50">
-                              {srcs.length > 0 ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={srcs[0]} alt="샘플" onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHoverThumb({ src: srcs[0], x: r.left, y: r.top }); }} onMouseLeave={() => setHoverThumb(null)} className="h-full w-full object-cover object-top [filter:contrast(1.06)_saturate(1.12)]" />
-                              ) : <span className="flex h-full w-full items-center justify-center text-[11px] text-muted-foreground/40">샘플 없음</span>}
-                              {t.bigBanner && <span className="absolute left-1.5 top-1.5 inline-flex items-center rounded border border-dashed border-indigo-400 bg-white/90 px-1.5 py-0.5 text-[9px] font-medium text-indigo-600">빅배너</span>}
+                            {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임) — 사진 대신 구조를 보여준다 */}
+                            <div className="border-b bg-slate-50 p-2">
+                              <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} compact />
                             </div>
                             <div className="flex flex-1 flex-col gap-1 p-3">
                               <div className="flex flex-wrap items-center gap-1.5">
@@ -1123,7 +1119,7 @@ function TRow({
 }
 
 /** 유형 상세 선택 시 만들어질 코너 레이아웃 미리보기 (스켈레톤 목업) */
-export function TypeDetailPreview({ base, component, detail, bigBanner = false, useTitle = true, useSub = true, useMore }: { base: string; component?: string; detail: string; bigBanner?: boolean; useTitle?: boolean; useSub?: boolean; useMore?: boolean }) {
+export function TypeDetailPreview({ base, component, detail, bigBanner = false, useTitle = true, useSub = true, useMore, compact = false }: { base: string; component?: string; detail: string; bigBanner?: boolean; useTitle?: boolean; useSub?: boolean; useMore?: boolean; compact?: boolean }) {
   // 스켈레톤(회색 막대) 대신 '위치에 이름'을 적는 라벨 슬롯 — Title / Description / img / Badge / Price …
   const Slot = ({ label, className = '' }: { label: string; className?: string }) => (
     <div className={cn('flex items-center justify-center overflow-hidden rounded border border-dashed border-slate-400 bg-slate-100 px-1 text-center text-[9px] font-semibold leading-none text-slate-600', className)}>
@@ -1194,19 +1190,21 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     const cardW = shapeView === '4:3' ? 'w-[52%]' : 'w-[42%]';
     body = (
       <div className="space-y-2">
-        <div className="flex items-center gap-1">
-          <span className="mr-1 text-[10px] font-medium text-slate-400">카드 비율</span>
-          {(['1:1', '3:4', '4:3'] as const).map((sh) => (
-            <button
-              key={sh}
-              type="button"
-              onClick={() => setShapeView(sh)}
-              className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold transition', shapeView === sh ? 'border-primary bg-primary text-primary-foreground' : 'border-slate-300 text-slate-500 hover:bg-slate-100')}
-            >
-              {sh}
-            </button>
-          ))}
-        </div>
+        {!compact && (
+          <div className="flex items-center gap-1">
+            <span className="mr-1 text-[10px] font-medium text-slate-400">카드 비율</span>
+            {(['1:1', '3:4', '4:3'] as const).map((sh) => (
+              <button
+                key={sh}
+                type="button"
+                onClick={() => setShapeView(sh)}
+                className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold transition', shapeView === sh ? 'border-primary bg-primary text-primary-foreground' : 'border-slate-300 text-slate-500 hover:bg-slate-100')}
+              >
+                {sh}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex gap-2 overflow-hidden">
           {[0, 1, 2].map((i) => (
             <div key={i} className={cn('shrink-0 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5', cardW)}>
@@ -1216,7 +1214,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
             </div>
           ))}
         </div>
-        <p className="text-[9px] leading-relaxed text-slate-400">같은 가로형(2.5배열)이라도 콘텐츠에 따라 비율이 달라요(1:1 상품·3:4 포스터·4:3 와이드). 실제 비율은 빌더에서 코너별로 선택합니다.</p>
+        {!compact && <p className="text-[9px] leading-relaxed text-slate-400">같은 가로형(2.5배열)이라도 콘텐츠에 따라 비율이 달라요(1:1 상품·3:4 포스터·4:3 와이드). 실제 비율은 빌더에서 코너별로 선택합니다.</p>}
       </div>
     );
   } else if (has('단일강조', '1.5')) {
@@ -1340,14 +1338,16 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
   // 세부 항목 토글(타이틀/서브타이틀 사용여부)에 따라 헤더 슬롯을 켜고 끈다
   const showHeader = !noHeader && (useTitle || useSub);
   return (
-    <div className="rounded-md border bg-slate-50 p-3">
-      <p className="mb-2 text-xs font-medium text-muted-foreground">
-        미리보기 · {base}
-        {c && c !== base ? ` › ${c}` : ''}
-        {detail ? ` › ${detail}` : ''}
-        {bigBanner ? ' · 빅배너' : ''}
-      </p>
-      <div className="min-h-[340px] w-full rounded-lg border bg-white p-5 shadow-sm">
+    <div className={cn('rounded-md border bg-slate-50', compact ? 'p-1.5' : 'p-3')}>
+      {!compact && (
+        <p className="mb-2 text-xs font-medium text-muted-foreground">
+          미리보기 · {base}
+          {c && c !== base ? ` › ${c}` : ''}
+          {detail ? ` › ${detail}` : ''}
+          {bigBanner ? ' · 빅배너' : ''}
+        </p>
+      )}
+      <div className={cn('w-full rounded-lg border bg-white', compact ? 'p-2.5' : 'min-h-[340px] p-5 shadow-sm')}>
         <div className="space-y-3">
           {showHeader && (
             <div className="space-y-1">
