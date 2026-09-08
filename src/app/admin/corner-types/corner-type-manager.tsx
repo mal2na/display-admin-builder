@@ -12,7 +12,6 @@ import {
   deriveCornerTypeUsage,
   CORNER_TYPES,
   cornerTypePurpose,
-  cornerTypeGovernance,
   cornerTypeChipClass,
   componentTypesForCorner,
   cornerTypeDetails,
@@ -364,9 +363,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             if (groupBases.length === 0) return <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">조건에 맞는 코너 유형이 없습니다.</div>;
             return groupBases.map((bc) => {
               const rows = filtered.filter((t) => t.baseCategory === bc);
-              const allowed = componentTypesForCorner(bc);
               const purpose = cornerTypePurpose(bc);
-              const gov = cornerTypeGovernance(bc);
               const usingCount = rows.filter((r) => r.liveVersion != null && r.active).length;
               return (
                 <div key={bc} className="overflow-hidden rounded-2xl border bg-card shadow-sm">
@@ -378,20 +375,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                     {purpose && <span className="min-w-0 flex-1 truncate text-[12.5px] text-muted-foreground">{purpose}</span>}
                     <Link href={`/admin/corner-types/new?base=${encodeURIComponent(bc)}`} className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-primary shadow-sm transition hover:bg-secondary"><Plus className="h-3.5 w-3.5" /> 배열·레이아웃 추가</Link>
                   </div>
-
-                  {/* 거버넌스 패널 */}
-                  {(gov || allowed.length > 0) && (
-                    <div className="border-b bg-surface-subtle/60 px-5 py-3">
-                      {allowed.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[11px] font-semibold text-foreground">담을 수 있는 컴포넌트(모듈)</span>
-                          {allowed.map((c) => <span key={c} className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{componentLabel(c)}</span>)}
-                          <span className="ml-1 text-[10px] text-muted-foreground/70">빌더에서 이 코너에 붙일 수 있는 구성 모듈 · PI-DSP-CMP-003</span>
-                        </div>
-                      )}
-                      {gov && <p className="mt-2 border-t border-dashed pt-2 text-[12.5px] leading-relaxed text-muted-foreground">{gov}</p>}
-                    </div>
-                  )}
 
                   {/* ── 배열·레이아웃 카드 그리드 — 하나씩 카드, 클릭하면 상세로 ── */}
                   {rows.length === 0 ? (
