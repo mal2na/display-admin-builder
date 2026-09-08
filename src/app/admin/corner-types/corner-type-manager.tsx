@@ -606,8 +606,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const [detail, setDetail] = useState(row.typeDetail ?? '');
   const [bigBanner, setBigBanner] = useState(row.bigBanner ?? false); // ④ 빅배너 구분자
   const [active, setActive] = useState(row.active);
-  const [moreDefault, setMoreDefault] = useState(row.defaultMoreButton ?? false); // 더보기 기본 ON(타입-레벨)
-  const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 기본 문구(controlled) — 미리보기에 실제 텍스트 반영
+  const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
   const [recSource, setRecSource] = useState(row.defaultRecSource ? normalizeRecSource(row.defaultRecSource) : ''); // 추천 수급 방식 기본값(controlled) — 노출·구성 노출 여부를 좌우
   // FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 유형에서
   const [userCustom, setUserCustom] = useState(row.userCustomizable ?? false);
@@ -679,8 +678,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const featureApplies = (key: string) => {
     if (key === 'useMainTitle' || key === 'useSubTitle') return !noHeaderType;
     if (key === 'useMoreButton') return isListType; // CTA 노출은 리스트형에서 의미
-    if (key === 'useBadge') return compValid === '상품형' || compValid === '혜택형'; // 배지는 상품·혜택 카드에서만
-    if (key === 'useImage' || key === 'usePrice') return compValid === '상품형'; // 상품 이미지·가격은 상품형 카드에서만
+    if (key === 'useImage' || key === 'usePrice' || key === 'useBadge') return compValid === '상품형'; // 상품 이미지·가격·배지(가격 앞)는 상품형 카드에서만
     return true; // 미 노출 기준은 어떤 코너에서도 설정 가능
   };
   // 실제 적용값 = 토글 ON && 유형에 적용 가능
@@ -862,22 +860,27 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
           <div className="flex flex-wrap gap-x-6 gap-y-2">
             {CORNER_TYPE_FEATURES.map((f) => {
               const applies = featureApplies(f.key);
-              const checked = applies && features[f.key as keyof typeof features];
+              // 배지는 가격에 종속 — 가격이 꺼져 있으면 배지도 없다(배지는 가격 앞에만 붙음).
+              const badgeLocked = f.key === 'useBadge' && !features.usePrice;
+              const disabled = !applies || badgeLocked;
+              const checked = applies && features[f.key as keyof typeof features] && !badgeLocked;
               const toggle = (on: boolean) => {
                 setFeatures((prev) => {
                   const next = { ...prev, [f.key]: on };
                   if (f.key === 'useMainTitle' && !on) next.useSubTitle = false; // 타이틀 끄면 서브타이틀도(단독 불가)
                   if (f.key === 'useSubTitle' && on) next.useMainTitle = true; // 서브타이틀 켜면 타이틀 자동 ON
+                  if (f.key === 'usePrice' && !on) next.useBadge = false; // 가격 끄면 배지도 (배지는 가격 앞에만)
+                  if (f.key === 'useBadge' && on) next.usePrice = true; // 배지 켜면 가격 자동 ON
                   return next;
                 });
               };
               return (
-                <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', !applies && 'cursor-not-allowed text-muted-foreground/40')} title={!applies ? '이 코너 유형에는 해당 항목이 없어요' : undefined}>
+                <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', disabled && 'cursor-not-allowed text-muted-foreground/40')} title={!applies ? '이 코너 유형에는 해당 항목이 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
                   <input
                     type="checkbox"
                     name={f.key}
                     checked={checked}
-                    disabled={!applies}
+                    disabled={disabled}
                     onChange={(e) => toggle(e.target.checked)}
                     className="accent-indigo-600 disabled:opacity-40"
                   />
@@ -886,6 +889,16 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
               );
             })}
           </div>
+          {/* CTA 문구 — 'CTA' 표시 항목 ON일 때. (노출 구성이 아니라 여기서 관리 · 미리보기 버튼·빌더 상속에 쓰임) */}
+          {eff('useMoreButton') && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <label className="text-[11px] font-medium text-muted-foreground">CTA 문구</label>
+              <Input name="defaultMoreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} placeholder="예: 담기 / 자세히 / 전체보기" className="h-8 w-52 text-xs" />
+              <span className="text-[10px] text-slate-400">미리보기 버튼에 그대로 노출 · 링크는 코너별로</span>
+            </div>
+          )}
+          {/* CTA(표시 항목) ON이면 빌더에도 기본 노출로 상속 */}
+          <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
           <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
             <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
               <Info className="h-3.5 w-3.5 text-indigo-500" /> 체크한 항목만 이 유형의 코너에 나타나요
@@ -952,7 +965,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
                   <b>CVM 수급</b>이라 정렬·노출 구성을 <b>CVM이 고객마다 자동 결정</b>합니다. 노출 구성은 <b>운영자 편성</b>일 때만 설정할 수 있어요.
                 </p>
               )}
-              <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4', cvmChosen && 'opacity-50')} aria-disabled={cvmChosen}>
+              <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2', cvmChosen && 'opacity-50')} aria-disabled={cvmChosen}>
                 <div className="space-y-1">
                   <label className="text-[11px] text-muted-foreground">정렬 기준 기본값</label>
                   <select name="defaultSortStrategy" defaultValue={row.defaultSortStrategy ?? ''} disabled={cvmChosen} className="h-8 w-full rounded-md border bg-background px-2 text-xs disabled:cursor-not-allowed disabled:opacity-60">
@@ -962,22 +975,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
                     ))}
                   </select>
                 </div>
-                {eff('useMoreButton') && (
-                  <div className="space-y-1">
-                    <label className="text-[11px] text-muted-foreground">CTA 노출 기본</label>
-                    <label className={cn('flex h-8 items-center gap-1.5 rounded-md border bg-background px-2 text-xs', cvmChosen && 'cursor-not-allowed')}>
-                      <input type="checkbox" checked={moreDefault && !cvmChosen} disabled={cvmChosen} onChange={(e) => setMoreDefault(e.target.checked)} className="accent-indigo-600" />
-                      기본 노출
-                    </label>
-                    {!cvmChosen && <input type="hidden" name="defaultMoreButton" value={moreDefault ? '1' : ''} />}
-                  </div>
-                )}
-                {eff('useMoreButton') && moreDefault && !cvmChosen && (
-                  <div className="space-y-1 sm:col-span-2">
-                    <label className="text-[11px] text-muted-foreground">CTA 기본 문구 <span className="text-slate-400">· 미리보기 버튼에 그대로 노출</span></label>
-                    <Input name="defaultMoreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} placeholder="예: 담기 / 자세히 / 전체보기 (링크는 코너별로 입력)" className="h-8 text-xs" />
-                  </div>
-                )}
+                {/* CTA는 '표시 항목'(세부 항목)에서 관리 — 여기(노출 구성)엔 두지 않는다(중복 제거). */}
               </div>
             </div>
           )}
@@ -1154,12 +1152,12 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       <Slot label={image ? '이미지' : '이미지 없음'} className={cn('h-full w-full', !image && 'border-slate-300 bg-slate-50 text-slate-400')} />
     </div>
   );
-  // 배지+가격 행 — 정책상 배지는 '가격 앞'에 붙는다. 세부 항목 배지/가격 ON에 따라 함께 묶어 보여준다.
-  //  배지 ON → 가격 앞 로즈 칩 · 가격 ON → 가격 슬롯. 둘 다 OFF면 렌더 안 함.
-  const PriceRow = ({ className = '' }: { className?: string }) => ((badge || price) ? (
+  // 배지+가격 행 — 정책상 배지는 '가격 앞'에 붙는다. 배지는 가격에 종속(가격 없으면 배지도 없음).
+  //  가격 OFF면 행 자체를 렌더하지 않음(배지만 단독 노출 안 함).
+  const PriceRow = ({ className = '' }: { className?: string }) => (price ? (
     <div className={cn('flex items-center gap-1', className)}>
       {badge && <span className="shrink-0 rounded bg-rose-500 px-1 py-[1px] text-[8px] font-bold leading-none text-white">배지</span>}
-      {price && <Slot label="가격" className="h-3 min-w-0 flex-1" />}
+      <Slot label="가격" className="h-3 min-w-0 flex-1" />
     </div>
   ) : null);
   // CTA 텍스트 — 세부 항목 CTA ON일 때 실제 문구(② 노출 구성의 CTA 기본 문구)로 표시. 미입력 시 'CTA' 안내.
