@@ -39,6 +39,7 @@ export default async function CornerTypesPage() {
     useMaxItems: r.useMaxItems,
     useNoDisplay: r.useNoDisplay,
     useMoreButton: r.useMoreButton,
+    useBadge: r.useBadge ?? false,
     defaultMinItems: r.defaultMinItems ?? null,
     defaultMaxItems: r.defaultMaxItems ?? null,
     defaultSortStrategy: r.defaultSortStrategy ?? null,

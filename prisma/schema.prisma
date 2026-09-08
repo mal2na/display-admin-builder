@@ -361,12 +361,13 @@ model CornerType {
   useMaxItems   Boolean @default(true)
   useNoDisplay  Boolean @default(true)
   useMoreButton Boolean @default(true)
+  useBadge      Boolean @default(false) // 배지(상태/신규/할인 등) 노출 여부 — 상품·혜택 카드에서. 켜면 코너 스캐폴드에 BADGE 아톰 추가·미리보기 표시
 
   // 타입-레벨 기본값(템플릿 강화) — 이 유형으로 빌더에서 코너를 만들 때 기본 상속(코너별 수정 가능).
   defaultMinItems       Int?    // 기본 노출 개수(하한)
   defaultMaxItems       Int?    // 최대 노출 개수 — 정책서 Corner 구성 기준(노출 순서·최대 노출 개수)
   defaultSortStrategy   String? // 기본 정렬 기준: MANUAL | PRIORITY | RECENT | POPULAR | PRICE_ASC | PRICE_DESC
-  defaultRecSource      String? // 기본 추천 수급 방식 (상품형·개인화 추천형): CVM 기반 | 채널 데이터 | 룰 기반 | 운영 편성 | 수동 대체. 코너 불러오기 시 corner.recSource로 상속.
+  defaultRecSource      String? // 기본 추천 수급 방식 (상품형 등): CVM 기반 | 운영자 편성. 코너 불러오기 시 corner.recSource로 상속.
   defaultMoreButton     Boolean @default(false) // 더보기 버튼 기본 ON 여부(라벨은 아래, 링크는 코너별 입력)
   defaultMoreButtonLabel String? // 더보기 기본 라벨(예: 더보기, 전체보기)
   // CVM 연동 필드 — 이 코너 유형이 CVM/BSS에서 자동으로 가져오는 회원 데이터(FN-EVTMSN-FORM-001). CVM_FIELDS key csv.

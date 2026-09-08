@@ -62,6 +62,7 @@ export type CornerTypeRow = {
   useMaxItems: boolean;
   useNoDisplay: boolean;
   useMoreButton: boolean;
+  useBadge: boolean;
   // 타입-레벨 기본값(빌더 상속)
   defaultMinItems: number | null;
   defaultMaxItems: number | null;
@@ -107,6 +108,7 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   useMaxItems: true,
   useNoDisplay: true,
   useMoreButton: true,
+  useBadge: false,
   defaultMinItems: null,
   defaultMaxItems: null,
   defaultSortStrategy: null,
@@ -400,7 +402,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             </div>
                             {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임). flex-1로 같은 행 최대 높이에 맞춰 채움(안 잘림·동일 사이즈). */}
                             <div className="flex-1 bg-slate-50 p-2">
-                              <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} compact />
+                              <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} badge={t.useBadge} compact />
                             </div>
                             {/* 하단 고정: 상태 */}
                             <div className="mt-auto flex flex-wrap items-center gap-1 border-t px-3 py-2.5">
@@ -613,6 +615,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
     useMaxItems: row.useMaxItems,
     useNoDisplay: row.useNoDisplay,
     useMoreButton: row.useMoreButton,
+    useBadge: row.useBadge,
   });
 
   // ① 코너 유형 = 정책서 7종 고정(PI-DSP-CMP-003 / TM-DSP-021). 수정 시 레거시 값 보존.
@@ -668,6 +671,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const featureApplies = (key: string) => {
     if (key === 'useMainTitle' || key === 'useSubTitle') return !noHeaderType;
     if (key === 'useMoreButton') return isListType; // CTA 노출은 리스트형에서 의미
+    if (key === 'useBadge') return compValid === '상품형' || compValid === '혜택형'; // 배지는 상품·혜택 카드에서만
     return true; // 미 노출 기준은 어떤 코너에서도 설정 가능
   };
   // 실제 적용값 = 토글 ON && 유형에 적용 가능
@@ -702,7 +706,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
         <div className="border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">기본 정보</div>
         {/* 상단: 좌측 미리보기(고정 폭) + 우측 핵심 필드(코너 유형 ID · 코너 유형 · 유형 상세) */}
         <div className="grid grid-cols-1 items-start gap-5 border-b p-3 md:grid-cols-[460px_minmax(0,1fr)]">
-          <TypeDetailPreview base={base} component={compValid} detail={detailValid} bigBanner={bigBannerOn} useTitle={useTitle} useSub={useSub} useMore={eff('useMoreButton')} />
+          <TypeDetailPreview base={base} component={compValid} detail={detailValid} bigBanner={bigBannerOn} useTitle={useTitle} useSub={useSub} useMore={eff('useMoreButton')} badge={eff('useBadge')} />
           <div className="space-y-3">
             {/* 코너 유형 명은 [코너 유형 · 컴포넌트 · 배열]로 자동 구성 · 코너 레이아웃은 값 보존 */}
             <input type="hidden" name="name" value={derivedName} />
@@ -1110,11 +1114,18 @@ function TRow({
 }
 
 /** 유형 상세 선택 시 만들어질 코너 레이아웃 미리보기 (스켈레톤 목업) */
-export function TypeDetailPreview({ base, component, detail, bigBanner = false, useTitle = true, useSub = true, useMore, compact = false }: { base: string; component?: string; detail: string; bigBanner?: boolean; useTitle?: boolean; useSub?: boolean; useMore?: boolean; compact?: boolean }) {
+export function TypeDetailPreview({ base, component, detail, bigBanner = false, useTitle = true, useSub = true, useMore, badge = false, compact = false }: { base: string; component?: string; detail: string; bigBanner?: boolean; useTitle?: boolean; useSub?: boolean; useMore?: boolean; badge?: boolean; compact?: boolean }) {
   // 스켈레톤(회색 막대) 대신 '위치에 이름'을 적는 라벨 슬롯 — Title / Description / img / Badge / Price …
   const Slot = ({ label, className = '' }: { label: string; className?: string }) => (
     <div className={cn('flex items-center justify-center overflow-hidden rounded border border-dashed border-slate-400 bg-slate-100 px-1 text-center text-[9px] font-semibold leading-none text-slate-600', className)}>
       {label}
+    </div>
+  );
+  // 이미지 슬롯 + (배지 ON이면) 좌상단 배지 칩 — 상품·혜택 카드 미리보기에 실제 노출 위치를 보여준다.
+  const ImgSlot = ({ className = '' }: { className?: string }) => (
+    <div className={cn('relative', className)}>
+      <Slot label="이미지" className="h-full w-full" />
+      {badge && <span className="absolute left-0.5 top-0.5 rounded bg-rose-500 px-1 py-[1px] text-[7px] font-bold leading-none text-white shadow-sm">배지</span>}
     </div>
   );
   // 가로형(2.5배열) 카드 비율 미리보기 뷰 — 1:1(상품)/3:4(포스터)/4:3(와이드) 전환
@@ -1150,7 +1161,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
           <Slot label="텍스트" className="h-4 w-3/4 justify-start" />
           <Slot label="설명" className="h-3 w-1/2 justify-start" />
         </div>
-        <Slot label="이미지" className="h-16 w-16 shrink-0" />
+        <ImgSlot className="h-16 w-16 shrink-0" />
       </div>
     );
   } else if (isProduct && has('세로') && !has('가로', '2.5', '단일강조')) {
@@ -1166,7 +1177,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         )}
         {[0, 1, 2].map((i) => (
           <div key={i} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
-            <Slot label="이미지" className="h-10 w-10 shrink-0" />
+            <ImgSlot className="h-10 w-10 shrink-0" />
             <div className="flex-1 space-y-1">
               <Slot label="텍스트" className="h-3 w-3/4 justify-start" />
               <Slot label="설명" className="h-3 w-1/3 justify-start" />
@@ -1181,7 +1192,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       <div className="grid grid-cols-2 gap-2">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
-            <Slot label="이미지" className="aspect-[4/3] w-full" />
+            <ImgSlot className="aspect-[4/3] w-full" />
             <Slot label="텍스트" className="h-2.5 w-3/4 justify-start" />
           </div>
         ))}
@@ -1211,7 +1222,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         <div className="flex gap-2 overflow-hidden">
           {[0, 1, 2].map((i) => (
             <div key={i} className={cn('shrink-0 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5', cardW)}>
-              <Slot label="이미지" className={cn('w-full', ratioCls)} />
+              <ImgSlot className={cn('w-full', ratioCls)} />
               <Slot label="텍스트" className="h-3 w-full justify-start" />
               <Slot label="설명" className="h-3 w-2/3 justify-start" />
             </div>
@@ -1227,7 +1238,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         <div className="flex gap-2 overflow-hidden">
           {[0, 1].map((i) => (
             <div key={i} className="w-[66%] shrink-0 space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2">
-              <Slot label="이미지" className="aspect-[16/10] w-full" />
+              <ImgSlot className="aspect-[16/10] w-full" />
               <Slot label="텍스트" className="h-4 w-3/4 justify-start" />
               <Slot label="설명" className="h-3 w-1/2 justify-start" />
             </div>
@@ -1242,7 +1253,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         {[0, 1, 2].map((i) => (
           <div key={i} className="w-[42%] shrink-0 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
             {/* 상품 이미지 = 세로로 긴 카드 이미지 영역 */}
-            <Slot label="이미지" className="h-28 w-full" />
+            <ImgSlot className="h-28 w-full" />
             <Slot label="텍스트" className="h-3 w-full justify-start" />
             <Slot label="설명" className="h-3 w-2/3 justify-start" />
           </div>

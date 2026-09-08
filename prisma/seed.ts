@@ -1417,6 +1417,9 @@ async function patchVariantDemo() {
   await prisma.corner.updateMany({ where: { layoutDetail: '세로형(카테고리탭)' }, data: { layoutDetail: '세로형' } });
   await prisma.cornerType.deleteMany({ where: { typeDetail: '세로형(카테고리탭)' } });
 
+  // ── 배지 세부 항목 데모 — 상품형 코너 유형은 배지(NEW/할인 등)를 기본 노출로 켜 미리보기·스캐폴드에 반영. ──
+  await prisma.cornerType.updateMany({ where: { baseCategory: '상품형' }, data: { useBadge: true } });
+
   // ── 추천 수급 방식 정규화 — '운영 편성'·'수동 대체'(같은 직접 구성 폴백)를 '운영자 편성' 하나로 통합. '채널 데이터'→CVM. ──
   //   (정책·회의 2026-08-31: 운영자 직접 구성분이 곧 최하단 폴백이라 별도 '수동 대체' 없음. taxonomy.normalizeRecSource와 동일 규칙)
   await prisma.corner.updateMany({ where: { recSource: { in: ['운영 편성', '수동 대체'] } }, data: { recSource: '운영자 편성' } });

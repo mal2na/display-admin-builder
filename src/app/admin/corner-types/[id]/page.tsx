@@ -57,6 +57,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     useMaxItems: ct.useMaxItems,
     useNoDisplay: ct.useNoDisplay,
     useMoreButton: ct.useMoreButton,
+    useBadge: ct.useBadge ?? false,
     defaultMinItems: ct.defaultMinItems ?? null,
     defaultMaxItems: ct.defaultMaxItems ?? null,
     defaultSortStrategy: ct.defaultSortStrategy ?? null,

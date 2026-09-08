@@ -429,7 +429,7 @@ export async function createCorner(templateId: string, formData: FormData) {
 type ScaffoldAtom = { name: string; atomType: string; content?: string; imageUrl?: string; altText?: string; linkUrl?: string };
 type ScaffoldComp = { name: string; componentType: ComponentType; atoms: ScaffoldAtom[]; chipRows?: number; selectedIndex?: number };
 
-function scaffoldSpecFor(componentType: string | null, typeDetail: string | null): ScaffoldComp[] {
+function scaffoldSpecFor(componentType: string | null, typeDetail: string | null, useBadge = false): ScaffoldComp[] {
   const ct = (componentType ?? '') as ComponentType | '';
   const d = typeDetail ?? '';
   const tabComp: ScaffoldComp = {
@@ -438,11 +438,13 @@ function scaffoldSpecFor(componentType: string | null, typeDetail: string | null
     selectedIndex: 0,
     atoms: ['전체', '카테고리1', '카테고리2', '카테고리3'].map((c) => ({ name: c, atomType: 'TEXT', content: c })),
   };
+  const badgeAtom = (label: string): ScaffoldComp['atoms'] => (useBadge ? [{ name: '배지', atomType: 'BADGE', content: label }] : []); // 유형 세부 항목 '배지' ON일 때만
   const productComp = (i: number): ScaffoldComp => ({
     name: `상품 ${i}`,
     componentType: '상품형',
     atoms: [
       { name: '상품 이미지', atomType: 'IMAGE', imageUrl: '', altText: `상품 ${i} 이미지` },
+      ...badgeAtom('NEW'),
       { name: '상품명', atomType: 'TEXT', content: `상품 ${i}` },
       { name: '설명', atomType: 'PRICE', content: '' },
     ],
@@ -452,6 +454,7 @@ function scaffoldSpecFor(componentType: string | null, typeDetail: string | null
     componentType: '혜택형',
     atoms: [
       { name: '로고', atomType: 'ICON', imageUrl: '', altText: `브랜드 ${i}` },
+      ...badgeAtom('혜택'),
       { name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: `혜택 ${i} 문구를 입력하세요` },
       { name: '브랜드', atomType: 'INFO', content: `브랜드 ${i}` },
     ],
@@ -588,7 +591,7 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
     },
   });
   // 유형의 컴포넌트 유형·배열에 맞춰 '코너 구성'을 스캐폴딩(불러오면 코너 정보 + 코너 구성이 실제로 채워짐)
-  await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail));
+  await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail, def.useBadge));
   return corner;
 }
 
