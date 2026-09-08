@@ -148,9 +148,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
   // 뷰 모드 — 유형별(7 상위 유형 → 배열·레이아웃) 그룹 뷰 ↔ 전체 목록(평면). 거버넌스는 유형 기준, 배열·레이아웃은 하위.
   const [view, setView] = useState<'group' | 'list'>(sp.get('view') === 'list' ? 'list' : 'group');
-  // 유형별 그룹 펼침(아코디언) — 클릭한 유형만 배열·레이아웃을 펼친다(기본 접힘 → 7줄 개요).
-  const [openTypes, setOpenTypes] = useState<Set<string>>(new Set());
-  const toggleType = (bc: string) => setOpenTypes((p) => { const n = new Set(p); n.has(bc) ? n.delete(bc) : n.add(bc); return n; });
 
   // 상위 분기(도메인)로 코너 유형을 먼저 나눈다: 전시/관리(전시 8종) vs 이벤트/미션(전용 계열)
   const inDomain = (t: CornerTypeRow) => (domain === '이벤트/미션' ? isEventCornerFamily(t.baseCategory) : !isEventCornerFamily(t.baseCategory));
@@ -342,15 +339,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             : <>검색결과: <b className="text-foreground">{filtered.length}개</b></>}
         </p>
         <div className="flex items-center gap-2">
-          {view === 'group' && (() => {
-            const allBases = domain === '전시/관리' ? (CORNER_TYPES as readonly string[]) : [...new Set(domainTypes.map((t) => t.baseCategory))];
-            const allOpen = allBases.length > 0 && allBases.every((b) => openTypes.has(b));
-            return (
-              <button onClick={() => setOpenTypes(allOpen ? new Set() : new Set(allBases))} className="rounded-lg border bg-white px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary">
-                {allOpen ? '모두 접기' : '모두 펼치기'}
-              </button>
-            );
-          })()}
           {/* 뷰 토글 — 유형별(7 상위 → 배열·레이아웃) ↔ 목록(평면) */}
           <div className="flex rounded-lg border bg-white p-0.5 text-xs">
             <button onClick={() => setView('group')} className={cn('rounded-md px-2.5 py-1 font-medium', view === 'group' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary')}>유형별</button>
@@ -379,29 +367,20 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               const gov = cornerTypeGovernance(bc);
               const regDetails = new Set(rows.map((r) => r.typeDetail).filter(Boolean));
               const missing = cornerTypeDetails(bc).filter((d) => !regDetails.has(d));
-              const isOpen = openTypes.has(bc) || groupBases.length === 1;
               const usingCount = rows.filter((r) => r.liveVersion != null && r.active).length;
               return (
                 <div key={bc} className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                  {/* ── 유형 헤더(클릭 = 펼치기/접기) ── */}
-                  <div
-                    onClick={() => toggleType(bc)}
-                    className={cn('flex cursor-pointer items-center gap-3 px-4 py-3.5 transition hover:bg-muted/30', isOpen && 'border-b')}
-                  >
-                    <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', isOpen && 'rotate-180')} />
+                  {/* ── 유형 헤더(항상 표시) ── */}
+                  <div className="flex flex-wrap items-center gap-3 border-b px-5 py-4">
                     <span className={cn('inline-flex shrink-0 items-center rounded-md border px-2.5 py-1 text-[13px] font-bold', cornerTypeChipClass(bc))}>{bc}</span>
                     <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">배열·레이아웃 {rows.length}</span>
                     {usingCount > 0 && <span className="shrink-0 text-[11px] font-medium text-emerald-600">사용 {usingCount}</span>}
                     {purpose && <span className="min-w-0 flex-1 truncate text-[12.5px] text-muted-foreground">{purpose}</span>}
-                    <Link
-                      href={`/admin/corner-types/new?base=${encodeURIComponent(bc)}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-primary shadow-sm transition hover:bg-secondary"
-                    ><Plus className="h-3.5 w-3.5" /> 배열·레이아웃 추가</Link>
+                    <Link href={`/admin/corner-types/new?base=${encodeURIComponent(bc)}`} className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-primary shadow-sm transition hover:bg-secondary"><Plus className="h-3.5 w-3.5" /> 배열·레이아웃 추가</Link>
                   </div>
 
-                  {/* 거버넌스 패널 — 펼쳤을 때만 */}
-                  {isOpen && (gov || allowed.length > 0) && (
+                  {/* 거버넌스 패널 */}
+                  {(gov || allowed.length > 0) && (
                     <div className="border-b bg-surface-subtle/60 px-5 py-3">
                       {allowed.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -414,45 +393,49 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                     </div>
                   )}
 
-                  {/* ── 배열·레이아웃 목록 — 펼쳤을 때만 ── */}
-                  {isOpen && (rows.length === 0 ? (
+                  {/* ── 배열·레이아웃 카드 그리드 — 하나씩 카드, 클릭하면 상세로 ── */}
+                  {rows.length === 0 ? (
                     <p className="px-5 py-4 text-[13px] text-muted-foreground">등록된 배열·레이아웃이 없습니다. <b className="text-foreground">배열·레이아웃 추가</b>로 이 유형의 첫 배열을 등록하세요.</p>
                   ) : (
-                    <ul className="divide-y">
+                    <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
                       {rows.map((t) => {
                         const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
                         const srcs = t.sampleImageUrl ? t.sampleImageUrl.split('\n').filter(Boolean) : [];
                         return (
-                          <li key={t.id} onClick={() => router.push(`/admin/corner-types/${t.id}`)} className="flex cursor-pointer items-center gap-3.5 px-5 py-3 transition hover:bg-muted/40">
-                            {srcs.length > 0 ? (
-                              <button type="button" onClick={(e) => { e.stopPropagation(); setPreview(srcs); }} onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHoverThumb({ src: srcs[0], x: r.left, y: r.top }); }} onMouseLeave={() => setHoverThumb(null)} className="shrink-0 rounded-lg transition hover:ring-2 hover:ring-primary/50">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={srcs[0]} alt="샘플" className="h-9 w-14 rounded-lg border object-cover object-top [filter:contrast(1.08)_saturate(1.15)]" />
-                              </button>
-                            ) : <span className="grid h-9 w-14 shrink-0 place-items-center rounded-lg border border-dashed text-[9px] text-muted-foreground/40">샘플</span>}
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => router.push(`/admin/corner-types/${t.id}`)}
+                            className="group flex flex-col overflow-hidden rounded-xl border bg-white text-left shadow-sm transition hover:border-primary/50 hover:shadow-md"
+                          >
+                            <div className="relative aspect-[16/10] w-full overflow-hidden border-b bg-slate-50">
+                              {srcs.length > 0 ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={srcs[0]} alt="샘플" onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHoverThumb({ src: srcs[0], x: r.left, y: r.top }); }} onMouseLeave={() => setHoverThumb(null)} className="h-full w-full object-cover object-top [filter:contrast(1.06)_saturate(1.12)]" />
+                              ) : <span className="flex h-full w-full items-center justify-center text-[11px] text-muted-foreground/40">샘플 없음</span>}
+                              {t.bigBanner && <span className="absolute left-1.5 top-1.5 inline-flex items-center rounded border border-dashed border-indigo-400 bg-white/90 px-1.5 py-0.5 text-[9px] font-medium text-indigo-600">빅배너</span>}
+                            </div>
+                            <div className="flex flex-1 flex-col gap-1 p-3">
+                              <div className="flex flex-wrap items-center gap-1.5">
                                 <span className="text-[14px] font-semibold text-foreground">{t.typeDetail ?? '(상세 없음)'}</span>
-                                {t.bigBanner && <span className="inline-flex items-center rounded border border-dashed border-indigo-400 bg-indigo-50/60 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">빅배너</span>}
-                                {/* 컴포넌트 태그는 유형과 다를 때만(‘상품형 안에 상품형’ 중복 제거) */}
                                 {t.componentType && t.componentType !== bc && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{t.componentType}</span>}
                               </div>
-                              <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground/70">{t.typeId}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
+                              <div className="mt-auto flex flex-wrap items-center gap-1 pt-1.5">
+                                {t.liveVersion != null && t.active
+                                  ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
+                                  : <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">미사용</span>}
+                                <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span>
+                                {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
+                              </div>
                             </div>
-                            <div className="flex shrink-0 items-center gap-1.5">
-                              {t.liveVersion != null && t.active
-                                ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
-                                : <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">미사용</span>}
-                              <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span>
-                              {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
-                            </div>
-                          </li>
+                          </button>
                         );
                       })}
-                    </ul>
-                  ))}
-                  {/* 카탈로그에 있으나 미등록인 배열·레이아웃 — 추가 유도 (펼쳤을 때만) */}
-                  {isOpen && missing.length > 0 && (
+                    </div>
+                  )}
+                  {/* 카탈로그에 있으나 미등록인 배열·레이아웃 — 추가 유도 */}
+                  {missing.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 border-t bg-surface-subtle/40 px-5 py-2.5">
                       <span className="text-[11px] font-medium text-muted-foreground">추가 가능한 배열·레이아웃</span>
                       {missing.map((d) => (
