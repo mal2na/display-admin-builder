@@ -264,14 +264,18 @@ export const OPERATION_PLATFORMS = ['전체', '모바일', 'PC'] as const;
 // 노출 개수(최소/최대)는 코너 유형이 아니라 빌더에서 코너별로 조정한다 → 세부 항목에서 제외.
 // 더보기 → 'CTA 노출'로 일반화(전체보기·바로가기 등 포함, moreButton* 필드 재사용).
 // 원본 '컴포넌트 노출유형' 어드민의 노출 항목(전체·이미지·타이틀·서브타이틀·가격·배지·순위·담기)을 코너 유형 세부 항목으로 흡수.
-//  · 타이틀/서브타이틀=코너 헤더, CTA=담기 버튼, 배지=상태/신규/할인 라벨(상품·혜택 카드에서).
-//  · '순위 숫자'(랭킹 번호)·'가격'·'상품대표이미지'는 상품형 한정·니치라 세부 토글에서 제외(카드 스캐폴드가 기본 포함).
+//  · 타이틀/서브타이틀=코너 헤더, CTA 노출=담기 버튼, 배지=상태/신규/할인 라벨.
+//  · 상품 이미지·가격·순위 숫자는 상품형 카드 한정 항목(featureApplies로 상품형에서만 노출).
+//  순서는 원본 노출 항목 표와 맞춘다: 이미지 · 타이틀 · 서브타이틀 · 가격 · 배지 · 순위 · 담기(CTA) · 미노출.
 export const CORNER_TYPE_FEATURES = [
+  { key: 'useImage', label: '상품 이미지' },
   { key: 'useMainTitle', label: '타이틀' },
   { key: 'useSubTitle', label: '서브타이틀' },
+  { key: 'usePrice', label: '가격' },
   { key: 'useBadge', label: '배지' },
+  { key: 'useRank', label: '순위 숫자' },
+  { key: 'useMoreButton', label: 'CTA(담기)' },
   { key: 'useNoDisplay', label: '미 노출 기준' },
-  { key: 'useMoreButton', label: 'CTA 노출' },
 ] as const;
 
 // 우리 8분류(CORNER_TYPES) → T우주 이미지의 코너 유형 표기명 매핑.

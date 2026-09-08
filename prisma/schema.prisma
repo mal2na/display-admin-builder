@@ -362,6 +362,9 @@ model CornerType {
   useNoDisplay  Boolean @default(true)
   useMoreButton Boolean @default(true)
   useBadge      Boolean @default(false) // 배지(상태/신규/할인 등) 노출 여부 — 상품·혜택 카드에서. 켜면 코너 스캐폴드에 BADGE 아톰 추가·미리보기 표시
+  useImage      Boolean @default(true)  // 상품 대표이미지 노출 여부 — 상품형 카드. 원본 '컴포넌트 노출유형' 노출 항목
+  usePrice      Boolean @default(true)  // 가격 노출 여부 — 상품형 카드
+  useRank       Boolean @default(false) // 순위 숫자(랭킹 번호) 노출 여부 — 상품형 랭킹 카드
 
   // 타입-레벨 기본값(템플릿 강화) — 이 유형으로 빌더에서 코너를 만들 때 기본 상속(코너별 수정 가능).
   defaultMinItems       Int?    // 기본 노출 개수(하한)

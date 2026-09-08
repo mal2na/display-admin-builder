@@ -89,6 +89,9 @@ function readForm(formData: FormData) {
     useNoDisplay: flag('useNoDisplay'),
     useMoreButton: flag('useMoreButton'),
     useBadge: flag('useBadge'),
+    useImage: flag('useImage'),
+    usePrice: flag('usePrice'),
+    useRank: flag('useRank'),
     // 타입-레벨 기본값(템플릿 강화) — 빌더에서 이 유형으로 코너 생성 시 상속
     defaultMinItems: num('defaultMinItems'),
     defaultMaxItems: num('defaultMaxItems'),
