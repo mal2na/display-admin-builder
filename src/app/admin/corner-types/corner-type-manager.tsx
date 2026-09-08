@@ -413,8 +413,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                               </div>
                               <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
                             </div>
-                            {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임). 고정 높이 + 넘치면 클립 → 카드 사이즈 통일·소형화 */}
-                            <div className="h-[252px] shrink-0 overflow-hidden bg-slate-50 p-2">
+                            {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임). flex-1로 같은 행 최대 높이에 맞춰 채움(안 잘림·동일 사이즈). */}
+                            <div className="flex-1 bg-slate-50 p-2">
                               <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} compact />
                             </div>
                             {/* 하단 고정: 상태 */}
