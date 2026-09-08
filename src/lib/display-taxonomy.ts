@@ -392,7 +392,7 @@ export function isComponentAllowedInCorner(
 //   각 유형이 실제로 갖는 배열·레이아웃만 남긴다. 새 배열이 필요하면 여기 추가 후 등록해 사용.
 export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
   상품형: ['가로형(2.5배열)', '세로형'],
-  배너형: ['이미지형', '팝업배너형'],
+  배너형: ['이미지형'],
   '혜택·오퍼형': ['세로형', '가로형(2.5배열)', '세로형(카테고리탭)'],
   '업무 진입형': ['카테고리 탭', '메뉴 리스트'],
   '상태 안내형': ['아이콘/이미지형'],
