@@ -133,6 +133,10 @@ export type CornerNode = {
   moreButtonUse: boolean;
   moreButtonLabel: string | null;
   moreButtonLink: string | null;
+  showImage: boolean; // 코너별 표시 항목 — 상품 이미지
+  showPrice: boolean; // 가격
+  showBadge: boolean; // 배지(가격 앞)
+  showDesc: boolean; // 설명(부가/흐린 글씨)
   bannerId: string | null;
   bannerName: string | null;
   bannerImageUrl: string | null;
@@ -286,6 +290,10 @@ type CornerPatch = {
   moreButtonUse?: boolean;
   moreButtonLabel?: string;
   bannerPosition?: string;
+  showImage?: boolean;
+  showPrice?: boolean;
+  showBadge?: boolean;
+  showDesc?: boolean;
 };
 type CornerDraftState = { key: string; patch: CornerPatch } | null;
 type CornerPreviewSetter = (key: string, patch: CornerPatch | null) => void;
@@ -376,6 +384,10 @@ function toPreviewCorner(c: CornerNode): PreviewCorner {
     recSource: c.recSource,
     recSourcePlan: c.recSourcePlan,
     showRecReason: c.showRecReason,
+    showImage: c.showImage,
+    showPrice: c.showPrice,
+    showBadge: c.showBadge,
+    showDesc: c.showDesc,
     components: c.components.map((cc) => ({
       id: cc.cornerComponentId,
       name: cc.name,
@@ -1936,6 +1948,7 @@ function CornerInfoForm({
   const [resetKey, setResetKey] = useState(0); // '취소'로 폼(비제어 필드) 초기화
   const [, startTab] = useTransition(); // 상단 카테고리 탭 토글
   const family = cornerFamily(ct);
+  const hasProductComp = corner.components.some((c) => c.componentType === '상품형'); // 표시 항목(상품 카드 요소) UI 노출 기준 — 혜택·오퍼형 2.5 등도 커버
 
   // 코너 정보 실시간 편집 — 저장 전에도 미리보기에 즉시 반영
   const pushCorner = useContext(CornerPreviewContext);
@@ -1945,6 +1958,20 @@ function CornerInfoForm({
   const [subTitleIcon, setSubTitleIcon] = useState(corner.subTitleIcon ?? '사용안함');
   const [cornerLayout] = useState(corner.cornerLayout ?? ''); // 필드는 숨김(값 보존)
   const [layoutDetail, setLayoutDetail] = useState(corner.layoutDetail ?? '');
+  // 코너별 표시 항목(상품 카드 요소 on/off) — 코너 유형 세부 항목의 코너 단위 오버라이드. 배지는 가격에 종속.
+  const [showItems, setShowItems] = useState({
+    showImage: corner.showImage ?? true,
+    showPrice: corner.showPrice ?? true,
+    showBadge: corner.showBadge ?? true,
+    showDesc: corner.showDesc ?? true,
+  });
+  const toggleShow = (key: keyof typeof showItems, on: boolean) =>
+    setShowItems((p) => {
+      const next = { ...p, [key]: on };
+      if (key === 'showPrice' && !on) next.showBadge = false; // 가격 끄면 배지도(배지는 가격 앞)
+      if (key === 'showBadge' && on) next.showPrice = true; // 배지 켜면 가격 자동 ON
+      return next;
+    });
   // 추천 수급 방식 — 재정렬 가능한 '자동 방식'(CVM/룰) + 항상 최하단 고정 '운영자 편성'(운영자가 코너 구성에 직접 짠 항목 = 폴백).
   //  운영자 편성은 정책상 대체 전시(PI-DSP-PER-002) 필수라 끌 수 없고, 운영자가 짠 항목이 곧 폴백이라 늘 켜져 있어야 함(빈 코너 방지). (2026-08-31 사용자 결정)
   const REC_AUTO_METHODS: string[] = ['CVM 기반']; // 수급 자동 방식 = CVM만 (룰 기반은 타겟팅 축이라 제거)
@@ -1984,13 +2011,14 @@ function CornerInfoForm({
         layoutDetail,
         recSource,
         recSourcePlan: recFullPlan.length ? JSON.stringify(recFullPlan) : null,
+        ...showItems, // 코너별 표시 항목 → 미리보기 즉시 반영
         // 빅배너·하단CTA·배너위치는 '코너 구성' 컨트롤에서 즉시 저장(revalidate로 프리뷰 반영) → 여기 draft에서 제외
       });
     } else {
       pushCorner(corner.templateCornerId, null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, recSource, recPrimaryPlan, recPersonalized, corner.templateCornerId]);
+  }, [edit, name, mainTitle, subTitle, subTitleIcon, cornerLayout, layoutDetail, recSource, recPrimaryPlan, recPersonalized, showItems, corner.templateCornerId]);
 
   // 언마운트(코너 전환) 시 미리보기 정리
   useEffect(() => () => pushCorner(corner.templateCornerId, null), [corner.templateCornerId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2215,6 +2243,34 @@ function CornerInfoForm({
         {/* 최소/최대 노출 개수 필드는 표시하지 않음 (값은 보존) */}
         <input type="hidden" name="minItems" value={corner.minItems ?? ''} />
         <input type="hidden" name="maxItems" value={corner.maxItems ?? ''} />
+
+        {/* 코너별 표시 항목 — 코너 유형 세부 항목의 코너 단위 오버라이드. 값은 항상 제출(round-trip), UI는 상품형에만. */}
+        <input type="hidden" name="showImage" value={showItems.showImage ? '1' : ''} />
+        <input type="hidden" name="showPrice" value={showItems.showPrice ? '1' : ''} />
+        <input type="hidden" name="showBadge" value={showItems.showBadge ? '1' : ''} />
+        <input type="hidden" name="showDesc" value={showItems.showDesc ? '1' : ''} />
+        {hasProductComp && (
+          <div className="col-span-2 space-y-1.5 rounded-md border bg-slate-50/60 p-2.5">
+            <label className="text-[11px] font-semibold text-slate-700">표시 항목 <span className="font-normal text-slate-400">· 이 코너 카드에 보일 요소 (유형 기본값 상속 · 코너별 조정)</span></label>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+              {([
+                ['showImage', '상품 이미지'],
+                ['showBadge', '배지'],
+                ['showPrice', '가격'],
+                ['showDesc', '설명'],
+              ] as const).map(([key, label]) => {
+                const badgeLocked = key === 'showBadge' && !showItems.showPrice; // 배지는 가격에 종속
+                return (
+                  <label key={key} className={cn('flex items-center gap-1.5 text-xs', badgeLocked && 'cursor-not-allowed text-muted-foreground/40')} title={badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
+                    <input type="checkbox" checked={showItems[key] && !badgeLocked} disabled={badgeLocked} onChange={(e) => toggleShow(key, e.target.checked)} className="accent-indigo-600 disabled:opacity-40" />
+                    {label}
+                  </label>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-slate-400">끄면 미리보기에서 숨겨요(내용은 지우지 않음). 타이틀·서브타이틀·CTA는 아래·별도 컨트롤에서 조정.</p>
+          </div>
+        )}
 
         {/* 상품형 전용: 상품 노출 순서 */}
         {family === 'product' && (
@@ -2861,6 +2917,10 @@ export function BuilderEditor({
         if (p.moreButtonUse !== undefined) pc.moreButtonUse = p.moreButtonUse;
         if (p.moreButtonLabel !== undefined) pc.moreButtonLabel = p.moreButtonLabel || null;
         if (p.bannerPosition !== undefined) pc.bannerPosition = p.bannerPosition || null;
+        if (p.showImage !== undefined) pc.showImage = p.showImage;
+        if (p.showPrice !== undefined) pc.showPrice = p.showPrice;
+        if (p.showBadge !== undefined) pc.showBadge = p.showBadge;
+        if (p.showDesc !== undefined) pc.showDesc = p.showDesc;
       }
       // 컴포넌트 Atom 실시간 반영 (칩 편집 · 비-칩 Atom 편집)
       pc.components = pc.components.map((comp) => {

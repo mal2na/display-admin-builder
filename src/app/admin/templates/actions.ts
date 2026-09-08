@@ -388,6 +388,11 @@ function readCornerInfo(formData: FormData) {
     userMinItems: uMinRaw ? Number(uMinRaw) : null,
     userMaxItems: uMaxRaw ? Number(uMaxRaw) : null,
     noDisplayCondition: nn(formData, 'noDisplayCondition'),
+    // 코너별 표시 항목(상품 카드 요소 on/off) — 체크박스 hidden 값 '1'/''
+    showImage: String(formData.get('showImage') ?? '') === '1',
+    showPrice: String(formData.get('showPrice') ?? '') === '1',
+    showBadge: String(formData.get('showBadge') ?? '') === '1',
+    showDesc: String(formData.get('showDesc') ?? '') === '1',
     recSource: nn(formData, 'recSource'), // (대표) 1순위 추천 수급 방식
     recSourcePlan: nn(formData, 'recSourcePlan'), // 우선순위 편성(JSON 배열, 1순위→폴백)
     showRecReason: String(formData.get('showRecReason') ?? '') === '1', // 추천 근거 표시 여부(레거시·미표시)
@@ -582,6 +587,11 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
       recSource: def.defaultRecSource ?? null,
       moreButtonUse: moreOn,
       moreButtonLabel: moreOn ? (def.defaultMoreButtonLabel ?? '전체보기') : null,
+      // 표시 항목(코너 유형 세부 항목) → 코너별 오버라이드 초기값 상속
+      showImage: def.useImage ?? true,
+      showPrice: def.usePrice ?? true,
+      showBadge: def.useBadge ?? true,
+      showDesc: def.useDesc ?? true,
       // 코너 유형 관리의 유형 샘플 썸네일을 코너에 상속(카드/참고용) — 컴포넌트가 생기면 미리보기는 컴포넌트로 렌더
       sampleImageUrl: def.sampleImageUrl,
       // 사용처 추적: 이 코너가 생성된 원본 코너 유형(카탈로그) id

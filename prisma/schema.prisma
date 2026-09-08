@@ -127,6 +127,13 @@ model Corner {
   moreButtonLabel    String? // 더보기 버튼명
   moreButtonLink     String? // 더보기 랜딩 URL
 
+  // 코너별 표시 항목(코너 유형 세부 항목의 코너 단위 오버라이드) — 상품 카드 요소 on/off. 유형 기본값 상속, 빌더에서 조정.
+  // 비파괴적: 끄면 아톰을 지우지 않고 미리보기에서만 숨긴다(다시 켜면 그대로 노출).
+  showImage Boolean @default(true) // 상품 이미지
+  showPrice Boolean @default(true) // 가격
+  showBadge Boolean @default(true) // 배지(가격 앞)
+  showDesc  Boolean @default(true) // 설명(부가/흐린 글씨)
+
   // 배너형 코너에 연결된 배너 라이브러리 항목 (포탈2 BannerSlot)
   bannerId String?
   banner   Banner? @relation(fields: [bannerId], references: [id])
