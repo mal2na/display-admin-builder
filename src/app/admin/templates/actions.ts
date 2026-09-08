@@ -429,10 +429,10 @@ export async function createCorner(templateId: string, formData: FormData) {
 type ScaffoldAtom = { name: string; atomType: string; content?: string; imageUrl?: string; altText?: string; linkUrl?: string };
 type ScaffoldComp = { name: string; componentType: ComponentType; atoms: ScaffoldAtom[]; chipRows?: number; selectedIndex?: number };
 
-function scaffoldSpecFor(componentType: string | null, typeDetail: string | null, feats: { badge?: boolean; image?: boolean; price?: boolean } = {}): ScaffoldComp[] {
+function scaffoldSpecFor(componentType: string | null, typeDetail: string | null, feats: { badge?: boolean; image?: boolean; price?: boolean; desc?: boolean } = {}): ScaffoldComp[] {
   const ct = (componentType ?? '') as ComponentType | '';
   const d = typeDetail ?? '';
-  const { badge = false, image = true, price = true } = feats; // 유형 세부 항목(표시 항목) — 켜진 항목만 스캐폴드에 넣는다
+  const { badge = false, image = true, price = true, desc = true } = feats; // 유형 세부 항목(표시 항목) — 켜진 항목만 스캐폴드에 넣는다
   const tabComp: ScaffoldComp = {
     name: '카테고리 탭',
     componentType: '선택형',
@@ -448,6 +448,7 @@ function scaffoldSpecFor(componentType: string | null, typeDetail: string | null
       { name: '상품명', atomType: 'TEXT', content: `상품 ${i}` },
       ...badgeAtom('NEW'), // 배지는 가격 앞에 붙는다(정책 상품 Set: 가격·배지 인접)
       ...(price ? [{ name: '가격', atomType: 'PRICE' as const, content: '' }] : []), // 가격 ON
+      ...(desc ? [{ name: '설명', atomType: 'INFO' as const, content: '' }] : []), // 설명(부가/흐린 글씨) ON — 정보값 Atom
     ],
   });
   const benefitComp = (i: number): ScaffoldComp => ({
@@ -592,7 +593,7 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
     },
   });
   // 유형의 컴포넌트 유형·배열에 맞춰 '코너 구성'을 스캐폴딩(불러오면 코너 정보 + 코너 구성이 실제로 채워짐)
-  await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail, { badge: def.useBadge, image: def.useImage, price: def.usePrice }));
+  await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail, { badge: def.useBadge, image: def.useImage, price: def.usePrice, desc: def.useDesc }));
   return corner;
 }
 

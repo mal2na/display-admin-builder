@@ -60,6 +60,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     useBadge: ct.useBadge ?? false,
     useImage: ct.useImage ?? true,
     usePrice: ct.usePrice ?? true,
+    useDesc: ct.useDesc ?? true,
     defaultMinItems: ct.defaultMinItems ?? null,
     defaultMaxItems: ct.defaultMaxItems ?? null,
     defaultSortStrategy: ct.defaultSortStrategy ?? null,

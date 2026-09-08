@@ -263,9 +263,12 @@ export const OPERATION_PLATFORMS = ['전체', '모바일', 'PC'] as const;
 // 코너 유형 세부 항목(항목별 사용여부) 정의 — 폼/표기 공용
 // 노출 개수(최소/최대)는 코너 유형이 아니라 빌더에서 코너별로 조정한다 → 세부 항목에서 제외.
 // 더보기 → 'CTA 노출'로 일반화(전체보기·바로가기 등 포함, moreButton* 필드 재사용).
-// 정책서 상품 Component 노출 데이터 Set = "대표 이미지, 상품명, 가격, 배지, CTA" (POL-DSP). 이를 코너 유형 세부 항목으로 흡수.
-//  · 타이틀/서브타이틀=코너 헤더(상품명), 배지=가격 앞에 붙는 라벨(할인·NEW 등), CTA=담기/자세히 버튼.
-//  · 상품 이미지·가격·배지는 상품형 카드 한정(featureApplies). '순위 숫자'는 정책 노출 Set에 없어 제외(랭킹은 정책상 우선순위=코너 배치 기준이지 카드 번호가 아님).
+// 정책서 Atom/상품 Component Set 기반 세부 항목 — "대표 이미지, 상품명, 가격, 배지, 혜택 문구/정보값, CTA" (POL-DSP).
+//  카드 본문은 케이스마다 조합이 달라 세 요소(텍스트=상품명 · 가격 · 설명=흐린 글씨)를 각각 둔다:
+//  · 가격 = 가격 Atom(예: 12,900원) · 설명 = 혜택 문구/정보값 Atom(예: '데이터 500', 흐린 글씨 부가 정보).
+//    같은 자리라도 어떤 코너는 가격, 어떤 코너는 설명이라 하나로 '가격'이라 못 박지 않는다.
+//  · 배지는 가격 앞에 붙는 라벨(할인·NEW 등)이라 가격에 종속(가격 없으면 배지 없음).
+//  · 상품 이미지·가격·설명·배지는 상품형 카드 한정(featureApplies). '순위 숫자'는 정책 노출 Set에 없어 제외.
 //  · 미노출 조건 = 표시 데이터가 없거나(재고 소진·후보 없음) 노출 조건(TM-DSP-008: 로그인·기간·상품 상태 등)에 안 맞을 때 숨기는 기준.
 export const CORNER_TYPE_FEATURES = [
   { key: 'useImage', label: '상품 이미지' },
@@ -273,6 +276,7 @@ export const CORNER_TYPE_FEATURES = [
   { key: 'useSubTitle', label: '서브타이틀' },
   { key: 'useBadge', label: '배지' },
   { key: 'usePrice', label: '가격' },
+  { key: 'useDesc', label: '설명' },
   { key: 'useMoreButton', label: 'CTA' },
   { key: 'useNoDisplay', label: '미노출 조건' },
 ] as const;

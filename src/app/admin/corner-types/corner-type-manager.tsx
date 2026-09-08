@@ -65,6 +65,7 @@ export type CornerTypeRow = {
   useBadge: boolean;
   useImage: boolean;
   usePrice: boolean;
+  useDesc: boolean;
   // 타입-레벨 기본값(빌더 상속)
   defaultMinItems: number | null;
   defaultMaxItems: number | null;
@@ -113,6 +114,7 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   useBadge: false,
   useImage: true,
   usePrice: true,
+  useDesc: true,
   defaultMinItems: null,
   defaultMaxItems: null,
   defaultSortStrategy: null,
@@ -406,7 +408,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             </div>
                             {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임). flex-1로 같은 행 최대 높이에 맞춰 채움(안 잘림·동일 사이즈). */}
                             <div className="flex-1 bg-slate-50 p-2">
-                              <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} badge={t.useBadge} image={t.useImage} price={t.usePrice} compact />
+                              <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} badge={t.useBadge} image={t.useImage} price={t.usePrice} desc={t.useDesc} compact />
                             </div>
                             {/* 하단 고정: 상태 */}
                             <div className="mt-auto flex flex-wrap items-center gap-1 border-t px-3 py-2.5">
@@ -623,6 +625,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
     useBadge: row.useBadge,
     useImage: row.useImage,
     usePrice: row.usePrice,
+    useDesc: row.useDesc,
   });
 
   // ① 코너 유형 = 정책서 7종 고정(PI-DSP-CMP-003 / TM-DSP-021). 수정 시 레거시 값 보존.
@@ -678,7 +681,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const featureApplies = (key: string) => {
     if (key === 'useMainTitle' || key === 'useSubTitle') return !noHeaderType;
     if (key === 'useMoreButton') return isListType; // CTA 노출은 리스트형에서 의미
-    if (key === 'useImage' || key === 'usePrice' || key === 'useBadge') return compValid === '상품형'; // 상품 이미지·가격·배지(가격 앞)는 상품형 카드에서만
+    if (key === 'useImage' || key === 'usePrice' || key === 'useBadge' || key === 'useDesc') return compValid === '상품형'; // 상품 이미지·가격·설명·배지는 상품형 카드에서만
     return true; // 미 노출 기준은 어떤 코너에서도 설정 가능
   };
   // 실제 적용값 = 토글 ON && 유형에 적용 가능
@@ -688,6 +691,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   // 이미지·가격은 상품형이 아닐 땐 기본 노출(true)로 둔다 — 유형에 해당 항목이 없으면 미리보기에선 원래대로 보여야 함.
   const imageOn = featureApplies('useImage') ? features.useImage : true;
   const priceOn = featureApplies('usePrice') ? features.usePrice : true;
+  const descOn = featureApplies('useDesc') ? features.useDesc : true; // 설명(부가/흐린 글씨) — 상품형 외엔 기본 노출
   // 추천 수급 방식 + 노출 구성 = 한 섹션. CVM 수급이면 노출 구성(정렬·CTA)은 CVM이 결정 → 선택 불가.
   const isRecEligible = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(base);
   const cvmChosen = recSource === 'CVM 기반';
@@ -719,7 +723,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
         <div className="border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">기본 정보</div>
         {/* 상단: 좌측 미리보기(고정 폭) + 우측 핵심 필드(코너 유형 ID · 코너 유형 · 유형 상세) */}
         <div className="grid grid-cols-1 items-start gap-5 border-b p-3 md:grid-cols-[460px_minmax(0,1fr)]">
-          <TypeDetailPreview base={base} component={compValid} detail={detailValid} bigBanner={bigBannerOn} useTitle={useTitle} useSub={useSub} useMore={eff('useMoreButton')} badge={eff('useBadge')} image={imageOn} price={priceOn} ctaLabel={moreLabel} />
+          <TypeDetailPreview base={base} component={compValid} detail={detailValid} bigBanner={bigBannerOn} useTitle={useTitle} useSub={useSub} useMore={eff('useMoreButton')} badge={eff('useBadge')} image={imageOn} price={priceOn} desc={descOn} ctaLabel={moreLabel} />
           <div className="space-y-3">
             {/* 코너 유형 명은 [코너 유형 · 컴포넌트 · 배열]로 자동 구성 · 코너 레이아웃은 값 보존 */}
             <input type="hidden" name="name" value={derivedName} />
@@ -1138,7 +1142,7 @@ function TRow({
 }
 
 /** 유형 상세 선택 시 만들어질 코너 레이아웃 미리보기 (스켈레톤 목업) */
-export function TypeDetailPreview({ base, component, detail, bigBanner = false, useTitle = true, useSub = true, useMore, badge = false, image = true, price = true, ctaLabel, compact = false }: { base: string; component?: string; detail: string; bigBanner?: boolean; useTitle?: boolean; useSub?: boolean; useMore?: boolean; badge?: boolean; image?: boolean; price?: boolean; ctaLabel?: string; compact?: boolean }) {
+export function TypeDetailPreview({ base, component, detail, bigBanner = false, useTitle = true, useSub = true, useMore, badge = false, image = true, price = true, desc = true, ctaLabel, compact = false }: { base: string; component?: string; detail: string; bigBanner?: boolean; useTitle?: boolean; useSub?: boolean; useMore?: boolean; badge?: boolean; image?: boolean; price?: boolean; desc?: boolean; ctaLabel?: string; compact?: boolean }) {
   // 스켈레톤(회색 막대) 대신 '위치에 이름'을 적는 라벨 슬롯 — Title / Description / img / Badge / Price …
   const Slot = ({ label, className = '' }: { label: string; className?: string }) => (
     <div className={cn('flex items-center justify-center overflow-hidden rounded border border-dashed border-slate-400 bg-slate-100 px-1 text-center text-[9px] font-semibold leading-none text-slate-600', className)}>
@@ -1160,6 +1164,8 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       <Slot label="가격" className="h-3 min-w-0 flex-1" />
     </div>
   ) : null);
+  // 설명 행(부가/흐린 글씨, 예: '데이터 500') — 혜택 문구/정보값 Atom. 가격과 별개로 존재 가능.
+  const DescSlot = ({ className = '' }: { className?: string }) => (desc ? <Slot label="설명" className={cn('border-slate-300 bg-slate-50 text-slate-400', className)} /> : null);
   // CTA 텍스트 — 세부 항목 CTA ON일 때 실제 문구(② 노출 구성의 CTA 기본 문구)로 표시. 미입력 시 'CTA' 안내.
   const ctaText = (ctaLabel && ctaLabel.trim()) || 'CTA';
   // 가로형(2.5배열) 카드 비율 미리보기 뷰 — 1:1(상품)/3:4(포스터)/4:3(와이드) 전환
@@ -1194,6 +1200,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
           <Slot label="텍스트" className="h-3 w-1/3 justify-start" />
           <Slot label="텍스트" className="h-4 w-3/4 justify-start" />
           <PriceRow className="h-3 w-1/2 justify-start" />
+          <DescSlot className="h-2.5 w-2/3 justify-start" />
         </div>
         <ImgSlot className="h-16 w-16 shrink-0" />
       </div>
@@ -1215,6 +1222,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
             <div className="flex-1 space-y-1">
               <Slot label="텍스트" className="h-3 w-3/4 justify-start" />
               <PriceRow className="h-3 w-1/3 justify-start" />
+              <DescSlot className="h-2.5 w-1/2 justify-start" />
             </div>
           </div>
         ))}
@@ -1259,6 +1267,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
               <ImgSlot className={cn('w-full', ratioCls)} />
               <Slot label="텍스트" className="h-3 w-full justify-start" />
               <PriceRow className="h-3 w-2/3 justify-start" />
+              <DescSlot className="h-2.5 w-1/2 justify-start" />
             </div>
           ))}
         </div>
@@ -1275,6 +1284,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
               <ImgSlot className="aspect-[16/10] w-full" />
               <Slot label="텍스트" className="h-4 w-3/4 justify-start" />
               <PriceRow className="h-3 w-1/2 justify-start" />
+              <DescSlot className="h-2.5 w-2/5 justify-start" />
             </div>
           ))}
         </div>
@@ -1290,6 +1300,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
             <ImgSlot className="h-28 w-full" />
             <Slot label="텍스트" className="h-3 w-full justify-start" />
             <PriceRow className="h-3 w-2/3 justify-start" />
+            <DescSlot className="h-2.5 w-1/2 justify-start" />
           </div>
         ))}
       </div>
