@@ -413,8 +413,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                               </div>
                               <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
                             </div>
-                            {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임) — 사진 대신 구조를 보여준다 */}
-                            <div className="bg-slate-50 p-2">
+                            {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임) — 사진 대신 구조. flex-1로 배경 영역을 카드 높이에 맞춰 채운다(같은 행 동일 사이즈). */}
+                            <div className="flex-1 bg-slate-50 p-2">
                               <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} compact />
                             </div>
                             {/* 하단 고정: 상태 (mt-auto로 카드 바닥 정렬) */}
@@ -1340,7 +1340,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
   // 세부 항목 토글(타이틀/서브타이틀 사용여부)에 따라 헤더 슬롯을 켜고 끈다
   const showHeader = !noHeader && (useTitle || useSub);
   return (
-    <div className={cn('rounded-md border bg-slate-50', compact ? 'p-1.5' : 'p-3')}>
+    <div className={compact ? 'flex h-full flex-col' : 'rounded-md border bg-slate-50 p-3'}>
       {!compact && (
         <p className="mb-2 text-xs font-medium text-muted-foreground">
           미리보기 · {base}
@@ -1349,7 +1349,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
           {bigBanner ? ' · 빅배너' : ''}
         </p>
       )}
-      <div className={cn('w-full rounded-lg border bg-white', compact ? 'p-2.5' : 'min-h-[340px] p-5 shadow-sm')}>
+      <div className={cn('w-full rounded-lg border bg-white', compact ? 'flex-1 p-2.5' : 'min-h-[340px] p-5 shadow-sm')}>
         <div className="space-y-3">
           {showHeader && (
             <div className="space-y-1">
