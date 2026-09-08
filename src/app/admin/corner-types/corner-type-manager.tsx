@@ -395,7 +395,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   {rows.length === 0 ? (
                     <p className="px-5 py-4 text-[13px] text-muted-foreground">등록된 배열·레이아웃이 없습니다. <b className="text-foreground">배열·레이아웃 추가</b>로 이 유형의 첫 배열을 등록하세요.</p>
                   ) : (
-                    <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="flex gap-3 overflow-x-auto p-4">
                       {rows.map((t) => {
                         const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
                         return (
@@ -403,7 +403,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             key={t.id}
                             type="button"
                             onClick={() => router.push(`/admin/corner-types/${t.id}`)}
-                            className="group flex flex-col overflow-hidden rounded-xl border bg-white text-left shadow-sm transition hover:border-primary/50 hover:shadow-md"
+                            className="group flex w-[210px] shrink-0 flex-col overflow-hidden rounded-xl border bg-white text-left shadow-sm transition hover:border-primary/50 hover:shadow-md"
                           >
                             {/* 상단 고정: 배열·레이아웃 이름 + ID (미리보기 높이와 무관하게 정렬) */}
                             <div className="border-b px-3 py-2.5">
@@ -413,11 +413,11 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                               </div>
                               <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
                             </div>
-                            {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임) — 사진 대신 구조. flex-1로 배경 영역을 카드 높이에 맞춰 채운다(같은 행 동일 사이즈). */}
-                            <div className="flex-1 bg-slate-50 p-2">
+                            {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임). 고정 높이 + 넘치면 클립 → 카드 사이즈 통일·소형화 */}
+                            <div className="h-[168px] shrink-0 overflow-hidden bg-slate-50 p-2">
                               <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} compact />
                             </div>
-                            {/* 하단 고정: 상태 (mt-auto로 카드 바닥 정렬) */}
+                            {/* 하단 고정: 상태 */}
                             <div className="mt-auto flex flex-wrap items-center gap-1 border-t px-3 py-2.5">
                               {t.liveVersion != null && t.active
                                 ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
