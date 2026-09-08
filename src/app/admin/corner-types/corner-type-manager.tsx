@@ -630,8 +630,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   };
   const typeShapes = (() => {
     const seen = new Set<string>(); const out: string[] = [];
-    for (const r of registered.filter((x) => x.baseCategory === base)) if (r.typeDetail && !seen.has(r.typeDetail)) { seen.add(r.typeDetail); out.push(r.typeDetail); }
-    for (const d of cornerTypeDetails(base)) if (!seen.has(d)) { seen.add(d); out.push(d); }
+    for (const d of cornerTypeDetails(base)) if (!seen.has(d)) { seen.add(d); out.push(d); } // 카탈로그 순서 우선(가로2.5·가로1.5·세로·그리드)
+    for (const r of registered.filter((x) => x.baseCategory === base)) if (r.typeDetail && !seen.has(r.typeDetail)) { seen.add(r.typeDetail); out.push(r.typeDetail); } // 카탈로그 밖 등록분
     if (onOrigBase && row.typeDetail && !seen.has(row.typeDetail)) { seen.add(row.typeDetail); out.push(row.typeDetail); }
     return out;
   })();
@@ -764,17 +764,21 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
                     </span>
                   </label>
                 )}
-                {typeShapes.map((d) => (
-                  <label key={d} className="cursor-pointer">
+                {typeShapes.map((d) => {
+                  const isReg = registered.some((r) => r.baseCategory === base && (r.typeDetail ?? '') === d); // 이 유형·배열이 이미 등록됐나
+                  return (
+                  <label key={d} className="inline-flex cursor-pointer items-center gap-1">
                     <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
                     <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">
                       {layoutLabel(d)}
                     </span>
+                    {isReg && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700" title="이 유형·배열은 이미 등록돼 있어요(다시 등록해도 됩니다)">등록됨</span>}
                   </label>
-                ))}
+                  );
+                })}
               </div>
               <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                배열은 <b>형태(레이아웃)</b>만 정합니다. <b>노출 개수(몇 개를 보여줄지)</b>는 유형에서 고정하지 않고, <b>코너를 배치할 때(빌더)에서 최대 노출 개수로 추가·조정</b>할 수 있어요.
+                배열은 <b>형태(레이아웃)</b>만 정합니다. <b className="text-emerald-700">등록됨</b> 표시는 이미 같은 유형·배열이 있다는 뜻(다시 등록 가능). <b>노출 개수</b>는 빌더에서 코너별로 조정.
               </p>
             </div>
 
@@ -1171,14 +1175,13 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       </div>
     );
   } else if (has('그리드')) {
-    // 그리드형 — 2열 그리드로 카드 배치(정사각 카드).
+    // 그리드형 — 2열 그리드로 카드 배치(다른 배열과 높이 맞추려 카드 컴팩트).
     body = (
       <div className="grid grid-cols-2 gap-2">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
-            <Slot label="이미지" className="aspect-square w-full" />
-            <Slot label="텍스트" className="h-3 w-3/4 justify-start" />
-            <Slot label="설명" className="h-3 w-1/2 justify-start" />
+            <Slot label="이미지" className="aspect-[4/3] w-full" />
+            <Slot label="텍스트" className="h-2.5 w-3/4 justify-start" />
           </div>
         ))}
       </div>
