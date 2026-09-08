@@ -16,6 +16,8 @@ import {
   cornerTypeChipClass,
   componentTypesForCorner,
   cornerTypeDetails,
+  layoutLabel,
+  componentLabel,
   componentLayoutDetails,
   PRODUCT_SORT_OPTIONS,
   REC_SOURCE_METHODS,
@@ -278,7 +280,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             <div>
               <p className="mb-1 text-xs font-medium text-muted-foreground">유형 상세</p>
               <select value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={`${selectCls} w-full`}>
-                {detailOptions.map((o) => <option key={o} value={o}>{o}</option>)}
+                {detailOptions.map((o) => <option key={o} value={o}>{layoutLabel(o)}</option>)}
               </select>
             </div>
             <div>
@@ -383,7 +385,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                       {allowed.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="text-[11px] font-semibold text-foreground">담을 수 있는 컴포넌트</span>
-                          {allowed.map((c) => <span key={c} className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{c}</span>)}
+                          {allowed.map((c) => <span key={c} className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{componentLabel(c)}</span>)}
                           <span className="ml-1 text-[10px] text-muted-foreground/70">PI-DSP-CMP-003 · 유형 기준(배열·레이아웃 무관)</span>
                         </div>
                       )}
@@ -408,8 +410,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             {/* 상단 고정: 배열·레이아웃 이름 + ID (미리보기 높이와 무관하게 정렬) */}
                             <div className="border-b px-3 py-2.5">
                               <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="text-[14px] font-semibold text-foreground">{t.typeDetail ?? '(상세 없음)'}</span>
-                                {t.componentType && t.componentType !== bc && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{t.componentType}</span>}
+                                <span className="text-[14px] font-semibold text-foreground">{layoutLabel(t.typeDetail) || '(상세 없음)'}</span>
+                                {t.componentType && t.componentType !== bc && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{componentLabel(t.componentType)}</span>}
                               </div>
                               <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
                             </div>
@@ -466,10 +468,10 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                     {t.baseCategory}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs">{t.componentType ?? '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-xs">{componentLabel(t.componentType) || '-'}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-xs">
                   <span className="inline-flex items-center gap-1">
-                    {t.typeDetail ?? '-'}
+                    {layoutLabel(t.typeDetail) || '-'}
                     {t.bigBanner && (
                       <span className="inline-flex items-center rounded border border-dashed border-indigo-400 bg-indigo-50/60 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">빅배너</span>
                     )}
@@ -784,7 +786,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
                   <label key={d} className="cursor-pointer">
                     <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
                     <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">
-                      {d}
+                      {layoutLabel(d)}
                     </span>
                   </label>
                 ))}
@@ -1344,8 +1346,8 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       {!compact && (
         <p className="mb-2 text-xs font-medium text-muted-foreground">
           미리보기 · {base}
-          {c && c !== base ? ` › ${c}` : ''}
-          {detail ? ` › ${detail}` : ''}
+          {c && c !== base ? ` › ${componentLabel(c)}` : ''}
+          {detail ? ` › ${layoutLabel(detail)}` : ''}
           {bigBanner ? ' · 빅배너' : ''}
         </p>
       )}

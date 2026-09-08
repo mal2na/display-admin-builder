@@ -21,6 +21,8 @@ import {
   cornerTypePurpose,
   cornerTypeGovernance,
   componentTypesForCorner,
+  layoutLabel,
+  componentLabel,
   ATOM_TYPES,
   ATOM_TYPE_LABELS,
   ATOM_TYPE_FIELDS,
@@ -183,7 +185,7 @@ function cornerTypeParts(corner: CornerNode): { base: string; rest: string; bigB
   // 빅배너는 인스턴스 옵션(corner.bigBanner)이 유일한 진실 — 끄면 칩·상단배너·렌더 모두 사라진다(레거시 배열마커/배너연결 폴백 제거).
   const bigBanner = !isBannerCorner && corner.bigBanner;
   const detail = raw.replace(/\s*·\s*빅배너\s*/, '').replace(/\(배너\)/, '').trim();
-  const rest = [comp, detail].filter(Boolean).join(' · '); // 빅배너는 경로에서 빼고 별도 배지로
+  const rest = [componentLabel(comp), layoutLabel(detail)].filter(Boolean).join(' · '); // 빅배너는 경로에서 빼고 별도 배지로
   return { base, rest, bigBanner };
 }
 
@@ -227,11 +229,11 @@ function CornerGovernance({ base, layoutDetail }: { base: string; layoutDetail?:
       {allowed.length > 0 && (
         <div className="flex flex-wrap items-center gap-1">
           <span className="text-[10px] font-semibold text-slate-500">담을 수 있는 컴포넌트</span>
-          {allowed.map((c) => <span key={c} className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary">{c}</span>)}
+          {allowed.map((c) => <span key={c} className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary">{componentLabel(c)}</span>)}
           <span className="text-[9px] text-slate-400">· PI-DSP-CMP-003</span>
         </div>
       )}
-      {layoutDetail && <p className="text-[10px] text-slate-500">배열·레이아웃 · <b className="text-slate-700">{layoutDetail}</b></p>}
+      {layoutDetail && <p className="text-[10px] text-slate-500">배열·레이아웃 · <b className="text-slate-700">{layoutLabel(layoutDetail)}</b></p>}
       {gov && <p className="border-t border-dashed border-slate-200 pt-1.5 text-[10px] leading-relaxed text-slate-500">{gov}</p>}
     </div>
   );
@@ -2067,7 +2069,7 @@ function CornerInfoForm({
                       .map((bc) => (
                         <optgroup key={bc} label={nameMap[bc] ?? bc}>
                           {byBase.get(bc)!.map((t) => (
-                            <option key={t.id} value={t.id}>{t.typeDetail || t.componentType || '기본'}</option>
+                            <option key={t.id} value={t.id}>{layoutLabel(t.typeDetail) || componentLabel(t.componentType) || '기본'}</option>
                           ))}
                         </optgroup>
                       ));
@@ -2636,7 +2638,7 @@ function CornerLoadModal({
     .map((t) => {
       const component = t.componentType ?? '';
       const bigBanner = !!t.bigBanner;
-      const rest = [component, t.typeDetail ?? ''].filter(Boolean).join(' · '); // 빅배너는 배지로 분리
+      const rest = [componentLabel(component), layoutLabel(t.typeDetail)].filter(Boolean).join(' · '); // 빅배너는 배지로 분리
       return {
         id: t.id,
         base: t.baseCategory,
@@ -2719,9 +2721,9 @@ function CornerLoadModal({
                               <img src={t.sampleImageUrl!.split('\n')[0]} alt="" className="h-8 w-12 shrink-0 rounded border object-cover object-top" />
                             )}
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate text-[13px] font-medium text-foreground">{t.detail || t.component || '기본'}</span>
+                              <span className="block truncate text-[13px] font-medium text-foreground">{layoutLabel(t.detail) || componentLabel(t.component) || '기본'}</span>
                               {/* 컴포넌트 표시는 유형과 다를 때만(‘상품형 안에 상품형’ 중복 제거) */}
-                              {t.component && t.detail && t.component !== t.base && <span className="block truncate text-[10px] text-muted-foreground">{t.component}</span>}
+                              {t.component && t.detail && t.component !== t.base && <span className="block truncate text-[10px] text-muted-foreground">{componentLabel(t.component)}</span>}
                             </span>
                             {t.bigBanner && <BigBannerBadge className="shrink-0" />}
                           </button>

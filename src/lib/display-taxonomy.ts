@@ -407,6 +407,26 @@ export function cornerTypeDetails(cornerType: string): readonly string[] {
   return (CORNER_TYPE_DETAILS as Record<string, readonly string[]>)[cornerType] ?? [];
 }
 
+// ── 표시명 통일(2026-09) — 저장값(typeDetail)은 유지하고 화면 표기만 '형태 기준'으로 정리. ──
+//  콘텐츠 이름(카테고리 탭·바코드…)을 형태명(탭형·바코드형…)으로. 매처/DB는 원값 그대로라 안전.
+const LAYOUT_LABEL: Record<string, string> = {
+  '세로형(카테고리탭)': '세로형(탭)',
+  '카테고리 탭': '탭형',
+  '메뉴 리스트': '리스트형',
+  '아이콘/이미지형': '카드형',
+  '바코드': '바코드형',
+};
+export function layoutLabel(detail?: string | null): string {
+  if (!detail) return '';
+  return LAYOUT_LABEL[detail] ?? detail;
+}
+// 컴포넌트 표시명 — 정책명(선택형)은 유지하되, 애매한 '선택형'은 화면에서 '선택형(탭·메뉴)'로 명확히.
+const COMPONENT_LABEL: Record<string, string> = { '선택형': '선택형(탭·메뉴)' };
+export function componentLabel(c?: string | null): string {
+  if (!c) return '';
+  return COMPONENT_LABEL[c] ?? c;
+}
+
 // ── 3단 계층 ③: 구성 컴포넌트 유형(②) → 배열/레이아웃 상세 SSOT ──
 //  코너 유형(①) → CORNER_COMPONENT_MAP → 컴포넌트 유형(②) → 여기 → 배열 상세(③).
 //  같은 '상품형'이라도 ①(상품 코너 자체)과 ②(다른 코너 안 상품 모듈)는 계층이 다르며,
