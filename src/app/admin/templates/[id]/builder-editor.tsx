@@ -19,6 +19,7 @@ import {
   cornerFamily,
   cornerTypeChipClass,
   cornerTypePurpose,
+  isComponentAllowedInCorner,
   layoutLabel,
   componentLabel,
   ATOM_TYPES,
@@ -55,6 +56,7 @@ import {
   reorderCorners,
   addBlankComponent,
   removeComponent,
+  toggleCornerTab,
   renameComponent,
   moveComponent,
   reorderComponents,
@@ -1931,6 +1933,7 @@ function CornerInfoForm({
   // 하단 CTA(더보기) 사용여부/문구는 '코너 구성'의 MoreButtonControl로 이동(여기선 상태 없음).
   const [loadOpen, setLoadOpen] = useState(false); // '코너 불러오기' 피커 열림
   const [resetKey, setResetKey] = useState(0); // '취소'로 폼(비제어 필드) 초기화
+  const [, startTab] = useTransition(); // 상단 카테고리 탭 토글
   const family = cornerFamily(ct);
 
   // 코너 정보 실시간 편집 — 저장 전에도 미리보기에 즉시 반영
@@ -2096,6 +2099,22 @@ function CornerInfoForm({
             <CornerGovernance base={ct} layoutDetail={layoutDetail} />
           </div>
         </div>
+
+        {/* 상단 카테고리 탭 토글 — 탭은 별도 배열이 아니라 선택형 컴포넌트. 이 유형이 선택형을 허용할 때만. */}
+        {isComponentAllowedInCorner(ct as CornerType, '선택형') && (() => {
+          const hasTab = corner.components.some((c) => c.componentType === '선택형');
+          return (
+            <div className="col-span-2 flex items-center justify-between gap-2 rounded-md border bg-white px-2.5 py-2">
+              <span className="text-[11px] font-medium text-foreground">상단 카테고리 탭 <span className="font-normal text-muted-foreground">· {hasTab ? '켜짐 — 상단에 탭(선택형)이 얹혀 있어요' : '끄면 없음 · 켜면 카테고리 탭을 얹어요'}</span></span>
+              <button type="button" role="switch" aria-checked={hasTab}
+                onClick={() => startTab(() => toggleCornerTab(templateId, corner.id))}
+                title={hasTab ? '카테고리 탭 끄기(선택형 컴포넌트 제거)' : '카테고리 탭 켜기(선택형 컴포넌트 추가)'}
+                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', hasTab ? 'bg-primary' : 'bg-slate-300')}>
+                <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', hasTab ? 'translate-x-4' : 'translate-x-0.5')} />
+              </button>
+            </div>
+          );
+        })()}
 
         {/* 추천 수급 방식 — 자동 방식(CVM/룰)을 우선순위로 편성 + 운영자 편성(최하단 고정 폴백). (정책 근거: CVM 개인화 / 룰=노출조건 PI-DSP-RUL-001 / 대체 전시 PI-DSP-PER-002) */}
         {isRecCorner && (

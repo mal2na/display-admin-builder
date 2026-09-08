@@ -933,6 +933,27 @@ export async function removeComponent(templateId: string, cornerComponentId: str
   rp(templateId);
 }
 
+// 상단 카테고리 탭 토글 — 탭 = 선택형 컴포넌트. 있으면 제거(끄기), 없으면 카테고리 탭 스캐폴드 추가(켜기).
+export async function toggleCornerTab(templateId: string, cornerId: string) {
+  const corner = await prisma.corner.findUnique({
+    where: { id: cornerId },
+    select: { cornerType: true, cornerComponents: { include: { component: { select: { componentType: true } } } } },
+  });
+  if (!corner) throw new Error('Corner를 찾을 수 없습니다.');
+  const tabCC = corner.cornerComponents.find((cc) => cc.component.componentType === '선택형');
+  if (tabCC) {
+    await prisma.cornerComponent.delete({ where: { id: tabCC.id } }); // 끄기
+  } else {
+    if (!isComponentAllowedInCorner(corner.cornerType as CornerType, '선택형')) {
+      throw new Error(`${corner.cornerType} 유형은 상단 카테고리 탭(선택형)을 담을 수 없습니다.`);
+    }
+    await createScaffoldComponents(cornerId, corner.cornerType, [
+      { name: '카테고리 탭', componentType: '선택형', selectedIndex: 0, atoms: ['전체', '카테고리1', '카테고리2', '카테고리3'].map((c) => ({ name: c, atomType: 'TEXT', content: c })) },
+    ]);
+  }
+  rp(templateId);
+}
+
 // 컴포넌트 이름 변경 (componentId = Component.id)
 export async function renameComponent(templateId: string, componentId: string, formData: FormData) {
   const name = String(formData.get('name') ?? '').trim();
