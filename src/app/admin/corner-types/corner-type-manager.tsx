@@ -161,8 +161,19 @@ function domainGovernances(domain: Domain, present: string[]): string[] {
   return present;
 }
 
+// CornerTypeRow → 미리보기 PreviewCorner (저장 조합 우선, 없으면 유형 기본 조합). 카드·상세 공용.
+export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
+  return compositionToPreviewCorner({
+    base: row.baseCategory,
+    detail: row.typeDetail,
+    mainTitle: row.useMainTitle ? '코너 타이틀' : null,
+    subTitle: row.useSubTitle ? '서브타이틀' : null,
+    composition: parseComposition(row.composition) ?? defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: row.useBadge, desc: row.useDesc }),
+  });
+}
+
 // 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
-function DevicePreview({ corner }: { corner: PreviewCorner }) {
+export function DevicePreview({ corner }: { corner: PreviewCorner }) {
   const NAT_W = 320; // 자연 렌더 폭(폰 기준). 박스에 맞춰 scale로 축소.
   const boxRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -201,14 +212,8 @@ function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: CornerT
   const comp = parseComposition(t.composition);
   const compMeta = comp ? `컴포넌트 ${comp.reduce((s, b) => s + b.count, 0)}개` : (componentLabel(t.componentType) || layoutLabel(t.typeDetail) || '유형');
   const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
-  // 미리보기 = 조합(없으면 유형 기본 조합)을 실제 렌더러(CornerBlock)로. DS 포털처럼 디바이스 카드로 보여준다.
-  const previewCorner = compositionToPreviewCorner({
-    base: t.baseCategory,
-    detail: t.typeDetail,
-    mainTitle: t.useMainTitle ? '코너 타이틀' : null,
-    subTitle: t.useSubTitle ? '서브타이틀' : null,
-    composition: comp ?? defaultComposition(t.componentType, t.typeDetail, { image: t.useImage, price: t.usePrice, badge: t.useBadge, desc: t.useDesc }),
-  });
+  // 미리보기 = 조합(없으면 유형 기본 조합)을 실제 렌더러(CornerBlock)로. 카드·상세 공용 헬퍼.
+  const previewCorner = cornerRowPreview(t);
   return (
     <div className={cn('group flex flex-col overflow-hidden rounded-lg border border-[#E6E8EF] bg-white shadow-[0_1px_2px_rgba(20,22,40,0.05),0_4px_16px_rgba(20,22,40,0.06)] transition hover:shadow-[0_2px_4px_rgba(20,22,40,0.08),0_8px_24px_rgba(20,22,40,0.10)]', busy && 'pointer-events-none opacity-60')}>
       {/* 미리보기(클릭 → 상세) — DS 포털처럼 회색(#E2E6F1) 배경 위, 코너 전체를 축소해 통째로 보여준다(잘림 없음). */}
