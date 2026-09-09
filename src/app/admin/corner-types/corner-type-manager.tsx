@@ -167,12 +167,24 @@ function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: CornerT
   const comp = parseComposition(t.composition);
   const compMeta = comp ? `컴포넌트 ${comp.reduce((s, b) => s + b.count, 0)}개` : (componentLabel(t.componentType) || layoutLabel(t.typeDetail) || '유형');
   const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
+  // 미리보기 = 조합(없으면 유형 기본 조합)을 실제 렌더러(CornerBlock)로. DS 포털처럼 디바이스 카드로 보여준다.
+  const previewCorner = compositionToPreviewCorner({
+    base: t.baseCategory,
+    detail: t.typeDetail,
+    mainTitle: t.useMainTitle ? '코너 타이틀' : null,
+    subTitle: t.useSubTitle ? '서브타이틀' : null,
+    composition: comp ?? defaultComposition(t.componentType, t.typeDetail, { image: t.useImage, price: t.usePrice, badge: t.useBadge, desc: t.useDesc }),
+  });
   return (
     <div className={cn('group flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:border-primary/40 hover:shadow-md', busy && 'pointer-events-none opacity-60')}>
-      {/* 미리보기(클릭 → 상세) — 고정 높이 안에 클립(넘침 방지). 썸네일처럼 상단부만 보인다. */}
-      <button type="button" onClick={onOpen} className="block w-full bg-slate-50/70 p-3 text-left">
-        <div className="pointer-events-none h-40 overflow-hidden rounded-lg border border-slate-200/70 bg-white">
-          <TypeDetailPreview base={t.baseCategory} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} badge={t.useBadge} image={t.useImage} price={t.usePrice} desc={t.useDesc} compact />
+      {/* 미리보기(클릭 → 상세) — 회색 배경 위에 흰 '디바이스' 카드, 중앙 정렬. 실제 렌더 UI를 디바이스 크기로 보여준다. */}
+      <button type="button" onClick={onOpen} className="block w-full bg-slate-100 p-4 text-left">
+        <div className="pointer-events-none relative mx-auto h-56 w-[300px] max-w-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+          <div className="p-3">
+            <CornerBlock corner={previewCorner} />
+          </div>
+          {/* 하단 페이드 — 잘리는 부분을 부드럽게 (DS 포털 카드 느낌) */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent" />
         </div>
       </button>
       {/* 이름 · 태그 · 개수 */}
