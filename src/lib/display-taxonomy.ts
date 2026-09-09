@@ -115,6 +115,66 @@ export const COMPONENT_TYPES = [
 ] as const;
 export type ComponentType = (typeof COMPONENT_TYPES)[number];
 
+// ── 코너 유형의 '컴포넌트 조합' — 어떤 컴포넌트를(유형) 몇 개(count), 어떤 표시 요소로 담을지의 순서 있는 목록.
+//  코너 유형 관리 화면에서 조립하고 CornerType.composition(JSON)으로 저장한다.
+//  빌더에서 코너를 만들 때 이 조합대로 실제 Component/Atom을 생성한다(없으면 기존 절차적 scaffold로 폴백).
+export type CompositionBlock = {
+  componentType: ComponentType; // 담을 컴포넌트 유형(코너 유형이 허용하는 것만 — CORNER_COMPONENT_MAP)
+  count: number; // 개수(1~). 예: 상품형 카드 3개
+  name?: string; // 블록 표시 이름(선택)
+  // 표시 요소(상품형 카드 등) — 켠 것만 생성. 배지는 가격에 종속.
+  image?: boolean;
+  price?: boolean;
+  badge?: boolean;
+  desc?: boolean;
+};
+export type Composition = CompositionBlock[];
+
+// 조합이 아직 없을 때 시드로 쓸 기본 조합 — 현재 컴포넌트 유형·배열·표시요소로 유추(scaffoldSpecFor와 동일 규칙).
+export function defaultComposition(
+  componentType: string | null,
+  typeDetail: string | null,
+  feats: { image?: boolean; price?: boolean; badge?: boolean; desc?: boolean } = {},
+): Composition {
+  const ct = componentType as ComponentType | null;
+  const d = typeDetail ?? '';
+  const flags = { image: feats.image !== false, price: feats.price !== false, badge: !!feats.badge, desc: feats.desc !== false };
+  const blocks: Composition = [];
+  if (ct === '선택형') blocks.push({ componentType: '선택형', count: 1 });
+  else if (ct === '상품형') blocks.push({ componentType: '상품형', count: d.includes('단일') ? 1 : 3, ...flags });
+  else if (ct === '혜택형') blocks.push({ componentType: '혜택형', count: 3, badge: flags.badge });
+  else if (ct) blocks.push({ componentType: ct, count: 1 });
+  // 배열에 '카테고리 탭'이 있고 주 컴포넌트가 선택형이 아니면 상단 탭 블록을 얹는다.
+  if (/카테고리\s*탭/.test(d) && ct !== '선택형' && blocks.length) blocks.unshift({ componentType: '선택형', count: 1 });
+  return blocks;
+}
+
+// 저장된 조합 문자열(JSON)을 안전하게 파싱. 유효하지 않으면 null.
+export function parseComposition(raw: string | null | undefined): Composition | null {
+  if (!raw) return null;
+  try {
+    const a = JSON.parse(raw);
+    if (!Array.isArray(a) || a.length === 0) return null;
+    const out: Composition = [];
+    for (const b of a) {
+      if (!b || typeof b !== 'object') continue;
+      if (!(COMPONENT_TYPES as readonly string[]).includes(b.componentType)) continue;
+      out.push({
+        componentType: b.componentType,
+        count: Math.max(1, Math.min(20, Number(b.count) || 1)),
+        name: typeof b.name === 'string' ? b.name : undefined,
+        image: b.image !== false,
+        price: b.price !== false,
+        badge: !!b.badge,
+        desc: b.desc !== false,
+      });
+    }
+    return out.length ? out : null;
+  } catch {
+    return null;
+  }
+}
+
 // ── 추천 수급 방식 (POL-REC PG-REC-SOURCE-001) ──────────────────────────────
 //  '이 코너를 무엇을 기준으로 채우는가.' 통합채널(전시)은 추천을 '생성'하지 않고 '전시·제어'만 한다.
 //  후보·순위·근거는 CVM(추천 시스템)이 산출하고, 운영자는 슬롯 규칙(최대 노출·정렬·폴백)만 정한다.

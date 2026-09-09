@@ -22,7 +22,13 @@ import {
   REC_SOURCE_METHODS,
   REC_SOURCE_INFO,
   normalizeRecSource,
+  parseComposition,
+  defaultComposition,
+  type Composition,
+  type ComponentType,
 } from '@/lib/display-taxonomy';
+import { CornerBlock } from '@/components/preview/blocks';
+import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { isEventCornerFamily } from '@/lib/event-taxonomy';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -74,6 +80,7 @@ export type CornerTypeRow = {
   defaultMoreButton: boolean;
   defaultMoreButtonLabel: string | null;
   cvmFields: string; // 고객정보 연동 필드 keys csv
+  composition: string | null; // 컴포넌트 조합(JSON: CompositionBlock[]). null이면 절차적 scaffold 폴백.
   userCustomizable?: boolean;
   userMinItems?: number | null;
   userMaxItems?: number | null;
@@ -122,6 +129,7 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   defaultMoreButton: false,
   defaultMoreButtonLabel: null,
   cvmFields: '',
+  composition: null,
   userCustomizable: false,
   userMinItems: null,
   userMaxItems: null,
@@ -601,6 +609,16 @@ function StepHead({ n, title, required, hint }: { n: number; title: string; requ
 }
 
 // ── 코너 유형 등록/수정 폼 (BO 대표 유형 화면 · 등록 폼 패턴) ─────────────
+// 조합 블록의 표시 요소 미니 체크박스
+function ChkMini({ label, checked, onChange, disabled, title }: { label: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; title?: string }) {
+  return (
+    <label className={cn('flex items-center gap-1 text-[11px]', disabled ? 'cursor-not-allowed text-muted-foreground/40' : 'text-slate-600')} title={title}>
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} className="accent-indigo-600 disabled:opacity-40" />
+      {label}
+    </label>
+  );
+}
+
 export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; onClose: () => void }) {
   const isNew = !row.id;
   // 2단 분류: ① 코너 유형(base) → ② 배열·레이아웃(detail). 구성 컴포넌트는 배열·레이아웃에서 자동 도출.
@@ -610,6 +628,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const [active, setActive] = useState(row.active);
   const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
   const [recSource, setRecSource] = useState(row.defaultRecSource ? normalizeRecSource(row.defaultRecSource) : ''); // 추천 수급 방식 기본값(controlled) — 노출·구성 노출 여부를 좌우
+  // ③ 컴포넌트 조합 — 이 유형이 담는 컴포넌트 목록(순서). 비어 있으면 아래 shownBlocks가 유형 기본값을 보여준다.
+  const [blocks, setBlocks] = useState<Composition>(() => parseComposition(row.composition) ?? []);
   // FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 유형에서
   const [userCustom, setUserCustom] = useState(row.userCustomizable ?? false);
   const [userMin, setUserMin] = useState(row.userMinItems != null ? String(row.userMinItems) : '');
@@ -699,6 +719,24 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   // ④ 빅배너 구분자는 '상품형' 모듈(상품·혜택 리스트/카드) 위에 얹는 것만 의미가 있다 → 상품형일 때만 노출/적용.
   const canBigBanner = compValid === '상품형';
   const bigBannerOn = canBigBanner && bigBanner;
+
+  // ③ 컴포넌트 조합 — 편집 안 했으면(빈 blocks) 현재 유형 기본값을 보여준다. 저장은 이 shownBlocks(명시적 조합)로.
+  const allowedComps = componentTypesForCorner(base) as ComponentType[]; // 이 코너 유형이 담을 수 있는 컴포넌트(정책)
+  const shownBlocks: Composition = blocks.length
+    ? blocks
+    : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc });
+  const setBlk = (next: Composition) => setBlocks(next); // 편집 시 명시적 조합으로 고정
+  const patchBlock = (i: number, patch: Partial<Composition[number]>) => setBlk(shownBlocks.map((b, j) => (j === i ? { ...b, ...patch } : b)));
+  const addBlock = () => setBlk([...shownBlocks, { componentType: allowedComps[0] ?? '상품형', count: 1, image: true, price: true, desc: true }]);
+  const removeBlock = (i: number) => setBlk(shownBlocks.filter((_, j) => j !== i));
+  const moveBlock = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= shownBlocks.length) return;
+    const next = shownBlocks.slice();
+    [next[i], next[j]] = [next[j], next[i]];
+    setBlk(next);
+  };
+  const resetBlocks = () => setBlocks([]); // 유형 기본값으로 재설정
   // 코너 유형 명 = [코너 유형 · 컴포넌트 · 배열 (· 빅배너)] 자동 구성
   // 코너 유형 명 = 유형 · 배열·레이아웃 (컴포넌트는 표기에서 제외 — UI에서 컴포넌트 노출 안 함).
   const derivedName = [base, detailValid, bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
@@ -851,6 +889,83 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
             <TRow label="코너 유형 설명" flat>
               <Input name="description" defaultValue={row.description ?? ''} placeholder="100자 이내" className="h-8 text-xs" />
             </TRow>
+          </div>
+        </div>
+      </section>
+
+      {/* ③ 컴포넌트 조합 — 이 코너 유형에 담을 컴포넌트를 순서대로 조립. 빌더에서 코너를 만들면 이 조합대로 실제 생성된다. */}
+      <section className="overflow-hidden rounded-md border border-indigo-200">
+        <div className="flex flex-wrap items-center gap-2 border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-indigo-700">
+          ③ 컴포넌트 조합
+          <span className="font-normal text-indigo-400">이 유형에 담을 컴포넌트를 순서대로 조립 · 빌더에서 코너 만들 때 이대로 생성</span>
+          <button type="button" onClick={resetBlocks} className="ml-auto inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-white px-2 py-1 text-[10px] font-medium text-indigo-600 hover:bg-indigo-50">
+            <RotateCcw className="h-3 w-3" /> 유형 기본값으로
+          </button>
+        </div>
+        <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
+        <div className="grid grid-cols-1 gap-3 p-3 lg:grid-cols-[1fr_300px]">
+          {/* 블록 목록 편집 */}
+          <div className="space-y-2">
+            {shownBlocks.map((b, i) => {
+              const isProduct = b.componentType === '상품형';
+              const usesBadge = ['상품형', '혜택형', '정보형'].includes(b.componentType);
+              return (
+                <div key={i} className="rounded-md border bg-white p-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-bold text-slate-500">{i + 1}</span>
+                    <select
+                      value={b.componentType}
+                      onChange={(e) => patchBlock(i, { componentType: e.target.value as ComponentType })}
+                      className="h-8 min-w-0 flex-1 rounded-md border bg-background px-2 text-xs"
+                    >
+                      {/* 이 코너 유형이 허용하는 컴포넌트만(정책). 현재 값이 목록에 없으면 함께 노출. */}
+                      {Array.from(new Set([b.componentType, ...allowedComps])).map((c) => (
+                        <option key={c} value={c}>{componentLabel(c)}</option>
+                      ))}
+                    </select>
+                    <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      개수
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={b.count}
+                        onChange={(e) => patchBlock(i, { count: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
+                        className="h-8 w-14 rounded-md border bg-background px-2 text-xs"
+                      />
+                    </label>
+                    <button type="button" onClick={() => moveBlock(i, -1)} disabled={i === 0} className="flex h-7 w-6 items-center justify-center rounded border text-muted-foreground hover:bg-secondary disabled:opacity-30" title="위로">↑</button>
+                    <button type="button" onClick={() => moveBlock(i, 1)} disabled={i === shownBlocks.length - 1} className="flex h-7 w-6 items-center justify-center rounded border text-muted-foreground hover:bg-secondary disabled:opacity-30" title="아래로">↓</button>
+                    <button type="button" onClick={() => removeBlock(i)} className="flex h-7 w-6 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="삭제"><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
+                  {/* 표시 요소 — 상품형은 이미지·가격·배지·설명, 혜택형·정보형은 배지만 */}
+                  {(isProduct || usesBadge) && (
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 pl-7">
+                      {isProduct && (
+                        <>
+                          <ChkMini label="이미지" checked={b.image !== false} onChange={(v) => patchBlock(i, { image: v })} />
+                          <ChkMini label="가격" checked={b.price !== false} onChange={(v) => patchBlock(i, { price: v, ...(v ? {} : { badge: false }) })} />
+                          <ChkMini label="배지" checked={!!b.badge && b.price !== false} disabled={b.price === false} onChange={(v) => patchBlock(i, { badge: v, ...(v ? { price: true } : {}) })} title={b.price === false ? '가격을 켜야 배지를 쓸 수 있어요(배지는 가격 앞)' : undefined} />
+                          <ChkMini label="설명" checked={b.desc !== false} onChange={(v) => patchBlock(i, { desc: v })} />
+                        </>
+                      )}
+                      {!isProduct && usesBadge && <ChkMini label="배지" checked={!!b.badge} onChange={(v) => patchBlock(i, { badge: v })} />}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <button type="button" onClick={addBlock} className="inline-flex items-center gap-1 rounded-md border border-dashed border-indigo-300 bg-indigo-50/40 px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50">
+              <Plus className="h-3.5 w-3.5" /> 컴포넌트 추가
+            </button>
+            <p className="text-[10px] leading-relaxed text-muted-foreground">담을 수 있는 컴포넌트는 이 코너 유형(정책)이 허용하는 것만 나와요. 순서·개수·표시 요소를 정하면 빌더에서 코너를 만들 때 그대로 생성됩니다.</p>
+          </div>
+          {/* 라이브 미리보기 — 실제 렌더러로 조합 결과를 본다 */}
+          <div className="min-w-0">
+            <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
+            <div className="overflow-hidden rounded-lg border bg-white p-3">
+              <CornerBlock corner={compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? '코너 타이틀' : null, subTitle: useSub ? '서브타이틀' : null })} />
+            </div>
           </div>
         </div>
       </section>

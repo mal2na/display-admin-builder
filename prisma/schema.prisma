@@ -383,6 +383,10 @@ model CornerType {
   // CVM 연동 필드 — 이 코너 유형이 CVM/BSS에서 자동으로 가져오는 회원 데이터(FN-EVTMSN-FORM-001). CVM_FIELDS key csv.
   cvmFields String @default("")
 
+  // 컴포넌트 조합 — 이 코너 유형이 어떤 컴포넌트를(유형) 몇 개, 어떤 표시 요소로 담는지의 순서 있는 목록(JSON: CompositionBlock[]).
+  // 코너 유형 관리의 '컴포넌트 조합' 화면에서 조립. 빌더에서 코너 생성 시 이 조합대로 실제 Component/Atom 생성(없으면 절차적 scaffold 폴백).
+  composition String?
+
   // ── FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 리스트 유형에서. 코너 불러오기 시 코너에 상속. ──
   userCustomizable Boolean @default(false)
   userMinItems     Int?

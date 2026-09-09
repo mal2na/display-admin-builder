@@ -95,12 +95,14 @@ function defSnapshot(ct: {
   layout: string | null; markupId: string | null; description: string | null;
   defaultMoreButton: boolean; useMoreButton: boolean; defaultMoreButtonLabel: string | null;
   defaultSortStrategy: string | null; sampleImageUrl: string | null; cvmFields: string; name: string;
+  composition?: string | null;
 }) {
   return JSON.stringify({
     name: ct.name, baseCategory: ct.baseCategory, componentType: ct.componentType, typeDetail: ct.typeDetail,
     bigBanner: ct.bigBanner, layout: ct.layout, markupId: ct.markupId, description: ct.description,
     defaultMoreButton: ct.defaultMoreButton, useMoreButton: ct.useMoreButton, defaultMoreButtonLabel: ct.defaultMoreButtonLabel,
     defaultSortStrategy: ct.defaultSortStrategy, sampleImageUrl: ct.sampleImageUrl, cvmFields: ct.cvmFields,
+    composition: ct.composition ?? null, // 컴포넌트 조합 — 불러오기(생성)가 이 정본을 소비
   });
 }
 

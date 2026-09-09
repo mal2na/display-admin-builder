@@ -6,6 +6,7 @@ import {
   CORNER_TYPES,
   componentTypesForCorner,
   componentLayoutDetails,
+  parseComposition,
   type CornerType,
 } from '@/lib/display-taxonomy';
 
@@ -100,6 +101,8 @@ function readForm(formData: FormData) {
     defaultMoreButton: String(formData.get('defaultMoreButton') ?? '') === '1',
     defaultMoreButtonLabel: opt('defaultMoreButtonLabel'),
     cvmFields: formData.getAll('cvmFields').map(String).filter(Boolean).join(','), // CVM 연동 필드 keys
+    // 컴포넌트 조합 — 유효성 검증 후 정규화 JSON 저장(유효하지 않으면 null → 절차적 scaffold 폴백)
+    composition: (() => { const c = parseComposition(String(formData.get('composition') ?? '')); return c ? JSON.stringify(c) : null; })(),
     // FO 사용자 설정(고객 커스터마이즈) 기본값
     userCustomizable: String(formData.get('userCustomizable') ?? '') === '1',
     userMinItems: num('userMinItems'),
