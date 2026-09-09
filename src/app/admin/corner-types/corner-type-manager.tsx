@@ -274,7 +274,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   );
   const [field, setField] = useState<'typeId' | 'createdBy'>(sp.get('field') === 'createdBy' ? 'createdBy' : 'typeId');
   const [q, setQ] = useState(sp.get('q') ?? '');
-  const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 10);
+  const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 12);
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
 
   // 상위 분기(도메인) — 전시(상품형·이벤트미션 제외 6거버넌스) / 프로모션(이벤트·미션) / 상품(상품형).
@@ -320,7 +320,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
     if (statusSel.size < statusKeys.length) p.set('status', [...statusSel].join(','));
     if (field !== 'typeId') p.set('field', field);
     if (q.trim()) p.set('q', q.trim());
-    if (perPage !== 10) p.set('pp', String(perPage));
+    if (perPage !== 12) p.set('pp', String(perPage));
     if (curPage !== 1) p.set('p', String(curPage));
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
@@ -482,7 +482,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           {types.length === 0 ? <>등록된 코너 유형이 없습니다. 우측 상단 <b className="text-foreground">등록</b>으로 추가하세요.</> : '검색 조건에 맞는 코너 유형이 없습니다.'}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        // 화면이 넓어지면 3칸을 늘리는 게 아니라 칸 수가 늘어난다 → 카드는 적정 폭 유지(과도한 stretch 방지).
+        <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
           {pageRows.map((t) => (
             <CornerTypeCard
               key={t.id}
