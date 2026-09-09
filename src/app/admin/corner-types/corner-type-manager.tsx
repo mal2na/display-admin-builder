@@ -27,7 +27,7 @@ import {
   type Composition,
   type ComponentType,
 } from '@/lib/display-taxonomy';
-import { CornerBlock } from '@/components/preview/blocks';
+import { CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { isEventCornerFamily } from '@/lib/event-taxonomy';
 import { cn } from '@/lib/utils';
@@ -161,6 +161,40 @@ function domainGovernances(domain: Domain, present: string[]): string[] {
   return present;
 }
 
+// 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
+function DevicePreview({ corner }: { corner: PreviewCorner }) {
+  const NAT_W = 320; // 자연 렌더 폭(폰 기준). 박스에 맞춰 scale로 축소.
+  const boxRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.6);
+  useEffect(() => {
+    const box = boxRef.current, content = contentRef.current;
+    if (!box || !content) return;
+    const fit = () => {
+      const bw = box.clientWidth, bh = box.clientHeight, ch = content.scrollHeight || 1;
+      const s = Math.min(bw / NAT_W, bh / ch, 1);
+      if (s > 0 && Number.isFinite(s)) setScale(s);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(box); ro.observe(content);
+    return () => ro.disconnect();
+  }, [corner]);
+  return (
+    <div ref={boxRef} className="relative h-full w-full overflow-hidden">
+      <div
+        ref={contentRef}
+        className="absolute top-0"
+        style={{ width: NAT_W, left: `calc(50% - ${NAT_W / 2}px)`, transform: `scale(${scale})`, transformOrigin: 'top center' }}
+      >
+        <div className="rounded-2xl bg-white p-3 shadow-[0_2px_8px_rgba(20,22,40,0.10)] ring-1 ring-black/5">
+          <CornerBlock corner={corner} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // DS 포털 라이브러리 스타일 코너 유형 카드 — 미리보기 + 이름/태그/개수 + 수정하기·복제·삭제.
 function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: CornerTypeRow; onOpen: () => void; onDuplicate: () => void; onDelete: () => void; busy?: boolean }) {
   const name = [t.baseCategory, layoutLabel(t.typeDetail), t.bigBanner ? '빅배너' : ''].filter(Boolean).join(' · ');
@@ -177,14 +211,10 @@ function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: CornerT
   });
   return (
     <div className={cn('group flex flex-col overflow-hidden rounded-lg border border-[#E6E8EF] bg-white shadow-[0_1px_2px_rgba(20,22,40,0.05),0_4px_16px_rgba(20,22,40,0.06)] transition hover:shadow-[0_2px_4px_rgba(20,22,40,0.08),0_8px_24px_rgba(20,22,40,0.10)]', busy && 'pointer-events-none opacity-60')}>
-      {/* 미리보기(클릭 → 상세) — DS 포털처럼 회색(#E2E6F1) 배경 위 흰 '디바이스' 카드, 중앙 정렬. */}
-      <button type="button" onClick={onOpen} className="block w-full bg-[#E2E6F1] p-4 text-left">
-        <div className="pointer-events-none relative mx-auto h-60 w-[300px] max-w-full overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(20,22,40,0.10)] ring-1 ring-black/5">
-          <div className="p-3">
-            <CornerBlock corner={previewCorner} />
-          </div>
-          {/* 하단 페이드 — 잘리는 부분을 부드럽게 */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent" />
+      {/* 미리보기(클릭 → 상세) — DS 포털처럼 회색(#E2E6F1) 배경 위, 코너 전체를 축소해 통째로 보여준다(잘림 없음). */}
+      <button type="button" onClick={onOpen} className="block w-full bg-[#E2E6F1] p-3 text-left">
+        <div className="pointer-events-none h-56">
+          <DevicePreview corner={previewCorner} />
         </div>
       </button>
       {/* 이름 · 태그 · 개수 */}
