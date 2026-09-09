@@ -50,9 +50,9 @@ export type PreviewCorner = {
 const byType = (atoms: PreviewAtom[], ...types: string[]) => atoms.filter((a) => types.includes(a.atomType));
 const first = (atoms: PreviewAtom[], ...types: string[]) => byType(atoms, ...types)[0];
 
-/** 실제로 <img>로 그릴 수 있는 소스인지 (AI 생성 data URI / 외부 http) */
-// 실제 존재하는 파일만 렌더: data URI · http · /assets/corner-samples(유형 샘플). 그 외 /assets 자리표시자는 placeholder 처리.
-const isRenderableImg = (src?: string | null) => !!src && (src.startsWith('data:') || src.startsWith('http') || src.startsWith('/assets/corner-samples/'));
+/** 실제로 <img>로 그릴 수 있는 소스인지 (AI 생성 data URI / 외부 http / 로컬 public 자산) */
+// 실제 존재하는 파일만 렌더: data URI · http · /assets/(corner-samples·concept 등 public 자산). 그 외는 placeholder 처리.
+const isRenderableImg = (src?: string | null) => !!src && (src.startsWith('data:') || src.startsWith('http') || src.startsWith('/assets/corner-samples/') || src.startsWith('/assets/concept/'));
 
 function ImageBox({ atom, className }: { atom?: PreviewAtom; className?: string }) {
   // 실제 파일이 없으면 onError로 깔끔한 영역+슬러그 라벨(PreviewImage)로 대체 — 깨진 이미지 방지

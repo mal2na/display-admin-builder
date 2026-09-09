@@ -15,6 +15,14 @@ const atom = (a: Partial<PreviewAtom> & { atomType: string; name: string }): Pre
   ...a,
 });
 
+// 미리보기용 실제 샘플 이미지 풀(main-concept 데모에서 추출 · public/assets/concept). 인덱스로 돌려가며 배정.
+const IMAGE_POOL = [
+  '/assets/concept/img02.png', '/assets/concept/img03.png', '/assets/concept/img04.png', '/assets/concept/img26.png',
+  '/assets/concept/img24.png', '/assets/concept/img30.png', '/assets/concept/img19.png',
+];
+const LOGO_POOL = ['/assets/concept/img14.png', '/assets/concept/img20.png', '/assets/concept/img22.png', '/assets/concept/img25.png'];
+const pick = (arr: string[], i: number) => arr[(i - 1 + arr.length * 100) % arr.length];
+
 // 한 블록의 한 인스턴스(i번째) → PreviewComponent. buildComp(서버)과 같은 아톰 구성.
 function blockComp(b: CompositionBlock, i: number): PreviewComponent {
   const badge = b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: i === 1 ? 'NEW' : '' })] : [];
@@ -27,7 +35,7 @@ function blockComp(b: CompositionBlock, i: number): PreviewComponent {
         ...base,
         name: `상품 ${i}`,
         atoms: [
-          ...(b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE' })] : []),
+          ...(b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE', imageUrl: pick(IMAGE_POOL, i) })] : []),
           atom({ name: '상품명', atomType: 'TEXT', content: `상품 ${i}` }),
           ...badge,
           ...(b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: '99,999원' })] : []),
@@ -39,7 +47,7 @@ function blockComp(b: CompositionBlock, i: number): PreviewComponent {
         ...base,
         name: `혜택 ${i}`,
         atoms: [
-          atom({ name: '로고', atomType: 'ICON' }),
+          atom({ name: '로고', atomType: 'ICON', imageUrl: pick(LOGO_POOL, i) }),
           ...badge,
           atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: `혜택 ${i} 문구` }),
           atom({ name: '브랜드', atomType: 'INFO', content: `브랜드 ${i}` }),
@@ -53,7 +61,7 @@ function blockComp(b: CompositionBlock, i: number): PreviewComponent {
           atom({ name: '배너 타이틀', atomType: 'TEXT', content: '배너 타이틀' }),
           atom({ name: '배너 설명', atomType: 'INFO', content: '배너 설명 문구' }),
           atom({ name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: '/' }),
-          atom({ name: '배너 이미지', atomType: 'IMAGE' }),
+          atom({ name: '배너 이미지', atomType: 'IMAGE', imageUrl: pick(IMAGE_POOL, i) }),
         ],
       };
     case '정보형':
