@@ -176,42 +176,42 @@ function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: CornerT
     composition: comp ?? defaultComposition(t.componentType, t.typeDetail, { image: t.useImage, price: t.usePrice, badge: t.useBadge, desc: t.useDesc }),
   });
   return (
-    <div className={cn('group flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:border-primary/40 hover:shadow-md', busy && 'pointer-events-none opacity-60')}>
-      {/* 미리보기(클릭 → 상세) — 회색 배경 위에 흰 '디바이스' 카드, 중앙 정렬. 실제 렌더 UI를 디바이스 크기로 보여준다. */}
-      <button type="button" onClick={onOpen} className="block w-full bg-slate-100 p-4 text-left">
-        <div className="pointer-events-none relative mx-auto h-56 w-[300px] max-w-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+    <div className={cn('group flex flex-col overflow-hidden rounded-lg border border-[#E6E8EF] bg-white shadow-[0_1px_2px_rgba(20,22,40,0.05),0_4px_16px_rgba(20,22,40,0.06)] transition hover:shadow-[0_2px_4px_rgba(20,22,40,0.08),0_8px_24px_rgba(20,22,40,0.10)]', busy && 'pointer-events-none opacity-60')}>
+      {/* 미리보기(클릭 → 상세) — DS 포털처럼 회색(#E2E6F1) 배경 위 흰 '디바이스' 카드, 중앙 정렬. */}
+      <button type="button" onClick={onOpen} className="block w-full bg-[#E2E6F1] p-4 text-left">
+        <div className="pointer-events-none relative mx-auto h-60 w-[300px] max-w-full overflow-hidden rounded-2xl bg-white shadow-[0_2px_8px_rgba(20,22,40,0.10)] ring-1 ring-black/5">
           <div className="p-3">
             <CornerBlock corner={previewCorner} />
           </div>
-          {/* 하단 페이드 — 잘리는 부분을 부드럽게 (DS 포털 카드 느낌) */}
+          {/* 하단 페이드 — 잘리는 부분을 부드럽게 */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent" />
         </div>
       </button>
       {/* 이름 · 태그 · 개수 */}
-      <div className="flex flex-1 flex-col gap-2 px-4 pt-3">
+      <div className="flex flex-1 flex-col gap-2 px-4 pt-3.5">
         <button type="button" onClick={onOpen} className="text-left">
-          <p className="text-[15px] font-semibold text-foreground group-hover:text-primary">{name}</p>
-          <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
+          <p className="text-[15px] font-bold leading-tight text-[#1A1A2E] group-hover:text-[#4A6CF7]">{name}</p>
+          <span className="mt-1 block font-mono text-[10px] text-slate-400">{t.typeId}</span>
         </button>
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className={cn('inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span>
-          <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">{compMeta}</span>
+          <span className={cn('inline-flex items-center rounded-[5px] px-1.5 py-0.5 text-[10px] font-bold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span>
+          <span className="text-[11px] font-medium tabular-nums text-slate-400">· {compMeta}</span>
           {t.liveVersion != null && t.active
             ? <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
-            : <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">미사용</span>}
+            : <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">미사용</span>}
           <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span>
           {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
         </div>
       </div>
-      {/* 액션 — 수정하기 · 복제 · 삭제 */}
-      <div className="mt-3 flex items-center gap-1.5 border-t px-3 py-2.5">
-        <button type="button" onClick={onOpen} className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/10">
+      {/* 액션 — 수정하기(DS 블루) · 복제 · 삭제 */}
+      <div className="mt-3.5 flex items-center gap-1.5 px-4 pb-4">
+        <button type="button" onClick={onOpen} className="inline-flex items-center gap-1 rounded-lg border border-[#4A6CF7] bg-[#EEF1FF] px-3 py-1.5 text-[12.5px] font-bold text-[#3A5CF0] transition hover:bg-[#E1E7FF]">
           <Pencil className="h-3.5 w-3.5" /> 수정하기
         </button>
-        <button type="button" onClick={onDuplicate} className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-secondary">
+        <button type="button" onClick={onDuplicate} className="inline-flex items-center gap-1 rounded-lg border border-[#E6E8EF] bg-white px-3 py-1.5 text-[12.5px] font-medium text-[#4A4A5A] transition hover:bg-slate-50">
           <Copy className="h-3.5 w-3.5" /> 복제
         </button>
-        <button type="button" onClick={onDelete} className="ml-auto inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive">
+        <button type="button" onClick={onDelete} className="ml-auto inline-flex items-center gap-1 rounded-lg border border-[#E6E8EF] bg-white px-3 py-1.5 text-[12.5px] font-medium text-[#4A4A5A] transition hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive">
           <Trash2 className="h-3.5 w-3.5" /> 삭제
         </button>
       </div>
@@ -227,7 +227,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   // ── 상세 검색 필터 (T우주 코너 유형 목록 기준) ──
   // 필터 상태는 URL 쿼리에 저장 → 상세로 갔다가 뒤로 와도 유지된다.
   const statusKeys = Object.keys(CORNER_TYPE_STATUS_LABEL);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false); // DS 포털처럼 기본은 접힘(깔끔). 필요 시 상세검색 열기.
   const spDomain = sp.get('domain'); // 상위 분기: 전시 / 프로모션 / 상품
   const [domain, setDomain] = useState<Domain>(spDomain === '프로모션' || spDomain === '상품' ? spDomain : '전시');
   const [base, setBase] = useState(sp.get('base') ?? '전체'); // 코너 유형
@@ -309,8 +309,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         }
       />
 
-      {/* ── 최상위 분기: 전시 / 프로모션 / 상품 ── */}
-      <div className="inline-flex rounded-xl border bg-surface-subtle p-1">
+      {/* ── 최상위 분기: 전시 / 프로모션 / 상품 (DS 포털식 세그먼트) ── */}
+      <div className="inline-flex rounded-xl border border-[#E6E8EF] bg-[#EEF1F6] p-1">
         {DOMAINS.map((d) => {
           const active = domain === d;
           const cnt = types.filter((t) => domainOf(t.baseCategory) === d).length;
@@ -321,11 +321,13 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               onClick={() => switchDomain(d)}
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition',
-                active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                active
+                  ? 'bg-white text-[#4A6CF7] shadow-[0_1px_3px_rgba(0,0,0,0.1),0_0_0_1px_rgba(74,108,247,0.18)]'
+                  : 'text-slate-500 hover:text-slate-700',
               )}
             >
               {d}
-              <span className={cn('rounded-full px-1.5 text-[11px] tabular-nums', active ? 'bg-white/20' : 'bg-black/5')}>{cnt}</span>
+              <span className={cn('rounded-full px-1.5 text-[11px] tabular-nums', active ? 'bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'bg-black/5')}>{cnt}</span>
             </button>
           );
         })}
@@ -350,7 +352,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   onClick={() => setStatusTab(t.key)}
                   className={cn(
                     '-mb-px border-b-2 pb-2.5 text-sm font-semibold transition',
-                    active ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground',
+                    active ? 'border-[#4A6CF7] text-[#4A6CF7]' : 'border-transparent text-slate-400 hover:text-slate-600',
                   )}
                 >
                   {t.label}
@@ -365,7 +367,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       {/* 코너 유형은 상위 탭이 아니라 아래 상세 필터에서 고른다 (승인 상태만 상위 거버넌스 탭). */}
 
       {/* 상세 검색 필터 */}
-      <div className="rounded-xl border bg-surface-subtle p-4">
+      <div className="rounded-lg border border-[#E6E8EF] bg-[#F7F8FB] p-4">
         {expanded && (
           <div className="mb-3 grid gap-x-6 gap-y-3 border-b pb-3 md:grid-cols-2 xl:grid-cols-3">
             {/* 승인상태는 상단 탭에서 고른다 → 상세 필터에서는 중복 제거 */}
