@@ -144,18 +144,18 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
 // ── 상위 분기(도메인) 3종: 전시 / 프로모션 / 상품 ──
 const DOMAINS = ['전시', '프로모션', '상품'] as const;
 type Domain = (typeof DOMAINS)[number];
-// baseCategory → 도메인. 이벤트·미션 계열=프로모션, 상품형=상품, 나머지(전시 6거버넌스)=전시.
+// baseCategory → 도메인. 이벤트·미션 계열=프로모션, 나머지(전시 7거버넌스, 상품형 포함)=전시.
+//  현재 '상품형'은 전시(진열) 유형이다. '상품' 도메인은 전용 유형이 아직 없어 비어 있다(향후 확장 자리).
 function domainOf(base: string): Domain {
   if (isEventCornerFamily(base)) return '프로모션';
-  if (base === '상품형') return '상품';
   return '전시';
 }
 const DOMAIN_GUIDE: Record<Domain, string> = {
-  전시: '전시 코너 유형 — 상품형을 제외한 6개 거버넌스(배너·혜택오퍼·업무진입·상태안내·콘텐츠안내·고정필수)로 나뉩니다.',
-  프로모션: '프로모션(이벤트·미션) 전용 코너 유형 — 7거버넌스와 별개의 이벤트미션 계열로 관리합니다.',
-  상품: '상품 진열 전용 코너 유형(상품형) — 배열·레이아웃 단위로 관리합니다.',
+  전시: '전시 코너 유형 — 7개 거버넌스(상품형·배너·혜택오퍼·업무진입·상태안내·콘텐츠안내·고정필수)로 나뉩니다.',
+  프로모션: '프로모션(이벤트·미션) 전용 코너 유형 — 전시 7거버넌스와 별개의 이벤트미션 계열로 관리합니다.',
+  상품: '상품 전용 코너 유형은 아직 준비 중입니다. (현재 상품형은 전시 도메인에서 관리)',
 };
-// 도메인별 거버넌스(유형) 칩 목록 — 전시는 6거버넌스 고정, 그 외는 도메인에 존재하는 유형.
+// 도메인별 거버넌스(유형) 칩 목록 — 전시는 7거버넌스 고정, 그 외는 도메인에 존재하는 유형.
 function domainGovernances(domain: Domain, present: string[]): string[] {
   if (domain === '전시') return (CORNER_TYPES as readonly string[]).filter((bc) => domainOf(bc) === '전시');
   return present;
@@ -169,9 +169,9 @@ function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: CornerT
   const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
   return (
     <div className={cn('group flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:border-primary/40 hover:shadow-md', busy && 'pointer-events-none opacity-60')}>
-      {/* 미리보기(클릭 → 상세) */}
+      {/* 미리보기(클릭 → 상세) — 고정 높이 안에 클립(넘침 방지). 썸네일처럼 상단부만 보인다. */}
       <button type="button" onClick={onOpen} className="block w-full bg-slate-50/70 p-3 text-left">
-        <div className="pointer-events-none flex h-44 items-stretch">
+        <div className="pointer-events-none h-40 overflow-hidden rounded-lg border border-slate-200/70 bg-white">
           <TypeDetailPreview base={t.baseCategory} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} badge={t.useBadge} image={t.useImage} price={t.usePrice} desc={t.useDesc} compact />
         </div>
       </button>
