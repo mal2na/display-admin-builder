@@ -824,9 +824,18 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
           </button>
         </div>
         <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
-        <div className="grid grid-cols-1 gap-3 p-3 lg:grid-cols-[1fr_300px]">
-          {/* 블록 목록 편집 */}
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 gap-3 p-3 lg:grid-cols-[340px_1fr]">
+          {/* 라이브 미리보기 — 왼쪽(DS 포털식 회색 배경 + 폰 프레임). 편집하며 계속 보이도록 sticky. */}
+          <div className="self-start lg:sticky lg:top-3">
+            <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
+            <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#E2E6F1] p-4">
+              <div className="mx-auto w-[300px] rounded-[24px] bg-white p-3 shadow-[0_4px_16px_rgba(20,22,40,0.12)] ring-1 ring-black/5">
+                <CornerBlock corner={compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? '코너 타이틀' : null, subTitle: useSub ? '서브타이틀' : null })} />
+              </div>
+            </div>
+          </div>
+          {/* 블록 목록 편집 — 오른쪽 */}
+          <div className="min-w-0 space-y-2">
             {shownBlocks.map((b, i) => {
               const isProduct = b.componentType === '상품형';
               const usesBadge = ['상품형', '혜택형', '정보형'].includes(b.componentType);
@@ -880,13 +889,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
               <Plus className="h-3.5 w-3.5" /> 컴포넌트 추가
             </button>
             <p className="text-[10px] leading-relaxed text-muted-foreground">담을 수 있는 컴포넌트는 이 코너 유형(정책)이 허용하는 것만 나와요. 순서·개수·표시 요소를 정하면 빌더에서 코너를 만들 때 그대로 생성됩니다.</p>
-          </div>
-          {/* 라이브 미리보기 — 실제 렌더러로 조합 결과를 본다 */}
-          <div className="min-w-0">
-            <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
-            <div className="overflow-hidden rounded-lg border bg-white p-3">
-              <CornerBlock corner={compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? '코너 타이틀' : null, subTitle: useSub ? '서브타이틀' : null })} />
-            </div>
           </div>
         </div>
       </section>

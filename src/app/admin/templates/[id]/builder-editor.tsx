@@ -55,7 +55,6 @@ import {
   duplicateCorner,
   toggleCornerVisible,
   reorderCorners,
-  addBlankComponent,
   removeComponent,
   toggleCornerTab,
   renameComponent,
@@ -75,7 +74,6 @@ import {
   setCornerDisplayVariants,
   setCornerMainTitleVariants,
   setCornerBigBanner,
-  setCornerBannerPosition,
   setCornerMoreButton,
   addBssProduct,
 } from '../actions';
@@ -822,12 +820,47 @@ function MessagePickerModal({
   );
 }
 
+// ── 어드민이 '편집할 수 없는(가져오는)' 콘텐츠인지 판정 ────────────────────
+//  어제 논의(2026-09-09) 반영 — '누가 채우냐'의 축. 어드민은 실제로 정하는 것만 편집한다.
+//   · 상품형 컴포넌트(상품·영화 등): 상품 정보가 BSS·API 원장에 이미 있어 하나하나 편집이 아니라 '가져오기'만.
+//   · 코너 수급이 CVM 기반: 콘텐츠가 런타임에 고객별로 채워짐 → 어드민 편집 불가.
+//  잠그는 필드 = 문구(content)·이미지(image). 링크·표시토글·개수·배치는 운영자 몫이라 그대로 편집.
+//  선택형(카테고리 탭 등 구조)은 운영자 편성이라 잠그지 않는다.
+function atomSourceLock(
+  atomType: string,
+  componentType: string,
+  recSource: string | null,
+): { tag: string; label: string } | null {
+  if (componentType === '선택형') return null;
+  const f = ATOM_TYPE_FIELDS[atomType as AtomType] ?? {};
+  if (!f.content && !f.image) return null; // 링크/버튼 등 순수 편집 항목은 대상 아님
+  if (componentType === '상품형') return { tag: 'API', label: '상품 정보 · 자동' };
+  if (recSource != null && normalizeRecSource(recSource) === 'CVM 기반') return { tag: 'CVM', label: '개인화 · 고객별 자동' };
+  return null;
+}
+
+// 잠긴(가져오는) 콘텐츠 표시 — 입력 대신 출처·샘플만 읽기 전용으로 보여준다.
+function LockedSource({ lock, sample, kind }: { lock: { tag: string; label: string }; sample?: string | null; kind: 'content' | 'image' }) {
+  return (
+    <div className="flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5">
+      <span className="inline-flex shrink-0 items-center gap-1 rounded border border-amber-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+        <Lock className="h-2.5 w-2.5" />
+        <span className="rounded bg-amber-600 px-1 text-[9px] font-bold text-white">{lock.tag}</span>{lock.label}
+      </span>
+      <span className="flex-1 truncate text-[11px] text-slate-500">
+        {kind === 'image' ? '이미지 자동 연동' : sample ? `예: ${sample}` : '실서비스에서 자동'} · 편집 불가
+      </span>
+    </div>
+  );
+}
+
 function AtomRow({
   templateId,
   atom,
   images,
   links,
   messages,
+  sourceLock,
   onChange,
 }: {
   templateId: string;
@@ -835,6 +868,7 @@ function AtomRow({
   images: LibraryData['images'];
   links: LibraryData['links'];
   messages: LibraryData['messages'];
+  sourceLock?: { tag: string; label: string } | null;
   onChange: (patch: Partial<AtomNode>) => void;
 }) {
   const f = ATOM_TYPE_FIELDS[atom.atomType as AtomType] ?? { content: true, image: false, link: false };
@@ -852,7 +886,7 @@ function AtomRow({
       <div className="flex items-center justify-between gap-2">
         <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
           {ATOM_TYPE_LABELS[atom.atomType as AtomType] ?? atom.atomType}{!shown && <span className="ml-1.5 rounded bg-slate-100 px-1 py-px text-[9px] font-semibold text-slate-400 ring-1 ring-inset ring-slate-200">숨김</span>}
-          {isVisualAtom && (
+          {isVisualAtom && !sourceLock && (
             <span className="inline-flex overflow-hidden rounded border">
               {(['ICON', 'IMAGE'] as const).map((tp) => (
                 <button
@@ -882,7 +916,9 @@ function AtomRow({
         )}
       </div>
       {f.content &&
-        (isCvmBinding(atom.content) ? (
+        (sourceLock ? (
+          <LockedSource lock={sourceLock} sample={atom.content} kind="content" />
+        ) : isCvmBinding(atom.content) ? (
           // 고객정보 연동 중 — 직접 입력 대신 출처 표시(FN-EVTMSN-FORM-001 자동 입력 출처 표시)
           <div className="flex items-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 px-2 py-1.5">
             <span className="inline-flex items-center gap-1 rounded border border-sky-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
@@ -913,7 +949,7 @@ function AtomRow({
           </div>
         ))}
       {/* 문구 베리에이션 — 타겟별 후보. 편집은 문구 관리(원장), 빌더는 참조만. 실서비스엔 CVM이 택1(기본=위 문구). 회의 2026-08-31. */}
-      {f.content && !isCvmBinding(atom.content) && (() => {
+      {f.content && !sourceLock && !isCvmBinding(atom.content) && (() => {
         const vars = atom.contentVariants ?? [];
         return (
           <div className="space-y-1 rounded-md border border-dashed border-violet-200 bg-violet-50/30 px-2 py-1.5">
@@ -945,7 +981,9 @@ function AtomRow({
         />
       )}
       {f.image &&
-        (atom.atomType === 'ICON' ? (
+        (sourceLock ? (
+          <LockedSource lock={sourceLock} sample={atom.imageUrl} kind="image" />
+        ) : atom.atomType === 'ICON' ? (
           // 아이콘 원자 = 아이콘 라이브러리에서 글리프 선택(이미지 파일 아님)
           <IconPickField
             value={atom.imageUrl}
@@ -1061,11 +1099,13 @@ function AtomManager({
   templateId,
   component,
   library,
+  recSource,
   onAtomsChange,
 }: {
   templateId: string;
   component: ComponentNode;
   library: LibraryData;
+  recSource: string | null; // 코너 수급 방식 — CVM 기반이면 콘텐츠 잠금
   onAtomsChange?: (atoms: AtomNode[]) => void; // 상위(ComponentCard)가 '완료'에서 일괄 저장하도록 동기화
 }) {
   // 편집 중인 Atom 값을 로컬 draft로 들고, 즉시 미리보기에 반영한다.
@@ -1100,6 +1140,7 @@ function AtomManager({
           images={library.images}
           links={library.links}
           messages={library.messages}
+          sourceLock={atomSourceLock(a.atomType, component.componentType, recSource)}
           onChange={(patch) => editAtom(a.componentAtomId, patch)}
         />
       ))}
@@ -1127,6 +1168,7 @@ function ReadOnlyAtoms({ component }: { component: ComponentNode }) {
       {component.atoms.map((a) => {
         const binding = cvmBindingLabel(a.content); // CVM 연동이면 라벨(예: 멤버십 번호)
         const isBarcode = a.atomType === 'BARCODE';
+        const lock = atomSourceLock(a.atomType, component.componentType, null); // 상품형 등 API 자동 콘텐츠
         const val = a.content || a.imageUrl || a.altText;
         return (
           <div key={a.componentAtomId} className="flex items-center gap-1.5 text-xs">
@@ -1135,6 +1177,11 @@ function ReadOnlyAtoms({ component }: { component: ComponentNode }) {
               <span className="flex flex-1 items-center gap-1 truncate">
                 <span className="inline-flex shrink-0 items-center gap-1 rounded border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700"><span className="rounded bg-sky-600 px-1 text-[9px] font-bold text-white">BSS</span>{binding}</span>
                 <span className="truncate text-muted-foreground/60">{resolveCvmSample(a.content)}</span>
+              </span>
+            ) : lock ? (
+              <span className="flex flex-1 items-center gap-1 truncate">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700"><span className="rounded bg-amber-600 px-1 text-[9px] font-bold text-white">{lock.tag}</span>{lock.label}</span>
+                {val && <span className="truncate text-muted-foreground/60">예: {val}</span>}
               </span>
             ) : isBarcode ? (
               <span className="flex flex-1 items-center gap-1 truncate">
@@ -1291,6 +1338,7 @@ function ComponentCard({
             templateId={templateId}
             component={cc}
             library={library}
+            recSource={corner.recSource}
             onAtomsChange={(atoms) => {
               atomsRef.current = atoms;
             }}
@@ -1467,23 +1515,19 @@ function ComponentList({
           ) : (
             <p className="px-0.5 pb-1 text-[11px] text-muted-foreground">아직 콘텐츠가 없습니다. 아래에서 추가하세요.</p>
           )}
-          {/* 추가 버튼 — 빈 컴포넌트 / BSS 상품(혜택 브랜드) 불러오기. 콘텐츠 묶음 안이라 칩이 아닌 본문으로 추가됨을 명확히. */}
-          <div className="mt-2 flex gap-1.5">
-            <form action={addBlankComponent.bind(null, templateId, corner.id)} className="flex-1">
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed bg-white/70 py-2 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary"
-              >
-                <Plus className="h-3.5 w-3.5" /> 컴포넌트 추가
-              </button>
-            </form>
+          {/* 추가 — 자유 컴포넌트 생성은 정책상 불가(⛔ 새 구조 생성). 코드화된 상품(BSS)만 불러와 편성(🔶). */}
+          <div className="mt-2 space-y-1.5">
             <button
               type="button"
               onClick={() => setBssOpen(true)}
-              className="flex flex-1 items-center justify-center gap-1 rounded-md border border-dashed border-sky-300 bg-white/70 py-2 text-xs font-medium text-sky-700 hover:border-sky-500 hover:bg-sky-50"
+              className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-sky-300 bg-white/70 py-2 text-xs font-medium text-sky-700 hover:border-sky-500 hover:bg-sky-50"
             >
-              <Search className="h-3.5 w-3.5" /> 상품 불러오기
+              <Search className="h-3.5 w-3.5" /> 상품 불러오기 (코드화된 컴포넌트 편성)
             </button>
+            <p className="flex items-start gap-1 rounded-md bg-slate-50 px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
+              <Lock className="mt-0.5 h-3 w-3 shrink-0" />
+              <span>새 컴포넌트 자유 추가는 여기서 하지 않아요. 컴포넌트 구성은 <b className="text-slate-600">코너 유형 관리 → 컴포넌트 조합</b>에서 정의합니다 (DS Portal 코드화 기준).</span>
+            </p>
           </div>
         </div>
       </DndContext>
@@ -1855,12 +1899,10 @@ function CardShapeControl({ templateId, corner }: { templateId: string; corner: 
 function BigBannerControl({ templateId, corner, banners }: { templateId: string; corner: CornerNode; banners: LibraryData['banners'] }) {
   const canBigBanner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(corner.cornerType);
   const [on, setOn] = useState(!!corner.bigBanner);
-  const [pos, setPos] = useState(corner.bannerPosition ?? '상단');
   const [pending, start] = useTransition();
-  useEffect(() => { setOn(!!corner.bigBanner); setPos(corner.bannerPosition ?? '상단'); }, [corner.bigBanner, corner.bannerPosition, corner.templateCornerId]);
+  useEffect(() => { setOn(!!corner.bigBanner); }, [corner.bigBanner, corner.templateCornerId]);
   if (!canBigBanner) return null;
   const toggle = () => { const next = !on; setOn(next); start(() => setCornerBigBanner(templateId, corner.id, next)); };
-  const choosePos = (p: string) => { setPos(p); start(() => setCornerBannerPosition(templateId, corner.id, p)); };
   return (
     <div className="mb-3 space-y-2 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
       <label className="flex items-center justify-between gap-2">
@@ -1875,17 +1917,7 @@ function BigBannerControl({ templateId, corner, banners }: { templateId: string;
       </label>
       {on && (
         <div className="space-y-2.5 border-t border-indigo-100 pt-2">
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium text-indigo-700">빅배너 위치</label>
-            <div className="flex gap-1.5">
-              {(['상단', '하단'] as const).map((p) => (
-                <button key={p} type="button" disabled={pending} onClick={() => choosePos(p)}
-                  className={cn('flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition', pos === p ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 hover:bg-secondary')}>
-                  배너 {p}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* 배너 위치는 DS 포털처럼 항상 상단 고정 — 선택 없음 */}
           {/* 배너 이미지 선택(라이브러리/직접 등록) — 빅배너 카드 안에 임베드 */}
           <div className="space-y-1">
             <label className="text-[10px] font-medium text-indigo-700">배너 이미지</label>

@@ -52,7 +52,7 @@ const first = (atoms: PreviewAtom[], ...types: string[]) => byType(atoms, ...typ
 
 /** 실제로 <img>로 그릴 수 있는 소스인지 (AI 생성 data URI / 외부 http / 로컬 public 자산) */
 // 실제 존재하는 파일만 렌더: data URI · http · /assets/(corner-samples·concept 등 public 자산). 그 외는 placeholder 처리.
-const isRenderableImg = (src?: string | null) => !!src && (src.startsWith('data:') || src.startsWith('http') || src.startsWith('/assets/corner-samples/') || src.startsWith('/assets/concept/'));
+const isRenderableImg = (src?: string | null) => !!src && (src.startsWith('data:') || src.startsWith('http') || src.startsWith('/assets/'));
 
 function ImageBox({ atom, className }: { atom?: PreviewAtom; className?: string }) {
   // 실제 파일이 없으면 onError로 깔끔한 영역+슬러그 라벨(PreviewImage)로 대체 — 깨진 이미지 방지
@@ -476,9 +476,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
 
   const wrapClass = isBanner ? '' : 'rounded-2xl bg-white p-4 shadow-sm';
 
-  // 코너 부속 배너. 배너형 코너는 배너가 곧 본문이라 항상 상단. 그 외(상품형 등 '빅배너')는
-  // 빌더에서 정한 bannerPosition(상단/하단)에 따라 카드 위/아래로 렌더(기본 상단).
-  const bannerAtTop = isBanner || corner.bannerPosition !== '하단';
+  // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
   const firstImg = corner.components.flatMap((c) => c.atoms).find((a) => a.atomType === 'IMAGE' && isRenderableImg(a.imageUrl))?.imageUrl ?? null;
   // 상단 히어로 배너는 '빅배너로 강조'(배치 옵션) 전용 — 상품형·혜택·오퍼형·콘텐츠 안내형에서 bigBanner일 때만.
@@ -507,7 +505,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
 
   return (
     <section className={`space-y-2 ${wrapClass}`}>
-      {bannerAtTop && bannerEl}
+      {bannerEl}
       {(() => {
         // 추천 수급 방식 배지 — 1순위 + 폴백 체인 표시 (예: CVM 개인화 추천 · 없으면 → 운영자 편성)
         let plan: string[] = [];
@@ -548,7 +546,6 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           </span>
         </div>
       )}
-      {!bannerAtTop && bannerEl}
     </section>
   );
 }

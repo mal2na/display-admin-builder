@@ -15,12 +15,15 @@ const atom = (a: Partial<PreviewAtom> & { atomType: string; name: string }): Pre
   ...a,
 });
 
-// 미리보기용 실제 샘플 이미지 풀(main-concept 데모에서 추출 · public/assets/concept). 인덱스로 돌려가며 배정.
+// 미리보기용 실제 샘플 이미지 풀(DS 포털 라이브러리에서 추출 · public/assets/ds). 인덱스로 돌려가며 배정.
 const IMAGE_POOL = [
-  '/assets/concept/img02.png', '/assets/concept/img03.png', '/assets/concept/img04.png', '/assets/concept/img26.png',
-  '/assets/concept/img24.png', '/assets/concept/img30.png', '/assets/concept/img19.png',
+  '/assets/ds/device-iphone.png', '/assets/ds/plan-5gx.png', '/assets/ds/pack-baemin.png',
+  '/assets/ds/movie-cgv.png', '/assets/ds/banner-activation.png',
 ];
-const LOGO_POOL = ['/assets/concept/img14.png', '/assets/concept/img20.png', '/assets/concept/img22.png', '/assets/concept/img25.png'];
+const LOGO_POOL = [
+  '/assets/ds/logo-gongcha.png', '/assets/ds/logo-baskin.png', '/assets/ds/logo-paulbassett.png',
+  '/assets/ds/logo-tlj.png', '/assets/ds/logo-nol.png', '/assets/ds/logo-domino.png', '/assets/ds/logo-tmap.png',
+];
 const pick = (arr: string[], i: number) => arr[(i - 1 + arr.length * 100) % arr.length];
 
 // 한 블록의 한 인스턴스(i번째) → PreviewComponent. buildComp(서버)과 같은 아톰 구성.
