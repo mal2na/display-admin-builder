@@ -383,6 +383,10 @@ model CornerType {
   // CVM 연동 필드 — 이 코너 유형이 CVM/BSS에서 자동으로 가져오는 회원 데이터(FN-EVTMSN-FORM-001). CVM_FIELDS key csv.
   cvmFields String @default("")
 
+  // 컴포넌트 조합 — 이 코너 유형이 어떤 컴포넌트를(유형) 몇 개, 어떤 표시 요소로 담는지의 순서 있는 목록(JSON: CompositionBlock[]).
+  // 코너 유형 관리의 '컴포넌트 조합' 화면에서 조립. 빌더에서 코너 생성 시 이 조합대로 실제 Component/Atom 생성(없으면 절차적 scaffold 폴백).
+  composition String?
+
   // ── FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 리스트 유형에서. 코너 불러오기 시 코너에 상속. ──
   userCustomizable Boolean @default(false)
   userMinItems     Int?
@@ -652,4 +656,141 @@ model EventCommentReply {
   createdAt DateTime      @default(now())
 
   @@index([commentId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 운영 관리 — App 위젯 관리 (SB-ETC-076/096/110 · 위젯 유형 관리) · 정책 AIM
+//   위젯 유형(규격·노출위치) 카탈로그 + App 위젯(배너 인스턴스) 등록/게시.
+//   유형/상태는 String으로 관리(허용값은 src/lib/widget-taxonomy.ts).
+// ─────────────────────────────────────────────────────────────
+model WidgetType {
+  id             String  @id @default(cuid())
+  typeName       String  // 위젯유형 표기 (예: Android_5X4_멤버십)
+  description    String? // 유형설명
+  typeCode       String  // 유형코드 (시스템, 예: WDT_SERVICE_BANNER)
+  osType         String  // Android | IOS
+  sizeLabel      String? // App 위젯 관리 사이즈 (예: MEDIUM, 5X2 배너형)
+  nativeWidgetId String? // 네이티브 위젯ID (예: IOS_WIDGET_MEDIUM_01)
+  widgetSpec     String? // 위젯 규격 (예: 329 X 155 px)
+  bannerArea     String? // 배너 영역 (예: 329 X 50 px)
+  previewImageUrl String? // 미리보기 이미지
+  useYn          Boolean @default(false) // 사용여부 (사용/미사용)
+
+  // 승인 정보 (시스템 자동) — draft | requested | approved
+  approvalStatus      String    @default("draft")
+  approvalRequester   String?
+  approvalManager     String?
+  approvalRequestedAt DateTime?
+  approvalProcessedAt DateTime?
+
+  // 담당자
+  createdBy String?
+  updatedBy String?
+
+  appWidgets AppWidget[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model AppWidget {
+  id           String      @id @default(cuid())
+  osType       String      // Android | IOS
+  exposeYn     Boolean     @default(false) // 게시여부(노출/미노출)
+  widgetTypeId String?
+  widgetType   WidgetType? @relation(fields: [widgetTypeId], references: [id])
+  publishStart DateTime?   // 게시 시작
+  publishEnd   DateTime?   // 게시 종료
+
+  // 배너 정보
+  bannerName       String  // 배너명
+  bgColorCode      String? // BG용 RGB 색상코드
+  bannerImageUrl   String? // 배너 이미지
+  bannerImageAlt   String? // 배너 이미지 ALT
+  linkType         String  @default("internal") // internal | external | none
+  linkUrl          String?
+  statCode         String? // 통계코드 (T월드 영역)
+  landingPosition  String? // 랜딩위치 (T월드 영역)
+  targetCampaignId String? // 타겟 캠페인ID (T월드 영역)
+  note             String? // 비고 (T월드 영역)
+
+  // 목록/상태
+  displayOrder  Int    @default(0)            // 노출순서
+  publishStatus String @default("unpublished") // unpublished | scheduled | live | ended
+  deployStatus  String @default("waiting")     // waiting | done
+
+  // 승인 정보 (시스템 자동)
+  approvalStatus      String    @default("draft") // draft | requested | approved
+  approvalRequester   String?
+  approvalManager     String?
+  approvalRequestedAt DateTime?
+  approvalProcessedAt DateTime?
+
+  // 담당자
+  createdBy String?
+  updatedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([widgetTypeId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 운영 관리 — App 스플래시 관리 (SB-ETC-116/117/118/119) · 정책 DSP/AIM
+//   OS유형별 버전으로 앱 시작 이미지(배경/애니메이션) 등록·승인·적용.
+// ─────────────────────────────────────────────────────────────
+model AppSplash {
+  id           String   @id @default(cuid())
+  osType       String   // Android | IOS
+  version      Int      @default(1)  // OS유형별 버전 (승인완료 시 최신+1)
+  updateContent String? // 업데이트 주요 내용
+  applyStartAt DateTime? // 적용시작일시
+
+  // 배경 이미지
+  bgImageUrl String?
+  bgImageAlt String?
+  bgUseYn    Boolean @default(true) // 배경 이미지 사용여부
+
+  // 애니메이션 (json)
+  animUrl String?
+  animAlt String?
+  animUseYn Boolean @default(true) // 애니메이션 사용여부
+
+  // 승인 정보 — draft(임시저장) | requested(승인대기) | approved(승인완료) | rejected(반려) | cancelled(요청취소)
+  approvalStatus      String    @default("draft")
+  approvalRequester   String?
+  approvalManager     String?
+  approvalRequestedAt DateTime?
+  approvalProcessedAt DateTime?
+
+  // 담당자
+  createdBy String?
+  updatedBy String?
+
+  history AppSplashHistory[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([osType, version])
+}
+
+// App 스플래시 변경/승인 이력 (SB BO-AIM-ETC-PG047/048) — 회차 단위 임시저장·승인요청·승인·반려·요청취소 이력
+model AppSplashHistory {
+  id        String   @id @default(cuid())
+  splashId  String
+  splash    AppSplash @relation(fields: [splashId], references: [id], onDelete: Cascade)
+  osType    String
+  version   Int?     // 처리 시점 버전 (승인완료 시 채번)
+  status    String   // draft(임시저장) | requested(승인요청) | approved(승인완료) | rejected(반려) | cancelled(요청취소)
+  requester String?  // 승인 요청자
+  manager   String?  // 승인 담당자
+  requestedAt DateTime? // 요청 일시
+  requestReason String? // 요청 사유
+  processedAt DateTime? // 처리 일시
+  processReason String? // 처리 사유
+  changeNote  String?   // 변경 내용 (상세보기 대상)
+  createdAt DateTime @default(now())
+
+  @@index([splashId])
+  @@index([osType])
 }

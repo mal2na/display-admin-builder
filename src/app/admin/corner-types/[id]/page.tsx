@@ -68,6 +68,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     defaultMoreButton: ct.defaultMoreButton ?? false,
     defaultMoreButtonLabel: ct.defaultMoreButtonLabel ?? null,
     cvmFields: ct.cvmFields ?? '',
+    composition: ct.composition ?? null,
     userCustomizable: ct.userCustomizable ?? false,
     userMinItems: ct.userMinItems ?? null,
     userMaxItems: ct.userMaxItems ?? null,

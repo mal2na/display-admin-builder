@@ -19,9 +19,9 @@ export function PreviewImage({
   className?: string;
 }) {
   const [err, setErr] = useState(false);
-  // 실제 존재하는 파일: data URI · 외부 http · 로컬 /assets/corner-samples(유형 샘플 썸네일)만.
-  // 그 외 /assets/movie-*, /assets/brand-* 등은 시드 자리표시자(파일 없음) → 깨진 img 대신 placeholder.
-  const renderable = !!src && (src.startsWith('data:') || src.startsWith('http') || src.startsWith('/assets/corner-samples/'));
+  // 실제 존재하는 파일만: data URI · 외부 http · /assets/corner-samples · /assets/concept(추출 샘플).
+  // 그 외 /assets/movie-*·brand-* 등 시드 자리표시자는 파일이 없어 렌더하지 않음(불필요한 404 방지).
+  const renderable = !!src && (src.startsWith('data:') || src.startsWith('http') || src.startsWith('/assets/'));
 
   if (renderable && !err) {
     // eslint-disable-next-line @next/next/no-img-element

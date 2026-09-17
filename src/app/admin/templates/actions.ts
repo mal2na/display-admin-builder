@@ -10,9 +10,11 @@ import {
   CORNER_TYPES,
   CORNER_COMPONENT_MAP,
   isComponentAllowedInCorner,
+  parseComposition,
   type AtomType,
   type ComponentType,
   type CornerType,
+  type Composition,
 } from '@/lib/display-taxonomy';
 import { bssProductByKey } from '@/lib/bss-products';
 
@@ -434,96 +436,109 @@ export async function createCorner(templateId: string, formData: FormData) {
 type ScaffoldAtom = { name: string; atomType: string; content?: string; imageUrl?: string; altText?: string; linkUrl?: string };
 type ScaffoldComp = { name: string; componentType: ComponentType; atoms: ScaffoldAtom[]; chipRows?: number; selectedIndex?: number };
 
-function scaffoldSpecFor(componentType: string | null, typeDetail: string | null, feats: { badge?: boolean; image?: boolean; price?: boolean; desc?: boolean } = {}): ScaffoldComp[] {
+type CompFeats = { badge?: boolean; image?: boolean; price?: boolean; desc?: boolean };
+
+// 한 컴포넌트(유형·순번·표시요소) → ScaffoldComp(아톰 포함). scaffoldSpecFor와 조합 기반 생성(specFromComposition)의 공용 빌더.
+function buildComp(componentType: ComponentType, i: number, feats: CompFeats = {}): ScaffoldComp {
+  const { badge = false, image = true, price = true, desc = true } = feats;
+  const badgeAtom = (label: string): ScaffoldAtom[] => (badge ? [{ name: '배지', atomType: 'BADGE', content: label }] : []);
+  switch (componentType) {
+    case '선택형':
+      return { name: '카테고리 탭', componentType: '선택형', selectedIndex: 0, atoms: ['전체', '카테고리1', '카테고리2', '카테고리3'].map((c) => ({ name: c, atomType: 'TEXT', content: c })) };
+    case '상품형':
+      return {
+        name: `상품 ${i}`,
+        componentType: '상품형',
+        atoms: [
+          ...(image ? [{ name: '상품 이미지', atomType: 'IMAGE', imageUrl: '', altText: `상품 ${i} 이미지` }] : []),
+          { name: '상품명', atomType: 'TEXT', content: `상품 ${i}` },
+          ...badgeAtom('NEW'), // 배지는 가격 앞(정책 상품 Set: 가격·배지 인접)
+          ...(price ? [{ name: '가격', atomType: 'PRICE', content: '' }] : []),
+          ...(desc ? [{ name: '설명', atomType: 'INFO', content: '' }] : []), // 부가/흐린 글씨 = 정보값 Atom
+        ],
+      };
+    case '혜택형':
+      return {
+        name: `혜택 ${i}`,
+        componentType: '혜택형',
+        atoms: [
+          { name: '로고', atomType: 'ICON', imageUrl: '', altText: `브랜드 ${i}` },
+          ...badgeAtom('혜택'),
+          { name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: `혜택 ${i} 문구를 입력하세요` },
+          { name: '브랜드', atomType: 'INFO', content: `브랜드 ${i}` },
+        ],
+      };
+    case '배너형':
+      return {
+        name: i > 1 ? `배너 ${i}` : '배너',
+        componentType: '배너형',
+        atoms: [
+          { name: '배너 타이틀', atomType: 'TEXT', content: '배너 타이틀' },
+          { name: '배너 설명', atomType: 'INFO', content: '배너 설명 문구' },
+          { name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: '/' },
+          { name: '배너 이미지', atomType: 'IMAGE', imageUrl: '', altText: '배너 이미지' },
+        ],
+      };
+    case '정보형':
+      return {
+        name: i > 1 ? `정보 카드 ${i}` : '정보 카드',
+        componentType: '정보형',
+        atoms: [
+          { name: '아이콘', atomType: 'ICON', imageUrl: 'icon:general/Info', altText: '아이콘' },
+          { name: '값', atomType: 'PRICE', content: '주요 값' },
+          ...badgeAtom('상태'),
+          { name: '라벨', atomType: 'TEXT', content: '라벨' },
+        ],
+      };
+    case '행동형':
+      return {
+        name: i > 1 ? `바로가기 ${i}` : '바로가기',
+        componentType: '행동형',
+        atoms: [
+          { name: '제목', atomType: 'TEXT', content: '업무 바로가기' },
+          { name: '버튼', atomType: 'CTA', content: '바로가기', linkUrl: '/' },
+        ],
+      };
+    default:
+      return { name: `${componentType} ${i}`, componentType, atoms: [] };
+  }
+}
+
+// 절차적 폴백 — 코너 유형에 저장된 '컴포넌트 조합'이 없을 때 컴포넌트 유형·배열로 대표 구성을 추론한다.
+function scaffoldSpecFor(componentType: string | null, typeDetail: string | null, feats: CompFeats = {}): ScaffoldComp[] {
   const ct = (componentType ?? '') as ComponentType | '';
   const d = typeDetail ?? '';
-  const { badge = false, image = true, price = true, desc = true } = feats; // 유형 세부 항목(표시 항목) — 켜진 항목만 스캐폴드에 넣는다
-  const tabComp: ScaffoldComp = {
-    name: '카테고리 탭',
-    componentType: '선택형',
-    selectedIndex: 0,
-    atoms: ['전체', '카테고리1', '카테고리2', '카테고리3'].map((c) => ({ name: c, atomType: 'TEXT', content: c })),
-  };
-  const badgeAtom = (label: string): ScaffoldComp['atoms'] => (badge ? [{ name: '배지', atomType: 'BADGE', content: label }] : []); // 유형 세부 항목 '배지' ON일 때만
-  const productComp = (i: number): ScaffoldComp => ({
-    name: `상품 ${i}`,
-    componentType: '상품형',
-    atoms: [
-      ...(image ? [{ name: '상품 이미지', atomType: 'IMAGE' as const, imageUrl: '', altText: `상품 ${i} 이미지` }] : []), // 상품 이미지 ON
-      { name: '상품명', atomType: 'TEXT', content: `상품 ${i}` },
-      ...badgeAtom('NEW'), // 배지는 가격 앞에 붙는다(정책 상품 Set: 가격·배지 인접)
-      ...(price ? [{ name: '가격', atomType: 'PRICE' as const, content: '' }] : []), // 가격 ON
-      ...(desc ? [{ name: '설명', atomType: 'INFO' as const, content: '' }] : []), // 설명(부가/흐린 글씨) ON — 정보값 Atom
-    ],
-  });
-  const benefitComp = (i: number): ScaffoldComp => ({
-    name: `혜택 ${i}`,
-    componentType: '혜택형',
-    atoms: [
-      { name: '로고', atomType: 'ICON', imageUrl: '', altText: `브랜드 ${i}` },
-      ...badgeAtom('혜택'),
-      { name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: `혜택 ${i} 문구를 입력하세요` },
-      { name: '브랜드', atomType: 'INFO', content: `브랜드 ${i}` },
-    ],
-  });
-
   let comps: ScaffoldComp[] = [];
   switch (ct) {
     case '선택형':
-      comps = [tabComp];
+      comps = [buildComp('선택형', 1, feats)];
       break;
     case '상품형':
-      comps = d.includes('단일') ? [productComp(1)] : [productComp(1), productComp(2), productComp(3)];
-      break;
-    case '배너형':
-      comps = [
-        {
-          name: '배너',
-          componentType: '배너형',
-          atoms: [
-            { name: '배너 타이틀', atomType: 'TEXT', content: '배너 타이틀' },
-            { name: '배너 설명', atomType: 'INFO', content: '배너 설명 문구' },
-            { name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: '/' },
-            { name: '배너 이미지', atomType: 'IMAGE', imageUrl: '', altText: '배너 이미지' },
-          ],
-        },
-      ];
+      comps = d.includes('단일') ? [buildComp('상품형', 1, feats)] : [1, 2, 3].map((i) => buildComp('상품형', i, feats));
       break;
     case '혜택형':
-      comps = [benefitComp(1), benefitComp(2), benefitComp(3)];
+      comps = [1, 2, 3].map((i) => buildComp('혜택형', i, feats));
       break;
+    case '배너형':
     case '정보형':
-      comps = [
-        {
-          name: '정보 카드',
-          componentType: '정보형',
-          // 아이콘형 상태카드 기준: 아이콘 + 값(가격) + 상태(배지) + 라벨(텍스트) → 와이어프레임과 원자 유형 일치
-          atoms: [
-            { name: '아이콘', atomType: 'ICON', imageUrl: 'icon:general/Info', altText: '아이콘' },
-            { name: '값', atomType: 'PRICE', content: '주요 값' },
-            { name: '상태', atomType: 'BADGE', content: '상태' },
-            { name: '라벨', atomType: 'TEXT', content: '라벨' },
-          ],
-        },
-      ];
-      break;
     case '행동형':
-      comps = [
-        {
-          name: '바로가기',
-          componentType: '행동형',
-          atoms: [
-            { name: '제목', atomType: 'TEXT', content: '업무 바로가기' },
-            { name: '버튼', atomType: 'CTA', content: '바로가기', linkUrl: '/' },
-          ],
-        },
-      ];
+      comps = [buildComp(ct, 1, feats)];
       break;
     default:
       comps = [];
   }
   // 배열 상세에 '카테고리탭'이 있고 주 컴포넌트가 선택형이 아니면 상단 탭을 얹는다(예: 상품형·세로형(카테고리탭)).
-  if (/카테고리\s*탭/.test(d) && ct !== '선택형' && comps.length) comps = [tabComp, ...comps];
+  if (/카테고리\s*탭/.test(d) && ct !== '선택형' && comps.length) comps = [buildComp('선택형', 1, feats), ...comps];
+  return comps;
+}
+
+// 코너 유형에 저장된 '컴포넌트 조합'(CompositionBlock[]) → 실제 생성할 ScaffoldComp[]. 블록마다 count개씩 펼친다.
+function specFromComposition(composition: Composition): ScaffoldComp[] {
+  const comps: ScaffoldComp[] = [];
+  for (const b of composition) {
+    const feats: CompFeats = { image: b.image, price: b.price, badge: b.badge, desc: b.desc };
+    for (let i = 1; i <= b.count; i++) comps.push(buildComp(b.componentType, i, feats));
+  }
   return comps;
 }
 
@@ -603,7 +618,12 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
     },
   });
   // 유형의 컴포넌트 유형·배열에 맞춰 '코너 구성'을 스캐폴딩(불러오면 코너 정보 + 코너 구성이 실제로 채워짐)
-  await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail, { badge: def.useBadge, image: def.useImage, price: def.usePrice, desc: def.useDesc }));
+  // 코너 유형에 저장된 '컴포넌트 조합'이 있으면 그대로 생성, 없으면 절차적 scaffold로 폴백.
+  const composition = parseComposition(def.composition);
+  const specs = composition
+    ? specFromComposition(composition)
+    : scaffoldSpecFor(def.componentType, def.typeDetail, { badge: def.useBadge, image: def.useImage, price: def.usePrice, desc: def.useDesc });
+  await createScaffoldComponents(corner.id, def.baseCategory, specs);
   return corner;
 }
 

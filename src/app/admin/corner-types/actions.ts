@@ -6,6 +6,7 @@ import {
   CORNER_TYPES,
   componentTypesForCorner,
   componentLayoutDetails,
+  parseComposition,
   type CornerType,
 } from '@/lib/display-taxonomy';
 
@@ -100,6 +101,8 @@ function readForm(formData: FormData) {
     defaultMoreButton: String(formData.get('defaultMoreButton') ?? '') === '1',
     defaultMoreButtonLabel: opt('defaultMoreButtonLabel'),
     cvmFields: formData.getAll('cvmFields').map(String).filter(Boolean).join(','), // CVM 연동 필드 keys
+    // 컴포넌트 조합 — 유효성 검증 후 정규화 JSON 저장(유효하지 않으면 null → 절차적 scaffold 폴백)
+    composition: (() => { const c = parseComposition(String(formData.get('composition') ?? '')); return c ? JSON.stringify(c) : null; })(),
     // FO 사용자 설정(고객 커스터마이즈) 기본값
     userCustomizable: String(formData.get('userCustomizable') ?? '') === '1',
     userMinItems: num('userMinItems'),
@@ -212,4 +215,22 @@ export async function deleteCornerType(id: string) {
   await prisma.cornerType.delete({ where: { id } });
   await writeAudit({ targetId: id, before: before ? { name: before.name, typeId: before.typeId } : null, reason: `코너 유형 삭제 (${before?.typeId ?? id})`, result: 'DELETED' });
   revalidate();
+}
+
+// 복제 — 정의(조합·플래그·기본값)를 그대로 복사해 새 작업본으로. 라이브/버전/승인 이력은 초기화.
+export async function duplicateCornerType(id: string) {
+  const src = await prisma.cornerType.findUnique({ where: { id } });
+  if (!src) return;
+  const typeId = await nextTypeId();
+  const {
+    id: _id, typeId: _typeId, createdAt: _c, updatedAt: _u, createdBy: _cb,
+    liveVersion: _lv, liveSnapshot: _ls, liveAt: _la, workingVersion: _wv,
+    status: _st, rejectReason: _rr, reviewedBy: _rb, reviewedAt: _ra,
+    ...rest
+  } = src;
+  const created = await prisma.cornerType.create({
+    data: { ...rest, name: `${src.name} 복사본`, typeId, createdBy: ACTOR, status: 'DRAFT', workingVersion: 1, liveVersion: null, liveSnapshot: null, liveAt: null },
+  });
+  await writeAudit({ targetId: created.id, after: { name: created.name, typeId }, reason: `코너 유형 복제 (${src.typeId} → ${typeId})`, result: 'CREATED' });
+  revalidate(created.id);
 }

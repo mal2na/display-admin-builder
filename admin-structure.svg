@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" font-family="'Noto Sans KR','Apple SD Gothic Neo',-apple-system,'Segoe UI',sans-serif">
+  <defs>
+    <marker id="dep" markerWidth="11" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M1,1 L10,5 L1,9" fill="none" stroke="#2f6fed" stroke-width="1.5"/></marker>
+    <marker id="fl" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#7a828f"/></marker>
+  </defs>
+  <style>
+    .h1{font-size:23px;font-weight:800;fill:#1a1d24}
+    .ov{font-size:13px;fill:#5b6270}
+    .bt{font-size:16px;font-weight:800;fill:#1a1d24}
+    .stereo{font-size:12px;font-style:italic;fill:#9298a4;font-weight:600}
+    .role{font-size:12.5px;fill:#3a3f4b}
+    .emph{font-size:12.5px;font-weight:800;fill:#147a52}
+    .note{font-size:11.5px;fill:#8a90a0}
+    .pill{font-size:11px;font-weight:700;fill:#2f6fed}
+    .dep{font-size:12px;font-weight:700;fill:#2f6fed}
+    .flow{font-size:12px;font-weight:700;fill:#5b6270}
+    .outer{font-size:16px;font-weight:800;fill:#2f6fed}
+    .outsub{font-size:12px;fill:#8a90a0}
+    .leg{font-size:12px;fill:#5b6270}
+    .pillt{font-size:11px;font-weight:700}
+    .card{font-size:11px;font-weight:800;fill:#5b6270}
+  </style>
+  <rect width="1200" height="800" fill="#ffffff"/>
+
+  <g id="제목">
+    <text class="h1" x="50" y="40">5. 전시관리 Admin — 기능 구조도 및 데이터 연결</text>
+    <text class="ov" x="50" y="62">원천(DS Portal) → 구성(빌더) → 게시(전시화면 관리) → 노출(채널). 관리 기능 간 포함, 의존, 흐름 관계와 원장 번호(화면 ID) 기준을 함께 표기</text>
+  </g>
+
+  <g id="범례" transform="translate(50,80)">
+    <rect x="0" y="2" width="20" height="15" fill="none" stroke="#7a828f"/><rect x="4" y="6" width="11" height="8" fill="#dfe4f4"/>
+    <text class="leg" x="28" y="14">포함 (상위가 하위를 구성)</text>
+    <line x1="240" y1="10" x2="278" y2="10" stroke="#2f6fed" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#dep)"/>
+    <text class="leg" x="286" y="14">의존 (사용, 참조)</text>
+    <line x1="452" y1="10" x2="486" y2="10" stroke="#7a828f" stroke-width="1.6" marker-end="url(#fl)"/>
+    <text class="leg" x="494" y="14">흐름 (공급, 게시)</text>
+    <text class="leg" x="620" y="14">1 : N   상위 1개에 하위 여러 개</text>
+    <rect x="0" y="26" width="14" height="14" fill="#147a52"/><text class="leg" x="20" y="37">전체화면 관리</text>
+    <rect x="150" y="26" width="14" height="14" fill="#2f6fed"/><text class="leg" x="170" y="37">전시화면 관리, 빌더</text>
+    <rect x="340" y="26" width="14" height="14" fill="#7a828f"/><text class="leg" x="360" y="37">메뉴 관리, 배너/캠페인</text>
+    <text class="leg" x="560" y="37" fill="#9298a4">색 = 소유 주체 구분</text>
+  </g>
+
+  <!-- FRAME: 전체화면 관리 -->
+  <g id="전체화면 관리" transform="translate(60,150)">
+    <rect x="0" y="0" width="430" height="300" fill="#ffffff" stroke="#c2c8d2"/>
+    <rect x="0" y="0" width="4" height="300" fill="#147a52"/>
+    <rect x="22" y="10" width="15" height="13" fill="none" stroke="#147a52"/><rect x="19" y="12" width="6" height="3" fill="#147a52"/><rect x="19" y="18" width="6" height="3" fill="#147a52"/>
+    <text class="bt" x="46" y="24" fill="#147a52">전체화면 관리</text>
+    <text class="stereo" x="410" y="24" text-anchor="end">«화면 원장»</text>
+    <text class="role" x="24" y="54">서비스의 모든 페이지(화면)를 등록하고 소유</text>
+    <text class="emph" x="24" y="78">원장 번호 = Container (화면 ID) 기준</text>
+    <g id="Container-Template 분기">
+      <rect x="24" y="94" width="160" height="40" fill="#f2f4f8" stroke="#c2c8d2"/>
+      <text class="pill" x="38" y="112" fill="#147a52">Container</text>
+      <text class="card" x="38" y="127" fill="#147a52">화면 ID = 원장 번호</text>
+      <rect x="270" y="88" width="150" height="28" fill="#ffffff" stroke="#b9c2e8"/><text class="pill" x="284" y="106">Template 로그인</text>
+      <rect x="270" y="122" width="150" height="28" fill="#ffffff" stroke="#b9c2e8"/><text class="pill" x="284" y="140">Template 비로그인</text>
+      <rect x="270" y="156" width="150" height="28" fill="#ffffff" stroke="#b9c2e8"/><text class="pill" x="284" y="174" fill="#8a90a0">Template 세그먼트/기간 등</text>
+      <line x1="184" y1="114" x2="234" y2="114" stroke="#7a828f" stroke-width="1.4"/>
+      <line x1="234" y1="102" x2="234" y2="170" stroke="#7a828f" stroke-width="1.4"/>
+      <line x1="234" y1="102" x2="268" y2="102" stroke="#7a828f" stroke-width="1.4" marker-end="url(#fl)"/>
+      <line x1="234" y1="136" x2="268" y2="136" stroke="#7a828f" stroke-width="1.4" marker-end="url(#fl)"/>
+      <line x1="234" y1="170" x2="268" y2="170" stroke="#7a828f" stroke-width="1.4" marker-end="url(#fl)"/>
+      <text class="card" x="198" y="108" fill="#5b6270">1 : N</text>
+    </g>
+    <text class="note" x="24" y="212">로그인/비로그인/세그먼트는 별도 번호가 아니라</text>
+    <text class="note" x="24" y="230">같은 Container(같은 원장 번호) 아래 Template 분기</text>
+    <text class="note" x="24" y="262">채널 호출 = Container + 고객 상태 + 노출 조건으로 Template 택1</text>
+  </g>
+
+  <!-- FRAME: 메뉴 관리 -->
+  <g id="메뉴 관리" transform="translate(60,486)">
+    <rect x="0" y="0" width="430" height="112" fill="#ffffff" stroke="#c2c8d2"/>
+    <rect x="0" y="0" width="4" height="112" fill="#7a828f"/>
+    <rect x="22" y="16" width="15" height="13" fill="none" stroke="#5b6270"/><rect x="19" y="18" width="6" height="3" fill="#5b6270"/><rect x="19" y="24" width="6" height="3" fill="#5b6270"/>
+    <text class="bt" x="46" y="30">메뉴 관리</text>
+    <text class="stereo" x="144" y="30">«네비게이션»</text>
+    <text class="role" x="24" y="60">등록된 화면(Container)을 GNB, 전체메뉴에 배치</text>
+    <rect x="24" y="74" width="260" height="24" fill="#f2f4f8" stroke="#c2c8d2"/><text class="pill" x="36" y="90" fill="#5b6270">진입 순서만 변경, 새 화면 생성 안 함</text>
+  </g>
+
+  <!-- FRAME: DS Portal (SSOT, 원천) -->
+  <g id="DS Portal" transform="translate(560,150)">
+    <rect x="0" y="0" width="600" height="52" fill="#2b3550"/>
+    <rect x="20" y="14" width="15" height="13" fill="none" stroke="#c3ccff"/><rect x="17" y="16" width="6" height="3" fill="#c3ccff"/><rect x="17" y="22" width="6" height="3" fill="#c3ccff"/>
+    <text x="44" y="24" font-size="15" font-weight="800" fill="#ffffff">DS Portal (SSOT)</text>
+    <text x="200" y="24" font-size="12" font-style="italic" fill="#aeb7e6">«원천 라이브러리»</text>
+    <text x="44" y="42" font-size="12" fill="#dfe4ff">공식(★) 확정 자산만 코드화 → Component, Atom 공급 (빌더는 만들지 않고 불러와 조합)</text>
+  </g>
+
+  <!-- FRAME: 전시화면 관리 -->
+  <g id="전시화면 관리" transform="translate(560,240)">
+    <rect x="0" y="0" width="600" height="430" fill="#f8f9fb" stroke="#c2c8d2"/>
+    <rect x="0" y="0" width="4" height="430" fill="#2f6fed"/>
+    <rect x="22" y="10" width="15" height="13" fill="none" stroke="#2f6fed"/><rect x="19" y="12" width="6" height="3" fill="#2f6fed"/><rect x="19" y="18" width="6" height="3" fill="#2f6fed"/>
+    <text class="outer" x="46" y="24">전시화면 관리</text>
+    <text class="stereo" x="178" y="24">«구성, 게시, 운영»</text>
+    <text class="outsub" x="46" y="46">화면을 구성하고 검수, 승인, 게시, 운영하는 상위 영역</text>
+
+    <g id="빌더" transform="translate(34,66)">
+      <rect x="0" y="0" width="288" height="220" fill="#ffffff" stroke="#2f6fed"/>
+      <rect x="0" y="0" width="4" height="220" fill="#2f6fed"/>
+      <rect x="22" y="18" width="15" height="13" fill="none" stroke="#2f6fed"/><rect x="19" y="20" width="6" height="3" fill="#2f6fed"/><rect x="19" y="26" width="6" height="3" fill="#2f6fed"/>
+      <text class="bt" x="46" y="32" fill="#2f6fed">빌더</text>
+      <text class="stereo" x="26" y="62">«화면 구성»</text>
+      <text class="role" x="26" y="86">코너를 조합하여 Template을 구성</text>
+      <rect x="26" y="100" width="78" height="24" fill="#f2f4f8" stroke="#b9c2e8"/><text class="pill" x="38" y="116">Corner</text>
+      <rect x="112" y="100" width="92" height="24" fill="#f2f4f8" stroke="#b9c2e8"/><text class="pill" x="124" y="116">Template</text>
+      <text class="note" x="26" y="150">Atom → Component → Corner → Template 계층</text>
+      <text class="note" x="26" y="170">로그인/비로그인 Template을 각각 구성 가능</text>
+      <rect x="26" y="184" width="238" height="26" fill="#eef4ff" stroke="#b9c2e8"/><text class="pill" x="38" y="201">콘텐츠 수급 : CVM 개인화 / 운영자 편성</text>
+    </g>
+
+    <g id="배너 캠페인 관리" transform="translate(368,66)">
+      <rect x="0" y="0" width="212" height="220" fill="#ffffff" stroke="#c2c8d2"/>
+      <rect x="0" y="0" width="4" height="220" fill="#7a828f"/>
+      <rect x="22" y="18" width="15" height="13" fill="none" stroke="#5b6270"/><rect x="19" y="20" width="6" height="3" fill="#5b6270"/><rect x="19" y="26" width="6" height="3" fill="#5b6270"/>
+      <text class="bt" x="46" y="32">배너 / 캠페인</text>
+      <text class="stereo" x="26" y="62">«콘텐츠 소재»</text>
+      <text class="role" x="26" y="86">배너, 캠페인 단위</text>
+      <text class="role" x="26" y="104">소재를 관리</text>
+      <rect x="26" y="118" width="96" height="24" fill="#f2f4f8" stroke="#c2c8d2"/><text class="pill" x="38" y="134" fill="#5b6270">배너 소재</text>
+    </g>
+
+    <g id="게시 흐름" transform="translate(34,314)">
+      <text class="note" x="0" y="0" fill="#5b6270" font-weight="700">게시 흐름 (Template 단위)</text>
+      <g transform="translate(0,10)">
+        <rect x="0" y="0" width="104" height="30" fill="#eaf0fe" stroke="#b9c2e8"/><text class="pillt" x="52" y="20" text-anchor="middle" fill="#2f6fed">구성 (빌더)</text>
+        <rect x="126" y="0" width="82" height="30" fill="#ffffff" stroke="#c2c8d2"/><text class="pillt" x="167" y="20" text-anchor="middle" fill="#5b6270">검수</text>
+        <rect x="230" y="0" width="82" height="30" fill="#ffffff" stroke="#c2c8d2"/><text class="pillt" x="271" y="20" text-anchor="middle" fill="#5b6270">승인</text>
+        <rect x="334" y="0" width="82" height="30" fill="#ffffff" stroke="#c2c8d2"/><text class="pillt" x="375" y="20" text-anchor="middle" fill="#5b6270">게시</text>
+        <rect x="438" y="0" width="82" height="30" fill="#ffffff" stroke="#c2c8d2"/><text class="pillt" x="479" y="20" text-anchor="middle" fill="#5b6270">운영</text>
+        <line x1="106" y1="15" x2="124" y2="15" stroke="#7a828f" stroke-width="1.4" marker-end="url(#fl)"/>
+        <line x1="210" y1="15" x2="228" y2="15" stroke="#7a828f" stroke-width="1.4" marker-end="url(#fl)"/>
+        <line x1="314" y1="15" x2="332" y2="15" stroke="#7a828f" stroke-width="1.4" marker-end="url(#fl)"/>
+        <line x1="418" y1="15" x2="436" y2="15" stroke="#7a828f" stroke-width="1.4" marker-end="url(#fl)"/>
+      </g>
+      <text class="note" x="0" y="68">게시 상태는 Container 아래 Template(로그인/비로그인)별로 각각 관리</text>
+    </g>
+  </g>
+
+  <!-- FRAME: 채널 노출 (결과) -->
+  <g id="채널 노출" transform="translate(560,690)">
+    <rect x="0" y="0" width="600" height="52" fill="#eef4ff" stroke="#2f6fed"/>
+    <rect x="0" y="0" width="4" height="52" fill="#2f6fed"/>
+    <text x="24" y="24" font-size="15" font-weight="800" fill="#2f6fed">채널 노출 (T우주 앱)</text>
+    <text x="196" y="24" font-size="12" font-style="italic" fill="#8a90a0">«실제 반영»</text>
+    <text x="24" y="42" font-size="12" fill="#5b6270">Container + Template + 고객 상태 + 노출 조건으로 고객에게 실제 렌더</text>
+  </g>
+
+  <!-- 관계 (방향 화살표) -->
+  <g id="관계">
+    <!-- 메뉴 → 전체화면 -->
+    <line x1="265" y1="486" x2="265" y2="452" stroke="#2f6fed" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#dep)"/>
+    <rect x="278" y="460" width="196" height="20" fill="#ffffff"/><text class="dep" x="284" y="475">화면 ID 참조, 순서만 변경</text>
+    <!-- 전시화면 → 전체화면 -->
+    <line x1="560" y1="330" x2="492" y2="330" stroke="#2f6fed" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#dep)"/>
+    <rect x="497" y="296" width="118" height="18" fill="#ffffff"/><text class="dep" x="500" y="310">게시 Template을</text>
+    <rect x="497" y="314" width="118" height="18" fill="#ffffff"/><text class="dep" x="500" y="328">화면에 반영</text>
+    <!-- 빌더 → 배너 -->
+    <line x1="884" y1="372" x2="926" y2="372" stroke="#2f6fed" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#dep)"/>
+    <text class="dep" x="905" y="356" text-anchor="middle">배너</text>
+    <text class="dep" x="905" y="398" text-anchor="middle">요소만</text>
+    <text class="dep" x="905" y="414" text-anchor="middle">사용</text>
+    <!-- DS Portal → 빌더 (공급) -->
+    <line x1="592" y1="202" x2="592" y2="238" stroke="#7a828f" stroke-width="1.6" marker-end="url(#fl)"/>
+    <rect x="604" y="210" width="150" height="20" fill="#ffffff"/><text class="flow" x="608" y="225">코드화 자산 공급</text>
+    <!-- 전시화면(게시) → 채널 노출 -->
+    <line x1="820" y1="670" x2="820" y2="688" stroke="#7a828f" stroke-width="1.6" marker-end="url(#fl)"/>
+    <rect x="600" y="672" width="118" height="16" fill="#f8f9fb"/><text class="flow" x="600" y="684">게시 결과 노출 →</text>
+  </g>
+
+  <g id="푸터">
+    <text class="ov" x="50" y="778" fill="#8a90a0">SKT T우주 전시관리 어드민 빌더 기능 구조도 (논의용 초안)</text>
+  </g>
+</svg>

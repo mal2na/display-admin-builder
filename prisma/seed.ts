@@ -420,7 +420,7 @@ async function main() {
 
   // 여러 이름의 큐레이션 배너 (라이브러리 드롭다운 선택지 + 미리보기)
   const bannerTWeek = await prisma.banner.create({
-    data: { name: 'T Week 오늘 소멸 히어로', imageUrl: tweekHeroSvg, linkUrl: '/tweek', status: 'active' },
+    data: { name: 'T Week 오늘 소멸 히어로', imageUrl: '/assets/tweek-hero.png', linkUrl: '/tweek', status: 'active' },
   });
   const bannerSummer = await prisma.banner.create({
     data: { name: '여름 이벤트 배너', imageUrl: bannerSvg('여름 이벤트 배너', '시원한 여름 혜택 모음', '#0ea5e9', '#22d3ee'), linkUrl: '/event', status: 'active' },

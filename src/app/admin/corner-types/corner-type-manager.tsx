@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
@@ -22,15 +22,21 @@ import {
   REC_SOURCE_METHODS,
   REC_SOURCE_INFO,
   normalizeRecSource,
+  parseComposition,
+  defaultComposition,
+  type Composition,
+  type ComponentType,
 } from '@/lib/display-taxonomy';
+import { CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
+import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { isEventCornerFamily } from '@/lib/event-taxonomy';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronDown, RotateCcw, Info } from 'lucide-react';
-import { createCornerType, updateCornerType } from './actions';
+import { Plus, Trash2, Check, X, Search, ChevronDown, RotateCcw, Info, Copy, Pencil } from 'lucide-react';
+import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 
 // 등록된 코너 유형(코너 유형 관리 = 마스터)의 (코너유형·컴포넌트·배열) 조합. 등록 폼 ②③을 이걸로 좁힌다.
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
@@ -74,6 +80,7 @@ export type CornerTypeRow = {
   defaultMoreButton: boolean;
   defaultMoreButtonLabel: string | null;
   cvmFields: string; // 고객정보 연동 필드 keys csv
+  composition: string | null; // 컴포넌트 조합(JSON: CompositionBlock[]). null이면 절차적 scaffold 폴백.
   userCustomizable?: boolean;
   userMinItems?: number | null;
   userMaxItems?: number | null;
@@ -122,6 +129,7 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   defaultMoreButton: false,
   defaultMoreButtonLabel: null,
   cvmFields: '',
+  composition: null,
   userCustomizable: false,
   userMinItems: null,
   userMaxItems: null,
@@ -133,6 +141,119 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   createdBy: null,
 };
 
+// ── 상위 분기(도메인) 3종: 전시 / 프로모션 / 상품 ──
+const DOMAINS = ['전시', '프로모션', '상품'] as const;
+type Domain = (typeof DOMAINS)[number];
+// baseCategory → 도메인. 이벤트·미션 계열=프로모션, 나머지(전시 7거버넌스, 상품형 포함)=전시.
+//  현재 '상품형'은 전시(진열) 유형이다. '상품' 도메인은 전용 유형이 아직 없어 비어 있다(향후 확장 자리).
+function domainOf(base: string): Domain {
+  if (isEventCornerFamily(base)) return '프로모션';
+  return '전시';
+}
+const DOMAIN_GUIDE: Record<Domain, string> = {
+  전시: '전시 코너 유형 — 7개 거버넌스(상품형·배너·혜택오퍼·업무진입·상태안내·콘텐츠안내·고정필수)로 나뉩니다.',
+  프로모션: '프로모션(이벤트·미션) 전용 코너 유형 — 전시 7거버넌스와 별개의 이벤트미션 계열로 관리합니다.',
+  상품: '상품 전용 코너 유형은 아직 준비 중입니다. (현재 상품형은 전시 도메인에서 관리)',
+};
+// 도메인별 거버넌스(유형) 칩 목록 — 전시는 7거버넌스 고정, 그 외는 도메인에 존재하는 유형.
+function domainGovernances(domain: Domain, present: string[]): string[] {
+  if (domain === '전시') return (CORNER_TYPES as readonly string[]).filter((bc) => domainOf(bc) === '전시');
+  return present;
+}
+
+// CornerTypeRow → 미리보기 PreviewCorner (저장 조합 우선, 없으면 유형 기본 조합). 카드·상세 공용.
+export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
+  return compositionToPreviewCorner({
+    base: row.baseCategory,
+    detail: row.typeDetail,
+    mainTitle: row.useMainTitle ? '코너 타이틀' : null,
+    subTitle: row.useSubTitle ? '서브타이틀' : null,
+    composition: parseComposition(row.composition) ?? defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: row.useBadge, desc: row.useDesc }),
+  });
+}
+
+// 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
+export function DevicePreview({ corner }: { corner: PreviewCorner }) {
+  const NAT_W = 320; // 자연 렌더 폭(폰 기준). 박스에 맞춰 scale로 축소.
+  const boxRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.6);
+  useEffect(() => {
+    const box = boxRef.current, content = contentRef.current;
+    if (!box || !content) return;
+    const fit = () => {
+      const bw = box.clientWidth, bh = box.clientHeight, ch = content.scrollHeight || 1;
+      const s = Math.min(bw / NAT_W, bh / ch, 1);
+      if (s > 0 && Number.isFinite(s)) setScale(s);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(box); ro.observe(content);
+    return () => ro.disconnect();
+  }, [corner]);
+  return (
+    <div ref={boxRef} className="relative h-full w-full overflow-hidden">
+      <div
+        ref={contentRef}
+        className="absolute top-0"
+        style={{ width: NAT_W, left: `calc(50% - ${NAT_W / 2}px)`, transform: `scale(${scale})`, transformOrigin: 'top center' }}
+      >
+        <div className="rounded-2xl bg-white p-3 shadow-[0_2px_8px_rgba(20,22,40,0.10)] ring-1 ring-black/5">
+          <CornerBlock corner={corner} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// DS 포털 라이브러리 스타일 코너 유형 카드 — 미리보기 + 이름/태그/개수 + 수정하기·복제·삭제.
+function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: CornerTypeRow; onOpen: () => void; onDuplicate: () => void; onDelete: () => void; busy?: boolean }) {
+  const name = [t.baseCategory, layoutLabel(t.typeDetail), t.bigBanner ? '빅배너' : ''].filter(Boolean).join(' · ');
+  const comp = parseComposition(t.composition);
+  const compMeta = comp ? `컴포넌트 ${comp.reduce((s, b) => s + b.count, 0)}개` : (componentLabel(t.componentType) || layoutLabel(t.typeDetail) || '유형');
+  const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
+  // 미리보기 = 조합(없으면 유형 기본 조합)을 실제 렌더러(CornerBlock)로. 카드·상세 공용 헬퍼.
+  const previewCorner = cornerRowPreview(t);
+  return (
+    <div className={cn('group flex flex-col overflow-hidden rounded-lg border border-[#E6E8EF] bg-white shadow-[0_1px_2px_rgba(20,22,40,0.05),0_4px_16px_rgba(20,22,40,0.06)] transition hover:shadow-[0_2px_4px_rgba(20,22,40,0.08),0_8px_24px_rgba(20,22,40,0.10)]', busy && 'pointer-events-none opacity-60')}>
+      {/* 미리보기(클릭 → 상세) — DS 포털처럼 회색(#E2E6F1) 배경 위, 코너 전체를 축소해 통째로 보여준다(잘림 없음). */}
+      <button type="button" onClick={onOpen} className="block w-full bg-[#E2E6F1] p-3 text-left">
+        <div className="pointer-events-none h-56">
+          <DevicePreview corner={previewCorner} />
+        </div>
+      </button>
+      {/* 이름 · 태그 · 개수 */}
+      <div className="flex flex-1 flex-col gap-2 px-4 pt-3.5">
+        <button type="button" onClick={onOpen} className="text-left">
+          <p className="text-[15px] font-bold leading-tight text-[#1A1A2E] group-hover:text-[#4A6CF7]">{name}</p>
+          <span className="mt-1 block font-mono text-[10px] text-slate-400">{t.typeId}</span>
+        </button>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={cn('inline-flex items-center rounded-[5px] px-1.5 py-0.5 text-[10px] font-bold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span>
+          <span className="text-[11px] font-medium tabular-nums text-slate-400">· {compMeta}</span>
+          {t.liveVersion != null && t.active
+            ? <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
+            : <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">미사용</span>}
+          <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span>
+          {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
+        </div>
+      </div>
+      {/* 액션 — 수정하기(DS 블루) · 복제 · 삭제 */}
+      <div className="mt-3.5 flex items-center gap-1.5 px-4 pb-4">
+        <button type="button" onClick={onOpen} className="inline-flex items-center gap-1 rounded-lg border border-[#4A6CF7] bg-[#EEF1FF] px-3 py-1.5 text-[12.5px] font-bold text-[#3A5CF0] transition hover:bg-[#E1E7FF]">
+          <Pencil className="h-3.5 w-3.5" /> 수정하기
+        </button>
+        <button type="button" onClick={onDuplicate} className="inline-flex items-center gap-1 rounded-lg border border-[#E6E8EF] bg-white px-3 py-1.5 text-[12.5px] font-medium text-[#4A4A5A] transition hover:bg-slate-50">
+          <Copy className="h-3.5 w-3.5" /> 복제
+        </button>
+        <button type="button" onClick={onDelete} className="ml-auto inline-flex items-center gap-1 rounded-lg border border-[#E6E8EF] bg-white px-3 py-1.5 text-[12.5px] font-medium text-[#4A4A5A] transition hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive">
+          <Trash2 className="h-3.5 w-3.5" /> 삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRow[]; builtOptions: BuiltCornerOption[] }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -141,10 +262,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   // ── 상세 검색 필터 (T우주 코너 유형 목록 기준) ──
   // 필터 상태는 URL 쿼리에 저장 → 상세로 갔다가 뒤로 와도 유지된다.
   const statusKeys = Object.keys(CORNER_TYPE_STATUS_LABEL);
-  const [expanded, setExpanded] = useState(true);
-  const [preview, setPreview] = useState<string[] | null>(null); // 유형 샘플 확대 미리보기(클릭)
-  const [hoverThumb, setHoverThumb] = useState<{ src: string; x: number; y: number } | null>(null); // 호버 확대(테이블 overflow에 안 잘리게 fixed 오버레이)
-  const [domain, setDomain] = useState<'전시/관리' | '이벤트/미션'>(sp.get('domain') === '이벤트/미션' ? '이벤트/미션' : '전시/관리'); // 상위 분기
+  const [expanded, setExpanded] = useState(false); // DS 포털처럼 기본은 접힘(깔끔). 필요 시 상세검색 열기.
+  const spDomain = sp.get('domain'); // 상위 분기: 전시 / 프로모션 / 상품
+  const [domain, setDomain] = useState<Domain>(spDomain === '프로모션' || spDomain === '상품' ? spDomain : '전시');
   const [base, setBase] = useState(sp.get('base') ?? '전체'); // 코너 유형
   const [detail, setDetail] = useState(sp.get('detail') ?? '전체'); // 유형 상세
   const [useOn, setUseOn] = useState(sp.get('on') !== '0');
@@ -154,19 +274,24 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   );
   const [field, setField] = useState<'typeId' | 'createdBy'>(sp.get('field') === 'createdBy' ? 'createdBy' : 'typeId');
   const [q, setQ] = useState(sp.get('q') ?? '');
-  const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 10);
+  const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 12);
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
-  // 뷰 모드 — 유형별(7 상위 유형 → 배열·레이아웃) 그룹 뷰 ↔ 전체 목록(평면). 거버넌스는 유형 기준, 배열·레이아웃은 하위.
-  const [view, setView] = useState<'group' | 'list'>(sp.get('view') === 'list' ? 'list' : 'group');
 
-  // 상위 분기(도메인)로 코너 유형을 먼저 나눈다: 전시/관리(전시 8종) vs 이벤트/미션(전용 계열)
-  const inDomain = (t: CornerTypeRow) => (domain === '이벤트/미션' ? isEventCornerFamily(t.baseCategory) : !isEventCornerFamily(t.baseCategory));
-  const domainTypes = types.filter(inDomain);
+  // 상위 분기(도메인) — 전시(상품형·이벤트미션 제외 6거버넌스) / 프로모션(이벤트·미션) / 상품(상품형).
+  const domainTypes = types.filter((t) => domainOf(t.baseCategory) === domain);
   const baseOptions = ['전체', ...Array.from(new Set(domainTypes.map((t) => t.baseCategory).filter(Boolean)))];
   const detailOptions = ['전체', ...Array.from(new Set(domainTypes.map((t) => t.typeDetail).filter((d): d is string => !!d)))];
 
   const reset = () => { setBase('전체'); setDetail('전체'); setUseOn(true); setUseOff(true); setStatusSel(new Set(statusKeys)); setField('typeId'); setQ(''); setPage(1); };
-  const switchDomain = (d: '전시/관리' | '이벤트/미션') => { setDomain(d); setBase('전체'); setDetail('전체'); setPage(1); };
+  const switchDomain = (d: Domain) => { setDomain(d); setBase('전체'); setDetail('전체'); setPage(1); };
+  // 카드 액션 — 복제/삭제(서버 액션 + 새로고침)
+  const [, startTx] = useTransition();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const onDuplicate = (id: string) => { setBusyId(id); startTx(async () => { await duplicateCornerType(id); setBusyId(null); router.refresh(); }); };
+  const onDelete = (id: string, label: string) => {
+    if (!window.confirm(`'${label}' 코너 유형을 삭제할까요? 되돌릴 수 없습니다.`)) return;
+    setBusyId(id); startTx(async () => { await deleteCornerType(id); setBusyId(null); router.refresh(); });
+  };
 
   const ql = q.trim().toLowerCase();
   const filtered = domainTypes.filter((t) => {
@@ -187,7 +312,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   // 필터 상태 → URL 쿼리 동기화 (기본값은 생략). 상세 진입 후 뒤로 오면 이 쿼리로 복원된다.
   useEffect(() => {
     const p = new URLSearchParams();
-    if (domain !== '전시/관리') p.set('domain', domain);
+    if (domain !== '전시') p.set('domain', domain);
     if (base !== '전체') p.set('base', base);
     if (detail !== '전체') p.set('detail', detail);
     if (!useOn) p.set('on', '0');
@@ -195,13 +320,12 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
     if (statusSel.size < statusKeys.length) p.set('status', [...statusSel].join(','));
     if (field !== 'typeId') p.set('field', field);
     if (q.trim()) p.set('q', q.trim());
-    if (perPage !== 10) p.set('pp', String(perPage));
+    if (perPage !== 12) p.set('pp', String(perPage));
     if (curPage !== 1) p.set('p', String(curPage));
-    if (view !== 'group') p.set('view', view);
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domain, base, detail, useOn, useOff, statusSel, field, q, perPage, curPage, view]);
+  }, [domain, base, detail, useOn, useOff, statusSel, field, q, perPage, curPage]);
 
   const selectCls = 'h-9 rounded-lg border bg-white px-2.5 text-sm';
   const chk = 'flex items-center gap-1.5 text-sm cursor-pointer';
@@ -220,11 +344,11 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         }
       />
 
-      {/* ── 최상위 분기: 전시/관리 ↔ 이벤트/미션 ── */}
-      <div className="inline-flex rounded-xl border bg-surface-subtle p-1">
-        {(['전시/관리', '이벤트/미션'] as const).map((d) => {
+      {/* ── 최상위 분기: 전시 / 프로모션 / 상품 (DS 포털식 세그먼트) ── */}
+      <div className="inline-flex rounded-xl border border-[#E6E8EF] bg-[#EEF1F6] p-1">
+        {DOMAINS.map((d) => {
           const active = domain === d;
-          const cnt = types.filter((t) => (d === '이벤트/미션' ? isEventCornerFamily(t.baseCategory) : !isEventCornerFamily(t.baseCategory))).length;
+          const cnt = types.filter((t) => domainOf(t.baseCategory) === d).length;
           return (
             <button
               key={d}
@@ -232,15 +356,18 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               onClick={() => switchDomain(d)}
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition',
-                active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                active
+                  ? 'bg-white text-[#4A6CF7] shadow-[0_1px_3px_rgba(0,0,0,0.1),0_0_0_1px_rgba(74,108,247,0.18)]'
+                  : 'text-slate-500 hover:text-slate-700',
               )}
             >
               {d}
-              <span className={cn('rounded-full px-1.5 text-[11px] tabular-nums', active ? 'bg-white/20' : 'bg-black/5')}>{cnt}</span>
+              <span className={cn('rounded-full px-1.5 text-[11px] tabular-nums', active ? 'bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'bg-black/5')}>{cnt}</span>
             </button>
           );
         })}
       </div>
+      <p className="-mt-1 text-[12px] leading-relaxed text-muted-foreground">{DOMAIN_GUIDE[domain]}</p>
 
       {/* ── 상위 거버넌스: 승인 상태 탭 (언더라인 탭 — 참고 UI 스타일) ── */}
       {(() => {
@@ -260,7 +387,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   onClick={() => setStatusTab(t.key)}
                   className={cn(
                     '-mb-px border-b-2 pb-2.5 text-sm font-semibold transition',
-                    active ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground',
+                    active ? 'border-[#4A6CF7] text-[#4A6CF7]' : 'border-transparent text-slate-400 hover:text-slate-600',
                   )}
                 >
                   {t.label}
@@ -275,7 +402,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       {/* 코너 유형은 상위 탭이 아니라 아래 상세 필터에서 고른다 (승인 상태만 상위 거버넌스 탭). */}
 
       {/* 상세 검색 필터 */}
-      <div className="rounded-xl border bg-surface-subtle p-4">
+      <div className="rounded-lg border border-[#E6E8EF] bg-[#F7F8FB] p-4">
         {expanded && (
           <div className="mb-3 grid gap-x-6 gap-y-3 border-b pb-3 md:grid-cols-2 xl:grid-cols-3">
             {/* 승인상태는 상단 탭에서 고른다 → 상세 필터에서는 중복 제거 */}
@@ -318,9 +445,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         </div>
       </div>
 
-      {/* 코너 유형 빠른 필터 칩 — 검색결과 바로 위, 원클릭 소팅(8색). 상위 탭은 승인 상태, 이건 유형. */}
+      {/* 코너 유형(거버넌스) 빠른 필터 칩 — 전시는 6거버넌스 고정, 프로모션·상품은 도메인에 존재하는 유형. */}
       <div className="flex flex-wrap gap-1.5">
-        {baseOptions.map((b) => {
+        {['전체', ...domainGovernances(domain, Array.from(new Set(domainTypes.map((t) => t.baseCategory).filter(Boolean))))].map((b) => {
           const active = base === b;
           const count = b === '전체' ? domainTypes.length : domainTypes.filter((t) => t.baseCategory === b).length;
           const color = b === '전체' ? 'border-border bg-card text-muted-foreground' : cornerTypeChipClass(b);
@@ -343,197 +470,35 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {view === 'group'
-            ? <>상위 유형 <b className="text-foreground">{(domain === '전시/관리' ? CORNER_TYPES.length : new Set(filtered.map((t) => t.baseCategory)).size)}</b> · 배열·레이아웃 <b className="text-foreground">{filtered.length}개</b></>
-            : <>검색결과: <b className="text-foreground">{filtered.length}개</b></>}
-        </p>
-        <div className="flex items-center gap-2">
-          {/* 뷰 토글 — 유형별(7 상위 → 배열·레이아웃) ↔ 목록(평면) */}
-          <div className="flex rounded-lg border bg-white p-0.5 text-xs">
-            <button onClick={() => setView('group')} className={cn('rounded-md px-2.5 py-1 font-medium', view === 'group' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary')}>유형별</button>
-            <button onClick={() => setView('list')} className={cn('rounded-md px-2.5 py-1 font-medium', view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary')}>목록</button>
-          </div>
-          {view === 'list' && (
-            <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="h-8 rounded-md border bg-white px-2 text-xs">
-              {[10, 20, 50].map((n) => <option key={n} value={n}>{n}개씩</option>)}
-            </select>
-          )}
-        </div>
+        <p className="text-sm text-muted-foreground">검색결과 · <b className="text-foreground">{filtered.length}개</b> 코너 유형</p>
+        <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="h-8 rounded-md border bg-white px-2 text-xs">
+          {[12, 24, 48].map((n) => <option key={n} value={n}>{n}개씩</option>)}
+        </select>
       </div>
 
-      {/* ── 유형별 그룹 뷰 — 7 상위 유형 → 배열·레이아웃. 거버넌스(허용 컴포넌트)는 유형 헤더에 한 번, 배열·레이아웃은 하위 행. ── */}
-      {view === 'group' && (
-        <div className="space-y-4">
-          {(() => {
-            const groupBases = domain === '전시/관리'
-              ? (CORNER_TYPES as readonly string[]).filter((bc) => base === '전체' || bc === base)
-              : [...new Set(filtered.map((t) => t.baseCategory))];
-            if (groupBases.length === 0) return <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">조건에 맞는 코너 유형이 없습니다.</div>;
-            return groupBases.map((bc) => {
-              const rows = filtered.filter((t) => t.baseCategory === bc);
-              const purpose = cornerTypePurpose(bc);
-              const usingCount = rows.filter((r) => r.liveVersion != null && r.active).length;
-              return (
-                <div key={bc} className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                  {/* ── 유형 헤더(항상 표시) ── */}
-                  <div className="flex flex-wrap items-center gap-3 border-b px-5 py-4">
-                    <span className={cn('inline-flex shrink-0 items-center rounded-md border px-2.5 py-1 text-[13px] font-bold', cornerTypeChipClass(bc))}>{bc}</span>
-                    <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">배열·레이아웃 {rows.length}</span>
-                    {usingCount > 0 && <span className="shrink-0 text-[11px] font-medium text-emerald-600">사용 {usingCount}</span>}
-                    {purpose && <span className="min-w-0 flex-1 truncate text-[12.5px] text-muted-foreground">{purpose}</span>}
-                    <Link href={`/admin/corner-types/new?base=${encodeURIComponent(bc)}`} className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-primary shadow-sm transition hover:bg-secondary"><Plus className="h-3.5 w-3.5" /> 배열·레이아웃 추가</Link>
-                  </div>
-
-                  {/* ── 배열·레이아웃 카드 그리드 — 하나씩 카드, 클릭하면 상세로 ── */}
-                  {rows.length === 0 ? (
-                    <p className="px-5 py-4 text-[13px] text-muted-foreground">등록된 배열·레이아웃이 없습니다. <b className="text-foreground">배열·레이아웃 추가</b>로 이 유형의 첫 배열을 등록하세요.</p>
-                  ) : (
-                    <div className="flex gap-3 overflow-x-auto p-4">
-                      {rows.map((t) => {
-                        const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
-                        return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => router.push(`/admin/corner-types/${t.id}`)}
-                            className="group flex w-[300px] shrink-0 flex-col overflow-hidden rounded-xl border bg-white text-left shadow-sm transition hover:border-primary/50 hover:shadow-md"
-                          >
-                            {/* 상단 고정: 배열·레이아웃 이름 + ID (미리보기 높이와 무관하게 정렬) */}
-                            <div className="border-b px-3 py-2.5">
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="text-[14px] font-semibold text-foreground">{layoutLabel(t.typeDetail) || '(상세 없음)'}</span>
-                              </div>
-                              <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground/70">{t.typeId}</span>
-                            </div>
-                            {/* 미리보기 = 배열·레이아웃 쉐입(와이어프레임). flex-1로 같은 행 최대 높이에 맞춰 채움(안 잘림·동일 사이즈). */}
-                            <div className="flex-1 bg-slate-50 p-2">
-                              <TypeDetailPreview base={bc} component={t.componentType ?? undefined} detail={t.typeDetail ?? ''} bigBanner={t.bigBanner} badge={t.useBadge} image={t.useImage} price={t.usePrice} desc={t.useDesc} compact />
-                            </div>
-                            {/* 하단 고정: 상태 */}
-                            <div className="mt-auto flex flex-wrap items-center gap-1 border-t px-3 py-2.5">
-                              {t.liveVersion != null && t.active
-                                ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
-                                : <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">미사용</span>}
-                              <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span>
-                              {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            });
-          })()}
+      {/* ── 카드 그리드 (DS 포털 라이브러리 스타일) — 코너 유형 카드: 미리보기 + 이름/태그/개수 + 수정하기·복제·삭제 ── */}
+      {pageRows.length === 0 ? (
+        <div className="rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
+          {types.length === 0 ? <>등록된 코너 유형이 없습니다. 우측 상단 <b className="text-foreground">등록</b>으로 추가하세요.</> : '검색 조건에 맞는 코너 유형이 없습니다.'}
         </div>
-      )}
-
-      {view === 'list' && (
-      <div className="overflow-x-auto border">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-surface-subtle text-xs text-muted-foreground">
-            <tr>
-              {['번호', '코너 유형 ID', '코너 유형', '구성 컴포넌트', '배열/레이아웃 상세', '사용여부', '유형 샘플', '승인상태', '등록자', '등록일시', '최근수정자', '최근 수정일시'].map((h) => (
-                <th key={h} className="whitespace-nowrap px-3 py-2 text-left font-medium">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {pageRows.length === 0 && (
-              <tr>
-                <td colSpan={12} className="px-3 py-8 text-center text-muted-foreground">
-                  {types.length === 0 ? <>등록된 코너 유형이 없습니다. 우측 상단 <b>등록</b>으로 추가하세요.</> : '검색 조건에 맞는 코너 유형이 없습니다.'}
-                </td>
-              </tr>
-            )}
-            {pageRows.map((t, i) => (
-              <tr key={t.id} onClick={() => router.push(`/admin/corner-types/${t.id}`)} className="cursor-pointer hover:bg-muted/40">
-                <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{(curPage - 1) * perPage + i + 1}</td>
-                <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-primary underline-offset-2 hover:underline">{t.typeId}</td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold', cornerTypeChipClass(t.baseCategory))}>
-                    {t.baseCategory}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs">{componentLabel(t.componentType) || '-'}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs">
-                  <span className="inline-flex items-center gap-1">
-                    {layoutLabel(t.typeDetail) || '-'}
-                    {t.bigBanner && (
-                      <span className="inline-flex items-center rounded border border-dashed border-indigo-400 bg-indigo-50/60 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">빅배너</span>
-                    )}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  {/* 사용 여부(TM-DSP-021) — 목록에서는 읽기 전용 표시. 전환은 상세에서만(오클릭 방지). */}
-                  {t.liveVersion != null && t.active ? (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
-                  ) : (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground" title={t.liveVersion == null ? '승인·반영 후에 사용할 수 있습니다' : '미사용'}>미사용</span>
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                  {t.sampleImageUrl ? (
-                    (() => {
-                      const srcs = t.sampleImageUrl!.split('\n').filter(Boolean);
-                      const first = srcs[0];
-                      const more = srcs.length - 1; // 나머지 개수 → +N 마킹
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => setPreview(srcs)}
-                          onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHoverThumb({ src: first, x: r.left, y: r.top }); }}
-                          onMouseLeave={() => setHoverThumb(null)}
-                          className="relative inline-flex shrink-0 items-center rounded-lg ring-offset-1 transition hover:ring-2 hover:ring-primary/50"
-                          title={`클릭하면 전체보기 (총 ${srcs.length}장)`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={first} alt="유형 샘플" className="h-9 w-14 rounded-lg border object-cover object-top [filter:contrast(1.08)_saturate(1.15)]" />
-                          {/* 여러 장이면 +N 마킹 (오른쪽 아래 배지) */}
-                          {more > 0 && (
-                            <span className="absolute -bottom-1 -right-1 rounded-full border border-white bg-slate-800 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white shadow-sm">
-                              +{more}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })()
-                  ) : (
-                    <span className="inline-flex items-center rounded border px-2 py-0.5 text-[11px] text-muted-foreground/50">없음</span>
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs">
-                  {(() => {
-                    const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
-                    return (
-                      <span className="inline-flex items-center gap-1">
-                        <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>
-                          {CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}
-                        </span>
-                        {/* '사용 중'은 사용여부 컬럼으로 일원화 → 승인상태에는 편집본 관련 플래그만 */}
-                        {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
-                        {g.changeInReview && <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">변경 검수 중</span>}
-                      </span>
-                    );
-                  })()}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{t.createdBy ?? '-'}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{t.createdAt ? t.createdAt.replace('T', ' ').slice(0, 16) : '-'}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{t.updatedBy ?? '-'}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{t.updatedAt ? t.updatedAt.replace('T', ' ').slice(0, 16) : '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      ) : (
+        // 화면이 넓어지면 3칸을 늘리는 게 아니라 칸 수가 늘어난다 → 카드는 적정 폭 유지(과도한 stretch 방지).
+        <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+          {pageRows.map((t) => (
+            <CornerTypeCard
+              key={t.id}
+              t={t}
+              busy={busyId === t.id}
+              onOpen={() => router.push(`/admin/corner-types/${t.id}`)}
+              onDuplicate={() => onDuplicate(t.id)}
+              onDelete={() => onDelete(t.id, [t.baseCategory, layoutLabel(t.typeDetail)].filter(Boolean).join(' · '))}
+            />
+          ))}
+        </div>
       )}
 
       {/* 페이지네이션 */}
-      {view === 'list' && totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="flex items-center justify-center gap-1 text-sm">
           <button onClick={() => setPage(Math.max(1, curPage - 1))} disabled={curPage <= 1} className="rounded-md border px-2.5 py-1.5 disabled:opacity-40 hover:bg-secondary">‹</button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
@@ -543,43 +508,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         </div>
       )}
 
-      {/* 유형 샘플 확대 미리보기 모달 (클릭 시) — 화면 전체 오버레이라 잘리지 않음 */}
-      {preview && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-6"
-          onClick={() => setPreview(null)}
-        >
-          <div className="max-h-[88vh] max-w-[92vw] overflow-auto rounded-2xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-sm font-semibold">유형 샘플 미리보기 · {preview.length}장</span>
-              <button type="button" onClick={() => setPreview(null)} className="text-muted-foreground hover:text-foreground" title="닫기">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex flex-wrap justify-center gap-3">
-              {preview.map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={i} src={src} alt={`유형 샘플 ${i + 1}`} className="max-h-[70vh] w-auto max-w-[280px] rounded-xl border object-contain shadow-sm [filter:contrast(1.08)_saturate(1.15)]" />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* 유형 샘플 호버 확대 — 테이블 overflow에 잘리지 않도록 fixed 오버레이(viewport 기준). 위 공간 부족하면 아래로. */}
-      {hoverThumb && (
-        <div
-          className="pointer-events-none fixed z-[90]"
-          style={
-            hoverThumb.y > 200
-              ? { left: hoverThumb.x, top: hoverThumb.y - 8, transform: 'translateY(-100%)' }
-              : { left: hoverThumb.x, top: hoverThumb.y + 44 }
-          }
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={hoverThumb.src} alt="유형 샘플 미리보기" className="w-56 max-w-none rounded-xl border bg-white object-contain shadow-xl ring-1 ring-black/5 [filter:contrast(1.08)_saturate(1.15)]" />
-        </div>
-      )}
     </div>
   );
 }
@@ -601,6 +530,16 @@ function StepHead({ n, title, required, hint }: { n: number; title: string; requ
 }
 
 // ── 코너 유형 등록/수정 폼 (BO 대표 유형 화면 · 등록 폼 패턴) ─────────────
+// 조합 블록의 표시 요소 미니 체크박스
+function ChkMini({ label, checked, onChange, disabled, title }: { label: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; title?: string }) {
+  return (
+    <label className={cn('flex items-center gap-1 text-[11px]', disabled ? 'cursor-not-allowed text-muted-foreground/40' : 'text-slate-600')} title={title}>
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} className="accent-indigo-600 disabled:opacity-40" />
+      {label}
+    </label>
+  );
+}
+
 export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; onClose: () => void }) {
   const isNew = !row.id;
   // 2단 분류: ① 코너 유형(base) → ② 배열·레이아웃(detail). 구성 컴포넌트는 배열·레이아웃에서 자동 도출.
@@ -610,6 +549,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   const [active, setActive] = useState(row.active);
   const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
   const [recSource, setRecSource] = useState(row.defaultRecSource ? normalizeRecSource(row.defaultRecSource) : ''); // 추천 수급 방식 기본값(controlled) — 노출·구성 노출 여부를 좌우
+  // ③ 컴포넌트 조합 — 이 유형이 담는 컴포넌트 목록(순서). 비어 있으면 아래 shownBlocks가 유형 기본값을 보여준다.
+  const [blocks, setBlocks] = useState<Composition>(() => parseComposition(row.composition) ?? []);
   // FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 유형에서
   const [userCustom, setUserCustom] = useState(row.userCustomizable ?? false);
   const [userMin, setUserMin] = useState(row.userMinItems != null ? String(row.userMinItems) : '');
@@ -699,6 +640,24 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
   // ④ 빅배너 구분자는 '상품형' 모듈(상품·혜택 리스트/카드) 위에 얹는 것만 의미가 있다 → 상품형일 때만 노출/적용.
   const canBigBanner = compValid === '상품형';
   const bigBannerOn = canBigBanner && bigBanner;
+
+  // ③ 컴포넌트 조합 — 편집 안 했으면(빈 blocks) 현재 유형 기본값을 보여준다. 저장은 이 shownBlocks(명시적 조합)로.
+  const allowedComps = componentTypesForCorner(base) as ComponentType[]; // 이 코너 유형이 담을 수 있는 컴포넌트(정책)
+  const shownBlocks: Composition = blocks.length
+    ? blocks
+    : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc });
+  const setBlk = (next: Composition) => setBlocks(next); // 편집 시 명시적 조합으로 고정
+  const patchBlock = (i: number, patch: Partial<Composition[number]>) => setBlk(shownBlocks.map((b, j) => (j === i ? { ...b, ...patch } : b)));
+  const addBlock = () => setBlk([...shownBlocks, { componentType: allowedComps[0] ?? '상품형', count: 1, image: true, price: true, desc: true }]);
+  const removeBlock = (i: number) => setBlk(shownBlocks.filter((_, j) => j !== i));
+  const moveBlock = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= shownBlocks.length) return;
+    const next = shownBlocks.slice();
+    [next[i], next[j]] = [next[j], next[i]];
+    setBlk(next);
+  };
+  const resetBlocks = () => setBlocks([]); // 유형 기본값으로 재설정
   // 코너 유형 명 = [코너 유형 · 컴포넌트 · 배열 (· 빅배너)] 자동 구성
   // 코너 유형 명 = 유형 · 배열·레이아웃 (컴포넌트는 표기에서 제외 — UI에서 컴포넌트 노출 안 함).
   const derivedName = [base, detailValid, bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
@@ -851,6 +810,85 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose }: 
             <TRow label="코너 유형 설명" flat>
               <Input name="description" defaultValue={row.description ?? ''} placeholder="100자 이내" className="h-8 text-xs" />
             </TRow>
+          </div>
+        </div>
+      </section>
+
+      {/* ③ 컴포넌트 조합 — 이 코너 유형에 담을 컴포넌트를 순서대로 조립. 빌더에서 코너를 만들면 이 조합대로 실제 생성된다. */}
+      <section className="overflow-hidden rounded-md border border-indigo-200">
+        <div className="flex flex-wrap items-center gap-2 border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-indigo-700">
+          ③ 컴포넌트 조합
+          <span className="font-normal text-indigo-400">이 유형에 담을 컴포넌트를 순서대로 조립 · 빌더에서 코너 만들 때 이대로 생성</span>
+          <button type="button" onClick={resetBlocks} className="ml-auto inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-white px-2 py-1 text-[10px] font-medium text-indigo-600 hover:bg-indigo-50">
+            <RotateCcw className="h-3 w-3" /> 유형 기본값으로
+          </button>
+        </div>
+        <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
+        <div className="grid grid-cols-1 gap-3 p-3 lg:grid-cols-[340px_1fr]">
+          {/* 라이브 미리보기 — 왼쪽(DS 포털식 회색 배경 + 폰 프레임). 편집하며 계속 보이도록 sticky. */}
+          <div className="self-start lg:sticky lg:top-3">
+            <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
+            <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#E2E6F1] p-4">
+              <div className="mx-auto w-[300px] rounded-[24px] bg-white p-3 shadow-[0_4px_16px_rgba(20,22,40,0.12)] ring-1 ring-black/5">
+                <CornerBlock corner={compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? '코너 타이틀' : null, subTitle: useSub ? '서브타이틀' : null })} />
+              </div>
+            </div>
+          </div>
+          {/* 블록 목록 편집 — 오른쪽 */}
+          <div className="min-w-0 space-y-2">
+            {shownBlocks.map((b, i) => {
+              const isProduct = b.componentType === '상품형';
+              const usesBadge = ['상품형', '혜택형', '정보형'].includes(b.componentType);
+              return (
+                <div key={i} className="rounded-md border bg-white p-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-bold text-slate-500">{i + 1}</span>
+                    <select
+                      value={b.componentType}
+                      onChange={(e) => patchBlock(i, { componentType: e.target.value as ComponentType })}
+                      className="h-8 min-w-0 flex-1 rounded-md border bg-background px-2 text-xs"
+                    >
+                      {/* 이 코너 유형이 허용하는 컴포넌트만(정책). 현재 값이 목록에 없으면 함께 노출. */}
+                      {Array.from(new Set([b.componentType, ...allowedComps])).map((c) => (
+                        <option key={c} value={c}>{componentLabel(c)}</option>
+                      ))}
+                    </select>
+                    <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      개수
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={b.count}
+                        onChange={(e) => patchBlock(i, { count: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
+                        className="h-8 w-14 rounded-md border bg-background px-2 text-xs"
+                      />
+                    </label>
+                    <button type="button" onClick={() => moveBlock(i, -1)} disabled={i === 0} className="flex h-7 w-6 items-center justify-center rounded border text-muted-foreground hover:bg-secondary disabled:opacity-30" title="위로">↑</button>
+                    <button type="button" onClick={() => moveBlock(i, 1)} disabled={i === shownBlocks.length - 1} className="flex h-7 w-6 items-center justify-center rounded border text-muted-foreground hover:bg-secondary disabled:opacity-30" title="아래로">↓</button>
+                    <button type="button" onClick={() => removeBlock(i)} className="flex h-7 w-6 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="삭제"><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
+                  {/* 표시 요소 — 상품형은 이미지·가격·배지·설명, 혜택형·정보형은 배지만 */}
+                  {(isProduct || usesBadge) && (
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 pl-7">
+                      {isProduct && (
+                        <>
+                          <ChkMini label="이미지" checked={b.image !== false} onChange={(v) => patchBlock(i, { image: v })} />
+                          <ChkMini label="가격" checked={b.price !== false} onChange={(v) => patchBlock(i, { price: v, ...(v ? {} : { badge: false }) })} />
+                          <ChkMini label="배지" checked={!!b.badge && b.price !== false} disabled={b.price === false} onChange={(v) => patchBlock(i, { badge: v, ...(v ? { price: true } : {}) })} title={b.price === false ? '가격을 켜야 배지를 쓸 수 있어요(배지는 가격 앞)' : undefined} />
+                          <ChkMini label="설명" checked={b.desc !== false} onChange={(v) => patchBlock(i, { desc: v })} />
+                        </>
+                      )}
+                      {!isProduct && usesBadge && <ChkMini label="배지" checked={!!b.badge} onChange={(v) => patchBlock(i, { badge: v })} />}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <button type="button" onClick={addBlock} className="inline-flex items-center gap-1 rounded-md border border-dashed border-indigo-300 bg-indigo-50/40 px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50">
+              <Plus className="h-3.5 w-3.5" /> 컴포넌트 추가
+            </button>
+            <p className="text-[10px] leading-relaxed text-muted-foreground">담을 수 있는 컴포넌트는 이 코너 유형(정책)이 허용하는 것만 나와요. 순서·개수·표시 요소를 정하면 빌더에서 코너를 만들 때 그대로 생성됩니다.</p>
           </div>
         </div>
       </section>
