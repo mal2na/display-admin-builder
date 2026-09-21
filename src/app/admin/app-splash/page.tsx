@@ -8,21 +8,21 @@ export const dynamic = 'force-dynamic';
 
 export default async function AppSplashPage() {
   const rows = await prisma.appSplash.findMany({ orderBy: [{ osType: 'asc' }, { version: 'desc' }] });
-  // OS유형별 최신 버전만
+  // OS유형별 최신 승인완료(적용중) 버전만 — 반려/요청취소/임시저장 제외
   const latest = new Map<string, (typeof rows)[number]>();
-  for (const r of rows) if (!latest.has(r.osType)) latest.set(r.osType, r);
+  for (const r of rows) if (r.approvalStatus === 'approved' && !latest.has(r.osType)) latest.set(r.osType, r);
   const list = [...latest.values()];
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
+    <div className="px-8 py-6">
       <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 스플래시 관리</nav>
       <h1 className="mb-3 text-2xl font-bold">App 스플래시 관리</h1>
       <SplashTabs />
 
-      <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+      <div className="border-y border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-slate-50 text-[12px] text-slate-500">
+            <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
               <th className="px-4 py-2.5 text-left font-medium">버전</th>
               <th className="px-4 py-2.5 text-left font-medium">OS 유형</th>
               <th className="px-4 py-2.5 text-left font-medium">적용시작일시</th>
@@ -31,13 +31,16 @@ export default async function AppSplashPage() {
           <tbody>
             {list.length === 0 ? (
               <tr><td colSpan={3} className="px-4 py-10 text-center text-muted-foreground">등록된 스플래시가 없습니다.</td></tr>
-            ) : list.map((r) => (
-              <tr key={r.id} className="border-b last:border-b-0 hover:bg-slate-50/60">
-                <td className="px-4 py-3"><Link href={`/admin/app-splash/${r.id}`} className="font-medium text-slate-800 hover:text-indigo-600">{r.version}</Link></td>
-                <td className="px-4 py-3 text-slate-700">{r.osType}</td>
-                <td className="px-4 py-3 text-[12px] text-slate-500">{fmtDateTime(r.applyStartAt)}</td>
-              </tr>
-            ))}
+            ) : list.map((r) => {
+              const href = `/admin/app-splash/${r.id}`;
+              return (
+                <tr key={r.id} className="cursor-pointer border-b last:border-b-0 hover:bg-slate-50/60">
+                  <td className="p-0"><Link href={href} className="block px-4 py-3 font-medium text-slate-800">{r.version}</Link></td>
+                  <td className="p-0"><Link href={href} className="block px-4 py-3 text-slate-700">{r.osType}</Link></td>
+                  <td className="p-0"><Link href={href} className="block px-4 py-3 text-[12px] text-slate-500">{fmtDateTime(r.applyStartAt)}</Link></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180" role="img" aria-label="CHANEL 루쥬 코코 립스틱">
+  <!-- 닫힌 검정 튜브 (좌) -->
+  <g>
+    <rect x="46" y="34" width="34" height="118" rx="5" fill="#1A1A1A"/>
+    <rect x="46" y="34" width="12" height="118" rx="5" fill="#2E2E2E"/>
+    <text x="63" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" letter-spacing="1" fill="#C9C9C9">CHANEL</text>
+  </g>
+  <!-- 열린 립스틱 (우): 검정 하단 + 골드 밴드 + 핑크 불릿 -->
+  <g>
+    <rect x="92" y="96" width="34" height="56" rx="5" fill="#1A1A1A"/>
+    <rect x="92" y="80" width="34" height="20" rx="3" fill="#C9A24B"/>
+    <rect x="92" y="80" width="34" height="20" rx="3" fill="url(#gold)"/>
+    <!-- 핑크 불릿 (사선) -->
+    <path d="M96 80 L96 44 Q96 30 110 28 Q124 30 122 46 L122 80 Z" fill="#E85C7B"/>
+    <path d="M96 44 Q96 30 110 28 Q118 29 120 38 L110 46 Z" fill="#F07E97"/>
+  </g>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E7C878"/>
+      <stop offset="0.5" stop-color="#C9A24B"/>
+      <stop offset="1" stop-color="#A9863A"/>
+    </linearGradient>
+  </defs>
+</svg>

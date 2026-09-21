@@ -53,10 +53,10 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
 
       <p className="text-sm font-semibold">위젯 유형 목록 <span className="text-indigo-600">{filtered.length}건</span></p>
 
-      <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+      <div className="border-y border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-slate-50 text-[12px] text-slate-500">
+            <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
               <th className="w-16 px-3 py-2.5 text-left font-medium">번호</th>
               <th className="px-3 py-2.5 text-left font-medium">위젯 유형</th>
               <th className="px-3 py-2.5 text-left font-medium">유형설명</th>

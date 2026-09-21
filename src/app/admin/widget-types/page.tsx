@@ -1,6 +1,7 @@
 // 위젯 유형 관리 목록 · 운영 관리
 import { prisma } from '@/lib/prisma';
 import { WidgetTypeList, type TypeRow } from './widget-type-list';
+import { WidgetTabs } from '../app-widgets/widget-tabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,9 +12,10 @@ export default async function WidgetTypesPage() {
     updatedBy: r.updatedBy, updatedAt: r.updatedAt.toISOString(),
   }));
   return (
-    <div className="mx-auto max-w-6xl p-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › 위젯 유형 관리</nav>
-      <h1 className="mb-5 text-2xl font-bold">위젯 유형 관리</h1>
+    <div className="px-8 py-6">
+      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 위젯 관리</nav>
+      <h1 className="mb-3 text-2xl font-bold">App 위젯 관리</h1>
+      <WidgetTabs />
       <WidgetTypeList rows={data} />
     </div>
   );

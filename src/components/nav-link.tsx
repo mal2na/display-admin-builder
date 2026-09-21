@@ -9,14 +9,19 @@ export function NavLink({
   icon,
   label,
   collapsed,
+  alsoActiveFor,
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
   collapsed?: boolean;
+  alsoActiveFor?: string[]; // 통합 메뉴: 다른 경로에서도 활성 표시
 }) {
   const pathname = usePathname();
-  const active = pathname === href || pathname.startsWith(href + '/');
+  const active =
+    pathname === href ||
+    pathname.startsWith(href + '/') ||
+    (alsoActiveFor ?? []).some((p) => pathname === p || pathname.startsWith(p + '/'));
   return (
     <Link
       href={href}

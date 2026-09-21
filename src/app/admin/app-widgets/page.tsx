@@ -1,6 +1,7 @@
 // SB-ETC-076 App 위젯 관리 목록 · 운영 관리 · 정책 AIM
 import { prisma } from '@/lib/prisma';
 import { AppWidgetList, type WidgetRow } from './app-widget-list';
+import { WidgetTabs } from './widget-tabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,9 +26,10 @@ export default async function AppWidgetsPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="px-8 py-6">
       <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 위젯 관리</nav>
-      <h1 className="mb-5 text-2xl font-bold">App 위젯 관리</h1>
+      <h1 className="mb-3 text-2xl font-bold">App 위젯 관리</h1>
+      <WidgetTabs />
       <AppWidgetList rows={data} widgetTypes={types.map((t) => ({ id: t.id, name: t.typeName }))} />
     </div>
   );

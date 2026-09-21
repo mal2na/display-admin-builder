@@ -62,33 +62,31 @@ function ImageBox({ atom, className }: { atom?: PreviewAtom; className?: string 
 function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const twoRows = component.chipRows === 2;
-  // 퀵메뉴(선택형 칩)는 무조건 1줄 또는 2줄까지만. 2줄 모드는 3줄+로 넘치지 않게 '2행 그리드 + 가로 스크롤'로 고정.
+  // 퀵메뉴(선택형 칩) — 흰색 라운드 pill + 인디고 아이콘 + 라벨. 1줄/2줄(2행 그리드+가로 스크롤).
   return (
     <div
       className={
         twoRows
-          ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-1.5 overflow-x-auto pb-1'
-          : 'flex flex-nowrap items-start gap-1.5 overflow-x-auto pb-1'
+          ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-2 overflow-x-auto pb-1'
+          : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'
       }
     >
       {component.atoms.map((a, i) => (
         <span
           key={a.id}
           className={
-            'flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-[11px] ' +
-            (i === sel
-              ? 'bg-slate-900 font-semibold text-white'
-              : 'border border-slate-300 bg-white font-medium text-slate-700')
+            'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3.5 text-[12px] font-medium text-slate-800 shadow-sm ring-1 ' +
+            (i === sel ? 'ring-indigo-400' : 'ring-slate-100')
           }
         >
           {a.imageUrl &&
             (isIconRef(a.imageUrl) ? (
-              <IconGlyph name={a.imageUrl} className="-ml-0.5 h-3.5 w-3.5" />
+              <IconGlyph name={a.imageUrl} className="-ml-0.5 h-4 w-4 text-indigo-600" />
             ) : isRenderableImg(a.imageUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={a.imageUrl} alt={a.altText ?? ''} className="-ml-0.5 h-4 w-4 rounded-full object-cover" />
             ) : (
-              <span className="-ml-0.5 h-4 w-4 rounded-full bg-slate-300/70" title={a.altText ?? a.imageUrl} />
+              <span className="-ml-0.5 flex h-4 w-4 items-center justify-center rounded-full text-indigo-600" title={a.altText ?? a.imageUrl}><Sparkles className="h-3.5 w-3.5" /></span>
             ))}
           {a.content ?? a.name}
         </span>
@@ -121,39 +119,63 @@ function MenuListView({ component }: { component: PreviewComponent }) {
   );
 }
 
-function ProductCard({ component, shape, reason, titleLines, emphasis = false, parts }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null; emphasis?: boolean; parts?: CardParts }) {
+function ProductCard({ component, shape, reason, titleLines, emphasis = false, grid = false, parts }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null; emphasis?: boolean; grid?: boolean; parts?: CardParts }) {
   // 코너별 표시 항목 — 끈 요소는 렌더하지 않는다(미지정=노출). 배지는 가격에 종속(가격 꺼지면 배지도 숨김).
   const showImg = parts?.image !== false;
   const showPrice = parts?.price !== false;
   const showBadge = parts?.badge !== false && showPrice;
   const showDesc = parts?.desc !== false;
+  // 이름 기반 조회 — DS ListProductGrid 속성(브랜드·가격기준·할인율·기간·용량·서브텍스트)을 아톰 이름으로 찾는다(기존 카드와 호환).
+  const byName = (...names: string[]) => component.atoms.find((a) => names.includes(a.name) && a.content);
   const poster = showImg ? first(component.atoms, 'IMAGE') : undefined;
-  const title = first(component.atoms, 'TEXT');
-  // 가격 = PRICE, 설명 = INFO(정보값). 각각 표시 항목 토글로 노출 제어.
-  const priceAtom = showPrice ? first(component.atoms, 'PRICE') : null;
-  const descAtom = showDesc ? first(component.atoms, 'INFO') : null;
-  const info = priceAtom ?? descAtom; // 가격 우선, 없으면 설명
+  const brand = byName('브랜드', '서브타이틀'); // Apple
+  const title = byName('상품명') ?? first(component.atoms, 'TEXT'); // iPhone 20 Pro
+  const priceCaption = byName('가격 기준'); // 선택 약정 12개월 기준
+  const discount = byName('할인율'); // 99%
+  const priceAtom = showPrice ? first(component.atoms, 'PRICE') : null; // 99,999원
+  const period = byName('기간'); // /12개월
+  const subText = byName('서브텍스트'); // SubText02
+  const capacity = byName('용량'); // 256GB | 512GB | 1TB
+  const descAtom = showDesc ? first(component.atoms, 'INFO', 'BENEFIT_TEXT') : null; // 레거시 설명
+  const hasRich = !!(brand || priceCaption || discount || period || capacity || subText);
   const badge = showBadge ? first(component.atoms, 'BADGE') : null;
-  const cta = first(component.atoms, 'CTA'); // 선택적 CTA — 숨김(미사용) 원자면 프리뷰에서 제외됨
-  // 카드 비율: 1:1(정사각·상품) | 3:4(세로·포스터) | 4:3(가로·와이드). 기본 3:4. (레거시 정사각형=1:1)
+  const cta = first(component.atoms, 'CTA');
   const square = shape === '1:1' || shape === '정사각형';
   const wide = shape === '4:3';
-  // 단일강조(1.5배열)는 카드를 크게(≈1.5장 노출), 가로 와이드 비율로 하나를 강조. 2.5배열(기본)은 작은 카드 캐러셀.
-  const ratioCls = emphasis ? 'aspect-[16/10]' : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
-  const wCls = emphasis ? 'w-[224px]' : square ? 'w-[136px]' : wide ? 'w-[152px]' : 'w-[128px]';
-  // 상품명 줄 수 옵션: 2면 두 줄까지(line-clamp-2), 기본은 한 줄 말줄임(truncate)
+  const ratioCls = emphasis ? 'aspect-[16/10]' : grid ? (square ? 'aspect-square' : 'aspect-[4/3]') : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
+  const wCls = grid ? 'w-full' : emphasis ? 'w-[224px]' : square ? 'w-[150px]' : wide ? 'w-[168px]' : 'w-[156px]';
   const nameCls = titleLines === 2 ? 'line-clamp-2' : 'truncate';
   return (
     <div className={cn('shrink-0', wCls)}>
       {showImg && <ImageBox atom={poster} className={cn('w-full rounded-xl', ratioCls)} />}
       {reason && <RecReason text={reason} />}
-      <p className={cn('mt-1.5 font-semibold leading-tight text-slate-900', nameCls, emphasis ? 'text-[15px]' : 'text-[13px]')}>{title?.content ?? component.name}</p>
-      {/* 배지는 설명 앞 인라인. 설명은 이름보다 연하게(위계) — 예: [20%] 235,000원 */}
-      {(badge?.content || info?.content) && (
-        <p className="mt-0.5 flex items-center gap-1">
-          {badge?.content && <span className="shrink-0 rounded bg-rose-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white">{badge.content}</span>}
-          {info?.content && <span className="truncate text-[11px] font-normal text-slate-400">{info.content}</span>}
-        </p>
+      {/* 브랜드(서브타이틀) */}
+      {brand?.content && <p className="mt-1.5 truncate text-[11px] leading-tight text-slate-500">{brand.content}</p>}
+      {/* 상품명 */}
+      <p className={cn('font-semibold leading-tight text-slate-900', brand?.content ? 'mt-0' : 'mt-1.5', nameCls, emphasis ? 'text-[15px]' : 'text-[13px]')}>{title?.content ?? component.name}</p>
+      {hasRich ? (
+        <>
+          {priceCaption?.content && <p className="mt-1 truncate text-[10px] text-slate-400">{priceCaption.content}</p>}
+          {(discount?.content || priceAtom?.content) && (
+            <p className="mt-0.5 flex items-baseline gap-1 whitespace-nowrap">
+              {discount?.content && <span className="shrink-0 text-[12px] font-bold text-indigo-600">{discount.content}</span>}
+              {priceAtom?.content && <span className="text-[13px] font-bold text-slate-900">{priceAtom.content}</span>}
+              {/* 기간(/12개월)은 가격과 같은 줄이면 좁은 카드에서 깨져 내려오므로 가격 옆 작은 회색으로만, 넘치면 아래 줄 */}
+              {period?.content && <span className="text-[11px] font-normal text-slate-400">{period.content}</span>}
+            </p>
+          )}
+          {subText?.content && <p className="mt-0.5 truncate text-[11px] text-slate-500">{subText.content}</p>}
+          {capacity?.content && <p className="mt-0.5 truncate text-[11px] text-slate-400">{capacity.content}</p>}
+          {badge?.content && <span className="mt-1 inline-block rounded bg-rose-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white">{badge.content}</span>}
+        </>
+      ) : (
+        /* 레거시: 배지 + 설명 인라인 */
+        (badge?.content || (priceAtom ?? descAtom)?.content) && (
+          <p className="mt-0.5 flex items-center gap-1">
+            {badge?.content && <span className="shrink-0 rounded bg-rose-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white">{badge.content}</span>}
+            {(priceAtom ?? descAtom)?.content && <span className="truncate text-[11px] font-normal text-slate-400">{(priceAtom ?? descAtom)!.content}</span>}
+          </p>
+        )
       )}
       {cta?.content && (
         <span className="mt-1.5 flex items-center justify-center rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700">{cta.content}</span>
@@ -172,16 +194,50 @@ function RecReason({ text }: { text: string }) {
   );
 }
 
-function BannerCard({ component }: { component: PreviewComponent }) {
+function BannerCard({ component, sizeDetail }: { component: PreviewComponent; sizeDetail?: string | null }) {
   const title = first(component.atoms, 'TEXT', 'BENEFIT_TEXT');
   const sub = first(component.atoms, 'INFO');
   const cta = first(component.atoms, 'BUTTON', 'CTA');
   const img = first(component.atoms, 'IMAGE', 'ICON');
+  // 배너 규격(layoutDetail의 W×H)으로 실제 비율을 잡는다 — 빅/스몰/띠/팝업이 눈에 보이게.
+  const m = (sizeDetail ?? '').match(/(\d+)\s*[×xX*]\s*(\d+)/);
+  const ratio = m ? `${m[1]} / ${m[2]}` : null;
+  const src = img?.imageUrl ?? '';
+  const hasImg = isRenderableImg(src);
+  // 완성형 배너 이미지(업로드 사진·banner-*.svg 등)는 규격 비율로 꽉 채우고,
+  // 로고·상품 이미지(product-*.svg, 아이콘 등)는 타이틀 옆에 붙이는 콤포즈형으로 렌더(로고가 홀로 떠 보이지 않게).
+  const isFullBanner = /(^data:|^https?:|\/banner-|\.(jpe?g|png|webp)(\?|$))/i.test(src);
+  if (ratio) {
+    if (hasImg && isFullBanner) {
+      return (
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+          <div className="flex w-full items-center justify-center bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5]" style={{ aspectRatio: ratio }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt={img?.altText ?? title?.content ?? ''} className="h-full w-full object-contain" />
+          </div>
+        </div>
+      );
+    }
+    // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게.
+    return (
+      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-black/5" style={{ aspectRatio: ratio }}>
+        <div className="min-w-0 flex-1 py-3">
+          <p className="line-clamp-2 text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
+          {sub?.content && <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{sub.content}</p>}
+          {cta?.content && <span className="mt-1.5 inline-flex rounded-full bg-indigo-600 px-2.5 py-0.5 text-[10px] font-semibold text-white">{cta.content}</span>}
+        </div>
+        {hasImg && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt={img?.altText ?? ''} className="max-h-[76%] w-auto max-w-[36%] shrink-0 object-contain" />
+        )}
+      </div>
+    );
+  }
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm">
+    <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-black/5">
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-[15px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
-        {sub && <p className="text-[12px] text-slate-400">{sub.content}</p>}
+        {sub && <p className="text-[12px] text-slate-500">{sub.content}</p>}
         {cta && (
           <span className="mt-1 inline-flex rounded-full bg-indigo-600 px-3 py-1 text-[11px] font-semibold text-white">
             {cta.content}
@@ -332,7 +388,7 @@ function ComponentView({ component, mode, cardShape, reason, titleLines, parts }
       return <ChipsView component={component} />;
     case '상품형':
       // 세로 리스트형 코너에서는 큰 포스터 카드가 아니라 로고+문구 행 구조로 렌더 (참고 디자인)
-      return mode === 'list' ? <BenefitRow component={component} reason={reason} parts={parts} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} parts={parts} />;
+      return mode === 'list' ? <BenefitRow component={component} reason={reason} parts={parts} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} parts={parts} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':
@@ -406,9 +462,10 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         </div>
       );
     if (mode === 'grid')
+      // 그리드형은 최대 4개(2×2)까지만 노출해 미리보기에서 잘리지 않고 다 보이게 한다.
       return (
         <div className="grid grid-cols-2 gap-2">
-          {comps.map((c, i) => (
+          {comps.slice(0, 4).map((c, i) => (
             <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} parts={parts} />
           ))}
         </div>
@@ -437,10 +494,19 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 바코드 코너(고정·필수 노출형 · 바코드)는 상태카드가 아니라 멤버십 바코드 카드로 렌더
   const isBarcode = /바코드/.test(corner.layoutDetail ?? '');
   // 메뉴 리스트(업무 진입형 · 선택형 · 메뉴 리스트)는 칩이 아니라 세로 메뉴 리스트로 렌더 — 코너 유형 관리 와이어프레임과 일치
-  const isMenuList = /메뉴\s*리스트/.test(corner.layoutDetail ?? '');
+  const isMenuList = /메뉴/.test(corner.layoutDetail ?? '');
   const menuComp = corner.components.find((c) => c.componentType === '선택형') ?? corner.components[0];
   // 프로필형(고정·필수 노출형 · 정보형 · 프로필형)은 상태카드가 아니라 프로필 행([사진][이름·번호]…[CTA])으로 렌더
   const isProfile = /프로필/.test(corner.layoutDetail ?? '');
+  // '칩' 배열(예: 세로형+칩) → 카테고리 칩 탭을 본문 상단에 붙여 렌더(코너와 한 덩어리)
+  const hasChipTab = /칩/.test(corner.layoutDetail ?? '') && !isBanner && chipComps.length === 0;
+  const chipTabEl = hasChipTab ? (
+    <div className="flex flex-wrap gap-1.5">
+      {['카페', '베이커리', '외식', '쇼핑', '문화생활'].map((c, i) => (
+        <span key={c} className={cn('rounded-full px-2.5 py-1 text-[11px] font-medium', i === 0 ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500')}>{c}</span>
+      ))}
+    </div>
+  ) : null;
 
   const body =
     corner.components.length === 0 ? (
@@ -463,6 +529,8 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       <ProfileCard component={corner.components[0]} />
     ) : isMenuList ? (
       <MenuListView component={menuComp} />
+    ) : isBanner ? (
+      <BannerCard component={corner.components[0]} sizeDetail={corner.layoutDetail} />
     ) : chipComps.length > 0 && bodyComps.length > 0 ? (
       <div className="space-y-3">
         {chipComps.map((c) => (
@@ -483,25 +551,49 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   //  · 배너형 코너는 히어로로 승격하지 않는다. 배너 자체가 본문(BannerCard 컴포넌트)으로 렌더된다.
   //  · 빅배너를 끄면 첨부 배너 이미지가 있어도 상단 배너를 표시하지 않는다(빅배너 토글이 유일한 스위치).
   const bannerSrc = corner.bigBanner && !isBanner ? (corner.bannerImageUrl ?? firstImg) : null;
+  // 빅배너 히어로 — 여백 없이 카드 상단을 꽉 채우는 full-bleed(카드를 반으로 쪼개는 느낌). 큼직한 4:3.
   const bannerEl = bannerSrc ? (
     isRenderableImg(bannerSrc) ? (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={bannerSrc}
         alt={corner.bannerName ?? ''}
-        className="aspect-[16/7] w-full overflow-hidden rounded-2xl object-cover"
+        className="aspect-[16/10] w-full bg-gradient-to-b from-sky-50 to-white object-cover"
       />
     ) : (
-      <div className="flex aspect-[16/7] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-200 to-slate-300 text-[10px] font-medium text-slate-600">
+      <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-indigo-200 to-slate-300 text-[12px] font-medium text-slate-600">
         {corner.bannerName ?? bannerSrc.split('/').pop()}
       </div>
     )
   ) : corner.bigBanner && !isBanner ? (
-    // 승격할 이미지가 없으면 타이틀을 얹은 그라디언트 히어로로 빅배너 표현
-    <div className="flex aspect-[16/7] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 px-4 text-center text-[15px] font-bold leading-snug text-white">
+    <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-500 px-4 text-center text-[16px] font-bold leading-snug text-white">
       {corner.mainTitle || corner.name}
     </div>
   ) : null;
+
+  // 히어로가 있으면 카드는 패딩 없이(overflow-hidden) 배너를 꼭대기 full-bleed로, 본문만 패딩.
+  if (bannerEl && !isBanner) {
+    return (
+      <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
+        {bannerEl}
+        <div className="space-y-2 p-4 pt-3">
+          {heading && (
+            <div>
+              <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
+              {sub && <p className="mt-0.5 flex items-center gap-0.5 text-[12px] text-slate-400">{sub} {showChevron && <ChevronRight className="h-3 w-3" />}</p>}
+            </div>
+          )}
+          {chipTabEl}
+          {body}
+          {corner.moreButtonUse && (
+            <div className="pt-1 text-center">
+              <span className="inline-flex items-center gap-0.5 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-[12px] font-medium text-slate-600">{corner.moreButtonLabel || '더보기'} <ChevronRight className="h-3 w-3" /></span>
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={`space-y-2 ${wrapClass}`}>
@@ -538,6 +630,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           )}
         </div>
       )}
+      {chipTabEl}
       {body}
       {corner.moreButtonUse && (
         <div className="pt-1 text-center">
@@ -574,7 +667,7 @@ export function DeviceFrame({
           </div>
         </div>
         <div className="border-b bg-white px-4 py-2 text-sm font-semibold text-slate-700">{headerLabel}</div>
-        <div style={{ height: bodyHeight }} className="space-y-3 overflow-y-auto bg-slate-100 p-3">
+        <div style={{ height: bodyHeight }} className="space-y-3 overflow-y-auto bg-slate-200 p-3">
           {children}
         </div>
         <div className="flex justify-around border-t bg-white py-2 text-[11px]">

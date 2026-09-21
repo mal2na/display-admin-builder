@@ -19,15 +19,14 @@ export function StatusPill({ label, tone = 'muted', dot }: { label: string; tone
   );
 }
 
-// 섹션 카드 (번호 배지 + 제목)
-export function OpsSection({ no, title, children }: { no?: number | string; title: string; children: React.ReactNode }) {
+// 섹션 카드 (제목). no 인자는 하위호환용으로 남겨두되 표시하지 않는다.
+export function OpsSection({ title, children }: { no?: number | string; title: string; children: React.ReactNode }) {
   return (
     <section className="mb-6">
       <div className="mb-2 flex items-center gap-2">
-        {no != null && <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[11px] font-bold text-white">{no}</span>}
         <h3 className="text-[15px] font-bold text-slate-900">{title}</h3>
       </div>
-      <div className="rounded-lg border border-slate-200">{children}</div>
+      <div className="border-y border-slate-200">{children}</div>
     </section>
   );
 }
@@ -45,7 +44,7 @@ export function FieldRow({ label, required, children }: { label: string; require
   );
 }
 
-// 읽기 전용 값 (수정불가 회색 필드)
+// 읽기 전용 값 — 인풋박스 없이 텍스트로만
 export function ReadValue({ value }: { value: React.ReactNode }) {
-  return <div className="min-h-[34px] rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] text-slate-700">{value ?? '-'}</div>;
+  return <div className="min-h-[20px] py-1.5 text-[13px] text-slate-800">{value ?? '-'}</div>;
 }

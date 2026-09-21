@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 140" width="160" height="140" role="img" aria-label="LOTTE WORLD ADVENTURE">
+  <!-- 스우시 -->
+  <path d="M20 66 Q80 30 140 58" fill="none" stroke="#7A3E1D" stroke-width="2.5" opacity="0.7"/>
+  <!-- 성 (3개 첨탑) -->
+  <g>
+    <!-- 좌: 노랑 -->
+    <path d="M44 78 L52 40 L60 78 Z" fill="#F5A623"/>
+    <path d="M52 40 l10 -8 v6 l-6 4 z" fill="#E4007F"/>
+    <!-- 중: 보라 (제일 큼) -->
+    <path d="M66 82 L80 26 L94 82 Z" fill="#5B2A86"/>
+    <path d="M80 26 l12 -9 v7 l-7 5 z" fill="#E4007F"/>
+    <!-- 우: 빨강 -->
+    <path d="M100 78 L108 40 L116 78 Z" fill="#E11D48"/>
+    <path d="M108 40 l10 -8 v6 l-6 4 z" fill="#F5A623"/>
+    <circle cx="128" cy="46" r="4" fill="#E11D48"/>
+  </g>
+  <!-- 텍스트 -->
+  <text x="80" y="104" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="900" fill="#E11D48">LOTTE WORLD</text>
+  <text x="80" y="124" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="900" fill="#E11D48">ADVENTURE</text>
+</svg>

@@ -115,3 +115,41 @@ export const SPLASH_HISTORY_STATUS = {
   rejected: { label: '반려', tone: 'red' },
   cancelled: { label: '요청취소', tone: 'amber' },
 } as const;
+
+// ── App 버전 관리: 대상 App ──
+export const TARGET_APPS = ['통합App', '구T월드'] as const;
+export type TargetApp = (typeof TARGET_APPS)[number];
+
+// ── App 버전 관리: 승인상태 ──
+export const VERSION_APPROVAL = {
+  draft: { label: '승인대기', tone: 'muted' },
+  requested: { label: '승인요청', tone: 'blue' },
+  approved: { label: '승인완료', tone: 'green' },
+  rejected: { label: '반려', tone: 'red' },
+  cancelled: { label: '요청취소', tone: 'amber' },
+} as const;
+export type VersionApproval = keyof typeof VERSION_APPROVAL;
+
+// ── App 버전 관리 이력: 상태 표기 ──
+export const VERSION_HISTORY_STATUS = VERSION_APPROVAL;
+
+// 버전 문자열 유효성 (예: 2.0.0) — 최소 1개 이상 숫자 마디
+export function isValidVersion(v: string): boolean {
+  return /^\d+(\.\d+){1,3}$/.test(v.trim());
+}
+
+// ── 배너 캠페인 관리: 승인상태 ──
+export const BANNER_APPROVAL = {
+  draft: { label: '작성중', tone: 'muted' },
+  approved: { label: '승인완료', tone: 'green' },
+  requested: { label: '승인요청', tone: 'blue' },
+  cancelled: { label: '요청취소', tone: 'amber' },
+  rejected: { label: '반려', tone: 'red' },
+} as const;
+export type BannerApproval = keyof typeof BANNER_APPROVAL;
+
+// ── 배너 전시여부 표기 ──
+export const BANNER_EXPOSE = {
+  true: { label: '전시', tone: 'green' },
+  false: { label: '미전시', tone: 'muted' },
+} as const;

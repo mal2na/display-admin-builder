@@ -103,15 +103,16 @@ export async function requestApprovalSplash(id: string) {
   redirect(`/admin/app-splash/${id}`);
 }
 
-// 요청취소
-export async function cancelRequestSplash(id: string) {
+// 요청취소 (reason: 취소사유. 상세 화면 form에서 호출 시 FormData가 넘어올 수 있어 방어)
+export async function cancelRequestSplash(id: string, reason?: string | FormData) {
+  const note = typeof reason === 'string' && reason.trim() ? reason.trim() : '요청취소';
   const s = await prisma.appSplash.findUnique({ where: { id } });
   const now = new Date();
   await prisma.appSplash.update({
     where: { id },
     data: {
       approvalStatus: 'cancelled',
-      history: { create: { osType: s?.osType ?? 'Android', version: s?.version, status: 'cancelled', requester: s?.approvalRequester ?? OPERATOR, requestedAt: s?.approvalRequestedAt, processedAt: now, processReason: '요청취소', changeNote: '요청취소' } },
+      history: { create: { osType: s?.osType ?? 'Android', version: s?.version, status: 'cancelled', requester: s?.approvalRequester ?? OPERATOR, requestedAt: s?.approvalRequestedAt, processedAt: now, processReason: note, changeNote: '요청취소' } },
     },
   });
   revalidate(id);

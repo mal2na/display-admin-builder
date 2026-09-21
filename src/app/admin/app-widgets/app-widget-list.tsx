@@ -8,7 +8,8 @@ import { Select } from '@/components/ui/select';
 import { StatusPill } from '@/components/ops-ui';
 import { PUBLISH_STATUS, PUBLISH_STATUS_OPTIONS, DEPLOY_STATUS, fmtPeriod, fmtDateTime, computePublishStatus, type PublishStatus } from '@/lib/widget-taxonomy';
 import { reorderAppWidgets, redisReloadAppWidgets } from './actions';
-import { RotateCcw, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { RotateCcw, Search, ArrowUpDown } from 'lucide-react';
 
 export type WidgetRow = {
   id: string;
@@ -35,8 +36,17 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
   const [name, setName] = useState('');
   const [applied, setApplied] = useState({ status: '', typeId: '', from: '', to: '', name: '' });
   const [page, setPage] = useState(1);
-  const [orders, setOrders] = useState<Record<string, number>>(() => Object.fromEntries(rows.map((r) => [r.id, r.displayOrder])));
+  const initialOrders = useMemo(() => Object.fromEntries(rows.map((r) => [r.id, r.displayOrder])), [rows]);
+  const [orders, setOrders] = useState<Record<string, number>>(initialOrders);
+  const [editingOrder, setEditingOrder] = useState(false);
   const [pending, start] = useTransition();
+
+  // 중복 노출순서 값 집합 (전체 행 기준)
+  const dupValues = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const r of rows) { const v = orders[r.id] ?? 0; counts.set(v, (counts.get(v) ?? 0) + 1); }
+    return new Set([...counts.entries()].filter(([, c]) => c > 1).map(([v]) => v));
+  }, [rows, orders]);
 
   const withStatus = useMemo(
     () => rows.map((r) => ({ ...r, publishStatus: computePublishStatus(r.exposeYn, r.publishStart ? new Date(r.publishStart) : null, r.publishEnd ? new Date(r.publishEnd) : null) as PublishStatus })),
@@ -60,7 +70,16 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
   const doSearch = () => { setApplied({ status, typeId, from, to, name }); setPage(1); };
   const doReset = () => { setStatus(''); setTypeId(''); setFrom(''); setTo(''); setName(''); setApplied({ status: '', typeId: '', from: '', to: '', name: '' }); setPage(1); };
 
-  const saveOrder = () => start(async () => { await reorderAppWidgets(Object.entries(orders).map(([id, order]) => ({ id, order: Number(order) || 0 }))); alert('저장되었습니다.'); router.refresh(); });
+  const saveOrder = () => {
+    if (dupValues.size > 0) { alert('동일한 노출순서 번호가 있습니다. 중복되지 않도록 입력해주세요.'); return; }
+    start(async () => {
+      await reorderAppWidgets(Object.entries(orders).map(([id, order]) => ({ id, order: Number(order) || 0 })));
+      setEditingOrder(false);
+      alert('저장되었습니다.');
+      router.refresh();
+    });
+  };
+  const cancelOrder = () => { setOrders(initialOrders); setEditingOrder(false); };
   const redisReload = () => start(async () => { await redisReloadAppWidgets(); alert('Redis Reload 요청되었습니다. (배포 공통 프로세스 확정 후 실제 연동)'); });
 
   return (
@@ -103,10 +122,10 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
       </div>
 
       {/* 목록 */}
-      <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+      <div className="border-y border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-slate-50 text-[12px] text-slate-500">
+            <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
               <th className="w-24 px-3 py-2.5 text-left font-medium">노출순서</th>
               <th className="px-3 py-2.5 text-left font-medium">배너명</th>
               <th className="px-3 py-2.5 text-left font-medium">위젯유형</th>
@@ -122,12 +141,17 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
               <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">조회 결과가 없습니다.</td></tr>
             ) : pageRows.map((r) => {
               const ps = PUBLISH_STATUS[r.publishStatus];
-              const canEditOrder = r.deployStatus === 'done'; // 배포되어야 저장 반영
+              const isDup = editingOrder && dupValues.has(orders[r.id] ?? 0);
               return (
                 <tr key={r.id} className="border-b last:border-b-0 hover:bg-slate-50/60">
                   <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                    <Input value={orders[r.id] ?? 0} onChange={(e) => setOrders((o) => ({ ...o, [r.id]: Number(e.target.value.replace(/\D/g, '')) || 0 }))}
-                      disabled={!canEditOrder} title={canEditOrder ? undefined : '배포완료 건만 순서 저장 가능'} className="h-8 w-16 text-center text-xs disabled:bg-slate-100" />
+                    {editingOrder ? (
+                      <Input value={orders[r.id] ?? 0} onChange={(e) => setOrders((o) => ({ ...o, [r.id]: Number(e.target.value.replace(/\D/g, '')) || 0 }))}
+                        title={isDup ? '중복된 노출순서입니다.' : undefined}
+                        className={cn('h-8 w-16 text-center text-xs', isDup && 'border-rose-400 bg-rose-50 text-rose-600 focus-visible:ring-rose-300')} />
+                    ) : (
+                      <span className="inline-flex h-8 w-16 items-center justify-center text-xs font-medium text-slate-700">{orders[r.id] ?? 0}</span>
+                    )}
                   </td>
                   <td className="cursor-pointer px-3 py-2 font-medium text-slate-800" onClick={() => router.push(`/admin/app-widgets/${r.id}`)}>{r.bannerName}</td>
                   <td className="px-3 py-2 text-slate-600">{r.widgetTypeName ?? '-'}</td>
@@ -150,10 +174,20 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
             <button key={p} onClick={() => setPage(p)} className={`h-8 w-8 rounded-md text-xs ${p === page ? 'bg-indigo-600 text-white' : 'hover:bg-secondary'}`}>{p}</button>
           ))}
         </div>
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={redisReload} disabled={pending}>Redis Reload</Button>
-          <Button type="button" variant="outline" onClick={saveOrder} disabled={pending}>순서저장</Button>
-          <Button type="button" onClick={() => router.push('/admin/app-widgets/new')}>등록</Button>
+        <div className="flex items-center gap-2">
+          {editingOrder && dupValues.size > 0 && <span className="mr-1 text-[12px] font-medium text-rose-600">동일한 노출순서 번호가 있습니다.</span>}
+          {editingOrder ? (
+            <>
+              <Button type="button" variant="outline" onClick={cancelOrder} disabled={pending}>취소</Button>
+              <Button type="button" onClick={saveOrder} disabled={pending || dupValues.size > 0}>저장</Button>
+            </>
+          ) : (
+            <>
+              <Button type="button" variant="outline" onClick={redisReload} disabled={pending}>Redis Reload</Button>
+              <Button type="button" variant="outline" onClick={() => setEditingOrder(true)}><ArrowUpDown className="mr-1 h-3.5 w-3.5" />순서 변경</Button>
+              <Button type="button" onClick={() => router.push('/admin/app-widgets/new')}>등록</Button>
+            </>
+          )}
         </div>
       </div>
     </div>
