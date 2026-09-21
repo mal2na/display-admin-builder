@@ -28,6 +28,7 @@ import { seedEvents } from './seed-events';
 const prisma = new PrismaClient();
 
 async function resetAll() {
+  await prisma.bannerCampaign.deleteMany(); // 이력은 onDelete: Cascade 로 함께 정리
   await prisma.auditLog.deleteMany();
   await prisma.cornerComponentRule.deleteMany();
   await prisma.componentAtom.deleteMany();
@@ -1460,8 +1461,79 @@ async function patchVariantDemo() {
   console.log('✅ 베리에이션 데모 패치 완료 (타이틀 6타겟 · 혜택문구 프레이밍 · 메시지형 제목/서브/CTA/설명 후보 · 배지는 사실값이라 제외 · CTA 라벨 표준화)');
 }
 
+// ── 배너 캠페인 시드 — 운영자가 만든 대표 배너들을 코드로 등록(dev.db가 아닌 seed에 고정).
+//   배포/리시드 시에도 목록에 나타난다. 상태는 승인완료(등록완료)로.
+async function seedBannerCampaigns() {
+  const OP = '홍길동(P123456)';
+  const MGR = '정지솔(SSP12344)';
+  const now = new Date();
+  const start = new Date('2026-09-01T00:00:00');
+  const end = new Date('2026-12-31T23:59:00');
+  const S4 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)', '팝업배너 (720×600)'];
+  const S3 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)'];
+
+  const campaigns: {
+    campaignCode: string; title: string; subtitle: string | null; purpose: string | null;
+    landingType: string; landingUrl: string; pageType: string; bannerAlt: string;
+    typeDetails: Record<string, unknown>[];
+  }[] = [
+    {
+      campaignCode: 'BC-202609-001', title: '요금제 할인상품 구독가 안내',
+      subtitle: '원하는 AI와 OTT를 0원부터 구독하세요', purpose: 'SKT 베스트 요금제 고객 OTT/AI 구독 혜택 안내',
+      landingType: 'direct', landingUrl: 'https://tworld/plan-benefit', pageType: 'current', bannerAlt: '요금제 할인상품 구독가 안내',
+      typeDetails: S4.map((detail) => ({ type: '이미지형', detail, useYn: true, imageUrl: '/assets/banner-plan-ott.svg', bgColor: '#E7E8F8' })),
+    },
+    {
+      campaignCode: 'BC-202609-002', title: '스타벅스 옵션출시',
+      subtitle: 'T우주로 콘텐츠 즐기고 스타벅스 20% 할인혜택 받기', purpose: 'T 우주 스타벅스 구독 옵션 출시 안내',
+      landingType: 'direct', landingUrl: 'https://tworld/uzu-starbucks', pageType: 'current', bannerAlt: 'T 우주 스타벅스 옵션 출시 · 스타벅스 20% 할인혜택 받기',
+      typeDetails: S4.map((detail) => ({ type: '이미지형', detail, useYn: true, imageUrl: '/assets/banner-starbucks.svg', bgColor: '#8FE7BA', title: '', subtitle: '', rightImageUrl: '' })),
+    },
+    {
+      campaignCode: 'BC-202609-003', title: 'CHANEL 루쥬 코코 립스틱',
+      subtitle: '봄 뮤트 핑크 #130', purpose: 'T 우주 뷰티 제휴 · 샤넬 립스틱 프로모션',
+      landingType: 'direct', landingUrl: 'https://tworld/beauty-chanel', pageType: 'current', bannerAlt: 'CHANEL 루쥬 코코 립스틱 · 봄 뮤트 핑크 #130',
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EAEAF6', title: 'CHANEL 루쥬 코코 립스틱', subtitle: '봄 뮤트 핑크 #130', rightImageUrl: '/assets/product-chanel-lipstick.svg' })),
+    },
+    {
+      campaignCode: 'BC-202609-004', title: '롯데월드 제휴 혜택',
+      subtitle: null, purpose: '주말 가족 나들이 · 제휴사 혜택 안내 (직접 만들기)',
+      landingType: 'event', landingUrl: 'EVT20260820006 (제휴사 혜택 기획전)', pageType: 'current', bannerAlt: '이번 주말, 가족 나들이에 쓰기 좋은 혜택 · 롯데월드 어드벤처',
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: '이번 주말, 가족 나들이에 쓰기 좋은 혜택', subtitle: '', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', ctaText: '제휴사별 혜택 더보기', ctaColor: '#E11D48', rightImageUrl: '/assets/product-lotteworld.svg' })),
+    },
+    {
+      campaignCode: 'BC-202609-005', title: '갤럭시 신제품 사전예약',
+      subtitle: null, purpose: '갤럭시 신제품 사전예약 안내',
+      landingType: 'direct', landingUrl: 'https://tworld/galaxy-preorder', pageType: 'current', bannerAlt: '갤럭시 신제품 사전예약',
+      typeDetails: S4.map((detail) => ({ type: '이미지형', detail, useYn: true, imageUrl: '/assets/cardhome/cardhome-banner-BannerSrc-0.png' })),
+    },
+  ];
+
+  let apId = 1;
+  for (const c of campaigns) {
+    await prisma.bannerCampaign.create({
+      data: {
+        campaignCode: c.campaignCode, title: c.title, subtitle: c.subtitle, purpose: c.purpose, platform: 'APP',
+        landingType: c.landingType, landingUrl: c.landingUrl, pageType: c.pageType, bannerAlt: c.bannerAlt,
+        typeDetails: JSON.stringify(c.typeDetails), exposeYn: true, publishStart: start, publishEnd: end,
+        approvalStatus: 'approved', approvalRequester: OP, approvalManager: MGR, approvalRequestedAt: now, approvalProcessedAt: now,
+        createdBy: OP, updatedBy: OP,
+        history: {
+          create: [
+            { version: 1, status: 'draft', requester: OP, changeNote: '신규 등록 · 작성중' },
+            { version: 2, approvalId: String(apId++).padStart(10, '0'), status: 'requested', requester: OP, manager: MGR, requestedAt: now, changeNote: '승인요청' },
+            { version: 3, approvalId: String(apId++).padStart(10, '0'), status: 'approved', requester: OP, manager: MGR, requestedAt: now, processedAt: now, changeNote: '승인완료' },
+          ],
+        },
+      },
+    });
+  }
+  console.log(`✅ 배너 캠페인 시드 완료 (${campaigns.length}건 · 승인완료)`);
+}
+
 main()
   .then(() => patchVariantDemo())
+  .then(() => seedBannerCampaigns())
   .then(() => prisma.$disconnect())
   .catch(async (e) => {
     console.error(e);
