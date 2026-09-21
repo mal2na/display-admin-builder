@@ -39,7 +39,7 @@ export default async function AppWidgetDetailPage({ params }: { params: { id: st
   );
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
+    <div className="px-8 py-6">
       <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 위젯 관리 › App 위젯 관리 상세</nav>
       <h1 className="mb-3 text-2xl font-bold">App 위젯 관리 상세</h1>
       {/* 탭 */}

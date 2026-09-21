@@ -794,3 +794,123 @@ model AppSplashHistory {
   @@index([splashId])
   @@index([osType])
 }
+
+// App 버전 관리 (SB BO-AIM-ETC-PG038~042) — 앱 배포 버전/권장·강제 업데이트 기준 및 팝업 관리
+model AppVersion {
+  id          String   @id @default(cuid())
+  targetApp   String   @default("통합App") // 대상 App: 통합App | 구T월드
+  osType      String   // Android | IOS
+  updateDate  DateTime? // App 업데이트 날짜
+  version     String    // 배포 버전 "2.0.0"
+
+  // 업데이트 기준 버전
+  recommendVersion String? // 권장 업데이트 기준버전 "2.7.0"
+  forceVersion     String? // 강제 업데이트 기준버전 "3.1.0" (null = 없음)
+
+  // 상세/버전 내용
+  detailContent  String? // 상세내용
+  versionContent String? // 버전내용
+
+  // 권장 업데이트 팝업
+  recommendPopupTitle    String?
+  recommendPopupContent  String?
+  recommendPopupImageUrl String?
+  recommendPopupImageAlt String?
+
+  // 강제 업데이트 팝업
+  forcePopupTitle    String?
+  forcePopupContent  String?
+  forcePopupImageUrl String?
+  forcePopupImageAlt String?
+
+  // 승인 정보 — draft | requested | approved | rejected | cancelled
+  approvalStatus      String    @default("draft")
+  approvalRequester   String?
+  approvalManager     String?
+  approvalRequestedAt DateTime?
+  approvalProcessedAt DateTime?
+  processReason       String?
+
+  createdBy String?
+  updatedBy String?
+
+  history   AppVersionHistory[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([osType])
+  @@index([targetApp])
+}
+
+// App 버전 변경/승인 이력 (SB BO-AIM-ETC-PG040 / SB-ETC-122)
+model AppVersionHistory {
+  id        String     @id @default(cuid())
+  versionId String
+  appVersion AppVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  version   String?    // 처리 시점 버전
+  status    String     // draft | requested | approved | rejected | cancelled
+  requester String?
+  manager   String?
+  requestedAt   DateTime?
+  requestReason String?
+  processedAt   DateTime?
+  processReason String?
+  changeNote    String?
+  createdAt DateTime @default(now())
+
+  @@index([versionId])
+}
+
+// 배너 캠페인 관리 (SB BO-AIM-ETC-PG061~) — 배너는 전부 여기서 관리. 코너유형의 '배너형'은 이 캠페인으로 귀속.
+model BannerCampaign {
+  id           String   @id @default(cuid())
+  campaignCode String   @unique // 예: BC-202604-001
+  title        String   // 배너캠페인(타이틀)
+  purpose      String?  // 캠페인 목적
+  platform     String   @default("APP") // APP | WEB
+  subtitle     String?
+  bannerContentType String? // 텍스트형 | 이미지형
+  landingType  String?  // direct | product | event | none
+  landingUrl   String?
+  pageType     String?  // current | external | none
+  thumbnailUrl String?  // 카드형 뷰 썸네일 이미지
+  bannerAlt    String?  // 배너 이미지 공통 대체텍스트(유형상세 사이즈 공유)
+  typeDetails  String?  // 유형상세 행 JSON: [{type:'텍스트형|이미지형', detail:'빅배너|스몰배너|띠배너|팝업배너'}]
+
+  exposeYn     Boolean  @default(true) // 전시여부
+  publishStart DateTime?
+  publishEnd   DateTime?
+
+  approvalStatus  String @default("requested") // approved | requested | cancelled | rejected
+  approvalRequester   String?
+  approvalManager     String?
+  approvalRequestedAt DateTime?
+  approvalProcessedAt DateTime?
+
+  createdBy String?
+  updatedBy String?
+  history   BannerCampaignHistory[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([approvalStatus])
+}
+
+// 배너 캠페인 변경/승인 이력 (상세 > 이력 관리 탭)
+model BannerCampaignHistory {
+  id         String   @id @default(cuid())
+  approvalId String?  // 승인 ID (표시용, 예: 0000019261)
+  version    Int?     // 버전(회차)
+  campaignId String
+  campaign   BannerCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  status     String   // approved | requested | cancelled | rejected | draft
+  requester  String?
+  manager    String?
+  requestedAt   DateTime?
+  processedAt   DateTime?
+  processReason String?
+  changeNote    String?
+  createdAt DateTime @default(now())
+
+  @@index([campaignId])
+}

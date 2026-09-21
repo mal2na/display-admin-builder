@@ -7,7 +7,7 @@ import { X, Search, ImageIcon, Link2, Check } from 'lucide-react';
 export type ImageAsset = { url: string; alt: string | null; name: string };
 export type LinkAsset = { url: string; label: string };
 
-const isRenderableImg = (src?: string | null) => !!src && (src.startsWith('data:') || src.startsWith('http'));
+const isRenderableImg = (src?: string | null) => !!src && (src.startsWith('data:') || src.startsWith('http') || src.startsWith('/'));
 
 // 이미지(jpg 등) / 이동 URL을 라이브러리에서 "불러오기"로 선택하는 공용 모달.
 export function AssetPickerModal({

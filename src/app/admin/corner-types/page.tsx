@@ -1,12 +1,14 @@
 import { prisma } from '@/lib/prisma';
 import { CornerTypeManager, type CornerTypeRow } from './corner-type-manager';
 import { getBuiltCornerOptions } from './built-options';
+import { toCornerTypeRow } from './row-map';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CornerTypesPage() {
   const [rows, auditRows, builtOptions] = await Promise.all([
-    prisma.cornerType.findMany({ orderBy: { typeId: 'asc' } }),
+    // '배너형'은 배너 캠페인 관리(전시관리)로 분리 → 코너 유형 관리 목록에서 숨김
+    prisma.cornerType.findMany({ where: { baseCategory: { not: '배너형' } }, orderBy: { typeId: 'asc' } }),
     prisma.auditLog.findMany({
       where: { targetType: 'CornerType' },
       orderBy: { changedAt: 'desc' },
@@ -19,51 +21,7 @@ export default async function CornerTypesPage() {
   const lastActor = new Map<string, string>();
   for (const a of auditRows) if (a.targetId && !lastActor.has(a.targetId)) lastActor.set(a.targetId, a.actor);
 
-  const types: CornerTypeRow[] = rows.map((r) => ({
-    id: r.id,
-    typeId: r.typeId,
-    name: r.name,
-    baseCategory: r.baseCategory,
-    componentType: r.componentType ?? null,
-    typeDetail: r.typeDetail,
-    bigBanner: r.bigBanner ?? false,
-    markupId: r.markupId,
-    layout: r.layout,
-    description: r.description,
-    channels: r.channels,
-    platforms: r.platforms,
-    active: r.active,
-    useMainTitle: r.useMainTitle,
-    useSubTitle: r.useSubTitle,
-    useMinItems: r.useMinItems,
-    useMaxItems: r.useMaxItems,
-    useNoDisplay: r.useNoDisplay,
-    useMoreButton: r.useMoreButton,
-    useBadge: r.useBadge ?? false,
-    useImage: r.useImage ?? true,
-    usePrice: r.usePrice ?? true,
-    useDesc: r.useDesc ?? true,
-    defaultMinItems: r.defaultMinItems ?? null,
-    defaultMaxItems: r.defaultMaxItems ?? null,
-    defaultSortStrategy: r.defaultSortStrategy ?? null,
-    defaultRecSource: r.defaultRecSource ?? null,
-    defaultMoreButton: r.defaultMoreButton ?? false,
-    defaultMoreButtonLabel: r.defaultMoreButtonLabel ?? null,
-    cvmFields: r.cvmFields ?? '',
-    composition: r.composition ?? null,
-    userCustomizable: r.userCustomizable ?? false,
-    userMinItems: r.userMinItems ?? null,
-    userMaxItems: r.userMaxItems ?? null,
-    sampleImageUrl: r.sampleImageUrl,
-    status: r.status,
-    workingVersion: r.workingVersion ?? 1,
-    liveVersion: r.liveVersion ?? null,
-    liveAt: r.liveAt ? r.liveAt.toISOString() : null,
-    createdBy: r.createdBy,
-    updatedBy: lastActor.get(r.id) ?? r.createdBy ?? null,
-    createdAt: r.createdAt.toISOString(),
-    updatedAt: r.updatedAt.toISOString(),
-  }));
+  const types: CornerTypeRow[] = rows.map((r) => toCornerTypeRow(r, lastActor.get(r.id) ?? null));
 
   return (
     <div className="p-6">

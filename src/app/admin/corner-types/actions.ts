@@ -7,6 +7,7 @@ import {
   componentTypesForCorner,
   componentLayoutDetails,
   parseComposition,
+  layoutLabel,
   type CornerType,
 } from '@/lib/display-taxonomy';
 
@@ -157,6 +158,38 @@ export async function createCornerType(formData: FormData) {
   revalidate(created.id);
 }
 
+// 유형(base)을 '한 번에' 저장 — 원본 폼(CornerTypeForm) bulk 모드에서 제출. 공통 설정(컴포넌트 조합 포함)을
+//  선택한 모든 배열·레이아웃에 동일 적용(선택=유지/생성, 해제=삭제).
+export async function saveCornerTypeBulk(base: string, formData: FormData) {
+  if (!(CORNER_TYPES as readonly string[]).includes(base)) throw new Error(`유효한 코너 유형이 아닙니다. (${base})`);
+  const common = readForm(formData);
+  let arrays: string[] = [];
+  try { const a = JSON.parse(String(formData.get('bulkArraysJson') ?? '[]')); if (Array.isArray(a)) arrays = a.map(String).filter(Boolean); } catch { arrays = []; }
+  if (!arrays.length) throw new Error('배열·레이아웃을 최소 1개 선택하세요.');
+  const componentType = common.componentType ?? componentTypesForCorner(base)[0] ?? null;
+  const existing = await prisma.cornerType.findMany({ where: { baseCategory: base }, select: { id: true, typeDetail: true } });
+  const byDetail = new Map(existing.map((e) => [e.typeDetail ?? '', e]));
+  const nameFor = (d: string) => [base, layoutLabel(d) || d].filter(Boolean).join(' · ');
+  const { name: _n, typeDetail: _td, status: _s, baseCategory: _bc, componentType: _ct, ...rest } = common;
+  void _n; void _td; void _s; void _bc; void _ct;
+
+  for (const d of arrays) {
+    const data = { ...rest, baseCategory: base, componentType, typeDetail: d, name: nameFor(d) };
+    const hit = byDetail.get(d);
+    if (hit) {
+      await prisma.cornerType.update({ where: { id: hit.id }, data: { ...data, status: 'DRAFT' } });
+    } else {
+      const typeId = await nextTypeId();
+      await prisma.cornerType.create({ data: { ...data, typeId, createdBy: ACTOR, status: 'APPROVED', workingVersion: 1, liveVersion: 1, liveAt: new Date() } });
+    }
+  }
+  for (const e of existing) if (!arrays.includes(e.typeDetail ?? '')) await prisma.cornerType.delete({ where: { id: e.id } });
+  await writeAudit({ targetId: existing[0]?.id ?? base, reason: `코너 유형 일괄 수정 (${base} · 배열 ${arrays.length}개)`, result: 'UPDATED' });
+  revalidate();
+  const { redirect } = await import('next/navigation');
+  redirect(`/admin/corner-types/group?base=${encodeURIComponent(base)}`);
+}
+
 export async function updateCornerType(id: string, formData: FormData) {
   const data = readForm(formData);
   const before = await prisma.cornerType.findUnique({ where: { id } });
@@ -194,6 +227,125 @@ export async function updateCornerType(id: string, formData: FormData) {
     result: 'UPDATED',
   });
   revalidate(id);
+}
+
+// 한 유형(base)의 여러 베리에이션을 한 번에 수정 — 유형상세명·설명·사용여부.
+export async function bulkUpdateCornerType(base: string, formData: FormData) {
+  const ids = formData.getAll('id').map(String);
+  for (const id of ids) {
+    const typeDetail = String(formData.get(`typeDetail_${id}`) ?? '').trim() || null;
+    const description = String(formData.get(`description_${id}`) ?? '').trim() || null;
+    const active = formData.get(`active_${id}`) === 'on';
+    await prisma.cornerType.update({ where: { id }, data: { typeDetail, description, active } });
+  }
+  revalidate();
+  const { redirect } = await import('next/navigation');
+  redirect(`/admin/corner-types?base=${encodeURIComponent(base)}`);
+}
+
+// 한 유형(base)의 베리에이션을 한 화면에서 한 번에 저장 — 수정/추가/삭제 동시.
+//  payload: JSON VarDraft[] { id?, typeDetail, active, bigBanner, use*, defaultMinItems, defaultMaxItems, defaultSortStrategy, defaultRecSource, sampleImageUrl, _delete }
+export async function saveTypeVariations(base: string, payload: string) {
+  if (!(CORNER_TYPES as readonly string[]).includes(base)) throw new Error(`유효한 코너 유형이 아닙니다. (${base})`);
+  let drafts: Array<Record<string, unknown>> = [];
+  try { const a = JSON.parse(payload); if (Array.isArray(a)) drafts = a; } catch { drafts = []; }
+  const componentType = componentTypesForCorner(base)[0] ?? null;
+
+  const numOrNull = (v: unknown) => { const n = Number(v); return v === '' || v == null || !Number.isFinite(n) ? null : n; };
+  const strOrNull = (v: unknown) => { const s = String(v ?? '').trim(); return s.length ? s : null; };
+
+  for (const d of drafts) {
+    const id = typeof d.id === 'string' && d.id ? d.id : null;
+    if (d._delete) { if (id) { await prisma.cornerType.delete({ where: { id } }); await writeAudit({ targetId: id, reason: '코너 유형 베리에이션 삭제', result: 'DELETED' }); } continue; }
+    const typeDetail = strOrNull(d.typeDetail);
+    const bigBanner = !!d.bigBanner && componentType === '상품형';
+    const name = [base, layoutLabel(typeDetail ?? undefined) || typeDetail || '', bigBanner ? '빅배너' : ''].filter(Boolean).join(' · ');
+    const fields = {
+      name,
+      baseCategory: base,
+      componentType,
+      typeDetail,
+      bigBanner,
+      active: !!d.active,
+      useImage: !!d.useImage,
+      useMainTitle: !!d.useMainTitle,
+      useSubTitle: !!d.useSubTitle,
+      useBadge: !!d.useBadge,
+      usePrice: !!d.usePrice,
+      useDesc: !!d.useDesc,
+      useMoreButton: !!d.useMoreButton,
+      defaultMinItems: numOrNull(d.defaultMinItems),
+      defaultMaxItems: numOrNull(d.defaultMaxItems),
+      defaultSortStrategy: strOrNull(d.defaultSortStrategy),
+      defaultRecSource: strOrNull(d.defaultRecSource),
+      sampleImageUrl: strOrNull(d.sampleImageUrl),
+    };
+    if (id) {
+      await prisma.cornerType.update({ where: { id }, data: fields });
+      await writeAudit({ targetId: id, after: { name, typeDetail }, reason: '코너 유형 수정(유형 전체 수정)', result: 'UPDATED' });
+    } else {
+      const typeId = await nextTypeId();
+      const created = await prisma.cornerType.create({ data: { ...fields, typeId, channels: 'FO', platforms: '모바일', createdBy: ACTOR, status: 'APPROVED', workingVersion: 1, liveVersion: 1, liveAt: new Date() } });
+      await writeAudit({ targetId: created.id, after: { name, typeId }, reason: `코너 유형 베리에이션 추가 (${typeId} · ${name})`, result: 'CREATED' });
+    }
+  }
+  revalidate();
+  const { redirect } = await import('next/navigation');
+  redirect(`/admin/corner-types/group?base=${encodeURIComponent(base)}`);
+}
+
+// 한 유형(base)을 '한 번에' 수정 — 공유 설정(세부 항목·운영·기본값 등)을 모든 베리에이션에 동일 적용하고,
+//  선택한 배열·레이아웃 목록으로 베리에이션을 맞춘다(선택=유지/생성, 해제=삭제). 각자 수정이 아니라 유형 단위 일괄.
+export async function saveTypeSharedVariations(base: string, payload: string) {
+  if (!(CORNER_TYPES as readonly string[]).includes(base)) throw new Error(`유효한 코너 유형이 아닙니다. (${base})`);
+  let parsed: { arrays?: string[]; shared?: Record<string, unknown> } = {};
+  try { parsed = JSON.parse(payload); } catch { parsed = {}; }
+  const arrays = Array.isArray(parsed.arrays) ? parsed.arrays.map((s) => String(s).trim()).filter(Boolean) : [];
+  const s = parsed.shared ?? {};
+  const componentType = componentTypesForCorner(base)[0] ?? null;
+
+  const numOrNull = (v: unknown) => { const n = Number(v); return v === '' || v == null || !Number.isFinite(n) ? null : n; };
+  const strOrNull = (v: unknown) => { const t = String(v ?? '').trim(); return t.length ? t : null; };
+  const csv = (v: unknown) => (Array.isArray(v) ? v.map(String).filter(Boolean).join(',') : '') || null;
+
+  // 공유 설정 (모든 베리에이션 동일)
+  const shared = {
+    baseCategory: base,
+    componentType,
+    active: !!s.active,
+    channels: csv(s.channels) ?? '전체',
+    platforms: csv(s.platforms) ?? '모바일',
+    description: strOrNull(s.description),
+    useImage: !!s.useImage, useMainTitle: !!s.useMainTitle, useSubTitle: !!s.useSubTitle,
+    useBadge: !!s.useBadge, usePrice: !!s.usePrice, useDesc: !!s.useDesc, useMoreButton: !!s.useMoreButton,
+    defaultMinItems: numOrNull(s.defaultMinItems), defaultMaxItems: numOrNull(s.defaultMaxItems),
+    defaultSortStrategy: strOrNull(s.defaultSortStrategy), defaultRecSource: strOrNull(s.defaultRecSource),
+    bigBanner: !!s.bigBanner && componentType === '상품형',
+  };
+
+  const existing = await prisma.cornerType.findMany({ where: { baseCategory: base }, select: { id: true, typeDetail: true } });
+  const byDetail = new Map(existing.map((e) => [e.typeDetail ?? '', e]));
+  const nameFor = (detail: string) => [base, layoutLabel(detail) || detail, shared.bigBanner ? '빅배너' : ''].filter(Boolean).join(' · ');
+
+  // 선택한 배열 → 유지/생성 (공유 설정 적용)
+  for (const detail of arrays) {
+    const hit = byDetail.get(detail);
+    if (hit) {
+      await prisma.cornerType.update({ where: { id: hit.id }, data: { ...shared, typeDetail: detail, name: nameFor(detail) } });
+    } else {
+      const typeId = await nextTypeId();
+      await prisma.cornerType.create({ data: { ...shared, typeDetail: detail, name: nameFor(detail), typeId, createdBy: ACTOR, status: 'APPROVED', workingVersion: 1, liveVersion: 1, liveAt: new Date() } });
+    }
+  }
+  // 선택 해제된 기존 배열 → 삭제
+  for (const e of existing) {
+    if (!arrays.includes(e.typeDetail ?? '')) await prisma.cornerType.delete({ where: { id: e.id } });
+  }
+  await writeAudit({ targetId: existing[0]?.id ?? base, reason: `코너 유형 일괄 수정 (${base} · 배열 ${arrays.length}개)`, result: 'UPDATED' });
+
+  revalidate();
+  const { redirect } = await import('next/navigation');
+  redirect(`/admin/corner-types/group?base=${encodeURIComponent(base)}`);
 }
 
 export async function toggleCornerTypeActive(id: string) {

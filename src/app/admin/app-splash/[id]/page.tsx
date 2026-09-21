@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { SplashTabs } from '../splash-tabs';
 import { SplashDetailView } from '../splash-detail-view';
 import { APPLY_STATUS, computeApplyStatus } from '@/lib/widget-taxonomy';
 import { requestApprovalSplash, cancelRequestSplash } from '../actions';
@@ -16,26 +15,27 @@ export default async function SplashDetailPage({ params }: { params: { id: strin
   const apply = computeApplyStatus(s.approvalStatus, s.applyStartAt, newer > 0);
 
   const footer = (
-    <div className="flex items-center justify-center gap-2 pt-2">
+    <div className="flex items-center justify-between pt-2">
       <Link href="/admin/app-splash" className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">목록</Link>
-      <Link href={`/admin/app-splash/${s.id}/edit`} className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">수정</Link>
-      {s.approvalStatus === 'requested' ? (
-        <form action={cancelRequestSplash.bind(null, s.id)}>
-          <button type="submit" className="inline-flex h-9 items-center rounded-md border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-700 hover:bg-amber-100">요청취소</button>
-        </form>
-      ) : (
-        <form action={requestApprovalSplash.bind(null, s.id)}>
-          <button type="submit" className="inline-flex h-9 items-center rounded-md bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">승인요청</button>
-        </form>
-      )}
+      <div className="flex items-center gap-2">
+        <Link href={`/admin/app-splash/${s.id}/edit`} className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">수정</Link>
+        {s.approvalStatus === 'requested' ? (
+          <form action={cancelRequestSplash.bind(null, s.id)}>
+            <button type="submit" className="inline-flex h-9 items-center rounded-md border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-700 hover:bg-amber-100">요청취소</button>
+          </form>
+        ) : (
+          <form action={requestApprovalSplash.bind(null, s.id)}>
+            <button type="submit" className="inline-flex h-9 items-center rounded-md bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">승인요청</button>
+          </form>
+        )}
+      </div>
     </div>
   );
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
+    <div className="px-8 py-6">
       <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 스플래시 관리 › App 스플래시 상세</nav>
-      <h1 className="mb-3 text-2xl font-bold">App 스플래시 상세정보</h1>
-      <SplashTabs />
+      <h1 className="mb-5 text-2xl font-bold">App 스플래시 상세</h1>
       <SplashDetailView
         s={{
           version: s.version, osType: s.osType, applyLabel: APPLY_STATUS[apply].label, applyStartAt: s.applyStartAt?.toISOString() ?? null, updateContent: s.updateContent,

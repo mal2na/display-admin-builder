@@ -10,6 +10,7 @@ export async function getBuiltCornerOptions(): Promise<BuiltCornerOption[]> {
   const corners = await prisma.corner.findMany({ select: { cornerType: true, layoutDetail: true } });
   const map = new Map<string, Set<string>>();
   for (const c of corners) {
+    if (c.cornerType === '배너형') continue; // 배너형은 배너 캠페인 관리로 분리 → 코너 유형 등록 후보에서 제외
     if (!map.has(c.cornerType)) map.set(c.cornerType, new Set());
     map.get(c.cornerType)!.add(c.layoutDetail ?? '');
   }

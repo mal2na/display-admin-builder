@@ -444,17 +444,26 @@ function buildComp(componentType: ComponentType, i: number, feats: CompFeats = {
   const badgeAtom = (label: string): ScaffoldAtom[] => (badge ? [{ name: '배지', atomType: 'BADGE', content: label }] : []);
   switch (componentType) {
     case '선택형':
-      return { name: '카테고리 탭', componentType: '선택형', selectedIndex: 0, atoms: ['전체', '카테고리1', '카테고리2', '카테고리3'].map((c) => ({ name: c, atomType: 'TEXT', content: c })) };
+      // 업무진입형 탭형(선택형 칩)은 기본 2줄로 노출한다.
+      return { name: '카테고리 탭', componentType: '선택형', selectedIndex: 0, chipRows: 2, atoms: ['전체', '카테고리1', '카테고리2', '카테고리3'].map((c) => ({ name: c, atomType: 'TEXT', content: c })) };
     case '상품형':
+      // DS ListProductGrid 기준 상품 카드 — 브랜드·상품명·가격기준·할인율·가격·기간·용량·배지(한글 아톰).
       return {
         name: `상품 ${i}`,
         componentType: '상품형',
         atoms: [
           ...(image ? [{ name: '상품 이미지', atomType: 'IMAGE', imageUrl: '', altText: `상품 ${i} 이미지` }] : []),
+          { name: '브랜드', atomType: 'TEXT', content: '브랜드' }, // 서브타이틀(예: Apple)
           { name: '상품명', atomType: 'TEXT', content: `상품 ${i}` },
-          ...badgeAtom('NEW'), // 배지는 가격 앞(정책 상품 Set: 가격·배지 인접)
-          ...(price ? [{ name: '가격', atomType: 'PRICE', content: '' }] : []),
-          ...(desc ? [{ name: '설명', atomType: 'INFO', content: '' }] : []), // 부가/흐린 글씨 = 정보값 Atom
+          { name: '가격 기준', atomType: 'INFO', content: '선택 약정 12개월 기준' },
+          ...badgeAtom('NEW'),
+          ...(price ? [
+            { name: '할인율', atomType: 'TEXT', content: '' }, // 예: 99% (비우면 미표시)
+            { name: '가격', atomType: 'PRICE', content: '' },
+            { name: '기간', atomType: 'INFO', content: '/12개월' },
+          ] : []),
+          { name: '서브텍스트', atomType: 'INFO', content: '' }, // SubText (비우면 미표시)
+          ...(desc ? [{ name: '용량', atomType: 'INFO', content: '256GB | 512GB | 1TB' }] : []), // 캡션(용량 등)
         ],
       };
     case '혜택형':
@@ -631,11 +640,73 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
 // base + 유형상세뿐 아니라 코너 레이아웃(가로 SWIPE형 등)·마크업·설명까지 등록된 "형태"를 반영한다.
 export async function createCornerFromType(templateId: string, formData: FormData) {
   const cornerTypeId = String(formData.get('cornerTypeId') ?? '').trim();
+  const useVariants = String(formData.get('useVariants') ?? '') === '1'; // 선택 유형의 전체 베리에이션을 코너에 등록
   const corner = await createCornerInstanceFromTypeId(cornerTypeId);
+
+  // 베리에이션 함께 사용 — 같은 코너 유형(baseCategory)의 사용·반영된 베리에이션을 displayVariants로 등록.
+  //  선택한 유형상세가 기본(첫 번째)이 되고, 실서비스에선 CVM이 고객별로 택1(빌더 미리보기는 기본).
+  if (useVariants) {
+    const picked = await prisma.cornerType.findUnique({ where: { id: cornerTypeId }, select: { baseCategory: true } });
+    if (picked) {
+      const sibs = await prisma.cornerType.findMany({
+        where: { baseCategory: picked.baseCategory, active: true, liveVersion: { not: null } },
+        select: { id: true, name: true, typeDetail: true },
+      });
+      if (sibs.length > 1) {
+        const ordered = [...sibs].sort((a, b) => (a.id === cornerTypeId ? -1 : b.id === cornerTypeId ? 1 : 0));
+        const variants = ordered.map((s) => {
+          const label = s.typeDetail || s.name;
+          return { typeId: s.id, typeName: s.name, label };
+        });
+        await prisma.corner.update({ where: { id: corner.id }, data: { displayVariants: JSON.stringify(variants) } });
+      }
+    }
+  }
+
   const order = await nextOrder('templateCorner', { templateId });
   const tc = await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order } });
   rp(templateId);
   return tc.id; // 생성된 templateCorner id → 빌더에서 새 코너로 포커싱
+}
+
+// 배너 불러오기 — 배너 캠페인 관리(전시관리)에 등록된 캠페인 1건 → 배너형 코너로 편성.
+// 코너 유형의 '배너형'은 전부 배너 캠페인 관리로 귀속되므로, 빌더에선 이 액션으로 불러온다.
+export async function importBannerCampaignCorner(templateId: string, campaignId: string, sizeDetail?: string) {
+  const bc = await prisma.bannerCampaign.findUnique({ where: { id: campaignId } });
+  if (!bc) throw new Error('배너 캠페인을 찾을 수 없습니다.');
+  // 유형상세(사이즈별) 중 선택한 규격 → 없으면 첫 번째. layoutDetail = 배너 규격, 이미지도 해당 규격 것으로.
+  let sizes: { detail?: string; imageUrl?: string; rightImageUrl?: string; bannerAlt?: string }[] = [];
+  try { sizes = bc.typeDetails ? JSON.parse(bc.typeDetails) : []; } catch { sizes = []; }
+  const chosen = (sizeDetail && sizes.find((s) => s.detail === sizeDetail)) || sizes[0] || null;
+  const chosenDetail = chosen?.detail || sizeDetail || '팝업배너 (720×600)';
+  const chosenImg = chosen?.imageUrl || chosen?.rightImageUrl || '';
+  const corner = await prisma.corner.create({
+    data: {
+      name: `배너 · ${bc.title}`,
+      cornerType: '배너형',
+      layoutDetail: chosenDetail,
+      description: bc.purpose ?? bc.subtitle ?? null,
+      sortStrategy: 'MANUAL',
+    },
+  });
+  const comp = await prisma.component.create({ data: { name: bc.title, componentType: '배너형' } });
+  const atoms: { name: string; atomType: string; content?: string; imageUrl?: string; altText?: string; linkUrl?: string }[] = [
+    { name: '배너 타이틀', atomType: 'TEXT', content: bc.title },
+    ...(bc.subtitle ? [{ name: '배너 설명', atomType: 'INFO', content: bc.subtitle }] : []),
+    { name: '배너 이미지', atomType: 'IMAGE', imageUrl: chosenImg, altText: bc.bannerAlt ?? bc.title },
+    ...(bc.landingUrl ? [{ name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: bc.landingUrl }] : []),
+  ];
+  let i = 0;
+  for (const a of atoms) {
+    const atom = await prisma.atom.create({ data: { ...a, status: 'active' } });
+    await prisma.componentAtom.create({ data: { componentId: comp.id, atomId: atom.id, order: i, isRequired: true } });
+    i += 1;
+  }
+  await prisma.cornerComponent.create({ data: { cornerId: corner.id, componentId: comp.id, order: 0 } });
+  const order = await nextOrder('templateCorner', { templateId });
+  const tc = await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order } });
+  rp(templateId);
+  return tc.id;
 }
 
 // 코너 불러오기(슬롯 교체) — 코너 유형 관리 카탈로그에서 고른 유형으로 이 슬롯을 교체한다.

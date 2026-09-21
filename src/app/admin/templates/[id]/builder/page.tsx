@@ -58,8 +58,8 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     prisma.component.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, componentType: true, allowedCornerTypes: true } }),
     prisma.atom.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, atomType: true } }),
     prisma.banner.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, imageUrl: true } }),
-    // 코너 불러오기: 전시/관리 코너 유형만 (이벤트·미션 전용 계열 제외)
-    prisma.cornerType.findMany({ where: { baseCategory: { notIn: ['혜택상품형', '디스플레이형', '동작형'] } }, orderBy: { typeId: 'asc' }, select: { id: true, name: true, baseCategory: true, componentType: true, typeDetail: true, bigBanner: true, sampleImageUrl: true, active: true, liveVersion: true } }),
+    // 코너 불러오기: 전시/관리 코너 유형만 (이벤트·미션 전용 계열 제외). '배너형'은 배너 캠페인 관리 + '배너 불러오기'로 분리 → 제외.
+    prisma.cornerType.findMany({ where: { baseCategory: { notIn: ['혜택상품형', '디스플레이형', '동작형', '배너형'] } }, orderBy: { typeId: 'asc' }, select: { id: true, name: true, baseCategory: true, componentType: true, typeDetail: true, bigBanner: true, sampleImageUrl: true, active: true, liveVersion: true } }),
     // 이미지 라이브러리 재료: IMAGE/ICON Atom
     prisma.atom.findMany({
       where: { status: 'active', atomType: { in: ['ICON', 'IMAGE'] }, NOT: { imageUrl: null } },
@@ -71,6 +71,12 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     prisma.corner.findMany({ where: { NOT: { moreButtonLink: null } }, select: { name: true, moreButtonLink: true } }),
     prisma.banner.findMany({ where: { status: 'active', NOT: { linkUrl: null } }, select: { name: true, linkUrl: true } }),
   ]);
+
+  // 배너 불러오기: 배너 캠페인 관리(전시관리)에 등록된 캠페인 목록
+  const libBannerCampaigns = await prisma.bannerCampaign.findMany({
+    orderBy: { createdAt: 'desc' },
+    select: { id: true, campaignCode: true, title: true, exposeYn: true, approvalStatus: true, publishStart: true, publishEnd: true, typeDetails: true, bannerAlt: true },
+  });
 
   // 이미지 라이브러리 (Atom 이미지 + 배너 이미지, url 기준 중복 제거)
   const imageMap = new Map<string, { url: string; alt: string | null; name: string }>();
@@ -217,6 +223,21 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     atoms: libAtoms,
     banners: libBanners,
     cornerTypes: libCornerTypes,
+    bannerCampaigns: libBannerCampaigns.map((b) => {
+      // 미리보기용 이미지들 — 유형상세(사이즈별) 중 이미지가 있는 것들. 첫 번째가 대표 썸네일.
+      let sizes: { detail: string; imageUrl: string | null; bgColor: string | null }[] = [];
+      try {
+        const td = b.typeDetails ? (JSON.parse(b.typeDetails) as { detail?: string; imageUrl?: string; rightImageUrl?: string; bgColor?: string }[]) : [];
+        // 이미지형은 완성 이미지, 직접 만들기형은 상품 이미지(rightImageUrl)로 대표 미리보기.
+        sizes = td.map((t) => ({ detail: t.detail ?? '', imageUrl: t.imageUrl || t.rightImageUrl || null, bgColor: t.bgColor || null }));
+      } catch { sizes = []; }
+      const thumbnailUrl = sizes.find((s) => s.imageUrl)?.imageUrl ?? null;
+      return {
+        id: b.id, campaignCode: b.campaignCode, title: b.title, exposeYn: b.exposeYn, approvalStatus: b.approvalStatus,
+        publishStart: b.publishStart?.toISOString() ?? null, publishEnd: b.publishEnd?.toISOString() ?? null,
+        thumbnailUrl, bannerAlt: b.bannerAlt ?? null, sizes,
+      };
+    }),
     images,
     links,
     messages,
