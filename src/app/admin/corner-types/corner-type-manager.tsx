@@ -806,7 +806,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
     reader.readAsDataURL(f);
   };
   const detailValid = typeShapes.includes(detail) ? detail : (allowEmptyDetail ? '' : (typeShapes[0] ?? ''));
-  const compValid = compForShape(base, detailValid); // 컴포넌트는 배열·레이아웃에서 자동 도출
+  // 대표 컴포넌트 유형: 사용자가 컴포넌트 조합을 직접 편집했으면 그 첫 블록 유형을 대표로 쓴다(저장·미리보기 정합).
+  //  편집 전(blocks 비어있음)에는 배열·레이아웃에서 도출(compForShape) — 기존 동작 유지.
+  const compFromShape = compForShape(base, detailValid);
+  const compValid = blocks.length ? ((blocks[0]?.componentType as ComponentType) || compFromShape) : compFromShape;
 
   // ── 세부 항목 적용 가능 여부 (유형별) ──
   // 카테고리 탭/고정형 탭/배너/아이콘형 등은 코너 타이틀·서브타이틀이 없다(미리보기 noHeader와 동일 기준).
