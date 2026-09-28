@@ -5,6 +5,10 @@ dev.db
 dev.db-journal
 prisma/dev.db
 prisma/dev.db-journal
+# 임시/테스트용 sqlite (시드 검증 등)
+*.db-journal
+prisma/_tmp_*.db
+_tmp_*.db
 .DS_Store
 dist/
 .next/
