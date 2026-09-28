@@ -233,8 +233,9 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   const cta = first(component.atoms, 'BUTTON', 'CTA');
   const img = first(component.atoms, 'IMAGE', 'ICON');
   // 배너 규격(layoutDetail의 W×H)으로 실제 비율을 잡는다 — 빅/스몰/띠/팝업이 눈에 보이게.
+  //  규격에 W×H가 없으면(예: '이미지형') 실제 배너 기본 비율(빅배너 672×460)로 렌더 — 뚱뚱한 콤포즈 박스 방지.
   const m = (sizeDetail ?? '').match(/(\d+)\s*[×xX*]\s*(\d+)/);
-  const ratio = m ? `${m[1]} / ${m[2]}` : null;
+  const ratio = m ? `${m[1]} / ${m[2]}` : '672 / 460';
   const src = img?.imageUrl ?? '';
   const hasImg = isRenderableImg(src);
   // 완성형 배너 이미지(업로드 사진·banner-* 마커)는 규격 비율로 꽉 채우고,

@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma';
 import { CornerTypeDetail, type HistoryRow, type BannerPreview } from './corner-type-detail';
 import { type CornerTypeRow } from '../corner-type-manager';
 import { getBuiltCornerOptions, getRegisteredCombos } from '../built-options';
-import { getBannerUsage } from '../../banner-campaigns/banner-usage';
 import { type PreviewCorner } from '@/components/preview/blocks';
 import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE, PLACED_CORNER_ORDER } from '../preview-corner';
 
@@ -99,21 +98,9 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     reason: l.reason,
   }));
 
-  // 배너형 코너 유형 = 실제로 편성돼 쓰이는 배너들(콤포즈)을 미리보기에 모두 보여준다(한 유형이 여러 배너로 쓰임).
-  let bannerPreviews: BannerPreview[] = [];
-  if (ct.baseCategory === '배너형') {
-    const campaigns = await prisma.bannerCampaign.findMany({ orderBy: { campaignCode: 'asc' }, select: { id: true, title: true, typeDetails: true } });
-    const usageMap = await getBannerUsage(campaigns.map((c) => c.id));
-    bannerPreviews = campaigns.flatMap((c) => {
-      if ((usageMap[c.id] ?? []).length === 0) return [];
-      let fields: Record<string, unknown> | null = null;
-      try {
-        const td = c.typeDetails ? (JSON.parse(c.typeDetails) as Record<string, unknown>[]) : [];
-        fields = td.find((t) => t.type === '리스트형') ?? td[0] ?? null;
-      } catch { fields = null; }
-      return fields ? [{ id: c.id, title: c.title, fields }] : [];
-    });
-  }
+  // 배너형도 케이스별로 분리됨(배너 5종 각각) → 각 케이스는 자기 배너를 usagePreviews(실제 코너 렌더)로 보여준다.
+  //  (예전엔 배너형 한 유형이 모든 캠페인 배너를 모아 보여줬으나, 케이스 분리로 불필요해져 제거.)
+  const bannerPreviews: BannerPreview[] = [];
 
   return (
     <div className="p-6">

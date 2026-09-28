@@ -226,7 +226,7 @@ async function main() {
     { name: '롯데월드 이미지', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png', altText: '롯데월드 어드벤처' },
   ]);
   const cornerBanner1 = await corner(
-    { name: '제휴 혜택 배너', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
+    { name: '제휴 혜택 배너', cornerType: '배너형', maxItems: 3, layoutDetail: '빅배너 (672×460)' },
     [{ id: banner1.id, componentType: '배너형' }],
   );
 
@@ -286,7 +286,7 @@ async function main() {
     { name: '에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/airpods-max.png', altText: 'AirPods Max3 헤드폰' },
   ]);
   const cornerAirpods = await corner(
-    { name: 'AirPods 사전예약', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
+    { name: 'AirPods 사전예약', cornerType: '배너형', maxItems: 3, layoutDetail: '빅배너 (672×460)' },
     [{ id: banner3.id, componentType: '배너형' }],
   );
 
@@ -566,7 +566,7 @@ async function main() {
     { name: 'iPhone20 사전예약 이미지', atomType: 'IMAGE', imageUrl: '/assets/corner-samples/sh-preorder.png', altText: 'iPhone 20 사전예약 · 에어팟 프로 증정' },
   ]);
   const shopCornerPreorder = await corner(
-    { name: 'iPhone 20 사전예약', cornerType: '배너형', layoutDetail: '이미지형' },
+    { name: 'iPhone 20 사전예약', cornerType: '배너형', layoutDetail: '스몰배너 (672×324)' },
     [{ id: preorderComp.id, componentType: '배너형' }],
   );
 
@@ -699,7 +699,7 @@ async function main() {
     { name: '스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/marshall-speaker.png', altText: 'Marshall Stockwell 스피커' },
   ]);
   const shopCornerSpeaker = await corner(
-    { name: 'Marshall 스피커', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
+    { name: 'Marshall 스피커', cornerType: '배너형', maxItems: 3, layoutDetail: '띠배너 (672×214)' },
     [{ id: shopSpeaker.id, componentType: '배너형' }],
   );
 
@@ -884,7 +884,7 @@ async function main() {
     { name: '루쥬 코코 이미지', atomType: 'IMAGE', imageUrl: '/assets/chanel-lipstick.png', altText: 'CHANEL 루쥬 코코 립스틱' },
   ]);
   const myCornerProduct = await corner(
-    { name: '추천 상품', cornerType: '배너형', maxItems: 1, layoutDetail: '이미지형' },
+    { name: '추천 상품', cornerType: '배너형', maxItems: 1, layoutDetail: '띠배너 (672×214)' },
     [{ id: myProduct.id, componentType: '배너형' }],
   );
 
@@ -1036,12 +1036,11 @@ async function main() {
     allByType.set(key, arr);
   }
   let typeIdx = 1;
-  const seenBase = new Map<string, number>();
   for (const [, corners] of allByType) {
     const base = corners[0].cornerType;
-    // 배너형은 한 유형에서 여러 배너를 함께 보여주므로 묶어서 1개. 그 외는 '코너(케이스)마다' 각각 코너 유형으로 분리한다.
-    //  → 혜택·오퍼형 가로형(기프티콘·구독), 세로형(0Week·TDAY) 등 여러 케이스가 각자 카드/상세로 나뉘어 하나씩 편집 가능(2026-09-28 사용자 결정).
-    const emitGroups: (typeof corners)[] = base === '배너형' ? [corners] : corners.map((c) => [c]);
+    // 모든 유형을 '코너(케이스)마다' 각각 코너 유형으로 분리한다(배너형 포함 — 배너 5종도 각 케이스로).
+    //  같은 배열(예: 배너형 빅배너)에 케이스가 여럿이면 목록에서 배열 그룹 카드로 묶여 '케이스 탭'으로 전환된다.
+    const emitGroups: (typeof corners)[] = corners.map((c) => [c]);
     for (const grp of emitGroups) {
       const rep = grp[0];
       const { cleanDetail } = parseBanner(rep);
@@ -1063,15 +1062,8 @@ async function main() {
         .slice(0, 6)
         .map((slug) => `/assets/corner-samples/${slug}.png`);
       const sampleImageUrl = samples.length ? samples.join('\n') : null;
-      // 이름: 배너형(묶음)은 기존 규칙(중복 시 배열 접미). 그 외(코너별 분리)는 코너명이 곧 식별자.
-      let name: string;
-      if (base === '배너형') {
-        const seen = seenBase.get(base) ?? 0;
-        name = seen > 0 && detail ? `${base} · ${detail}` : base;
-        seenBase.set(base, seen + 1);
-      } else {
-        name = rep.name;
-      }
+      // 이름: 코너별 분리라 코너명이 곧 식별자(배너형도 각 배너명).
+      const name = rep.name;
       const created = await prisma.cornerType.create({
         data: {
           typeId: 'CY' + String(typeIdx).padStart(7, '0'),
@@ -1568,7 +1560,7 @@ async function linkBannerCampaignUsage() {
     '에어팟 사전예약 배너': { code: 'BC-202609-006', size: '빅배너 (672×460)' }, // AirPods Max3
     'iPhone 20 사전예약 배너': { code: 'BC-202609-007', size: '스몰배너 (672×324)' }, // iPhone 20 · 에어팟 프로 증정
     'Marshall Stockwell 배너': { code: 'BC-202609-008', size: '띠배너 (672×214)' }, // Marshall Stockwell
-    'CHANEL 루쥬 코코 배너': { code: 'BC-202609-003', size: '스몰배너 (672×324)' }, // CHANEL 루쥬 코코 립스틱
+    'CHANEL 루쥬 코코 배너': { code: 'BC-202609-003', size: '띠배너 (672×214)' }, // CHANEL 루쥬 코코 립스틱 (코너 유형관리 등록 규격)
   };
   let linked = 0;
   for (const [compName, { code, size }] of Object.entries(MAP)) {

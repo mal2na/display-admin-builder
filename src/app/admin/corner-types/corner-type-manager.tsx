@@ -425,8 +425,7 @@ function LayoutGroupCard({ cases, onOpen }: { cases: CornerTypeRow[]; onOpen: ()
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.04] shadow-[0_1px_3px_rgba(20,22,40,0.05),0_10px_28px_rgba(20,22,40,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_6px_rgba(20,22,40,0.08),0_18px_42px_rgba(20,22,40,0.14)]">
       <button type="button" onClick={onOpen} className="flex flex-1 flex-col text-left">
         <div className="relative bg-[#EEF1F8] p-2.5">
-          {/* 대표 미리보기(첫 케이스). 여러 케이스면 겹친 카드 느낌 + 개수 배지 */}
-          {multi && <div className="pointer-events-none absolute inset-x-3 top-1 h-40 translate-y-1 rounded-xl bg-white/70 ring-1 ring-black/[0.04]" />}
+          {/* 대표 미리보기(첫 케이스) + 여러 케이스면 개수 배지. 배경은 단일/다중 동일(#EEF1F8). */}
           <div className="pointer-events-none relative h-40"><DevicePreview corner={preview} fit="contain" /></div>
           {multi && <span className="absolute right-3 top-3 rounded-full bg-slate-900/85 px-2 py-0.5 text-[11px] font-bold text-white">{cases.length}개 케이스</span>}
         </div>
@@ -740,9 +739,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             <thead>
               <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
                 <th className="w-14 px-3 py-2.5 text-left font-medium">NO</th>
-                <th className="w-44 px-3 py-2.5 text-left font-medium">미리보기</th>
                 <th className="px-3 py-2.5 text-left font-medium">코너 유형</th>
                 <th className="px-3 py-2.5 text-left font-medium">배열·레이아웃</th>
+                <th className="w-44 px-3 py-2.5 text-left font-medium">미리보기</th>
                 <th className="px-3 py-2.5 text-left font-medium">코너(케이스)</th>
                 <th className="w-20 px-3 py-2.5 text-left font-medium">사용여부</th>
                 <th className="w-28 px-3 py-2.5 text-left font-medium">승인상태</th>
@@ -756,19 +755,19 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               ) : pageRows.map((t, i) => (
                 <tr key={t.id} className="cursor-pointer border-b last:border-0 hover:bg-slate-50/70" onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
                   <td className="px-3 py-2.5 align-top tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
+                  <td className="px-3 py-2.5 align-top"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11.5px] font-semibold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
+                  <td className="px-3 py-2.5 align-top text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
                   <td className="px-3 py-2.5">
                     {/* 리스트에서도 클릭 없이 바로 미리보기 — 카드 썸네일과 동일 렌더(실제 대표 코너) */}
                     <div className="pointer-events-none h-24 w-40 overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#EEF1F8] p-1.5">
                       <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" />
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 align-top"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11.5px] font-semibold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
-                  <td className="px-3 py-2.5 text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
-                  <td className="px-3 py-2.5 font-medium text-slate-800">{t.previewCorner?.name ?? '-'}</td>
-                  <td className="px-3 py-2.5 text-slate-600">{t.active ? '사용' : '미사용'}</td>
-                  <td className="px-3 py-2.5"><span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span></td>
-                  <td className="px-3 py-2.5 text-slate-600">{t.updatedBy ?? t.createdBy ?? '-'}</td>
-                  <td className="px-3 py-2.5 text-[12px] text-slate-500">{(t.updatedAt ?? '').replace('T', ' ').slice(0, 16) || '-'}</td>
+                  <td className="px-3 py-2.5 align-top font-medium text-slate-800">{t.previewCorner?.name ?? '-'}</td>
+                  <td className="px-3 py-2.5 align-top text-slate-600">{t.active ? '사용' : '미사용'}</td>
+                  <td className="px-3 py-2.5 align-top"><span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span></td>
+                  <td className="px-3 py-2.5 align-top text-slate-600">{t.updatedBy ?? t.createdBy ?? '-'}</td>
+                  <td className="px-3 py-2.5 align-top text-[12px] text-slate-500">{(t.updatedAt ?? '').replace('T', ' ').slice(0, 16) || '-'}</td>
                 </tr>
               ))}
             </tbody>
