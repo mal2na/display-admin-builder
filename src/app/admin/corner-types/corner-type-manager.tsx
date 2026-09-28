@@ -799,16 +799,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
     const reg = registered.find((r) => r.baseCategory === b && r.typeDetail);
     return reg?.typeDetail ?? cornerTypeDetails(b)[0] ?? '';
   };
-  // 유형 샘플 이미지 — 로컬에서 직접 등록(data URI)
-  const [sampleImage, setSampleImage] = useState(row.sampleImageUrl ?? '');
-  const sampleFileRef = useRef<HTMLInputElement>(null);
-  const onSampleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => setSampleImage(String(reader.result));
-    reader.readAsDataURL(f);
-  };
   const detailValid = typeShapes.includes(detail) ? detail : (allowEmptyDetail ? '' : (typeShapes[0] ?? ''));
   // 대표 컴포넌트 유형: 사용자가 컴포넌트 조합을 직접 편집했으면 그 첫 블록 유형을 대표로 쓴다(저장·미리보기 정합).
   //  편집 전(blocks 비어있음)에는 배열·레이아웃에서 도출(compForShape) — 기존 동작 유지.
@@ -1462,42 +1452,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
         </section>
       )}
 
-      {/* 유형 샘플 이미지 — 로컬에서 직접 등록 */}
-      <section className="overflow-hidden rounded-md border">
-        <div className="border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">유형 샘플 이미지</div>
-        <div className="p-3">
-          <input type="hidden" name="sampleImageUrl" value={sampleImage} />
-          <input ref={sampleFileRef} type="file" accept="image/*" className="hidden" onChange={onSampleFile} />
-          {sampleImage ? (
-            <div className="flex flex-wrap items-start gap-3">
-              {sampleImage.split('\n').filter(Boolean).map((src, i) => (
-                <a key={i} href={src} target="_blank" rel="noreferrer" title="원본 보기">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`유형 샘플 ${i + 1}`} className="h-28 w-44 rounded-xl border object-cover object-top shadow-sm hover:ring-2 hover:ring-primary/40 [filter:contrast(1.08)_saturate(1.15)]" />
-                </a>
-              ))}
-              <div className="flex flex-col gap-1.5">
-                <Button type="button" size="sm" variant="secondary" onClick={() => sampleFileRef.current?.click()}>
-                  이미지 변경
-                </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => setSampleImage('')}>
-                  <Trash2 className="mr-1 h-3.5 w-3.5" /> 제거
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => sampleFileRef.current?.click()}
-              className="flex h-24 w-40 flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-slate-300 text-xs text-muted-foreground hover:border-primary/50 hover:bg-accent"
-            >
-              <Plus className="h-5 w-5" />
-              이미지 등록
-            </button>
-          )}
-          <p className="mt-1.5 text-[10px] text-muted-foreground">홈 화면에서 해당 유형의 코너를 캡처한 샘플이에요. 같은 유형이 여러 곳에 있으면 여러 장이 표시됩니다. 이미지 변경 시 직접 등록한 1장으로 교체돼요.</p>
-        </div>
-      </section>
+      {/* 유형 샘플 이미지 제거(2026-09-28) — 컴포넌트 조합의 실시간 미리보기(미리보기·조합 결과)로 통일. 중복 방지. */}
 
       <div className="flex justify-end gap-2 border-t pt-3">
         <Button type="button" variant="secondary" size="sm" onClick={onClose}>
