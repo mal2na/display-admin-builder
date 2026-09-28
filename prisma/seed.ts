@@ -1475,8 +1475,8 @@ async function seedBannerCampaigns() {
   const now = new Date();
   const start = new Date('2026-09-01T00:00:00');
   const end = new Date('2026-12-31T23:59:00');
-  const S4 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)', '팝업배너 (720×600)'];
-  const S3 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)'];
+  const S4 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (672×214)', '팝업배너 (720×600)'];
+  const S3 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (672×214)'];
 
   const campaigns: {
     campaignCode: string; title: string; subtitle: string | null; purpose: string | null;
@@ -1499,7 +1499,7 @@ async function seedBannerCampaigns() {
       campaignCode: 'BC-202609-003', title: 'CHANEL 루쥬 코코 립스틱',
       subtitle: '봄 뮤트 핑크 #130', purpose: 'T 우주 뷰티 제휴 · 샤넬 립스틱 프로모션',
       landingType: 'direct', landingUrl: 'https://tworld/beauty-chanel', pageType: 'current', bannerAlt: 'CHANEL 루쥬 코코 립스틱 · 봄 뮤트 핑크 #130',
-      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EAEAF6', title: 'CHANEL 루쥬 코코 립스틱', subtitle: '봄 뮤트 핑크 #130', rightImageUrl: '/assets/product-chanel-lipstick.svg' })),
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: 'CHANEL\n루쥬 코코 립스틱', subtitle: '봄 뮤트 핑크 #130', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/ds/product-chanel-rouge.png' })),
     },
     {
       campaignCode: 'BC-202609-004', title: '롯데월드 제휴 혜택',
@@ -1519,6 +1519,20 @@ async function seedBannerCampaigns() {
       subtitle: null, purpose: '사전예약 클럽 멤버십 혜택 안내 (직접 만들기)',
       landingType: 'direct', landingUrl: 'https://tworld/airpods-max-preorder', pageType: 'current', bannerAlt: 'AirPods Max3 사전 예약 · 사전예약 클럽 멤버십 혜택',
       typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: 'AirPods Max3\n사전 예약 하셨나요?', subtitle: '사전예약 클럽 멤버십 혜택', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/ds/product-airpodsmax.png' })),
+    },
+    {
+      // iPhone 20 사전예약 시 에어팟 프로 증정 — 콤포즈형 혜택 배너(제목 좌 + 제품 우). (2026-09-28)
+      campaignCode: 'BC-202609-007', title: 'iPhone 20 사전 예약 시 에어팟 프로 증정',
+      subtitle: null, purpose: '사전예약 클럽 멤버십 혜택 안내 (직접 만들기)',
+      landingType: 'direct', landingUrl: 'https://tworld/iphone20-preorder', pageType: 'current', bannerAlt: 'iPhone 20 사전 예약 시 에어팟 프로 증정 · 사전예약 클럽 멤버십 혜택',
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: 'iPhone 20 사전 예약 시\n에어팟 프로 증정', subtitle: '사전예약 클럽 멤버십 혜택', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/ds/product-airpodspro.png' })),
+    },
+    {
+      // Marshall Stockwell 블루투스 스피커 — 콤포즈형 혜택 배너(제목 좌 + 제품 우). (2026-09-28)
+      campaignCode: 'BC-202609-008', title: 'Marshall Stockwell 블루투스 스피커',
+      subtitle: null, purpose: '사전예약 클럽 멤버십 혜택 안내 (직접 만들기)',
+      landingType: 'direct', landingUrl: 'https://tworld/marshall-stockwell', pageType: 'current', bannerAlt: 'Marshall Stockwell 블루투스 스피커 · 사전예약 클럽 멤버십 혜택',
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: 'Marshall Stockwell\n블루투스 스피커', subtitle: '사전예약 클럽 멤버십 혜택', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/ds/product-marshall.png' })),
     },
   ];
 
@@ -1544,9 +1558,36 @@ async function seedBannerCampaigns() {
   console.log(`✅ 배너 캠페인 시드 완료 (${campaigns.length}건 · 승인완료)`);
 }
 
+// 데모: 시드로 만든 배너형 코너의 컴포넌트를 해당 배너 캠페인에 연결(sourceCampaignId).
+// → 배너 캠페인 관리 '노출 위치'에 어느 전시화면(컨테이너>템플릿>코너)에 편성됐는지 표시된다. (실서비스는 빌더 '배너 불러오기' 시 자동 연결)
+async function linkBannerCampaignUsage() {
+  // compName → { code: 캠페인, size: 이 위치에서 쓰는 유형상세(규격) }. 코너 layoutDetail로 저장 → 노출 위치 ↔ 유형상세 맵핑.
+  const MAP: Record<string, { code: string; size: string }> = {
+    '가족 나들이 혜택 배너': { code: 'BC-202609-004', size: '빅배너 (672×460)' }, // 롯데월드 제휴 혜택
+    '에어팟 사전예약 배너': { code: 'BC-202609-006', size: '빅배너 (672×460)' }, // AirPods Max3
+    'iPhone 20 사전예약 배너': { code: 'BC-202609-007', size: '스몰배너 (672×324)' }, // iPhone 20 · 에어팟 프로 증정
+    'Marshall Stockwell 배너': { code: 'BC-202609-008', size: '띠배너 (672×214)' }, // Marshall Stockwell
+    'CHANEL 루쥬 코코 배너': { code: 'BC-202609-003', size: '스몰배너 (672×324)' }, // CHANEL 루쥬 코코 립스틱
+  };
+  let linked = 0;
+  for (const [compName, { code, size }] of Object.entries(MAP)) {
+    const bc = await prisma.bannerCampaign.findUnique({ where: { campaignCode: code } });
+    if (!bc) continue;
+    const comps = await prisma.component.findMany({ where: { name: compName, componentType: '배너형' }, select: { id: true } });
+    for (const c of comps) {
+      await prisma.component.update({ where: { id: c.id }, data: { sourceCampaignId: bc.id, sourceSyncedAt: bc.updatedAt } });
+      const ccs = await prisma.cornerComponent.findMany({ where: { componentId: c.id }, select: { cornerId: true } });
+      for (const cc of ccs) await prisma.corner.update({ where: { id: cc.cornerId }, data: { layoutDetail: size } });
+      linked += 1;
+    }
+  }
+  console.log(`✅ 배너 노출 위치 연결 완료 (${linked}개 컴포넌트 ↔ 캠페인, 규격 맵핑)`);
+}
+
 main()
   .then(() => patchVariantDemo())
   .then(() => seedBannerCampaigns())
+  .then(() => linkBannerCampaignUsage())
   .then(() => prisma.$disconnect())
   .catch(async (e) => {
     console.error(e);

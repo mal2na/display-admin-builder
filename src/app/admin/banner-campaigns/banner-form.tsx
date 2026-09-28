@@ -11,7 +11,7 @@ import { toLocalInput } from '@/lib/widget-taxonomy';
 import { ComposedBanner } from './composed-banner';
 import { AssetPickerModal, type ImageAsset } from '@/components/asset-picker-modal';
 import { generateComposeDraft, refineComposeDraft, AI_EXAMPLES, AI_REFINE_SUGGESTIONS } from './ai-compose';
-import { DS_BANNER_TYPES, dsBannerTypeName, dsBannerType } from './ds-banner-types';
+import { REGISTERED_DS_BANNER_TYPES, dsBannerTypeName, dsBannerType, type DsBannerType } from './ds-banner-types';
 import type { ComposeFields } from './composed-banner';
 import { Plus, Minus, X, Search, Image as ImageIcon, Upload, Database, Sparkles, Send, LayoutTemplate, Check } from 'lucide-react';
 
@@ -126,6 +126,49 @@ function LibraryPickButton({ images, onPick, label = '라이브러리' }: { imag
   );
 }
 
+// DS 배너 유형 가져오기 — 이미지 등록의 'DB에서 가져오기'와 동일한 방식. DS 포털에 '등록된' 유형만 끌어온다(현재 기본형 1개).
+function DsTypePickButton({ onPick, label = 'DS 배너 유형 가져오기' }: { onPick: (t: DsBannerType) => void; label?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-[12px] font-medium text-slate-700 hover:bg-slate-50">
+        <LayoutTemplate className="h-3 w-3" /> {label}
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
+          <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 border-b px-4 py-3">
+              <LayoutTemplate className="h-4 w-4 text-indigo-500" />
+              <h3 className="text-sm font-semibold">DS 배너 유형 가져오기</h3>
+              <span className="text-[11px] text-muted-foreground">DS 포털에 등록된 유형만</span>
+              <button type="button" onClick={() => setOpen(false)} className="ml-auto text-slate-400 hover:text-slate-700"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="max-h-[60vh] space-y-2 overflow-y-auto p-3">
+              {REGISTERED_DS_BANNER_TYPES.map((t) => {
+                const sample = { ...t.locked, title: '배너 제목', subtitle: '서브 문구', ctaText: '', rightImageUrl: '/assets/product-chanel-lipstick.svg' } as ComposeFields;
+                return (
+                  <button key={t.id} type="button" title={`${t.font} · ${t.image}`} onClick={() => { onPick(t); setOpen(false); }}
+                    className="group flex w-full flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-left shadow-sm transition hover:border-indigo-400 hover:shadow-md">
+                    <FitBanner f={sample} />
+                    <div className="flex items-center justify-between gap-1 px-0.5">
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-bold text-slate-800 group-hover:text-indigo-600">{t.name}</p>
+                        <p className="truncate text-[11px] text-slate-400">{t.desc}</p>
+                      </div>
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white opacity-0 transition group-hover:opacity-100"><Check className="h-3 w-3" />가져오기</span>
+                    </div>
+                    <p className="truncate border-t border-slate-100 px-0.5 pt-1.5 text-[10px] text-slate-400">{t.font} · {t.image}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // 이미지형 = 완성 이미지 업로드 / 리스트형 = 배경색+텍스트+우측이미지로 직접 조립
 type TypeDetailRow = {
   type: string; detail: string; useYn: boolean; imageUrl: string;
@@ -135,6 +178,8 @@ type TypeDetailRow = {
   badgeText: string; badgeColor: string;
   ctaText: string; ctaColor: string; rightImageUrl: string;
   bannerType: string; // DS 배너 유형 id (선택 시 레이아웃·배경·색 고정)
+  productScope?: string; // 상품 지정: all(전체/선택안함) | partial(일부 상품)
+  productRef?: string;   // 선택한 상품 (표시용 라벨/ID)
 };
 const emptyRow = (): TypeDetailRow => ({
   type: '이미지형', detail: DETAIL_TYPES[0], useYn: true, imageUrl: '',
@@ -143,6 +188,7 @@ const emptyRow = (): TypeDetailRow => ({
   align: 'left', imagePos: 'right', imgSize: 'md', imgShape: 'square',
   badgeText: '', badgeColor: '#4F46E5',
   ctaText: '', ctaColor: '#4F46E5', rightImageUrl: '', bannerType: '',
+  productScope: 'all', productRef: '',
 });
 
 // 배경 팔레트 프리셋 (단색 c1 / 그라데이션 c1→c2)
@@ -155,12 +201,31 @@ const PALETTES = [
   { name: '네이비', c1: '#334155', c2: '#0F172A' },
 ] as const;
 
-// 배너 제작 방식 2가지 (선택) — 값은 기존 데이터 호환을 위해 이미지형/리스트형 유지
+// 배너 제작 방식(유형) — 원안 4종. 각 유형이 가질 수 있는 규격은 SIZES_BY_TYPE.
+// legacy '리스트형'(직접 만들기·조립)은 버튼에 노출하지 않지만 기존 데이터 편집/렌더는 계속 지원.
 const METHODS = [
-  { value: '이미지형', label: '이미지 등록', desc: '완성된 배너 이미지를 그대로 업로드' },
-  { value: '리스트형', label: '직접 만들기', desc: '배경색 + 텍스트 + 상품 이미지로 조립' },
+  { value: '이미지형', label: '이미지형', desc: '완성 배너 이미지를 업로드 (띠배너는 상품 지정 가능)' },
+  { value: '리스트형', label: '직접 만들기', desc: '배경색 + 텍스트 + (선택) 이미지로 직접 조립' },
+  { value: '상품배너형', label: '상품배너형', desc: '상품 지정 + 배너 이미지' },
+  { value: '팝업배너형', label: '팝업배너형', desc: '팝업 이미지 업로드' },
 ] as const;
-const DETAIL_TYPES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)', '팝업배너 (720×600)'] as const;
+const SZ = {
+  big: '빅배너 (672×460)', small: '스몰배너 (672×324)', strip: '띠배너 (672×214)',
+  textStrip: '텍스트띠배너 (672×124)', popup: '팝업배너 (720×600)',
+};
+// 유형별 선택 가능한 규격 (원안 이미지 4 기준)
+const SIZES_BY_TYPE: Record<string, string[]> = {
+  이미지형: [SZ.big, SZ.small, SZ.strip],
+  리스트형: [SZ.big, SZ.small, SZ.strip, SZ.textStrip], // 직접 만들기 (텍스트형 흡수)
+  텍스트형: [SZ.textStrip, SZ.strip, SZ.big, SZ.small], // legacy 호환(직접 만들기로 통일)
+  상품배너형: [SZ.small, SZ.big],
+  팝업배너형: [SZ.popup],
+};
+const DETAIL_TYPES = [SZ.big, SZ.small, SZ.strip, SZ.textStrip, SZ.popup] as const;
+const sizesFor = (type: string) => SIZES_BY_TYPE[type] ?? [...DETAIL_TYPES];
+// 상품 지정 가능 유형/규격 (상품배너형 전체 · 이미지형 띠배너)
+const canPickProduct = (type: string, detail: string) => type === '상품배너형' || (type === '이미지형' && detail.startsWith('띠배너'));
+const isImageUploadType = (type: string) => type === '이미지형' || type === '팝업배너형' || type === '상품배너형';
 const LANDING_TYPES = [
   { value: 'direct', label: '직접입력' },
   { value: 'product', label: '상품' },
@@ -308,44 +373,31 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
 
   return (
     <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-      {/* AI 배너 생성 — TBD(정책 미정). 고민 포인트만 남겨둠. 생성 로직은 파킹. */}
-      <div className="mb-3 flex items-start gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/60 px-3 py-2.5">
-        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-        <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-amber-800">AI 배너 생성 <span className="rounded bg-amber-200/70 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">TBD</span></p>
-          <p className="mt-1 text-[11px] leading-relaxed text-amber-700/90">
-            정책 미정. 고민 포인트 — ① 생성 범위(문구만 vs 이미지·레이아웃) : DS 유형 규격 고정과 충돌 여부 ② 이미지 저작권·생성 소스(등록 이미지 활용 vs 생성) ③ 자동 카피 검수(승인 워크플로우 연계) ④ CVM 타겟별 문구 베리에이션 후보 생성과의 연결 ⑤ 실제 모델·비용·PII.
-          </p>
-        </div>
-      </div>
+      {/* AI 배너 생성 — 클릭하면 우측 AI 어시스턴트(채팅) 패널을 연다. 생성 정책은 TBD(미정). */}
+      <button
+        type="button"
+        onClick={() => setAiOpen(true)}
+        title="정책 미정(TBD) — ① 생성 범위(문구만 vs 이미지·레이아웃) ② 이미지 저작권·생성 소스 ③ 자동 카피 검수(승인 연계) ④ CVM 타겟별 문구 베리에이션 연결 ⑤ 모델·비용·PII"
+        className="mb-3 flex w-full items-center gap-2.5 rounded-lg border border-dashed border-indigo-300 bg-indigo-50/50 px-3 py-2.5 text-left transition hover:border-indigo-400 hover:bg-indigo-50"
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100"><Sparkles className="h-4 w-4 text-indigo-600" /></span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-indigo-800">AI 배너 생성 <span className="rounded bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">TBD</span></span>
+          <span className="mt-0.5 block text-[11px] text-indigo-500/90">클릭하면 우측 AI 어시스턴트에서 문구·디자인을 대화로 생성해요 (정책 미정)</span>
+        </span>
+        <Send className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+      </button>
       {!row.bannerType ? (
-        /* DS 배너 유형 선택 — 고르면 배경·레이아웃·색이 고정되고 텍스트·이미지만 편집 */
-        <div>
-          <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600"><LayoutTemplate className="h-4 w-4" /></span>
-            <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-slate-800">DS 배너 유형 선택</p>
-              <p className="text-[11px] text-slate-400">유형을 고르면 배경·레이아웃은 고정되고, 텍스트·이미지만 바꿔요</p>
-            </div>
+        /* DS 배너 유형 가져오기 — 이미지 등록과 동일한 UI(박스 + 가져오기 버튼). 등록된 유형(기본형)을 끌어오면 배경·레이아웃·색이 고정되고 텍스트·이미지만 편집 */
+        <div className="flex items-start gap-3">
+          <div className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-slate-300 bg-slate-50" style={{ width: dim.w, height: dim.h }}>
+            <div className="flex flex-col items-center gap-1 text-slate-300"><Plus className="h-5 w-5" /><LayoutTemplate className="h-4 w-4" /><span className="text-[10px]">DS 배너 유형</span></div>
           </div>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {DS_BANNER_TYPES.map((t) => {
-              const sample = { ...t.locked, title: '배너 제목', subtitle: '서브 문구', ctaText: '', rightImageUrl: '/assets/product-chanel-lipstick.svg' } as ComposeFields;
-              return (
-                <button key={t.id} type="button" title={`${t.font} · ${t.image}`} onClick={() => onShared({ bannerType: t.id, ...(t.locked as Partial<TypeDetailRow>) })}
-                  className="group flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-indigo-400 hover:shadow-[0_8px_22px_rgba(20,22,40,0.12)]">
-                  <FitBanner f={sample} />
-                  <div className="flex items-center justify-between gap-1 px-0.5">
-                    <div className="min-w-0">
-                      <p className="truncate text-[12px] font-bold text-slate-800 group-hover:text-indigo-600">{t.name}</p>
-                      <p className="truncate text-[10px] text-slate-400">{t.desc}</p>
-                    </div>
-                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-slate-300 text-transparent transition group-hover:border-indigo-500 group-hover:bg-indigo-500 group-hover:text-white"><Check className="h-2.5 w-2.5" /></span>
-                  </div>
-                  <p className="truncate border-t border-slate-100 px-0.5 pt-1.5 text-[9.5px] text-slate-400">{t.image}</p>
-                </button>
-              );
-            })}
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <DsTypePickButton onPick={(t) => onShared({ bannerType: t.id, ...(t.locked as Partial<TypeDetailRow>) })} />
+            </div>
+            <p className="text-[11px] text-muted-foreground">DS 포털에 <b>등록된 배너 유형</b>을 가져와 사용합니다. 현재 <b className="text-indigo-500">기본형</b> 하나만 등록되어 있어요 · 유형을 가져오면 배경·레이아웃·색은 고정되고 <b>텍스트·이미지만</b> 편집합니다.</p>
           </div>
         </div>
       ) : (
@@ -473,6 +525,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
   );
   const [bannerAlt, setBannerAlt] = useState(v.bannerAlt ?? '');
   const [picker, setPicker] = useState<null | 'product' | 'event'>(null);
+  const [prodPicker, setProdPicker] = useState<number | null>(null); // 유형상세 행별 상품 지정 피커
 
   // 베리에이션 추가 — 직전 디자인(제작 방식·색·문구·이미지 등)을 복제하고 '다음 사이즈'로 채운다(비슷한 배너 여러 개).
   const addRow = () => setRows((r) => {
@@ -496,11 +549,10 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
   return (
     <form ref={formRef} action={action}>
       <OpsSection title="기본 정보">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="배너캠페인 ID"><span className="text-[13px] text-slate-700">{v.campaignCode ?? '저장 시 자동 채번 (BC-YYYYMM-000)'}</span></FieldRow>
           <FieldRow label="배너캠페인(타이틀)" required><Input name="title" defaultValue={v.title ?? ''} placeholder="배너캠페인명을 입력하세요" className="h-9 text-sm" /></FieldRow>
           <FieldRow label="서브타이틀"><Input name="subtitle" defaultValue={v.subtitle ?? ''} placeholder="서브타이틀을 입력하세요" className="h-9 text-sm" /></FieldRow>
-          <FieldRow label="캠페인 목적"><Input name="purpose" defaultValue={v.purpose ?? ''} maxLength={500} placeholder="캠페인 목적을 입력하세요 (최대 500자)" className="h-9 text-sm" /></FieldRow>
           <FieldRow label="플랫폼" required>
             <div className="flex gap-4">{['APP', 'WEB'].map((p) => <Radio key={p} name="platform" value={p} checked={(v.platform ?? 'APP') === p}>{p}</Radio>)}</div>
           </FieldRow>
@@ -508,7 +560,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
       </OpsSection>
 
       <OpsSection title="전시 설정">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="전시여부" required>
             <div className="flex gap-4"><Radio name="exposeYn" value="true" checked={v.exposeYn !== false}>전시</Radio><Radio name="exposeYn" value="false" checked={v.exposeYn === false}>미전시</Radio></div>
           </FieldRow>
@@ -524,7 +576,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
       </OpsSection>
 
       <OpsSection title="랜딩 설정">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="랜딩 URL" required>
             <div className="space-y-2">
               <div className="flex flex-wrap gap-3">{LANDING_TYPES.map((l) => (
@@ -558,16 +610,37 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
           </div>
           {rows.map((row, i) => {
             const imgDim = pvDims(row.detail, 340);
-            const cardDim = pvDims(row.detail, 380);
+            // 이미지 업로드 블록 (이미지형·팝업배너형·상품배너형 공통)
+            const imageUploadEl = (
+              <div className="flex items-start gap-3">
+                <div className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-slate-300 bg-slate-50" style={{ width: imgDim.w, height: imgDim.h }}>
+                  {row.imageUrl
+                    ? <><img src={row.imageUrl} alt="" className="h-full w-full object-contain p-1" /><button type="button" onClick={() => setRow(i, { imageUrl: '' })} className="absolute right-1 top-1 rounded-full bg-white/90 p-0.5 text-slate-400 shadow ring-1 ring-slate-200 hover:text-slate-700"><X className="h-3.5 w-3.5" /></button></>
+                    : <div className="flex flex-col items-center gap-1 text-slate-300"><Plus className="h-5 w-5" /><ImageIcon className="h-4 w-4" /><span className="text-[10px]">{imgDim.label}</span></div>}
+                </div>
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50">
+                      <Upload className="h-3.5 w-3.5" /> 로컬 업로드
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(i, 'imageUrl', e.target.files?.[0])} />
+                    </label>
+                    <LibraryPickButton images={libImages} onPick={(url) => setRow(i, { imageUrl: url })} label="DB에서 가져오기" />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">완성된 배너 이미지를 <b>로컬 파일 업로드</b> 또는 <b>DB 이미지 라이브러리</b>에서 선택해 등록합니다 · 권장 규격: {row.detail} · JPG/PNG</p>
+                </div>
+              </div>
+            );
             return (
             <div key={i} className="rounded-lg border border-slate-200 p-3">
               <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                {/* 제작 방식 선택 (이미지 등록 / 직접 만들기) */}
+                {/* 제작 방식(유형) 선택 */}
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] text-muted-foreground">제작 방식</span>
+                  <span className="text-[12px] text-muted-foreground">유형</span>
                   <div className="inline-flex overflow-hidden rounded-lg border border-slate-200">
                     {METHODS.map((m) => (
-                      <button key={m.value} type="button" onClick={() => setRow(i, { type: m.value })} title={m.desc}
+                      <button key={m.value} type="button"
+                        onClick={() => { const sizes = sizesFor(m.value); setRow(i, { type: m.value, detail: sizes.includes(row.detail) ? row.detail : sizes[0] }); }}
+                        title={m.desc}
                         className={'px-3 py-1.5 text-[13px] font-medium ' + (row.type === m.value ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50')}>
                         {m.label}
                       </button>
@@ -577,7 +650,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
                 <div className="flex items-center gap-2">
                   <span className="text-[12px] text-muted-foreground">배너 규격</span>
                   <Select value={row.detail} onChange={(e) => setRow(i, { detail: e.target.value })} className="h-9 w-52 text-sm">
-                    {DETAIL_TYPES.map((d) => <option key={d} value={d}>{d}</option>)}
+                    {sizesFor(row.type).map((d) => <option key={d} value={d}>{d}</option>)}
                   </Select>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -589,27 +662,25 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
                   <button type="button" onClick={() => removeRow(i)} title="이 베리에이션 삭제" className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 px-2 text-[12px] text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"><Minus className="h-3.5 w-3.5" />삭제</button>
                 )}
               </div>
-              {/* 이미지형: 완성 이미지 업로드 */}
-              {row.type === '이미지형' ? (
-                <div className="flex items-start gap-3">
-                  <div className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-slate-300 bg-slate-50" style={{ width: imgDim.w, height: imgDim.h }}>
-                    {row.imageUrl
-                      ? <><img src={row.imageUrl} alt="" className="h-full w-full object-contain p-1" /><button type="button" onClick={() => setRow(i, { imageUrl: '' })} className="absolute right-1 top-1 rounded-full bg-white/90 p-0.5 text-slate-400 shadow ring-1 ring-slate-200 hover:text-slate-700"><X className="h-3.5 w-3.5" /></button></>
-                      : <div className="flex flex-col items-center gap-1 text-slate-300"><Plus className="h-5 w-5" /><ImageIcon className="h-4 w-4" /><span className="text-[10px]">{imgDim.label}</span></div>}
-                  </div>
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50">
-                        <Upload className="h-3.5 w-3.5" /> 로컬 업로드
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(i, 'imageUrl', e.target.files?.[0])} />
-                      </label>
-                      <LibraryPickButton images={libImages} onPick={(url) => setRow(i, { imageUrl: url })} label="DB에서 가져오기" />
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">완성된 배너 이미지를 <b>로컬 파일 업로드</b> 또는 <b>DB 이미지 라이브러리</b>에서 선택해 등록합니다 · 권장 규격: {row.detail} · JPG/PNG</p>
-                  </div>
+
+              {/* 상품 지정 — 상품배너형 · 이미지형(띠배너) */}
+              {canPickProduct(row.type, row.detail) && (
+                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
+                  <span className="text-[12px] font-medium text-slate-600">상품 지정 <span className="text-rose-500">*</span></span>
+                  <label className="flex items-center gap-1"><input type="radio" name={`ps-${i}`} checked={(row.productScope ?? 'all') === 'all'} onChange={() => setRow(i, { productScope: 'all' })} className="accent-indigo-600" />전체 상품(또는 선택 안함)</label>
+                  <label className="flex items-center gap-1"><input type="radio" name={`ps-${i}`} checked={row.productScope === 'partial'} onChange={() => setRow(i, { productScope: 'partial' })} className="accent-indigo-600" />일부 상품</label>
+                  {row.productScope === 'partial' && <Button type="button" variant="outline" onClick={() => setProdPicker(i)}>상품 추가</Button>}
+                  {row.productScope === 'partial' && row.productRef && (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-700">{row.productRef}<button type="button" onClick={() => setRow(i, { productRef: '' })} className="text-slate-400 hover:text-slate-700"><X className="h-3 w-3" /></button></span>
+                  )}
                 </div>
+              )}
+
+              {/* 유형별 상세 입력 — 이미지 업로드형 vs 직접 만들기(조립 편집기) */}
+              {isImageUploadType(row.type) ? (
+                imageUploadEl
               ) : (
-                /* 직접 만들기: 같은 페이지 인라인 편집(미리보기 + 탭 컨트롤) */
+                /* 직접 만들기(리스트형): 배경 + 텍스트 + (선택)이미지 인라인 조립 편집기 */
                 <ComposeEditorInline row={row} onPatch={(patch) => setRow(i, patch)} onShared={setAllCompose} onFile={(key, file) => pickFile(i, key, file)} images={libImages} />
               )}
             </div>
@@ -619,7 +690,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
           <button type="button" onClick={addRow} className="flex w-full items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-slate-200 py-3 text-[13px] font-medium text-slate-500 transition hover:border-indigo-300 hover:text-indigo-600">
             <Plus className="h-4 w-4" /> 베리에이션 추가 <span className="text-[11px] font-normal text-slate-400">· 같은 디자인 · 다음 사이즈</span>
           </button>
-          <p className="text-[11px] text-muted-foreground">제작 방식(이미지 등록 / 직접 만들기)과 배너 규격(빅배너·스몰배너·띠배너·팝업배너)을 베리에이션으로 추가합니다. 미리보기는 선택한 규격의 실제 비율로 표시되며, 사용여부는 규격별로 개별 설정됩니다.</p>
+          <p className="text-[11px] text-muted-foreground">유형(이미지형·텍스트형·상품배너형·팝업배너형)과 배너 규격을 베리에이션으로 추가합니다. 미리보기는 선택한 규격의 실제 비율로 표시되며, 사용여부는 규격별로 개별 설정됩니다.</p>
         </div>
       </OpsSection>
 
@@ -630,6 +701,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
 
       {picker === 'product' && <PickerModal title="상품 조회" idLabel="상품 ID" items={SAMPLE_PRODUCTS} onPick={(vv) => { setLandingUrl(vv); setPicker(null); }} onClose={() => setPicker(null)} />}
       {picker === 'event' && <PickerModal title="이벤트 조회" idLabel="이벤트 ID" items={SAMPLE_EVENTS} onPick={(vv) => { setLandingUrl(vv); setPicker(null); }} onClose={() => setPicker(null)} />}
+      {prodPicker !== null && <PickerModal title="상품 조회" idLabel="상품 ID" items={SAMPLE_PRODUCTS} onPick={(vv) => { setRow(prodPicker, { productRef: vv }); setProdPicker(null); }} onClose={() => setProdPicker(null)} />}
     </form>
   );
 }

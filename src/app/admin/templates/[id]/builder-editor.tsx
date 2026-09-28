@@ -2037,7 +2037,7 @@ function MoreButtonControl({ templateId, corner }: { templateId: string; corner:
 }
 
 // 배너형 코너의 규격(사이즈) — 배너 캠페인 관리의 유형상세와 동일한 4종. layoutDetail에 저장.
-const BANNER_SIZES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)', '팝업배너 (720×600)'] as const;
+const BANNER_SIZES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (672×214)', '팝업배너 (720×600)'] as const;
 const bannerSizeShort = (detail: string) => detail.replace(/\s*\(.*\)\s*/, '').trim() || detail;
 
 // ── 배너 레일 컨트롤 (배너형 코너 전용, '코너 구성' 안) ──────────────────
@@ -2966,7 +2966,7 @@ function BannerLoadModal({
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <GalleryHorizontalEnd className="h-4 w-4 text-indigo-500" />
           <h2 className="text-sm font-semibold">배너 불러오기 <span className="font-normal text-muted-foreground">· 배너 캠페인 관리</span></h2>
-          <span className="text-xs text-muted-foreground">선택하면 미리보기가 표시됩니다</span>
+          <span className="text-xs text-muted-foreground">직접 만들기(텍스트+서브문구) 배너만 불러올 수 있어요</span>
           <button onClick={onClose} className="ml-auto text-slate-400 hover:text-slate-700"><X className="h-4 w-4" /></button>
         </div>
         <div className="grid min-h-0 flex-1 grid-cols-[1fr_1.1fr]">
@@ -2980,7 +2980,7 @@ function BannerLoadModal({
             </div>
             <div className="flex-1 divide-y overflow-y-auto">
               {list.length === 0 ? (
-                <p className="px-5 py-10 text-center text-sm text-muted-foreground">등록된 배너 캠페인이 없습니다.<br /><span className="text-[12px]">전시관리 › 배너 캠페인 관리에서 먼저 등록하세요.</span></p>
+                <p className="px-5 py-10 text-center text-sm text-muted-foreground">불러올 수 있는 배너가 없습니다.<br /><span className="text-[12px]">배너 캠페인 관리에서 <b>직접 만들기</b>(텍스트+서브문구)로 등록한 배너만 불러올 수 있어요. (이미지형 제외)</span></p>
               ) : list.map((c) => (
                 <button key={c.id} type="button" onClick={() => chooseBanner(c.id)}
                   className={cn('flex w-full items-center gap-3 px-4 py-3 text-left', selId === c.id ? 'bg-accent' : 'hover:bg-slate-50')}>

@@ -6,7 +6,9 @@ import { OpsSection, FieldRow, ReadValue, StatusPill } from '@/components/ops-ui
 import { BANNER_APPROVAL, BANNER_EXPOSE, fmtDateTime, fmtPeriod } from '@/lib/widget-taxonomy';
 import { ComposedBanner } from './composed-banner';
 import { requestBannerApproval, cancelBannerApproval, approveBannerCampaign, rejectBannerCampaign } from './actions';
-import { Send, X as XIcon, Check, Undo2 } from 'lucide-react';
+import { Send, X as XIcon, Check, Undo2, MapPin } from 'lucide-react';
+import { DISPLAY_STATUS_LABEL } from '@/lib/display-taxonomy';
+import type { BannerUsage } from './banner-usage';
 
 const LANDING_LABEL: Record<string, string> = { direct: '직접입력', product: '상품', event: '이벤트', none: '연결안함' };
 const PAGE_LABEL: Record<string, string> = { current: '내부창', external: '외부창', none: '선택안함' };
@@ -90,7 +92,7 @@ function ApprovalBar({ d, history }: { d: BannerDetailData; history: BannerHisto
   );
 }
 
-export function BannerDetail({ d, history }: { d: BannerDetailData; history: BannerHistoryRow[] }) {
+export function BannerDetail({ d, history, usage }: { d: BannerDetailData; history: BannerHistoryRow[]; usage: BannerUsage[] }) {
   const [tab, setTab] = useState<'basic' | 'history'>('basic');
   const ex = d.exposeYn ? BANNER_EXPOSE.true : BANNER_EXPOSE.false;
   const ap = BANNER_APPROVAL[d.approvalStatus as keyof typeof BANNER_APPROVAL] ?? BANNER_APPROVAL.requested;
@@ -122,24 +124,48 @@ export function BannerDetail({ d, history }: { d: BannerDetailData; history: Ban
 
       {/* 입력/수정 폼과 동일한 섹션 순서: 기본 정보 → 전시 설정 → 랜딩 설정 → 유형상세 */}
       <OpsSection title="기본 정보">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="배너캠페인 ID"><ReadValue value={d.campaignCode} /></FieldRow>
           <FieldRow label="배너캠페인(타이틀)"><ReadValue value={d.title} /></FieldRow>
           <FieldRow label="서브타이틀"><ReadValue value={d.subtitle ?? '-'} /></FieldRow>
-          <FieldRow label="캠페인 목적"><ReadValue value={d.purpose ?? '-'} /></FieldRow>
           <FieldRow label="플랫폼"><ReadValue value={d.platform} /></FieldRow>
         </div>
       </OpsSection>
 
       <OpsSection title="전시 설정">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="전시여부"><StatusPill label={ex.label} tone={ex.tone} /></FieldRow>
           <FieldRow label="전시기간"><ReadValue value={fmtPeriod(d.publishStart, d.publishEnd)} /></FieldRow>
         </div>
       </OpsSection>
 
+      <OpsSection title="노출 위치">
+        {usage.length === 0 ? (
+          <p className="px-1 py-2 text-[13px] text-slate-400">아직 어느 전시화면에도 편성되지 않았습니다. <span className="text-slate-400">(빌더에서 배너형 코너에 ‘배너 불러오기’로 편성됩니다)</span></p>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-[12px] text-muted-foreground">이 배너가 편성된 전시화면 · 템플릿 · 코너 <b className="text-indigo-600">{usage.length}곳</b></p>
+            <div className="divide-y overflow-hidden rounded-lg border border-slate-200">
+              {usage.map((u, i) => (
+                <div key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5 text-[13px]">
+                  <MapPin className="h-4 w-4 shrink-0 text-indigo-400" />
+                  <Link href={`/admin/containers/${u.containerId}`} className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline">{u.containerName}</Link>
+                  {u.containerType && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-medium text-slate-500">{u.containerType}</span>}
+                  <span className="text-slate-300">›</span>
+                  <span className="text-slate-600">{u.templateName}</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-500">{(DISPLAY_STATUS_LABEL as Record<string, string>)[u.templateStatus] ?? u.templateStatus}</span>
+                  <span className="text-slate-300">›</span>
+                  <span className="text-slate-500">{u.cornerName}</span>
+                  {u.sizeDetail && <span className="ml-auto rounded bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-600">{u.sizeDetail}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </OpsSection>
+
       <OpsSection title="랜딩 설정">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="랜딩 URL 유형"><ReadValue value={LANDING_LABEL[d.landingType ?? 'direct'] ?? d.landingType} /></FieldRow>
           <FieldRow label="랜딩 값"><ReadValue value={d.landingUrl ?? '-'} /></FieldRow>
           <FieldRow label="페이지 타입"><ReadValue value={PAGE_LABEL[d.pageType ?? 'current'] ?? d.pageType} /></FieldRow>
@@ -157,12 +183,13 @@ export function BannerDetail({ d, history }: { d: BannerDetailData; history: Ban
             <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
               <th className="w-56 px-4 py-2.5 text-left font-medium">유형 상세</th>
               <th className="w-24 px-4 py-2.5 text-left font-medium">사용여부</th>
+              <th className="w-56 px-4 py-2.5 text-left font-medium">노출 위치</th>
               <th className="px-4 py-2.5 text-left font-medium">이미지</th>
             </tr>
           </thead>
           <tbody>
             {d.typeDetails.length === 0 ? (
-              <tr><td colSpan={3} className="px-4 py-10 text-center text-muted-foreground">등록된 유형상세가 없습니다.</td></tr>
+              <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">등록된 유형상세가 없습니다.</td></tr>
             ) : d.typeDetails.map((t, i) => {
               const sz = sizeOf(t.detail);
               const maxW = 320, maxH = 200;
@@ -172,6 +199,22 @@ export function BannerDetail({ d, history }: { d: BannerDetailData; history: Ban
                 <tr key={i} className="border-b last:border-b-0 align-top">
                   <td className="px-4 py-4 font-medium text-slate-700">{METHOD_LABEL[t.type] ?? t.type} / {t.detail}</td>
                   <td className="px-4 py-4 text-slate-600">{t.useYn === false ? '미사용' : '사용'}</td>
+                  <td className="px-4 py-4">
+                    {(() => {
+                      // 이 규격(유형상세)이 실제로 편성된 위치 — 전시화면·코너 (중복 제거)
+                      const locs = Array.from(new Map(usage.filter((u) => u.sizeDetail === t.detail).map((u) => [`${u.containerName}·${u.cornerName}`, u])).values());
+                      if (locs.length === 0) return <span className="text-[12px] text-slate-400">미노출</span>;
+                      return (
+                        <div className="space-y-1">
+                          {locs.map((u, k) => (
+                            <Link key={k} href={`/admin/containers/${u.containerId}`} className="flex items-center gap-1 text-[12px] text-slate-600 hover:text-indigo-600 hover:underline">
+                              <MapPin className="h-3 w-3 shrink-0 text-indigo-400" />{u.containerName} <span className="text-slate-300">·</span> {u.cornerName}
+                            </Link>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="px-4 py-4">
                     {t.imageUrl ? (
                       /* 이미지 등록: 배경색 위에 전체를 다 보여줌(contain) */

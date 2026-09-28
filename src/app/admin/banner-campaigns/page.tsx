@@ -1,11 +1,13 @@
 // SB BO-AIM-ETC-PG061 배너 캠페인 관리 목록 · 운영 관리
 import { prisma } from '@/lib/prisma';
 import { BannerList } from './banner-list';
+import { getBannerUsage } from './banner-usage';
 
 export const dynamic = 'force-dynamic';
 
 export default async function BannerCampaignsPage() {
   const rows = await prisma.bannerCampaign.findMany({ orderBy: { createdAt: 'desc' } });
+  const usage = await getBannerUsage(rows.map((r) => r.id));
   return (
     <div className="px-8 py-6">
       <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 전시관리 › 배너 캠페인 관리</nav>
@@ -27,6 +29,7 @@ export default async function BannerCampaignsPage() {
           id: r.id, campaignCode: r.campaignCode, title: r.title, exposeYn: r.exposeYn,
           publishStart: r.publishStart?.toISOString() ?? null, publishEnd: r.publishEnd?.toISOString() ?? null,
           approvalStatus: r.approvalStatus, approvalManager: r.approvalManager, preview,
+          usage: usage[r.id] ?? [],
           createdBy: r.createdBy, createdAt: r.createdAt.toISOString(), updatedBy: r.updatedBy, updatedAt: r.updatedAt.toISOString(),
         };
       })} />
