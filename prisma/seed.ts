@@ -609,23 +609,23 @@ async function main() {
 
   // 5) 데이터 요금제 안내 (상품형 · 세로형) — 요금제(상품) 리스트
   const data1 = await comp('데이터 무제한', '상품형', [
-    { name: '데이터1 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-infinity.png', altText: '무제한' },
+    { name: '데이터1 아이콘', atomType: 'ICON', imageUrl: '/assets/ds/plan-unlimited.png', altText: '무제한' },
     { name: '데이터1 제목', atomType: 'TEXT', content: '데이터 걱정 없이 마음껏 사용해요' },
     { name: '데이터1 설명', atomType: 'INFO', content: '무제한 · 월 69,000원부터' },
   ]);
   const data2 = await comp('데이터 영상', '상품형', [
-    { name: '데이터2 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-video.png', altText: '영상' },
+    { name: '데이터2 아이콘', atomType: 'ICON', imageUrl: '/assets/ds/plan-video.png', altText: '영상' },
     { name: '데이터2 제목', atomType: 'TEXT', content: '영상도 보고 여유 있게 사용해요' },
     { name: '데이터2 설명', atomType: 'INFO', content: '50~100GB · 월 48,000원부터' },
   ]);
   const data3 = await comp('데이터 메신저', '상품형', [
-    { name: '데이터3 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-chat.png', altText: '메신저' },
+    { name: '데이터3 아이콘', atomType: 'ICON', imageUrl: '/assets/ds/plan-messenger.png', altText: '메신저' },
     { name: '데이터3 제목', atomType: 'TEXT', content: '메신저 위주로 가볍게 사용해요' },
     { name: '데이터3 설명', atomType: 'INFO', content: '5~10GB · 월 34,000원부터' },
   ]);
   const data4 = await comp('데이터 직접찾기', '상품형', [
-    { name: '데이터4 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-search.png', altText: '직접 찾기' },
-    { name: '데이터4 제목', atomType: 'TEXT', content: '원하는 요금제 직접 찾아볼게요' },
+    { name: '데이터4 아이콘', atomType: 'ICON', imageUrl: '/assets/ds/plan-search.png', altText: '직접 찾기' },
+    { name: '데이터4 제목', atomType: 'TEXT', content: '원하는 요금제를 직접 찾아볼게요' },
     { name: '데이터4 설명', atomType: 'INFO', content: '월 19,000원부터' },
   ]);
   const shopCornerData = await corner(
@@ -703,19 +703,19 @@ async function main() {
 
   // 8) 구독 혜택 (상품형 · 가로 SWIPE)
   const sub1 = await comp('주말 장보기 패스', '상품형', [
-    { name: '구독1 이미지', atomType: 'IMAGE', imageUrl: '/assets/sub-grocery.png', altText: '주말 장보기 패스' },
+    { name: '구독1 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/sub-kurly-nstore.png', altText: '네이버플러스스토어+컬리' },
     { name: '구독1 제목', atomType: 'TEXT', content: '주말 장보기 패스 (네이버플러스스토어+컬리)' },
     { name: '구독1 가격', atomType: 'PRICE', content: '월 8,900원' },
   ]);
   const sub2 = await comp('쇼핑 올인원', '상품형', [
-    { name: '구독2 이미지', atomType: 'IMAGE', imageUrl: '/assets/sub-shopping.png', altText: '쇼핑 올인원' },
+    { name: '구독2 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/sub-musinsa-eql.png', altText: '무신사+EQL' },
     { name: '구독2 제목', atomType: 'TEXT', content: '쇼핑 올인원 (무신사+EQL)' },
     { name: '구독2 가격', atomType: 'PRICE', content: '월 9,900원' },
   ]);
   const sub3 = await comp('AI 크리에이터', '상품형', [
-    { name: '구독3 이미지', atomType: 'IMAGE', imageUrl: '/assets/sub-ai.png', altText: 'AI 크리에이터' },
-    { name: '구독3 제목', atomType: 'TEXT', content: 'AI 크리에이터 (Figma)' },
-    { name: '구독3 가격', atomType: 'PRICE', content: '월 20,000원' },
+    { name: '구독3 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/sub-figma-claude.png', altText: 'Figma+Claude' },
+    { name: '구독3 제목', atomType: 'TEXT', content: 'AI 크리에이티브팩 (Figma+Claude)' },
+    { name: '구독3 가격', atomType: 'PRICE', content: '27,200원' },
     { name: '구독3 배지', atomType: 'BADGE', content: '20%' },
   ]);
   const shopCornerSub = await corner(
@@ -1499,13 +1499,20 @@ async function seedBannerCampaigns() {
       campaignCode: 'BC-202609-004', title: '롯데월드 제휴 혜택',
       subtitle: null, purpose: '주말 가족 나들이 · 제휴사 혜택 안내 (직접 만들기)',
       landingType: 'event', landingUrl: 'EVT20260820006 (제휴사 혜택 기획전)', pageType: 'current', bannerAlt: '이번 주말, 가족 나들이에 쓰기 좋은 혜택 · 롯데월드 어드벤처',
-      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: '이번 주말, 가족 나들이에 쓰기 좋은 혜택', subtitle: '', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', ctaText: '제휴사별 혜택 더보기', ctaColor: '#E11D48', rightImageUrl: '/assets/product-lotteworld.svg' })),
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: '이번 주말, 가족 나들이에\n쓰기 좋은 혜택', subtitle: '제휴사별 혜택 더보기', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/lotteworld.png' })),
     },
     {
       campaignCode: 'BC-202609-005', title: '갤럭시 신제품 사전예약',
       subtitle: null, purpose: '갤럭시 신제품 사전예약 안내',
       landingType: 'direct', landingUrl: 'https://tworld/galaxy-preorder', pageType: 'current', bannerAlt: '갤럭시 신제품 사전예약',
       typeDetails: S4.map((detail) => ({ type: '이미지형', detail, useYn: true, imageUrl: '/assets/cardhome/cardhome-banner-BannerSrc-0.png' })),
+    },
+    {
+      // AirPods Max3 사전예약 — 콤포즈형 혜택 배너(제목 좌 + 제품 우). 롯데월드와 동일 룩. (2026-09-28)
+      campaignCode: 'BC-202609-006', title: 'AirPods Max3 사전 예약 하셨나요?',
+      subtitle: null, purpose: '사전예약 클럽 멤버십 혜택 안내 (직접 만들기)',
+      landingType: 'direct', landingUrl: 'https://tworld/airpods-max-preorder', pageType: 'current', bannerAlt: 'AirPods Max3 사전 예약 · 사전예약 클럽 멤버십 혜택',
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: 'AirPods Max3\n사전 예약 하셨나요?', subtitle: '사전예약 클럽 멤버십 혜택', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/ds/product-airpodsmax.png' })),
     },
   ];
 

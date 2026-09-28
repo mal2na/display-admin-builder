@@ -56,6 +56,12 @@ model Component {
   // null/빈 값 = CORNER_COMPONENT_MAP상 호환되는 모든 Corner 유형 허용. (PI-DSP-CMP-003 하위 제약)
   allowedCornerTypes String?
 
+  // 원본 변경 전파(2026-09-28) — 배너 캠페인에서 편성된 컴포넌트의 소스 추적.
+  //  sourceCampaignId = 원본 BannerCampaign.id, sourceSyncedAt = 편성/갱신 시점 원본 updatedAt.
+  //  원본 updatedAt > sourceSyncedAt 이면 '원본 변경됨' → 빌더에서 '최신으로 갱신' 제공.
+  sourceCampaignId String?
+  sourceSyncedAt   DateTime?
+
   componentAtoms   ComponentAtom[]
   cornerComponents CornerComponent[]
 
@@ -137,6 +143,9 @@ model Corner {
   // 배너형 코너에 연결된 배너 라이브러리 항목 (포탈2 BannerSlot)
   bannerId String?
   banner   Banner? @relation(fields: [bannerId], references: [id])
+  // 배너형 코너 노출 옵션 — 한 코너에 담긴 여러 배너를 어떻게 노출할지. JSON {mode:'swipe'|'auto', intervalSec, showIndicator, loop}.
+  //  mode=swipe(수동 캐러셀) | auto(자동 슬라이드). 1장이면 옵션과 무관하게 단일 노출. (2026-09-28 회의 — 배너=코너 유형 통합)
+  bannerOptions String?
   // ── FO 사용자 설정(고객 커스터마이즈) — 자주 보는 메뉴 등 선택형·메뉴 리스트 코너 ──
   //  BO는 기본값(항목·고정 여부)을 제공하고, userCustomizable가 켜지면 FO 고객이 편집 가능.
   //  이때 고객이 노출할 수 있는 개수 범위를 userMinItems~userMaxItems로 제한한다(고정 항목 포함).
@@ -743,6 +752,7 @@ model AppSplash {
   id           String   @id @default(cuid())
   osType       String   // Android | IOS
   version      Int      @default(1)  // OS유형별 버전 (승인완료 시 최신+1)
+  title         String? // 스플래시 제목 (SB-ETC 정의서 2-5)
   updateContent String? // 업데이트 주요 내용
   applyStartAt DateTime? // 적용시작일시
 
@@ -755,6 +765,13 @@ model AppSplash {
   animUrl String?
   animAlt String?
   animUseYn Boolean @default(true) // 애니메이션 사용여부
+
+  // 이벤트 이미지 (SB-ETC 정의서 2-10~2-13) — URL·게시기간·사용여부
+  eventImageUrl String?
+  eventImageAlt String?
+  eventPostStart DateTime?
+  eventPostEnd   DateTime?
+  eventUseYn     Boolean @default(false) // 이벤트 이미지 사용여부
 
   // 승인 정보 — draft(임시저장) | requested(승인대기) | approved(승인완료) | rejected(반려) | cancelled(요청취소)
   approvalStatus      String    @default("draft")

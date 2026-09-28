@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function CornerTypesPage() {
   const [rows, auditRows, builtOptions] = await Promise.all([
-    // '배너형'은 배너 캠페인 관리(전시관리)로 분리 → 코너 유형 관리 목록에서 숨김
-    prisma.cornerType.findMany({ where: { baseCategory: { not: '배너형' } }, orderBy: { typeId: 'asc' } }),
+    // 배너형도 정식 코너 유형(2026-09-28) → 목록에 노출. 배너 소재·문구는 배너 캠페인 관리가 소유.
+    prisma.cornerType.findMany({ orderBy: { typeId: 'asc' } }),
     prisma.auditLog.findMany({
       where: { targetType: 'CornerType' },
       orderBy: { changedAt: 'desc' },

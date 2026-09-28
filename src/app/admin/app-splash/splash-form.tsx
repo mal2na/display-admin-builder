@@ -9,9 +9,10 @@ import { toLocalInput } from '@/lib/widget-taxonomy';
 import { ImageIcon, Plus, X } from 'lucide-react';
 
 export type SplashFormValue = {
-  version?: number; osType?: string; applyLabel?: string; updateContent?: string | null; applyStartAt?: string | null;
+  version?: number; osType?: string; applyLabel?: string; title?: string | null; updateContent?: string | null; applyStartAt?: string | null;
   bgImageUrl?: string | null; bgImageAlt?: string | null; bgUseYn?: boolean;
   animUrl?: string | null; animAlt?: string | null; animUseYn?: boolean;
+  eventImageUrl?: string | null; eventImageAlt?: string | null; eventPostStart?: string | null; eventPostEnd?: string | null; eventUseYn?: boolean;
 };
 
 // 이미지/애니 업로드 필드 — 썸네일(있으면) 또는 + 업로드 박스 + 내용(alt) + URL + 안내
@@ -108,6 +109,11 @@ export function SplashForm({
           </FieldRow>
         </div>
         <div className="border-t border-slate-100">
+          <FieldRow label="제목" required>
+            <Input name="title" defaultValue={v.title ?? ''} placeholder="스플래시 제목을 입력해주세요." className="h-9 text-sm" />
+          </FieldRow>
+        </div>
+        <div className="border-t border-slate-100">
           <FieldRow label="업데이트 주요 내용">
             <Input name="updateContent" defaultValue={v.updateContent ?? ''} placeholder="업데이트 주요 내용을 입력해주세요." className="h-9 text-sm" />
           </FieldRow>
@@ -129,6 +135,29 @@ export function SplashForm({
           <FieldRow label="애니메이션 사용 여부" required>
             <div className="space-y-1"><YN name="animUseYn" on={v.animUseYn !== false} /><p className="text-[11px] text-muted-foreground">사용여부 'N'일 경우 앱기본 이미지가 노출됩니다.</p></div>
           </FieldRow>
+        </div>
+        {/* 이벤트 이미지 (정의서 2-10~2-13) — 이미지 + URL + 게시기간 + 사용여부 */}
+        <div className="grid grid-cols-2 border-t border-slate-100">
+          <FieldRow label="이벤트 이미지">
+            <MediaField name="eventImage" urlDefault={v.eventImageUrl ?? null} altDefault={v.eventImageAlt ?? null}
+              altPlaceholder="접근성을 위해 이미지의 주요 내용을 입력해주세요"
+              guide={['권장 규격: 720 x 200 px', '권장 형식: JPG, JPEG, PNG, GIF, BMP']} />
+          </FieldRow>
+          <div className="divide-y divide-slate-100">
+            <FieldRow label="이벤트 이미지 URL">
+              <ReadValue value={v.eventImageUrl || '-'} />
+            </FieldRow>
+            <FieldRow label="이벤트 이미지 게시 기간">
+              <div className="flex items-center gap-1.5">
+                <Input type="datetime-local" name="eventPostStart" defaultValue={toLocalInput(v.eventPostStart)} className="h-9 w-full max-w-[190px] text-sm" />
+                <span className="text-slate-400">~</span>
+                <Input type="datetime-local" name="eventPostEnd" defaultValue={toLocalInput(v.eventPostEnd)} className="h-9 w-full max-w-[190px] text-sm" />
+              </div>
+            </FieldRow>
+            <FieldRow label="이벤트 이미지 사용 여부">
+              <div className="space-y-1"><YN name="eventUseYn" on={v.eventUseYn === true} /><p className="text-[11px] text-muted-foreground">사용여부 'N'일 경우 기본 이미지가 노출됩니다.</p></div>
+            </FieldRow>
+          </div>
         </div>
       </OpsSection>
 

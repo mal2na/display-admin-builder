@@ -24,11 +24,12 @@ export default async function SplashHistoryDetailPage({ params }: { params: { id
       <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 스플래시 관리 › 변경/승인이력 › 변경/승인이력 상세</nav>
       <h1 className="mb-5 text-2xl font-bold">변경/승인이력 상세</h1>
       <SplashDetailView s={{
-        version: s.version, osType: s.osType, applyLabel: APPLY_STATUS[apply].label, applyStartAt: s.applyStartAt?.toISOString() ?? null, updateContent: s.updateContent,
+        version: s.version, osType: s.osType, applyLabel: APPLY_STATUS[apply].label, title: s.title, applyStartAt: s.applyStartAt?.toISOString() ?? null, updateContent: s.updateContent,
         approvalStatus: s.approvalStatus, approvalRequester: s.approvalRequester, approvalManager: s.approvalManager,
         approvalRequestedAt: s.approvalRequestedAt?.toISOString() ?? null, approvalProcessedAt: s.approvalProcessedAt?.toISOString() ?? null,
         bgImageUrl: s.bgImageUrl, bgImageAlt: s.bgImageAlt, bgUseYn: s.bgUseYn,
         animUrl: s.animUrl, animAlt: s.animAlt, animUseYn: s.animUseYn,
+        eventImageUrl: s.eventImageUrl, eventImageAlt: s.eventImageAlt, eventPostStart: s.eventPostStart?.toISOString() ?? null, eventPostEnd: s.eventPostEnd?.toISOString() ?? null, eventUseYn: s.eventUseYn,
         createdBy: s.createdBy, createdAt: s.createdAt.toISOString(), updatedBy: s.updatedBy, updatedAt: s.updatedAt.toISOString(),
       }} footer={footer} />
     </div>

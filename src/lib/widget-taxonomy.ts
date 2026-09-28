@@ -1,5 +1,8 @@
 // 운영 관리 — App 위젯 관리 / 위젯 유형 관리 허용값(상수).
 // SQLite는 enum 미지원 → 모든 유형/상태는 String으로 저장하고 여기 상수로 검증·표기한다.
+// 승인 상태 어휘는 전 영역 공통(approval-status.ts)에서 파생 — 라벨·톤·영문 통일. (2026-09-28)
+import { APPROVAL_STATUS as CANON_APPROVAL, normalizeApproval } from './approval-status';
+const _ap = (raw: string) => { const c = CANON_APPROVAL[normalizeApproval(raw)]; return { label: c.label, en: c.en, tone: c.tone }; };
 
 // ── OS 유형 ──
 export const OS_TYPES = ['Android', 'IOS'] as const;
@@ -43,10 +46,8 @@ export type DeployStatus = keyof typeof DEPLOY_STATUS;
 
 // ── 승인상태 ──
 export const APPROVAL_STATUS = {
-  draft: { label: '임시저장', tone: 'muted' },
-  requested: { label: '승인요청', tone: 'amber' },
-  approved: { label: '승인완료', tone: 'green' },
-} as const;
+  draft: _ap('draft'), requested: _ap('requested'), approved: _ap('approved'),
+};
 export type ApprovalStatus = keyof typeof APPROVAL_STATUS;
 
 // ── 사용여부(위젯 유형) ──
@@ -82,12 +83,8 @@ export function toLocalInput(d: Date | string | null | undefined): string {
 
 // ── App 스플래시: 승인상태 ──
 export const SPLASH_APPROVAL = {
-  draft: { label: '임시저장', tone: 'muted' },
-  requested: { label: '승인대기', tone: 'amber' },
-  approved: { label: '승인완료', tone: 'green' },
-  rejected: { label: '반려', tone: 'red' },
-  cancelled: { label: '요청취소', tone: 'slate' },
-} as const;
+  draft: _ap('draft'), requested: _ap('requested'), approved: _ap('approved'), rejected: _ap('rejected'), cancelled: _ap('cancelled'),
+};
 export type SplashApproval = keyof typeof SPLASH_APPROVAL;
 
 // ── App 스플래시: 적용상태 (계산값) ──
@@ -109,12 +106,8 @@ export function computeApplyStatus(approvalStatus: string, applyStartAt: Date | 
 
 // ── App 스플래시 이력: 상태 표기 (SPLASH_APPROVAL과 동일 톤) ──
 export const SPLASH_HISTORY_STATUS = {
-  draft: { label: '임시저장', tone: 'muted' },
-  requested: { label: '승인요청', tone: 'blue' },
-  approved: { label: '승인완료', tone: 'green' },
-  rejected: { label: '반려', tone: 'red' },
-  cancelled: { label: '요청취소', tone: 'amber' },
-} as const;
+  draft: _ap('draft'), requested: _ap('requested'), approved: _ap('approved'), rejected: _ap('rejected'), cancelled: _ap('cancelled'),
+};
 
 // ── App 버전 관리: 대상 App ──
 export const TARGET_APPS = ['통합App', '구T월드'] as const;
@@ -122,12 +115,8 @@ export type TargetApp = (typeof TARGET_APPS)[number];
 
 // ── App 버전 관리: 승인상태 ──
 export const VERSION_APPROVAL = {
-  draft: { label: '승인대기', tone: 'muted' },
-  requested: { label: '승인요청', tone: 'blue' },
-  approved: { label: '승인완료', tone: 'green' },
-  rejected: { label: '반려', tone: 'red' },
-  cancelled: { label: '요청취소', tone: 'amber' },
-} as const;
+  draft: _ap('draft'), requested: _ap('requested'), approved: _ap('approved'), rejected: _ap('rejected'), cancelled: _ap('cancelled'),
+};
 export type VersionApproval = keyof typeof VERSION_APPROVAL;
 
 // ── App 버전 관리 이력: 상태 표기 ──
@@ -140,12 +129,8 @@ export function isValidVersion(v: string): boolean {
 
 // ── 배너 캠페인 관리: 승인상태 ──
 export const BANNER_APPROVAL = {
-  draft: { label: '작성중', tone: 'muted' },
-  approved: { label: '승인완료', tone: 'green' },
-  requested: { label: '승인요청', tone: 'blue' },
-  cancelled: { label: '요청취소', tone: 'amber' },
-  rejected: { label: '반려', tone: 'red' },
-} as const;
+  draft: _ap('draft'), approved: _ap('approved'), requested: _ap('requested'), cancelled: _ap('cancelled'), rejected: _ap('rejected'),
+};
 export type BannerApproval = keyof typeof BANNER_APPROVAL;
 
 // ── 배너 전시여부 표기 ──

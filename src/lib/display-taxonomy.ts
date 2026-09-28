@@ -497,6 +497,49 @@ export function layoutLabel(detail?: string | null): string {
   if (!detail) return '';
   return LAYOUT_LABEL[detail] ?? detail;
 }
+
+// ── 한/영 병기(2026-09-28) — 유형·배열을 한국어(영어)로 함께 표기. 저장값은 그대로. ──
+export const CORNER_TYPE_EN: Record<string, string> = {
+  '상품형': 'Product',
+  '배너형': 'Banner',
+  '혜택·오퍼형': 'Benefit·Offer',
+  '업무 진입형': 'Quick Entry',
+  '상태 안내형': 'Status',
+  '콘텐츠 안내형': 'Content',
+  '고정·필수 노출형': 'Fixed·Required',
+  '개인화 추천형': 'Personalized',
+};
+// 배열(레이아웃) 영문 — 저장 원값 기준(표시 라벨도 함께 매핑해 안전).
+const LAYOUT_EN: Record<string, string> = {
+  '가로형': 'Horizontal', '가로형(2.5배열)': 'Horizontal (2.5)', '가로형(1.5배열)': 'Horizontal (1.5)',
+  '세로형': 'Vertical', '세로형(카테고리탭)': 'Vertical (Tab)', '세로형(탭)': 'Vertical (Tab)',
+  '가로형+배너': 'Horizontal + Banner', '세로형+배너': 'Vertical + Banner', '세로형+칩': 'Vertical + Chip',
+  '그리드형': 'Grid', '단일강조(1.5배열)': 'Single (1.5)', '단일 상품': 'Single', '단일강조': 'Single',
+  '카테고리 탭': 'Tab', '탭형': 'Tab', '메뉴 리스트': 'List', '리스트형': 'List', '메뉴형': 'Menu',
+  '아이콘/이미지형': 'Card', '카드형': 'Card', '프로필형': 'Profile',
+  '바코드': 'Barcode', '바코드형': 'Barcode', '이미지형': 'Image', '텍스트 고지형': 'Text Notice',
+  '가로형(무비)': 'Horizontal (Movie)', '상태 리스트형': 'Status Card',
+  '칩형(ChipHome)': 'ChipHome', '칩형(ChipContents)': 'ChipContents', '칩형(ChipFilter)': 'ChipFilter', '칩형(ChipPage)': 'ChipPage', '칩형': 'ChipHome',
+};
+
+export function cornerTypeEn(base?: string | null): string {
+  return base ? (CORNER_TYPE_EN[base] ?? '') : '';
+}
+// 배열 영문 — 원값 또는 표시라벨 어느 쪽이 와도 매핑. 못 찾으면 빈 문자열.
+export function layoutEn(detail?: string | null): string {
+  if (!detail) return '';
+  return LAYOUT_EN[detail] ?? LAYOUT_EN[layoutLabel(detail)] ?? '';
+}
+// "한국어 (English)" 병기 — 유형/배열 공용. 영문 없으면 한국어만.
+export function cornerTypeBi(base?: string | null): string {
+  const en = cornerTypeEn(base);
+  return en ? `${base} (${en})` : (base ?? '');
+}
+export function layoutBi(detail?: string | null): string {
+  const ko = layoutLabel(detail);
+  const en = layoutEn(detail);
+  return en ? `${ko} (${en})` : ko;
+}
 // 컴포넌트 표시명 — 정책명(선택형)은 유지하되, 애매한 '선택형'은 화면에서 '선택형(탭·메뉴)'로 명확히.
 const COMPONENT_LABEL: Record<string, string> = { '선택형': '선택형(탭·메뉴)' };
 export function componentLabel(c?: string | null): string {
@@ -516,7 +559,7 @@ export const COMPONENT_LAYOUT_DETAILS: Record<ComponentType, readonly string[]> 
   정보형: ['아이콘/이미지형', '금액형', '사용량형', '카드형', '리스트형', '프로필형', '바코드', '고지형'],
   행동형: ['버튼형', '메뉴 리스트', '고정형(탭)', '바로가기'],
   혜택형: ['혜택 카드', '세로형', '그리드형', '쿠폰형'],
-  선택형: ['카테고리 탭', '메뉴 리스트'],
+  선택형: ['칩형(ChipContents)', '칩형(ChipFilter)', '칩형(ChipPage)', '카테고리 탭', '메뉴 리스트'],
 };
 export function componentLayoutDetails(componentType?: string | null): readonly string[] {
   if (!componentType) return [];

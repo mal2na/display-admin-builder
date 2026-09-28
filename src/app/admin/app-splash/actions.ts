@@ -21,6 +21,7 @@ function dt(fd: FormData, k: string): Date | null {
 function readForm(fd: FormData) {
   return {
     osType: str(fd, 'osType') ?? 'Android',
+    title: str(fd, 'title'),
     updateContent: str(fd, 'updateContent'),
     applyStartAt: dt(fd, 'applyStartAt'),
     bgImageUrl: str(fd, 'bgImageUrl'),
@@ -29,6 +30,11 @@ function readForm(fd: FormData) {
     animUrl: str(fd, 'animUrl'),
     animAlt: str(fd, 'animAlt'),
     animUseYn: fd.get('animUseYn') !== 'false',
+    eventImageUrl: str(fd, 'eventImageUrl'),
+    eventImageAlt: str(fd, 'eventImageAlt'),
+    eventPostStart: dt(fd, 'eventPostStart'),
+    eventPostEnd: dt(fd, 'eventPostEnd'),
+    eventUseYn: fd.get('eventUseYn') === 'true',
   };
 }
 
