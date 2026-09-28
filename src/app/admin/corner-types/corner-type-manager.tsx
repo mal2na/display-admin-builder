@@ -37,7 +37,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pencil } from 'lucide-react';
+import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pencil, LayoutGrid, List } from 'lucide-react';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
 
@@ -465,6 +465,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const [q, setQ] = useState(sp.get('q') ?? '');
   const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 12);
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
+  const [view, setView] = useState<'card' | 'list'>(sp.get('view') === 'list' ? 'list' : 'card'); // 기본=카드, 리스트 보기 옵션
 
   // 상위 분기(도메인) — 전시(상품형·이벤트미션 제외 6거버넌스) / 프로모션(이벤트·미션) / 상품(상품형).
   const domainTypes = types.filter((t) => domainOf(t.baseCategory) === domain);
@@ -511,10 +512,11 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
     if (q.trim()) p.set('q', q.trim());
     if (perPage !== 12) p.set('pp', String(perPage));
     if (curPage !== 1) p.set('p', String(curPage));
+    if (view === 'list') p.set('view', 'list');
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domain, base, detail, useOn, useOff, statusSel, field, q, perPage, curPage]);
+  }, [domain, base, detail, useOn, useOff, statusSel, field, q, perPage, curPage, view]);
 
   const selectCls = 'h-9 rounded-lg border bg-white px-2.5 text-sm';
 
@@ -591,13 +593,26 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
 
       {/* 검색 필터 — 인라인 라벨 바. 코너 유형(상품형·배너형 등)·유형 상세·사용여부·검색을 한 줄에. (2026-09-28 사용자 요청 UI) */}
       <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+        {/* 코너 유형 — 바로 클릭 칩(드롭다운 대신 한눈에 선택·전환) */}
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 whitespace-nowrap text-[13px] font-medium text-slate-600">코너 유형</span>
+          {baseOptions.map((b) => {
+            const active = base === b;
+            const count = b === '전체' ? domainTypes.length : domainTypes.filter((t) => t.baseCategory === b).length;
+            const color = b === '전체' ? 'border-slate-200 bg-white text-slate-600' : cornerTypeChipClass(b);
+            return (
+              <button
+                key={b}
+                type="button"
+                onClick={() => { setBase(b); setPage(1); }}
+                className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] font-medium transition', color, active ? 'ring-2 ring-primary ring-offset-1 font-semibold' : 'opacity-80 hover:opacity-100')}
+              >
+                {b}<span className="rounded-full bg-black/5 px-1.5 text-[11px] tabular-nums">{count}</span>
+              </button>
+            );
+          })}
+        </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">코너 유형</span>
-            <select value={base} onChange={(e) => { setBase(e.target.value); setPage(1); }} className={`${selectCls} w-40`}>
-              {baseOptions.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </div>
           <div className="flex items-center gap-2">
             <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">유형 상세</span>
             <select value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={`${selectCls} w-40`}>
@@ -634,14 +649,28 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         </div>
       </div>
 
-      {/* 유형 헤더 + 배열 그리드 — 유형별 섹션을 세로로 스택. 상태(승인완료·검수대기·반려·초안) 필터를 걸면
-          매칭 배열이 유형별로 모여 보이고, 빈 유형은 자동으로 숨겨진다. 워크플로우 스캔에 최적. (2026-09-28 옵션1) */}
-      {(() => {
+      {/* 보기 전환 — 카드(배열 그룹) / 리스트(플랫 테이블). 기본=카드. */}
+      <div className="flex items-center justify-between">
+        <p className="text-[13px] text-muted-foreground">검색결과 <b className="text-indigo-600 tabular-nums">{filtered.length}</b>건</p>
+        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+          {([['card', '카드'], ['list', '리스트']] as const).map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => { setView(v); setPage(1); }}
+              className={cn('inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-[12.5px] font-semibold transition', view === v ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-700')}
+            >
+              {v === 'card' ? <LayoutGrid className="h-3.5 w-3.5" /> : <List className="h-3.5 w-3.5" />}{label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 카드 보기 — 유형별 섹션(헤더 + 배열 그리드) 스택. */}
+      {view === 'card' && (() => {
         const allGroups = domainGovernances(domain, Array.from(new Set(domainTypes.map((t) => t.baseCategory).filter(Boolean))));
         return (
           <>
-            {/* 코너 유형(상품형/배너형 등)은 상단 검색 필터의 '코너 유형' 드롭다운에서 선택 → 별도 칩 행 제거. (2026-09-28) */}
-
             {/* 유형별 섹션(헤더 + 배열 그리드) 스택 — filtered는 base를 반영하므로 base가 특정 유형이면 그 유형만. */}
             {(() => {
               const groups = base === '전체' ? allGroups : allGroups.filter((bc) => bc === base);
@@ -703,6 +732,49 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           </>
         );
       })()}
+
+      {/* 리스트 보기 — 케이스(코너 유형) 플랫 테이블. 배열별 그룹 없이 한 줄씩. 클릭 시 상세로. */}
+      {view === 'list' && (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
+                <th className="w-14 px-3 py-2.5 text-left font-medium">NO</th>
+                <th className="px-3 py-2.5 text-left font-medium">코너 유형</th>
+                <th className="px-3 py-2.5 text-left font-medium">배열·레이아웃</th>
+                <th className="px-3 py-2.5 text-left font-medium">코너(케이스)</th>
+                <th className="w-20 px-3 py-2.5 text-left font-medium">사용여부</th>
+                <th className="w-28 px-3 py-2.5 text-left font-medium">승인상태</th>
+                <th className="px-3 py-2.5 text-left font-medium">최근 수정자</th>
+                <th className="px-3 py-2.5 text-left font-medium">최근 수정일시</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageRows.length === 0 ? (
+                <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">검색 결과가 없습니다.</td></tr>
+              ) : pageRows.map((t, i) => (
+                <tr key={t.id} className="cursor-pointer border-b last:border-0 hover:bg-slate-50/70" onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
+                  <td className="px-3 py-2.5 tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
+                  <td className="px-3 py-2.5"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11.5px] font-semibold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
+                  <td className="px-3 py-2.5 text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
+                  <td className="px-3 py-2.5 font-medium text-slate-800">{t.previewCorner?.name ?? '-'}</td>
+                  <td className="px-3 py-2.5 text-slate-600">{t.active ? '사용' : '미사용'}</td>
+                  <td className="px-3 py-2.5"><span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span></td>
+                  <td className="px-3 py-2.5 text-slate-600">{t.updatedBy ?? t.createdBy ?? '-'}</td>
+                  <td className="px-3 py-2.5 text-[12px] text-slate-500">{(t.updatedAt ?? '').replace('T', ' ').slice(0, 16) || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1 border-t p-3">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
+                <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-xs', p === curPage ? 'bg-indigo-600 text-white' : 'hover:bg-secondary')}>{p}</button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
