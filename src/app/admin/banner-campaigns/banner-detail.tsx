@@ -190,29 +190,35 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
                       }
                       const locs = [...groups.values()];
                       if (locs.length === 0) return <span className="text-[12px] text-slate-400">미노출</span>;
+                      const stLabel = (s: string) => (DISPLAY_STATUS_LABEL as Record<string, string>)[s] ?? s;
                       return (
-                        <div className="space-y-1.5">
-                          <p className="text-[11px] text-muted-foreground">노출 <b className="text-indigo-600">{locs.length}곳</b></p>
-                          {locs.map(({ u, templates }, k) => (
-                            <div key={k} className="rounded-md border border-slate-200 bg-slate-50/60 px-2.5 py-1.5">
-                              <div className="flex flex-wrap items-center gap-1 text-[12px]">
-                                <MapPin className="h-3 w-3 shrink-0 text-indigo-400" />
-                                <Link href={`/admin/containers/${u.containerId}`} className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline">{u.containerName}</Link>
-                                {u.containerType && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{u.containerType}</span>}
-                                <span className="text-slate-300">›</span>
-                                <span className="text-slate-600">{u.cornerName}</span>
+                        <div className="space-y-2">
+                          {locs.map(({ u, templates }, k) => {
+                            // 템플릿명에서 컨테이너 접두(예: '쇼핑 홈'→'쇼핑')를 떼고 로그인/비로그인/기본만 간결하게.
+                            const prefix = u.containerName.replace(/\s*홈$/, '');
+                            const shortName = (n: string) => n.replace(new RegExp(`^${prefix}\\s*`), '') || n;
+                            const uniform = templates.every((tt) => tt.status === templates[0].status);
+                            return (
+                              <div key={k} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                {/* 위치 = 전시화면 › 코너 (한 줄) */}
+                                <div className="flex flex-wrap items-center gap-1.5 text-[12.5px]">
+                                  <MapPin className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+                                  <Link href={`/admin/containers/${u.containerId}`} className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline">{u.containerName}</Link>
+                                  {u.containerType && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{u.containerType}</span>}
+                                  <span className="text-slate-300">›</span>
+                                  <span className="text-slate-700">{u.cornerName}</span>
+                                </div>
+                                {/* 적용 템플릿 = 로그인/비로그인/기본 (상태 동일하면 1회 표기) */}
+                                <div className="mt-1.5 flex flex-wrap items-center gap-1 pl-5 text-[11px]">
+                                  <span className="text-slate-400">적용 템플릿 {templates.length}</span>
+                                  {templates.map((tt, j) => (
+                                    <span key={j} className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{shortName(tt.name)}</span>
+                                  ))}
+                                  {uniform && <span className="text-slate-400">· {stLabel(templates[0].status)}</span>}
+                                </div>
                               </div>
-                              <div className="mt-1 flex flex-wrap items-center gap-1 pl-4 text-[11px] text-slate-500">
-                                <span className="text-[10.5px] text-slate-400">템플릿</span>
-                                {templates.map((tt, j) => (
-                                  <span key={j} className="inline-flex items-center gap-1 rounded-full bg-white px-1.5 py-0.5 text-[10.5px] font-medium text-slate-600 ring-1 ring-slate-200">
-                                    {tt.name}
-                                    <span className="text-slate-400">· {(DISPLAY_STATUS_LABEL as Record<string, string>)[tt.status] ?? tt.status}</span>
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       );
                     })()}

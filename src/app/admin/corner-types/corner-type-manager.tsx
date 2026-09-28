@@ -740,6 +740,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             <thead>
               <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
                 <th className="w-14 px-3 py-2.5 text-left font-medium">NO</th>
+                <th className="w-44 px-3 py-2.5 text-left font-medium">미리보기</th>
                 <th className="px-3 py-2.5 text-left font-medium">코너 유형</th>
                 <th className="px-3 py-2.5 text-left font-medium">배열·레이아웃</th>
                 <th className="px-3 py-2.5 text-left font-medium">코너(케이스)</th>
@@ -751,11 +752,17 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             </thead>
             <tbody>
               {pageRows.length === 0 ? (
-                <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">검색 결과가 없습니다.</td></tr>
+                <tr><td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">검색 결과가 없습니다.</td></tr>
               ) : pageRows.map((t, i) => (
                 <tr key={t.id} className="cursor-pointer border-b last:border-0 hover:bg-slate-50/70" onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
-                  <td className="px-3 py-2.5 tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
-                  <td className="px-3 py-2.5"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11.5px] font-semibold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
+                  <td className="px-3 py-2.5 align-top tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
+                  <td className="px-3 py-2.5">
+                    {/* 리스트에서도 클릭 없이 바로 미리보기 — 카드 썸네일과 동일 렌더(실제 대표 코너) */}
+                    <div className="pointer-events-none h-24 w-40 overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#EEF1F8] p-1.5">
+                      <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" />
+                    </div>
+                  </td>
+                  <td className="px-3 py-2.5 align-top"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11.5px] font-semibold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
                   <td className="px-3 py-2.5 text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
                   <td className="px-3 py-2.5 font-medium text-slate-800">{t.previewCorner?.name ?? '-'}</td>
                   <td className="px-3 py-2.5 text-slate-600">{t.active ? '사용' : '미사용'}</td>
