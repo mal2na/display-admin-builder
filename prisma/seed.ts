@@ -1499,7 +1499,7 @@ async function seedBannerCampaigns() {
       campaignCode: 'BC-202609-003', title: 'CHANEL 루쥬 코코 립스틱',
       subtitle: '봄 뮤트 핑크 #130', purpose: 'T 우주 뷰티 제휴 · 샤넬 립스틱 프로모션',
       landingType: 'direct', landingUrl: 'https://tworld/beauty-chanel', pageType: 'current', bannerAlt: 'CHANEL 루쥬 코코 립스틱 · 봄 뮤트 핑크 #130',
-      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EAEAF6', title: 'CHANEL 루쥬 코코 립스틱', subtitle: '봄 뮤트 핑크 #130', rightImageUrl: '/assets/product-chanel-lipstick.svg' })),
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: 'CHANEL\n루쥬 코코 립스틱', subtitle: '봄 뮤트 핑크 #130', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/ds/product-chanel-rouge.png' })),
     },
     {
       campaignCode: 'BC-202609-004', title: '롯데월드 제휴 혜택',
@@ -1519,6 +1519,20 @@ async function seedBannerCampaigns() {
       subtitle: null, purpose: '사전예약 클럽 멤버십 혜택 안내 (직접 만들기)',
       landingType: 'direct', landingUrl: 'https://tworld/airpods-max-preorder', pageType: 'current', bannerAlt: 'AirPods Max3 사전 예약 · 사전예약 클럽 멤버십 혜택',
       typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: 'AirPods Max3\n사전 예약 하셨나요?', subtitle: '사전예약 클럽 멤버십 혜택', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/ds/product-airpodsmax.png' })),
+    },
+    {
+      // iPhone 20 사전예약 시 에어팟 프로 증정 — 콤포즈형 혜택 배너(제목 좌 + 제품 우). (2026-09-28)
+      campaignCode: 'BC-202609-007', title: 'iPhone 20 사전 예약 시 에어팟 프로 증정',
+      subtitle: null, purpose: '사전예약 클럽 멤버십 혜택 안내 (직접 만들기)',
+      landingType: 'direct', landingUrl: 'https://tworld/iphone20-preorder', pageType: 'current', bannerAlt: 'iPhone 20 사전 예약 시 에어팟 프로 증정 · 사전예약 클럽 멤버십 혜택',
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: 'iPhone 20 사전 예약 시\n에어팟 프로 증정', subtitle: '사전예약 클럽 멤버십 혜택', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/ds/product-airpodspro.png' })),
+    },
+    {
+      // Marshall Stockwell 블루투스 스피커 — 콤포즈형 혜택 배너(제목 좌 + 제품 우). (2026-09-28)
+      campaignCode: 'BC-202609-008', title: 'Marshall Stockwell 블루투스 스피커',
+      subtitle: null, purpose: '사전예약 클럽 멤버십 혜택 안내 (직접 만들기)',
+      landingType: 'direct', landingUrl: 'https://tworld/marshall-stockwell', pageType: 'current', bannerAlt: 'Marshall Stockwell 블루투스 스피커 · 사전예약 클럽 멤버십 혜택',
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: 'Marshall Stockwell\n블루투스 스피커', subtitle: '사전예약 클럽 멤버십 혜택', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/ds/product-marshall.png' })),
     },
   ];
 
