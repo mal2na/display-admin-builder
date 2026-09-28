@@ -59,7 +59,8 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     prisma.atom.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, atomType: true } }),
     prisma.banner.findMany({ where: { status: 'active' }, orderBy: { updatedAt: 'desc' }, select: { id: true, name: true, imageUrl: true } }),
     // 코너 불러오기: 전시/관리 코너 유형만 (이벤트·미션 전용 계열 제외). '배너형'은 배너 캠페인 관리 + '배너 불러오기'로 분리 → 제외.
-    prisma.cornerType.findMany({ where: { baseCategory: { notIn: ['혜택상품형', '디스플레이형', '동작형', '배너형'] } }, orderBy: { typeId: 'asc' }, select: { id: true, name: true, baseCategory: true, componentType: true, typeDetail: true, bigBanner: true, sampleImageUrl: true, active: true, liveVersion: true } }),
+    // 배너형도 정식 코너 유형(2026-09-28) → 빌더 '코너 불러오기'에 노출. 이벤트 계열(혜택상품형·디스플레이형·동작형)만 제외.
+    prisma.cornerType.findMany({ where: { baseCategory: { notIn: ['혜택상품형', '디스플레이형', '동작형'] } }, orderBy: { typeId: 'asc' }, select: { id: true, name: true, baseCategory: true, componentType: true, typeDetail: true, bigBanner: true, sampleImageUrl: true, active: true, liveVersion: true } }),
     // 이미지 라이브러리 재료: IMAGE/ICON Atom
     prisma.atom.findMany({
       where: { status: 'active', atomType: { in: ['ICON', 'IMAGE'] }, NOT: { imageUrl: null } },
@@ -131,6 +132,15 @@ export default async function BuilderPage({ params }: { params: { id: string } }
   }
   const messages = [...msgMap.values()].sort((a, b) => a.use.localeCompare(b.use, 'ko') || a.text.localeCompare(b.text, 'ko'));
 
+  // 원본 변경 전파 — 배너 캠페인에서 편성된 컴포넌트가 원본 변경 이후인지(원본 updatedAt > sourceSyncedAt) 감지.
+  const srcIds = Array.from(new Set(template.templateCorners.flatMap((tc) => tc.corner.cornerComponents.map((cc) => cc.component.sourceCampaignId).filter((x): x is string => !!x))));
+  const srcCampaigns = srcIds.length ? await prisma.bannerCampaign.findMany({ where: { id: { in: srcIds } }, select: { id: true, updatedAt: true } }) : [];
+  const srcUpdatedAt = new Map(srcCampaigns.map((c) => [c.id, c.updatedAt.getTime()]));
+  const sourceChangedOf = (cid: string | null, syncedAt: Date | null): boolean => {
+    if (!cid) return false;
+    const u = srcUpdatedAt.get(cid);
+    return u != null && (!syncedAt || u > syncedAt.getTime());
+  };
 
   const corners = template.templateCorners.map((tc) => ({
     templateCornerId: tc.id,
@@ -169,6 +179,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     bannerName: tc.corner.banner?.name ?? null,
     bannerImageUrl: tc.corner.banner?.imageUrl ?? null,
     bannerPosition: tc.corner.bannerPosition ?? '상단',
+    bannerOptions: tc.corner.bannerOptions ?? null,
     sampleImageUrl: tc.corner.sampleImageUrl ?? null,
     userCustomizable: tc.corner.userCustomizable ?? false,
     userMinItems: tc.corner.userMinItems ?? null,
@@ -185,6 +196,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
       componentType: cc.component.componentType,
       selectedIndex: cc.component.selectedIndex,
       chipRows: cc.component.chipRows,
+      sourceChanged: sourceChangedOf(cc.component.sourceCampaignId, cc.component.sourceSyncedAt),
       atoms: cc.component.componentAtoms.map((ca) => ({
         componentAtomId: ca.id,
         id: ca.atom.id,
@@ -278,6 +290,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
           startAt: template.startAt ? template.startAt.toISOString().slice(0, 16) : null,
           endAt: template.endAt ? template.endAt.toISOString().slice(0, 16) : null,
           containerName: template.container.name,
+          containerType: template.container.containerType, // 홈=MAIN 등 — 칩 사용 제어 컨텍스트
           isDefault: template.isDefault,
           memo: template.memo,
           displayOn: template.displayOn,

@@ -6,10 +6,11 @@ import { SPLASH_APPROVAL, fmtDateTime } from '@/lib/widget-taxonomy';
 import { ImageIcon, X } from 'lucide-react';
 
 export type SplashView = {
-  version: number; osType: string; applyLabel: string; applyStartAt: string | null; updateContent: string | null;
+  version: number; osType: string; applyLabel: string; title: string | null; applyStartAt: string | null; updateContent: string | null;
   approvalStatus: string; approvalRequester: string | null; approvalManager: string | null; approvalRequestedAt: string | null; approvalProcessedAt: string | null;
   bgImageUrl: string | null; bgImageAlt: string | null; bgUseYn: boolean;
   animUrl: string | null; animAlt: string | null; animUseYn: boolean;
+  eventImageUrl: string | null; eventImageAlt: string | null; eventPostStart: string | null; eventPostEnd: string | null; eventUseYn: boolean;
   createdBy: string | null; createdAt: string; updatedBy: string | null; updatedAt: string;
 };
 
@@ -48,6 +49,9 @@ export function SplashDetailView({ s, footer }: { s: SplashView; footer?: React.
           <FieldRow label="적용시작일시"><ReadValue value={fmtDateTime(s.applyStartAt)} /></FieldRow>
         </div>
         <div className="border-t border-slate-100">
+          <FieldRow label="제목"><ReadValue value={s.title ?? '-'} /></FieldRow>
+        </div>
+        <div className="border-t border-slate-100">
           <FieldRow label="업데이트 주요 내용"><ReadValue value={s.updateContent ?? '-'} /></FieldRow>
         </div>
         <div className="grid grid-cols-2 border-t border-slate-100">
@@ -67,6 +71,23 @@ export function SplashDetailView({ s, footer }: { s: SplashView; footer?: React.
           </FieldRow>
           <FieldRow label="배경 이미지 사용 여부"><ReadValue value={s.bgUseYn ? 'Y' : 'N'} /></FieldRow>
           <FieldRow label="애니메이션 사용 여부"><ReadValue value={s.animUseYn ? 'Y' : 'N'} /></FieldRow>
+        </div>
+        {/* 이벤트 이미지 (정의서 3-10~3-13) */}
+        <div className="grid grid-cols-2 border-t border-slate-100">
+          <FieldRow label="이벤트 이미지">
+            <div className="space-y-1.5">
+              <Thumb url={s.eventImageUrl} onOpen={() => setPreview(s.eventImageUrl)} />
+              <ReadValue value={s.eventImageAlt ?? '-'} />
+              <p className="text-[11px] text-muted-foreground">권장 720 x 200 px · JPG/JPEG/PNG/GIF/BMP</p>
+            </div>
+          </FieldRow>
+          <div className="divide-y divide-slate-100">
+            <FieldRow label="이벤트 이미지 URL"><ReadValue value={s.eventImageUrl ?? '-'} /></FieldRow>
+            <FieldRow label="이벤트 이미지 게시 기간">
+              <ReadValue value={s.eventPostStart || s.eventPostEnd ? `${fmtDateTime(s.eventPostStart)} ~ ${fmtDateTime(s.eventPostEnd)}` : '-'} />
+            </FieldRow>
+            <FieldRow label="이벤트 이미지 사용 여부"><ReadValue value={s.eventUseYn ? 'Y' : 'N'} /></FieldRow>
+          </div>
         </div>
       </OpsSection>
 

@@ -11,7 +11,9 @@ import { toLocalInput } from '@/lib/widget-taxonomy';
 import { ComposedBanner } from './composed-banner';
 import { AssetPickerModal, type ImageAsset } from '@/components/asset-picker-modal';
 import { generateComposeDraft, refineComposeDraft, AI_EXAMPLES, AI_REFINE_SUGGESTIONS } from './ai-compose';
-import { Plus, Minus, X, Search, Image as ImageIcon, Upload, Database, Sparkles, Send } from 'lucide-react';
+import { DS_BANNER_TYPES, dsBannerTypeName, dsBannerType } from './ds-banner-types';
+import type { ComposeFields } from './composed-banner';
+import { Plus, Minus, X, Search, Image as ImageIcon, Upload, Database, Sparkles, Send, LayoutTemplate, Check } from 'lucide-react';
 
 type AiMsg = { role: 'user' | 'ai'; text: string };
 
@@ -132,6 +134,7 @@ type TypeDetailRow = {
   align: string; imagePos: string; imgSize: string; imgShape: string;
   badgeText: string; badgeColor: string;
   ctaText: string; ctaColor: string; rightImageUrl: string;
+  bannerType: string; // DS 배너 유형 id (선택 시 레이아웃·배경·색 고정)
 };
 const emptyRow = (): TypeDetailRow => ({
   type: '이미지형', detail: DETAIL_TYPES[0], useYn: true, imageUrl: '',
@@ -139,7 +142,7 @@ const emptyRow = (): TypeDetailRow => ({
   title: '', subtitle: '', titleColor: '#0F172A', subColor: '#64748B', titleSize: 'md',
   align: 'left', imagePos: 'right', imgSize: 'md', imgShape: 'square',
   badgeText: '', badgeColor: '#4F46E5',
-  ctaText: '', ctaColor: '#4F46E5', rightImageUrl: '',
+  ctaText: '', ctaColor: '#4F46E5', rightImageUrl: '', bannerType: '',
 });
 
 // 배경 팔레트 프리셋 (단색 c1 / 그라데이션 c1→c2)
@@ -196,7 +199,7 @@ export type BannerFormValue = {
   campaignCode?: string; title?: string; subtitle?: string | null; purpose?: string | null; platform?: string;
   exposeYn?: boolean; publishStart?: string | null; publishEnd?: string | null;
   landingType?: string | null; landingUrl?: string | null; pageType?: string | null; bannerAlt?: string | null;
-  typeDetails?: { type: string; detail: string; useYn?: boolean; imageUrl?: string; bgColor?: string; bgColor2?: string; bgType?: string; title?: string; subtitle?: string; titleColor?: string; subColor?: string; titleSize?: string; align?: string; imagePos?: string; imgSize?: string; imgShape?: string; badgeText?: string; badgeColor?: string; ctaText?: string; ctaColor?: string; rightImageUrl?: string }[];
+  typeDetails?: { type: string; detail: string; useYn?: boolean; imageUrl?: string; bgColor?: string; bgColor2?: string; bgType?: string; title?: string; subtitle?: string; titleColor?: string; subColor?: string; titleSize?: string; align?: string; imagePos?: string; imgSize?: string; imgShape?: string; badgeText?: string; badgeColor?: string; ctaText?: string; ctaColor?: string; rightImageUrl?: string; bannerType?: string }[];
 };
 
 // 규격 문자열 (W×H) → 미리보기 비율/크기 (maxW 폭 기준으로 스케일)
@@ -228,9 +231,23 @@ function Seg({ value, onChange, options }: { value: string; onChange: (v: string
   );
 }
 
+// 컨테이너 폭에 맞춰 조립형 배너를 채우는 프리뷰(유형 선택 카드용). 좁은 폭에서도 안 넘침.
+function FitBanner({ f, ratio = 0.37 }: { f: ComposeFields; ratio?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setW(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return <div ref={ref} className="w-full overflow-hidden rounded-2xl">{w > 0 && <ComposedBanner f={f} width={w} height={Math.round(w * ratio)} preview />}</div>;
+}
+
 // 직접 만들기 인라인 편집기 — 같은 페이지에서 미리보기 + 탭 컨트롤(모달 아님)
-function ComposeEditorInline({ row, onPatch, onFile, images }: { row: TypeDetailRow; onPatch: (patch: Partial<TypeDetailRow>) => void; onFile: (key: 'rightImageUrl', file: File | undefined) => void; images: ImageAsset[] }) {
-  const [tab, setTab] = useState<'text' | 'image' | 'bg' | 'cta'>('text');
+function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: TypeDetailRow; onPatch: (patch: Partial<TypeDetailRow>) => void; onShared: (patch: Partial<TypeDetailRow>) => void; onFile: (key: 'rightImageUrl', file: File | undefined) => void; images: ImageAsset[] }) {
+  const [tab, setTab] = useState<'text' | 'image'>('text');
   const [aiOpen, setAiOpen] = useState(false);
   const [aiMsgs, setAiMsgs] = useState<AiMsg[]>([]);
   const [aiBusy, setAiBusy] = useState(false);
@@ -291,54 +308,96 @@ function ComposeEditorInline({ row, onPatch, onFile, images }: { row: TypeDetail
 
   return (
     <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-      {/* AI 초안 — 우측 AI Communicator 레일에서 대화하며 다듬기 */}
-      <button type="button" onClick={() => setAiOpen((v) => !v)}
-        className={'mb-3 flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-[13px] transition ' + (aiOpen ? 'border-indigo-300 bg-indigo-50/60 text-indigo-700' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-300 hover:text-slate-700')}>
-        <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
-        <span className="flex-1">AI로 초안 만들기 <span className={aiOpen ? 'text-indigo-400' : 'text-slate-400'}>— {aiOpen ? '우측 AI Communicator에서 대화 중' : '자연어로 설명하고 대화하며 다듬어요'}</span></span>
-        {aiMsgs.length > 0 && <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600">대화 {Math.ceil(aiMsgs.length / 2)}</span>}
-        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">{aiOpen ? '닫기' : '우측 패널 열기'}</span>
-      </button>
-      <div className="flex flex-col gap-4 md:flex-row">
+      {/* AI 배너 생성 — TBD(정책 미정). 고민 포인트만 남겨둠. 생성 로직은 파킹. */}
+      <div className="mb-3 flex items-start gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/60 px-3 py-2.5">
+        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-amber-800">AI 배너 생성 <span className="rounded bg-amber-200/70 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">TBD</span></p>
+          <p className="mt-1 text-[11px] leading-relaxed text-amber-700/90">
+            정책 미정. 고민 포인트 — ① 생성 범위(문구만 vs 이미지·레이아웃) : DS 유형 규격 고정과 충돌 여부 ② 이미지 저작권·생성 소스(등록 이미지 활용 vs 생성) ③ 자동 카피 검수(승인 워크플로우 연계) ④ CVM 타겟별 문구 베리에이션 후보 생성과의 연결 ⑤ 실제 모델·비용·PII.
+          </p>
+        </div>
+      </div>
+      {!row.bannerType ? (
+        /* DS 배너 유형 선택 — 고르면 배경·레이아웃·색이 고정되고 텍스트·이미지만 편집 */
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600"><LayoutTemplate className="h-4 w-4" /></span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-slate-800">DS 배너 유형 선택</p>
+              <p className="text-[11px] text-slate-400">유형을 고르면 배경·레이아웃은 고정되고, 텍스트·이미지만 바꿔요</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {DS_BANNER_TYPES.map((t) => {
+              const sample = { ...t.locked, title: '배너 제목', subtitle: '서브 문구', ctaText: '', rightImageUrl: '/assets/product-chanel-lipstick.svg' } as ComposeFields;
+              return (
+                <button key={t.id} type="button" title={`${t.font} · ${t.image}`} onClick={() => onShared({ bannerType: t.id, ...(t.locked as Partial<TypeDetailRow>) })}
+                  className="group flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-indigo-400 hover:shadow-[0_8px_22px_rgba(20,22,40,0.12)]">
+                  <FitBanner f={sample} />
+                  <div className="flex items-center justify-between gap-1 px-0.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-[12px] font-bold text-slate-800 group-hover:text-indigo-600">{t.name}</p>
+                      <p className="truncate text-[10px] text-slate-400">{t.desc}</p>
+                    </div>
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-slate-300 text-transparent transition group-hover:border-indigo-500 group-hover:bg-indigo-500 group-hover:text-white"><Check className="h-2.5 w-2.5" /></span>
+                  </div>
+                  <p className="truncate border-t border-slate-100 px-0.5 pt-1.5 text-[9.5px] text-slate-400">{t.image}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row">
         {/* 미리보기 (같은 페이지 · 인라인) */}
         <div className="shrink-0">
-          <div className="rounded-xl bg-white p-3 ring-1 ring-slate-100">
+          <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
             <ComposedBanner f={row} width={dim.w} height={dim.h} preview />
           </div>
-          <p className="mt-1 text-center text-[11px] text-muted-foreground">미리보기 · {dim.label}</p>
+          <p className="mt-1.5 text-center text-[11px] text-slate-400">미리보기 · {dim.label}</p>
         </div>
 
-        {/* 탭 컨트롤 */}
+        {/* 편집 — DS 유형 고정, 텍스트·이미지만 */}
         <div className="min-w-0 flex-1">
-            <div className="mb-4 flex gap-4 border-b">
-              {tabBtn('text', '텍스트')}
-              {tabBtn('image', '이미지')}
-              {tabBtn('bg', '배경')}
-              {tabBtn('cta', '배지·CTA')}
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[11.5px] font-semibold text-indigo-700"><LayoutTemplate className="h-3.5 w-3.5" />{dsBannerTypeName(row.bannerType)}</span>
+              <span className="text-[11px] text-slate-400">텍스트·이미지만 편집</span>
+              <button type="button" onClick={() => onShared({ bannerType: '' })} className="ml-auto inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600">유형 변경</button>
+            </div>
+            {/* 규격 정보 — 폰트·이미지·배너 규격 안내 */}
+            <div className="mb-4 grid grid-cols-3 gap-2 rounded-lg border border-slate-100 bg-slate-50/70 p-2.5 text-[11px]">
+              <div className="min-w-0"><p className="text-slate-400">배너 규격</p><p className="truncate font-medium text-slate-700">{row.detail || '—'}</p></div>
+              <div className="min-w-0"><p className="text-slate-400">폰트</p><p className="truncate font-medium text-slate-700" title={dsBannerType(row.bannerType).font}>{dsBannerType(row.bannerType).font}</p></div>
+              <div className="min-w-0"><p className="text-slate-400">권장 이미지</p><p className="truncate font-medium text-slate-700" title={dsBannerType(row.bannerType).image}>{dsBannerType(row.bannerType).image}</p></div>
+            </div>
+            <div className="mb-4 inline-flex rounded-lg bg-slate-100 p-0.5 text-[12.5px]">
+              {(['text', 'image'] as const).map((k) => (
+                <button key={k} type="button" onClick={() => setTab(k)}
+                  className={'rounded-md px-3 py-1 font-medium transition ' + (tab === k ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
+                  {k === 'text' ? '텍스트' : '이미지'}
+                </button>
+              ))}
             </div>
 
             {tab === 'text' && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <L>타이틀</L>
-                  <Input value={row.title} onChange={(e) => onPatch({ title: e.target.value })} placeholder="배너 타이틀" className="h-9 flex-1 text-sm" />
-                  <input type="color" value={row.titleColor} onChange={(e) => onPatch({ titleColor: e.target.value })} title="제목 글자색" className="h-8 w-8 shrink-0 cursor-pointer rounded border border-slate-200" />
+                  <Input value={row.title} onChange={(e) => onShared({ title: e.target.value })} placeholder="배너 타이틀" className="h-9 flex-1 text-sm" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <L>글자 크기</L>
-                  <Seg value={row.titleSize} onChange={(v) => onPatch({ titleSize: v })} options={[{ v: 'sm', l: '작게' }, { v: 'md', l: '보통' }, { v: 'lg', l: '크게' }, { v: 'xl', l: '특대' }]} />
+                  <L>서브타이틀</L>
+                  <Input value={row.subtitle} onChange={(e) => onShared({ subtitle: e.target.value })} placeholder="서브 문구 (비우면 미표시)" className="h-9 flex-1 text-sm" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <L>정렬</L>
-                  <Seg value={row.align} onChange={(v) => onPatch({ align: v })} options={[{ v: 'left', l: '좌측' }, { v: 'center', l: '가운데' }]} />
-                </div>
+                <p className="text-[11px] text-muted-foreground"><b className="text-indigo-500">문구·유형은 모든 규격 공통</b> 1벌로 적용돼요. 배경·글자·정렬·CTA는 <b>{dsBannerTypeName(row.bannerType)}</b> 유형 규격을 따르고, <b>이미지만 규격별</b>로 바꿀 수 있어요.</p>
               </div>
             )}
 
             {tab === 'image' && (
               <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <L>상품 이미지</L>
+                <div className="flex flex-wrap items-center gap-2">
+                  <L>이미지</L>
                   {row.rightImageUrl
                     ? <span className="flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600"><ImageIcon className="h-3 w-3" />등록됨<button type="button" onClick={() => onPatch({ rightImageUrl: '' })} className="text-slate-400 hover:text-slate-700"><X className="h-3 w-3" /></button></span>
                     : null}
@@ -348,57 +407,12 @@ function ComposeEditorInline({ row, onPatch, onFile, images }: { row: TypeDetail
                   </label>
                   <LibraryPickButton images={images} onPick={(url) => onPatch({ rightImageUrl: url })} label="DB에서 가져오기" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <L>위치</L>
-                  <Seg value={row.imagePos} onChange={(v) => onPatch({ imagePos: v })} options={[{ v: 'left', l: '좌' }, { v: 'right', l: '우' }, { v: 'top', l: '상' }, { v: 'bottom', l: '하' }]} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <L>크기</L>
-                  <Seg value={row.imgSize} onChange={(v) => onPatch({ imgSize: v })} options={[{ v: 'sm', l: '작게' }, { v: 'md', l: '보통' }, { v: 'lg', l: '크게' }]} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <L>모양</L>
-                  <Seg value={row.imgShape} onChange={(v) => onPatch({ imgShape: v })} options={[{ v: 'square', l: '사각' }, { v: 'circle', l: '원형' }]} />
-                </div>
-              </div>
-            )}
-
-            {tab === 'bg' && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <L>유형</L>
-                  <Seg value={row.bgType} onChange={(v) => onPatch({ bgType: v })} options={[{ v: 'solid', l: '단색' }, { v: 'gradient', l: '그라데이션' }]} />
-                  <input type="color" value={row.bgColor} onChange={(e) => onPatch({ bgColor: e.target.value })} title="배경색" className="h-8 w-8 cursor-pointer rounded border border-slate-200" />
-                  {row.bgType === 'gradient' && <input type="color" value={row.bgColor2} onChange={(e) => onPatch({ bgColor2: e.target.value })} title="그라데이션 끝색" className="h-8 w-8 cursor-pointer rounded border border-slate-200" />}
-                </div>
-                <div className="flex items-center gap-2">
-                  <L>팔레트</L>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {PALETTES.map((p) => (
-                      <button key={p.name} type="button" onClick={() => onPatch({ bgColor: p.c1, bgColor2: p.c2 })} title={p.name}
-                        className="h-7 w-7 rounded-full ring-1 ring-black/10 transition hover:scale-110" style={{ background: `linear-gradient(135deg, ${p.c1}, ${p.c2})` }} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {tab === 'cta' && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <L>상단 배지</L>
-                  <Input value={row.badgeText} onChange={(e) => onPatch({ badgeText: e.target.value })} placeholder="예: 단독 혜택 · NEW (비우면 미표시)" className="h-9 flex-1 text-sm" />
-                  <input type="color" value={row.badgeColor} onChange={(e) => onPatch({ badgeColor: e.target.value })} title="배지 색상" className="h-8 w-8 shrink-0 cursor-pointer rounded border border-slate-200" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <L>CTA 버튼</L>
-                  <Input value={row.ctaText} onChange={(e) => onPatch({ ctaText: e.target.value })} placeholder="예: 자세히 보기 (비우면 미표시)" className="h-9 flex-1 text-sm" />
-                  <input type="color" value={row.ctaColor} onChange={(e) => onPatch({ ctaColor: e.target.value })} title="버튼 색상" className="h-8 w-8 shrink-0 cursor-pointer rounded border border-slate-200" />
-                </div>
+                <p className="text-[11px] text-muted-foreground">이미지 위치·크기·모양은 유형 규격을 따릅니다. 이미지와 텍스트만 교체하세요.</p>
               </div>
             )}
           </div>
         </div>
+      )}
       </div>
   );
 }
@@ -476,6 +490,8 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
   };
   const removeRow = (i: number) => setRows((r) => (r.length > 1 ? r.filter((_, idx) => idx !== i) : r));
   const setRow = (i: number, patch: Partial<TypeDetailRow>) => setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+  // 문구·유형은 배너 공통 1벌 → 모든 규격 행에 동일 적용(이미지·사용여부만 규격별).
+  const setAllCompose = (patch: Partial<TypeDetailRow>) => setRows((r) => r.map((row) => ({ ...row, ...patch })));
 
   return (
     <form ref={formRef} action={action}>
@@ -594,7 +610,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
                 </div>
               ) : (
                 /* 직접 만들기: 같은 페이지 인라인 편집(미리보기 + 탭 컨트롤) */
-                <ComposeEditorInline row={row} onPatch={(patch) => setRow(i, patch)} onFile={(key, file) => pickFile(i, key, file)} images={libImages} />
+                <ComposeEditorInline row={row} onPatch={(patch) => setRow(i, patch)} onShared={setAllCompose} onFile={(key, file) => pickFile(i, key, file)} images={libImages} />
               )}
             </div>
             );

@@ -24,18 +24,20 @@ export default async function AppSplashPage() {
           <thead>
             <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
               <th className="px-4 py-2.5 text-left font-medium">버전</th>
+              <th className="px-4 py-2.5 text-left font-medium">제목</th>
               <th className="px-4 py-2.5 text-left font-medium">OS 유형</th>
               <th className="px-4 py-2.5 text-left font-medium">적용시작일시</th>
             </tr>
           </thead>
           <tbody>
             {list.length === 0 ? (
-              <tr><td colSpan={3} className="px-4 py-10 text-center text-muted-foreground">등록된 스플래시가 없습니다.</td></tr>
+              <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">등록된 스플래시가 없습니다.</td></tr>
             ) : list.map((r) => {
               const href = `/admin/app-splash/${r.id}`;
               return (
                 <tr key={r.id} className="cursor-pointer border-b last:border-b-0 hover:bg-slate-50/60">
                   <td className="p-0"><Link href={href} className="block px-4 py-3 font-medium text-slate-800">{r.version}</Link></td>
+                  <td className="p-0"><Link href={href} className="block px-4 py-3 text-slate-700">{r.title || '-'}</Link></td>
                   <td className="p-0"><Link href={href} className="block px-4 py-3 text-slate-700">{r.osType}</Link></td>
                   <td className="p-0"><Link href={href} className="block px-4 py-3 text-[12px] text-slate-500">{fmtDateTime(r.applyStartAt)}</Link></td>
                 </tr>

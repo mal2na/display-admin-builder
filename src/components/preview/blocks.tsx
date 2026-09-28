@@ -1,8 +1,10 @@
-import { Signal, Wifi, BatteryFull, ChevronRight, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles } from 'lucide-react';
+import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles } from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 import { resolveCvmSample, cvmBindingLabel } from '@/lib/display-taxonomy';
 import { PreviewImage } from './preview-image';
 import { cn } from '@/lib/utils';
+import { parseBannerOptions } from '@/lib/banner-options';
+import { BannerCarousel } from './banner-carousel';
 
 export type PreviewAtom = {
   id: string;
@@ -15,7 +17,7 @@ export type PreviewAtom = {
   linkUrl: string | null;
   menuRole?: string; // FIXED(고정) | EDITABLE(편집가능)
 };
-export type PreviewComponent = { id: string; name: string; componentType: string; atoms: PreviewAtom[]; selectedIndex?: number; chipRows?: number };
+export type PreviewComponent = { id: string; name: string; componentType: string; atoms: PreviewAtom[]; selectedIndex?: number; chipRows?: number; chipVariant?: string };
 export type PreviewCorner = {
   id: string;
   name: string;
@@ -36,6 +38,7 @@ export type PreviewCorner = {
   bannerImageUrl?: string | null;
   bannerName?: string | null;
   bannerPosition?: string | null;
+  bannerOptions?: string | null; // 배너형 코너 노출 옵션 (JSON {mode,intervalSec,showIndicator,loop})
   sampleImageUrl?: string | null;
   recSource?: string | null; // (대표) 1순위 추천 수급 방식 (CVM 기반이면 후보·순위·근거 런타임 판정)
   recSourcePlan?: string | null; // 우선순위 편성(JSON 배열, 1순위→폴백)
@@ -59,35 +62,65 @@ function ImageBox({ atom, className }: { atom?: PreviewAtom; className?: string 
   return <PreviewImage src={atom?.imageUrl} alt={atom?.altText} className={className} />;
 }
 
+// 칩(선택형) 렌더 — DS Chip 계열 4종을 배열(chipVariant)에 따라 다르게 그린다.
+//  home    : 아이콘+라벨 퀵메뉴, 최대 2행(ChipHome)
+//  contents: 콘텐츠 필터 칩 — 선택 1개를 진하게 강조(ChipContents)
+//  page    : 페이지 탭 칩 — 선택 언더라인 탭(ChipPage)
+//  filter  : 필터 칩 — 아웃라인 + 필터 글리프(ChipFilter)
 function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
-  const twoRows = component.chipRows === 2;
-  // 퀵메뉴(선택형 칩) — 흰색 라운드 pill + 인디고 아이콘 + 라벨. 1줄/2줄(2행 그리드+가로 스크롤).
+  const variant = component.chipVariant ?? (component.atoms.some((a) => a.imageUrl) ? 'home' : 'contents');
+
+  // ChipHome — 아이콘+라벨 pill, 1/2행(2행 그리드+가로 스크롤)
+  if (variant === 'home') {
+    const twoRows = component.chipRows === 2;
+    return (
+      <div className={twoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'}>
+        {component.atoms.map((a, i) => (
+          <span key={a.id} className={'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3.5 text-[12px] font-medium text-slate-800 shadow-sm ring-1 ' + (i === sel ? 'ring-indigo-400' : 'ring-slate-100')}>
+            {a.imageUrl && (isIconRef(a.imageUrl)
+              ? <IconGlyph name={a.imageUrl} className="-ml-0.5 h-4 w-4 text-indigo-600" />
+              : isRenderableImg(a.imageUrl)
+                ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="-ml-0.5 h-4 w-4 rounded-full object-cover" />
+                : <span className="-ml-0.5 flex h-4 w-4 items-center justify-center rounded-full text-indigo-600" title={a.altText ?? a.imageUrl}><Sparkles className="h-3.5 w-3.5" /></span>)}
+            {a.content ?? a.name}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  // ChipPage — 페이지 탭(선택 언더라인)
+  if (variant === 'page') {
+    return (
+      <div className="flex flex-nowrap items-center gap-4 overflow-x-auto border-b border-slate-100 pb-0">
+        {component.atoms.map((a, i) => (
+          <span key={a.id} className={'shrink-0 whitespace-nowrap border-b-2 pb-2 text-[13px] ' + (i === sel ? 'border-slate-900 font-semibold text-slate-900' : 'border-transparent font-medium text-slate-400')}>
+            {a.content ?? a.name}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  // ChipFilter — 아웃라인 필터 칩(필터 글리프)
+  if (variant === 'filter') {
+    return (
+      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+        {component.atoms.map((a) => (
+          <span key={a.id} className="flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-slate-300 bg-white px-3 text-[12px] font-medium text-slate-600">
+            {a.content ?? a.name} <ChevronDown className="h-3 w-3 text-slate-400" />
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩
   return (
-    <div
-      className={
-        twoRows
-          ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-2 overflow-x-auto pb-1'
-          : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'
-      }
-    >
+    <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
       {component.atoms.map((a, i) => (
-        <span
-          key={a.id}
-          className={
-            'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3.5 text-[12px] font-medium text-slate-800 shadow-sm ring-1 ' +
-            (i === sel ? 'ring-indigo-400' : 'ring-slate-100')
-          }
-        >
-          {a.imageUrl &&
-            (isIconRef(a.imageUrl) ? (
-              <IconGlyph name={a.imageUrl} className="-ml-0.5 h-4 w-4 text-indigo-600" />
-            ) : isRenderableImg(a.imageUrl) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={a.imageUrl} alt={a.altText ?? ''} className="-ml-0.5 h-4 w-4 rounded-full object-cover" />
-            ) : (
-              <span className="-ml-0.5 flex h-4 w-4 items-center justify-center rounded-full text-indigo-600" title={a.altText ?? a.imageUrl}><Sparkles className="h-3.5 w-3.5" /></span>
-            ))}
+        <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium ' + (i === sel ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500')}>
           {a.content ?? a.name}
         </span>
       ))}
@@ -194,7 +227,7 @@ function RecReason({ text }: { text: string }) {
   );
 }
 
-function BannerCard({ component, sizeDetail }: { component: PreviewComponent; sizeDetail?: string | null }) {
+export function BannerCard({ component, sizeDetail }: { component: PreviewComponent; sizeDetail?: string | null }) {
   const title = first(component.atoms, 'TEXT', 'BENEFIT_TEXT');
   const sub = first(component.atoms, 'INFO');
   const cta = first(component.atoms, 'BUTTON', 'CTA');
@@ -204,9 +237,11 @@ function BannerCard({ component, sizeDetail }: { component: PreviewComponent; si
   const ratio = m ? `${m[1]} / ${m[2]}` : null;
   const src = img?.imageUrl ?? '';
   const hasImg = isRenderableImg(src);
-  // 완성형 배너 이미지(업로드 사진·banner-*.svg 등)는 규격 비율로 꽉 채우고,
-  // 로고·상품 이미지(product-*.svg, 아이콘 등)는 타이틀 옆에 붙이는 콤포즈형으로 렌더(로고가 홀로 떠 보이지 않게).
-  const isFullBanner = /(^data:|^https?:|\/banner-|\.(jpe?g|png|webp)(\?|$))/i.test(src);
+  // 완성형 배너 이미지(업로드 사진·banner-* 마커)는 규격 비율로 꽉 채우고,
+  // 로고·상품 이미지(lotteworld·product-*·airpods 등)는 타이틀 옆에 붙이는 콤포즈형으로 렌더(로고가 홀로 떠 보이지 않게).
+  //  판정 기준을 '확장자'가 아니라 '완성형 마커(data/http · /banner- 접두)'로 한정 — 로고 .png가 전체 이미지로 잘못 렌더되던 문제 수정.
+  //  단, ICON 아톰(로고 글리프)은 언제나 콤포즈형.
+  const isFullBanner = img?.atomType !== 'ICON' && /(^data:|^https?:|\/banner-)/i.test(src);
   if (ratio) {
     if (hasImg && isFullBanner) {
       return (
@@ -246,6 +281,19 @@ function BannerCard({ component, sizeDetail }: { component: PreviewComponent; si
       </div>
       {img && <ImageBox atom={img} className="h-16 w-16 shrink-0 rounded-xl" />}
     </div>
+  );
+}
+
+// 배너 캐러셀 — 한 배너형 코너에 담긴 배너 여러 장. 스와이프(수동) / 자동 슬라이드는 클라이언트 컴포넌트로 분리.
+//  옵션(mode·간격·인디케이터·루프)은 Corner.bannerOptions(JSON) → parseBannerOptions.
+function BannerCarouselBlock({ corner }: { corner: PreviewCorner }) {
+  const list = corner.components ?? [];
+  if (list.length === 0) return null;
+  return (
+    <BannerCarousel
+      options={parseBannerOptions(corner.bannerOptions)}
+      items={list.map((c) => <BannerCard key={c.id} component={c} sizeDetail={corner.layoutDetail} />)}
+    />
   );
 }
 
@@ -403,8 +451,9 @@ function ComponentView({ component, mode, cardShape, reason, titleLines, parts }
 /** 한 Corner를 화면 영역으로 렌더 (프리뷰/빌더 공용) */
 export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const isBanner = corner.cornerType === '배너형';
-  const heading = corner.mainTitle ?? corner.title;
-  const sub = corner.subTitle ?? corner.name;
+  // 배너형은 코너 타이틀/서브타이틀을 두지 않는다(배너 자체가 콘텐츠). 헤딩 숨김. (2026-09-28 사용자 결정)
+  const heading = isBanner ? null : (corner.mainTitle ?? corner.title);
+  const sub = isBanner ? null : (corner.subTitle ?? corner.name);
   const showChevron = (corner.subTitleIcon ?? '화살표') !== '사용안함';
 
   // 코너 레이아웃(노출 방식) → 본문 배치 모드. 5종이 각각 다르게 렌더된다.
@@ -530,7 +579,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     ) : isMenuList ? (
       <MenuListView component={menuComp} />
     ) : isBanner ? (
-      <BannerCard component={corner.components[0]} sizeDetail={corner.layoutDetail} />
+      <BannerCarouselBlock corner={corner} />
     ) : chipComps.length > 0 && bodyComps.length > 0 ? (
       <div className="space-y-3">
         {chipComps.map((c) => (

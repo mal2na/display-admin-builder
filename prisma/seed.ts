@@ -28,6 +28,7 @@ import { seedEvents } from './seed-events';
 const prisma = new PrismaClient();
 
 async function resetAll() {
+  await prisma.bannerCampaign.deleteMany(); // 이력은 onDelete: Cascade 로 함께 정리
   await prisma.auditLog.deleteMany();
   await prisma.cornerComponentRule.deleteMany();
   await prisma.componentAtom.deleteMany();
@@ -608,23 +609,23 @@ async function main() {
 
   // 5) 데이터 요금제 안내 (상품형 · 세로형) — 요금제(상품) 리스트
   const data1 = await comp('데이터 무제한', '상품형', [
-    { name: '데이터1 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-infinity.png', altText: '무제한' },
+    { name: '데이터1 아이콘', atomType: 'ICON', imageUrl: '/assets/ds/plan-unlimited.png', altText: '무제한' },
     { name: '데이터1 제목', atomType: 'TEXT', content: '데이터 걱정 없이 마음껏 사용해요' },
     { name: '데이터1 설명', atomType: 'INFO', content: '무제한 · 월 69,000원부터' },
   ]);
   const data2 = await comp('데이터 영상', '상품형', [
-    { name: '데이터2 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-video.png', altText: '영상' },
+    { name: '데이터2 아이콘', atomType: 'ICON', imageUrl: '/assets/ds/plan-video.png', altText: '영상' },
     { name: '데이터2 제목', atomType: 'TEXT', content: '영상도 보고 여유 있게 사용해요' },
     { name: '데이터2 설명', atomType: 'INFO', content: '50~100GB · 월 48,000원부터' },
   ]);
   const data3 = await comp('데이터 메신저', '상품형', [
-    { name: '데이터3 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-chat.png', altText: '메신저' },
+    { name: '데이터3 아이콘', atomType: 'ICON', imageUrl: '/assets/ds/plan-messenger.png', altText: '메신저' },
     { name: '데이터3 제목', atomType: 'TEXT', content: '메신저 위주로 가볍게 사용해요' },
     { name: '데이터3 설명', atomType: 'INFO', content: '5~10GB · 월 34,000원부터' },
   ]);
   const data4 = await comp('데이터 직접찾기', '상품형', [
-    { name: '데이터4 아이콘', atomType: 'ICON', imageUrl: '/assets/icon-search.png', altText: '직접 찾기' },
-    { name: '데이터4 제목', atomType: 'TEXT', content: '원하는 요금제 직접 찾아볼게요' },
+    { name: '데이터4 아이콘', atomType: 'ICON', imageUrl: '/assets/ds/plan-search.png', altText: '직접 찾기' },
+    { name: '데이터4 제목', atomType: 'TEXT', content: '원하는 요금제를 직접 찾아볼게요' },
     { name: '데이터4 설명', atomType: 'INFO', content: '월 19,000원부터' },
   ]);
   const shopCornerData = await corner(
@@ -702,19 +703,19 @@ async function main() {
 
   // 8) 구독 혜택 (상품형 · 가로 SWIPE)
   const sub1 = await comp('주말 장보기 패스', '상품형', [
-    { name: '구독1 이미지', atomType: 'IMAGE', imageUrl: '/assets/sub-grocery.png', altText: '주말 장보기 패스' },
+    { name: '구독1 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/sub-kurly-nstore.png', altText: '네이버플러스스토어+컬리' },
     { name: '구독1 제목', atomType: 'TEXT', content: '주말 장보기 패스 (네이버플러스스토어+컬리)' },
     { name: '구독1 가격', atomType: 'PRICE', content: '월 8,900원' },
   ]);
   const sub2 = await comp('쇼핑 올인원', '상품형', [
-    { name: '구독2 이미지', atomType: 'IMAGE', imageUrl: '/assets/sub-shopping.png', altText: '쇼핑 올인원' },
+    { name: '구독2 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/sub-musinsa-eql.png', altText: '무신사+EQL' },
     { name: '구독2 제목', atomType: 'TEXT', content: '쇼핑 올인원 (무신사+EQL)' },
     { name: '구독2 가격', atomType: 'PRICE', content: '월 9,900원' },
   ]);
   const sub3 = await comp('AI 크리에이터', '상품형', [
-    { name: '구독3 이미지', atomType: 'IMAGE', imageUrl: '/assets/sub-ai.png', altText: 'AI 크리에이터' },
-    { name: '구독3 제목', atomType: 'TEXT', content: 'AI 크리에이터 (Figma)' },
-    { name: '구독3 가격', atomType: 'PRICE', content: '월 20,000원' },
+    { name: '구독3 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/sub-figma-claude.png', altText: 'Figma+Claude' },
+    { name: '구독3 제목', atomType: 'TEXT', content: 'AI 크리에이티브팩 (Figma+Claude)' },
+    { name: '구독3 가격', atomType: 'PRICE', content: '27,200원' },
     { name: '구독3 배지', atomType: 'BADGE', content: '20%' },
   ]);
   const shopCornerSub = await corner(
@@ -1460,8 +1461,92 @@ async function patchVariantDemo() {
   console.log('✅ 베리에이션 데모 패치 완료 (타이틀 6타겟 · 혜택문구 프레이밍 · 메시지형 제목/서브/CTA/설명 후보 · 배지는 사실값이라 제외 · CTA 라벨 표준화)');
 }
 
+// ── 배너 캠페인 시드 — 운영자가 만든 대표 배너들을 코드로 등록(dev.db가 아닌 seed에 고정).
+//   배포/리시드 시에도 목록에 나타난다. 상태는 승인완료(등록완료)로.
+async function seedBannerCampaigns() {
+  // 이미 배너 캠페인이 있으면 건너뛴다(main과 동일한 멱등 가드). 재배포 시 campaignCode 중복 생성 방지(P2002).
+  const existing = await prisma.bannerCampaign.count();
+  if (existing > 0 && !process.env.FORCE_SEED) {
+    console.log(`↷ 배너 캠페인이 이미 있어 건너뜁니다 (${existing}건). 재시드하려면 FORCE_SEED=1`);
+    return;
+  }
+  const OP = '홍길동(P123456)';
+  const MGR = '정지솔(SSP12344)';
+  const now = new Date();
+  const start = new Date('2026-09-01T00:00:00');
+  const end = new Date('2026-12-31T23:59:00');
+  const S4 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)', '팝업배너 (720×600)'];
+  const S3 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)'];
+
+  const campaigns: {
+    campaignCode: string; title: string; subtitle: string | null; purpose: string | null;
+    landingType: string; landingUrl: string; pageType: string; bannerAlt: string;
+    typeDetails: Record<string, unknown>[];
+  }[] = [
+    {
+      campaignCode: 'BC-202609-001', title: '요금제 할인상품 구독가 안내',
+      subtitle: '원하는 AI와 OTT를 0원부터 구독하세요', purpose: 'SKT 베스트 요금제 고객 OTT/AI 구독 혜택 안내',
+      landingType: 'direct', landingUrl: 'https://tworld/plan-benefit', pageType: 'current', bannerAlt: '요금제 할인상품 구독가 안내',
+      typeDetails: S4.map((detail) => ({ type: '이미지형', detail, useYn: true, imageUrl: '/assets/banner-plan-ott.svg', bgColor: '#E7E8F8' })),
+    },
+    {
+      campaignCode: 'BC-202609-002', title: '스타벅스 옵션출시',
+      subtitle: 'T우주로 콘텐츠 즐기고 스타벅스 20% 할인혜택 받기', purpose: 'T 우주 스타벅스 구독 옵션 출시 안내',
+      landingType: 'direct', landingUrl: 'https://tworld/uzu-starbucks', pageType: 'current', bannerAlt: 'T 우주 스타벅스 옵션 출시 · 스타벅스 20% 할인혜택 받기',
+      typeDetails: S4.map((detail) => ({ type: '이미지형', detail, useYn: true, imageUrl: '/assets/banner-starbucks.svg', bgColor: '#8FE7BA', title: '', subtitle: '', rightImageUrl: '' })),
+    },
+    {
+      campaignCode: 'BC-202609-003', title: 'CHANEL 루쥬 코코 립스틱',
+      subtitle: '봄 뮤트 핑크 #130', purpose: 'T 우주 뷰티 제휴 · 샤넬 립스틱 프로모션',
+      landingType: 'direct', landingUrl: 'https://tworld/beauty-chanel', pageType: 'current', bannerAlt: 'CHANEL 루쥬 코코 립스틱 · 봄 뮤트 핑크 #130',
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EAEAF6', title: 'CHANEL 루쥬 코코 립스틱', subtitle: '봄 뮤트 핑크 #130', rightImageUrl: '/assets/product-chanel-lipstick.svg' })),
+    },
+    {
+      campaignCode: 'BC-202609-004', title: '롯데월드 제휴 혜택',
+      subtitle: null, purpose: '주말 가족 나들이 · 제휴사 혜택 안내 (직접 만들기)',
+      landingType: 'event', landingUrl: 'EVT20260820006 (제휴사 혜택 기획전)', pageType: 'current', bannerAlt: '이번 주말, 가족 나들이에 쓰기 좋은 혜택 · 롯데월드 어드벤처',
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: '이번 주말, 가족 나들이에\n쓰기 좋은 혜택', subtitle: '제휴사별 혜택 더보기', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/lotteworld.png' })),
+    },
+    {
+      campaignCode: 'BC-202609-005', title: '갤럭시 신제품 사전예약',
+      subtitle: null, purpose: '갤럭시 신제품 사전예약 안내',
+      landingType: 'direct', landingUrl: 'https://tworld/galaxy-preorder', pageType: 'current', bannerAlt: '갤럭시 신제품 사전예약',
+      typeDetails: S4.map((detail) => ({ type: '이미지형', detail, useYn: true, imageUrl: '/assets/cardhome/cardhome-banner-BannerSrc-0.png' })),
+    },
+    {
+      // AirPods Max3 사전예약 — 콤포즈형 혜택 배너(제목 좌 + 제품 우). 롯데월드와 동일 룩. (2026-09-28)
+      campaignCode: 'BC-202609-006', title: 'AirPods Max3 사전 예약 하셨나요?',
+      subtitle: null, purpose: '사전예약 클럽 멤버십 혜택 안내 (직접 만들기)',
+      landingType: 'direct', landingUrl: 'https://tworld/airpods-max-preorder', pageType: 'current', bannerAlt: 'AirPods Max3 사전 예약 · 사전예약 클럽 멤버십 혜택',
+      typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: 'AirPods Max3\n사전 예약 하셨나요?', subtitle: '사전예약 클럽 멤버십 혜택', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/ds/product-airpodsmax.png' })),
+    },
+  ];
+
+  let apId = 1;
+  for (const c of campaigns) {
+    await prisma.bannerCampaign.create({
+      data: {
+        campaignCode: c.campaignCode, title: c.title, subtitle: c.subtitle, purpose: c.purpose, platform: 'APP',
+        landingType: c.landingType, landingUrl: c.landingUrl, pageType: c.pageType, bannerAlt: c.bannerAlt,
+        typeDetails: JSON.stringify(c.typeDetails), exposeYn: true, publishStart: start, publishEnd: end,
+        approvalStatus: 'approved', approvalRequester: OP, approvalManager: MGR, approvalRequestedAt: now, approvalProcessedAt: now,
+        createdBy: OP, updatedBy: OP,
+        history: {
+          create: [
+            { version: 1, status: 'draft', requester: OP, changeNote: '신규 등록 · 작성중' },
+            { version: 2, approvalId: String(apId++).padStart(10, '0'), status: 'requested', requester: OP, manager: MGR, requestedAt: now, changeNote: '승인요청' },
+            { version: 3, approvalId: String(apId++).padStart(10, '0'), status: 'approved', requester: OP, manager: MGR, requestedAt: now, processedAt: now, changeNote: '승인완료' },
+          ],
+        },
+      },
+    });
+  }
+  console.log(`✅ 배너 캠페인 시드 완료 (${campaigns.length}건 · 승인완료)`);
+}
+
 main()
   .then(() => patchVariantDemo())
+  .then(() => seedBannerCampaigns())
   .then(() => prisma.$disconnect())
   .catch(async (e) => {
     console.error(e);

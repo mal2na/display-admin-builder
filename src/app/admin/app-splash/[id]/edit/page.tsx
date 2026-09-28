@@ -38,10 +38,11 @@ export default async function SplashEditPage({ params }: { params: { id: string 
       <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 스플래시 관리 › App 스플래시 수정</nav>
       <h1 className="mb-5 text-2xl font-bold">App 스플래시 수정</h1>
       <SplashForm mode="edit" action={updateSplash.bind(null, s.id)} topExtra={approvalSection} bottomExtra={managerSection} value={{
-        version: s.version, osType: s.osType, applyLabel: APPLY_STATUS[apply].label,
+        version: s.version, osType: s.osType, applyLabel: APPLY_STATUS[apply].label, title: s.title,
         updateContent: s.updateContent, applyStartAt: s.applyStartAt?.toISOString() ?? null,
         bgImageUrl: s.bgImageUrl, bgImageAlt: s.bgImageAlt, bgUseYn: s.bgUseYn,
         animUrl: s.animUrl, animAlt: s.animAlt, animUseYn: s.animUseYn,
+        eventImageUrl: s.eventImageUrl, eventImageAlt: s.eventImageAlt, eventPostStart: s.eventPostStart?.toISOString() ?? null, eventPostEnd: s.eventPostEnd?.toISOString() ?? null, eventUseYn: s.eventUseYn,
       }} />
     </div>
   );

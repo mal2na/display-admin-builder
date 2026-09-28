@@ -272,7 +272,7 @@ async function serializeTemplate(templateId: string) {
     sortStrategy: c.sortStrategy, status: c.status, markupId: c.markupId, layoutDetail: c.layoutDetail,
     cornerLayout: c.cornerLayout, description: c.description, mainTitle: c.mainTitle, subTitle: c.subTitle,
     subTitleIcon: c.subTitleIcon, minItems: c.minItems, noDisplayCondition: c.noDisplayCondition,
-    bigBanner: c.bigBanner, bannerPosition: c.bannerPosition, cardShape: c.cardShape,
+    bigBanner: c.bigBanner, bannerPosition: c.bannerPosition, bannerOptions: c.bannerOptions, cardShape: c.cardShape,
     moreButtonUse: c.moreButtonUse, moreButtonLabel: c.moreButtonLabel, moreButtonLink: c.moreButtonLink, bannerId: c.bannerId,
   });
   return {
@@ -671,15 +671,84 @@ export async function createCornerFromType(templateId: string, formData: FormDat
 
 // 배너 불러오기 — 배너 캠페인 관리(전시관리)에 등록된 캠페인 1건 → 배너형 코너로 편성.
 // 코너 유형의 '배너형'은 전부 배너 캠페인 관리로 귀속되므로, 빌더에선 이 액션으로 불러온다.
-export async function importBannerCampaignCorner(templateId: string, campaignId: string, sizeDetail?: string) {
+// 배너 캠페인 → 배너형 컴포넌트(타이틀·설명·이미지·CTA 아톰) 생성 후 componentId 반환.
+// 캠페인 → 배너 컴포넌트의 아톰 스펙(제목·설명·이미지·CTA). 편성/갱신 공용.
+function bannerAtomSpecs(bc: { title: string; subtitle: string | null; bannerAlt: string | null; landingUrl: string | null }, chosenImg: string) {
+  return [
+    { name: '배너 타이틀', atomType: 'TEXT', content: bc.title },
+    ...(bc.subtitle ? [{ name: '배너 설명', atomType: 'INFO', content: bc.subtitle }] : []),
+    { name: '배너 이미지', atomType: 'IMAGE', imageUrl: chosenImg, altText: bc.bannerAlt ?? bc.title },
+    ...(bc.landingUrl ? [{ name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: bc.landingUrl }] : []),
+  ];
+}
+
+async function createBannerComponentFromCampaign(bc: { id?: string; title: string; subtitle: string | null; bannerAlt: string | null; landingUrl: string | null; updatedAt?: Date }, chosenImg: string) {
+  // 원본 추적 저장(원본 변경 감지·갱신용).
+  const comp = await prisma.component.create({ data: { name: bc.title, componentType: '배너형', sourceCampaignId: bc.id ?? null, sourceSyncedAt: bc.updatedAt ?? new Date() } });
+  let i = 0;
+  for (const a of bannerAtomSpecs(bc, chosenImg)) {
+    const atom = await prisma.atom.create({ data: { ...a, status: 'active' } });
+    await prisma.componentAtom.create({ data: { componentId: comp.id, atomId: atom.id, order: i, isRequired: true } });
+    i += 1;
+  }
+  return comp.id;
+}
+
+// 원본(배너 캠페인) 변경을 편성된 컴포넌트에 반영 — 아톰을 최신 캠페인으로 재물질화 + 동기 시점 갱신.
+export async function refreshBannerComponent(templateId: string, componentId: string) {
+  const comp = await prisma.component.findUnique({ where: { id: componentId } });
+  if (!comp?.sourceCampaignId) throw new Error('원본 캠페인 연결이 없는 컴포넌트입니다.');
+  const bc = await prisma.bannerCampaign.findUnique({ where: { id: comp.sourceCampaignId } });
+  if (!bc) throw new Error('원본 배너 캠페인을 찾을 수 없습니다.');
+  // 편성 규격 유지 — 이 컴포넌트가 속한 코너의 layoutDetail로 규격 이미지 재선택.
+  const cc = await prisma.cornerComponent.findFirst({ where: { componentId }, select: { corner: { select: { layoutDetail: true } } } });
+  let sizes: { detail?: string; imageUrl?: string; rightImageUrl?: string; title?: string; subtitle?: string }[] = [];
+  try { sizes = bc.typeDetails ? JSON.parse(bc.typeDetails) : []; } catch { sizes = []; }
+  const chosen = (cc?.corner.layoutDetail && sizes.find((s) => s.detail === cc.corner.layoutDetail)) || sizes[0] || null;
+  const chosenImg = chosen?.imageUrl || chosen?.rightImageUrl || '';
+  // 콤포즈 제목/서브(typeDetails)를 캠페인명보다 우선 — 편성 시 보이던 카피 유지.
+  const bcResolved = { ...bc, title: chosen?.title?.trim() || bc.title, subtitle: chosen?.subtitle?.trim() || bc.subtitle };
+  // 기존 아톰 교체(비파괴적 링크 정리 후 재생성).
+  const olds = await prisma.componentAtom.findMany({ where: { componentId }, select: { id: true, atomId: true } });
+  await prisma.componentAtom.deleteMany({ where: { componentId } });
+  await prisma.atom.deleteMany({ where: { id: { in: olds.map((o) => o.atomId) } } });
+  let i = 0;
+  for (const a of bannerAtomSpecs(bcResolved, chosenImg)) {
+    const atom = await prisma.atom.create({ data: { ...a, status: 'active' } });
+    await prisma.componentAtom.create({ data: { componentId, atomId: atom.id, order: i, isRequired: true } });
+    i += 1;
+  }
+  await prisma.component.update({ where: { id: componentId }, data: { name: bcResolved.title, sourceSyncedAt: bc.updatedAt } });
+  rp(templateId);
+}
+
+// 배너 불러오기 — targetCornerId 가 있으면 기존 배너 코너에 '한 장 더' 추가(스와이프 캐러셀), 없으면 새 배너 코너 생성.
+export async function importBannerCampaignCorner(templateId: string, campaignId: string, sizeDetail?: string, targetCornerId?: string) {
   const bc = await prisma.bannerCampaign.findUnique({ where: { id: campaignId } });
   if (!bc) throw new Error('배너 캠페인을 찾을 수 없습니다.');
-  // 유형상세(사이즈별) 중 선택한 규격 → 없으면 첫 번째. layoutDetail = 배너 규격, 이미지도 해당 규격 것으로.
-  let sizes: { detail?: string; imageUrl?: string; rightImageUrl?: string; bannerAlt?: string }[] = [];
+  // 유형상세(사이즈별) 중 선택한 규격 → 없으면 첫 번째. 이미지도 해당 규격 것으로.
+  let sizes: { detail?: string; imageUrl?: string; rightImageUrl?: string; title?: string; subtitle?: string }[] = [];
   try { sizes = bc.typeDetails ? JSON.parse(bc.typeDetails) : []; } catch { sizes = []; }
   const chosen = (sizeDetail && sizes.find((s) => s.detail === sizeDetail)) || sizes[0] || null;
   const chosenDetail = chosen?.detail || sizeDetail || '팝업배너 (720×600)';
   const chosenImg = chosen?.imageUrl || chosen?.rightImageUrl || '';
+  // 콤포즈 제목/서브(typeDetails)를 캠페인명보다 우선 — 편성 배너에 실제 노출 카피가 들어가게.
+  const bcResolved = { ...bc, title: chosen?.title?.trim() || bc.title, subtitle: chosen?.subtitle?.trim() || bc.subtitle };
+
+  const compId = await createBannerComponentFromCampaign(bcResolved, chosenImg);
+
+  // 기존 배너 코너에 추가(캐러셀 한 장 더). 코너의 규격(layoutDetail)은 유지.
+  if (targetCornerId) {
+    const target = await prisma.corner.findUnique({ where: { id: targetCornerId }, select: { id: true, cornerType: true } });
+    if (!target || target.cornerType !== '배너형') throw new Error('배너형 코너가 아닙니다.');
+    const order = await prisma.cornerComponent.count({ where: { cornerId: targetCornerId } });
+    await prisma.cornerComponent.create({ data: { cornerId: targetCornerId, componentId: compId, order } });
+    rp(templateId);
+    const tc = await prisma.templateCorner.findFirst({ where: { templateId, cornerId: targetCornerId }, select: { id: true } });
+    return tc?.id ?? null;
+  }
+
+  // 새 배너 코너 생성
   const corner = await prisma.corner.create({
     data: {
       name: `배너 · ${bc.title}`,
@@ -689,20 +758,7 @@ export async function importBannerCampaignCorner(templateId: string, campaignId:
       sortStrategy: 'MANUAL',
     },
   });
-  const comp = await prisma.component.create({ data: { name: bc.title, componentType: '배너형' } });
-  const atoms: { name: string; atomType: string; content?: string; imageUrl?: string; altText?: string; linkUrl?: string }[] = [
-    { name: '배너 타이틀', atomType: 'TEXT', content: bc.title },
-    ...(bc.subtitle ? [{ name: '배너 설명', atomType: 'INFO', content: bc.subtitle }] : []),
-    { name: '배너 이미지', atomType: 'IMAGE', imageUrl: chosenImg, altText: bc.bannerAlt ?? bc.title },
-    ...(bc.landingUrl ? [{ name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: bc.landingUrl }] : []),
-  ];
-  let i = 0;
-  for (const a of atoms) {
-    const atom = await prisma.atom.create({ data: { ...a, status: 'active' } });
-    await prisma.componentAtom.create({ data: { componentId: comp.id, atomId: atom.id, order: i, isRequired: true } });
-    i += 1;
-  }
-  await prisma.cornerComponent.create({ data: { cornerId: corner.id, componentId: comp.id, order: 0 } });
+  await prisma.cornerComponent.create({ data: { cornerId: corner.id, componentId: compId, order: 0 } });
   const order = await nextOrder('templateCorner', { templateId });
   const tc = await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order } });
   rp(templateId);
@@ -825,6 +881,29 @@ export async function setCornerBigBanner(templateId: string, cornerId: string, o
 // 빅배너 위치(상단/하단) — '코너 구성' 컨트롤에서 즉시 저장. 코너 정보 저장과 독립.
 export async function setCornerBannerPosition(templateId: string, cornerId: string, pos: string) {
   await prisma.corner.update({ where: { id: cornerId }, data: { bannerPosition: pos === '하단' ? '하단' : '상단' } });
+  rp(templateId);
+}
+
+// 배너형 코너 규격(빅/스몰/띠/팝업) — '코너 구성'의 배너 레일에서 즉시 저장(layoutDetail). 코너 정보 저장과 독립.
+export async function setCornerBannerSize(templateId: string, cornerId: string, size: string) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { layoutDetail: size } });
+  rp(templateId);
+}
+
+// 배너형 코너 노출 옵션(스와이프/자동 슬라이드 + 간격·인디케이터·루프) — '코너 구성'의 배너 레일 컨트롤에서 즉시 저장.
+//  값은 JSON {mode,intervalSec,showIndicator,loop}. 배너형 코너에만 의미(1장이면 옵션 무관 단일 노출).
+export async function setBannerOptions(templateId: string, cornerId: string, optionsJson: string | null) {
+  // 유효성: 화이트리스트 mode + 숫자 범위만 통과시켜 저장(임의 값 방지).
+  let clean: string | null = null;
+  if (optionsJson) {
+    try {
+      const o = JSON.parse(optionsJson) as { mode?: string; intervalSec?: number; showIndicator?: boolean; loop?: boolean };
+      const mode = o.mode === 'auto' ? 'auto' : 'swipe';
+      const intervalSec = Math.min(15, Math.max(2, Number(o.intervalSec) || 4));
+      clean = JSON.stringify({ mode, intervalSec, showIndicator: o.showIndicator !== false, loop: o.loop !== false });
+    } catch { clean = null; }
+  }
+  await prisma.corner.update({ where: { id: cornerId }, data: { bannerOptions: clean } });
   rp(templateId);
 }
 

@@ -332,82 +332,60 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
               }
             />
 
-            {/* 상위 거버넌스: 프로모션 상태 언더라인 탭(참고 UI 스타일). 유형은 아래 상세 필터에서 고른다. */}
+            {/* 검색 조건 — 유형·상태·전시상태·기간·검색을 한 카드에 그룹형(칩)으로 모아 한 번에 (SB-EVT-027) */}
             {(() => {
-              const statusTabActive = statusSel.size >= PROMO_STATUSES.length ? '전체' : statusSel.size === 1 ? [...statusSel][0] : '';
-              const setStatusTab = (k: string) => { setStatusSel(k === '전체' ? new Set(PROMO_STATUSES) : new Set([k])); setPage(1); };
-              const tabs = ['전체', ...PROMO_STATUSES];
+              const statusAll = statusSel.size >= PROMO_STATUSES.length;
+              const toggleStatus = (s: string) => { setStatusSel((prev) => { const base = statusAll ? new Set<string>() : new Set(prev); if (base.has(s)) base.delete(s); else base.add(s); return base.size === 0 ? new Set(PROMO_STATUSES) : base; }); setPage(1); };
+              const chip = (active: boolean) => `inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[13px] font-medium transition ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground'}`;
+              const Row = ({ label, children }: { label: string; children: ReactNode }) => (
+                <div className="flex flex-col gap-2 border-b border-border/50 py-3 last:border-0 sm:flex-row sm:items-center">
+                  <span className="w-24 shrink-0 text-sm font-medium text-muted-foreground">{label}</span>
+                  <div className="flex flex-wrap items-center gap-1.5">{children}</div>
+                </div>
+              );
               return (
-                <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-1 border-b">
-                  {tabs.map((t) => {
-                    const active = statusTabActive === t;
-                    const count = t === '전체' ? projects.length : projects.filter((p) => p.promoStatus === t).length;
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setStatusTab(t)}
-                        className={`-mb-px border-b-2 pb-2.5 text-sm font-semibold transition ${active ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-                      >
-                        {t}
-                        <span className={`ml-1.5 text-xs tabular-nums ${active ? 'text-primary' : 'text-muted-foreground/70'}`}>{count}</span>
+                <div className="mb-4 rounded-xl border bg-surface-subtle px-4">
+                  <Row label="유형">
+                    {['전체', '안내형', '응모형'].map((t) => (
+                      <button key={t} type="button" onClick={() => { setDetailType(t); setPage(1); }} className={chip(detailType === t)}>{t}</button>
+                    ))}
+                  </Row>
+                  <Row label="프로모션 상태">
+                    <button type="button" onClick={() => { setStatusSel(new Set(PROMO_STATUSES)); setPage(1); }} className={chip(statusAll)}>전체</button>
+                    {PROMO_STATUSES.map((s) => (
+                      <button key={s} type="button" onClick={() => toggleStatus(s)} className={chip(!statusAll && statusSel.has(s))}>
+                        {s}<span className="text-xs tabular-nums opacity-70">{projects.filter((p) => p.promoStatus === s).length}</span>
                       </button>
-                    );
-                  })}
+                    ))}
+                  </Row>
+                  <Row label="전시 상태">
+                    {EXPOSURE_OPTIONS.map((s) => (
+                      <button key={s} type="button" onClick={() => { setExposure(s); setPage(1); }} className={chip(exposure === s)}>{s}</button>
+                    ))}
+                  </Row>
+                  <Row label="기간">
+                    <select value={periodBasis} onChange={(e) => setPeriodBasis(e.target.value as typeof periodBasis)} className="h-9 w-28 rounded-lg border bg-background px-2.5 text-sm">
+                      <option value="created">등록일</option>
+                      <option value="displayStart">전시 시작일</option>
+                    </select>
+                    <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPage(1); }} className="h-9 rounded-lg border px-2.5 text-sm" />
+                    <span className="text-muted-foreground">~</span>
+                    <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(1); }} className="h-9 rounded-lg border px-2.5 text-sm" />
+                  </Row>
+                  <Row label="검색어">
+                    <select value={field} onChange={(e) => { setField(e.target.value as typeof field); setPage(1); }} className="h-9 w-36 rounded-lg border bg-background px-2.5 text-sm">
+                      {Object.entries(FIELD_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                    <div className="relative min-w-[220px] flex-1">
+                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="검색어 입력" className="h-9 w-full rounded-lg border pl-9 pr-3 text-sm" />
+                    </div>
+                    <button onClick={resetFilters} title="초기화" className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm text-muted-foreground hover:bg-secondary"><RotateCcw className="h-4 w-4" />초기화</button>
+                    <button onClick={() => setPage(1)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"><Search className="h-4 w-4" />조회</button>
+                  </Row>
                 </div>
               );
             })()}
-
-            {/* 검색 조건 영역 (SB-EVT-027 · PI-EVTMSN-SEARCH-001) */}
-            <div className="mb-4 rounded-xl border bg-surface-subtle p-4">
-              <div className="grid grid-cols-1 gap-x-8 gap-y-3 lg:grid-cols-2">
-                {/* 유형 (상위 + 세부) */}
-                <div className="flex items-center gap-3">
-                  <span className="w-20 shrink-0 text-sm font-medium text-muted-foreground">유형</span>
-                  <select value={kind} onChange={(e) => { setKind(e.target.value); setDetailType('전체'); setPage(1); }} className="h-9 w-32 rounded-lg border bg-background px-2.5 text-sm">
-                    {KIND_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
-                  </select>
-                  <select value={detailType} onChange={(e) => { setDetailType(e.target.value); setPage(1); }} className="h-9 flex-1 rounded-lg border bg-background px-2.5 text-sm">
-                    {typeOptions.map((t) => <option key={t} value={t}>{t === '전체' ? '세부 유형 선택' : t}</option>)}
-                  </select>
-                </div>
-                {/* 기간 */}
-                <div className="flex items-center gap-3">
-                  <span className="w-20 shrink-0 text-sm font-medium text-muted-foreground">기간</span>
-                  <select value={periodBasis} onChange={(e) => setPeriodBasis(e.target.value as typeof periodBasis)} className="h-9 w-28 rounded-lg border bg-background px-2.5 text-sm">
-                    <option value="created">등록일</option>
-                    <option value="displayStart">전시 시작일</option>
-                  </select>
-                  <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPage(1); }} className="h-9 flex-1 rounded-lg border px-2.5 text-sm" />
-                  <span className="text-muted-foreground">~</span>
-                  <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(1); }} className="h-9 flex-1 rounded-lg border px-2.5 text-sm" />
-                </div>
-                {/* 프로모션 상태는 상단 탭에서 고른다 → 상세 필터에서는 중복 제거 */}
-                {/* 전시 상태 */}
-                <div className="flex items-center gap-3">
-                  <span className="w-20 shrink-0 text-sm font-medium text-muted-foreground">전시 상태</span>
-                  <select value={exposure} onChange={(e) => { setExposure(e.target.value); setPage(1); }} className="h-9 w-40 rounded-lg border bg-background px-2.5 text-sm">
-                    {EXPOSURE_OPTIONS.map((s) => <option key={s} value={s}>{s === '전체' ? '전체' : s}</option>)}
-                  </select>
-                </div>
-                {/* 상세 조건 */}
-                <div className="flex items-center gap-3 lg:col-span-2">
-                  <span className="w-20 shrink-0 text-sm font-medium text-muted-foreground">상세 조건</span>
-                  <select value={field} onChange={(e) => { setField(e.target.value as typeof field); setPage(1); }} className="h-9 w-36 rounded-lg border bg-background px-2.5 text-sm">
-                    {Object.entries(FIELD_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                  <div className="relative max-w-md flex-1">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="검색어 입력" className="h-9 w-full rounded-lg border pl-9 pr-3 text-sm" />
-                  </div>
-                </div>
-              </div>
-              {/* 초기화 / 조회 */}
-              <div className="mt-3 flex items-center justify-end gap-2 border-t pt-3">
-                <button onClick={resetFilters} title="초기화" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border text-muted-foreground hover:bg-secondary"><RotateCcw className="h-4 w-4" /></button>
-                <button onClick={() => setPage(1)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"><Search className="h-4 w-4" /> 조회</button>
-              </div>
-            </div>
 
             {/* 조회결과 카운트 + Excel 다운로드 + 개수/정렬/뷰 (SB-EVT-027 프로모션 목록 영역) */}
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm">
