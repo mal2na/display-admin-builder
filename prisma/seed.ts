@@ -776,7 +776,6 @@ async function main() {
           { cornerId: shopCornerGift.id, order: 5 },
           { cornerId: shopCornerSpeaker.id, order: 6 },
           { cornerId: shopCornerSub.id, order: 7 },
-          { cornerId: cornerReco.id, order: 8 }, // 추천 상품(상품형 · 가로형(2.5배열)) — 배너 없는 가로 상품 리스트 유형 유지
         ],
       },
     },
@@ -801,7 +800,6 @@ async function main() {
           { cornerId: shopCornerGift.id, order: 5 },
           { cornerId: shopCornerSpeaker.id, order: 6 },
           { cornerId: shopCornerSub.id, order: 7 },
-          { cornerId: cornerReco.id, order: 8 }, // 추천 상품(상품형 · 가로형(2.5배열))
         ],
       },
     },

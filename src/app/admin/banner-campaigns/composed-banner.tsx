@@ -64,7 +64,7 @@ export function ComposedBanner({ f, width, height, preview = false }: { f: Compo
 
   return (
     <div
-      className={'flex overflow-hidden rounded-2xl px-4 shadow-sm ring-1 ring-black/5 ' + (vertical ? 'flex-col items-center justify-center gap-2 py-3' : 'items-center gap-3')}
+      className={'flex overflow-hidden rounded-2xl px-4 shadow-sm ring-1 ring-white ' + (vertical ? 'flex-col items-center justify-center gap-2 py-3' : 'items-center gap-3')}
       style={{ background: composeBg(f), width, height }}
     >
       {(pos === 'left' || pos === 'top') && imageEl}

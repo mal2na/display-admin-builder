@@ -245,7 +245,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   if (ratio) {
     if (hasImg && isFullBanner) {
       return (
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-white">
           <div className="flex w-full items-center justify-center bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5]" style={{ aspectRatio: ratio }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt={img?.altText ?? title?.content ?? ''} className="h-full w-full object-contain" />
@@ -255,7 +255,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     }
     // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게.
     return (
-      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-black/5" style={{ aspectRatio: ratio }}>
+      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: ratio }}>
         <div className="min-w-0 flex-1 py-3">
           <p className="line-clamp-2 whitespace-pre-line text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
           {sub?.content && <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{sub.content}</p>}
@@ -269,7 +269,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     );
   }
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-black/5">
+    <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-white">
       <div className="min-w-0 flex-1 space-y-1">
         <p className="whitespace-pre-line text-[15px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
         {sub && <p className="text-[12px] text-slate-500">{sub.content}</p>}

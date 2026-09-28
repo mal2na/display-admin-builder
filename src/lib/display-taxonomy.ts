@@ -471,7 +471,7 @@ export function isComponentAllowedInCorner(
 //   상단 카테고리 탭은 별도 배열이 아니라 빌더에서 얹는 선택형 컴포넌트(토글) → 세로형(카테고리탭) 제거.
 const GENERAL_LAYOUTS = ['가로형(2.5배열)', '가로형(1.5배열)', '세로형', '그리드형'] as const; // 순서: 가로2.5 → 가로1.5 → 세로 → 그리드
 export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
-  상품형: [...GENERAL_LAYOUTS, '가로형+배너', '세로형+배너'],
+  상품형: [...GENERAL_LAYOUTS.filter((l) => l !== '가로형(2.5배열)'), '가로형+배너', '세로형+배너'],
   '혜택·오퍼형': [...GENERAL_LAYOUTS],
   '콘텐츠 안내형': [...GENERAL_LAYOUTS],
   // ── 특이케이스: 목적별 특정 배열만 ──
