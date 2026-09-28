@@ -159,13 +159,13 @@ async function main() {
   const cornerMovie = await corner(
     {
       name: '영화 예매',
-      cornerType: '콘텐츠 안내형', // 정책서 코너유형(혜택 정리 #1) · 구성=상품형 · 배열=가로형(2.5배열)
+      cornerType: '콘텐츠 안내형', // 정책서 코너유형(혜택 정리 #1) · 구성=상품형 · 배열=가로형
       minItems: 1,
       maxItems: 10,
       mainTitle: '불금인 오늘 명동 CGV에서\n무료 영화 어때요?',
       subTitle: 'T 영화예매',
       cardShape: '3:4', // 영화 포스터 = 3:4 직사각형
-      layoutDetail: '가로형(2.5배열)',
+      layoutDetail: '가로형',
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '인기순',
@@ -226,7 +226,7 @@ async function main() {
     { name: '롯데월드 이미지', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png', altText: '롯데월드 어드벤처' },
   ]);
   const cornerBanner1 = await corner(
-    { name: '제휴 혜택 배너', cornerType: '배너형', maxItems: 3, layoutDetail: '빅배너 (672×460)' },
+    { name: '제휴 혜택 배너', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
     [{ id: banner1.id, componentType: '배너형' }],
   );
 
@@ -286,7 +286,7 @@ async function main() {
     { name: '에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/airpods-max.png', altText: 'AirPods Max3 헤드폰' },
   ]);
   const cornerAirpods = await corner(
-    { name: 'AirPods 사전예약', cornerType: '배너형', maxItems: 3, layoutDetail: '빅배너 (672×460)' },
+    { name: 'AirPods 사전예약', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
     [{ id: banner3.id, componentType: '배너형' }],
   );
 
@@ -566,7 +566,7 @@ async function main() {
     { name: 'iPhone20 사전예약 이미지', atomType: 'IMAGE', imageUrl: '/assets/corner-samples/sh-preorder.png', altText: 'iPhone 20 사전예약 · 에어팟 프로 증정' },
   ]);
   const shopCornerPreorder = await corner(
-    { name: 'iPhone 20 사전예약', cornerType: '배너형', layoutDetail: '스몰배너 (672×324)' },
+    { name: 'iPhone 20 사전예약', cornerType: '배너형', layoutDetail: '이미지형' },
     [{ id: preorderComp.id, componentType: '배너형' }],
   );
 
@@ -699,7 +699,7 @@ async function main() {
     { name: '스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/marshall-speaker.png', altText: 'Marshall Stockwell 스피커' },
   ]);
   const shopCornerSpeaker = await corner(
-    { name: 'Marshall 스피커', cornerType: '배너형', maxItems: 3, layoutDetail: '띠배너 (672×214)' },
+    { name: 'Marshall 스피커', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
     [{ id: shopSpeaker.id, componentType: '배너형' }],
   );
 
@@ -884,7 +884,7 @@ async function main() {
     { name: '루쥬 코코 이미지', atomType: 'IMAGE', imageUrl: '/assets/chanel-lipstick.png', altText: 'CHANEL 루쥬 코코 립스틱' },
   ]);
   const myCornerProduct = await corner(
-    { name: '추천 상품', cornerType: '배너형', maxItems: 1, layoutDetail: '띠배너 (672×214)' },
+    { name: '추천 상품', cornerType: '배너형', maxItems: 1, layoutDetail: '이미지형' },
     [{ id: myProduct.id, componentType: '배너형' }],
   );
 
