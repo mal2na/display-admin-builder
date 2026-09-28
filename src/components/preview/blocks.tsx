@@ -323,6 +323,28 @@ function BenefitRow({ component, reason, parts }: { component: PreviewComponent;
   );
 }
 
+// 상품형 · 세로형+배너 요금제 행 — 라벨 카드 썸네일 + [요금제명 / 월정액(굵게) / 스펙]. (참고: 약정 만료 요금제)
+function PlanBannerRow({ component }: { component: PreviewComponent }) {
+  const badge = first(component.atoms, 'BADGE');
+  const name = first(component.atoms, 'TEXT');
+  const price = first(component.atoms, 'PRICE');
+  const spec = first(component.atoms, 'INFO');
+  const label = badge?.content ?? '';
+  const isUnlimited = /무제한|무료/.test(label);
+  return (
+    <div className="flex items-center gap-3 py-2.5">
+      <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#4B63E6] to-[#3A4FCC]' : 'bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]')}>
+        {label || '요금제'}
+      </div>
+      <div className="min-w-0 flex-1">
+        {name?.content && <p className="truncate text-[13px] text-slate-700">{name.content}</p>}
+        {price?.content && <p className="truncate text-[15px] font-bold text-slate-900">{price.content}</p>}
+        {spec?.content && <p className="truncate text-[11px] text-slate-400">{spec.content}</p>}
+      </div>
+    </div>
+  );
+}
+
 // 아이콘을 IconGlyph(icon:ref) 또는 이미지로 렌더
 function AtomIcon({ atom, className }: { atom?: PreviewAtom; className?: string }) {
   if (!atom) return null;
@@ -436,7 +458,13 @@ function ComponentView({ component, mode, cardShape, reason, titleLines, parts }
       return <ChipsView component={component} />;
     case '상품형':
       // 세로 리스트형 코너에서는 큰 포스터 카드가 아니라 로고+문구 행 구조로 렌더 (참고 디자인)
-      return mode === 'list' ? <BenefitRow component={component} reason={reason} parts={parts} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} parts={parts} />;
+      //  세로형+배너 요금제 행(PRICE 아톰 있음) = 라벨 카드 + 이름/월정액/스펙(PlanBannerRow), 그 외 리스트 = BenefitRow.
+      if (mode === 'list') {
+        return component.atoms.some((a) => a.atomType === 'PRICE')
+          ? <PlanBannerRow component={component} />
+          : <BenefitRow component={component} reason={reason} parts={parts} />;
+      }
+      return <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} parts={parts} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':

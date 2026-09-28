@@ -176,7 +176,11 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   // '배너' 배열(예: 가로형+배너) → 상단 히어로 배너를 코너에 붙여서 렌더.
   //  배너 이미지는 상품 카드 이미지와 별개(bannerImageUrl)라, 상품 이미지 토글을 꺼도 배너는 유지된다.
   const isBannerArr = row.typeDetail?.includes('배너') ?? false;
-  return { ...c, bigBanner: row.bigBanner || isBannerArr, bannerImageUrl: isBannerArr ? (row.baseCategory === '상품형' ? '/assets/ds/hero-device.png' : '/assets/ds/hero-plan.png') : c.bannerImageUrl };
+  // 상품형 세로형+배너 = 요금제(약정 만료) 히어로, 가로형+배너 등 = 단말 히어로.
+  const heroImg = row.baseCategory === '상품형'
+    ? (row.typeDetail?.includes('세로형') ? '/assets/ds/plan-hero-expire.png' : '/assets/ds/hero-device.png')
+    : '/assets/ds/hero-plan.png';
+  return { ...c, bigBanner: row.bigBanner || isBannerArr, bannerImageUrl: isBannerArr ? heroImg : c.bannerImageUrl };
 }
 
 // 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
@@ -877,7 +881,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
     const c = compositionToPreviewCorner({ base, detail: d, composition: comp, mainTitle: features.useMainTitle ? '코너 타이틀' : null, subTitle: features.useSubTitle ? '서브타이틀' : null });
     // 배너 히어로는 상품 이미지와 독립(bannerImageUrl) — 상품 이미지 OFF에도 배너 유지
     const isBannerArr = d.includes('배너');
-    return { ...c, bigBanner: isBannerArr, bannerImageUrl: isBannerArr ? (base === '상품형' ? '/assets/ds/hero-device.png' : '/assets/ds/hero-plan.png') : undefined, moreButtonUse: features.useMoreButton, moreButtonLabel: moreLabel || undefined };
+    const heroImg = base === '상품형' ? (d.includes('세로형') ? '/assets/ds/plan-hero-expire.png' : '/assets/ds/hero-device.png') : '/assets/ds/hero-plan.png';
+    return { ...c, bigBanner: isBannerArr, bannerImageUrl: isBannerArr ? heroImg : undefined, moreButtonUse: features.useMoreButton, moreButtonLabel: moreLabel || undefined };
   };
 
   // bulk 컴포넌트 속성 패널(DS 그룹형 토글) — 미리보기 우측(고정)에 배치. 모든 배열에 공통 적용.

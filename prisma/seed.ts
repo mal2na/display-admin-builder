@@ -576,25 +576,25 @@ async function main() {
 
   // 4) 요금제 추천 — 약정 만료 (혜택·오퍼형 · 상품형 · 세로형(배너)) — 상단 히어로 배너 + 요금제(상품) 리스트
   const plan1 = await comp('0 청년 109 넷플릭스', '상품형', [
-    { name: '요금제1 배지', atomType: 'BADGE', content: '무료' },
+    { name: '요금제1 배지', atomType: 'BADGE', content: '무제한' },
     { name: '요금제1 제목', atomType: 'TEXT', content: '0 청년 109 (넷플릭스)' },
-    { name: '요금제1 가격', atomType: 'INFO', content: '월 99,000원' },
-    { name: '요금제1 설명', atomType: 'INFO', content: '데이터 500GB · 넷플릭스 프리미엄 제공 +2' },
+    { name: '요금제1 가격', atomType: 'PRICE', content: '월 99,000원' },
+    { name: '요금제1 설명', atomType: 'INFO', content: '데이터 500GB | 넷플릭스 프리미엄 제공 +2' },
   ]);
   const plan2 = await comp('0 청년 109 네이버', '상품형', [
-    { name: '요금제2 배지', atomType: 'BADGE', content: '500GB' },
+    { name: '요금제2 배지', atomType: 'BADGE', content: '150GB' },
     { name: '요금제2 제목', atomType: 'TEXT', content: '0 청년 109 (네이버 플러스 스토어)' },
-    { name: '요금제2 가격', atomType: 'INFO', content: '월 99,000원' },
-    { name: '요금제2 설명', atomType: 'INFO', content: '데이터 500GB · 넷플릭스 프리미엄 제공 +2' },
+    { name: '요금제2 가격', atomType: 'PRICE', content: '월 99,000원' },
+    { name: '요금제2 설명', atomType: 'INFO', content: '데이터 500GB | 넷플릭스 프리미엄 제공 +2' },
   ]);
   const shopCornerPlan = await corner(
     {
       name: '약정 만료 요금제',
-      cornerType: '상품형', // 요금제(상품) 리스트 → 상품형 · 세로형 (+ 빅배너 배치 옵션)
+      cornerType: '상품형', // 요금제(상품) 리스트 → 상품형 · 세로형+배너 (상단 히어로 배너 + 리스트)
       maxItems: 6,
       mainTitle: '약정 만료 시 위약금 없이\n이어갈 수 있는 요금제에요',
       subTitle: '전체 요금제',
-      layoutDetail: '세로형',
+      layoutDetail: '세로형+배너',
       bigBanner: true, // 상단 빅배너로 강조 (배치 옵션)
       subTitleIcon: '화살표',
       moreButtonUse: true,
