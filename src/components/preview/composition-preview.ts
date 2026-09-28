@@ -18,6 +18,13 @@ const atom = (a: Partial<PreviewAtom> & { atomType: string; name: string }): Pre
 
 // 상품형 카드 이미지(단말·요금제·구독) / 콘텐츠 무비 포스터 — 유형별로 카테고리 맞춰 배정
 const PRODUCT_POOL = ['/assets/ds/device-iphone.png', '/assets/ds/plan-5gx.png', '/assets/ds/sub-tving.png', '/assets/ds/sub-streaming.png'];
+// 상품형 · 세로형 — SKT 요금제 안내 리스트(참고 이미지). 아이콘 타일 + 안내 문구 + 구간·가격.
+const PLAN_ITEMS: { icon: string; title: string; sub: string }[] = [
+  { icon: '/assets/ds/plan-unlimited.png', title: '데이터 걱정 없이 마음껏 사용해요', sub: '무제한 | 69,000원 부터' },
+  { icon: '/assets/ds/plan-video.png', title: '영상도 보고 여유 있게 사용해요', sub: '50~100GB | 48,000원 부터' },
+  { icon: '/assets/ds/plan-messenger.png', title: '메신저 위주로 가볍게 사용해요', sub: '5~10GB | 34,000원 부터' },
+  { icon: '/assets/ds/plan-search.png', title: '원하는 요금제를 직접 찾아볼게요', sub: '19,000원 부터' },
+];
 // 콘텐츠 안내형 무비 3편 (토이스토리 · 인크레더블 · 둠스데이) — public/assets 실제 포스터.
 const MOVIE_POOL = ['/assets/movie-toystory.jpg', '/assets/movie-incredibles.jpg', '/assets/movie-avengers.jpg'];
 const MOVIES: [string, string][] = [['토이스토리 5', '평점 4.8 · 예매율 32.1%'], ['인크레더블', '평점 4.6 · 예매율 18.4%'], ['어벤져스: 둠스데이', '2026.12 개봉 예정']];
@@ -39,6 +46,8 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
   const badge = b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: i === 1 ? 'NEW' : '' })] : [];
   const base = { id: nid(), componentType: b.componentType };
   const isMovie = ctx?.base === '콘텐츠 안내형' || /무비/.test(ctx?.detail ?? '');
+  // 상품형 · 세로형 = SKT 요금제 안내 리스트(참고 이미지). 세로형+배너/칩/카테고리탭은 제외.
+  const isPlan = ctx?.base === '상품형' && ctx?.detail === '세로형';
   switch (b.componentType) {
     case '선택형': {
       // 업무 진입형 — 메뉴형은 세로 메뉴 라벨. 칩 계열(ChipHome/Contents/Filter/Page)은 종류별로 다르게. 그 외는 카테고리 탭.
@@ -71,6 +80,15 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
       return { ...base, name: '카테고리 탭', selectedIndex: 0, chipVariant: 'contents', atoms: T(['전체', '카테고리1', '카테고리2', '카테고리3']) };
     }
     case '상품형':
+      // 상품형 · 세로형 — 요금제 안내 리스트(아이콘 + 안내 문구 + 구간·가격). BenefitRow로 렌더.
+      if (isPlan) {
+        const p = PLAN_ITEMS[(i - 1) % PLAN_ITEMS.length];
+        return { ...base, name: p.title, atoms: [
+          atom({ name: '아이콘', atomType: 'ICON', imageUrl: p.icon }),
+          atom({ name: '안내 문구', atomType: 'TEXT', content: p.title }),
+          atom({ name: '구간·가격', atomType: 'INFO', content: p.sub }),
+        ] };
+      }
       // 콘텐츠 안내형(무비) — 포스터 + 영화 제목 + 평점·예매율 (가격 없음)
       if (isMovie) {
         const m = MOVIES[(i - 1) % MOVIES.length];

@@ -141,7 +141,7 @@ export function defaultComposition(
   const flags = { image: feats.image !== false, price: feats.price !== false, badge: !!feats.badge, desc: feats.desc !== false };
   const blocks: Composition = [];
   if (ct === '선택형') blocks.push({ componentType: '선택형', count: 1 });
-  else if (ct === '상품형') blocks.push({ componentType: '상품형', count: d.includes('단일') ? 1 : 3, ...flags });
+  else if (ct === '상품형') blocks.push({ componentType: '상품형', count: d.includes('단일') ? 1 : (d === '세로형' ? 4 : 3), ...flags });
   else if (ct === '혜택형') blocks.push({ componentType: '혜택형', count: 3, badge: flags.badge });
   else if (ct === '정보형') blocks.push({ componentType: '정보형', count: /리스트|상태/.test(d) ? 4 : 1 });
   else if (ct) blocks.push({ componentType: ct, count: 1 });
