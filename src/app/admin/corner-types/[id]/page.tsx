@@ -43,7 +43,8 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
   }
 
   // 실제 사용 코너의 구성을 미리보기로 매핑 — 배너형 외 유형(예: 혜택·오퍼형)은 상세에서 실제 코너들을 보여준다(한 유형 = 여러 케이스).
-  const usagePreviews: PreviewCorner[] = usageCorners.map((c) => ({
+  //  전시화면(템플릿)에 배치된 코너만 — 미배치(orphan) 코너는 제외.
+  const usagePreviews: PreviewCorner[] = usageCorners.filter((c) => c.templateCorners.length > 0).map((c) => ({
     id: c.id, name: c.name, cornerType: c.cornerType, title: c.title, maxItems: c.maxItems,
     mainTitle: c.mainTitle, subTitle: c.subTitle, cornerLayout: c.cornerLayout, layoutDetail: c.layoutDetail,
     subTitleIcon: c.subTitleIcon, moreButtonUse: c.moreButtonUse, moreButtonLabel: c.moreButtonLabel,
