@@ -310,7 +310,8 @@ function BenefitRow({ component, reason, parts }: { component: PreviewComponent;
   const cta = first(component.atoms, 'CTA'); // 선택적 CTA (숨김=미사용이면 프리뷰 제외)
   return (
     <div className="flex items-center gap-3 py-2">
-      {logo && <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl" />}
+      {/* 로고 = 연회색 타일 위 object-contain — 와이드 워드마크(배달의민족 등)도 잘리지 않고 전체가 보인다. */}
+      {logo && <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl bg-slate-50 object-contain p-1.5" />}
       <div className="min-w-0 flex-1">
         <p className={cn('truncate text-[14px] font-semibold text-slate-900')}>{title?.content ?? component.name}</p>
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}
@@ -629,14 +630,16 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   //  · 배너형 코너는 히어로로 승격하지 않는다. 배너 자체가 본문(BannerCard 컴포넌트)으로 렌더된다.
   //  · 빅배너를 끄면 첨부 배너 이미지가 있어도 상단 배너를 표시하지 않는다(빅배너 토글이 유일한 스위치).
   const bannerSrc = corner.bigBanner && !isBanner ? (corner.bannerImageUrl ?? firstImg) : null;
-  // 빅배너 히어로 — 여백 없이 카드 상단을 꽉 채우는 full-bleed(카드를 반으로 쪼개는 느낌). 큼직한 4:3.
+  // 빅배너 히어로 — 이미지의 '자연 비율' 그대로 full-bleed(고정 aspect 강제 금지).
+  //  배너 소재마다 비율이 달라(예: 2.05:1 카운트다운·500GB, 1.6:1 요금제 히어로) 16/10로 강제하면
+  //  좌우가 잘리고 위/아래 빈 여백이 생겨서, w-full·높이 auto로 이미지를 있는 그대로 보여준다.
   const bannerEl = bannerSrc ? (
     isRenderableImg(bannerSrc) ? (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={bannerSrc}
         alt={corner.bannerName ?? ''}
-        className="aspect-[16/10] w-full bg-gradient-to-b from-sky-50 to-white object-cover"
+        className="block w-full bg-gradient-to-b from-sky-50 to-white"
       />
     ) : (
       <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-indigo-200 to-slate-300 text-[12px] font-medium text-slate-600">

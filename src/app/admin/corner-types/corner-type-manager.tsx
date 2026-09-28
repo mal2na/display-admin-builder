@@ -356,7 +356,9 @@ function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => void }) 
           <div className="pointer-events-none h-40"><DevicePreview corner={v.previewCorner ?? cornerRowPreview(v)} fit="contain" /></div>
         </div>
         <div className="flex flex-1 flex-col gap-1.5 px-3 py-2.5">
-          <p className="truncate text-[13.5px] font-semibold text-[#1A1A2E] group-hover/vc:text-[#4A6CF7]">{layoutBi(v.typeDetail) || v.typeDetail || '기본'}</p>
+          {/* 코너명(실제 케이스) = 주 식별자. 같은 배열이 여러 케이스로 분리돼도 코너명으로 구분된다. */}
+          <p className="truncate text-[13.5px] font-semibold text-[#1A1A2E] group-hover/vc:text-[#4A6CF7]">{v.previewCorner?.name ?? (layoutBi(v.typeDetail) || v.typeDetail || '기본')}</p>
+          <p className="truncate text-[11px] text-slate-500">{layoutBi(v.typeDetail) || v.typeDetail || '기본'}</p>
           <div className="flex flex-wrap items-center gap-1">
             {v.liveVersion != null && v.active
               ? <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{v.liveVersion}</span>

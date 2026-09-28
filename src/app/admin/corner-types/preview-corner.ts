@@ -11,7 +11,8 @@ export function cornerToPreviewCorner(c: any): PreviewCorner {
     subTitleIcon: c.subTitleIcon, moreButtonUse: c.moreButtonUse, moreButtonLabel: c.moreButtonLabel,
     bigBanner: c.bigBanner, cardShape: c.cardShape, titleLines: c.titleLines,
     bannerImageUrl: c.banner?.imageUrl ?? null, bannerOptions: c.bannerOptions,
-    recSource: c.recSource, recSourcePlan: c.recSourcePlan, showRecReason: c.showRecReason,
+    // 코너 유형 관리 미리보기에서는 CVM/추천 수급 배지를 표시하지 않는다(2026-09-28 사용자 요청 "cvm 빼줘"). 값은 비워 배지 렌더를 막음.
+    recSource: null, recSourcePlan: null, showRecReason: false,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     components: c.cornerComponents.map((cc: any) => ({
       id: cc.component.id, name: cc.component.name, componentType: cc.component.componentType,

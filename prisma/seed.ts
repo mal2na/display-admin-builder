@@ -609,6 +609,11 @@ async function main() {
       { id: plan2.id, componentType: '상품형' },
     ],
   );
+  // 약정 만료 요금제(상품형·세로형+배너) 상단 히어로 = 500GB 카드 배너(약정만료 배너). bannerId로 붙여 상품 카드 이미지가 아닌 이 히어로가 상단에 오도록.
+  const bannerPlanExpire = await prisma.banner.create({
+    data: { name: '약정 만료 요금제 히어로', imageUrl: '/assets/ds/plan-hero-expire.png', linkUrl: '/plan', status: 'active' },
+  });
+  await prisma.corner.update({ where: { id: shopCornerPlan.id }, data: { bannerId: bannerPlanExpire.id } });
 
   // 5) 데이터 요금제 안내 (상품형 · 세로형) — 요금제(상품) 리스트
   const data1 = await comp('데이터 무제한', '상품형', [
@@ -1045,64 +1050,69 @@ async function main() {
   let typeIdx = 1;
   const seenBase = new Map<string, number>();
   for (const [, corners] of allByType) {
-    const rep = corners[0];
-    const base = rep.cornerType;
-    // (구 개인화 추천형 복합형 → 7종 체계에서 혜택·오퍼형으로 흡수. 복합형 특수 처리 없음)
-    const isComposite = false;
-    const { cleanDetail } = parseBanner(rep);
-    const detail = cleanDetail ?? (isComposite ? '세로형' : null);
-    // ② 구성 컴포넌트 유형 = 코너에서 가장 많은 컴포넌트 유형(동률이면 먼저 배치된 것).
-    //   예: 카테고리별 혜택 = 선택형(탭) 1 + 상품형 3 → 상품형(주 콘텐츠) 으로 잡는다.
-    const freq = new Map<string, number>();
-    for (const cc of rep.cornerComponents) freq.set(cc.component.componentType, (freq.get(cc.component.componentType) ?? 0) + 1);
-    let componentType: string | null = null;
-    let bestFreq = -1;
-    for (const cc of rep.cornerComponents) {
-      const f = freq.get(cc.component.componentType)!;
-      if (f > bestFreq) { bestFreq = f; componentType = cc.component.componentType; }
+    const base = corners[0].cornerType;
+    // 배너형은 한 유형에서 여러 배너를 함께 보여주므로 묶어서 1개. 그 외는 '코너(케이스)마다' 각각 코너 유형으로 분리한다.
+    //  → 혜택·오퍼형 가로형(기프티콘·구독), 세로형(0Week·TDAY) 등 여러 케이스가 각자 카드/상세로 나뉘어 하나씩 편집 가능(2026-09-28 사용자 결정).
+    const emitGroups: (typeof corners)[] = base === '배너형' ? [corners] : corners.map((c) => [c]);
+    for (const grp of emitGroups) {
+      const rep = grp[0];
+      const { cleanDetail } = parseBanner(rep);
+      const detail = cleanDetail ?? null;
+      // ② 구성 컴포넌트 유형 = 코너에서 가장 많은 컴포넌트 유형(동률이면 먼저 배치된 것).
+      const freq = new Map<string, number>();
+      for (const cc of rep.cornerComponents) freq.set(cc.component.componentType, (freq.get(cc.component.componentType) ?? 0) + 1);
+      let componentType: string | null = null;
+      let bestFreq = -1;
+      for (const cc of rep.cornerComponents) {
+        const f = freq.get(cc.component.componentType)!;
+        if (f > bestFreq) { bestFreq = f; componentType = cc.component.componentType; }
+      }
+      componentType = componentType ?? componentTypesForCorner(base)[0] ?? null;
+      // 유형 샘플 이미지 — 이 그룹에 속한 코너들의 홈 크롭
+      const samples = grp
+        .map((c) => sampleSlugFor(c))
+        .filter(Boolean)
+        .slice(0, 6)
+        .map((slug) => `/assets/corner-samples/${slug}.png`);
+      const sampleImageUrl = samples.length ? samples.join('\n') : null;
+      // 이름: 배너형(묶음)은 기존 규칙(중복 시 배열 접미). 그 외(코너별 분리)는 코너명이 곧 식별자.
+      let name: string;
+      if (base === '배너형') {
+        const seen = seenBase.get(base) ?? 0;
+        name = seen > 0 && detail ? `${base} · ${detail}` : base;
+        seenBase.set(base, seen + 1);
+      } else {
+        name = rep.name;
+      }
+      const created = await prisma.cornerType.create({
+        data: {
+          typeId: 'CY' + String(typeIdx).padStart(7, '0'),
+          name,
+          baseCategory: base,
+          componentType,
+          bigBanner: false, // 빅배너는 유형 구분자가 아님 (코너 인스턴스의 부속 옵션으로만)
+          sampleImageUrl,
+          markupId: rep.markupId,
+          typeDetail: detail,
+          layout: rep.cornerLayout ?? null,
+          description: null,
+          channels: 'FO',
+          platforms: '모바일',
+          active: true,
+          status: 'APPROVED',
+          createdBy: '김마리나',
+          // 타입-레벨 기본값(템플릿 강화) — 대표 코너의 노출/정렬/더보기 설정을 유형 기본값으로 승격.
+          defaultMinItems: rep.minItems ?? null,
+          defaultMaxItems: rep.maxItems ?? null,
+          defaultSortStrategy: rep.sortStrategy && rep.sortStrategy !== 'MANUAL' ? rep.sortStrategy : null,
+          defaultMoreButton: rep.moreButtonUse ?? false,
+          defaultMoreButtonLabel: rep.moreButtonUse ? '전체보기' : null, // 유형 기본 CTA는 일반 라벨(대표 코너명 상속 금지)
+        },
+      });
+      // 생성 즉시 이 그룹의 코너들을 이 유형에 연결(코너별 분리라 정확 매핑 — 아래 fallback 백필은 미배치 코너용).
+      for (const c of grp) await prisma.corner.update({ where: { id: c.id }, data: { sourceCornerTypeId: created.id } });
+      typeIdx += 1;
     }
-    componentType = componentType ?? componentTypesForCorner(base)[0] ?? null;
-    // 유형 샘플 이미지 — 이 유형에 속한 코너들의 홈 크롭(최대 2장, 줄바꿈으로 구분)
-    const samples = corners
-      .map((c) => sampleSlugFor(c))
-      .filter(Boolean)
-      .slice(0, 6)
-      .map((slug) => `/assets/corner-samples/${slug}.png`);
-    const sampleImageUrl = samples.length ? samples.join('\n') : null;
-    const baseName = base; // 코너 유형 관리 이름 = 코너 유형과 동치(별칭 미사용)
-    const seen = seenBase.get(base) ?? 0;
-    const suffix: string[] = [];
-    if (seen > 0 && detail) suffix.push(detail); // 같은 기준분류가 여러 개면 유형상세로 구분 (빅배너는 구분자 아님)
-    const name = suffix.length ? `${baseName} · ${suffix.join(' · ')}` : baseName;
-    seenBase.set(base, seen + 1);
-    await prisma.cornerType.create({
-      data: {
-        typeId: 'CY' + String(typeIdx).padStart(7, '0'),
-        name,
-        baseCategory: base,
-        componentType,
-        bigBanner: false, // 빅배너는 유형 구분자가 아님 (코너 인스턴스의 부속 옵션으로만)
-        sampleImageUrl,
-        markupId: rep.markupId,
-        typeDetail: detail,
-        layout: rep.cornerLayout ?? (isComposite ? '세로 리스트형' : null),
-        description: isComposite
-          ? '타이틀 + 카테고리 칩(선택형) + 혜택 리스트(혜택형) 복합 구성 · 예: VIP 지훈님, 최대 할인 혜택만 모았어요'
-          : null,
-        channels: 'FO',
-        platforms: '모바일',
-        active: true,
-        status: 'APPROVED',
-        createdBy: '김마리나',
-        // 타입-레벨 기본값(템플릿 강화) — 대표 코너의 노출/정렬/더보기 설정을 유형 기본값으로 승격.
-        defaultMinItems: rep.minItems ?? null,
-        defaultMaxItems: rep.maxItems ?? null,
-        defaultSortStrategy: rep.sortStrategy && rep.sortStrategy !== 'MANUAL' ? rep.sortStrategy : null,
-        defaultMoreButton: rep.moreButtonUse ?? false,
-        defaultMoreButtonLabel: rep.moreButtonUse ? '전체보기' : null, // 유형 기본 CTA는 일반 라벨(대표 코너명 상속 금지)
-      },
-    });
-    typeIdx += 1;
   }
 
   // ── 이벤트·미션 전용 코너 유형 (BO EVT Architecture "코너 유형 정의") — 3계열 14종 ──
@@ -1166,7 +1176,8 @@ async function main() {
   {
     const norm = (d: string | null) => (d ?? '').replace(/\s*·\s*빅배너\s*/, '').replace(/\(배너\)/, '').trim();
     const allTypes = await prisma.cornerType.findMany({ select: { id: true, baseCategory: true, typeDetail: true, bigBanner: true } });
-    const allCorners = await prisma.corner.findMany({ select: { id: true, cornerType: true, layoutDetail: true, bannerId: true } });
+    // 미배치(라이브러리 전용) 코너만 fallback 매칭 — 배치 코너는 위에서 코너별로 이미 정확히 연결됨.
+    const allCorners = await prisma.corner.findMany({ where: { sourceCornerTypeId: null }, select: { id: true, cornerType: true, layoutDetail: true, bannerId: true } });
     for (const c of allCorners) {
       const d = norm(c.layoutDetail);
       const big = /배너/.test(c.layoutDetail ?? '') || c.bannerId != null;
