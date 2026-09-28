@@ -230,7 +230,8 @@ export default async function BuilderPage({ params }: { params: { id: string } }
   const isComposedBanner = (typeDetails: string | null | undefined) => {
     try {
       const rep = (JSON.parse(typeDetails || '[]') as { type?: string; title?: string; subtitle?: string }[])[0];
-      return !!rep && rep.type === '리스트형' && !!rep.title?.trim() && !!rep.subtitle?.trim();
+      // 텍스트가 있는 직접 만들기 계열(리스트형 legacy · 텍스트형)만 코너로 불러오기 가능. 이미지형·팝업·상품배너형 제외.
+      return !!rep && (rep.type === '리스트형' || rep.type === '텍스트형') && !!rep.title?.trim() && !!rep.subtitle?.trim();
     } catch { return false; }
   };
 
