@@ -243,7 +243,7 @@ async function main() {
       maxItems: 6,
       mainTitle: '오늘이 지나면\n다시 없는 혜택이에요',
       subTitle: 'T Week · 오늘 소멸 예정',
-      layoutDetail: '세로형',
+      layoutDetail: '세로형+배너', // 상단 소멸 히어로(빅배너) + 혜택 리스트 (혜택·오퍼형 4종 중 세로형+배너)
       bigBanner: true, // 상단 빅배너로 강조 (배치 옵션)
       cornerLayout: '세로 리스트형',
       subTitleIcon: '화살표',
@@ -323,7 +323,7 @@ async function main() {
       maxItems: 10,
       mainTitle: 'VIP 지훈님,\n최대 할인 혜택만 모았어요',
       subTitle: '카테고리별 혜택',
-      layoutDetail: '세로형(카테고리탭)',
+      layoutDetail: '세로형+칩', // 카테고리 칩 탭 + 혜택 리스트 (혜택·오퍼형 4종 중 세로형+칩)
       subTitleIcon: '화살표',
     },
     [
@@ -677,7 +677,7 @@ async function main() {
       mainTitle: '더 저렴하게 살 수 있는\n기프티콘이 있어요',
       subTitle: '기프티콘',
       cardShape: '1:1', // 상품 이미지 = 1:1 정사각형
-      layoutDetail: '가로형(2.5배열)',
+      layoutDetail: '가로형',
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '낮은 가격순',
@@ -730,7 +730,7 @@ async function main() {
       subTitle: '구독 상품',
       cardShape: '1:1', // 상품 이미지 = 1:1 정사각형
       titleLines: 2, // 긴 구독 상품명(예: 주말 장보기 패스 (네이버플러스스토어+컬리))은 두 줄로 표시
-      layoutDetail: '가로형(2.5배열)',
+      layoutDetail: '가로형',
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '인기순',

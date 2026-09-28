@@ -270,6 +270,8 @@ export function compositionToPreviewCorner(opts: {
   // 세로형+배너 = 요금제 히어로, 가로형+배너 = 아이폰 히어로. 둘 다 상단 히어로 배너(빅배너) 자동 표시.
   const isPlanBanner = opts.base === '상품형' && /세로형\+배너|세로형\(배너\)/.test(opts.detail ?? '');
   const isDeviceBanner = opts.base === '상품형' && /가로형\+배너|가로형\(배너\)/.test(opts.detail ?? '');
+  // 혜택·오퍼형 세로형+배너 = 상단 소멸 히어로(T Week형) — 이미지 미첨부 시 CornerBlock이 그라데이션 히어로로 렌더.
+  const isBenefitBanner = opts.base === '혜택·오퍼형' && /세로형\+배너|세로형\(배너\)/.test(opts.detail ?? '');
   return {
     id: 'composition-preview',
     name: opts.base,
@@ -280,7 +282,7 @@ export function compositionToPreviewCorner(opts: {
     subTitle: opts.subTitle ?? null,
     layoutDetail: opts.detail ?? null,
     cornerLayout: opts.layout ?? null,
-    bigBanner: isPlanBanner || isDeviceBanner || undefined,
+    bigBanner: isPlanBanner || isDeviceBanner || isBenefitBanner || undefined,
     bannerImageUrl: isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : undefined,
     components,
   };

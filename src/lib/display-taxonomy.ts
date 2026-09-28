@@ -472,7 +472,8 @@ export function isComponentAllowedInCorner(
 const GENERAL_LAYOUTS = ['가로형(2.5배열)', '가로형(1.5배열)', '세로형', '그리드형'] as const; // 순서: 가로2.5 → 가로1.5 → 세로 → 그리드
 export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
   상품형: [...GENERAL_LAYOUTS.filter((l) => l !== '가로형(2.5배열)'), '가로형+배너', '세로형+배너'],
-  '혜택·오퍼형': [...GENERAL_LAYOUTS],
+  // 혜택·오퍼형은 실제 사용 4종만: 가로형(기프티콘·구독) · 세로형(제휴 혜택 리스트) · 세로형+배너(T Week 소멸) · 세로형+칩(카테고리별 혜택). (2026-09-28 사용자 확정)
+  '혜택·오퍼형': ['가로형', '세로형', '세로형+배너', '세로형+칩'],
   '콘텐츠 안내형': [...GENERAL_LAYOUTS],
   // ── 특이케이스: 목적별 특정 배열만 ──
   배너형: ['이미지형'],
