@@ -717,8 +717,8 @@ async function main() {
   const sub3 = await comp('AI 크리에이터', '상품형', [
     { name: '구독3 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/sub-figma-claude.png', altText: 'Figma+Claude' },
     { name: '구독3 제목', atomType: 'TEXT', content: 'AI 크리에이티브팩 (Figma+Claude)' },
+    { name: '할인율', atomType: 'TEXT', content: '20%' },
     { name: '구독3 가격', atomType: 'PRICE', content: '27,200원' },
-    { name: '구독3 배지', atomType: 'BADGE', content: '20%' },
   ]);
   const shopCornerSub = await corner(
     {
