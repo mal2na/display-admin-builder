@@ -5,6 +5,7 @@ export type BannerUsage = {
   containerId: string; containerName: string; containerType: string | null;
   templateId: string; templateName: string; templateStatus: string;
   cornerName: string;
+  sizeDetail: string | null; // 이 위치에서 쓰는 유형상세(규격) = Corner.layoutDetail
 };
 
 // 배너 캠페인 → Component.sourceCampaignId ← CornerComponent → Corner ← TemplateCorner → Template → Container 로 역참조.
@@ -19,7 +20,7 @@ export async function getBannerUsage(campaignIds: string[]): Promise<Record<stri
         select: {
           corner: {
             select: {
-              name: true, mainTitle: true,
+              name: true, mainTitle: true, layoutDetail: true,
               templateCorners: {
                 select: {
                   template: {
@@ -53,6 +54,7 @@ export async function getBannerUsage(campaignIds: string[]): Promise<Record<stri
         (map[cid] ??= []).push({
           containerId: t.container.id, containerName: t.container.name, containerType: t.container.containerType,
           templateId: t.id, templateName: t.name, templateStatus: t.status, cornerName,
+          sizeDetail: cc.corner.layoutDetail ?? null,
         });
       }
     }

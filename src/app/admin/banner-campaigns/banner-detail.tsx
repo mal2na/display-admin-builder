@@ -157,6 +157,7 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-500">{(DISPLAY_STATUS_LABEL as Record<string, string>)[u.templateStatus] ?? u.templateStatus}</span>
                   <span className="text-slate-300">›</span>
                   <span className="text-slate-500">{u.cornerName}</span>
+                  {u.sizeDetail && <span className="ml-auto rounded bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-600">{u.sizeDetail}</span>}
                 </div>
               ))}
             </div>
@@ -183,12 +184,13 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
             <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
               <th className="w-56 px-4 py-2.5 text-left font-medium">유형 상세</th>
               <th className="w-24 px-4 py-2.5 text-left font-medium">사용여부</th>
+              <th className="w-56 px-4 py-2.5 text-left font-medium">노출 위치</th>
               <th className="px-4 py-2.5 text-left font-medium">이미지</th>
             </tr>
           </thead>
           <tbody>
             {d.typeDetails.length === 0 ? (
-              <tr><td colSpan={3} className="px-4 py-10 text-center text-muted-foreground">등록된 유형상세가 없습니다.</td></tr>
+              <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">등록된 유형상세가 없습니다.</td></tr>
             ) : d.typeDetails.map((t, i) => {
               const sz = sizeOf(t.detail);
               const maxW = 320, maxH = 200;
@@ -198,6 +200,22 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
                 <tr key={i} className="border-b last:border-b-0 align-top">
                   <td className="px-4 py-4 font-medium text-slate-700">{METHOD_LABEL[t.type] ?? t.type} / {t.detail}</td>
                   <td className="px-4 py-4 text-slate-600">{t.useYn === false ? '미사용' : '사용'}</td>
+                  <td className="px-4 py-4">
+                    {(() => {
+                      // 이 규격(유형상세)이 실제로 편성된 위치 — 전시화면·코너 (중복 제거)
+                      const locs = Array.from(new Map(usage.filter((u) => u.sizeDetail === t.detail).map((u) => [`${u.containerName}·${u.cornerName}`, u])).values());
+                      if (locs.length === 0) return <span className="text-[12px] text-slate-400">미노출</span>;
+                      return (
+                        <div className="space-y-1">
+                          {locs.map((u, k) => (
+                            <Link key={k} href={`/admin/containers/${u.containerId}`} className="flex items-center gap-1 text-[12px] text-slate-600 hover:text-indigo-600 hover:underline">
+                              <MapPin className="h-3 w-3 shrink-0 text-indigo-400" />{u.containerName} <span className="text-slate-300">·</span> {u.cornerName}
+                            </Link>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="px-4 py-4">
                     {t.imageUrl ? (
                       /* 이미지 등록: 배경색 위에 전체를 다 보여줌(contain) */

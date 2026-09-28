@@ -237,9 +237,10 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
                           {uniq.slice(0, 2).map((u, i) => (
                             <div key={i} className="flex items-center gap-1 text-[11.5px] text-slate-600">
                               <MapPin className="h-3 w-3 shrink-0 text-indigo-400" />
-                              <span className="max-w-[190px] truncate" title={`${u.containerName} › ${u.cornerName}`}>
+                              <span className="max-w-[150px] truncate" title={`${u.containerName} › ${u.cornerName}${u.sizeDetail ? ` › ${u.sizeDetail}` : ''}`}>
                                 {u.containerName} <span className="text-slate-300">·</span> {u.cornerName}
                               </span>
+                              {u.sizeDetail && <span className="shrink-0 rounded bg-indigo-50 px-1 py-0.5 text-[9.5px] font-medium text-indigo-600">{u.sizeDetail.split(' ')[0]}</span>}
                             </div>
                           ))}
                           {uniq.length > 2 && <span className="pl-4 text-[11px] text-slate-400">외 {uniq.length - 2}곳</span>}

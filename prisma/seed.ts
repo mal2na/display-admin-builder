@@ -1561,24 +1561,27 @@ async function seedBannerCampaigns() {
 // 데모: 시드로 만든 배너형 코너의 컴포넌트를 해당 배너 캠페인에 연결(sourceCampaignId).
 // → 배너 캠페인 관리 '노출 위치'에 어느 전시화면(컨테이너>템플릿>코너)에 편성됐는지 표시된다. (실서비스는 빌더 '배너 불러오기' 시 자동 연결)
 async function linkBannerCampaignUsage() {
-  const MAP: Record<string, string> = {
-    '가족 나들이 혜택 배너': 'BC-202609-004', // 롯데월드 제휴 혜택
-    '에어팟 사전예약 배너': 'BC-202609-006', // AirPods Max3
-    'iPhone 20 사전예약 배너': 'BC-202609-007', // iPhone 20 · 에어팟 프로 증정
-    'Marshall Stockwell 배너': 'BC-202609-008', // Marshall Stockwell
-    'CHANEL 루쥬 코코 배너': 'BC-202609-003', // CHANEL 루쥬 코코 립스틱
+  // compName → { code: 캠페인, size: 이 위치에서 쓰는 유형상세(규격) }. 코너 layoutDetail로 저장 → 노출 위치 ↔ 유형상세 맵핑.
+  const MAP: Record<string, { code: string; size: string }> = {
+    '가족 나들이 혜택 배너': { code: 'BC-202609-004', size: '빅배너 (672×460)' }, // 롯데월드 제휴 혜택
+    '에어팟 사전예약 배너': { code: 'BC-202609-006', size: '빅배너 (672×460)' }, // AirPods Max3
+    'iPhone 20 사전예약 배너': { code: 'BC-202609-007', size: '스몰배너 (672×324)' }, // iPhone 20 · 에어팟 프로 증정
+    'Marshall Stockwell 배너': { code: 'BC-202609-008', size: '띠배너 (672×214)' }, // Marshall Stockwell
+    'CHANEL 루쥬 코코 배너': { code: 'BC-202609-003', size: '스몰배너 (672×324)' }, // CHANEL 루쥬 코코 립스틱
   };
   let linked = 0;
-  for (const [compName, code] of Object.entries(MAP)) {
+  for (const [compName, { code, size }] of Object.entries(MAP)) {
     const bc = await prisma.bannerCampaign.findUnique({ where: { campaignCode: code } });
     if (!bc) continue;
-    const res = await prisma.component.updateMany({
-      where: { name: compName, componentType: '배너형', sourceCampaignId: null },
-      data: { sourceCampaignId: bc.id, sourceSyncedAt: bc.updatedAt },
-    });
-    linked += res.count;
+    const comps = await prisma.component.findMany({ where: { name: compName, componentType: '배너형' }, select: { id: true } });
+    for (const c of comps) {
+      await prisma.component.update({ where: { id: c.id }, data: { sourceCampaignId: bc.id, sourceSyncedAt: bc.updatedAt } });
+      const ccs = await prisma.cornerComponent.findMany({ where: { componentId: c.id }, select: { cornerId: true } });
+      for (const cc of ccs) await prisma.corner.update({ where: { id: cc.cornerId }, data: { layoutDetail: size } });
+      linked += 1;
+    }
   }
-  console.log(`✅ 배너 노출 위치 연결 완료 (${linked}개 컴포넌트 ↔ 캠페인)`);
+  console.log(`✅ 배너 노출 위치 연결 완료 (${linked}개 컴포넌트 ↔ 캠페인, 규격 맵핑)`);
 }
 
 main()
