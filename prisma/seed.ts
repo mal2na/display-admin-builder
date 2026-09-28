@@ -1464,6 +1464,12 @@ async function patchVariantDemo() {
 // ── 배너 캠페인 시드 — 운영자가 만든 대표 배너들을 코드로 등록(dev.db가 아닌 seed에 고정).
 //   배포/리시드 시에도 목록에 나타난다. 상태는 승인완료(등록완료)로.
 async function seedBannerCampaigns() {
+  // 이미 배너 캠페인이 있으면 건너뛴다(main과 동일한 멱등 가드). 재배포 시 campaignCode 중복 생성 방지(P2002).
+  const existing = await prisma.bannerCampaign.count();
+  if (existing > 0 && !process.env.FORCE_SEED) {
+    console.log(`↷ 배너 캠페인이 이미 있어 건너뜁니다 (${existing}건). 재시드하려면 FORCE_SEED=1`);
+    return;
+  }
   const OP = '홍길동(P123456)';
   const MGR = '정지솔(SSP12344)';
   const now = new Date();
