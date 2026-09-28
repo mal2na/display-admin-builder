@@ -1475,8 +1475,8 @@ async function seedBannerCampaigns() {
   const now = new Date();
   const start = new Date('2026-09-01T00:00:00');
   const end = new Date('2026-12-31T23:59:00');
-  const S4 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)', '팝업배너 (720×600)'];
-  const S3 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)'];
+  const S4 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (672×214)', '팝업배너 (720×600)'];
+  const S3 = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (672×214)'];
 
   const campaigns: {
     campaignCode: string; title: string; subtitle: string | null; purpose: string | null;

@@ -11,7 +11,7 @@ import { toLocalInput } from '@/lib/widget-taxonomy';
 import { ComposedBanner } from './composed-banner';
 import { AssetPickerModal, type ImageAsset } from '@/components/asset-picker-modal';
 import { generateComposeDraft, refineComposeDraft, AI_EXAMPLES, AI_REFINE_SUGGESTIONS } from './ai-compose';
-import { DS_BANNER_TYPES, dsBannerTypeName, dsBannerType } from './ds-banner-types';
+import { REGISTERED_DS_BANNER_TYPES, dsBannerTypeName, dsBannerType, type DsBannerType } from './ds-banner-types';
 import type { ComposeFields } from './composed-banner';
 import { Plus, Minus, X, Search, Image as ImageIcon, Upload, Database, Sparkles, Send, LayoutTemplate, Check } from 'lucide-react';
 
@@ -126,6 +126,49 @@ function LibraryPickButton({ images, onPick, label = '라이브러리' }: { imag
   );
 }
 
+// DS 배너 유형 가져오기 — 이미지 등록의 'DB에서 가져오기'와 동일한 방식. DS 포털에 '등록된' 유형만 끌어온다(현재 기본형 1개).
+function DsTypePickButton({ onPick, label = 'DS 배너 유형 가져오기' }: { onPick: (t: DsBannerType) => void; label?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-[12px] font-medium text-slate-700 hover:bg-slate-50">
+        <LayoutTemplate className="h-3 w-3" /> {label}
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
+          <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 border-b px-4 py-3">
+              <LayoutTemplate className="h-4 w-4 text-indigo-500" />
+              <h3 className="text-sm font-semibold">DS 배너 유형 가져오기</h3>
+              <span className="text-[11px] text-muted-foreground">DS 포털에 등록된 유형만</span>
+              <button type="button" onClick={() => setOpen(false)} className="ml-auto text-slate-400 hover:text-slate-700"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="max-h-[60vh] space-y-2 overflow-y-auto p-3">
+              {REGISTERED_DS_BANNER_TYPES.map((t) => {
+                const sample = { ...t.locked, title: '배너 제목', subtitle: '서브 문구', ctaText: '', rightImageUrl: '/assets/product-chanel-lipstick.svg' } as ComposeFields;
+                return (
+                  <button key={t.id} type="button" title={`${t.font} · ${t.image}`} onClick={() => { onPick(t); setOpen(false); }}
+                    className="group flex w-full flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-left shadow-sm transition hover:border-indigo-400 hover:shadow-md">
+                    <FitBanner f={sample} />
+                    <div className="flex items-center justify-between gap-1 px-0.5">
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-bold text-slate-800 group-hover:text-indigo-600">{t.name}</p>
+                        <p className="truncate text-[11px] text-slate-400">{t.desc}</p>
+                      </div>
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white opacity-0 transition group-hover:opacity-100"><Check className="h-3 w-3" />가져오기</span>
+                    </div>
+                    <p className="truncate border-t border-slate-100 px-0.5 pt-1.5 text-[10px] text-slate-400">{t.font} · {t.image}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // 이미지형 = 완성 이미지 업로드 / 리스트형 = 배경색+텍스트+우측이미지로 직접 조립
 type TypeDetailRow = {
   type: string; detail: string; useYn: boolean; imageUrl: string;
@@ -160,7 +203,7 @@ const METHODS = [
   { value: '이미지형', label: '이미지 등록', desc: '완성된 배너 이미지를 그대로 업로드' },
   { value: '리스트형', label: '직접 만들기', desc: '배경색 + 텍스트 + 상품 이미지로 조립' },
 ] as const;
-const DETAIL_TYPES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)', '팝업배너 (720×600)'] as const;
+const DETAIL_TYPES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (672×214)', '팝업배너 (720×600)'] as const;
 const LANDING_TYPES = [
   { value: 'direct', label: '직접입력' },
   { value: 'product', label: '상품' },
@@ -319,33 +362,16 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
         </div>
       </div>
       {!row.bannerType ? (
-        /* DS 배너 유형 선택 — 고르면 배경·레이아웃·색이 고정되고 텍스트·이미지만 편집 */
-        <div>
-          <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600"><LayoutTemplate className="h-4 w-4" /></span>
-            <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-slate-800">DS 배너 유형 선택</p>
-              <p className="text-[11px] text-slate-400">유형을 고르면 배경·레이아웃은 고정되고, 텍스트·이미지만 바꿔요</p>
-            </div>
+        /* DS 배너 유형 가져오기 — 이미지 등록과 동일한 UI(박스 + 가져오기 버튼). 등록된 유형(기본형)을 끌어오면 배경·레이아웃·색이 고정되고 텍스트·이미지만 편집 */
+        <div className="flex items-start gap-3">
+          <div className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-slate-300 bg-slate-50" style={{ width: dim.w, height: dim.h }}>
+            <div className="flex flex-col items-center gap-1 text-slate-300"><Plus className="h-5 w-5" /><LayoutTemplate className="h-4 w-4" /><span className="text-[10px]">DS 배너 유형</span></div>
           </div>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {DS_BANNER_TYPES.map((t) => {
-              const sample = { ...t.locked, title: '배너 제목', subtitle: '서브 문구', ctaText: '', rightImageUrl: '/assets/product-chanel-lipstick.svg' } as ComposeFields;
-              return (
-                <button key={t.id} type="button" title={`${t.font} · ${t.image}`} onClick={() => onShared({ bannerType: t.id, ...(t.locked as Partial<TypeDetailRow>) })}
-                  className="group flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-indigo-400 hover:shadow-[0_8px_22px_rgba(20,22,40,0.12)]">
-                  <FitBanner f={sample} />
-                  <div className="flex items-center justify-between gap-1 px-0.5">
-                    <div className="min-w-0">
-                      <p className="truncate text-[12px] font-bold text-slate-800 group-hover:text-indigo-600">{t.name}</p>
-                      <p className="truncate text-[10px] text-slate-400">{t.desc}</p>
-                    </div>
-                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-slate-300 text-transparent transition group-hover:border-indigo-500 group-hover:bg-indigo-500 group-hover:text-white"><Check className="h-2.5 w-2.5" /></span>
-                  </div>
-                  <p className="truncate border-t border-slate-100 px-0.5 pt-1.5 text-[9.5px] text-slate-400">{t.image}</p>
-                </button>
-              );
-            })}
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <DsTypePickButton onPick={(t) => onShared({ bannerType: t.id, ...(t.locked as Partial<TypeDetailRow>) })} />
+            </div>
+            <p className="text-[11px] text-muted-foreground">DS 포털에 <b>등록된 배너 유형</b>을 가져와 사용합니다. 현재 <b className="text-indigo-500">기본형</b> 하나만 등록되어 있어요 · 유형을 가져오면 배경·레이아웃·색은 고정되고 <b>텍스트·이미지만</b> 편집합니다.</p>
           </div>
         </div>
       ) : (

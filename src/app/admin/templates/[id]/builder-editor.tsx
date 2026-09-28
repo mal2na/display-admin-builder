@@ -2037,7 +2037,7 @@ function MoreButtonControl({ templateId, corner }: { templateId: string; corner:
 }
 
 // 배너형 코너의 규격(사이즈) — 배너 캠페인 관리의 유형상세와 동일한 4종. layoutDetail에 저장.
-const BANNER_SIZES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (720×156)', '팝업배너 (720×600)'] as const;
+const BANNER_SIZES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (672×214)', '팝업배너 (720×600)'] as const;
 const bannerSizeShort = (detail: string) => detail.replace(/\s*\(.*\)\s*/, '').trim() || detail;
 
 // ── 배너 레일 컨트롤 (배너형 코너 전용, '코너 구성' 안) ──────────────────
