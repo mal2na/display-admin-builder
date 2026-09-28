@@ -37,8 +37,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronDown, ChevronRight, RotateCcw, Info, Copy, Pencil, MapPin, GalleryHorizontalEnd } from 'lucide-react';
-import type { BannerUsage } from '../banner-campaigns/banner-usage';
+import { Plus, Trash2, Check, X, Search, ChevronDown, ChevronRight, RotateCcw, Info, Copy, Pencil } from 'lucide-react';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
 
@@ -51,9 +50,6 @@ export type BuiltCornerOption = {
   details: string[]; // 그 유형으로 실제 만들어진 유형 상세(layoutDetail) 목록
   allowEmpty: boolean; // 유형 상세 없이(null) 만들어진 코너가 있으면 true → "선택 안 함" 허용
 };
-
-// 배너형 코너 유형 = 여러 배너가 어느 전시화면·코너에 노출 중인지. (배너 캠페인 관리와 달리 유형 전체 관점)
-export type BannerUsageEntry = { id: string; campaignCode: string; title: string; thumb: string | null; usage: BannerUsage[] };
 
 export type CornerTypeRow = {
   id: string;
@@ -316,39 +312,6 @@ const REJECT_REASONS = ['필수정보 누락', '대체텍스트 없음', '잘못
 
 // 배열 카드 (마스터 목록의 그리드 셀) — 미리보기·이름·상태 + 상태별 인라인 승인 워크플로우 액션.
 //  검수 대기(REVIEW) → 승인/반려(정형 사유), 초안·반려(DRAFT/REJECTED) → 승인 요청, 승인완료(APPROVED)+미반영 → 반영.
-// 배너형 코너 유형 = 여러 배너가 '현재 어느 전시화면·코너에 노출 중인지' 목록. (유형 샘플 대신)
-function BannerUsageList({ entries, onOpen }: { entries: BannerUsageEntry[]; onOpen: (id: string) => void }) {
-  if (entries.length === 0) return <p className="rounded-lg bg-slate-50 px-3 py-6 text-center text-[13px] text-slate-400">현재 빌더에 편성된 배너가 없습니다. (전시화면 관리 › 배너형 코너에 ‘배너 불러오기’로 편성)</p>;
-  return (
-    <div className="space-y-2">
-      <p className="text-[12px] text-slate-500">각 배너가 현재 <b className="text-slate-700">어느 전시화면·코너</b>에 노출 중인지 보여줍니다. (배너 소재·문구는 배너 캠페인 관리가 소유)</p>
-      <div className="divide-y overflow-hidden rounded-xl border border-slate-200">
-        {entries.map((b) => {
-          const locs = Array.from(new Map(b.usage.map((u) => [`${u.containerName}·${u.cornerName}`, u])).values());
-          return (
-            <button key={b.id} type="button" onClick={() => onOpen(b.id)} className="flex w-full items-start gap-3 px-3 py-3 text-left transition hover:bg-slate-50">
-              <div className="flex h-11 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                {b.thumb ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={b.thumb} alt="" className="h-full w-full object-contain p-1" /> : <GalleryHorizontalEnd className="h-4 w-4 text-slate-300" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-semibold text-slate-800">{b.title} <span className="font-mono text-[11px] font-normal text-slate-400">{b.campaignCode}</span></p>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {locs.map((u, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
-                      <MapPin className="h-3 w-3" />{u.containerName} · {u.cornerName}{u.sizeDetail ? ` · ${u.sizeDetail.split(' ')[0]}` : ''}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-300" />
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 //  카드 본문 클릭은 편집 상세로, 액션 버튼은 stopPropagation으로 상세 이동을 막고 서버 액션만 수행.
 function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => void }) {
   const router = useRouter();
@@ -443,7 +406,7 @@ function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => void }) 
   );
 }
 
-export function CornerTypeManager({ types, builtOptions, bannerUsage = [] }: { types: CornerTypeRow[]; builtOptions: BuiltCornerOption[]; bannerUsage?: BannerUsageEntry[] }) {
+export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRow[]; builtOptions: BuiltCornerOption[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -701,15 +664,11 @@ export function CornerTypeManager({ types, builtOptions, bannerUsage = [] }: { t
                             전체 관리 <ChevronRight className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                        {bc === '배너형' ? (
-                          <BannerUsageList entries={bannerUsage} onOpen={(id) => router.push(`/admin/banner-campaigns/${id}`)} />
-                        ) : (
-                          <div className="grid grid-cols-4 gap-3 max-xl:grid-cols-3 max-md:grid-cols-2">
-                            {rows.map((v) => (
-                              <VariationCard key={v.id} v={v} onOpen={() => router.push(`/admin/corner-types/${v.id}`)} />
-                            ))}
-                          </div>
-                        )}
+                        <div className="grid grid-cols-4 gap-3 max-xl:grid-cols-3 max-md:grid-cols-2">
+                          {rows.map((v) => (
+                            <VariationCard key={v.id} v={v} onOpen={() => router.push(`/admin/corner-types/${v.id}`)} />
+                          ))}
+                        </div>
                       </section>
                     );
                   })}
