@@ -257,7 +257,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     return (
       <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-black/5" style={{ aspectRatio: ratio }}>
         <div className="min-w-0 flex-1 py-3">
-          <p className="line-clamp-2 text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
+          <p className="line-clamp-2 whitespace-pre-line text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
           {sub?.content && <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{sub.content}</p>}
           {cta?.content && <span className="mt-1.5 inline-flex rounded-full bg-indigo-600 px-2.5 py-0.5 text-[10px] font-semibold text-white">{cta.content}</span>}
         </div>
@@ -271,7 +271,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-black/5">
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="text-[15px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
+        <p className="whitespace-pre-line text-[15px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
         {sub && <p className="text-[12px] text-slate-500">{sub.content}</p>}
         {cta && (
           <span className="mt-1 inline-flex rounded-full bg-indigo-600 px-3 py-1 text-[11px] font-semibold text-white">

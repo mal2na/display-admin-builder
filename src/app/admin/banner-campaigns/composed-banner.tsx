@@ -54,7 +54,7 @@ export function ComposedBanner({ f, width, height, preview = false }: { f: Compo
   const textBlock = (
     <div className={'min-w-0 ' + (vertical ? 'w-full text-center' : 'flex-1 ' + (center ? 'text-center' : ''))}>
       {f.badgeText && <span className="mb-1 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: f.badgeColor || '#4F46E5' }}>{f.badgeText}</span>}
-      {titleText && <p className={'line-clamp-2 font-bold leading-snug ' + titleCls} style={{ color: f.titleColor || '#0F172A' }}>{titleText}</p>}
+      {titleText && <p className={'line-clamp-2 whitespace-pre-line font-bold leading-snug ' + titleCls} style={{ color: f.titleColor || '#0F172A' }}>{titleText}</p>}
       {f.subtitle && <p className="mt-1 line-clamp-1 text-[11px]" style={{ color: f.subColor || '#64748B' }}>{f.subtitle}</p>}
       {f.ctaText && !compact && (
         <span className="mt-2 inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold text-white" style={{ backgroundColor: f.ctaColor || '#4F46E5' }}>{f.ctaText}</span>

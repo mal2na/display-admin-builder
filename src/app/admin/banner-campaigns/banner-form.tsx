@@ -351,16 +351,20 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
 
   return (
     <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-      {/* AI 배너 생성 — TBD(정책 미정). 고민 포인트만 남겨둠. 생성 로직은 파킹. */}
-      <div className="mb-3 flex items-start gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/60 px-3 py-2.5">
-        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-        <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-amber-800">AI 배너 생성 <span className="rounded bg-amber-200/70 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">TBD</span></p>
-          <p className="mt-1 text-[11px] leading-relaxed text-amber-700/90">
-            정책 미정. 고민 포인트 — ① 생성 범위(문구만 vs 이미지·레이아웃) : DS 유형 규격 고정과 충돌 여부 ② 이미지 저작권·생성 소스(등록 이미지 활용 vs 생성) ③ 자동 카피 검수(승인 워크플로우 연계) ④ CVM 타겟별 문구 베리에이션 후보 생성과의 연결 ⑤ 실제 모델·비용·PII.
-          </p>
-        </div>
-      </div>
+      {/* AI 배너 생성 — 클릭하면 우측 AI 어시스턴트(채팅) 패널을 연다. 생성 정책은 TBD(미정). */}
+      <button
+        type="button"
+        onClick={() => setAiOpen(true)}
+        title="정책 미정(TBD) — ① 생성 범위(문구만 vs 이미지·레이아웃) ② 이미지 저작권·생성 소스 ③ 자동 카피 검수(승인 연계) ④ CVM 타겟별 문구 베리에이션 연결 ⑤ 모델·비용·PII"
+        className="mb-3 flex w-full items-center gap-2.5 rounded-lg border border-dashed border-indigo-300 bg-indigo-50/50 px-3 py-2.5 text-left transition hover:border-indigo-400 hover:bg-indigo-50"
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100"><Sparkles className="h-4 w-4 text-indigo-600" /></span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-indigo-800">AI 배너 생성 <span className="rounded bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">TBD</span></span>
+          <span className="mt-0.5 block text-[11px] text-indigo-500/90">클릭하면 우측 AI 어시스턴트에서 문구·디자인을 대화로 생성해요 (정책 미정)</span>
+        </span>
+        <Send className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+      </button>
       {!row.bannerType ? (
         /* DS 배너 유형 가져오기 — 이미지 등록과 동일한 UI(박스 + 가져오기 버튼). 등록된 유형(기본형)을 끌어오면 배경·레이아웃·색이 고정되고 텍스트·이미지만 편집 */
         <div className="flex items-start gap-3">
