@@ -233,8 +233,9 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   const cta = first(component.atoms, 'BUTTON', 'CTA');
   const img = first(component.atoms, 'IMAGE', 'ICON');
   // 배너 규격(layoutDetail의 W×H)으로 실제 비율을 잡는다 — 빅/스몰/띠/팝업이 눈에 보이게.
+  //  규격에 W×H가 없으면(예: '이미지형') 실제 배너 기본 비율(빅배너 672×460)로 렌더 — 뚱뚱한 콤포즈 박스 방지.
   const m = (sizeDetail ?? '').match(/(\d+)\s*[×xX*]\s*(\d+)/);
-  const ratio = m ? `${m[1]} / ${m[2]}` : null;
+  const ratio = m ? `${m[1]} / ${m[2]}` : '672 / 460';
   const src = img?.imageUrl ?? '';
   const hasImg = isRenderableImg(src);
   // 완성형 배너 이미지(업로드 사진·banner-* 마커)는 규격 비율로 꽉 채우고,
@@ -245,7 +246,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   if (ratio) {
     if (hasImg && isFullBanner) {
       return (
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-white">
           <div className="flex w-full items-center justify-center bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5]" style={{ aspectRatio: ratio }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt={img?.altText ?? title?.content ?? ''} className="h-full w-full object-contain" />
@@ -255,7 +256,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     }
     // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게.
     return (
-      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-black/5" style={{ aspectRatio: ratio }}>
+      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: ratio }}>
         <div className="min-w-0 flex-1 py-3">
           <p className="line-clamp-2 whitespace-pre-line text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
           {sub?.content && <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{sub.content}</p>}
@@ -269,7 +270,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     );
   }
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-black/5">
+    <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-white">
       <div className="min-w-0 flex-1 space-y-1">
         <p className="whitespace-pre-line text-[15px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
         {sub && <p className="text-[12px] text-slate-500">{sub.content}</p>}
@@ -310,7 +311,8 @@ function BenefitRow({ component, reason, parts }: { component: PreviewComponent;
   const cta = first(component.atoms, 'CTA'); // 선택적 CTA (숨김=미사용이면 프리뷰 제외)
   return (
     <div className="flex items-center gap-3 py-2">
-      {logo && <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl" />}
+      {/* 로고 = 연회색 타일 위 object-contain — 와이드 워드마크(배달의민족 등)도 잘리지 않고 전체가 보인다. */}
+      {logo && <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl bg-slate-50 object-contain p-1.5" />}
       <div className="min-w-0 flex-1">
         <p className={cn('truncate text-[14px] font-semibold text-slate-900')}>{title?.content ?? component.name}</p>
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}
@@ -319,6 +321,29 @@ function BenefitRow({ component, reason, parts }: { component: PreviewComponent;
       {cta?.content && (
         <span className="shrink-0 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700">{cta.content}</span>
       )}
+    </div>
+  );
+}
+
+// 상품형 · 세로형+배너 요금제 행 — 라벨 카드 썸네일 + [요금제명 / 월정액(굵게) / 스펙]. (참고: 약정 만료 요금제)
+function PlanBannerRow({ component }: { component: PreviewComponent }) {
+  const thumb = first(component.atoms, 'IMAGE');
+  const badge = first(component.atoms, 'BADGE');
+  const name = first(component.atoms, 'TEXT');
+  const price = first(component.atoms, 'PRICE');
+  const spec = first(component.atoms, 'INFO');
+  const label = badge?.content ?? '';
+  const isUnlimited = /무제한|무료/.test(label);
+  return (
+    <div className="flex items-center gap-3 py-2.5">
+      {isRenderableImg(thumb?.imageUrl)
+        ? <ImageBox atom={thumb} className="h-14 w-14 shrink-0 rounded-2xl" />
+        : <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#4B63E6] to-[#3A4FCC]' : 'bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]')}>{label || '요금제'}</div>}
+      <div className="min-w-0 flex-1">
+        {name?.content && <p className="truncate text-[13px] text-slate-700">{name.content}</p>}
+        {price?.content && <p className="truncate text-[15px] font-bold text-slate-900">{price.content}</p>}
+        {spec?.content && <p className="truncate text-[11px] text-slate-400">{spec.content}</p>}
+      </div>
     </div>
   );
 }
@@ -436,7 +461,13 @@ function ComponentView({ component, mode, cardShape, reason, titleLines, parts }
       return <ChipsView component={component} />;
     case '상품형':
       // 세로 리스트형 코너에서는 큰 포스터 카드가 아니라 로고+문구 행 구조로 렌더 (참고 디자인)
-      return mode === 'list' ? <BenefitRow component={component} reason={reason} parts={parts} /> : <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} parts={parts} />;
+      //  세로형+배너 요금제 행(PRICE 아톰 있음) = 라벨 카드 + 이름/월정액/스펙(PlanBannerRow), 그 외 리스트 = BenefitRow.
+      if (mode === 'list') {
+        return component.atoms.some((a) => a.atomType === 'PRICE')
+          ? <PlanBannerRow component={component} />
+          : <BenefitRow component={component} reason={reason} parts={parts} />;
+      }
+      return <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} parts={parts} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':
@@ -600,14 +631,16 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   //  · 배너형 코너는 히어로로 승격하지 않는다. 배너 자체가 본문(BannerCard 컴포넌트)으로 렌더된다.
   //  · 빅배너를 끄면 첨부 배너 이미지가 있어도 상단 배너를 표시하지 않는다(빅배너 토글이 유일한 스위치).
   const bannerSrc = corner.bigBanner && !isBanner ? (corner.bannerImageUrl ?? firstImg) : null;
-  // 빅배너 히어로 — 여백 없이 카드 상단을 꽉 채우는 full-bleed(카드를 반으로 쪼개는 느낌). 큼직한 4:3.
+  // 빅배너 히어로 — 이미지의 '자연 비율' 그대로 full-bleed(고정 aspect 강제 금지).
+  //  배너 소재마다 비율이 달라(예: 2.05:1 카운트다운·500GB, 1.6:1 요금제 히어로) 16/10로 강제하면
+  //  좌우가 잘리고 위/아래 빈 여백이 생겨서, w-full·높이 auto로 이미지를 있는 그대로 보여준다.
   const bannerEl = bannerSrc ? (
     isRenderableImg(bannerSrc) ? (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={bannerSrc}
         alt={corner.bannerName ?? ''}
-        className="aspect-[16/10] w-full bg-gradient-to-b from-sky-50 to-white object-cover"
+        className="block w-full bg-gradient-to-b from-sky-50 to-white"
       />
     ) : (
       <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-indigo-200 to-slate-300 text-[12px] font-medium text-slate-600">

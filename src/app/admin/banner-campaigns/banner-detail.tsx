@@ -139,30 +139,7 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
         </div>
       </OpsSection>
 
-      <OpsSection title="노출 위치">
-        {usage.length === 0 ? (
-          <p className="px-1 py-2 text-[13px] text-slate-400">아직 어느 전시화면에도 편성되지 않았습니다. <span className="text-slate-400">(빌더에서 배너형 코너에 ‘배너 불러오기’로 편성됩니다)</span></p>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-[12px] text-muted-foreground">이 배너가 편성된 전시화면 · 템플릿 · 코너 <b className="text-indigo-600">{usage.length}곳</b></p>
-            <div className="divide-y overflow-hidden rounded-lg border border-slate-200">
-              {usage.map((u, i) => (
-                <div key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5 text-[13px]">
-                  <MapPin className="h-4 w-4 shrink-0 text-indigo-400" />
-                  <Link href={`/admin/containers/${u.containerId}`} className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline">{u.containerName}</Link>
-                  {u.containerType && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-medium text-slate-500">{u.containerType}</span>}
-                  <span className="text-slate-300">›</span>
-                  <span className="text-slate-600">{u.templateName}</span>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-500">{(DISPLAY_STATUS_LABEL as Record<string, string>)[u.templateStatus] ?? u.templateStatus}</span>
-                  <span className="text-slate-300">›</span>
-                  <span className="text-slate-500">{u.cornerName}</span>
-                  {u.sizeDetail && <span className="ml-auto rounded bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-600">{u.sizeDetail}</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </OpsSection>
+      {/* 노출 위치는 배너별(유형상세)로 각각 가지므로 별도 섹션 없이 아래 '유형상세'의 노출 위치 컬럼에서 상세 표기. (2026-09-28 사용자 결정) */}
 
       <OpsSection title="랜딩 설정">
         <div className="grid grid-cols-1">
@@ -183,7 +160,7 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
             <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
               <th className="w-56 px-4 py-2.5 text-left font-medium">유형 상세</th>
               <th className="w-24 px-4 py-2.5 text-left font-medium">사용여부</th>
-              <th className="w-56 px-4 py-2.5 text-left font-medium">노출 위치</th>
+              <th className="w-80 px-4 py-2.5 text-left font-medium">노출 위치</th>
               <th className="px-4 py-2.5 text-left font-medium">이미지</th>
             </tr>
           </thead>
@@ -201,16 +178,47 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
                   <td className="px-4 py-4 text-slate-600">{t.useYn === false ? '미사용' : '사용'}</td>
                   <td className="px-4 py-4">
                     {(() => {
-                      // 이 규격(유형상세)이 실제로 편성된 위치 — 전시화면·코너 (중복 제거)
-                      const locs = Array.from(new Map(usage.filter((u) => u.sizeDetail === t.detail).map((u) => [`${u.containerName}·${u.cornerName}`, u])).values());
+                      // 이 규격(유형상세)이 편성된 위치 — 같은 전시화면(컨테이너)·코너면 하나로 묶고, 로그인/비로그인 등 템플릿은 그 아래 칩으로.
+                      //  (같은 컨테이너+코너가 템플릿만 달라 여러 번 나오던 중복 제거)
+                      const items = usage.filter((u) => u.sizeDetail === t.detail);
+                      const groups = new Map<string, { u: typeof items[number]; templates: { name: string; status: string }[] }>();
+                      for (const u of items) {
+                        const k = `${u.containerId}·${u.cornerName}`;
+                        const g = groups.get(k) ?? { u, templates: [] };
+                        if (!g.templates.some((tt) => tt.name === u.templateName)) g.templates.push({ name: u.templateName, status: u.templateStatus });
+                        groups.set(k, g);
+                      }
+                      const locs = [...groups.values()];
                       if (locs.length === 0) return <span className="text-[12px] text-slate-400">미노출</span>;
+                      const stLabel = (s: string) => (DISPLAY_STATUS_LABEL as Record<string, string>)[s] ?? s;
                       return (
-                        <div className="space-y-1">
-                          {locs.map((u, k) => (
-                            <Link key={k} href={`/admin/containers/${u.containerId}`} className="flex items-center gap-1 text-[12px] text-slate-600 hover:text-indigo-600 hover:underline">
-                              <MapPin className="h-3 w-3 shrink-0 text-indigo-400" />{u.containerName} <span className="text-slate-300">·</span> {u.cornerName}
-                            </Link>
-                          ))}
+                        <div className="space-y-2">
+                          {locs.map(({ u, templates }, k) => {
+                            // 템플릿명에서 컨테이너 접두(예: '쇼핑 홈'→'쇼핑')를 떼고 로그인/비로그인/기본만 간결하게.
+                            const prefix = u.containerName.replace(/\s*홈$/, '');
+                            const shortName = (n: string) => n.replace(new RegExp(`^${prefix}\\s*`), '') || n;
+                            const uniform = templates.every((tt) => tt.status === templates[0].status);
+                            return (
+                              <div key={k} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                {/* 위치 = 전시화면 › 코너 (한 줄) */}
+                                <div className="flex flex-wrap items-center gap-1.5 text-[12.5px]">
+                                  <MapPin className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+                                  <Link href={`/admin/containers/${u.containerId}`} className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline">{u.containerName}</Link>
+                                  {u.containerType && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{u.containerType}</span>}
+                                  <span className="text-slate-300">›</span>
+                                  <span className="text-slate-700">{u.cornerName}</span>
+                                </div>
+                                {/* 적용 템플릿 = 로그인/비로그인/기본 (상태 동일하면 1회 표기) */}
+                                <div className="mt-1.5 flex flex-wrap items-center gap-1 pl-5 text-[11px]">
+                                  <span className="text-slate-400">적용 템플릿 {templates.length}</span>
+                                  {templates.map((tt, j) => (
+                                    <span key={j} className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{shortName(tt.name)}</span>
+                                  ))}
+                                  {uniform && <span className="text-slate-400">· {stLabel(templates[0].status)}</span>}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })()}

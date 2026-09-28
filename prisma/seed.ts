@@ -159,13 +159,13 @@ async function main() {
   const cornerMovie = await corner(
     {
       name: '영화 예매',
-      cornerType: '콘텐츠 안내형', // 정책서 코너유형(혜택 정리 #1) · 구성=상품형 · 배열=가로형(2.5배열)
+      cornerType: '콘텐츠 안내형', // 정책서 코너유형(혜택 정리 #1) · 구성=상품형 · 배열=가로형
       minItems: 1,
       maxItems: 10,
       mainTitle: '불금인 오늘 명동 CGV에서\n무료 영화 어때요?',
       subTitle: 'T 영화예매',
       cardShape: '3:4', // 영화 포스터 = 3:4 직사각형
-      layoutDetail: '가로형(2.5배열)',
+      layoutDetail: '가로형',
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '인기순',
@@ -243,7 +243,7 @@ async function main() {
       maxItems: 6,
       mainTitle: '오늘이 지나면\n다시 없는 혜택이에요',
       subTitle: 'T Week · 오늘 소멸 예정',
-      layoutDetail: '세로형',
+      layoutDetail: '세로형+배너', // 상단 소멸 히어로(빅배너) + 혜택 리스트 (혜택·오퍼형 4종 중 세로형+배너)
       bigBanner: true, // 상단 빅배너로 강조 (배치 옵션)
       cornerLayout: '세로 리스트형',
       subTitleIcon: '화살표',
@@ -323,7 +323,7 @@ async function main() {
       maxItems: 10,
       mainTitle: 'VIP 지훈님,\n최대 할인 혜택만 모았어요',
       subTitle: '카테고리별 혜택',
-      layoutDetail: '세로형(카테고리탭)',
+      layoutDetail: '세로형+칩', // 카테고리 칩 탭 + 혜택 리스트 (혜택·오퍼형 4종 중 세로형+칩)
       subTitleIcon: '화살표',
     },
     [
@@ -457,33 +457,8 @@ async function main() {
   const template = await prisma.template.create({
     data: {
       containerId: container.id,
-      name: '혜택 기본',
+      name: '혜택 로그인',
       conditionGroup: '로그인',
-      isDefault: true,
-      status: 'DRAFT',
-      version: 1,
-      templateCorners: {
-        create: [
-          { cornerId: cornerTop.id, order: 0 },
-          { cornerId: cornerMovie.id, order: 1 },
-          { cornerId: cornerZeroWeek.id, order: 2 },
-          { cornerId: cornerBanner1.id, order: 3 },
-          { cornerId: cornerTWeek.id, order: 4 },
-          { cornerId: cornerCategory.id, order: 5 },
-          { cornerId: cornerTDay.id, order: 6 },
-          { cornerId: cornerAirpods.id, order: 7 },
-        ],
-      },
-    },
-  });
-  await prisma.container.update({ where: { id: container.id }, data: { defaultTemplateId: template.id } });
-
-  // 두 번째 Template (비로그인) — 로그인과 동일하게 8개 Corner 전체 배치.
-  await prisma.template.create({
-    data: {
-      containerId: container.id,
-      name: '비로그인 기본',
-      conditionGroup: '비로그인',
       isDefault: false,
       status: 'DRAFT',
       version: 1,
@@ -501,6 +476,26 @@ async function main() {
       },
     },
   });
+  // 혜택 홈 8개 코너 (기본/로그인/비로그인 공통 배치)
+  const beCorners = [
+    { cornerId: cornerTop.id, order: 0 },
+    { cornerId: cornerMovie.id, order: 1 },
+    { cornerId: cornerZeroWeek.id, order: 2 },
+    { cornerId: cornerBanner1.id, order: 3 },
+    { cornerId: cornerTWeek.id, order: 4 },
+    { cornerId: cornerCategory.id, order: 5 },
+    { cornerId: cornerTDay.id, order: 6 },
+    { cornerId: cornerAirpods.id, order: 7 },
+  ];
+  // 비로그인 Template (로그인 판정 후 비로그인 분기)
+  await prisma.template.create({
+    data: { containerId: container.id, name: '혜택 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: beCorners } },
+  });
+  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 안전하게 비로그인 뷰 기준.
+  const beBase = await prisma.template.create({
+    data: { containerId: container.id, name: '혜택 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: beCorners } },
+  });
+  await prisma.container.update({ where: { id: container.id }, data: { defaultTemplateId: beBase.id } });
 
   // ═══════════════════════════════════════════════════════════
   // 쇼핑 홈 (Container) — 혜택 홈과 동일 포맷 (Container + 기본 Template + Corner 배치)
@@ -522,22 +517,22 @@ async function main() {
 
   // 2) 단말기 추천 (상품형 · 가로 SWIPE)
   const dev1 = await comp('iPhone 20 Air 256GB', '상품형', [
-    { name: '단말기1 이미지', atomType: 'IMAGE', imageUrl: '/assets/iphone20-air.png', altText: 'iPhone 20 Air' },
+    { name: '단말기1 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 Air' },
     { name: '단말기1 제목', atomType: 'TEXT', content: 'iPhone 20 Air' },
+    { name: '할인율', atomType: 'TEXT', content: '7%' },
     { name: '단말기1 가격', atomType: 'PRICE', content: '1,165,600원' },
-    { name: '단말기1 배지', atomType: 'BADGE', content: '7%' },
   ]);
-  const dev2 = await comp('iPhone 20 Pro 256GB', '상품형', [
-    { name: '단말기2 이미지', atomType: 'IMAGE', imageUrl: '/assets/iphone20-pro.png', altText: 'iPhone 20 Pro' },
-    { name: '단말기2 제목', atomType: 'TEXT', content: 'iPhone 20 Pro' },
-    { name: '단말기2 가격', atomType: 'PRICE', content: '1,550,900원' },
-    { name: '단말기2 배지', atomType: 'BADGE', content: '7%' },
+  const dev2 = await comp('iPhone 20 Air 256GB (2)', '상품형', [
+    { name: '단말기2 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 Air' },
+    { name: '단말기2 제목', atomType: 'TEXT', content: 'iPhone 20 Air' },
+    { name: '할인율', atomType: 'TEXT', content: '7%' },
+    { name: '단말기2 가격', atomType: 'PRICE', content: '1,165,600원' },
   ]);
-  const dev3 = await comp('iPhone 20 Pro Max 256GB', '상품형', [
-    { name: '단말기3 이미지', atomType: 'IMAGE', imageUrl: '/assets/iphone20-promax.png', altText: 'iPhone 20 Pro Max' },
-    { name: '단말기3 제목', atomType: 'TEXT', content: 'iPhone 20 Pro Max' },
-    { name: '단말기3 가격', atomType: 'PRICE', content: '1,850,300원' },
-    { name: '단말기3 배지', atomType: 'BADGE', content: '7%' },
+  const dev3 = await comp('iPhone 20 Air 256GB (3)', '상품형', [
+    { name: '단말기3 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 Air' },
+    { name: '단말기3 제목', atomType: 'TEXT', content: 'iPhone 20 Air' },
+    { name: '할인율', atomType: 'TEXT', content: '7%' },
+    { name: '단말기3 가격', atomType: 'PRICE', content: '1,165,600원' },
   ]);
   const shopCornerDevice = await corner(
     {
@@ -548,7 +543,8 @@ async function main() {
       mainTitle: '최근 본 아이폰을\n혜택으로 만나보세요',
       subTitle: '단말기 추천',
       cardShape: '1:1', // 상품 이미지 = 1:1 정사각형
-      layoutDetail: '가로형(2.5배열)',
+      layoutDetail: '가로형+배너', // 상단 히어로(아이폰) + 가로 상품 카드
+      bigBanner: true,
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '인기순',
@@ -576,25 +572,27 @@ async function main() {
 
   // 4) 요금제 추천 — 약정 만료 (혜택·오퍼형 · 상품형 · 세로형(배너)) — 상단 히어로 배너 + 요금제(상품) 리스트
   const plan1 = await comp('0 청년 109 넷플릭스', '상품형', [
-    { name: '요금제1 배지', atomType: 'BADGE', content: '무료' },
+    { name: '요금제1 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/plan-card-unlimited.png', altText: '무제한' },
+    { name: '요금제1 배지', atomType: 'BADGE', content: '무제한' },
     { name: '요금제1 제목', atomType: 'TEXT', content: '0 청년 109 (넷플릭스)' },
-    { name: '요금제1 가격', atomType: 'INFO', content: '월 99,000원' },
-    { name: '요금제1 설명', atomType: 'INFO', content: '데이터 500GB · 넷플릭스 프리미엄 제공 +2' },
+    { name: '요금제1 가격', atomType: 'PRICE', content: '월 99,000원' },
+    { name: '요금제1 설명', atomType: 'INFO', content: '데이터 500GB | 넷플릭스 프리미엄 제공 +2' },
   ]);
   const plan2 = await comp('0 청년 109 네이버', '상품형', [
-    { name: '요금제2 배지', atomType: 'BADGE', content: '500GB' },
+    { name: '요금제2 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/plan-card-150gb.png', altText: '150GB' },
+    { name: '요금제2 배지', atomType: 'BADGE', content: '150GB' },
     { name: '요금제2 제목', atomType: 'TEXT', content: '0 청년 109 (네이버 플러스 스토어)' },
-    { name: '요금제2 가격', atomType: 'INFO', content: '월 99,000원' },
-    { name: '요금제2 설명', atomType: 'INFO', content: '데이터 500GB · 넷플릭스 프리미엄 제공 +2' },
+    { name: '요금제2 가격', atomType: 'PRICE', content: '월 99,000원' },
+    { name: '요금제2 설명', atomType: 'INFO', content: '데이터 500GB | 넷플릭스 프리미엄 제공 +2' },
   ]);
   const shopCornerPlan = await corner(
     {
       name: '약정 만료 요금제',
-      cornerType: '상품형', // 요금제(상품) 리스트 → 상품형 · 세로형 (+ 빅배너 배치 옵션)
+      cornerType: '상품형', // 요금제(상품) 리스트 → 상품형 · 세로형+배너 (상단 히어로 배너 + 리스트)
       maxItems: 6,
       mainTitle: '약정 만료 시 위약금 없이\n이어갈 수 있는 요금제에요',
       subTitle: '전체 요금제',
-      layoutDetail: '세로형',
+      layoutDetail: '세로형+배너',
       bigBanner: true, // 상단 빅배너로 강조 (배치 옵션)
       subTitleIcon: '화살표',
       moreButtonUse: true,
@@ -606,6 +604,11 @@ async function main() {
       { id: plan2.id, componentType: '상품형' },
     ],
   );
+  // 약정 만료 요금제(상품형·세로형+배너) 상단 히어로 = 500GB 카드 배너(약정만료 배너). bannerId로 붙여 상품 카드 이미지가 아닌 이 히어로가 상단에 오도록.
+  const bannerPlanExpire = await prisma.banner.create({
+    data: { name: '약정 만료 요금제 히어로', imageUrl: '/assets/ds/plan-hero-expire.png', linkUrl: '/plan', status: 'active' },
+  });
+  await prisma.corner.update({ where: { id: shopCornerPlan.id }, data: { bannerId: bannerPlanExpire.id } });
 
   // 5) 데이터 요금제 안내 (상품형 · 세로형) — 요금제(상품) 리스트
   const data1 = await comp('데이터 무제한', '상품형', [
@@ -651,20 +654,19 @@ async function main() {
   const gift1 = await comp('영 메모리즈 오드 퍼퓸', '상품형', [
     { name: '기프티콘1 이미지', atomType: 'IMAGE', imageUrl: '/assets/gift-perfume.png', altText: '영 메모리즈 오드 퍼퓸' },
     { name: '기프티콘1 제목', atomType: 'TEXT', content: '영 메모리즈 오드 퍼퓸 100ml' },
+    { name: '할인율', atomType: 'TEXT', content: '20%' },
     { name: '기프티콘1 가격', atomType: 'PRICE', content: '235,000원' },
-    { name: '기프티콘1 배지', atomType: 'BADGE', content: '20%' },
   ]);
   const gift2 = await comp('SNOWMAN8 Portable', '상품형', [
     { name: '기프티콘2 이미지', atomType: 'IMAGE', imageUrl: '/assets/gift-humidifier.png', altText: 'SNOWMAN8 Portable' },
     { name: '기프티콘2 제목', atomType: 'TEXT', content: 'SNOWMAN8 Portable WARMGREY TAIL' },
+    { name: '할인율', atomType: 'TEXT', content: '5%' },
     { name: '기프티콘2 가격', atomType: 'PRICE', content: '46,550원' },
-    { name: '기프티콘2 배지', atomType: 'BADGE', content: '5%' },
   ]);
   const gift3 = await comp('로즈마리 바디 세트', '상품형', [
     { name: '기프티콘3 이미지', atomType: 'IMAGE', imageUrl: '/assets/gift-body.png', altText: '로즈마리 바디 세트' },
     { name: '기프티콘3 제목', atomType: 'TEXT', content: '로즈마리 리프레시 바디 세트' },
     { name: '기프티콘3 가격', atomType: 'PRICE', content: '83,160원' },
-    { name: '기프티콘3 배지', atomType: 'BADGE', content: '10%' },
   ]);
   const shopCornerGift = await corner(
     {
@@ -675,7 +677,7 @@ async function main() {
       mainTitle: '더 저렴하게 살 수 있는\n기프티콘이 있어요',
       subTitle: '기프티콘',
       cardShape: '1:1', // 상품 이미지 = 1:1 정사각형
-      layoutDetail: '가로형(2.5배열)',
+      layoutDetail: '가로형',
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '낮은 가격순',
@@ -715,8 +717,8 @@ async function main() {
   const sub3 = await comp('AI 크리에이터', '상품형', [
     { name: '구독3 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/sub-figma-claude.png', altText: 'Figma+Claude' },
     { name: '구독3 제목', atomType: 'TEXT', content: 'AI 크리에이티브팩 (Figma+Claude)' },
+    { name: '할인율', atomType: 'TEXT', content: '20%' },
     { name: '구독3 가격', atomType: 'PRICE', content: '27,200원' },
-    { name: '구독3 배지', atomType: 'BADGE', content: '20%' },
   ]);
   const shopCornerSub = await corner(
     {
@@ -728,7 +730,7 @@ async function main() {
       subTitle: '구독 상품',
       cardShape: '1:1', // 상품 이미지 = 1:1 정사각형
       titleLines: 2, // 긴 구독 상품명(예: 주말 장보기 패스 (네이버플러스스토어+컬리))은 두 줄로 표시
-      layoutDetail: '가로형(2.5배열)',
+      layoutDetail: '가로형',
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '인기순',
@@ -758,9 +760,9 @@ async function main() {
   const shopTemplate = await prisma.template.create({
     data: {
       containerId: shopContainer.id,
-      name: '쇼핑 기본',
+      name: '쇼핑 로그인',
       conditionGroup: '로그인',
-      isDefault: true,
+      isDefault: false,
       status: 'DRAFT',
       version: 1,
       templateCorners: {
@@ -777,30 +779,26 @@ async function main() {
       },
     },
   });
-  await prisma.container.update({ where: { id: shopContainer.id }, data: { defaultTemplateId: shopTemplate.id } });
-  // 두 번째 Template (비로그인) — 로그인과 동일한 코너 배치. (혜택 홈과 동일 포맷)
+  // 쇼핑 홈 코너 (기본/로그인/비로그인 공통 배치)
+  const shopCornersList = [
+    { cornerId: shopCornerTab.id, order: 0 },
+    { cornerId: shopCornerDevice.id, order: 1 },
+    { cornerId: shopCornerPreorder.id, order: 2 },
+    { cornerId: shopCornerPlan.id, order: 3 },
+    { cornerId: shopCornerData.id, order: 4 },
+    { cornerId: shopCornerGift.id, order: 5 },
+    { cornerId: shopCornerSpeaker.id, order: 6 },
+    { cornerId: shopCornerSub.id, order: 7 },
+  ];
+  // 비로그인 Template
   await prisma.template.create({
-    data: {
-      containerId: shopContainer.id,
-      name: '비로그인 기본',
-      conditionGroup: '비로그인',
-      isDefault: false,
-      status: 'DRAFT',
-      version: 1,
-      templateCorners: {
-        create: [
-          { cornerId: shopCornerTab.id, order: 0 },
-          { cornerId: shopCornerDevice.id, order: 1 },
-          { cornerId: shopCornerPreorder.id, order: 2 },
-          { cornerId: shopCornerPlan.id, order: 3 },
-          { cornerId: shopCornerData.id, order: 4 },
-          { cornerId: shopCornerGift.id, order: 5 },
-          { cornerId: shopCornerSpeaker.id, order: 6 },
-          { cornerId: shopCornerSub.id, order: 7 },
-        ],
-      },
-    },
+    data: { containerId: shopContainer.id, name: '쇼핑 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: shopCornersList } },
   });
+  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 비로그인 뷰 기준.
+  const shopBase = await prisma.template.create({
+    data: { containerId: shopContainer.id, name: '쇼핑 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: shopCornersList } },
+  });
+  await prisma.container.update({ where: { id: shopContainer.id }, data: { defaultTemplateId: shopBase.id } });
   await prisma.auditLog.create({
     data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: shopTemplate.id, afterValue: JSON.stringify({ name: '쇼핑 기본', status: 'DRAFT', corners: 7 }), reason: '쇼핑 홈 재구성(단말기 코너에 사전예약 빅배너 통합)', result: 'CREATED' },
   });
@@ -942,37 +940,8 @@ async function main() {
   const myTemplate = await prisma.template.create({
     data: {
       containerId: myContainer.id,
-      name: '마이 기본',
+      name: '마이 로그인',
       conditionGroup: '로그인',
-      isDefault: true,
-      status: 'DRAFT',
-      version: 1,
-      templateCorners: {
-        create: [
-          { cornerId: myCornerProfile.id, order: 0 },
-          { cornerId: myCornerBill.id, order: 1 },
-          { cornerId: myCornerPoint.id, order: 2 },
-          { cornerId: myCornerBarcode.id, order: 3 },
-          { cornerId: myCornerData.id, order: 4 },
-          { cornerId: myCornerCombine.id, order: 5 },
-          { cornerId: myCornerProduct.id, order: 6 },
-          { cornerId: myCornerPay.id, order: 7 },
-          { cornerId: myCornerSub.id, order: 8 },
-          { cornerId: myCornerMenu.id, order: 9 },
-        ],
-      },
-    },
-  });
-  await prisma.container.update({ where: { id: myContainer.id }, data: { defaultTemplateId: myTemplate.id } });
-  await prisma.auditLog.create({
-    data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: myTemplate.id, afterValue: JSON.stringify({ name: '마이 기본', status: 'DRAFT', corners: 10 }), reason: '마이 홈 재구성(마이.png 기준: 요금·포인트·바코드·데이터·결합·상품·결제·구독·메뉴)', result: 'CREATED' },
-  });
-  // 두 번째 Template (비로그인) — 로그인과 동일한 코너 배치. (혜택 홈과 동일 포맷)
-  await prisma.template.create({
-    data: {
-      containerId: myContainer.id,
-      name: '비로그인 기본',
-      conditionGroup: '비로그인',
       isDefault: false,
       status: 'DRAFT',
       version: 1,
@@ -992,6 +961,32 @@ async function main() {
       },
     },
   });
+  await prisma.container.update({ where: { id: myContainer.id }, data: { defaultTemplateId: myTemplate.id } }); // 기본 템플릿 생성 후 아래에서 재지정
+  await prisma.auditLog.create({
+    data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: myTemplate.id, afterValue: JSON.stringify({ name: '마이 기본', status: 'DRAFT', corners: 10 }), reason: '마이 홈 재구성(마이.png 기준: 요금·포인트·바코드·데이터·결합·상품·결제·구독·메뉴)', result: 'CREATED' },
+  });
+  // 마이 홈 코너 (기본/로그인/비로그인 공통 배치)
+  const myCornersList = [
+    { cornerId: myCornerProfile.id, order: 0 },
+    { cornerId: myCornerBill.id, order: 1 },
+    { cornerId: myCornerPoint.id, order: 2 },
+    { cornerId: myCornerBarcode.id, order: 3 },
+    { cornerId: myCornerData.id, order: 4 },
+    { cornerId: myCornerCombine.id, order: 5 },
+    { cornerId: myCornerProduct.id, order: 6 },
+    { cornerId: myCornerPay.id, order: 7 },
+    { cornerId: myCornerSub.id, order: 8 },
+    { cornerId: myCornerMenu.id, order: 9 },
+  ];
+  // 비로그인 Template
+  await prisma.template.create({
+    data: { containerId: myContainer.id, name: '마이 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: myCornersList } },
+  });
+  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 비로그인 뷰 기준.
+  const myBase = await prisma.template.create({
+    data: { containerId: myContainer.id, name: '마이 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: myCornersList } },
+  });
+  await prisma.container.update({ where: { id: myContainer.id }, data: { defaultTemplateId: myBase.id } });
 
   // 코너 유형 카탈로그 (T우주 "코너 유형 관리") — 모든 홈(혜택·쇼핑·마이)에 실제 배치된 코너 유형을 카탈로그화.
   //   → 코너 유형 관리 = 전시화면에 쓰인 코너 유형의 단일 소스. 여기 등록된 유형만 빌더에서 가져올 수 있다.
@@ -1041,66 +1036,63 @@ async function main() {
     allByType.set(key, arr);
   }
   let typeIdx = 1;
-  const seenBase = new Map<string, number>();
   for (const [, corners] of allByType) {
-    const rep = corners[0];
-    const base = rep.cornerType;
-    // (구 개인화 추천형 복합형 → 7종 체계에서 혜택·오퍼형으로 흡수. 복합형 특수 처리 없음)
-    const isComposite = false;
-    const { cleanDetail } = parseBanner(rep);
-    const detail = cleanDetail ?? (isComposite ? '세로형' : null);
-    // ② 구성 컴포넌트 유형 = 코너에서 가장 많은 컴포넌트 유형(동률이면 먼저 배치된 것).
-    //   예: 카테고리별 혜택 = 선택형(탭) 1 + 상품형 3 → 상품형(주 콘텐츠) 으로 잡는다.
-    const freq = new Map<string, number>();
-    for (const cc of rep.cornerComponents) freq.set(cc.component.componentType, (freq.get(cc.component.componentType) ?? 0) + 1);
-    let componentType: string | null = null;
-    let bestFreq = -1;
-    for (const cc of rep.cornerComponents) {
-      const f = freq.get(cc.component.componentType)!;
-      if (f > bestFreq) { bestFreq = f; componentType = cc.component.componentType; }
+    const base = corners[0].cornerType;
+    // 모든 유형을 '코너(케이스)마다' 각각 코너 유형으로 분리한다(배너형 포함 — 배너 5종도 각 케이스로).
+    //  같은 배열(예: 배너형 빅배너)에 케이스가 여럿이면 목록에서 배열 그룹 카드로 묶여 '케이스 탭'으로 전환된다.
+    const emitGroups: (typeof corners)[] = corners.map((c) => [c]);
+    for (const grp of emitGroups) {
+      const rep = grp[0];
+      const { cleanDetail } = parseBanner(rep);
+      const detail = cleanDetail ?? null;
+      // ② 구성 컴포넌트 유형 = 코너에서 가장 많은 컴포넌트 유형(동률이면 먼저 배치된 것).
+      const freq = new Map<string, number>();
+      for (const cc of rep.cornerComponents) freq.set(cc.component.componentType, (freq.get(cc.component.componentType) ?? 0) + 1);
+      let componentType: string | null = null;
+      let bestFreq = -1;
+      for (const cc of rep.cornerComponents) {
+        const f = freq.get(cc.component.componentType)!;
+        if (f > bestFreq) { bestFreq = f; componentType = cc.component.componentType; }
+      }
+      componentType = componentType ?? componentTypesForCorner(base)[0] ?? null;
+      // 유형 샘플 이미지 — 이 그룹에 속한 코너들의 홈 크롭
+      const samples = grp
+        .map((c) => sampleSlugFor(c))
+        .filter(Boolean)
+        .slice(0, 6)
+        .map((slug) => `/assets/corner-samples/${slug}.png`);
+      const sampleImageUrl = samples.length ? samples.join('\n') : null;
+      // 이름: 코너별 분리라 코너명이 곧 식별자(배너형도 각 배너명).
+      const name = rep.name;
+      const created = await prisma.cornerType.create({
+        data: {
+          typeId: 'CY' + String(typeIdx).padStart(7, '0'),
+          name,
+          baseCategory: base,
+          componentType,
+          bigBanner: false, // 빅배너는 유형 구분자가 아님 (코너 인스턴스의 부속 옵션으로만)
+          sampleImageUrl,
+          markupId: rep.markupId,
+          typeDetail: detail,
+          layout: rep.cornerLayout ?? null,
+          description: null,
+          channels: 'FO',
+          platforms: '모바일',
+          active: true,
+          status: 'APPROVED',
+          createdBy: '김마리나',
+          // 타입-레벨 기본값(템플릿 강화) — 대표 코너의 노출/정렬/더보기 설정을 유형 기본값으로 승격.
+          defaultMinItems: rep.minItems ?? null,
+          defaultMaxItems: rep.maxItems ?? null,
+          defaultSortStrategy: rep.sortStrategy && rep.sortStrategy !== 'MANUAL' ? rep.sortStrategy : null,
+          defaultMoreButton: rep.moreButtonUse ?? false,
+          defaultMoreButtonLabel: rep.moreButtonUse ? '전체보기' : null, // 유형 기본 CTA는 일반 라벨(대표 코너명 상속 금지)
+        },
+      });
+      // 생성 즉시 이 그룹의 코너들을 이 유형에 연결(코너별 분리라 정확 매핑 — 아래 fallback 백필은 미배치 코너용).
+      for (const c of grp) await prisma.corner.update({ where: { id: c.id }, data: { sourceCornerTypeId: created.id } });
+      typeIdx += 1;
     }
-    componentType = componentType ?? componentTypesForCorner(base)[0] ?? null;
-    // 유형 샘플 이미지 — 이 유형에 속한 코너들의 홈 크롭(최대 2장, 줄바꿈으로 구분)
-    const samples = corners
-      .map((c) => sampleSlugFor(c))
-      .filter(Boolean)
-      .slice(0, 6)
-      .map((slug) => `/assets/corner-samples/${slug}.png`);
-    const sampleImageUrl = samples.length ? samples.join('\n') : null;
-    const baseName = base; // 코너 유형 관리 이름 = 코너 유형과 동치(별칭 미사용)
-    const seen = seenBase.get(base) ?? 0;
-    const suffix: string[] = [];
-    if (seen > 0 && detail) suffix.push(detail); // 같은 기준분류가 여러 개면 유형상세로 구분 (빅배너는 구분자 아님)
-    const name = suffix.length ? `${baseName} · ${suffix.join(' · ')}` : baseName;
-    seenBase.set(base, seen + 1);
-    await prisma.cornerType.create({
-      data: {
-        typeId: 'CY' + String(typeIdx).padStart(7, '0'),
-        name,
-        baseCategory: base,
-        componentType,
-        bigBanner: false, // 빅배너는 유형 구분자가 아님 (코너 인스턴스의 부속 옵션으로만)
-        sampleImageUrl,
-        markupId: rep.markupId,
-        typeDetail: detail,
-        layout: rep.cornerLayout ?? (isComposite ? '세로 리스트형' : null),
-        description: isComposite
-          ? '타이틀 + 카테고리 칩(선택형) + 혜택 리스트(혜택형) 복합 구성 · 예: VIP 지훈님, 최대 할인 혜택만 모았어요'
-          : null,
-        channels: 'FO',
-        platforms: '모바일',
-        active: true,
-        status: 'APPROVED',
-        createdBy: '김마리나',
-        // 타입-레벨 기본값(템플릿 강화) — 대표 코너의 노출/정렬/더보기 설정을 유형 기본값으로 승격.
-        defaultMinItems: rep.minItems ?? null,
-        defaultMaxItems: rep.maxItems ?? null,
-        defaultSortStrategy: rep.sortStrategy && rep.sortStrategy !== 'MANUAL' ? rep.sortStrategy : null,
-        defaultMoreButton: rep.moreButtonUse ?? false,
-        defaultMoreButtonLabel: rep.moreButtonUse ? '전체보기' : null, // 유형 기본 CTA는 일반 라벨(대표 코너명 상속 금지)
-      },
-    });
-    typeIdx += 1;
   }
 
   // ── 이벤트·미션 전용 코너 유형 (BO EVT Architecture "코너 유형 정의") — 3계열 14종 ──
@@ -1164,7 +1156,8 @@ async function main() {
   {
     const norm = (d: string | null) => (d ?? '').replace(/\s*·\s*빅배너\s*/, '').replace(/\(배너\)/, '').trim();
     const allTypes = await prisma.cornerType.findMany({ select: { id: true, baseCategory: true, typeDetail: true, bigBanner: true } });
-    const allCorners = await prisma.corner.findMany({ select: { id: true, cornerType: true, layoutDetail: true, bannerId: true } });
+    // 미배치(라이브러리 전용) 코너만 fallback 매칭 — 배치 코너는 위에서 코너별로 이미 정확히 연결됨.
+    const allCorners = await prisma.corner.findMany({ where: { sourceCornerTypeId: null }, select: { id: true, cornerType: true, layoutDetail: true, bannerId: true } });
     for (const c of allCorners) {
       const d = norm(c.layoutDetail);
       const big = /배너/.test(c.layoutDetail ?? '') || c.bannerId != null;
@@ -1567,7 +1560,7 @@ async function linkBannerCampaignUsage() {
     '에어팟 사전예약 배너': { code: 'BC-202609-006', size: '빅배너 (672×460)' }, // AirPods Max3
     'iPhone 20 사전예약 배너': { code: 'BC-202609-007', size: '스몰배너 (672×324)' }, // iPhone 20 · 에어팟 프로 증정
     'Marshall Stockwell 배너': { code: 'BC-202609-008', size: '띠배너 (672×214)' }, // Marshall Stockwell
-    'CHANEL 루쥬 코코 배너': { code: 'BC-202609-003', size: '스몰배너 (672×324)' }, // CHANEL 루쥬 코코 립스틱
+    'CHANEL 루쥬 코코 배너': { code: 'BC-202609-003', size: '띠배너 (672×214)' }, // CHANEL 루쥬 코코 립스틱 (코너 유형관리 등록 규격)
   };
   let linked = 0;
   for (const [compName, { code, size }] of Object.entries(MAP)) {

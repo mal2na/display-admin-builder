@@ -9,7 +9,10 @@ import { StatusPill } from '@/components/ops-ui';
 import { PUBLISH_STATUS, PUBLISH_STATUS_OPTIONS, DEPLOY_STATUS, fmtPeriod, fmtDateTime, computePublishStatus, type PublishStatus } from '@/lib/widget-taxonomy';
 import { reorderAppWidgets, redisReloadAppWidgets } from './actions';
 import { cn } from '@/lib/utils';
-import { RotateCcw, Search, ArrowUpDown } from 'lucide-react';
+import { RotateCcw, Search, GripVertical } from 'lucide-react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 export type WidgetRow = {
   id: string;
@@ -27,6 +30,34 @@ export type WidgetRow = {
 
 const PER_PAGE = 10;
 
+type ViewRow = WidgetRow & { publishStatus: PublishStatus; rank: number };
+
+// 드래그 가능한 목록 행 — 노출순서 셀에 드래그 핸들. 배너명 클릭 시 상세로 이동.
+function SortableRow({ r, onOpen }: { r: ViewRow; onOpen: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: r.id });
+  const ps = PUBLISH_STATUS[r.publishStatus];
+  const style = { transform: CSS.Transform.toString(transform), transition } as React.CSSProperties;
+  return (
+    <tr ref={setNodeRef} style={style} className={cn('border-b last:border-b-0 hover:bg-slate-50/60', isDragging && 'relative z-10 bg-indigo-50/70 shadow-lg')}>
+      <td className="px-3 py-2">
+        <div className="flex items-center gap-1.5">
+          <button type="button" className="cursor-grab touch-none text-slate-300 hover:text-slate-500 active:cursor-grabbing" {...attributes} {...listeners} aria-label="드래그하여 순서 변경">
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <span className="text-xs font-medium tabular-nums text-slate-700">{r.rank}</span>
+        </div>
+      </td>
+      <td className="cursor-pointer px-3 py-2 font-medium text-slate-800 hover:text-indigo-600" onClick={onOpen}>{r.bannerName}</td>
+      <td className="px-3 py-2 text-slate-600">{r.widgetTypeName ?? '-'}</td>
+      <td className="px-3 py-2"><StatusPill label={ps.label} tone={ps.tone} dot={r.publishStatus === 'live' || r.publishStatus === 'unpublished'} /></td>
+      <td className="px-3 py-2 text-slate-600">{DEPLOY_STATUS[r.deployStatus as keyof typeof DEPLOY_STATUS]?.label ?? r.deployStatus}</td>
+      <td className="px-3 py-2 text-[12px] text-slate-500">{fmtPeriod(r.publishStart, r.publishEnd)}</td>
+      <td className="px-3 py-2 text-slate-600">{r.updatedBy ?? '-'}</td>
+      <td className="px-3 py-2 text-[12px] text-slate-500">{fmtDateTime(r.updatedAt)}</td>
+    </tr>
+  );
+}
+
 export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widgetTypes: { id: string; name: string }[] }) {
   const router = useRouter();
   const [status, setStatus] = useState('');
@@ -36,80 +67,97 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
   const [name, setName] = useState('');
   const [applied, setApplied] = useState({ status: '', typeId: '', from: '', to: '', name: '' });
   const [page, setPage] = useState(1);
-  const initialOrders = useMemo(() => Object.fromEntries(rows.map((r) => [r.id, r.displayOrder])), [rows]);
-  const [orders, setOrders] = useState<Record<string, number>>(initialOrders);
-  const [editingOrder, setEditingOrder] = useState(false);
   const [pending, start] = useTransition();
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  // 중복 노출순서 값 집합 (전체 행 기준)
-  const dupValues = useMemo(() => {
-    const counts = new Map<number, number>();
-    for (const r of rows) { const v = orders[r.id] ?? 0; counts.set(v, (counts.get(v) ?? 0) + 1); }
-    return new Set([...counts.entries()].filter(([, c]) => c > 1).map(([v]) => v));
-  }, [rows, orders]);
+  const byId = useMemo(() => Object.fromEntries(rows.map((r) => [r.id, r])), [rows]);
+  // 노출순서(displayOrder) 내림차순 = 위가 우선. orderedIds가 현재(드래그 반영) 순서의 원본.
+  const initialOrder = useMemo(() => [...rows].sort((a, b) => b.displayOrder - a.displayOrder).map((r) => r.id), [rows]);
+  const [orderedIds, setOrderedIds] = useState<string[]>(initialOrder);
+  const dirty = useMemo(() => orderedIds.join(',') !== initialOrder.join(','), [orderedIds, initialOrder]);
 
-  const withStatus = useMemo(
-    () => rows.map((r) => ({ ...r, publishStatus: computePublishStatus(r.exposeYn, r.publishStart ? new Date(r.publishStart) : null, r.publishEnd ? new Date(r.publishEnd) : null) as PublishStatus })),
-    [rows],
-  );
+  const statusOf = (r: WidgetRow) => computePublishStatus(r.exposeYn, r.publishStart ? new Date(r.publishStart) : null, r.publishEnd ? new Date(r.publishEnd) : null) as PublishStatus;
 
-  const filtered = useMemo(() => {
+  // 검색 필터를 통과하는 id 집합
+  const matchedIds = useMemo(() => {
     const f = applied;
-    return withStatus
-      .filter((r) => (f.status ? r.publishStatus === f.status : true))
-      .filter((r) => (f.typeId ? r.widgetTypeId === f.typeId : true))
-      .filter((r) => (f.name ? r.bannerName.toLowerCase().includes(f.name.toLowerCase()) : true))
-      .filter((r) => (f.from ? (r.publishEnd ?? r.publishStart ?? '') >= f.from : true))
-      .filter((r) => (f.to ? (r.publishStart ?? r.publishEnd ?? '') <= f.to + 'T23:59' : true))
-      .sort((a, b) => (orders[b.id] ?? 0) - (orders[a.id] ?? 0));
-  }, [withStatus, applied, orders]);
+    return new Set(rows.filter((r) => {
+      if (f.status && statusOf(r) !== f.status) return false;
+      if (f.typeId && r.widgetTypeId !== f.typeId) return false;
+      if (f.name && !r.bannerName.toLowerCase().includes(f.name.toLowerCase())) return false;
+      if (f.from && (r.publishEnd ?? r.publishStart ?? '') < f.from) return false;
+      if (f.to && (r.publishStart ?? r.publishEnd ?? '') > f.to + 'T23:59') return false;
+      return true;
+    }).map((r) => r.id));
+  }, [rows, applied]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const pageRows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  // 화면 순서 = orderedIds에서 검색 통과분만. rank는 전체 순서 기준 위치(1부터).
+  const orderedView: ViewRow[] = useMemo(() =>
+    orderedIds
+      .map((id, idx) => ({ id, rank: idx + 1 }))
+      .filter((o) => byId[o.id] && matchedIds.has(o.id))
+      .map((o) => ({ ...byId[o.id], publishStatus: statusOf(byId[o.id]), rank: o.rank })),
+  [orderedIds, byId, matchedIds]);
+
+  const totalPages = Math.max(1, Math.ceil(orderedView.length / PER_PAGE));
+  const pageRows = orderedView.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const doSearch = () => { setApplied({ status, typeId, from, to, name }); setPage(1); };
   const doReset = () => { setStatus(''); setTypeId(''); setFrom(''); setTo(''); setName(''); setApplied({ status: '', typeId: '', from: '', to: '', name: '' }); setPage(1); };
 
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setOrderedIds((ids) => {
+      const oldIndex = ids.indexOf(String(active.id));
+      const newIndex = ids.indexOf(String(over.id));
+      if (oldIndex < 0 || newIndex < 0) return ids;
+      return arrayMove(ids, oldIndex, newIndex);
+    });
+  };
+
   const saveOrder = () => {
-    if (dupValues.size > 0) { alert('동일한 노출순서 번호가 있습니다. 중복되지 않도록 입력해주세요.'); return; }
+    // 화면 위(=rank 1)가 가장 큰 displayOrder → 내림차순 정렬 시 순서 유지.
+    const n = orderedIds.length;
+    const orders = orderedIds.map((id, i) => ({ id, order: n - i }));
     start(async () => {
-      await reorderAppWidgets(Object.entries(orders).map(([id, order]) => ({ id, order: Number(order) || 0 })));
-      setEditingOrder(false);
+      await reorderAppWidgets(orders);
       alert('저장되었습니다.');
       router.refresh();
     });
   };
-  const cancelOrder = () => { setOrders(initialOrders); setEditingOrder(false); };
   const redisReload = () => start(async () => { await redisReloadAppWidgets(); alert('Redis Reload 요청되었습니다. (배포 공통 프로세스 확정 후 실제 연동)'); });
 
   return (
     <div className="space-y-4">
-      {/* 검색 영역 */}
-      <div className="rounded-xl border bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">게시상태
-            <Select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-32 text-sm">
+      {/* 검색 영역 — 라벨 인라인, 버튼 우측 (SB) */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">게시상태</span>
+            <Select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-28 text-sm">
               <option value="">전체</option>
               {PUBLISH_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </Select>
-          </label>
-          <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">위젯유형
-            <Select value={typeId} onChange={(e) => setTypeId(e.target.value)} className="h-9 w-44 text-sm">
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">위젯유형</span>
+            <Select value={typeId} onChange={(e) => setTypeId(e.target.value)} className="h-9 w-40 text-sm">
               <option value="">전체</option>
               {widgetTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </Select>
-          </label>
-          <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">게시기간
-            <div className="flex items-center gap-1">
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-36 text-sm" />
-              <span className="text-muted-foreground">-</span>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-36 text-sm" />
-            </div>
-          </label>
-          <label className="flex flex-1 flex-col gap-1 text-[12px] text-muted-foreground">배너명
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="배너명을 입력하세요" className="h-9 text-sm" />
-          </label>
-          <div className="flex gap-2">
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">게시기간</span>
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-36 text-sm" />
+            <span className="text-muted-foreground">-</span>
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-36 text-sm" />
+          </div>
+          <div className="flex flex-1 items-center gap-2">
+            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">배너명</span>
+            <Input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder="배너명을 입력하세요" className="h-9 min-w-[160px] flex-1 text-sm" />
+          </div>
+          <div className="ml-auto flex gap-2">
             <Button type="button" variant="outline" onClick={doReset}><RotateCcw className="mr-1 h-3.5 w-3.5" />초기화</Button>
             <Button type="button" onClick={doSearch}><Search className="mr-1 h-3.5 w-3.5" />조회</Button>
           </div>
@@ -118,10 +166,11 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
 
       {/* 테이블 정보 */}
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">App 위젯 관리 목록 <span className="text-indigo-600">{filtered.length}건</span></p>
+        <p className="text-sm font-semibold">App 위젯 관리 목록 <span className="text-indigo-600">{orderedView.length}건</span></p>
+        {dirty && <span className="text-[12px] font-medium text-amber-600">순서가 변경되었습니다. ‘순서저장’을 눌러 반영하세요.</span>}
       </div>
 
-      {/* 목록 */}
+      {/* 목록 — 드래그앤드롭 순서 변경 */}
       <div className="border-y border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead>
@@ -136,34 +185,17 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
               <th className="px-3 py-2.5 text-left font-medium">최근 수정일시</th>
             </tr>
           </thead>
-          <tbody>
-            {pageRows.length === 0 ? (
-              <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">조회 결과가 없습니다.</td></tr>
-            ) : pageRows.map((r) => {
-              const ps = PUBLISH_STATUS[r.publishStatus];
-              const isDup = editingOrder && dupValues.has(orders[r.id] ?? 0);
-              return (
-                <tr key={r.id} className="border-b last:border-b-0 hover:bg-slate-50/60">
-                  <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                    {editingOrder ? (
-                      <Input value={orders[r.id] ?? 0} onChange={(e) => setOrders((o) => ({ ...o, [r.id]: Number(e.target.value.replace(/\D/g, '')) || 0 }))}
-                        title={isDup ? '중복된 노출순서입니다.' : undefined}
-                        className={cn('h-8 w-16 text-center text-xs', isDup && 'border-rose-400 bg-rose-50 text-rose-600 focus-visible:ring-rose-300')} />
-                    ) : (
-                      <span className="inline-flex h-8 w-16 items-center justify-center text-xs font-medium text-slate-700">{orders[r.id] ?? 0}</span>
-                    )}
-                  </td>
-                  <td className="cursor-pointer px-3 py-2 font-medium text-slate-800" onClick={() => router.push(`/admin/app-widgets/${r.id}`)}>{r.bannerName}</td>
-                  <td className="px-3 py-2 text-slate-600">{r.widgetTypeName ?? '-'}</td>
-                  <td className="px-3 py-2"><StatusPill label={ps.label} tone={ps.tone} dot={r.publishStatus === 'live' || r.publishStatus === 'unpublished'} /></td>
-                  <td className="px-3 py-2 text-slate-600">{DEPLOY_STATUS[r.deployStatus as keyof typeof DEPLOY_STATUS]?.label ?? r.deployStatus}</td>
-                  <td className="px-3 py-2 text-[12px] text-slate-500">{fmtPeriod(r.publishStart, r.publishEnd)}</td>
-                  <td className="px-3 py-2 text-slate-600">{r.updatedBy ?? '-'}</td>
-                  <td className="px-3 py-2 text-[12px] text-slate-500">{fmtDateTime(r.updatedAt)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={pageRows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+              <tbody>
+                {pageRows.length === 0 ? (
+                  <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">조회 결과가 없습니다.</td></tr>
+                ) : pageRows.map((r) => (
+                  <SortableRow key={r.id} r={r} onOpen={() => router.push(`/admin/app-widgets/${r.id}`)} />
+                ))}
+              </tbody>
+            </SortableContext>
+          </DndContext>
         </table>
       </div>
 
@@ -175,19 +207,9 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
           ))}
         </div>
         <div className="flex items-center gap-2">
-          {editingOrder && dupValues.size > 0 && <span className="mr-1 text-[12px] font-medium text-rose-600">동일한 노출순서 번호가 있습니다.</span>}
-          {editingOrder ? (
-            <>
-              <Button type="button" variant="outline" onClick={cancelOrder} disabled={pending}>취소</Button>
-              <Button type="button" onClick={saveOrder} disabled={pending || dupValues.size > 0}>저장</Button>
-            </>
-          ) : (
-            <>
-              <Button type="button" variant="outline" onClick={redisReload} disabled={pending}>Redis Reload</Button>
-              <Button type="button" variant="outline" onClick={() => setEditingOrder(true)}><ArrowUpDown className="mr-1 h-3.5 w-3.5" />순서 변경</Button>
-              <Button type="button" onClick={() => router.push('/admin/app-widgets/new')}>등록</Button>
-            </>
-          )}
+          <Button type="button" variant="outline" onClick={redisReload} disabled={pending}>Redis Reload</Button>
+          <Button type="button" variant="outline" onClick={saveOrder} disabled={pending || !dirty}>순서저장</Button>
+          <Button type="button" onClick={() => router.push('/admin/app-widgets/new')}>등록</Button>
         </div>
       </div>
     </div>

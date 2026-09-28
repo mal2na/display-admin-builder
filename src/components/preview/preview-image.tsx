@@ -24,8 +24,10 @@ export function PreviewImage({
   const renderable = !!src && (src.startsWith('data:') || src.startsWith('http') || src.startsWith('/assets/'));
 
   if (renderable && !err) {
+    // className에 object-fit이 지정돼 있으면 그걸 존중(예: 와이드 워드마크 로고는 object-contain). 없으면 기본 cover.
+    const hasFit = /\bobject-(cover|contain|fill|none|scale-down)\b/.test(className ?? '');
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src!} alt={alt ?? ''} className={`object-cover ${className ?? ''}`} onError={() => setErr(true)} />;
+    return <img src={src!} alt={alt ?? ''} className={`${hasFit ? '' : 'object-cover'} ${className ?? ''}`} onError={() => setErr(true)} />;
   }
   // 슬러그: 경로/확장자 제거 → 없으면 alt → 기본
   const slug = src ? src.split('/').pop()?.replace(/\.(png|jpe?g|svg|webp|gif|avif)$/i, '') : null;

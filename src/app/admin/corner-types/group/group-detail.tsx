@@ -26,12 +26,10 @@ function RORow({ label, children }: { label: string; children: React.ReactNode }
 export function GroupDetail({ base, variations }: { base: string; variations: CornerTypeRow[] }) {
   const router = useRouter();
   const seed = variations[0]; // 설정은 유형 공통 → 대표값
-  const [preview, setPreview] = useState<string | null>(null);
   const [selVar, setSelVar] = useState(0); // 상단 배열 탭 선택 인덱스
   const cur = variations[Math.min(selVar, variations.length - 1)] ?? seed;
   const channels = (seed?.channels ?? '').split(',').filter(Boolean);
   const platforms = (seed?.platforms ?? '').split(',').filter(Boolean);
-  const samples = Array.from(new Set(variations.flatMap((v) => (v.sampleImageUrl ? v.sampleImageUrl.split('\n') : [])).filter(Boolean)));
   const hasDefaults = seed && (seed.defaultMinItems != null || seed.defaultMaxItems != null || seed.defaultSortStrategy || seed.defaultRecSource);
 
   return (
@@ -108,30 +106,9 @@ export function GroupDetail({ base, variations }: { base: string; variations: Co
                 </div>
               </RORow>
             )}
-            {samples.length > 0 && (
-              <RORow label="유형 샘플">
-                <div className="flex flex-wrap gap-1.5">
-                  {samples.slice(0, 6).map((src, i) => (
-                    <button key={i} type="button" onClick={() => setPreview(src)} className="overflow-hidden rounded-md border transition hover:ring-2 hover:ring-primary/50">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt="유형 샘플" className="h-16 w-24 object-cover object-top" />
-                    </button>
-                  ))}
-                </div>
-              </RORow>
-            )}
           </div>
         </div>
       </div>
-
-      {preview && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-6" onClick={() => setPreview(null)}>
-          <div className="max-h-[88vh] max-w-[92vw] overflow-auto rounded-2xl bg-white p-3 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={preview} alt="유형 샘플 미리보기" className="max-h-[80vh] w-auto rounded-lg" />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
