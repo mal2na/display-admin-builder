@@ -65,6 +65,25 @@ export async function requestCornerTypeReview(id: string, note?: string) {
   return { ok: true as const, issues: [] as Issue[] };
 }
 
+// ── 1-b. 배열(케이스 묶음) 일괄 승인요청 — 요청 가능한 케이스(초안/반려)만 한 번에 BSS로. 개별 승인 모델은 유지. ──
+export async function requestReviewForCornerTypes(ids: string[], note?: string) {
+  const memo = note?.trim() || null;
+  const result = { requested: 0, skipped: 0, blocked: [] as { name: string; issues: Issue[] }[] };
+  for (const id of ids) {
+    const ct = await prisma.cornerType.findUnique({ where: { id } });
+    if (!ct) continue;
+    if (!(TRANSITIONS[ct.status] ?? []).includes('REVIEW')) { result.skipped++; continue; } // 이미 승인대기/승인완료 등 → 요청 대상 아님
+    const issues = gateIssues(ct);
+    if (issues.length) { result.blocked.push({ name: ct.name ?? id, issues }); continue; }
+    await prisma.cornerType.update({ where: { id }, data: { status: 'REVIEW', rejectReason: null, reviewedBy: null, reviewedAt: null } });
+    await writeAudit({ id, before: { status: ct.status }, after: { status: 'REVIEW' }, reason: memo, result: 'REVIEW_REQUESTED' });
+    result.requested++;
+  }
+  revalidatePath('/admin/corner-types');
+  for (const id of ids) revalidatePath(`/admin/corner-types/${id}`);
+  return result;
+}
+
 // ── 2-a. BSS 승인 응답 (승인 대기 → 승인 완료) ──
 export async function approveCornerType(id: string) {
   const ct = await prisma.cornerType.findUniqueOrThrow({ where: { id } });
