@@ -457,33 +457,8 @@ async function main() {
   const template = await prisma.template.create({
     data: {
       containerId: container.id,
-      name: '혜택 기본',
+      name: '혜택 로그인',
       conditionGroup: '로그인',
-      isDefault: true,
-      status: 'DRAFT',
-      version: 1,
-      templateCorners: {
-        create: [
-          { cornerId: cornerTop.id, order: 0 },
-          { cornerId: cornerMovie.id, order: 1 },
-          { cornerId: cornerZeroWeek.id, order: 2 },
-          { cornerId: cornerBanner1.id, order: 3 },
-          { cornerId: cornerTWeek.id, order: 4 },
-          { cornerId: cornerCategory.id, order: 5 },
-          { cornerId: cornerTDay.id, order: 6 },
-          { cornerId: cornerAirpods.id, order: 7 },
-        ],
-      },
-    },
-  });
-  await prisma.container.update({ where: { id: container.id }, data: { defaultTemplateId: template.id } });
-
-  // 두 번째 Template (비로그인) — 로그인과 동일하게 8개 Corner 전체 배치.
-  await prisma.template.create({
-    data: {
-      containerId: container.id,
-      name: '비로그인 기본',
-      conditionGroup: '비로그인',
       isDefault: false,
       status: 'DRAFT',
       version: 1,
@@ -501,6 +476,26 @@ async function main() {
       },
     },
   });
+  // 혜택 홈 8개 코너 (기본/로그인/비로그인 공통 배치)
+  const beCorners = [
+    { cornerId: cornerTop.id, order: 0 },
+    { cornerId: cornerMovie.id, order: 1 },
+    { cornerId: cornerZeroWeek.id, order: 2 },
+    { cornerId: cornerBanner1.id, order: 3 },
+    { cornerId: cornerTWeek.id, order: 4 },
+    { cornerId: cornerCategory.id, order: 5 },
+    { cornerId: cornerTDay.id, order: 6 },
+    { cornerId: cornerAirpods.id, order: 7 },
+  ];
+  // 비로그인 Template (로그인 판정 후 비로그인 분기)
+  await prisma.template.create({
+    data: { containerId: container.id, name: '혜택 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: beCorners } },
+  });
+  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 안전하게 비로그인 뷰 기준.
+  const beBase = await prisma.template.create({
+    data: { containerId: container.id, name: '혜택 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: beCorners } },
+  });
+  await prisma.container.update({ where: { id: container.id }, data: { defaultTemplateId: beBase.id } });
 
   // ═══════════════════════════════════════════════════════════
   // 쇼핑 홈 (Container) — 혜택 홈과 동일 포맷 (Container + 기본 Template + Corner 배치)
@@ -765,9 +760,9 @@ async function main() {
   const shopTemplate = await prisma.template.create({
     data: {
       containerId: shopContainer.id,
-      name: '쇼핑 기본',
+      name: '쇼핑 로그인',
       conditionGroup: '로그인',
-      isDefault: true,
+      isDefault: false,
       status: 'DRAFT',
       version: 1,
       templateCorners: {
@@ -784,30 +779,26 @@ async function main() {
       },
     },
   });
-  await prisma.container.update({ where: { id: shopContainer.id }, data: { defaultTemplateId: shopTemplate.id } });
-  // 두 번째 Template (비로그인) — 로그인과 동일한 코너 배치. (혜택 홈과 동일 포맷)
+  // 쇼핑 홈 코너 (기본/로그인/비로그인 공통 배치)
+  const shopCornersList = [
+    { cornerId: shopCornerTab.id, order: 0 },
+    { cornerId: shopCornerDevice.id, order: 1 },
+    { cornerId: shopCornerPreorder.id, order: 2 },
+    { cornerId: shopCornerPlan.id, order: 3 },
+    { cornerId: shopCornerData.id, order: 4 },
+    { cornerId: shopCornerGift.id, order: 5 },
+    { cornerId: shopCornerSpeaker.id, order: 6 },
+    { cornerId: shopCornerSub.id, order: 7 },
+  ];
+  // 비로그인 Template
   await prisma.template.create({
-    data: {
-      containerId: shopContainer.id,
-      name: '비로그인 기본',
-      conditionGroup: '비로그인',
-      isDefault: false,
-      status: 'DRAFT',
-      version: 1,
-      templateCorners: {
-        create: [
-          { cornerId: shopCornerTab.id, order: 0 },
-          { cornerId: shopCornerDevice.id, order: 1 },
-          { cornerId: shopCornerPreorder.id, order: 2 },
-          { cornerId: shopCornerPlan.id, order: 3 },
-          { cornerId: shopCornerData.id, order: 4 },
-          { cornerId: shopCornerGift.id, order: 5 },
-          { cornerId: shopCornerSpeaker.id, order: 6 },
-          { cornerId: shopCornerSub.id, order: 7 },
-        ],
-      },
-    },
+    data: { containerId: shopContainer.id, name: '쇼핑 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: shopCornersList } },
   });
+  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 비로그인 뷰 기준.
+  const shopBase = await prisma.template.create({
+    data: { containerId: shopContainer.id, name: '쇼핑 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: shopCornersList } },
+  });
+  await prisma.container.update({ where: { id: shopContainer.id }, data: { defaultTemplateId: shopBase.id } });
   await prisma.auditLog.create({
     data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: shopTemplate.id, afterValue: JSON.stringify({ name: '쇼핑 기본', status: 'DRAFT', corners: 7 }), reason: '쇼핑 홈 재구성(단말기 코너에 사전예약 빅배너 통합)', result: 'CREATED' },
   });
@@ -949,37 +940,8 @@ async function main() {
   const myTemplate = await prisma.template.create({
     data: {
       containerId: myContainer.id,
-      name: '마이 기본',
+      name: '마이 로그인',
       conditionGroup: '로그인',
-      isDefault: true,
-      status: 'DRAFT',
-      version: 1,
-      templateCorners: {
-        create: [
-          { cornerId: myCornerProfile.id, order: 0 },
-          { cornerId: myCornerBill.id, order: 1 },
-          { cornerId: myCornerPoint.id, order: 2 },
-          { cornerId: myCornerBarcode.id, order: 3 },
-          { cornerId: myCornerData.id, order: 4 },
-          { cornerId: myCornerCombine.id, order: 5 },
-          { cornerId: myCornerProduct.id, order: 6 },
-          { cornerId: myCornerPay.id, order: 7 },
-          { cornerId: myCornerSub.id, order: 8 },
-          { cornerId: myCornerMenu.id, order: 9 },
-        ],
-      },
-    },
-  });
-  await prisma.container.update({ where: { id: myContainer.id }, data: { defaultTemplateId: myTemplate.id } });
-  await prisma.auditLog.create({
-    data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: myTemplate.id, afterValue: JSON.stringify({ name: '마이 기본', status: 'DRAFT', corners: 10 }), reason: '마이 홈 재구성(마이.png 기준: 요금·포인트·바코드·데이터·결합·상품·결제·구독·메뉴)', result: 'CREATED' },
-  });
-  // 두 번째 Template (비로그인) — 로그인과 동일한 코너 배치. (혜택 홈과 동일 포맷)
-  await prisma.template.create({
-    data: {
-      containerId: myContainer.id,
-      name: '비로그인 기본',
-      conditionGroup: '비로그인',
       isDefault: false,
       status: 'DRAFT',
       version: 1,
@@ -999,6 +961,32 @@ async function main() {
       },
     },
   });
+  await prisma.container.update({ where: { id: myContainer.id }, data: { defaultTemplateId: myTemplate.id } }); // 기본 템플릿 생성 후 아래에서 재지정
+  await prisma.auditLog.create({
+    data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: myTemplate.id, afterValue: JSON.stringify({ name: '마이 기본', status: 'DRAFT', corners: 10 }), reason: '마이 홈 재구성(마이.png 기준: 요금·포인트·바코드·데이터·결합·상품·결제·구독·메뉴)', result: 'CREATED' },
+  });
+  // 마이 홈 코너 (기본/로그인/비로그인 공통 배치)
+  const myCornersList = [
+    { cornerId: myCornerProfile.id, order: 0 },
+    { cornerId: myCornerBill.id, order: 1 },
+    { cornerId: myCornerPoint.id, order: 2 },
+    { cornerId: myCornerBarcode.id, order: 3 },
+    { cornerId: myCornerData.id, order: 4 },
+    { cornerId: myCornerCombine.id, order: 5 },
+    { cornerId: myCornerProduct.id, order: 6 },
+    { cornerId: myCornerPay.id, order: 7 },
+    { cornerId: myCornerSub.id, order: 8 },
+    { cornerId: myCornerMenu.id, order: 9 },
+  ];
+  // 비로그인 Template
+  await prisma.template.create({
+    data: { containerId: myContainer.id, name: '마이 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: myCornersList } },
+  });
+  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 비로그인 뷰 기준.
+  const myBase = await prisma.template.create({
+    data: { containerId: myContainer.id, name: '마이 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: myCornersList } },
+  });
+  await prisma.container.update({ where: { id: myContainer.id }, data: { defaultTemplateId: myBase.id } });
 
   // 코너 유형 카탈로그 (T우주 "코너 유형 관리") — 모든 홈(혜택·쇼핑·마이)에 실제 배치된 코너 유형을 카탈로그화.
   //   → 코너 유형 관리 = 전시화면에 쓰인 코너 유형의 단일 소스. 여기 등록된 유형만 빌더에서 가져올 수 있다.
