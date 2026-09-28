@@ -716,11 +716,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             <LayoutGroupCard
                               key={detail || '기본'}
                               cases={cases}
-                              onOpen={() => router.push(
-                                cases.length === 1
-                                  ? `/admin/corner-types/${cases[0].id}`
-                                  : `/admin/corner-types/group?base=${encodeURIComponent(bc)}&detail=${encodeURIComponent(detail)}`,
-                              )}
+                              // 항상 대표(첫) 케이스 상세로 직행 — 상세 상단의 '형제 케이스 탭'으로 나머지 케이스를 전환(중간 고르기 페이지 없음).
+                              onOpen={() => router.push(`/admin/corner-types/${cases[0].id}`)}
                             />
                           ))}
                         </div>

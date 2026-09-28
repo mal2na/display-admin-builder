@@ -27,6 +27,13 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
   ]);
   if (!ct) notFound();
 
+  // 형제 케이스 — 같은 배열(base+typeDetail)의 다른 코너 유형들. 상세 상단 탭으로 좌우 전환(중간 '고르기' 페이지 제거).
+  const siblings = await prisma.cornerType.findMany({
+    where: { baseCategory: ct.baseCategory, typeDetail: ct.typeDetail },
+    orderBy: { typeId: 'asc' },
+    select: { id: true, name: true },
+  });
+
   // 사용처 rows: 배치된 곳마다 (컨테이너 · 템플릿 · 코너명). 미배치 코너는 템플릿/컨테이너 null.
   const usage: { container: string | null; template: string | null; corner: string }[] = [];
   for (const c of usageCorners) {
@@ -110,7 +117,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
 
   return (
     <div className="p-6">
-      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} usage={usage} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} />
+      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} usage={usage} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} siblings={siblings} />
     </div>
   );
 }
