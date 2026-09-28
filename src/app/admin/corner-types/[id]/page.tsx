@@ -4,6 +4,7 @@ import { CornerTypeDetail, type HistoryRow, type BannerPreview } from './corner-
 import { type CornerTypeRow } from '../corner-type-manager';
 import { getBuiltCornerOptions, getRegisteredCombos } from '../built-options';
 import { getBannerUsage } from '../../banner-campaigns/banner-usage';
+import { type PreviewCorner } from '@/components/preview/blocks';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,14 +17,17 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     }),
     getBuiltCornerOptions(),
     getRegisteredCombos(),
-    // 사용처: 이 코너 유형으로 생성된 코너 + 배치된 템플릿/컨테이너
+    // 사용처: 이 코너 유형으로 생성된 코너 + 배치된 템플릿/컨테이너 + 실제 구성(미리보기용)
     prisma.corner.findMany({
       where: { sourceCornerTypeId: params.id },
-      select: {
-        id: true,
-        name: true,
+      include: {
+        banner: { select: { imageUrl: true } },
         templateCorners: {
           select: { template: { select: { name: true, container: { select: { name: true } } } } },
+        },
+        cornerComponents: {
+          orderBy: { order: 'asc' },
+          include: { component: { include: { componentAtoms: { orderBy: { order: 'asc' }, include: { atom: true } } } } },
         },
       },
       orderBy: { updatedAt: 'desc' },
@@ -37,6 +41,24 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     if (c.templateCorners.length === 0) usage.push({ container: null, template: null, corner: c.name });
     for (const tc of c.templateCorners) usage.push({ container: tc.template.container.name, template: tc.template.name, corner: c.name });
   }
+
+  // 실제 사용 코너의 구성을 미리보기로 매핑 — 배너형 외 유형(예: 혜택·오퍼형)은 상세에서 실제 코너들을 보여준다(한 유형 = 여러 케이스).
+  const usagePreviews: PreviewCorner[] = usageCorners.map((c) => ({
+    id: c.id, name: c.name, cornerType: c.cornerType, title: c.title, maxItems: c.maxItems,
+    mainTitle: c.mainTitle, subTitle: c.subTitle, cornerLayout: c.cornerLayout, layoutDetail: c.layoutDetail,
+    subTitleIcon: c.subTitleIcon, moreButtonUse: c.moreButtonUse, moreButtonLabel: c.moreButtonLabel,
+    bigBanner: c.bigBanner, cardShape: c.cardShape, titleLines: c.titleLines,
+    bannerImageUrl: c.banner?.imageUrl ?? null, bannerOptions: c.bannerOptions,
+    recSource: c.recSource, recSourcePlan: c.recSourcePlan, showRecReason: c.showRecReason,
+    components: c.cornerComponents.map((cc) => ({
+      id: cc.component.id, name: cc.component.name, componentType: cc.component.componentType,
+      selectedIndex: cc.component.selectedIndex, chipRows: cc.component.chipRows,
+      atoms: cc.component.componentAtoms.map((ca) => ({
+        id: ca.atom.id, name: ca.atom.name, atomType: ca.atom.atomType, content: ca.atom.content,
+        imageUrl: ca.atom.imageUrl, altText: ca.atom.altText, linkUrl: ca.atom.linkUrl, menuRole: ca.menuRole,
+      })),
+    })),
+  }));
 
   const row: CornerTypeRow = {
     id: ct.id,
@@ -110,7 +132,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
 
   return (
     <div className="p-6">
-      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} usage={usage} bannerPreviews={bannerPreviews} />
+      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} usage={usage} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} />
     </div>
   );
 }

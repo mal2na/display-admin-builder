@@ -654,20 +654,19 @@ async function main() {
   const gift1 = await comp('영 메모리즈 오드 퍼퓸', '상품형', [
     { name: '기프티콘1 이미지', atomType: 'IMAGE', imageUrl: '/assets/gift-perfume.png', altText: '영 메모리즈 오드 퍼퓸' },
     { name: '기프티콘1 제목', atomType: 'TEXT', content: '영 메모리즈 오드 퍼퓸 100ml' },
+    { name: '할인율', atomType: 'TEXT', content: '20%' },
     { name: '기프티콘1 가격', atomType: 'PRICE', content: '235,000원' },
-    { name: '기프티콘1 배지', atomType: 'BADGE', content: '20%' },
   ]);
   const gift2 = await comp('SNOWMAN8 Portable', '상품형', [
     { name: '기프티콘2 이미지', atomType: 'IMAGE', imageUrl: '/assets/gift-humidifier.png', altText: 'SNOWMAN8 Portable' },
     { name: '기프티콘2 제목', atomType: 'TEXT', content: 'SNOWMAN8 Portable WARMGREY TAIL' },
+    { name: '할인율', atomType: 'TEXT', content: '5%' },
     { name: '기프티콘2 가격', atomType: 'PRICE', content: '46,550원' },
-    { name: '기프티콘2 배지', atomType: 'BADGE', content: '5%' },
   ]);
   const gift3 = await comp('로즈마리 바디 세트', '상품형', [
     { name: '기프티콘3 이미지', atomType: 'IMAGE', imageUrl: '/assets/gift-body.png', altText: '로즈마리 바디 세트' },
     { name: '기프티콘3 제목', atomType: 'TEXT', content: '로즈마리 리프레시 바디 세트' },
     { name: '기프티콘3 가격', atomType: 'PRICE', content: '83,160원' },
-    { name: '기프티콘3 배지', atomType: 'BADGE', content: '10%' },
   ]);
   const shopCornerGift = await corner(
     {
