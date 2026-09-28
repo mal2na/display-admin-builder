@@ -738,10 +738,33 @@ model AppWidget {
   createdBy String?
   updatedBy String?
 
+  history AppWidgetHistory[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([widgetTypeId])
+}
+
+// App 위젯 관리 — 변경/승인 이력 (SB BO-AIM-DSP-PG052) · AppSplashHistory와 동일 패턴
+//   최초 등록 이후 발생한 승인요청·승인완료·요청취소·반려를 회차 단위로 기록. 수정·삭제 불가.
+model AppWidgetHistory {
+  id        String    @id @default(cuid())
+  widgetId  String
+  widget    AppWidget @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  seq       Int       // 회차(NO) — 오름차순
+  version   Int?      // 승인 완료되어 FO 반영된 회차에만 순차 부여
+  status    String    // requested(승인요청) | approved(승인완료) | cancelled(요청취소) | rejected(반려)
+  requester String?   // 승인 요청자
+  manager   String?   // 승인 담당자
+  requestedAt   DateTime? // 요청 일시
+  requestReason String?   // 요청 사유
+  processedAt   DateTime? // 처리 일시
+  processReason String?   // 처리 사유 (승인취소/반려 시)
+  changeNote    String?   // 변경 내용 (상세보기 대상)
+  createdAt DateTime @default(now())
+
+  @@index([widgetId])
 }
 
 // ─────────────────────────────────────────────────────────────
