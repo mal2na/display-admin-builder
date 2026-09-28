@@ -178,24 +178,38 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
                   <td className="px-4 py-4 text-slate-600">{t.useYn === false ? '미사용' : '사용'}</td>
                   <td className="px-4 py-4">
                     {(() => {
-                      // 이 규격(유형상세)이 실제로 편성된 위치 — 전시화면(컨테이너)+유형 › 템플릿+상태 › 코너 (중복 제거).
-                      const locs = Array.from(new Map(usage.filter((u) => u.sizeDetail === t.detail).map((u) => [`${u.containerName}·${u.templateName}·${u.cornerName}`, u])).values());
+                      // 이 규격(유형상세)이 편성된 위치 — 같은 전시화면(컨테이너)·코너면 하나로 묶고, 로그인/비로그인 등 템플릿은 그 아래 칩으로.
+                      //  (같은 컨테이너+코너가 템플릿만 달라 여러 번 나오던 중복 제거)
+                      const items = usage.filter((u) => u.sizeDetail === t.detail);
+                      const groups = new Map<string, { u: typeof items[number]; templates: { name: string; status: string }[] }>();
+                      for (const u of items) {
+                        const k = `${u.containerId}·${u.cornerName}`;
+                        const g = groups.get(k) ?? { u, templates: [] };
+                        if (!g.templates.some((tt) => tt.name === u.templateName)) g.templates.push({ name: u.templateName, status: u.templateStatus });
+                        groups.set(k, g);
+                      }
+                      const locs = [...groups.values()];
                       if (locs.length === 0) return <span className="text-[12px] text-slate-400">미노출</span>;
                       return (
                         <div className="space-y-1.5">
                           <p className="text-[11px] text-muted-foreground">노출 <b className="text-indigo-600">{locs.length}곳</b></p>
-                          {locs.map((u, k) => (
+                          {locs.map(({ u, templates }, k) => (
                             <div key={k} className="rounded-md border border-slate-200 bg-slate-50/60 px-2.5 py-1.5">
                               <div className="flex flex-wrap items-center gap-1 text-[12px]">
                                 <MapPin className="h-3 w-3 shrink-0 text-indigo-400" />
                                 <Link href={`/admin/containers/${u.containerId}`} className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline">{u.containerName}</Link>
                                 {u.containerType && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{u.containerType}</span>}
-                              </div>
-                              <div className="mt-0.5 flex flex-wrap items-center gap-1 pl-4 text-[11.5px] text-slate-500">
-                                <span>{u.templateName}</span>
-                                <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{(DISPLAY_STATUS_LABEL as Record<string, string>)[u.templateStatus] ?? u.templateStatus}</span>
                                 <span className="text-slate-300">›</span>
-                                <span>{u.cornerName}</span>
+                                <span className="text-slate-600">{u.cornerName}</span>
+                              </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-1 pl-4 text-[11px] text-slate-500">
+                                <span className="text-[10.5px] text-slate-400">템플릿</span>
+                                {templates.map((tt, j) => (
+                                  <span key={j} className="inline-flex items-center gap-1 rounded-full bg-white px-1.5 py-0.5 text-[10.5px] font-medium text-slate-600 ring-1 ring-slate-200">
+                                    {tt.name}
+                                    <span className="text-slate-400">· {(DISPLAY_STATUS_LABEL as Record<string, string>)[tt.status] ?? tt.status}</span>
+                                  </span>
+                                ))}
                               </div>
                             </div>
                           ))}

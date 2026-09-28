@@ -37,7 +37,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronDown, ChevronRight, RotateCcw, Info, Copy, Pencil } from 'lucide-react';
+import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pencil } from 'lucide-react';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
 
@@ -452,7 +452,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   // ── 상세 검색 필터 (T우주 코너 유형 목록 기준) ──
   // 필터 상태는 URL 쿼리에 저장 → 상세로 갔다가 뒤로 와도 유지된다.
   const statusKeys = Object.keys(CORNER_TYPE_STATUS_LABEL);
-  const [expanded, setExpanded] = useState(false); // DS 포털처럼 기본은 접힘(깔끔). 필요 시 상세검색 열기.
   const spDomain = sp.get('domain'); // 상위 분기: 전시 / 프로모션 / 상품
   const [domain, setDomain] = useState<Domain>(spDomain === '프로모션' || spDomain === '상품' ? spDomain : '전시');
   const [base, setBase] = useState(sp.get('base') ?? '전체'); // 코너 유형
@@ -518,7 +517,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   }, [domain, base, detail, useOn, useOff, statusSel, field, q, perPage, curPage]);
 
   const selectCls = 'h-9 rounded-lg border bg-white px-2.5 text-sm';
-  const chk = 'flex items-center gap-1.5 text-sm cursor-pointer';
 
   return (
     <div className="space-y-4">
@@ -591,47 +589,48 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
 
       {/* 코너 유형은 상위 탭이 아니라 아래 상세 필터에서 고른다 (승인 상태만 상위 거버넌스 탭). */}
 
-      {/* 상세 검색 필터 */}
-      <div className="rounded-lg border border-[#E6E8EF] bg-[#F7F8FB] p-4">
-        {expanded && (
-          <div className="mb-3 grid gap-x-6 gap-y-3 border-b pb-3 md:grid-cols-2 xl:grid-cols-3">
-            {/* 승인상태는 상단 탭에서 고른다 → 상세 필터에서는 중복 제거 */}
-            <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">코너 유형</p>
-              <select value={base} onChange={(e) => { setBase(e.target.value); setPage(1); }} className={`${selectCls} w-full`}>
-                {baseOptions.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
-            <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">유형 상세</p>
-              <select value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={`${selectCls} w-full`}>
-                {detailOptions.map((o) => <option key={o} value={o}>{layoutLabel(o)}</option>)}
-              </select>
-            </div>
-            <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">사용여부</p>
-              <div className="flex h-9 items-center gap-4">
-                <label className={chk}><input type="checkbox" checked={useOn} onChange={(e) => { setUseOn(e.target.checked); setPage(1); }} className="accent-primary" /> 사용</label>
-                <label className={chk}><input type="checkbox" checked={useOff} onChange={(e) => { setUseOff(e.target.checked); setPage(1); }} className="accent-primary" /> 미사용</label>
-              </div>
+      {/* 검색 필터 — 인라인 라벨 바. 코너 유형(상품형·배너형 등)·유형 상세·사용여부·검색을 한 줄에. (2026-09-28 사용자 요청 UI) */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">코너 유형</span>
+            <select value={base} onChange={(e) => { setBase(e.target.value); setPage(1); }} className={`${selectCls} w-40`}>
+              {baseOptions.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">유형 상세</span>
+            <select value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={`${selectCls} w-40`}>
+              {detailOptions.map((o) => <option key={o} value={o}>{o === '전체' ? '전체' : layoutLabel(o)}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">사용여부</span>
+            <select
+              value={useOn && useOff ? '전체' : useOn ? '사용' : '미사용'}
+              onChange={(e) => { const v = e.target.value; setUseOn(v !== '미사용'); setUseOff(v !== '사용'); setPage(1); }}
+              className={`${selectCls} w-28`}
+            >
+              <option value="전체">전체</option>
+              <option value="사용">사용</option>
+              <option value="미사용">미사용</option>
+            </select>
+          </div>
+          <div className="flex flex-1 items-center gap-2">
+            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">검색</span>
+            <select value={field} onChange={(e) => setField(e.target.value as typeof field)} className={selectCls}>
+              <option value="typeId">코너 유형 ID</option>
+              <option value="createdBy">등록자</option>
+            </select>
+            <div className="relative min-w-[180px] flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="내용을 입력하세요." className="h-9 w-full rounded-lg border pl-8 pr-3 text-sm" />
             </div>
           </div>
-        )}
-        {/* 직접 검색 행 */}
-        <div className="flex flex-wrap items-center gap-2">
-          <select value={field} onChange={(e) => setField(e.target.value as typeof field)} className={selectCls}>
-            <option value="typeId">코너 유형 ID</option>
-            <option value="createdBy">등록자</option>
-          </select>
-          <div className="relative min-w-[240px] flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="영문/숫자 포함 10자 이내로 입력해 주세요." className="h-9 w-full rounded-lg border pl-8 pr-3 text-sm" />
+          <div className="ml-auto flex gap-2">
+            <Button size="sm" variant="outline" className="h-9" onClick={reset}><RotateCcw className="mr-1 h-3.5 w-3.5" />초기화</Button>
+            <Button size="sm" className="h-9" onClick={() => setPage(1)}><Search className="mr-1 h-4 w-4" />조회</Button>
           </div>
-          <button onClick={() => setExpanded((v) => !v)} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-secondary">
-            상세검색 {expanded ? '닫기' : '열기'} <ChevronDown className={cn('h-3.5 w-3.5 transition', expanded && 'rotate-180')} />
-          </button>
-          <button onClick={reset} title="초기화" className="inline-flex h-9 w-9 items-center justify-center rounded-md border hover:bg-secondary"><RotateCcw className="h-4 w-4" /></button>
-          <Button size="sm" className="h-9"><Search className="mr-1 h-4 w-4" /> 조회</Button>
         </div>
       </div>
 
@@ -639,35 +638,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           매칭 배열이 유형별로 모여 보이고, 빈 유형은 자동으로 숨겨진다. 워크플로우 스캔에 최적. (2026-09-28 옵션1) */}
       {(() => {
         const allGroups = domainGovernances(domain, Array.from(new Set(domainTypes.map((t) => t.baseCategory).filter(Boolean))));
-        // 유형 칩 카운트 — 선택 유형(base)과 무관하게, 현재 상태·검색 필터를 반영해 유형별 개수를 보여준다.
-        const noBase = domainTypes.filter((t) => {
-          if (detail !== '전체' && (t.typeDetail ?? '') !== detail) return false;
-          if (!(t.active ? useOn : useOff)) return false;
-          if (statusSel.size < statusKeys.length && !statusSel.has(t.status)) return false;
-          if (ql) { const hay = (field === 'createdBy' ? t.createdBy : t.typeId) ?? ''; if (!hay.toLowerCase().includes(ql)) return false; }
-          return true;
-        });
         return (
           <>
-            {/* 유형 빠른 필터 칩 — 전체 / 7거버넌스. 카운트는 현재 상태 필터 반영. */}
-            <div className="flex flex-wrap gap-1.5">
-              {['전체', ...allGroups].map((b) => {
-                const active = base === b;
-                const count = b === '전체' ? noBase.length : noBase.filter((t) => t.baseCategory === b).length;
-                const color = b === '전체' ? 'border-border bg-card text-muted-foreground' : cornerTypeChipClass(b);
-                return (
-                  <button
-                    key={b}
-                    type="button"
-                    onClick={() => { setBase(b); setPage(1); }}
-                    className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition', color, active ? 'ring-2 ring-primary ring-offset-1 font-semibold' : 'opacity-80 hover:opacity-100')}
-                  >
-                    {b}
-                    <span className="rounded-full bg-black/5 px-1.5 text-[11px] tabular-nums">{count}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {/* 코너 유형(상품형/배너형 등)은 상단 검색 필터의 '코너 유형' 드롭다운에서 선택 → 별도 칩 행 제거. (2026-09-28) */}
 
             {/* 유형별 섹션(헤더 + 배열 그리드) 스택 — filtered는 base를 반영하므로 base가 특정 유형이면 그 유형만. */}
             {(() => {
