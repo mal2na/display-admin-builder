@@ -226,6 +226,14 @@ export default async function BuilderPage({ params }: { params: { id: string } }
   // 템플릿 승인 요청 필수값
   const reviewIssues = await collectReviewIssues(template.id);
 
+  // 배너 불러오기 가능 조건: 직접 만들기(리스트형)이고 제목·서브문구가 등록된 배너만. 이미지형은 코너로 불러올 수 없다.
+  const isComposedBanner = (typeDetails: string | null | undefined) => {
+    try {
+      const rep = (JSON.parse(typeDetails || '[]') as { type?: string; title?: string; subtitle?: string }[])[0];
+      return !!rep && rep.type === '리스트형' && !!rep.title?.trim() && !!rep.subtitle?.trim();
+    } catch { return false; }
+  };
+
   const library = {
     corners: libCorners,
     components: libComponents.map((c) => ({
@@ -235,7 +243,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     atoms: libAtoms,
     banners: libBanners,
     cornerTypes: libCornerTypes,
-    bannerCampaigns: libBannerCampaigns.map((b) => {
+    bannerCampaigns: libBannerCampaigns.filter((b) => isComposedBanner(b.typeDetails)).map((b) => {
       // 미리보기용 이미지들 — 유형상세(사이즈별) 중 이미지가 있는 것들. 첫 번째가 대표 썸네일.
       let sizes: { detail: string; imageUrl: string | null; bgColor: string | null }[] = [];
       try {
