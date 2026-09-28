@@ -522,22 +522,22 @@ async function main() {
 
   // 2) 단말기 추천 (상품형 · 가로 SWIPE)
   const dev1 = await comp('iPhone 20 Air 256GB', '상품형', [
-    { name: '단말기1 이미지', atomType: 'IMAGE', imageUrl: '/assets/iphone20-air.png', altText: 'iPhone 20 Air' },
+    { name: '단말기1 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 Air' },
     { name: '단말기1 제목', atomType: 'TEXT', content: 'iPhone 20 Air' },
+    { name: '할인율', atomType: 'TEXT', content: '7%' },
     { name: '단말기1 가격', atomType: 'PRICE', content: '1,165,600원' },
-    { name: '단말기1 배지', atomType: 'BADGE', content: '7%' },
   ]);
-  const dev2 = await comp('iPhone 20 Pro 256GB', '상품형', [
-    { name: '단말기2 이미지', atomType: 'IMAGE', imageUrl: '/assets/iphone20-pro.png', altText: 'iPhone 20 Pro' },
-    { name: '단말기2 제목', atomType: 'TEXT', content: 'iPhone 20 Pro' },
-    { name: '단말기2 가격', atomType: 'PRICE', content: '1,550,900원' },
-    { name: '단말기2 배지', atomType: 'BADGE', content: '7%' },
+  const dev2 = await comp('iPhone 20 Air 256GB (2)', '상품형', [
+    { name: '단말기2 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 Air' },
+    { name: '단말기2 제목', atomType: 'TEXT', content: 'iPhone 20 Air' },
+    { name: '할인율', atomType: 'TEXT', content: '7%' },
+    { name: '단말기2 가격', atomType: 'PRICE', content: '1,165,600원' },
   ]);
-  const dev3 = await comp('iPhone 20 Pro Max 256GB', '상품형', [
-    { name: '단말기3 이미지', atomType: 'IMAGE', imageUrl: '/assets/iphone20-promax.png', altText: 'iPhone 20 Pro Max' },
-    { name: '단말기3 제목', atomType: 'TEXT', content: 'iPhone 20 Pro Max' },
-    { name: '단말기3 가격', atomType: 'PRICE', content: '1,850,300원' },
-    { name: '단말기3 배지', atomType: 'BADGE', content: '7%' },
+  const dev3 = await comp('iPhone 20 Air 256GB (3)', '상품형', [
+    { name: '단말기3 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 Air' },
+    { name: '단말기3 제목', atomType: 'TEXT', content: 'iPhone 20 Air' },
+    { name: '할인율', atomType: 'TEXT', content: '7%' },
+    { name: '단말기3 가격', atomType: 'PRICE', content: '1,165,600원' },
   ]);
   const shopCornerDevice = await corner(
     {
@@ -548,7 +548,8 @@ async function main() {
       mainTitle: '최근 본 아이폰을\n혜택으로 만나보세요',
       subTitle: '단말기 추천',
       cardShape: '1:1', // 상품 이미지 = 1:1 정사각형
-      layoutDetail: '가로형(2.5배열)',
+      layoutDetail: '가로형+배너', // 상단 히어로(아이폰) + 가로 상품 카드
+      bigBanner: true,
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '인기순',
@@ -576,12 +577,14 @@ async function main() {
 
   // 4) 요금제 추천 — 약정 만료 (혜택·오퍼형 · 상품형 · 세로형(배너)) — 상단 히어로 배너 + 요금제(상품) 리스트
   const plan1 = await comp('0 청년 109 넷플릭스', '상품형', [
+    { name: '요금제1 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/plan-card-unlimited.png', altText: '무제한' },
     { name: '요금제1 배지', atomType: 'BADGE', content: '무제한' },
     { name: '요금제1 제목', atomType: 'TEXT', content: '0 청년 109 (넷플릭스)' },
     { name: '요금제1 가격', atomType: 'PRICE', content: '월 99,000원' },
     { name: '요금제1 설명', atomType: 'INFO', content: '데이터 500GB | 넷플릭스 프리미엄 제공 +2' },
   ]);
   const plan2 = await comp('0 청년 109 네이버', '상품형', [
+    { name: '요금제2 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/plan-card-150gb.png', altText: '150GB' },
     { name: '요금제2 배지', atomType: 'BADGE', content: '150GB' },
     { name: '요금제2 제목', atomType: 'TEXT', content: '0 청년 109 (네이버 플러스 스토어)' },
     { name: '요금제2 가격', atomType: 'PRICE', content: '월 99,000원' },
@@ -773,6 +776,7 @@ async function main() {
           { cornerId: shopCornerGift.id, order: 5 },
           { cornerId: shopCornerSpeaker.id, order: 6 },
           { cornerId: shopCornerSub.id, order: 7 },
+          { cornerId: cornerReco.id, order: 8 }, // 추천 상품(상품형 · 가로형(2.5배열)) — 배너 없는 가로 상품 리스트 유형 유지
         ],
       },
     },
@@ -797,6 +801,7 @@ async function main() {
           { cornerId: shopCornerGift.id, order: 5 },
           { cornerId: shopCornerSpeaker.id, order: 6 },
           { cornerId: shopCornerSub.id, order: 7 },
+          { cornerId: cornerReco.id, order: 8 }, // 추천 상품(상품형 · 가로형(2.5배열))
         ],
       },
     },

@@ -141,7 +141,7 @@ export function defaultComposition(
   const flags = { image: feats.image !== false, price: feats.price !== false, badge: !!feats.badge, desc: feats.desc !== false };
   const blocks: Composition = [];
   if (ct === '선택형') blocks.push({ componentType: '선택형', count: 1 });
-  else if (ct === '상품형') blocks.push({ componentType: '상품형', count: d.includes('단일') ? 1 : d === '세로형' ? 4 : d.includes('배너') ? 2 : 3, ...flags });
+  else if (ct === '상품형') blocks.push({ componentType: '상품형', count: d.includes('단일') ? 1 : d === '세로형' ? 4 : (d.includes('세로형') && d.includes('배너')) ? 2 : 3, ...flags });
   else if (ct === '혜택형') blocks.push({ componentType: '혜택형', count: 3, badge: flags.badge });
   else if (ct === '정보형') blocks.push({ componentType: '정보형', count: /리스트|상태/.test(d) ? 4 : 1 });
   else if (ct) blocks.push({ componentType: ct, count: 1 });
@@ -471,7 +471,7 @@ export function isComponentAllowedInCorner(
 //   상단 카테고리 탭은 별도 배열이 아니라 빌더에서 얹는 선택형 컴포넌트(토글) → 세로형(카테고리탭) 제거.
 const GENERAL_LAYOUTS = ['가로형(2.5배열)', '가로형(1.5배열)', '세로형', '그리드형'] as const; // 순서: 가로2.5 → 가로1.5 → 세로 → 그리드
 export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
-  상품형: [...GENERAL_LAYOUTS, '세로형+배너'],
+  상품형: [...GENERAL_LAYOUTS, '가로형+배너', '세로형+배너'],
   '혜택·오퍼형': [...GENERAL_LAYOUTS],
   '콘텐츠 안내형': [...GENERAL_LAYOUTS],
   // ── 특이케이스: 목적별 특정 배열만 ──

@@ -325,6 +325,7 @@ function BenefitRow({ component, reason, parts }: { component: PreviewComponent;
 
 // 상품형 · 세로형+배너 요금제 행 — 라벨 카드 썸네일 + [요금제명 / 월정액(굵게) / 스펙]. (참고: 약정 만료 요금제)
 function PlanBannerRow({ component }: { component: PreviewComponent }) {
+  const thumb = first(component.atoms, 'IMAGE');
   const badge = first(component.atoms, 'BADGE');
   const name = first(component.atoms, 'TEXT');
   const price = first(component.atoms, 'PRICE');
@@ -333,9 +334,9 @@ function PlanBannerRow({ component }: { component: PreviewComponent }) {
   const isUnlimited = /무제한|무료/.test(label);
   return (
     <div className="flex items-center gap-3 py-2.5">
-      <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#4B63E6] to-[#3A4FCC]' : 'bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]')}>
-        {label || '요금제'}
-      </div>
+      {isRenderableImg(thumb?.imageUrl)
+        ? <ImageBox atom={thumb} className="h-14 w-14 shrink-0 rounded-2xl" />
+        : <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#4B63E6] to-[#3A4FCC]' : 'bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]')}>{label || '요금제'}</div>}
       <div className="min-w-0 flex-1">
         {name?.content && <p className="truncate text-[13px] text-slate-700">{name.content}</p>}
         {price?.content && <p className="truncate text-[15px] font-bold text-slate-900">{price.content}</p>}

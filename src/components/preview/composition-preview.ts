@@ -27,9 +27,16 @@ const PLAN_ITEMS: { icon: string; title: string; sub: string }[] = [
 ];
 // 상품형 · 세로형+배너 — 상단 히어로 배너 + 요금제(상품) 리스트(썸네일 라벨 + 이름 + 월가격 + 스펙). 참고: 약정 만료.
 const PLAN_HERO = '/assets/ds/plan-hero-expire.png';
-const PLAN_BANNER_ITEMS: { badge: string; name: string; price: string; spec: string }[] = [
-  { badge: '무제한', name: '0 청년 109 (넷플릭스)', price: '월 99,000원', spec: '데이터 500GB | 넷플릭스 프리미엄 제공 +2' },
-  { badge: '150GB', name: '0 청년 109 (네이버 플러스 스토어)', price: '월 99,000원', spec: '데이터 500GB | 넷플릭스 프리미엄 제공 +2' },
+const PLAN_BANNER_ITEMS: { thumb: string; badge: string; name: string; price: string; spec: string }[] = [
+  { thumb: '/assets/ds/plan-card-unlimited.png', badge: '무제한', name: '0 청년 109 (넷플릭스)', price: '월 99,000원', spec: '데이터 500GB | 넷플릭스 프리미엄 제공 +2' },
+  { thumb: '/assets/ds/plan-card-150gb.png', badge: '150GB', name: '0 청년 109 (네이버 플러스 스토어)', price: '월 99,000원', spec: '데이터 500GB | 넷플릭스 프리미엄 제공 +2' },
+];
+// 상품형 · 가로형+배너 — 상단 히어로(아이폰) + 가로 상품 카드(단말기 추천). 참고: 최근 본 아이폰.
+const DEVICE_HERO = '/assets/ds/hero-device.png';
+const DEVICE_BANNER_ITEMS: { img: string; name: string; discount: string; price: string }[] = [
+  { img: '/assets/ds/device-iphone.png', name: 'iPhone 20 Air', discount: '7%', price: '1,165,600원' },
+  { img: '/assets/ds/device-iphone.png', name: 'iPhone 20 Air', discount: '7%', price: '1,165,600원' },
+  { img: '/assets/ds/device-iphone.png', name: 'iPhone 20 Air', discount: '7%', price: '1,165,600원' },
 ];
 // 콘텐츠 안내형 무비 3편 (토이스토리 · 인크레더블 · 둠스데이) — public/assets 실제 포스터.
 const MOVIE_POOL = ['/assets/movie-toystory.jpg', '/assets/movie-incredibles.jpg', '/assets/movie-avengers.jpg'];
@@ -56,6 +63,8 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
   const isPlan = ctx?.base === '상품형' && ctx?.detail === '세로형';
   // 상품형 · 세로형+배너 = 상단 히어로 배너 + 요금제(상품) 리스트.
   const isPlanBanner = ctx?.base === '상품형' && /세로형\+배너|세로형\(배너\)/.test(ctx?.detail ?? '');
+  // 상품형 · 가로형+배너 = 상단 히어로(아이폰) + 가로 상품 카드.
+  const isDeviceBanner = ctx?.base === '상품형' && /가로형\+배너|가로형\(배너\)/.test(ctx?.detail ?? '');
   switch (b.componentType) {
     case '선택형': {
       // 업무 진입형 — 메뉴형은 세로 메뉴 라벨. 칩 계열(ChipHome/Contents/Filter/Page)은 종류별로 다르게. 그 외는 카테고리 탭.
@@ -88,14 +97,27 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
       return { ...base, name: '카테고리 탭', selectedIndex: 0, chipVariant: 'contents', atoms: T(['전체', '카테고리1', '카테고리2', '카테고리3']) };
     }
     case '상품형':
-      // 상품형 · 세로형+배너 — 요금제(상품) 행: 라벨 썸네일 + 이름 + 월가격 + 스펙. PlanBannerRow로 렌더.
+      // 상품형 · 세로형+배너 — 요금제(상품) 행: 카드 썸네일 + 이름 + 월가격 + 스펙. PlanBannerRow로 렌더.
       if (isPlanBanner) {
         const pb = PLAN_BANNER_ITEMS[(i - 1) % PLAN_BANNER_ITEMS.length];
         return { ...base, name: pb.name, atoms: [
+          atom({ name: '카드 이미지', atomType: 'IMAGE', imageUrl: pb.thumb }),
           atom({ name: '라벨', atomType: 'BADGE', content: pb.badge }),
           atom({ name: '요금제명', atomType: 'TEXT', content: pb.name }),
           atom({ name: '월정액', atomType: 'PRICE', content: pb.price }),
           atom({ name: '스펙', atomType: 'INFO', content: pb.spec }),
+        ] };
+      }
+      // 상품형 · 가로형+배너 — 가로 상품 카드(이미지 + 이름 + 할인율 + 가격). ProductCard로 렌더.
+      if (isDeviceBanner) {
+        const db = DEVICE_BANNER_ITEMS[(i - 1) % DEVICE_BANNER_ITEMS.length];
+        return { ...base, name: db.name, atoms: [
+          ...(b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE', imageUrl: db.img })] : []),
+          atom({ name: '상품명', atomType: 'TEXT', content: db.name }),
+          ...(b.price !== false ? [
+            atom({ name: '할인율', atomType: 'TEXT', content: db.discount }),
+            atom({ name: '가격', atomType: 'PRICE', content: db.price }),
+          ] : []),
         ] };
       }
       // 상품형 · 세로형 — 요금제 안내 리스트(아이콘 + 안내 문구 + 구간·가격). BenefitRow로 렌더.
@@ -211,8 +233,9 @@ export function compositionToPreviewCorner(opts: {
   const components: PreviewComponent[] = [];
   const ctx = { base: opts.base, detail: opts.detail };
   for (const b of opts.composition) for (let i = 1; i <= b.count; i++) components.push(blockComp(b, i, ctx));
-  // 세로형+배너 = 상단 히어로 배너(빅배너) 자동 표시.
+  // 세로형+배너 = 요금제 히어로, 가로형+배너 = 아이폰 히어로. 둘 다 상단 히어로 배너(빅배너) 자동 표시.
   const isPlanBanner = opts.base === '상품형' && /세로형\+배너|세로형\(배너\)/.test(opts.detail ?? '');
+  const isDeviceBanner = opts.base === '상품형' && /가로형\+배너|가로형\(배너\)/.test(opts.detail ?? '');
   return {
     id: 'composition-preview',
     name: opts.base,
@@ -223,8 +246,8 @@ export function compositionToPreviewCorner(opts: {
     subTitle: opts.subTitle ?? null,
     layoutDetail: opts.detail ?? null,
     cornerLayout: opts.layout ?? null,
-    bigBanner: isPlanBanner || undefined,
-    bannerImageUrl: isPlanBanner ? PLAN_HERO : undefined,
+    bigBanner: isPlanBanner || isDeviceBanner || undefined,
+    bannerImageUrl: isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : undefined,
     components,
   };
 }
