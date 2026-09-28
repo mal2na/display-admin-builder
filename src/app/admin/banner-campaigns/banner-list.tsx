@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { StatusPill } from '@/components/ops-ui';
 import { BANNER_APPROVAL, BANNER_EXPOSE, fmtDateTime, fmtPeriod } from '@/lib/widget-taxonomy';
-import { RotateCcw, Search, List, LayoutGrid, Trash2, X } from 'lucide-react';
+import { RotateCcw, Search, List, LayoutGrid, Trash2, X, MapPin } from 'lucide-react';
 import { ComposedBanner, type ComposeFields } from './composed-banner';
 import { deleteBannerCampaign } from './actions';
+import type { BannerUsage } from './banner-usage';
 
 // 썸네일 프리뷰 — 완성 이미지형은 URL, 직접 만들기형은 조립 결과를 라이브 렌더.
 export type BannerPreview =
@@ -20,6 +21,7 @@ export type BannerPreview =
 export type BannerRow = {
   id: string; campaignCode: string; title: string; exposeYn: boolean;
   publishStart: string | null; publishEnd: string | null; approvalStatus: string; approvalManager: string | null; preview: BannerPreview;
+  usage: BannerUsage[];
   createdBy: string | null; createdAt: string; updatedBy: string | null; updatedAt: string;
 };
 
@@ -166,6 +168,16 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
                       <StatusPill label={ex.label} tone={ex.tone} />
                       <StatusPill label={ap.label} tone={ap.tone} />
                     </div>
+                    {(() => {
+                      const uniq = Array.from(new Map(r.usage.map((u) => [`${u.containerName}·${u.cornerName}`, u])).values());
+                      if (uniq.length === 0) return null;
+                      return (
+                        <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
+                          <MapPin className="h-3 w-3 shrink-0 text-indigo-400" /><span className="font-medium text-slate-600">노출 {uniq.length}곳</span>
+                          <span className="truncate text-slate-400">· {uniq[0].containerName}</span>
+                        </div>
+                      );
+                    })()}
                     <p className="mt-1 text-[11px] text-muted-foreground">{fmtPeriod(r.publishStart, r.publishEnd)}</p>
                   </div>
                 </div>
@@ -178,7 +190,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
       {/* 리스트형 뷰 */}
       {view === 'list' && (
       <div className="overflow-x-auto border-y border-slate-200 bg-white">
-        <table className="w-full min-w-[1000px] text-sm">
+        <table className="w-full min-w-[1140px] text-sm">
           <thead>
             <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
               <th className="px-4 py-2.5 text-left font-medium">배너캠페인 ID</th>
@@ -186,6 +198,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
               <th className="px-4 py-2.5 text-left font-medium">배너캠페인(타이틀)</th>
               <th className="w-24 px-4 py-2.5 text-left font-medium">전시여부</th>
               <th className="px-4 py-2.5 text-left font-medium">전시기간</th>
+              <th className="px-4 py-2.5 text-left font-medium">노출 위치</th>
               <th className="w-24 px-4 py-2.5 text-left font-medium">승인상태</th>
               <th className="px-4 py-2.5 text-left font-medium">등록자</th>
               <th className="px-4 py-2.5 text-left font-medium">등록일시</th>
@@ -196,7 +209,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
           </thead>
           <tbody>
             {paged.length === 0 ? (
-              <tr><td colSpan={11} className="px-4 py-16 text-center text-muted-foreground">
+              <tr><td colSpan={12} className="px-4 py-16 text-center text-muted-foreground">
                 <div>조회된 배너 캠페인이 없습니다.</div>
                 <div className="mt-1 text-[12px]">검색 조건을 설정하여 조회해주세요.</div>
               </td></tr>
@@ -214,6 +227,26 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
                   <td className="px-4 py-3 text-slate-700">{r.title}</td>
                   <td className="px-4 py-3"><StatusPill label={ex.label} tone={ex.tone} /></td>
                   <td className="px-4 py-3 text-[12px] text-slate-500">{fmtPeriod(r.publishStart, r.publishEnd)}</td>
+                  <td className="px-4 py-3">
+                    {(() => {
+                      // 목록 요약 — 같은 전시화면·코너는 한 번만(템플릿 로그인/비로그인 중복 제거)
+                      const uniq = Array.from(new Map(r.usage.map((u) => [`${u.containerName}·${u.cornerName}`, u])).values());
+                      if (uniq.length === 0) return <span className="text-[12px] text-slate-400">미사용</span>;
+                      return (
+                        <div className="space-y-0.5">
+                          {uniq.slice(0, 2).map((u, i) => (
+                            <div key={i} className="flex items-center gap-1 text-[11.5px] text-slate-600">
+                              <MapPin className="h-3 w-3 shrink-0 text-indigo-400" />
+                              <span className="max-w-[190px] truncate" title={`${u.containerName} › ${u.cornerName}`}>
+                                {u.containerName} <span className="text-slate-300">·</span> {u.cornerName}
+                              </span>
+                            </div>
+                          ))}
+                          {uniq.length > 2 && <span className="pl-4 text-[11px] text-slate-400">외 {uniq.length - 2}곳</span>}
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="px-4 py-3"><StatusPill label={ap.label} tone={ap.tone} /></td>
                   <td className="px-4 py-3 text-slate-600">{r.createdBy ?? '-'}</td>
                   <td className="px-4 py-3 text-[12px] text-slate-500">{fmtDateTime(r.createdAt)}</td>

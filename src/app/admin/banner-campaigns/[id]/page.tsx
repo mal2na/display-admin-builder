@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { BannerDetail, type BannerTypeDetail } from '../banner-detail';
+import { getBannerUsage } from '../banner-usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,7 @@ export default async function BannerCampaignDetailPage({ params }: { params: { i
   if (!b) notFound();
   let typeDetails: BannerTypeDetail[] = [];
   try { if (b.typeDetails) typeDetails = JSON.parse(b.typeDetails); } catch { typeDetails = []; }
+  const usage = (await getBannerUsage([b.id]))[b.id] ?? [];
 
   return (
     <div className="px-8 py-6">
@@ -23,6 +25,7 @@ export default async function BannerCampaignDetailPage({ params }: { params: { i
           typeDetails,
           createdBy: b.createdBy, createdAt: b.createdAt.toISOString(), updatedBy: b.updatedBy, updatedAt: b.updatedAt.toISOString(),
         }}
+        usage={usage}
         history={b.history.map((h) => ({
           id: h.id, approvalId: h.approvalId, version: h.version, status: h.status, requester: h.requester, manager: h.manager,
           requestedAt: h.requestedAt?.toISOString() ?? null, processedAt: h.processedAt?.toISOString() ?? null,

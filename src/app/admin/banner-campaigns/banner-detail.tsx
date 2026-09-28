@@ -6,7 +6,9 @@ import { OpsSection, FieldRow, ReadValue, StatusPill } from '@/components/ops-ui
 import { BANNER_APPROVAL, BANNER_EXPOSE, fmtDateTime, fmtPeriod } from '@/lib/widget-taxonomy';
 import { ComposedBanner } from './composed-banner';
 import { requestBannerApproval, cancelBannerApproval, approveBannerCampaign, rejectBannerCampaign } from './actions';
-import { Send, X as XIcon, Check, Undo2 } from 'lucide-react';
+import { Send, X as XIcon, Check, Undo2, MapPin } from 'lucide-react';
+import { DISPLAY_STATUS_LABEL } from '@/lib/display-taxonomy';
+import type { BannerUsage } from './banner-usage';
 
 const LANDING_LABEL: Record<string, string> = { direct: '직접입력', product: '상품', event: '이벤트', none: '연결안함' };
 const PAGE_LABEL: Record<string, string> = { current: '내부창', external: '외부창', none: '선택안함' };
@@ -90,7 +92,7 @@ function ApprovalBar({ d, history }: { d: BannerDetailData; history: BannerHisto
   );
 }
 
-export function BannerDetail({ d, history }: { d: BannerDetailData; history: BannerHistoryRow[] }) {
+export function BannerDetail({ d, history, usage }: { d: BannerDetailData; history: BannerHistoryRow[]; usage: BannerUsage[] }) {
   const [tab, setTab] = useState<'basic' | 'history'>('basic');
   const ex = d.exposeYn ? BANNER_EXPOSE.true : BANNER_EXPOSE.false;
   const ap = BANNER_APPROVAL[d.approvalStatus as keyof typeof BANNER_APPROVAL] ?? BANNER_APPROVAL.requested;
@@ -136,6 +138,30 @@ export function BannerDetail({ d, history }: { d: BannerDetailData; history: Ban
           <FieldRow label="전시여부"><StatusPill label={ex.label} tone={ex.tone} /></FieldRow>
           <FieldRow label="전시기간"><ReadValue value={fmtPeriod(d.publishStart, d.publishEnd)} /></FieldRow>
         </div>
+      </OpsSection>
+
+      <OpsSection title="노출 위치">
+        {usage.length === 0 ? (
+          <p className="px-1 py-2 text-[13px] text-slate-400">아직 어느 전시화면에도 편성되지 않았습니다. <span className="text-slate-400">(빌더에서 배너형 코너에 ‘배너 불러오기’로 편성됩니다)</span></p>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-[12px] text-muted-foreground">이 배너가 편성된 전시화면 · 템플릿 · 코너 <b className="text-indigo-600">{usage.length}곳</b></p>
+            <div className="divide-y overflow-hidden rounded-lg border border-slate-200">
+              {usage.map((u, i) => (
+                <div key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5 text-[13px]">
+                  <MapPin className="h-4 w-4 shrink-0 text-indigo-400" />
+                  <Link href={`/admin/containers/${u.containerId}`} className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline">{u.containerName}</Link>
+                  {u.containerType && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-medium text-slate-500">{u.containerType}</span>}
+                  <span className="text-slate-300">›</span>
+                  <span className="text-slate-600">{u.templateName}</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-500">{(DISPLAY_STATUS_LABEL as Record<string, string>)[u.templateStatus] ?? u.templateStatus}</span>
+                  <span className="text-slate-300">›</span>
+                  <span className="text-slate-500">{u.cornerName}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </OpsSection>
 
       <OpsSection title="랜딩 설정">
