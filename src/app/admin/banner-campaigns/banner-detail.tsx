@@ -124,17 +124,16 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
 
       {/* 입력/수정 폼과 동일한 섹션 순서: 기본 정보 → 전시 설정 → 랜딩 설정 → 유형상세 */}
       <OpsSection title="기본 정보">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="배너캠페인 ID"><ReadValue value={d.campaignCode} /></FieldRow>
           <FieldRow label="배너캠페인(타이틀)"><ReadValue value={d.title} /></FieldRow>
           <FieldRow label="서브타이틀"><ReadValue value={d.subtitle ?? '-'} /></FieldRow>
-          <FieldRow label="캠페인 목적"><ReadValue value={d.purpose ?? '-'} /></FieldRow>
           <FieldRow label="플랫폼"><ReadValue value={d.platform} /></FieldRow>
         </div>
       </OpsSection>
 
       <OpsSection title="전시 설정">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="전시여부"><StatusPill label={ex.label} tone={ex.tone} /></FieldRow>
           <FieldRow label="전시기간"><ReadValue value={fmtPeriod(d.publishStart, d.publishEnd)} /></FieldRow>
         </div>
@@ -166,7 +165,7 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
       </OpsSection>
 
       <OpsSection title="랜딩 설정">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="랜딩 URL 유형"><ReadValue value={LANDING_LABEL[d.landingType ?? 'direct'] ?? d.landingType} /></FieldRow>
           <FieldRow label="랜딩 값"><ReadValue value={d.landingUrl ?? '-'} /></FieldRow>
           <FieldRow label="페이지 타입"><ReadValue value={PAGE_LABEL[d.pageType ?? 'current'] ?? d.pageType} /></FieldRow>

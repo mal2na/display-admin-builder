@@ -526,11 +526,10 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
   return (
     <form ref={formRef} action={action}>
       <OpsSection title="기본 정보">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="배너캠페인 ID"><span className="text-[13px] text-slate-700">{v.campaignCode ?? '저장 시 자동 채번 (BC-YYYYMM-000)'}</span></FieldRow>
           <FieldRow label="배너캠페인(타이틀)" required><Input name="title" defaultValue={v.title ?? ''} placeholder="배너캠페인명을 입력하세요" className="h-9 text-sm" /></FieldRow>
           <FieldRow label="서브타이틀"><Input name="subtitle" defaultValue={v.subtitle ?? ''} placeholder="서브타이틀을 입력하세요" className="h-9 text-sm" /></FieldRow>
-          <FieldRow label="캠페인 목적"><Input name="purpose" defaultValue={v.purpose ?? ''} maxLength={500} placeholder="캠페인 목적을 입력하세요 (최대 500자)" className="h-9 text-sm" /></FieldRow>
           <FieldRow label="플랫폼" required>
             <div className="flex gap-4">{['APP', 'WEB'].map((p) => <Radio key={p} name="platform" value={p} checked={(v.platform ?? 'APP') === p}>{p}</Radio>)}</div>
           </FieldRow>
@@ -538,7 +537,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
       </OpsSection>
 
       <OpsSection title="전시 설정">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="전시여부" required>
             <div className="flex gap-4"><Radio name="exposeYn" value="true" checked={v.exposeYn !== false}>전시</Radio><Radio name="exposeYn" value="false" checked={v.exposeYn === false}>미전시</Radio></div>
           </FieldRow>
@@ -554,7 +553,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
       </OpsSection>
 
       <OpsSection title="랜딩 설정">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-1">
           <FieldRow label="랜딩 URL" required>
             <div className="space-y-2">
               <div className="flex flex-wrap gap-3">{LANDING_TYPES.map((l) => (
