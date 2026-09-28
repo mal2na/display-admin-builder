@@ -315,7 +315,7 @@ const REJECT_REASONS = ['필수정보 누락', '대체텍스트 없음', '잘못
 // 배열 카드 (마스터 목록의 그리드 셀) — 미리보기·이름·상태 + 상태별 인라인 승인 워크플로우 액션.
 //  검수 대기(REVIEW) → 승인/반려(정형 사유), 초안·반려(DRAFT/REJECTED) → 승인 요청, 승인완료(APPROVED)+미반영 → 반영.
 //  카드 본문 클릭은 편집 상세로, 액션 버튼은 stopPropagation으로 상세 이동을 막고 서버 액션만 수행.
-function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => void }) {
+export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => void }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -407,6 +407,39 @@ function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => void }) 
           <p className="text-center text-[10px] text-slate-400">사용 중 · 조치 없음</p>
         )}
       </div>
+    </div>
+  );
+}
+
+// 배열(레이아웃) 그룹 카드 — 같은 배열의 케이스(코너)들을 하나로 묶어 보여준다.
+//  목록에서는 '어떤 배열이 있는지'를 배열 단위로 스캔하고, 클릭하면 그 배열의 케이스들을 합쳐서(각각 승인·편집) 본다.
+//  단일 케이스면 바로 상세([id])로, 여러 케이스면 배열 상세(group?base&detail)로 이동.
+function LayoutGroupCard({ cases, onOpen }: { cases: CornerTypeRow[]; onOpen: () => void }) {
+  const rep = cases[0];
+  const multi = cases.length > 1;
+  const preview = rep.previewCorner ?? cornerRowPreview(rep);
+  const liveCount = cases.filter((c) => c.liveVersion != null && c.active).length;
+  const needAttention = cases.filter((c) => c.status === 'REVIEW' || c.status === 'REJECTED' || c.status === 'DRAFT').length;
+  const caseNames = cases.map((c) => c.previewCorner?.name ?? c.name).filter(Boolean);
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.04] shadow-[0_1px_3px_rgba(20,22,40,0.05),0_10px_28px_rgba(20,22,40,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_6px_rgba(20,22,40,0.08),0_18px_42px_rgba(20,22,40,0.14)]">
+      <button type="button" onClick={onOpen} className="flex flex-1 flex-col text-left">
+        <div className="relative bg-[#EEF1F8] p-2.5">
+          {/* 대표 미리보기(첫 케이스). 여러 케이스면 겹친 카드 느낌 + 개수 배지 */}
+          {multi && <div className="pointer-events-none absolute inset-x-3 top-1 h-40 translate-y-1 rounded-xl bg-white/70 ring-1 ring-black/[0.04]" />}
+          <div className="pointer-events-none relative h-40"><DevicePreview corner={preview} fit="contain" /></div>
+          {multi && <span className="absolute right-3 top-3 rounded-full bg-slate-900/85 px-2 py-0.5 text-[11px] font-bold text-white">{cases.length}개 케이스</span>}
+        </div>
+        <div className="flex flex-1 flex-col gap-1.5 px-3 py-2.5">
+          <p className="truncate text-[13.5px] font-semibold text-[#1A1A2E] group-hover:text-[#4A6CF7]">{layoutBi(rep.typeDetail) || rep.typeDetail || '기본'}</p>
+          {/* 이 배열에 속한 케이스(코너)명 — 어떤 코너들이 묶였는지 한눈에 */}
+          <p className="line-clamp-2 text-[11px] leading-tight text-slate-500">{caseNames.join(' · ')}</p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1">
+            <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">사용 {liveCount}/{cases.length}</span>
+            {needAttention > 0 && <span className="rounded-full border border-amber-300 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">조치 {needAttention}</span>}
+          </div>
+        </div>
+      </button>
     </div>
   );
 }
@@ -647,6 +680,15 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                 <div className="space-y-4">
                   {visible.map((bc) => {
                     const rows = filtered.filter((t) => t.baseCategory === bc);
+                    // 같은 배열(typeDetail)의 케이스(코너)들을 묶는다 — 목록은 '배열 단위'로 보여준다(케이스별 나열 X).
+                    const byDetail = new Map<string, CornerTypeRow[]>();
+                    for (const r of rows) {
+                      const k = r.typeDetail ?? '';
+                      const arr = byDetail.get(k) ?? [];
+                      arr.push(r);
+                      byDetail.set(k, arr);
+                    }
+                    const layoutGroups = [...byDetail.entries()];
                     const info = CORNER_TYPE_INFO[bc];
                     return (
                       <section key={bc} className="rounded-2xl bg-white p-5 ring-1 ring-black/[0.04] shadow-[0_1px_3px_rgba(20,22,40,0.05),0_10px_28px_rgba(20,22,40,0.08)]">
@@ -655,7 +697,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             <div className="flex flex-wrap items-center gap-2">
                               <span className={cn('inline-flex items-center rounded-md px-2.5 py-1 text-[15px] font-bold', cornerTypeChipClass(bc))}>{bc}</span>
                               {cornerTypeEn(bc) && <span className="text-[12px] font-medium text-slate-400">{cornerTypeEn(bc)}</span>}
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-slate-600">{rows.length}개 배열</span>
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-slate-600">{layoutGroups.length}개 배열</span>
                             </div>
                             {info && <p className="mt-2 text-[13px] leading-relaxed text-slate-600">{info.purpose}</p>}
                             {info && <p className="mt-1 text-[12px] text-slate-400">허용 컴포넌트: {info.allow}</p>}
@@ -670,8 +712,16 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                           </button>
                         </div>
                         <div className="grid grid-cols-4 gap-3 max-xl:grid-cols-3 max-md:grid-cols-2">
-                          {rows.map((v) => (
-                            <VariationCard key={v.id} v={v} onOpen={() => router.push(`/admin/corner-types/${v.id}`)} />
+                          {layoutGroups.map(([detail, cases]) => (
+                            <LayoutGroupCard
+                              key={detail || '기본'}
+                              cases={cases}
+                              onOpen={() => router.push(
+                                cases.length === 1
+                                  ? `/admin/corner-types/${cases[0].id}`
+                                  : `/admin/corner-types/group?base=${encodeURIComponent(bc)}&detail=${encodeURIComponent(detail)}`,
+                              )}
+                            />
                           ))}
                         </div>
                       </section>
