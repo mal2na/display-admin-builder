@@ -38,6 +38,18 @@ const DEVICE_BANNER_ITEMS: { img: string; name: string; discount: string; price:
   { img: '/assets/ds/device-iphone.png', name: 'iPhone 20 Air', discount: '7%', price: '1,165,600원' },
   { img: '/assets/ds/device-iphone.png', name: 'iPhone 20 Air', discount: '7%', price: '1,165,600원' },
 ];
+// 혜택·오퍼형 · 세로형 = 제휴 혜택 리스트(로고 + 혜택 문구 + 브랜드). 참고: 0 Week.
+const BENEFIT_ITEMS: { logo: string; text: string; brand: string }[] = [
+  { logo: '/assets/brand-gongcha.png', text: '인기 음료 6종 50% 할인', brand: '공차' },
+  { logo: '/assets/brand-tlj.png', text: '브라우니 1개 증정', brand: '뚜레쥬르' },
+  { logo: '/assets/brand-nol.png', text: '전시회 40% 할인', brand: 'NOL 티켓' },
+];
+// 혜택·오퍼형 · 가로형 = 기프티콘(상품) 가로 카드. 참고: 기프티콘 추천.
+const GIFTICON_ITEMS: { img: string; name: string; discount: string; price: string }[] = [
+  { img: '/assets/gift-perfume.png', name: '영 메모리즈 오드 퍼퓸 100ml', discount: '20%', price: '235,000원' },
+  { img: '/assets/gift-humidifier.png', name: 'SNOWMAN8 Portable WARMGREY TAIL', discount: '5%', price: '46,550원' },
+  { img: '/assets/gift-body.png', name: '로즈마리 리프레시 바디 세트', discount: '', price: '83,160원' },
+];
 // 콘텐츠 안내형 무비 3편 (토이스토리 · 인크레더블 · 둠스데이) — public/assets 실제 포스터.
 const MOVIE_POOL = ['/assets/movie-toystory.jpg', '/assets/movie-incredibles.jpg', '/assets/movie-avengers.jpg'];
 const MOVIES: [string, string][] = [['토이스토리 5', '평점 4.8 · 예매율 32.1%'], ['인크레더블', '평점 4.6 · 예매율 18.4%'], ['어벤져스: 둠스데이', '2026.12 개봉 예정']];
@@ -65,6 +77,9 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
   const isPlanBanner = ctx?.base === '상품형' && /세로형\+배너|세로형\(배너\)/.test(ctx?.detail ?? '');
   // 상품형 · 가로형+배너 = 상단 히어로(아이폰) + 가로 상품 카드.
   const isDeviceBanner = ctx?.base === '상품형' && /가로형\+배너|가로형\(배너\)/.test(ctx?.detail ?? '');
+  // 혜택·오퍼형 · 세로형 = 제휴 혜택 리스트 / 가로형 = 기프티콘 카드. (componentType가 상품형이어도 혜택·오퍼형이면 이쪽)
+  const isBenefitVertical = ctx?.base === '혜택·오퍼형' && (ctx?.detail ?? '').includes('세로형');
+  const isGifticon = ctx?.base === '혜택·오퍼형' && (ctx?.detail ?? '').includes('가로형');
   switch (b.componentType) {
     case '선택형': {
       // 업무 진입형 — 메뉴형은 세로 메뉴 라벨. 칩 계열(ChipHome/Contents/Filter/Page)은 종류별로 다르게. 그 외는 카테고리 탭.
@@ -97,6 +112,25 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
       return { ...base, name: '카테고리 탭', selectedIndex: 0, chipVariant: 'contents', atoms: T(['전체', '카테고리1', '카테고리2', '카테고리3']) };
     }
     case '상품형':
+      // 혜택·오퍼형 · 세로형 — 제휴 혜택 리스트(로고 + 혜택 문구 + 브랜드). BenefitRow로 렌더.
+      if (isBenefitVertical) {
+        const bd = BENEFIT_ITEMS[(i - 1) % BENEFIT_ITEMS.length];
+        return { ...base, name: bd.brand, atoms: [
+          atom({ name: '로고', atomType: 'ICON', imageUrl: bd.logo }),
+          atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: bd.text }),
+          atom({ name: '브랜드', atomType: 'INFO', content: bd.brand }),
+        ] };
+      }
+      // 혜택·오퍼형 · 가로형 — 기프티콘 상품 카드(이미지 + 이름 + 할인율 + 가격). ProductCard로 렌더.
+      if (isGifticon) {
+        const g = GIFTICON_ITEMS[(i - 1) % GIFTICON_ITEMS.length];
+        return { ...base, name: g.name, atoms: [
+          ...(b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE', imageUrl: g.img })] : []),
+          atom({ name: '상품명', atomType: 'TEXT', content: g.name }),
+          ...(g.discount ? [atom({ name: '할인율', atomType: 'TEXT', content: g.discount })] : []),
+          ...(b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: g.price })] : []),
+        ] };
+      }
       // 상품형 · 세로형+배너 — 요금제(상품) 행: 카드 썸네일 + 이름 + 월가격 + 스펙. PlanBannerRow로 렌더.
       if (isPlanBanner) {
         const pb = PLAN_BANNER_ITEMS[(i - 1) % PLAN_BANNER_ITEMS.length];
