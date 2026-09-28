@@ -99,6 +99,8 @@ export type CornerTypeRow = {
   updatedBy?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  // 실제 배치된 대표 코너 미리보기(있으면 카드 썸네일을 이걸로 렌더 → 상세 첫 타일과 일치). 미배치면 null → 조합 샘플.
+  previewCorner?: PreviewCorner | null;
 };
 
 export const EMPTY_CORNER_TYPE: CornerTypeRow = {
@@ -262,8 +264,8 @@ export function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: 
   const comp = parseComposition(t.composition);
   const compMeta = comp ? `컴포넌트 ${comp.reduce((s, b) => s + b.count, 0)}개` : (componentLabel(t.componentType) || layoutLabel(t.typeDetail) || '유형');
   const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
-  // 미리보기 = 조합(없으면 유형 기본 조합)을 실제 렌더러(CornerBlock)로. 카드·상세 공용 헬퍼.
-  const previewCorner = cornerRowPreview(t);
+  // 미리보기 = 실제 배치된 대표 코너(있으면) → 상세와 일치. 없으면 조합(유형 기본) 샘플.
+  const previewCorner = t.previewCorner ?? cornerRowPreview(t);
   return (
     <div className={cn('group flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.04] shadow-[0_1px_3px_rgba(20,22,40,0.05),0_10px_28px_rgba(20,22,40,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_6px_rgba(20,22,40,0.08),0_18px_42px_rgba(20,22,40,0.14)]', busy && 'pointer-events-none opacity-60')}>
       {/* 미리보기(클릭 → 상세) — 은은한 라벤더 배경 위 라운드 프레임에 코너 전체를 축소해 통째로 보여준다. */}
@@ -350,7 +352,8 @@ function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => void }) 
         className="group/vc flex flex-1 flex-col text-left transition hover:-translate-y-0.5 hover:shadow-[0_8px_22px_rgba(20,22,40,0.10)]"
       >
         <div className="bg-[#EEF1F8] p-2.5">
-          <div className="pointer-events-none h-40"><DevicePreview corner={cornerRowPreview(v)} fit="contain" /></div>
+          {/* 썸네일 = 실제 배치된 대표 코너(있으면). 상세 첫 타일과 동일 코너라 이미지가 일치한다. 미배치면 조합 샘플. */}
+          <div className="pointer-events-none h-40"><DevicePreview corner={v.previewCorner ?? cornerRowPreview(v)} fit="contain" /></div>
         </div>
         <div className="flex flex-1 flex-col gap-1.5 px-3 py-2.5">
           <p className="truncate text-[13.5px] font-semibold text-[#1A1A2E] group-hover/vc:text-[#4A6CF7]">{layoutBi(v.typeDetail) || v.typeDetail || '기본'}</p>

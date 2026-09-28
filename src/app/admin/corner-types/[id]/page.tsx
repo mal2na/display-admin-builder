@@ -5,6 +5,7 @@ import { type CornerTypeRow } from '../corner-type-manager';
 import { getBuiltCornerOptions, getRegisteredCombos } from '../built-options';
 import { getBannerUsage } from '../../banner-campaigns/banner-usage';
 import { type PreviewCorner } from '@/components/preview/blocks';
+import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE, PLACED_CORNER_ORDER } from '../preview-corner';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,17 +21,8 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     // 사용처: 이 코너 유형으로 생성된 코너 + 배치된 템플릿/컨테이너 + 실제 구성(미리보기용)
     prisma.corner.findMany({
       where: { sourceCornerTypeId: params.id },
-      include: {
-        banner: { select: { imageUrl: true } },
-        templateCorners: {
-          select: { template: { select: { name: true, container: { select: { name: true } } } } },
-        },
-        cornerComponents: {
-          orderBy: { order: 'asc' },
-          include: { component: { include: { componentAtoms: { orderBy: { order: 'asc' }, include: { atom: true } } } } },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
+      include: PLACED_CORNER_INCLUDE,
+      orderBy: PLACED_CORNER_ORDER,
     }),
   ]);
   if (!ct) notFound();
@@ -44,22 +36,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
 
   // 실제 사용 코너의 구성을 미리보기로 매핑 — 배너형 외 유형(예: 혜택·오퍼형)은 상세에서 실제 코너들을 보여준다(한 유형 = 여러 케이스).
   //  전시화면(템플릿)에 배치된 코너만 — 미배치(orphan) 코너는 제외.
-  const usagePreviews: PreviewCorner[] = usageCorners.filter((c) => c.templateCorners.length > 0).map((c) => ({
-    id: c.id, name: c.name, cornerType: c.cornerType, title: c.title, maxItems: c.maxItems,
-    mainTitle: c.mainTitle, subTitle: c.subTitle, cornerLayout: c.cornerLayout, layoutDetail: c.layoutDetail,
-    subTitleIcon: c.subTitleIcon, moreButtonUse: c.moreButtonUse, moreButtonLabel: c.moreButtonLabel,
-    bigBanner: c.bigBanner, cardShape: c.cardShape, titleLines: c.titleLines,
-    bannerImageUrl: c.banner?.imageUrl ?? null, bannerOptions: c.bannerOptions,
-    recSource: c.recSource, recSourcePlan: c.recSourcePlan, showRecReason: c.showRecReason,
-    components: c.cornerComponents.map((cc) => ({
-      id: cc.component.id, name: cc.component.name, componentType: cc.component.componentType,
-      selectedIndex: cc.component.selectedIndex, chipRows: cc.component.chipRows,
-      atoms: cc.component.componentAtoms.map((ca) => ({
-        id: ca.atom.id, name: ca.atom.name, atomType: ca.atom.atomType, content: ca.atom.content,
-        imageUrl: ca.atom.imageUrl, altText: ca.atom.altText, linkUrl: ca.atom.linkUrl, menuRole: ca.menuRole,
-      })),
-    })),
-  }));
+  const usagePreviews: PreviewCorner[] = usageCorners.filter((c) => c.templateCorners.length > 0).map(cornerToPreviewCorner);
 
   const row: CornerTypeRow = {
     id: ct.id,
