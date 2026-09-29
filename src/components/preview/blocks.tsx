@@ -75,7 +75,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   if (variant === 'home') {
     const twoRows = component.chipRows === 2;
     return (
-      <div className={twoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'}>
+      <div className={twoRows ? 'flex flex-wrap items-start gap-2 pb-1' : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'}>
         {component.atoms.map((a, i) => (
           <span key={a.id} className={'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3.5 text-[12px] font-medium text-slate-800 shadow-sm ring-1 ' + (i === sel ? 'ring-indigo-400' : 'ring-slate-100')}>
             {a.imageUrl && (isIconRef(a.imageUrl)
@@ -119,7 +119,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩. chipRows=2면 두 줄(그리드)로.
   const contentsTwoRows = component.chipRows === 2;
   return (
-    <div className={contentsTwoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-center gap-2 overflow-x-auto pb-1'}>
+    <div className={contentsTwoRows ? 'flex flex-wrap items-center gap-2 pb-1' : 'flex flex-nowrap items-center gap-2 overflow-x-auto pb-1'}>
       {component.atoms.map((a, i) => (
         <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium ' + (i === sel ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500')}>
           {a.content ?? a.name}
@@ -233,10 +233,6 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   const sub = first(component.atoms, 'INFO');
   const cta = first(component.atoms, 'BUTTON', 'CTA');
   const img = first(component.atoms, 'IMAGE', 'ICON');
-  // 배너 규격(layoutDetail의 W×H)으로 실제 비율을 잡는다 — 빅/스몰/띠/팝업이 눈에 보이게.
-  //  규격에 W×H가 없으면(예: '이미지형') 실제 배너 기본 비율(빅배너 672×460)로 렌더 — 뚱뚱한 콤포즈 박스 방지.
-  const m = (sizeDetail ?? '').match(/(\d+)\s*[×xX*]\s*(\d+)/);
-  const ratio = m ? `${m[1]} / ${m[2]}` : '672 / 460';
   const src = img?.imageUrl ?? '';
   const hasImg = isRenderableImg(src);
   // 완성형 배너 이미지(업로드 사진·banner-* 마커)는 규격 비율로 꽉 채우고,
@@ -244,6 +240,17 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   //  판정 기준을 '확장자'가 아니라 '완성형 마커(data/http · /banner- 접두)'로 한정 — 로고 .png가 전체 이미지로 잘못 렌더되던 문제 수정.
   //  단, ICON 아톰(로고 글리프)은 언제나 콤포즈형.
   const isFullBanner = img?.atomType !== 'ICON' && /(^data:|^https?:|\/banner-)/i.test(src);
+  // 배너 규격(layoutDetail의 W×H)으로 실제 비율을 잡는다 — 빅/스몰/띠/팝업이 눈에 보이게.
+  //  규격에 W×H가 없으면(예: '배너 단일형'): 완성형 이미지는 빅배너(672×460), 콤포즈형(타이틀+로고)은 납작한 띠 비율(672×260)로 → 뚱뚱한 박스 방지.
+  const m = (sizeDetail ?? '').match(/(\d+)\s*[×xX*]\s*(\d+)/);
+  const ratio = m ? `${m[1]} / ${m[2]}` : (isFullBanner ? '672 / 460' : '672 / 260');
+  // 콤포즈형(타이틀+로고)은 규격이 커도(빅배너 672×460 등) 세로가 길면 비어 보임(뚱뚱) → 폭 대비 최대 672:260 비율로 캡.
+  const composeRatio = (() => {
+    if (!m) return isFullBanner ? '672 / 460' : '672 / 260';
+    const w = Number(m[1]), h = Number(m[2]);
+    const capH = Math.round((w * 260) / 672);
+    return `${w} / ${Math.min(h, capH)}`;
+  })();
   if (ratio) {
     if (hasImg && isFullBanner) {
       return (
@@ -255,9 +262,9 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
         </div>
       );
     }
-    // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게.
+    // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게. 규격이 커도 세로는 캡(뚱뚱 방지).
     return (
-      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: ratio }}>
+      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: composeRatio }}>
         <div className="min-w-0 flex-1 py-3">
           <p className="line-clamp-2 whitespace-pre-line text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
           {sub?.content && <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{sub.content}</p>}
@@ -390,8 +397,8 @@ function InfoCard({ component }: { component: PreviewComponent }) {
   // 아이콘/이미지형: 아톰이 이미지면 사각 썸네일, 아이콘이면 원형 배경 — 빌더에서 아이콘/이미지 중 선택.
   const isImage = iconAtom?.atomType === 'IMAGE';
   return (
-    // 상태 안내형 카드형 = 796×248 비율(위아래로 너무 납작하지 않게). 콘텐츠는 세로 중앙.
-    <div className="flex items-center gap-3" style={{ aspectRatio: '796 / 248' }}>
+    // 상태 안내형 카드형 = 794×248 비율(2026-09-29 사용자 요청). 콘텐츠는 세로 중앙.
+    <div className="flex items-center gap-3" style={{ aspectRatio: '794 / 248' }}>
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="text-[17px] font-bold leading-tight text-slate-900">{resolveCvmSample(value?.content) || component.name}</p>
@@ -625,7 +632,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       renderComps(corner.components, layoutMode)
     );
 
-  const wrapClass = isBanner ? '' : 'rounded-2xl bg-white p-4 shadow-sm';
+  const wrapClass = isBanner ? '' : 'rounded-2xl bg-white p-3 shadow-sm';
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
@@ -661,7 +668,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     return (
       <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
         {bannerEl}
-        <div className="space-y-2 p-4 pt-3">
+        <div className="space-y-2 p-3 pt-2.5">
           {heading && (
             <div>
               <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>

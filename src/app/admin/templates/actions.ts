@@ -540,6 +540,45 @@ function scaffoldSpecFor(componentType: string | null, typeDetail: string | null
 function specFromComposition(composition: Composition): ScaffoldComp[] {
   const comps: ScaffoldComp[] = [];
   for (const b of composition) {
+    // 배너형 스와이프형 — 코너 유형에서 묶은 배너(배너 캠페인 스냅샷)를 그대로 생성. 랜딩 URL은 캠페인 값 그대로. 빌더는 순서만.
+    if (b.componentType === '배너형' && b.banners && b.banners.length) {
+      for (const bn of b.banners) {
+        comps.push({
+          name: bn.title || '배너', componentType: '배너형',
+          atoms: [
+            { name: '배너 타이틀', atomType: 'TEXT', content: bn.title },
+            ...(bn.linkUrl ? [{ name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: bn.linkUrl }] : []),
+            ...(bn.imageUrl ? [{ name: '배너 이미지', atomType: 'IMAGE', imageUrl: bn.imageUrl, altText: bn.title }] : []),
+          ],
+        });
+      }
+      continue;
+    }
+    // 상품형·혜택형 — 코너 유형에서 묶은 상품·혜택 아이템(BSS 카탈로그 스냅샷)을 그대로 생성. 랜딩 URL은 담은 값 그대로. 빌더는 순서만. 2026-09-29
+    if ((b.componentType === '상품형' || b.componentType === '혜택형') && b.items && b.items.length) {
+      for (const it of b.items) {
+        comps.push({
+          name: it.brand || it.title || '상품', componentType: b.componentType,
+          atoms: [
+            ...(it.imageUrl ? [{ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl, altText: it.brand || it.title }] : []),
+            ...(it.badge && b.badge ? [{ name: '배지', atomType: 'BADGE', content: it.badge }] : []),
+            { name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title },
+            ...(it.brand ? [{ name: '브랜드', atomType: 'INFO', content: it.brand }] : []),
+            ...(it.price && b.price !== false ? [{ name: '가격', atomType: 'PRICE', content: it.price }] : []),
+            ...(it.linkUrl ? [{ name: 'CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: it.linkUrl }] : []),
+          ],
+        });
+      }
+      continue;
+    }
+    // 선택형(탭·메뉴) — 칩 정의(라벨·링크·줄수)를 코너 유형에서 정의(2026-09-29). 그대로 생성, 빌더는 순서만 변경.
+    if (b.componentType === '선택형' && b.chips && b.chips.length) {
+      comps.push({
+        name: '탭', componentType: '선택형', selectedIndex: 0, chipRows: b.chipRows === 2 ? 2 : 1,
+        atoms: b.chips.map((c) => ({ name: c.label ? `칩:${c.label}` : '칩', atomType: 'TEXT', content: c.label ?? '', linkUrl: c.linkUrl ?? undefined })),
+      });
+      continue;
+    }
     const feats: CompFeats = { image: b.image, price: b.price, badge: b.badge, desc: b.desc };
     for (let i = 1; i <= b.count; i++) comps.push(buildComp(b.componentType, i, feats));
   }

@@ -296,15 +296,6 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
               title="프로모션"
               subtitle={`총 ${projects.length}개의 프로모션이 있습니다.`}
               className="mb-4"
-              action={
-                <button
-                  type="button"
-                  onClick={() => setWizardOpen(true)}
-                  className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4" /> 등록
-                </button>
-              }
             />
 
             {/* 검색 조건 — 유형·상태·전시상태·기간·검색을 한 카드에 그룹형(칩)으로 모아 한 번에 (SB-EVT-027) */}
@@ -427,6 +418,17 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
                 <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={curPage === totalPages} className="inline-flex h-8 w-8 items-center justify-center rounded-md border disabled:opacity-40 hover:bg-secondary"><ChevronRight className="h-4 w-4" /></button>
               </div>
             )}
+
+            {/* 등록 버튼 — 목록 테이블 하단(프로토타입 배치). 클릭 시 등록 마법사(문답형/선택형) */}
+            <div className="mt-5 flex justify-end border-t pt-4">
+              <button
+                type="button"
+                onClick={() => setWizardOpen(true)}
+                className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4" /> 등록
+              </button>
+            </div>
           </>
         )}
 

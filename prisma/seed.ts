@@ -709,27 +709,27 @@ async function main() {
   const swipeBanner1 = await comp('SW-제휴 혜택 배너', '배너형', [
     { name: 'SW 가족나들이 제목', atomType: 'TEXT', content: '이번 주말, 가족 나들이에 쓰기 좋은 혜택' },
     { name: 'SW 가족나들이 서브', atomType: 'INFO', content: '제휴사별 혜택 더보기' },
-    { name: 'SW 롯데월드 이미지', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png', altText: '롯데월드 어드벤처' },
+    { name: 'SW 롯데월드 이미지', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png', altText: '롯데월드 어드벤처', linkUrl: 'https://tworld/partner-lotteworld' },
   ]);
   const swipeBanner2 = await comp('SW-AirPods 사전예약', '배너형', [
     { name: 'SW 에어팟 제목', atomType: 'TEXT', content: 'AirPods Max3 사전 예약 하셨나요?' },
     { name: 'SW 에어팟 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
-    { name: 'SW 에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-airpodsmax.png', altText: 'AirPods Max3 헤드폰' },
+    { name: 'SW 에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-airpodsmax.png', altText: 'AirPods Max3 헤드폰', linkUrl: 'https://tworld/airpods-max-preorder' },
   ]);
   const swipeBanner3 = await comp('SW-iPhone 20 사전예약', '배너형', [
     { name: 'SW iPhone 제목', atomType: 'TEXT', content: 'iPhone 20 사전 예약 시\n에어팟 프로 증정' },
     { name: 'SW iPhone 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
-    { name: 'SW iPhone 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 사전예약' },
+    { name: 'SW iPhone 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 사전예약', linkUrl: 'https://tworld/iphone20-preorder' },
   ]);
   const swipeBanner4 = await comp('SW-Marshall 스피커', '배너형', [
     { name: 'SW 스피커 제목', atomType: 'TEXT', content: 'Marshall Stockwell 블루투스 스피커' },
     { name: 'SW 스피커 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
-    { name: 'SW 스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-marshall.png', altText: 'Marshall Stockwell 스피커' },
+    { name: 'SW 스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-marshall.png', altText: 'Marshall Stockwell 스피커', linkUrl: 'https://tworld/marshall-stockwell' },
   ]);
   const swipeBanner5 = await comp('SW-추천 상품 (CHANEL)', '배너형', [
     { name: 'SW 루쥬코코 제목', atomType: 'TEXT', content: 'CHANEL 루쥬 코코 립스틱' },
     { name: 'SW 루쥬코코 서브', atomType: 'INFO', content: '봄 뮤트 핑크 #130' },
-    { name: 'SW 루쥬코코 이미지', atomType: 'IMAGE', imageUrl: '/assets/chanel-lipstick.png', altText: 'CHANEL 루쥬 코코 립스틱' },
+    { name: 'SW 루쥬코코 이미지', atomType: 'IMAGE', imageUrl: '/assets/chanel-lipstick.png', altText: 'CHANEL 루쥬 코코 립스틱', linkUrl: 'https://tworld/beauty-chanel' },
   ]);
   const shopCornerSwipe = await corner(
     { name: '프로모션 배너 스와이프', cornerType: '배너형', maxItems: 5, layoutDetail: '이미지형' },
@@ -1039,7 +1039,7 @@ async function main() {
   const placed = await prisma.templateCorner.findMany({
     include: {
       corner: {
-        include: { cornerComponents: { include: { component: true }, orderBy: { order: 'asc' } } },
+        include: { cornerComponents: { include: { component: { include: { componentAtoms: { include: { atom: true }, orderBy: { order: 'asc' } } } } }, orderBy: { order: 'asc' } } },
       },
     },
     orderBy: { corner: { createdAt: 'asc' } },
@@ -1116,9 +1116,47 @@ async function main() {
       const sampleImageUrl = samples.length ? samples.join('\n') : null;
       // 이름: 코너별 분리라 코너명이 곧 식별자(배너형도 각 배너명).
       const name = rep.name;
+      // 선택형(탭·메뉴) 코너 유형: 칩 정의(라벨·링크·아이콘·줄수)를 composition으로 승격 → 빌더는 순서만 변경(2026-09-29).
+      let composition: string | null = null;
+      const selCC = rep.cornerComponents.find((cc) => cc.component.componentType === '선택형');
+      if (selCC && selCC.component.componentAtoms.length) {
+        const chips = selCC.component.componentAtoms.map((ca) => ({ label: ca.atom.content ?? ca.atom.name, linkUrl: ca.atom.linkUrl ?? undefined, icon: ca.atom.imageUrl ?? undefined }));
+        composition = JSON.stringify([{ componentType: '선택형', count: 1, chips, chipRows: selCC.component.chipRows ?? 1 }]);
+      }
+      // 배너형 스와이프형: 묶은 배너(제목·이미지·랜딩 URL)를 composition으로 승격 → 빌더는 하나하나 안 불러와도 됨(2026-09-29).
+      if (base === '배너형' && detail === '스와이프형') {
+        const bannerComps = rep.cornerComponents.filter((cc) => cc.component.componentType === '배너형');
+        const banners = bannerComps.map((cc) => {
+          const atoms = cc.component.componentAtoms.map((ca) => ca.atom);
+          return {
+            title: atoms.find((a) => a.atomType === 'TEXT')?.content ?? cc.component.name,
+            imageUrl: atoms.find((a) => a.atomType === 'IMAGE')?.imageUrl ?? undefined,
+            linkUrl: atoms.find((a) => a.atomType === 'CTA')?.linkUrl ?? atoms.find((a) => a.linkUrl)?.linkUrl ?? undefined,
+          };
+        });
+        if (banners.length) composition = JSON.stringify([{ componentType: '배너형', count: banners.length, banners }]);
+      }
+      // 상품형·혜택형: 코너에 담긴 상품·혜택 아이템(로고·혜택문구·브랜드·가격·랜딩 URL)을 composition으로 승격 → 빌더는 순서만(2026-09-29).
+      if (!composition) {
+        const itemComps = rep.cornerComponents.filter((cc) => cc.component.componentType === '상품형' || cc.component.componentType === '혜택형');
+        if (itemComps.length >= 1 && (componentType === '상품형' || componentType === '혜택형')) {
+          const items = itemComps.map((cc) => {
+            const atoms = cc.component.componentAtoms.map((ca) => ca.atom);
+            const brand = atoms.find((a) => a.atomType === 'INFO')?.content ?? cc.component.name;
+            const title = atoms.find((a) => a.atomType === 'BENEFIT_TEXT' || a.atomType === 'TEXT')?.content ?? brand;
+            const imageUrl = atoms.find((a) => a.atomType === 'ICON' || a.atomType === 'IMAGE')?.imageUrl ?? undefined;
+            const price = atoms.find((a) => a.atomType === 'PRICE')?.content ?? undefined;
+            const badge = atoms.find((a) => a.atomType === 'BADGE')?.content ?? undefined;
+            const linkUrl = atoms.find((a) => a.atomType === 'CTA')?.linkUrl ?? atoms.find((a) => a.linkUrl)?.linkUrl ?? undefined;
+            return { title, brand, imageUrl, price, badge, linkUrl };
+          });
+          if (items.length) composition = JSON.stringify([{ componentType, count: items.length, image: true, price: true, badge: !!items.some((it) => it.badge), desc: true, items }]);
+        }
+      }
       const created = await prisma.cornerType.create({
         data: {
           typeId: 'CY' + String(typeIdx).padStart(7, '0'),
+          composition,
           name,
           baseCategory: base,
           componentType,

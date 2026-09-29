@@ -127,6 +127,13 @@ export type CompositionBlock = {
   price?: boolean;
   badge?: boolean;
   desc?: boolean;
+  // 선택형(탭·메뉴/칩) — 칩 정의는 코너 유형이 소유(2026-09-29). 빌더는 순서만 변경. label/링크/줄수를 여기서 정의.
+  chips?: { label: string; linkUrl?: string; icon?: string }[];
+  chipRows?: number; // 칩 표시 줄 수(1|2)
+  // 배너형 스와이프형 — 묶을 배너(배너 캠페인 스냅샷). 코너 유형이 묶고, 랜딩 URL은 배너 캠페인에서 그대로 끌어옴. 빌더는 순서만.
+  banners?: { campaignId?: string; title: string; imageUrl?: string; linkUrl?: string; size?: string }[];
+  // 상품형/혜택형 — 묶을 상품·혜택 아이템. 코너 유형이 묶고(BSS 혜택 브랜드 카탈로그에서 담기), 랜딩 URL은 자동 매핑 후 수동 편집. 빌더는 순서만. (2026-09-29 사용자 요청)
+  items?: { productKey?: string; title: string; brand?: string; imageUrl?: string; price?: string; badge?: string; linkUrl?: string }[];
 };
 export type Composition = CompositionBlock[];
 
@@ -160,6 +167,35 @@ export function parseComposition(raw: string | null | undefined): Composition | 
     for (const b of a) {
       if (!b || typeof b !== 'object') continue;
       if (!(COMPONENT_TYPES as readonly string[]).includes(b.componentType)) continue;
+      // 선택형(탭·메뉴) 칩 정의 보존 — 라벨/링크/아이콘/줄수(코너 유형이 소유).
+      const chips = Array.isArray(b.chips)
+        ? b.chips.filter((c: unknown) => c && typeof c === 'object' && typeof (c as { label?: unknown }).label === 'string')
+            .map((c: { label: string; linkUrl?: unknown; icon?: unknown }) => ({ label: c.label, linkUrl: typeof c.linkUrl === 'string' ? c.linkUrl : undefined, icon: typeof c.icon === 'string' ? c.icon : undefined }))
+        : undefined;
+      // 배너형 스와이프형 묶음 배너 보존 — 배너 캠페인 스냅샷(제목/이미지/랜딩 URL/규격).
+      const banners = Array.isArray(b.banners)
+        ? b.banners.filter((x: unknown) => x && typeof x === 'object' && typeof (x as { title?: unknown }).title === 'string')
+            .map((x: { campaignId?: unknown; title: string; imageUrl?: unknown; linkUrl?: unknown; size?: unknown }) => ({
+              campaignId: typeof x.campaignId === 'string' ? x.campaignId : undefined,
+              title: x.title,
+              imageUrl: typeof x.imageUrl === 'string' ? x.imageUrl : undefined,
+              linkUrl: typeof x.linkUrl === 'string' ? x.linkUrl : undefined,
+              size: typeof x.size === 'string' ? x.size : undefined,
+            }))
+        : undefined;
+      // 상품형/혜택형 묶음 아이템 보존 — 상품/혜택 스냅샷(제목/브랜드/이미지/가격/배지/랜딩 URL).
+      const items = Array.isArray(b.items)
+        ? b.items.filter((x: unknown) => x && typeof x === 'object' && typeof (x as { title?: unknown }).title === 'string')
+            .map((x: { productKey?: unknown; title: string; brand?: unknown; imageUrl?: unknown; price?: unknown; badge?: unknown; linkUrl?: unknown }) => ({
+              productKey: typeof x.productKey === 'string' ? x.productKey : undefined,
+              title: x.title,
+              brand: typeof x.brand === 'string' ? x.brand : undefined,
+              imageUrl: typeof x.imageUrl === 'string' ? x.imageUrl : undefined,
+              price: typeof x.price === 'string' ? x.price : undefined,
+              badge: typeof x.badge === 'string' ? x.badge : undefined,
+              linkUrl: typeof x.linkUrl === 'string' ? x.linkUrl : undefined,
+            }))
+        : undefined;
       out.push({
         componentType: b.componentType,
         count: Math.max(1, Math.min(20, Number(b.count) || 1)),
@@ -168,6 +204,10 @@ export function parseComposition(raw: string | null | undefined): Composition | 
         price: b.price !== false,
         badge: !!b.badge,
         desc: b.desc !== false,
+        ...(chips && chips.length ? { chips } : {}),
+        ...(banners && banners.length ? { banners } : {}),
+        ...(items && items.length ? { items } : {}),
+        ...(b.chipRows === 2 ? { chipRows: 2 } : b.chipRows === 1 ? { chipRows: 1 } : {}),
       });
     }
     return out.length ? out : null;
@@ -469,9 +509,9 @@ export function isComponentAllowedInCorner(
 //   각 유형이 실제로 갖는 배열·레이아웃만 남긴다. 새 배열이 필요하면 여기 추가 후 등록해 사용.
 //  콘텐츠/상품 계열(상품형·혜택·오퍼형·콘텐츠 안내형)은 '만들 수 있는 배열' 풀셋을 공유.
 //   상단 카테고리 탭은 별도 배열이 아니라 빌더에서 얹는 선택형 컴포넌트(토글) → 세로형(카테고리탭) 제거.
-const GENERAL_LAYOUTS = ['가로형(2.5배열)', '가로형(1.5배열)', '세로형', '그리드형'] as const; // 순서: 가로2.5 → 가로1.5 → 세로 → 그리드
 export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
-  상품형: [...GENERAL_LAYOUTS.filter((l) => l !== '가로형(2.5배열)'), '가로형+배너', '세로형+배너'],
+  // 상품형 실제 사용 3종만: 세로형(요금제 리스트)·가로형+배너(단말 추천)·세로형+배너(요금제 히어로). (2026-09-29 사용자 확정 — 가로형(1.5배열)·그리드형 등 미사용 제거)
+  상품형: ['세로형', '가로형+배너', '세로형+배너'],
   // 혜택·오퍼형은 실제 사용 4종만: 가로형(기프티콘·구독) · 세로형(제휴 혜택 리스트) · 세로형+배너(T Week 소멸) · 세로형+칩(카테고리별 혜택). (2026-09-28 사용자 확정)
   '혜택·오퍼형': ['가로형', '세로형', '세로형+배너', '세로형+칩'],
   '콘텐츠 안내형': ['가로형'],

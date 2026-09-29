@@ -47,7 +47,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download, GalleryHorizontalEnd, ChevronUp, ChevronDown, RotateCcw } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download, GalleryHorizontalEnd, RotateCcw } from 'lucide-react';
 import { TypeDetailPreview } from '../../corner-types/corner-type-manager';
 import {
   updateTemplateMeta,
@@ -61,7 +61,6 @@ import {
   removeComponent,
   toggleCornerTab,
   renameComponent,
-  moveComponent,
   reorderComponents,
   addExistingAtom,
   createAtom,
@@ -435,21 +434,7 @@ function DisclosureButton({ children }: { children: React.ReactNode }) {
 }
 
 // 정렬 가능한 칩 한 줄 (드래그앤드롭 · 그립 핸들) — 좌측 코너 리스트와 동일한 방식
-function SortableChipRow({
-  i,
-  chip,
-  onEdit,
-  onRemove,
-  onOpenIcon,
-  showMenuRole,
-}: {
-  i: number;
-  chip: ChipItem;
-  onEdit: (patch: Partial<ChipItem>) => void;
-  onRemove: () => void;
-  onOpenIcon: () => void;
-  showMenuRole?: boolean;
-}) {
+function SortableChipRow({ i, chip }: { i: number; chip: ChipItem }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(i) });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
@@ -465,75 +450,38 @@ function SortableChipRow({
         <GripVertical className="h-4 w-4" />
       </button>
 
-      {/* 아이콘: 슬롯 자체가 불러오기 버튼(설정 시 아이콘, 미설정 시 +). ×로 해제 */}
-      <div className="relative shrink-0">
-        <button
-          type="button"
-          onClick={onOpenIcon}
-          title={chip.iconUrl ? '아이콘 변경 (라이브러리에서 끌어오기)' : '아이콘 불러오기'}
-          className="flex h-8 w-8 items-center justify-center rounded-md border bg-slate-50 hover:border-primary/50 hover:bg-accent"
-        >
-          {chip.iconUrl ? (
-            isIconRef(chip.iconUrl) ? (
-              <IconGlyph name={chip.iconUrl} className="h-4 w-4 text-slate-700" />
-            ) : isRenderableIconUrl(chip.iconUrl) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={chip.iconUrl} alt={chip.iconAlt} className="h-4 w-4 rounded object-cover" />
-            ) : (
-              <span className="h-3.5 w-3.5 rounded-full bg-slate-300/70" title={chip.iconAlt || chip.iconUrl} />
-            )
+      {/* 아이콘(읽기 전용) — 정의는 코너 유형에서 */}
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-slate-50">
+        {chip.iconUrl ? (
+          isIconRef(chip.iconUrl) ? (
+            <IconGlyph name={chip.iconUrl} className="h-4 w-4 text-slate-700" />
+          ) : isRenderableIconUrl(chip.iconUrl) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={chip.iconUrl} alt={chip.iconAlt} className="h-4 w-4 rounded object-cover" />
           ) : (
-            <Plus className="h-4 w-4 text-slate-400" />
-          )}
-        </button>
-        {chip.iconUrl && (
-          <button
-            type="button"
-            onClick={() => onEdit({ iconUrl: '', iconAlt: '' })}
-            title="아이콘 해제"
-            className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-slate-500 text-white hover:bg-destructive"
-          >
-            <X className="h-2.5 w-2.5" />
-          </button>
+            <span className="h-3.5 w-3.5 rounded-full bg-slate-300/70" title={chip.iconAlt || chip.iconUrl} />
+          )
+        ) : (
+          <span className="h-3.5 w-3.5 rounded bg-slate-200" />
         )}
       </div>
 
-      <Input value={chip.content} onChange={(e) => onEdit({ content: e.target.value })} placeholder={`ChipLabel${String(i + 1).padStart(2, '0')}`} className="h-8 min-w-0 flex-1 text-xs" />
-      <Input value={chip.linkUrl} onChange={(e) => onEdit({ linkUrl: e.target.value })} placeholder="이동 링크 URL" className="h-8 min-w-0 flex-1 text-xs" />
-      {/* 고객 메뉴 역할: 고정(삭제불가) ↔ 편집가능 — 메뉴 리스트 코너에서만 */}
-      {showMenuRole && (
-        <button
-          type="button"
-          onClick={() => onEdit({ menuRole: chip.menuRole === 'FIXED' ? 'EDITABLE' : 'FIXED' })}
-          title={chip.menuRole === 'FIXED' ? '고정 (고객이 삭제·이동 불가) — 클릭 시 편집가능' : '편집가능 (고객이 삭제·순서변경 가능) — 클릭 시 고정'}
-          className={cn(
-            'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-medium transition',
-            chip.menuRole === 'FIXED' ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-border text-muted-foreground hover:border-primary/40',
-          )}
-        >
-          {chip.menuRole === 'FIXED' ? <><Lock className="h-3 w-3" /> 고정</> : <><Pencil className="h-3 w-3" /> 편집</>}
-        </button>
-      )}
-      <button type="button" onClick={onRemove} className="shrink-0 text-muted-foreground hover:text-destructive" title="칩 삭제" aria-label="칩 삭제">
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      {/* 라벨·링크는 읽기 전용(코너 유형에서 정의) — 빌더에선 순서만 변경 */}
+      <span className="min-w-0 flex-1 truncate rounded-md bg-slate-50 px-2 py-1.5 text-xs text-slate-600">{chip.content || `ChipLabel${String(i + 1).padStart(2, '0')}`}</span>
+      <span className="min-w-0 flex-1 truncate rounded-md bg-slate-50 px-2 py-1.5 text-[11px] text-slate-400">{chip.linkUrl || '이동 링크 —'}</span>
     </div>
   );
 }
 
 // ── 선택형(칩/탭) 편집기 = ChipPage (업무진입형.png) ─────────
 // 완전 제어형: 개별 저장 없이 로컬 draft만 수정 → 미리보기 즉시 반영, 저장은 카드의 "완료"가 일괄 처리.
-function ChipEditor({ draft, onChange, showMenuRole }: { draft: ChipDraft; onChange: (next: ChipDraft) => void; showMenuRole?: boolean }) {
+function ChipEditor({ draft, onChange }: { draft: ChipDraft; onChange: (next: ChipDraft) => void }) {
   const { chips, selectedIndex, chipRows } = draft;
-  const [iconFor, setIconFor] = useState<number | null>(null); // 아이콘 모달을 연 칩 index
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const setChips = (next: ChipItem[], sel = selectedIndex) =>
     onChange({ chips: next, selectedIndex: Math.max(0, Math.min(sel, Math.max(0, next.length - 1))), chipRows });
-  const editChip = (i: number, patch: Partial<ChipItem>) =>
-    setChips(chips.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
-  const removeChip = (i: number) => setChips(chips.filter((_, idx) => idx !== i), selectedIndex > i ? selectedIndex - 1 : selectedIndex);
-  // 드래그로 순서 변경 (선택된 칩도 함께 따라가도록 selectedIndex 보정)
+  // 드래그로 순서만 변경 (선택된 칩도 함께 따라가도록 selectedIndex 보정). 라벨·링크·줄수는 코너 유형에서 정의.
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
@@ -549,43 +497,26 @@ function ChipEditor({ draft, onChange, showMenuRole }: { draft: ChipDraft; onCha
     else if (from > selectedIndex && to <= selectedIndex) sel = selectedIndex + 1;
     setChips(next, sel);
   };
-  const addChip = () => setChips([...chips, { content: '', linkUrl: '', iconUrl: '', iconAlt: '', menuRole: 'EDITABLE' }]);
 
   return (
     <div className="mt-1 space-y-2 rounded-md bg-muted/40 p-2">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium text-muted-foreground">Chips · 드래그로 순서 변경 · 편집 후 상단 “완료”로 일괄 저장</span>
+        <span className="text-[11px] font-medium text-muted-foreground">드래그로 <b className="text-slate-600">순서만</b> 변경 · 상단 “완료”로 저장</span>
         <span className="rounded bg-white px-1.5 py-0.5 text-[11px] font-semibold">{chips.length}</span>
       </div>
 
-      {/* 각 칩 = 동일 레이아웃 한 줄: 드래그 핸들 · 아이콘(불러오기 버튼) · 라벨 · 이동 링크 · 삭제 */}
+      {/* 각 칩 = 드래그 핸들 · 아이콘(읽기) · 라벨(읽기) · 이동 링크(읽기). 순서만 변경. */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={chips.map((_, i) => String(i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {chips.map((c, i) => (
-              <SortableChipRow
-                key={i}
-                i={i}
-                chip={c}
-                onEdit={(patch) => editChip(i, patch)}
-                onRemove={() => removeChip(i)}
-                onOpenIcon={() => setIconFor(i)}
-                showMenuRole={showMenuRole}
-              />
+              <SortableChipRow key={i} i={i} chip={c} />
             ))}
           </div>
         </SortableContext>
       </DndContext>
 
-      <IconPickerModal
-        open={iconFor !== null}
-        onClose={() => setIconFor(null)}
-        onSelect={(def) => {
-          if (iconFor !== null) editChip(iconFor, { iconUrl: `icon:${def.key}`, iconAlt: def.label });
-        }}
-      />
-
-      {/* Selection: 활성 칩 */}
+      {/* Selection: 기본 활성 칩 */}
       {chips.length > 0 && (
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] text-muted-foreground">Selection</span>
@@ -604,30 +535,17 @@ function ChipEditor({ draft, onChange, showMenuRole }: { draft: ChipDraft; onCha
         </div>
       )}
 
-      {/* 표시 줄 수: 1줄 / 2줄 */}
+      {/* 표시 줄 수 — 읽기 전용(코너 유형에서 정의) */}
       <div className="flex items-center gap-1.5">
         <span className="text-[11px] text-muted-foreground">표시 줄 수</span>
-        {[1, 2].map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => onChange({ ...draft, chipRows: r })}
-            className={cn('rounded px-2 py-0.5 text-[11px] font-medium', (chipRows ?? 1) === r ? 'bg-primary text-primary-foreground' : 'border bg-white hover:bg-secondary')}
-          >
-            {r}줄
-          </button>
-        ))}
+        <span className="rounded bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200">{chipRows ?? 1}줄</span>
+        <span className="text-[10px] text-slate-400">· 코너 유형에서 정의</span>
       </div>
 
-      {/* 칩 추가 */}
-      <Button type="button" size="sm" variant="secondary" onClick={addChip}>
-        <Plus className="mr-1 h-3.5 w-3.5" /> 칩 추가
-      </Button>
-
-      {/* 아이콘 경계 안내 — 등록된 DS 아이콘 선택=무중단 / 새 커스텀 이미지=자산등록(개발) */}
+      {/* 거버넌스 안내 — 정의는 코너 유형, 빌더는 순서만 */}
       <p className="flex items-start gap-1.5 rounded-md bg-white/70 px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
         <Lock className="mt-[1px] h-3 w-3 shrink-0 text-slate-400" />
-        <span>아이콘·라벨·이동 링크·순서는 <b className="text-emerald-700">어드민 편집(무중단)</b>. 단, 아이콘은 <b className="text-slate-600">등록된 DS 아이콘</b> 중 선택입니다. 라이브러리에 없는 <b className="text-slate-600">새 커스텀 이미지</b>가 필요하면 아이콘 세트에 자산을 추가하는 <b className="text-slate-600">디자인/개발(자산 등록)</b> 영역입니다.</span>
+        <span>탭·메뉴의 <b className="text-slate-600">라벨·이동 링크·줄 수·아이콘</b>은 <b className="text-slate-600">코너 유형</b>에서 정의합니다. 빌더에선 <b className="text-emerald-700">순서만</b> 바꿀 수 있어요.</span>
       </p>
     </div>
   );
@@ -1401,7 +1319,7 @@ function ComponentCard({
 
       {edit ? (
         isChip ? (
-          <ChipEditor draft={draft} onChange={updateDraft} showMenuRole={/메뉴\s*리스트/.test(corner.layoutDetail ?? '')} />
+          <ChipEditor draft={draft} onChange={updateDraft} />
         ) : (
           <AtomManager
             key={cc.atoms.map((a) => a.componentAtomId).join(',')}
@@ -1913,6 +1831,40 @@ function BigBannerControl({ templateId, corner, banners }: { templateId: string;
 const BANNER_SIZES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (672×214)', '팝업배너 (720×600)'] as const;
 const bannerSizeShort = (detail: string) => detail.replace(/\s*\(.*\)\s*/, '').trim() || detail;
 
+// 배너 레일의 한 줄 — 드래그앤드롭(그립 핸들)로 순서 변경. 썸네일·이름·삭제·원본 변경 안내.
+function SortableBannerRailItem({ cc, i, thumb, onRemove, onRefresh }: { cc: ComponentNode; i: number; thumb: string | null; onRemove: () => void; onRefresh: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cc.cornerComponentId });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <li ref={setNodeRef} style={style} className="rounded-lg border bg-white px-2 py-1.5">
+      <div className="flex items-center gap-2">
+        <button type="button" className="cursor-grab text-slate-400 active:cursor-grabbing" {...attributes} {...listeners} aria-label="순서 변경 (드래그)" title="드래그하여 순서 변경">
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-bold text-slate-500">{i + 1}</span>
+        <div className="flex h-9 w-14 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50">
+          {thumb
+            ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={thumb} alt="" className="h-full w-full object-cover" />
+            : <GalleryHorizontalEnd className="h-4 w-4 text-slate-300" />}
+        </div>
+        <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-slate-700">{cc.name}</span>
+        <button type="button" onClick={onRemove} title="이 코너에서 배너 빼기"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded border text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+      </div>
+      {/* 원본 변경 전파 — 캠페인 원본이 편성 이후 바뀌면 갱신 안내 */}
+      {cc.sourceChanged && (
+        <div className="mt-1.5 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1">
+          <span className="flex-1 text-[10.5px] leading-snug text-amber-700">원본 배너 캠페인이 변경됐어요. 이 편성은 편성 시점 스냅샷입니다.</span>
+          <button type="button" onClick={onRefresh}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-white px-2 py-0.5 text-[10.5px] font-semibold text-amber-700 hover:bg-amber-100">
+            <RotateCcw className="h-3 w-3" /> 최신으로 갱신
+          </button>
+        </div>
+      )}
+    </li>
+  );
+}
+
 // ── 배너 레일 컨트롤 (배너형 코너 전용, '코너 구성' 안) ──────────────────
 //  한 코너에 여러 배너를 담아 순서·삭제하고, 규격/노출 방식(스와이프·자동 슬라이드)을 한 곳에서 설정.
 //  배너 추가는 배너 캠페인 관리(SSOT)에서 불러온다. 문구는 캠페인 소유 → 여기선 배치/노출만.
@@ -1931,9 +1883,26 @@ function BannerRailControl({
   const size = corner.layoutDetail ?? '';
   const opts = parseBannerOptions(corner.bannerOptions);
   const pickSize = (s: string) => start(() => setCornerBannerSize(templateId, corner.id, s));
-  const move = (ccId: string, dir: 'up' | 'down') => start(() => moveComponent(templateId, corner.id, ccId, dir));
   const remove = (ccId: string) => start(() => removeComponent(templateId, ccId));
   const refresh = (componentId: string) => start(() => refreshBannerComponent(templateId, componentId));
+
+  // 드래그앤드롭 순서 변경 — 코너 컴포넌트(배너) 순서를 reorderComponents로 저장. 낙관적 로컬 순서 유지(2026-09-29 사용자 요청).
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const [ids, setIds] = useState(banners.map((c) => c.cornerComponentId));
+  if (ids.length !== banners.length || banners.some((c) => !ids.includes(c.cornerComponentId))) setIds(banners.map((c) => c.cornerComponentId));
+  const byId = new Map(banners.map((c) => [c.cornerComponentId, c]));
+  const orderedBanners = ids.map((id) => byId.get(id)).filter(Boolean) as ComponentNode[];
+  const onDragEnd = async (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    if (from < 0 || to < 0) return;
+    const next = [...ids];
+    next.splice(to, 0, next.splice(from, 1)[0]);
+    setIds(next);
+    await reorderComponents(templateId, corner.id, next);
+  };
 
   const thumbOf = (c: ComponentNode) => c.atoms.find((a) => a.atomType === 'IMAGE' && isImgSrc(a.imageUrl))?.imageUrl ?? null;
 
@@ -1949,48 +1918,21 @@ function BannerRailControl({
         </button>
       </div>
 
-      {/* 담긴 배너 목록 — 썸네일·순서·삭제 */}
+      {/* 담긴 배너 목록 — 썸네일·드래그 순서·삭제 */}
       {banners.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-300 p-5 text-center text-[12px] text-muted-foreground">
           담긴 배너가 없습니다.<br /><span className="text-[11px]">‘배너 추가’로 배너 캠페인에서 불러오세요.</span>
         </div>
       ) : (
-        <ul className="space-y-1.5">
-          {banners.map((c, i) => {
-            const thumb = thumbOf(c);
-            return (
-              <li key={c.cornerComponentId} className="rounded-lg border bg-white px-2 py-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-bold text-slate-500">{i + 1}</span>
-                  <div className="flex h-9 w-14 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50">
-                    {thumb
-                      ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={thumb} alt="" className="h-full w-full object-cover" />
-                      : <GalleryHorizontalEnd className="h-4 w-4 text-slate-300" />}
-                  </div>
-                  <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-slate-700">{c.name}</span>
-                  <div className="flex shrink-0 items-center gap-0.5">
-                    <button type="button" disabled={i === 0} onClick={() => move(c.cornerComponentId, 'up')} title="위로"
-                      className="flex h-6 w-6 items-center justify-center rounded border text-slate-500 hover:bg-secondary disabled:opacity-30"><ChevronUp className="h-3.5 w-3.5" /></button>
-                    <button type="button" disabled={i === banners.length - 1} onClick={() => move(c.cornerComponentId, 'down')} title="아래로"
-                      className="flex h-6 w-6 items-center justify-center rounded border text-slate-500 hover:bg-secondary disabled:opacity-30"><ChevronDown className="h-3.5 w-3.5" /></button>
-                    <button type="button" onClick={() => remove(c.cornerComponentId)} title="이 코너에서 배너 빼기"
-                      className="flex h-6 w-6 items-center justify-center rounded border text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
-                  </div>
-                </div>
-                {/* 원본 변경 전파 — 캠페인 원본이 편성 이후 바뀌면 갱신 안내 */}
-                {c.sourceChanged && (
-                  <div className="mt-1.5 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1">
-                    <span className="flex-1 text-[10.5px] leading-snug text-amber-700">원본 배너 캠페인이 변경됐어요. 이 편성은 편성 시점 스냅샷입니다.</span>
-                    <button type="button" onClick={() => refresh(c.id)}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-white px-2 py-0.5 text-[10.5px] font-semibold text-amber-700 hover:bg-amber-100">
-                      <RotateCcw className="h-3 w-3" /> 최신으로 갱신
-                    </button>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <ul className="space-y-1.5">
+              {orderedBanners.map((c, i) => (
+                <SortableBannerRailItem key={c.cornerComponentId} cc={c} i={i} thumb={thumbOf(c)} onRemove={() => remove(c.cornerComponentId)} onRefresh={() => refresh(c.id)} />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* 배너 규격 — 코너 전체 공통 */}
@@ -2937,6 +2879,7 @@ function CornerLoadModal({
   containerType?: string | null; // 컨테이너 유형(홈=MAIN 등) — 칩 사용 제어
 }) {
   const [q, setQ] = useState('');
+  const [baseFilter, setBaseFilter] = useState<string>('전체'); // 상단 유형 칩 필터(기본 서치처럼) — 2026-09-29 사용자 요청
   const [selId, setSelId] = useState<string | null>(null);
   const [useVariants, setUseVariants] = useState(false); // 베리에이션 함께 사용(실서비스 CVM 택1)
   const [pending, start] = useTransition();
@@ -2965,7 +2908,15 @@ function CornerLoadModal({
       };
     });
   const query = q.trim().toLowerCase();
-  const list = types.filter((t) => !query || t.label.toLowerCase().includes(query));
+  // 상단 유형 칩 = 불러올 수 있는 코너 유형(거버넌스 순서). 선택 시 그 유형만 목록에 노출(기본 서치).
+  const availBases = (() => {
+    const order = CORNER_TYPES as readonly string[];
+    return [...new Set(types.map((t) => t.base))].sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
+  })();
+  const list = types.filter((t) => (baseFilter === '전체' || t.base === baseFilter) && (!query || t.label.toLowerCase().includes(query)));
   const sel = types.find((t) => t.id === selId) ?? null;
 
   const doAdd = () => {
@@ -3000,10 +2951,31 @@ function CornerLoadModal({
         <div className="grid min-h-0 flex-1 grid-cols-[1fr_1.1fr]">
           {/* 목록 (코너 유형) */}
           <div className="flex min-h-0 flex-col border-r">
-            <div className="p-3">
+            <div className="space-y-2 p-3">
               <div className="flex items-center gap-2 rounded-md border bg-background px-3">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="코너 유형 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+              </div>
+              {/* 유형 칩 필터 — 상단에서 유형을 먼저 고르고 아래서 배열·레이아웃을 선택(2026-09-29 사용자 요청) */}
+              <div className="flex flex-wrap gap-1.5">
+                {['전체', ...availBases].map((bc) => {
+                  const cnt = bc === '전체' ? types.length : types.filter((t) => t.base === bc).length;
+                  const on = baseFilter === bc;
+                  return (
+                    <button
+                      key={bc}
+                      type="button"
+                      onClick={() => setBaseFilter(bc)}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11.5px] font-medium transition',
+                        on ? 'border-primary bg-primary text-primary-foreground' : 'border-slate-200 bg-white text-slate-600 hover:border-primary/40',
+                      )}
+                    >
+                      {bc}
+                      <span className={cn('tabular-nums', on ? 'text-primary-foreground/70' : 'text-slate-400')}>{cnt}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div className="flex-1 space-y-3 overflow-y-auto px-3 pb-3">
