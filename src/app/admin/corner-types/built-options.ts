@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
-import type { BuiltCornerOption, RegisteredCombo, BannerCampaignOption } from './corner-type-manager';
+import type { BuiltCornerOption, RegisteredCombo, BannerCampaignOption, ProductOption } from './corner-type-manager';
+import { BSS_PRODUCTS } from '@/lib/bss-products';
 
 /**
  * 전시화면관리(빌더)에서 실제로 만들어진 Corner의 유형 조합을 코너 유형 등록 후보로 반환한다.
@@ -37,6 +38,19 @@ export async function getBannerCampaignOptions(): Promise<BannerCampaignOption[]
     const first = sizes[0];
     return { id: r.id, title: r.title, linkUrl: r.landingUrl ?? null, imageUrl: first?.imageUrl || first?.rightImageUrl || null, size: first?.detail ?? null };
   });
+}
+
+// BSS 혜택 브랜드 카탈로그 → 상품형·혜택형 코너 유형에서 '상품 담기'로 선택할 후보(2026-09-29 사용자 결정).
+//  브랜드명·대표 혜택·로고를 그대로 끌어와 코너 유형 composition.items에 저장. 랜딩 URL은 담은 뒤 수동 편집.
+export async function getProductOptions(): Promise<ProductOption[]> {
+  return BSS_PRODUCTS.map((p) => ({
+    key: p.key,
+    title: p.benefit || p.name, // 대표 혜택이 있으면 그걸 타이틀로, 없으면 브랜드명
+    brand: p.name,
+    imageUrl: p.logo || null,
+    price: null,
+    badge: p.badges[0] ?? null,
+  }));
 }
 
 /**

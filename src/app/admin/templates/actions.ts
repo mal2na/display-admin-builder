@@ -554,6 +554,23 @@ function specFromComposition(composition: Composition): ScaffoldComp[] {
       }
       continue;
     }
+    // 상품형·혜택형 — 코너 유형에서 묶은 상품·혜택 아이템(BSS 카탈로그 스냅샷)을 그대로 생성. 랜딩 URL은 담은 값 그대로. 빌더는 순서만. 2026-09-29
+    if ((b.componentType === '상품형' || b.componentType === '혜택형') && b.items && b.items.length) {
+      for (const it of b.items) {
+        comps.push({
+          name: it.brand || it.title || '상품', componentType: b.componentType,
+          atoms: [
+            ...(it.imageUrl ? [{ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl, altText: it.brand || it.title }] : []),
+            ...(it.badge && b.badge ? [{ name: '배지', atomType: 'BADGE', content: it.badge }] : []),
+            { name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title },
+            ...(it.brand ? [{ name: '브랜드', atomType: 'INFO', content: it.brand }] : []),
+            ...(it.price && b.price !== false ? [{ name: '가격', atomType: 'PRICE', content: it.price }] : []),
+            ...(it.linkUrl ? [{ name: 'CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: it.linkUrl }] : []),
+          ],
+        });
+      }
+      continue;
+    }
     // 선택형(탭·메뉴) — 칩 정의(라벨·링크·줄수)를 코너 유형에서 정의(2026-09-29). 그대로 생성, 빌더는 순서만 변경.
     if (b.componentType === '선택형' && b.chips && b.chips.length) {
       comps.push({

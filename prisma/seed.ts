@@ -1136,6 +1136,23 @@ async function main() {
         });
         if (banners.length) composition = JSON.stringify([{ componentType: '배너형', count: banners.length, banners }]);
       }
+      // 상품형·혜택형: 코너에 담긴 상품·혜택 아이템(로고·혜택문구·브랜드·가격·랜딩 URL)을 composition으로 승격 → 빌더는 순서만(2026-09-29).
+      if (!composition) {
+        const itemComps = rep.cornerComponents.filter((cc) => cc.component.componentType === '상품형' || cc.component.componentType === '혜택형');
+        if (itemComps.length >= 1 && (componentType === '상품형' || componentType === '혜택형')) {
+          const items = itemComps.map((cc) => {
+            const atoms = cc.component.componentAtoms.map((ca) => ca.atom);
+            const brand = atoms.find((a) => a.atomType === 'INFO')?.content ?? cc.component.name;
+            const title = atoms.find((a) => a.atomType === 'BENEFIT_TEXT' || a.atomType === 'TEXT')?.content ?? brand;
+            const imageUrl = atoms.find((a) => a.atomType === 'ICON' || a.atomType === 'IMAGE')?.imageUrl ?? undefined;
+            const price = atoms.find((a) => a.atomType === 'PRICE')?.content ?? undefined;
+            const badge = atoms.find((a) => a.atomType === 'BADGE')?.content ?? undefined;
+            const linkUrl = atoms.find((a) => a.atomType === 'CTA')?.linkUrl ?? atoms.find((a) => a.linkUrl)?.linkUrl ?? undefined;
+            return { title, brand, imageUrl, price, badge, linkUrl };
+          });
+          if (items.length) composition = JSON.stringify([{ componentType, count: items.length, image: true, price: true, badge: !!items.some((it) => it.badge), desc: true, items }]);
+        }
+      }
       const created = await prisma.cornerType.create({
         data: {
           typeId: 'CY' + String(typeIdx).padStart(7, '0'),

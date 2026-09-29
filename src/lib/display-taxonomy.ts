@@ -132,6 +132,8 @@ export type CompositionBlock = {
   chipRows?: number; // 칩 표시 줄 수(1|2)
   // 배너형 스와이프형 — 묶을 배너(배너 캠페인 스냅샷). 코너 유형이 묶고, 랜딩 URL은 배너 캠페인에서 그대로 끌어옴. 빌더는 순서만.
   banners?: { campaignId?: string; title: string; imageUrl?: string; linkUrl?: string; size?: string }[];
+  // 상품형/혜택형 — 묶을 상품·혜택 아이템. 코너 유형이 묶고(BSS 혜택 브랜드 카탈로그에서 담기), 랜딩 URL은 자동 매핑 후 수동 편집. 빌더는 순서만. (2026-09-29 사용자 요청)
+  items?: { productKey?: string; title: string; brand?: string; imageUrl?: string; price?: string; badge?: string; linkUrl?: string }[];
 };
 export type Composition = CompositionBlock[];
 
@@ -181,6 +183,19 @@ export function parseComposition(raw: string | null | undefined): Composition | 
               size: typeof x.size === 'string' ? x.size : undefined,
             }))
         : undefined;
+      // 상품형/혜택형 묶음 아이템 보존 — 상품/혜택 스냅샷(제목/브랜드/이미지/가격/배지/랜딩 URL).
+      const items = Array.isArray(b.items)
+        ? b.items.filter((x: unknown) => x && typeof x === 'object' && typeof (x as { title?: unknown }).title === 'string')
+            .map((x: { productKey?: unknown; title: string; brand?: unknown; imageUrl?: unknown; price?: unknown; badge?: unknown; linkUrl?: unknown }) => ({
+              productKey: typeof x.productKey === 'string' ? x.productKey : undefined,
+              title: x.title,
+              brand: typeof x.brand === 'string' ? x.brand : undefined,
+              imageUrl: typeof x.imageUrl === 'string' ? x.imageUrl : undefined,
+              price: typeof x.price === 'string' ? x.price : undefined,
+              badge: typeof x.badge === 'string' ? x.badge : undefined,
+              linkUrl: typeof x.linkUrl === 'string' ? x.linkUrl : undefined,
+            }))
+        : undefined;
       out.push({
         componentType: b.componentType,
         count: Math.max(1, Math.min(20, Number(b.count) || 1)),
@@ -191,6 +206,7 @@ export function parseComposition(raw: string | null | undefined): Composition | 
         desc: b.desc !== false,
         ...(chips && chips.length ? { chips } : {}),
         ...(banners && banners.length ? { banners } : {}),
+        ...(items && items.length ? { items } : {}),
         ...(b.chipRows === 2 ? { chipRows: 2 } : b.chipRows === 1 ? { chipRows: 1 } : {}),
       });
     }

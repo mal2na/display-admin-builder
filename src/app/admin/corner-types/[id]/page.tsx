@@ -2,14 +2,14 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { CornerTypeDetail, type HistoryRow, type BannerPreview } from './corner-type-detail';
 import { type CornerTypeRow } from '../corner-type-manager';
-import { getBuiltCornerOptions, getRegisteredCombos, getBannerCampaignOptions } from '../built-options';
+import { getBuiltCornerOptions, getRegisteredCombos, getBannerCampaignOptions, getProductOptions } from '../built-options';
 import { type PreviewCorner } from '@/components/preview/blocks';
 import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE, PLACED_CORNER_ORDER } from '../preview-corner';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CornerTypeDetailPage({ params }: { params: { id: string } }) {
-  const [ct, logs, builtOptions, registered, bannerCampaigns, usageCorners] = await Promise.all([
+  const [ct, logs, builtOptions, registered, bannerCampaigns, productOptions, usageCorners] = await Promise.all([
     prisma.cornerType.findUnique({ where: { id: params.id } }),
     prisma.auditLog.findMany({
       where: { targetType: 'CornerType', targetId: params.id },
@@ -18,6 +18,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     getBuiltCornerOptions(),
     getRegisteredCombos(),
     getBannerCampaignOptions(),
+    getProductOptions(),
     // 사용처: 이 코너 유형으로 생성된 코너 + 배치된 템플릿/컨테이너 + 실제 구성(미리보기용)
     prisma.corner.findMany({
       where: { sourceCornerTypeId: params.id },
@@ -110,7 +111,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
 
   return (
     <div className="p-6">
-      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} usage={usage} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} siblings={siblings} />
+      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} usage={usage} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} siblings={siblings} />
     </div>
   );
 }

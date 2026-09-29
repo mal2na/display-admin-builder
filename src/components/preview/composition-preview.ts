@@ -166,6 +166,17 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
       return { ...base, name: '카테고리 탭', selectedIndex: 0, chipVariant: 'contents', atoms: T(['전체', '카테고리1', '카테고리2', '카테고리3']) };
     }
     case '상품형':
+      // 코너 유형에서 묶은 상품·혜택 아이템(BSS 카탈로그 스냅샷)이 있으면 그대로 렌더. 없으면 아래 샘플. 2026-09-29
+      if (b.items?.[i - 1]) {
+        const it = b.items[i - 1]!;
+        return { ...base, name: it.brand || it.title, atoms: [
+          ...(it.imageUrl ? [atom({ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl })] : []),
+          ...(it.badge && b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: it.badge })] : []),
+          atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title }),
+          ...(it.brand ? [atom({ name: '브랜드', atomType: 'INFO', content: it.brand })] : []),
+          ...(it.price && b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: it.price })] : []),
+        ] };
+      }
       // 혜택·오퍼형 · 세로형 — 제휴 혜택 리스트(로고 + 혜택 문구 + 브랜드). BenefitRow로 렌더.
       if (isBenefitVertical) {
         const bd = BENEFIT_ITEMS[(i - 1) % BENEFIT_ITEMS.length];
@@ -245,6 +256,16 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
         ],
       };
     case '혜택형': {
+      // 코너 유형에서 묶은 혜택 아이템(BSS 카탈로그 스냅샷)이 있으면 그대로 렌더. 없으면 아래 샘플. 2026-09-29
+      const it = b.items?.[i - 1];
+      if (it) {
+        return { ...base, name: it.brand || it.title, atoms: [
+          ...(it.imageUrl ? [atom({ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl })] : []),
+          ...(it.badge && b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: it.badge })] : []),
+          atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title }),
+          ...(it.brand ? [atom({ name: '브랜드', atomType: 'INFO', content: it.brand })] : []),
+        ] };
+      }
       // 혜택·오퍼형 대표 제휴 브랜드 — 공차 · 뚜레쥬르 · 놀 티켓
       const bd = BENEFIT_BRANDS[(i - 1) % BENEFIT_BRANDS.length];
       return {

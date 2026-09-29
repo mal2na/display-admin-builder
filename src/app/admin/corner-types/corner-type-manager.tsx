@@ -48,6 +48,8 @@ import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCo
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
 // 배너 캠페인 후보 — 스와이프형 코너 유형에서 '배너 묶기'로 선택(랜딩 URL은 캠페인에서 끌어옴).
 export type BannerCampaignOption = { id: string; title: string; linkUrl: string | null; imageUrl: string | null; size: string | null };
+// 상품/혜택 후보 — 상품형·혜택형 코너 유형에서 '상품 담기'로 선택(BSS 혜택 브랜드 카탈로그). 랜딩 URL은 담은 뒤 수동 편집.
+export type ProductOption = { key: string; title: string; brand: string; imageUrl: string | null; price: string | null; badge: string | null };
 
 // 전시화면관리(빌더)에서 실제로 만들어진 코너 유형 조합. 등록 폼의 선택지를 이걸로 제한한다.
 export type BuiltCornerOption = {
@@ -319,6 +321,83 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
         </select>
       </div>
       <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 순서는 <b>드래그</b>로 조정.</p>
+    </div>
+  );
+}
+
+// 상품/혜택 아이템 한 줄 (드래그앤드롭 · 그립 핸들 · 랜딩 URL 수동 편집) — 코너 유형에서 상품 묶음 순서를 바꾼다(2026-09-29 사용자 요청).
+type ProductItem = { productKey?: string; title: string; brand?: string; imageUrl?: string; price?: string; badge?: string; linkUrl?: string };
+function SortableProductRow({ id, idx, item, onRemove, onLinkChange }: { id: string; idx: number; item: ProductItem; onRemove: () => void; onLinkChange: (url: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-1.5 rounded-md border bg-white p-1.5">
+      <button type="button" className="cursor-grab text-slate-400 active:cursor-grabbing" {...attributes} {...listeners} aria-label="순서 변경 (드래그)" title="드래그하여 순서 변경">
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-50 text-[10px] font-bold tabular-nums text-indigo-500">{idx + 1}</span>
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50">
+        {item.imageUrl && !item.imageUrl.startsWith('icon:')
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+          : <span className="h-3.5 w-3.5 rounded-full bg-slate-300/70" />}
+      </div>
+      <div className="min-w-0 flex-1 space-y-1">
+        <p className="truncate text-[12px] font-medium text-slate-800">{item.title}{item.brand && item.brand !== item.title ? <span className="ml-1 font-normal text-slate-400">· {item.brand}</span> : null}</p>
+        {/* 랜딩 URL — 담을 때 자동 매핑되지만 여기서 수동 변경 가능(2026-09-29 사용자 요청) */}
+        <input
+          value={item.linkUrl ?? ''}
+          onChange={(e) => onLinkChange(e.target.value)}
+          placeholder="랜딩 URL (자동 매핑 · 수정 가능)"
+          className="h-7 w-full rounded border border-slate-200 bg-slate-50/60 px-2 text-[11px] text-slate-600 outline-none focus:border-indigo-400 focus:bg-white"
+        />
+      </div>
+      <button type="button" onClick={onRemove} className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive">×</button>
+    </div>
+  );
+}
+
+// 상품/혜택 묶기 편집기 — BSS 혜택 브랜드 카탈로그에서 담고, 드래그앤드롭으로 순서 변경. 빌더는 순서만(2026-09-29 사용자 요청).
+function ProductItemEditor({ items, productOptions, onCommit }: { items: ProductItem[]; productOptions: ProductOption[]; onCommit: (next: ProductItem[]) => void }) {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const rowId = (it: ProductItem, i: number) => `${it.productKey ?? 'item'}-${i}`;
+  const add = (key: string) => { const p = productOptions.find((o) => o.key === key); if (!p) return; onCommit([...items, { productKey: p.key, title: p.title, brand: p.brand, imageUrl: p.imageUrl ?? undefined, price: p.price ?? undefined, badge: p.badge ?? undefined, linkUrl: '' }]); };
+  const remove = (idx: number) => onCommit(items.filter((_, j) => j !== idx));
+  const patchLink = (idx: number, linkUrl: string) => onCommit(items.map((b, j) => (j === idx ? { ...b, linkUrl } : b)));
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const from = items.findIndex((it, i) => rowId(it, i) === active.id);
+    const to = items.findIndex((it, i) => rowId(it, i) === over.id);
+    if (from < 0 || to < 0) return;
+    const next = [...items];
+    next.splice(to, 0, next.splice(from, 1)[0]);
+    onCommit(next);
+  };
+  return (
+    <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+      <div className="flex items-center gap-2">
+        <span className="text-[12px] font-semibold text-indigo-700">상품·혜택 묶기</span>
+        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{items.length}개</span>
+        <span className="ml-auto text-[10px] text-indigo-500/80">드래그로 순서 변경</span>
+      </div>
+      {items.length === 0 && <p className="rounded-md border border-dashed border-indigo-200 bg-white/60 px-2 py-2 text-[10px] text-indigo-400">아래에서 상품·혜택을 골라 담으세요. 랜딩 URL은 담은 뒤 수정할 수 있어요.</p>}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={items.map((it, i) => rowId(it, i))} strategy={verticalListSortingStrategy}>
+          <div className="space-y-1.5">
+            {items.map((it, idx) => (
+              <SortableProductRow key={rowId(it, idx)} id={rowId(it, idx)} idx={idx} item={it} onRemove={() => remove(idx)} onLinkChange={(url) => patchLink(idx, url)} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+      <div className="flex items-center gap-2">
+        <select value="" onChange={(e) => { if (e.target.value) add(e.target.value); }} className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs">
+          <option value="">＋ BSS 혜택 브랜드에서 담기…</option>
+          {productOptions.map((p) => <option key={p.key} value={p.key}>{p.brand}{p.title && p.title !== p.brand ? ` — ${p.title}` : ''}</option>)}
+        </select>
+      </div>
+      <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
     </div>
   );
 }
@@ -916,7 +995,7 @@ function Switch({ checked, onChange, disabled }: { checked: boolean; onChange: (
   );
 }
 
-export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampaigns = [], onClose, bulk = false, bulkArrays, submitAction }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; onClose: () => void; bulk?: boolean; bulkArrays?: string[]; submitAction?: (fd: FormData) => void | Promise<void> }) {
+export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], onClose, bulk = false, bulkArrays, submitAction }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; onClose: () => void; bulk?: boolean; bulkArrays?: string[]; submitAction?: (fd: FormData) => void | Promise<void> }) {
   const isNew = !row.id;
   // 2단 분류: ① 코너 유형(base) → ② 배열·레이아웃(detail). 구성 컴포넌트는 배열·레이아웃에서 자동 도출.
   const [base, setBase] = useState(row.baseCategory);
@@ -1048,6 +1127,18 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   //  배너형 스와이프형은 배너 장수를 코너 유형에서 정한다(최소 2장) — 편집한 값 우선, 없으면 2장.
   const isSwipeBannerType = (compValid === '배너형' || base === '배너형') && detailValid === '스와이프형';
   const swipeBanners = isSwipeBannerType ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
+  // 상품형·혜택형 — 상품·혜택 아이템 묶음(BSS 카탈로그에서 담기 · 순서 드래그 · URL 수동). 2026-09-29 사용자 요청.
+  const isProductItemsType = !isSwipeBannerType && (compValid === '상품형' || compValid === '혜택형');
+  const productItems = isProductItemsType ? (blocks.find((b) => b.componentType === compValid)?.items ?? blocks.find((b) => b.items)?.items ?? []) : [];
+  // 상품 아이템 커밋 — 대상 컴포넌트 블록의 items·count만 갱신하고 다른 블록(예: 상단 탭)은 보존.
+  const commitProductItems = (next: ProductItem[]) => {
+    const target = compValid as ComponentType;
+    const base0 = blocks.length ? blocks : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc });
+    let replaced = false;
+    const updated = base0.map((b) => (!replaced && b.componentType === target ? ((replaced = true), { ...b, count: Math.max(1, next.length || 1), items: next }) : b));
+    if (!replaced) updated.push({ componentType: target, count: Math.max(1, next.length || 1), image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc, items: next });
+    setBlocks(updated);
+  };
   const shownBlocks: Composition = isSwipeBannerType
     ? [{ componentType: '배너형', count: Math.max(1, swipeBanners.length || 2), image: true, price: true, desc: true, ...(swipeBanners.length ? { banners: swipeBanners } : {}) }]
     : blocks.length
@@ -1432,6 +1523,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 banners={swipeBanners as SwipeBannerItem[]}
                 bannerCampaigns={bannerCampaigns}
                 onCommit={(next) => setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, next.length), image: true, price: true, desc: true, banners: next }])}
+              />
+            )}
+            {/* 상품형·혜택형 — BSS 혜택 브랜드 카탈로그에서 상품·혜택을 담고 드래그로 순서 변경(랜딩 URL 자동 매핑 후 수동 편집). 2026-09-29 사용자 요청 */}
+            {isProductItemsType && (
+              <ProductItemEditor
+                items={productItems as ProductItem[]}
+                productOptions={productOptions}
+                onCommit={commitProductItems}
               />
             )}
             {/* 선택형(탭·메뉴) — 칩 정의는 코너 유형이 소유(2026-09-29 사용자 결정). 빌더는 순서만 변경. */}
