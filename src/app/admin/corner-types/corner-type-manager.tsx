@@ -1131,7 +1131,26 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
               </div>
             </div>
           ) : (
-            <TypeDetailPreview base={base} component={compValid} detail={detailValid} bigBanner={bigBannerOn} useTitle={useTitle} useSub={useSub} useMore={eff('useMoreButton')} badge={eff('useBadge')} image={imageOn} price={priceOn} desc={descOn} ctaLabel={moreLabel} />
+            // 기본 정보 미리보기 — 실제 렌더(CornerBlock) + 신규는 슬롯 라벨(플레이스홀더). ③ 조합 결과와 동일한 실사 미리보기.
+            <div className="rounded-xl border bg-[#E2E6F1] p-4">
+              {(() => {
+                const previewC = {
+                  ...compositionToPreviewCorner({
+                    base, detail: detailValid, composition: shownBlocks,
+                    mainTitle: useTitle ? (mainTitleText || (isNew ? '타이틀' : '코너 타이틀')) : null,
+                    subTitle: useSub ? (subTitleText || (isNew ? '디스크립션' : '서브타이틀')) : null,
+                    placeholder: isNew && !mainTitleText && !subTitleText,
+                  }),
+                  cardShape: cardShape || undefined,
+                  subTitleIcon,
+                };
+                return isBannerType ? (
+                  <div className="mx-auto w-full max-w-[320px]"><CornerBlock corner={previewC} /></div>
+                ) : (
+                  <div className="mx-auto w-[300px] rounded-[24px] bg-white p-3 shadow-[0_4px_16px_rgba(20,22,40,0.12)] ring-1 ring-black/5"><CornerBlock corner={previewC} /></div>
+                );
+              })()}
+            </div>
           )}
           <div className="space-y-3">
             {/* 코너 유형 명은 [코너 유형 · 컴포넌트 · 배열]로 자동 구성 · 코너 레이아웃은 값 보존 */}
