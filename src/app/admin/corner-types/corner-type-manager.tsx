@@ -48,8 +48,8 @@ import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCo
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
 // 배너 캠페인 후보 — 스와이프형 코너 유형에서 '배너 묶기'로 선택(랜딩 URL은 캠페인에서 끌어옴).
 export type BannerCampaignOption = { id: string; title: string; linkUrl: string | null; imageUrl: string | null; size: string | null };
-// 상품/혜택 후보 — 상품형·혜택형 코너 유형에서 '상품 담기'로 선택(BSS 혜택 브랜드 카탈로그). 랜딩 URL은 담은 뒤 수동 편집.
-export type ProductOption = { key: string; title: string; brand: string; imageUrl: string | null; price: string | null; badge: string | null };
+// 상품/혜택 후보 — 상품형·혜택형 코너 유형에서 '상품 담기'로 선택(BSS 혜택 브랜드 + 디바이스·단말). 랜딩 URL은 담은 뒤 수동 편집.
+export type ProductOption = { key: string; title: string; brand: string; imageUrl: string | null; price: string | null; badge: string | null; category?: string };
 
 // 전시화면관리(빌더)에서 실제로 만들어진 코너 유형 조합. 등록 폼의 선택지를 이걸로 제한한다.
 export type BuiltCornerOption = {
@@ -461,8 +461,11 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
                     <img src={o.imageUrl} alt="" className="h-7 w-7 shrink-0 rounded object-cover ring-1 ring-slate-200" />
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-medium text-slate-800">{o.brand}</span>
-                    {o.title && o.title !== o.brand && <span className="block truncate text-[11px] text-slate-400">{o.title}</span>}
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate text-[13px] font-medium text-slate-800">{o.brand}</span>
+                      {o.category && <span className={cn('shrink-0 rounded px-1 py-[1px] text-[9px] font-semibold', o.category === '디바이스' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700')}>{o.category}</span>}
+                    </span>
+                    {o.title && o.title !== o.brand && <span className="block truncate text-[11px] text-slate-400">{o.title}{o.price ? ` · ${o.price}` : ''}</span>}
                   </span>
                   {already && <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">담김</span>}
                 </label>
@@ -524,7 +527,7 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
         </SortableContext>
       </DndContext>
       <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-2 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50">
-        <Plus className="h-3.5 w-3.5" /> BSS 혜택 브랜드에서 담기 (여러 개 선택)
+        <Plus className="h-3.5 w-3.5" /> 상품·혜택 담기 (디바이스·혜택 브랜드 · 여러 개 선택)
       </button>
       <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
       <ProductPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} options={productOptions} usedKeys={usedKeys} onAdd={addMany} />
