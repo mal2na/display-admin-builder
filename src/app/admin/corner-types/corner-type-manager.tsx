@@ -1492,8 +1492,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* ③ 컴포넌트 조합 — 이 코너 유형에 담을 컴포넌트를 순서대로 조립. (bulk 수정에선 컴포넌트 속성으로 대체 → 제외) */}
       {!bulk && (
-      <section className="overflow-hidden rounded-md border border-indigo-200">
-        <div className="flex flex-wrap items-center gap-2 border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-indigo-700">
+      /* overflow-hidden 제거 — position:sticky(좌측 미리보기)가 조상 overflow에 막히지 않도록 */
+      <section className="rounded-md border border-indigo-200">
+        <div className="flex flex-wrap items-center gap-2 rounded-t-md border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-indigo-700">
           코너 정의
           <span className="font-normal text-indigo-400">왼쪽 미리보기를 보며 오른쪽에서 유형·배열·구성·표시 항목을 한 번에 설정</span>
         </div>
