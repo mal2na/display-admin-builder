@@ -380,12 +380,10 @@ const nn = (formData: FormData, k: string) => {
 };
 
 function readCornerInfo(formData: FormData) {
-  const maxItemsRaw = String(formData.get('maxItems') ?? '').trim();
-  const minItemsRaw = String(formData.get('minItems') ?? '').trim();
   const uMinRaw = String(formData.get('userMinItems') ?? '').trim();
   const uMaxRaw = String(formData.get('userMaxItems') ?? '').trim();
+  // 정의(거버넌스) 필드 — 타이틀·서브·아이콘·노출개수·카드모양은 코너 유형이 정의(2026-09-29). 빌더 저장이 건드리지 않음(상속값 보존).
   return {
-    minItems: minItemsRaw ? Number(minItemsRaw) : null,
     userCustomizable: String(formData.get('userCustomizable') ?? '') === '1',
     userMinItems: uMinRaw ? Number(uMinRaw) : null,
     userMaxItems: uMaxRaw ? Number(uMaxRaw) : null,
@@ -407,12 +405,9 @@ function readCornerInfo(formData: FormData) {
     // bannerPosition(빅배너 위치)도 '코너 구성' 컨트롤에서 즉시 저장(setCornerBannerPosition) → 코너 정보 저장이 건드리지 않는다.
     cornerLayout: nn(formData, 'cornerLayout'),
     description: nn(formData, 'description'),
-    mainTitle: nn(formData, 'mainTitle'),
-    subTitle: nn(formData, 'subTitle'),
-    subTitleIcon: nn(formData, 'subTitleIcon'),
     sortStrategy: nn(formData, 'sortStrategy'),
     title: nn(formData, 'title'),
-    maxItems: maxItemsRaw ? Number(maxItemsRaw) : null,
+    // mainTitle·subTitle·subTitleIcon·minItems·maxItems 는 코너 유형(정의)에서 관리 → 여기서 저장하지 않음(상속값 유지)
   };
 }
 
@@ -605,9 +600,18 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
       cornerLayout: def.layout, // 등록된 코너 레이아웃 상속 → 미리보기 형태가 등록 유형과 일치
       markupId: def.markupId,
       description: def.description,
-      // 노출 개수(최소/최대)는 타입에서 상속하지 않는다 — 빌더에서 코너별로 설정
+      // 정의(거버넌스) 기본값 상속 — 코너 유형이 '무엇인가'를 정의(2026-09-29). 빌더는 이 값을 쌓기만 하고 정의는 안 바꾼다.
+      mainTitle: def.useMainTitle ? (def.defaultMainTitle ?? null) : null,
+      subTitle: def.useSubTitle ? (def.defaultSubTitle ?? null) : null,
+      subTitleIcon: def.useSubTitle ? (def.defaultSubTitleIcon ?? '화살표') : '사용안함',
+      // 노출 개수(최소/최대)도 코너 유형에서 정의 → 상속
+      minItems: def.defaultMinItems ?? null,
+      maxItems: def.defaultMaxItems ?? null,
+      // 카드 모양(상품형)·배너 노출 방식(스와이프형) — 코너 유형 정의 상속
+      cardShape: def.defaultCardShape ?? null,
+      bannerOptions: def.defaultBannerOptions ?? null,
       sortStrategy: def.defaultSortStrategy ?? 'MANUAL',
-      // 추천 수급 방식 기본값 상속 (상품형·개인화 추천형) — 코너별 조정 가능
+      // 추천 수급 방식 기본값 상속 (상품형·개인화 추천형) — 빌더(CVM)에서 조정
       recSource: def.defaultRecSource ?? null,
       moreButtonUse: moreOn,
       moreButtonLabel: moreOn ? (def.defaultMoreButtonLabel ?? '전체보기') : null,
