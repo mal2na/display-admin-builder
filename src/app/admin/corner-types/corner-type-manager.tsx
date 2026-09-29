@@ -359,11 +359,78 @@ function SortableProductRow({ id, idx, item, onRemove, onLinkChange }: { id: str
   );
 }
 
+// 상품·혜택 담기 모달 — BSS 카탈로그를 체크박스로 여러 개 한 번에 선택해 담는다(2026-09-29 사용자 요청, 드롭다운 대체).
+function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open: boolean; onClose: () => void; options: ProductOption[]; usedKeys: Set<string>; onAdd: (keys: string[]) => void }) {
+  const [q, setQ] = useState('');
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  if (!open) return null;
+  const query = q.trim().toLowerCase();
+  const list = options.filter((o) => !query || `${o.brand} ${o.title}`.toLowerCase().includes(query));
+  const toggle = (k: string) => setChecked((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const submit = () => { onAdd([...checked]); setChecked(new Set()); setQ(''); onClose(); };
+  const close = () => { setChecked(new Set()); setQ(''); onClose(); };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
+      <div className="flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b px-4 py-3">
+          <Plus className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold">상품·혜택 담기</h2>
+          <span className="text-xs text-muted-foreground">여러 개를 체크해 한 번에 담아요</span>
+          <button type="button" onClick={close} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="닫기"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="border-b p-3">
+          <div className="flex items-center gap-2 rounded-md border bg-background px-3">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="브랜드·혜택 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {list.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</p>}
+          <div className="space-y-1">
+            {list.map((o) => {
+              const already = usedKeys.has(o.key);
+              const on = checked.has(o.key);
+              return (
+                <label key={o.key} className={cn('flex cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-left', already ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-60' : on ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted/50')}>
+                  <input type="checkbox" checked={on || already} disabled={already} onChange={() => toggle(o.key)} className="accent-indigo-600" />
+                  {o.imageUrl && !o.imageUrl.startsWith('icon:') && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={o.imageUrl} alt="" className="h-7 w-7 shrink-0 rounded object-cover ring-1 ring-slate-200" />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-medium text-slate-800">{o.brand}</span>
+                    {o.title && o.title !== o.brand && <span className="block truncate text-[11px] text-slate-400">{o.title}</span>}
+                  </span>
+                  {already && <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">담김</span>}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 border-t px-4 py-3">
+          <span className="text-xs text-muted-foreground">{checked.size}개 선택</span>
+          <button type="button" onClick={close} className="ml-auto rounded-md border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">취소</button>
+          <button type="button" onClick={submit} disabled={checked.size === 0} className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40">{checked.size > 0 ? `${checked.size}개 담기` : '담기'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 상품/혜택 묶기 편집기 — BSS 혜택 브랜드 카탈로그에서 담고, 드래그앤드롭으로 순서 변경. 빌더는 순서만(2026-09-29 사용자 요청).
 function ProductItemEditor({ items, productOptions, onCommit }: { items: ProductItem[]; productOptions: ProductOption[]; onCommit: (next: ProductItem[]) => void }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const [pickerOpen, setPickerOpen] = useState(false);
   const rowId = (it: ProductItem, i: number) => `${it.productKey ?? 'item'}-${i}`;
-  const add = (key: string) => { const p = productOptions.find((o) => o.key === key); if (!p) return; onCommit([...items, { productKey: p.key, title: p.title, brand: p.brand, imageUrl: p.imageUrl ?? undefined, price: p.price ?? undefined, badge: p.badge ?? undefined, linkUrl: '' }]); };
+  // 이미 담긴 것 = productKey ∪ brand (시드 파생 아이템은 productKey가 없고 brand만 있음 · BSS 옵션 key=브랜드명이라 브랜드로도 매칭). 중복 방지.
+  const usedKeys = new Set([...items.map((it) => it.productKey), ...items.map((it) => it.brand)].filter(Boolean) as string[]);
+  const addMany = (keys: string[]) => {
+    const news = keys
+      .map((k) => productOptions.find((o) => o.key === k))
+      .filter((p): p is ProductOption => !!p && !usedKeys.has(p.key))
+      .map((p) => ({ productKey: p.key, title: p.title, brand: p.brand, imageUrl: p.imageUrl ?? undefined, price: p.price ?? undefined, badge: p.badge ?? undefined, linkUrl: '' }));
+    if (news.length) onCommit([...items, ...news]);
+  };
   const remove = (idx: number) => onCommit(items.filter((_, j) => j !== idx));
   const patchLink = (idx: number, linkUrl: string) => onCommit(items.map((b, j) => (j === idx ? { ...b, linkUrl } : b)));
   const onDragEnd = (e: DragEndEvent) => {
@@ -393,13 +460,11 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
           </div>
         </SortableContext>
       </DndContext>
-      <div className="flex items-center gap-2">
-        <select value="" onChange={(e) => { if (e.target.value) add(e.target.value); }} className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs">
-          <option value="">＋ BSS 혜택 브랜드에서 담기…</option>
-          {productOptions.map((p) => <option key={p.key} value={p.key}>{p.brand}{p.title && p.title !== p.brand ? ` — ${p.title}` : ''}</option>)}
-        </select>
-      </div>
+      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-2 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50">
+        <Plus className="h-3.5 w-3.5" /> BSS 혜택 브랜드에서 담기 (여러 개 선택)
+      </button>
       <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
+      <ProductPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} options={productOptions} usedKeys={usedKeys} onAdd={addMany} />
     </div>
   );
 }
