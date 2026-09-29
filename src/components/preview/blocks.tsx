@@ -363,18 +363,20 @@ function ProfileCard({ component }: { component?: PreviewComponent }) {
   const name = first(atoms, 'TEXT');
   const phone = first(atoms, 'INFO');
   const cta = first(atoms, 'CTA', 'BUTTON');
+  // 아바타가 IMAGE면 원형을 꽉 채우는 사진(object-cover), ICON이면 글리프. (참고 이미지: 프로필 사진 + 이름·번호 + '나의 가입 현황' 필)
+  const avatarIsImage = avatar?.atomType === 'IMAGE' && isRenderableImg(avatar.imageUrl);
   return (
     <div className="flex items-center gap-2.5">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-slate-400">
-        {avatar ? <AtomIcon atom={avatar} className="h-6 w-6" /> : <User className="h-5 w-5" />}
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-slate-400">
+        {avatarIsImage
+          ? <PreviewImage src={avatar!.imageUrl} alt={avatar!.altText ?? ''} className="h-full w-full object-cover" />
+          : avatar ? <AtomIcon atom={avatar} className="h-6 w-6" /> : <User className="h-6 w-6" />}
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] text-slate-900">
-          <span className="font-semibold">{resolveCvmSample(name?.content) || '고객'}님</span>
-          {phone && <span className="ml-1.5 text-[12px] text-slate-400">{resolveCvmSample(phone.content)}</span>}
-        </p>
+      <div className="flex min-w-0 flex-1 items-baseline gap-2">
+        <span className="shrink-0 text-[15px] font-bold text-slate-900">{resolveCvmSample(name?.content) || '고객'}님</span>
+        {phone && <span className="truncate text-[13px] font-medium text-slate-400">{resolveCvmSample(phone.content)}</span>}
       </div>
-      {cta && <span className="shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-600">{cta.content}</span>}
+      {cta && <span className="shrink-0 whitespace-nowrap rounded-full bg-slate-200/70 px-3 py-1.5 text-[12px] font-medium text-slate-600">{cta.content}</span>}
     </div>
   );
 }
@@ -424,23 +426,21 @@ function BarcodeCard({ component }: { component?: PreviewComponent }) {
   const timerStart = `${String(refreshMin).padStart(2, '0')}:00`;
   // 번호는 CVM 바인딩이면 sample로 대체 표시(런타임엔 회원 값)
   const numberText = resolveCvmSample(number?.content);
-  // 하이드레이션 안정(랜덤 X): 고정 폭 패턴으로 바코드 막대를 그린다(실제 값은 런타임 발급).
+  // 하이드레이션 안정(랜덤 X): 고정 패턴을 flex로 배분해 카드 폭을 꽉 채운다(실제 값은 런타임 발급).
   const bars = [3, 1, 2, 1, 4, 1, 2, 3, 1, 1, 2, 1, 3, 2, 1, 4, 1, 2, 1, 1, 3, 1, 2, 4, 1, 2, 1, 3, 1, 1, 2, 1, 4, 2, 1, 3, 1, 2, 1, 1, 3, 1, 2, 1, 4, 1, 2, 3];
+  // 참고 이미지: [T멤버십 라벨(회색)] · [풀폭 바코드] · [번호(좌) ─ 남은시간(파랑, 우)]
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <p className="text-[14px] font-bold text-slate-900">{label?.content ?? component?.name ?? '멤버십'}</p>
-        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-500">
-          <span className="h-1.5 w-1.5 rounded-full bg-rose-400" /> {timerStart}
-        </span>
-      </div>
-      <div className="mt-3 flex h-14 items-stretch justify-center gap-[2px] overflow-hidden rounded-md bg-white px-1">
+      <p className="text-[13px] font-medium text-slate-500">{label?.content ?? component?.name ?? 'T멤버십'}</p>
+      <div className="mt-3 flex h-16 w-full items-stretch gap-[2px] overflow-hidden bg-white">
         {bars.map((w, i) => (
-          <span key={i} style={{ width: `${w}px` }} className="shrink-0 bg-slate-900" />
+          <span key={i} style={{ flex: `${w} 0 0` }} className="bg-slate-900" />
         ))}
       </div>
-      {numberText && <p className="mt-2 text-center text-[13px] font-medium tracking-[0.25em] text-slate-500">{numberText}</p>}
-      <p className="mt-1.5 text-center text-[10px] text-slate-400">회원별 발급 · {refreshMin}분 유효(자동 갱신) · 번호는 고객정보 연동</p>
+      <div className="mt-2.5 flex items-center justify-between">
+        <p className="text-[13.5px] font-medium tracking-[0.12em] text-slate-500">{numberText || '1234 4561 1506 4932'}</p>
+        <span className="text-[13.5px] font-semibold tabular-nums text-blue-600">{timerStart}</span>
+      </div>
     </div>
   );
 }

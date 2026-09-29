@@ -703,19 +703,33 @@ async function main() {
     [{ id: shopSpeaker.id, componentType: '배너형' }],
   );
 
-  // 7-2) 프로모션 배너 스와이프 (배너형 · 스와이프형) — 한 코너에 배너 3장을 담아 좌우 스와이프.
+  // 7-2) 프로모션 배너 스와이프 (배너형 · 스와이프형) — 기존 배너 단일형 5개를 한 코너에 담아 좌우 스와이프.
   //   배너형 유형을 '배너 단일형'과 '스와이프형'으로 나누기 위한 대표 케이스(2026-09-29 사용자 결정).
-  const swipeBanner1 = await comp('프로모션 배너 A (요금제·OTT)', '배너형', [
-    { name: '스와이프A 제목', atomType: 'TEXT', content: '요금제 할인상품 구독가 안내' },
-    { name: '스와이프A 이미지', atomType: 'IMAGE', imageUrl: '/assets/banner-plan-ott.svg', altText: '요금제 할인상품 구독가 안내 배너' },
+  //   이름은 단일형과 겹치지 않게 접두 'SW-' — linkBannerCampaignUsage(이름 매칭)가 이 코너 규격을 덮어쓰지 않도록.
+  const swipeBanner1 = await comp('SW-제휴 혜택 배너', '배너형', [
+    { name: 'SW 가족나들이 제목', atomType: 'TEXT', content: '이번 주말, 가족 나들이에 쓰기 좋은 혜택' },
+    { name: 'SW 가족나들이 서브', atomType: 'INFO', content: '제휴사별 혜택 더보기' },
+    { name: 'SW 롯데월드 이미지', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png', altText: '롯데월드 어드벤처' },
   ]);
-  const swipeBanner2 = await comp('프로모션 배너 B (스타벅스)', '배너형', [
-    { name: '스와이프B 제목', atomType: 'TEXT', content: '스타벅스 옵션출시' },
-    { name: '스와이프B 이미지', atomType: 'IMAGE', imageUrl: '/assets/banner-starbucks.svg', altText: '스타벅스 옵션 출시 배너' },
+  const swipeBanner2 = await comp('SW-AirPods 사전예약', '배너형', [
+    { name: 'SW 에어팟 제목', atomType: 'TEXT', content: 'AirPods Max3 사전 예약 하셨나요?' },
+    { name: 'SW 에어팟 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
+    { name: 'SW 에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-airpodsmax.png', altText: 'AirPods Max3 헤드폰' },
   ]);
-  const swipeBanner3 = await comp('프로모션 배너 C (프로모션)', '배너형', [
-    { name: '스와이프C 제목', atomType: 'TEXT', content: '이달의 프로모션' },
-    { name: '스와이프C 이미지', atomType: 'IMAGE', imageUrl: '/assets/banner-promo-event.png', altText: '이달의 프로모션 배너' },
+  const swipeBanner3 = await comp('SW-iPhone 20 사전예약', '배너형', [
+    { name: 'SW iPhone 제목', atomType: 'TEXT', content: 'iPhone 20 사전 예약 시\n에어팟 프로 증정' },
+    { name: 'SW iPhone 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
+    { name: 'SW iPhone 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 사전예약' },
+  ]);
+  const swipeBanner4 = await comp('SW-Marshall 스피커', '배너형', [
+    { name: 'SW 스피커 제목', atomType: 'TEXT', content: 'Marshall Stockwell 블루투스 스피커' },
+    { name: 'SW 스피커 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
+    { name: 'SW 스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-marshall.png', altText: 'Marshall Stockwell 스피커' },
+  ]);
+  const swipeBanner5 = await comp('SW-추천 상품 (CHANEL)', '배너형', [
+    { name: 'SW 루쥬코코 제목', atomType: 'TEXT', content: 'CHANEL 루쥬 코코 립스틱' },
+    { name: 'SW 루쥬코코 서브', atomType: 'INFO', content: '봄 뮤트 핑크 #130' },
+    { name: 'SW 루쥬코코 이미지', atomType: 'IMAGE', imageUrl: '/assets/chanel-lipstick.png', altText: 'CHANEL 루쥬 코코 립스틱' },
   ]);
   const shopCornerSwipe = await corner(
     { name: '프로모션 배너 스와이프', cornerType: '배너형', maxItems: 5, layoutDetail: '이미지형' },
@@ -723,6 +737,8 @@ async function main() {
       { id: swipeBanner1.id, componentType: '배너형' },
       { id: swipeBanner2.id, componentType: '배너형' },
       { id: swipeBanner3.id, componentType: '배너형' },
+      { id: swipeBanner4.id, componentType: '배너형' },
+      { id: swipeBanner5.id, componentType: '배너형' },
     ],
   );
   // 배너형 노출 방식 = 스와이프(수동) + 인디케이터 + 루프. (bannerOptions JSON, 단일 진실)
