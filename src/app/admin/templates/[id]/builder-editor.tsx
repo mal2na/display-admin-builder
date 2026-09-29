@@ -2879,6 +2879,7 @@ function CornerLoadModal({
   containerType?: string | null; // 컨테이너 유형(홈=MAIN 등) — 칩 사용 제어
 }) {
   const [q, setQ] = useState('');
+  const [baseFilter, setBaseFilter] = useState<string>('전체'); // 상단 유형 칩 필터(기본 서치처럼) — 2026-09-29 사용자 요청
   const [selId, setSelId] = useState<string | null>(null);
   const [useVariants, setUseVariants] = useState(false); // 베리에이션 함께 사용(실서비스 CVM 택1)
   const [pending, start] = useTransition();
@@ -2907,7 +2908,15 @@ function CornerLoadModal({
       };
     });
   const query = q.trim().toLowerCase();
-  const list = types.filter((t) => !query || t.label.toLowerCase().includes(query));
+  // 상단 유형 칩 = 불러올 수 있는 코너 유형(거버넌스 순서). 선택 시 그 유형만 목록에 노출(기본 서치).
+  const availBases = (() => {
+    const order = CORNER_TYPES as readonly string[];
+    return [...new Set(types.map((t) => t.base))].sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
+  })();
+  const list = types.filter((t) => (baseFilter === '전체' || t.base === baseFilter) && (!query || t.label.toLowerCase().includes(query)));
   const sel = types.find((t) => t.id === selId) ?? null;
 
   const doAdd = () => {
@@ -2942,10 +2951,31 @@ function CornerLoadModal({
         <div className="grid min-h-0 flex-1 grid-cols-[1fr_1.1fr]">
           {/* 목록 (코너 유형) */}
           <div className="flex min-h-0 flex-col border-r">
-            <div className="p-3">
+            <div className="space-y-2 p-3">
               <div className="flex items-center gap-2 rounded-md border bg-background px-3">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="코너 유형 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+              </div>
+              {/* 유형 칩 필터 — 상단에서 유형을 먼저 고르고 아래서 배열·레이아웃을 선택(2026-09-29 사용자 요청) */}
+              <div className="flex flex-wrap gap-1.5">
+                {['전체', ...availBases].map((bc) => {
+                  const cnt = bc === '전체' ? types.length : types.filter((t) => t.base === bc).length;
+                  const on = baseFilter === bc;
+                  return (
+                    <button
+                      key={bc}
+                      type="button"
+                      onClick={() => setBaseFilter(bc)}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11.5px] font-medium transition',
+                        on ? 'border-primary bg-primary text-primary-foreground' : 'border-slate-200 bg-white text-slate-600 hover:border-primary/40',
+                      )}
+                    >
+                      {bc}
+                      <span className={cn('tabular-nums', on ? 'text-primary-foreground/70' : 'text-slate-400')}>{cnt}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div className="flex-1 space-y-3 overflow-y-auto px-3 pb-3">
