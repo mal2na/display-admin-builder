@@ -1322,7 +1322,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
           {/* 라이브 미리보기 — 왼쪽(DS 포털식 회색 배경 + 폰 프레임). 편집하며 계속 보이도록 sticky. */}
           <div className="self-start lg:sticky lg:top-3">
             <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
-            <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#E2E6F1] p-4">
+            <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#E2E6F1] p-3">
               {(() => {
                 // 정의 기본값(문구·아이콘·카드 모양)을 그대로 미리보기에 반영.
                 // 신규 등록(값 미입력)은 슬롯 라벨(타이틀/디스크립션)로 구조만 보여준다. 편집 중이면 입력값 그대로.
@@ -1336,12 +1336,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
                   cardShape: cardShape || undefined,
                   subTitleIcon,
                 };
-                return isBannerType ? (
-                  // 배너형 = 폰 카드 프레임 없이 실제 배너 비율 그대로(이중 카드로 인한 과도한 여백 제거).
-                  <div className="mx-auto w-full max-w-[300px]"><CornerBlock corner={previewC} /></div>
-                ) : (
-                  <div className="mx-auto w-[300px] rounded-[24px] bg-white p-3 shadow-[0_4px_16px_rgba(20,22,40,0.12)] ring-1 ring-black/5"><CornerBlock corner={previewC} /></div>
-                );
+                // 폰 카드 프레임 없이 코너 카드(CornerBlock)를 폭 채워 렌더 → 이중 카드·좌우 여백 제거(2026-09-29).
+                return <CornerBlock corner={previewC} />;
               })()}
             </div>
           </div>
