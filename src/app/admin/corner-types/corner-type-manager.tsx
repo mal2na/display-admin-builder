@@ -1288,6 +1288,131 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     );
   })() : null;
 
+  // 기본 정보 하단 메타(운영 채널·플랫폼·사용 여부·승인상태·설명) — bulk 섹션·통합 섹션에서 공용.
+  //  통합 섹션의 우측 열(1fr)에서도 안 눌리게 bulk일 때만 2열, 통합(비-bulk)에선 1열로 쌓는다.
+  const metaFields = (
+    <div className={cn('grid grid-cols-1', bulk && 'md:grid-cols-2')}>
+      <TRow label="운영 채널">
+        <OpsCheckGroup name="channels" options={OPERATION_CHANNELS} initial={channels} />
+      </TRow>
+      <TRow label="운영 플랫폼">
+        <OpsCheckGroup name="platforms" options={OPERATION_PLATFORMS} initial={platforms} />
+      </TRow>
+      <TRow label="사용 여부" required>
+        <div className="flex gap-4 py-0.5 text-xs">
+          <label className="flex items-center gap-1.5">
+            <input type="radio" checked={active} onChange={() => setActive(true)} className="accent-indigo-600" /> 사용
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input type="radio" checked={!active} onChange={() => setActive(false)} className="accent-indigo-600" /> 미사용
+          </label>
+        </div>
+        {active && <input type="hidden" name="active" value="on" />}
+      </TRow>
+      <TRow label="승인상태" hint="승인 결과는 별도 승인 프로세스에서 반영됩니다">
+        <div className="flex items-center gap-2 py-0.5">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+            {CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}
+          </span>
+          <span className="text-[10px] text-muted-foreground">(읽기 전용)</span>
+        </div>
+        <input type="hidden" name="status" value={row.status} />
+      </TRow>
+      <div className="p-3 md:col-span-2">
+        <TRow label="코너 유형 설명" flat>
+          <Input name="description" defaultValue={row.description ?? ''} placeholder="100자 이내" className="h-8 text-xs" />
+        </TRow>
+      </div>
+    </div>
+  );
+
+  // 유형·배열 선택(비-bulk) — 통합 섹션 우측 열 상단. (안내 + ① 코너 유형 + ② 배열·레이아웃 + 요약)
+  const basicPickers = (
+    <div className="space-y-3">
+      <input type="hidden" name="name" value={derivedName} />
+      <input type="hidden" name="layout" value={row.layout ?? ''} />
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2">
+        <span className="flex items-center gap-1.5 text-[11px] text-indigo-700">
+          <Info className="h-3.5 w-3.5 shrink-0" />
+          <span><b className="font-semibold">2단계</b>로 코너를 정의해요 — 코너 유형 → 배열·레이아웃</span>
+        </span>
+        <span className="text-[11px] text-slate-500">
+          코너 유형 ID <span className="ml-0.5 rounded border bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-700">{row.typeId}</span>
+        </span>
+      </div>
+      {/* ① 코너 유형 */}
+      <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+        <StepHead n={1} title="코너 유형" required hint="이 코너가 화면에서 맡는 역할이에요" />
+        <div className="flex flex-wrap gap-1.5">
+          {baseOptions.map((c) => (
+            <label key={c} className="cursor-pointer">
+              <input type="radio" name="baseCategory" value={c} checked={base === c} onChange={() => { setBase(c); setDetail(defaultShapeFor(c)); }} className="peer sr-only" />
+              <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">{c}</span>
+            </label>
+          ))}
+        </div>
+        {cornerTypePurpose(base) && (
+          <p className="mt-2 flex gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-indigo-700">
+            <span className="shrink-0 font-semibold">목적</span>
+            <span>{cornerTypePurpose(base)}</span>
+          </p>
+        )}
+      </div>
+      <input type="hidden" name="componentType" value={compValid} />
+      {/* ② 배열·레이아웃 */}
+      <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+        <StepHead n={2} title="배열·레이아웃" hint="이 유형을 어떤 형태로 보여줄지 골라요" />
+        <div className="flex flex-wrap gap-1.5">
+          {allowEmptyDetail && (
+            <label className="cursor-pointer">
+              <input type="radio" name="typeDetail" value="" checked={detailValid === ''} onChange={() => setDetail('')} className="peer sr-only" />
+              <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">선택 안 함</span>
+            </label>
+          )}
+          {typeShapes.map((d) => {
+            const isReg = registered.some((r) => r.baseCategory === base && (r.typeDetail ?? '') === d);
+            return (
+              <label key={d} className="cursor-pointer" title={isReg ? '이미 등록된 유형·배열이에요(다시 등록해도 됩니다)' : undefined}>
+                <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
+                <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white', isReg && 'border-emerald-300 bg-emerald-50/60')}>
+                  {layoutLabel(d)}
+                  {isReg && <span className="inline-flex items-center rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold leading-none text-white">등록됨</span>}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">배열은 <b>형태(레이아웃)</b>만 정합니다. 알약 안 <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span> 표시는 그 배열이 이미 등록돼 있다는 뜻(다시 등록 가능). <b>노출 개수</b>는 빌더에서 코너별로 조정.</p>
+      </div>
+      <input type="hidden" name="bigBanner" value="" />
+      <div className="rounded-md border border-dashed bg-slate-50 px-3 py-2 text-[11px] text-muted-foreground">
+        이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span>
+      </div>
+    </div>
+  );
+
+  // 통합 미리보기(라이브) — 좌측 sticky. 정의 기본값(문구·아이콘·카드 모양) 반영.
+  const livePreview = (
+    <div className="self-start lg:sticky lg:top-3">
+      <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
+      <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#E2E6F1] p-3">
+        {(() => {
+          const previewC = {
+            ...compositionToPreviewCorner({
+              base, detail: detailValid, composition: shownBlocks,
+              mainTitle: useTitle ? (mainTitleText || (isNew ? '타이틀' : '코너 타이틀')) : null,
+              subTitle: useSub ? (subTitleText || (isNew ? '디스크립션' : '서브타이틀')) : null,
+              placeholder: isNew && !mainTitleText && !subTitleText,
+            }),
+            cardShape: cardShape || undefined,
+            subTitleIcon,
+          };
+          return <CornerBlock corner={previewC} />;
+        })()}
+      </div>
+    </div>
+  );
+
   return (
     <form
       action={async (fd) => {
@@ -1301,11 +1426,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         <h2 className="text-sm font-semibold">{isNew ? '코너 유형 등록' : `코너 유형 수정 · ${row.typeId}`}</h2>
       </div>
 
-      {/* 기본 정보 */}
+      {/* 기본 정보 — bulk(다중 배열 일괄 수정) 전용. 비-bulk 등록/수정은 아래 통합 '코너 정의' 섹션에서 미리보기와 함께. */}
+      {bulk && (
       <section className="overflow-hidden rounded-md border">
         <div className="border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">기본 정보</div>
-        {bulk ? (
-          // 수정(bulk): 코너 유형 고정 + 배열·레이아웃을 카드로 하나씩 추가
           <div className="space-y-4 border-b p-3">
             <input type="hidden" name="name" value={derivedName} />
             <input type="hidden" name="layout" value={row.layout ?? ''} />
@@ -1362,212 +1486,25 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               <div className="self-start lg:sticky lg:top-4">{propsPanel}</div>
             </div>
           </div>
-        ) : (
-        <div className="border-b p-3">
-          {/* 미리보기는 아래 ③ 컴포넌트 구성의 라이브 미리보기 하나로 통합 — 유형 스키매틱 중복 제거(2026-09-29 사용자 요청).
-              기본 정보 = 유형·배열 선택 + 채널/플랫폼만, '어떻게 보이나'는 ③에서 실시간 확인. */}
-          <div className="space-y-3">
-            {/* 코너 유형 명은 [코너 유형 · 컴포넌트 · 배열]로 자동 구성 · 코너 레이아웃은 값 보존 */}
-            <input type="hidden" name="name" value={derivedName} />
-            <input type="hidden" name="layout" value={row.layout ?? ''} />
-
-            {/* 안내 + 코너 유형 ID */}
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2">
-              <span className="flex items-center gap-1.5 text-[11px] text-indigo-700">
-                <Info className="h-3.5 w-3.5 shrink-0" />
-                <span><b className="font-semibold">2단계</b>로 코너를 정의해요 — 코너 유형 → 배열·레이아웃</span>
-              </span>
-              <span className="text-[11px] text-slate-500">
-                코너 유형 ID <span className="ml-0.5 rounded border bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-700">{row.typeId}</span>
-              </span>
-            </div>
-
-            {/* ① 코너 유형 */}
-            <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-              <StepHead n={1} title="코너 유형" required hint="이 코너가 화면에서 맡는 역할이에요" />
-              <div className="flex flex-wrap gap-1.5">
-                {baseOptions.map((c) => (
-                  <label key={c} className="cursor-pointer">
-                    <input
-                      type="radio"
-                      name="baseCategory"
-                      value={c}
-                      checked={base === c}
-                      onChange={() => {
-                        setBase(c);
-                        setDetail(defaultShapeFor(c));
-                      }}
-                      className="peer sr-only"
-                    />
-                    <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">
-                      {c}
-                    </span>
-                  </label>
-                ))}
-              </div>
-              {cornerTypePurpose(base) && (
-                <p className="mt-2 flex gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-indigo-700">
-                  <span className="shrink-0 font-semibold">목적</span>
-                  <span>{cornerTypePurpose(base)}</span>
-                </p>
-              )}
-            </div>
-
-            {/* 구성 컴포넌트 유형은 배열·레이아웃에서 자동 도출 → 별도 단계 없이 hidden으로만 저장(거버넌스는 유형 기준 유지) */}
-            <input type="hidden" name="componentType" value={compValid} />
-
-            {/* ② 배열·레이아웃 */}
-            <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-              <StepHead n={2} title="배열·레이아웃" hint="이 유형을 어떤 형태로 보여줄지 골라요" />
-              {bulk ? (
-                // 선택된 배열 = 칩(× 제거) · '배열 추가'를 눌러야 새 배열을 넣는다
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {selectedArrays.length === 0 && <span className="text-[11px] text-amber-600">배열을 1개 이상 추가하세요.</span>}
-                    {selectedArrays.map((d) => (
-                      <span key={d} className="inline-flex items-center gap-1.5 rounded-full border border-indigo-600 bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white">
-                        {layoutLabel(d) || d}
-                        <button type="button" onClick={() => toggleArr(d)} className="text-white/70 hover:text-white" aria-label="제거"><X className="h-3 w-3" /></button>
-                      </span>
-                    ))}
-                    <button type="button" onClick={() => setAddingArr((v) => !v)} className="inline-flex items-center gap-1 rounded-full border border-dashed border-indigo-300 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50">
-                      <Plus className="h-3.5 w-3.5" /> 배열 추가
-                    </button>
-                  </div>
-                  {addingArr && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <p className="mb-1.5 text-[11px] text-muted-foreground">추가할 배열 이름 (직접 입력 또는 아래에서 선택)</p>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <input list="arr-catalog" value={newArr} onChange={(e) => setNewArr(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addArr(); } }} placeholder="예: 세로형+칩" className="h-8 w-52 rounded-md border border-slate-200 px-2.5 text-xs" />
-                        <datalist id="arr-catalog">{typeShapes.map((d) => <option key={d} value={d}>{layoutLabel(d)}</option>)}</datalist>
-                        <button type="button" onClick={addArr} className="inline-flex h-8 items-center gap-1 rounded-md bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700">추가</button>
-                      </div>
-                      {typeShapes.filter((d) => !selectedArrays.includes(d)).length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {typeShapes.filter((d) => !selectedArrays.includes(d)).map((d) => (
-                            <button key={d} type="button" onClick={() => { toggleArr(d); }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-indigo-300">{layoutLabel(d) || d}</button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {allowEmptyDetail && (
-                  <label className="cursor-pointer">
-                    <input type="radio" name="typeDetail" value="" checked={detailValid === ''} onChange={() => setDetail('')} className="peer sr-only" />
-                    <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">
-                      선택 안 함
-                    </span>
-                  </label>
-                )}
-                {typeShapes.map((d) => {
-                  const isReg = registered.some((r) => r.baseCategory === base && (r.typeDetail ?? '') === d); // 이 유형·배열이 이미 등록됐나
-                  return (
-                  <label key={d} className="cursor-pointer" title={isReg ? '이미 등록된 유형·배열이에요(다시 등록해도 됩니다)' : undefined}>
-                    <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
-                    <span className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white',
-                      isReg && 'border-emerald-300 bg-emerald-50/60', // 등록된 건 알약 자체를 초록 톤으로
-                    )}>
-                      {layoutLabel(d)}
-                      {isReg && <span className="inline-flex items-center rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold leading-none text-white">등록됨</span>}
-                    </span>
-                  </label>
-                  );
-                })}
-              </div>
-              )}
-              <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                {bulk
-                  ? <>이 유형이 가질 배열(베리에이션)을 <b>여러 개 선택</b>하세요. 아래 설정·컴포넌트 조합은 <b>선택한 모든 배열에 한 번에</b> 적용됩니다. 선택 해제하면 그 배열은 삭제돼요.</>
-                  : <>배열은 <b>형태(레이아웃)</b>만 정합니다. 알약 안 <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span> 표시는 그 배열이 이미 등록돼 있다는 뜻(다시 등록 가능). <b>노출 개수</b>는 빌더에서 코너별로 조정.</>}
-              </p>
-            </div>
-
-            {/* 빅배너 구분자 제거 — 빅배너는 유형 식별자가 아니라 코너 인스턴스의 부속 옵션(빌더의 '빅배너 위치 상/하단')으로만 둔다. */}
-            <input type="hidden" name="bigBanner" value="" />
-
-            {/* 결과 요약 */}
-            <div className="rounded-md border border-dashed bg-slate-50 px-3 py-2 text-[11px] text-muted-foreground">
-              이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span>
-            </div>
-          </div>
-        </div>
-        )}
-
-        {/* 하단: 나머지 항목 2열 */}
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          <TRow label="운영 채널">
-            <OpsCheckGroup name="channels" options={OPERATION_CHANNELS} initial={channels} />
-          </TRow>
-          <TRow label="운영 플랫폼">
-            <OpsCheckGroup name="platforms" options={OPERATION_PLATFORMS} initial={platforms} />
-          </TRow>
-
-          <TRow label="사용 여부" required>
-            <div className="flex gap-4 py-0.5 text-xs">
-              <label className="flex items-center gap-1.5">
-                <input type="radio" checked={active} onChange={() => setActive(true)} className="accent-indigo-600" /> 사용
-              </label>
-              <label className="flex items-center gap-1.5">
-                <input type="radio" checked={!active} onChange={() => setActive(false)} className="accent-indigo-600" /> 미사용
-              </label>
-            </div>
-            {active && <input type="hidden" name="active" value="on" />}
-          </TRow>
-          <TRow label="승인상태" hint="승인 결과는 별도 승인 프로세스에서 반영됩니다">
-            <div className="flex items-center gap-2 py-0.5">
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                {CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}
-              </span>
-              <span className="text-[10px] text-muted-foreground">(읽기 전용)</span>
-            </div>
-            <input type="hidden" name="status" value={row.status} />
-          </TRow>
-
-          <div className="p-3 md:col-span-2">
-            <TRow label="코너 유형 설명" flat>
-              <Input name="description" defaultValue={row.description ?? ''} placeholder="100자 이내" className="h-8 text-xs" />
-            </TRow>
-          </div>
-        </div>
+        {metaFields}
       </section>
+      )}
 
       {/* ③ 컴포넌트 조합 — 이 코너 유형에 담을 컴포넌트를 순서대로 조립. (bulk 수정에선 컴포넌트 속성으로 대체 → 제외) */}
       {!bulk && (
       <section className="overflow-hidden rounded-md border border-indigo-200">
         <div className="flex flex-wrap items-center gap-2 border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-indigo-700">
-          ③ 컴포넌트 구성 <span className="rounded-full bg-white px-1.5 py-0.5 text-[9px] font-semibold text-indigo-500 ring-1 ring-indigo-200">자동</span>
-          <span className="font-normal text-indigo-400">배열·레이아웃에서 자동 도출 · 빌더에서 코너 만들 때 이대로 생성</span>
+          코너 정의
+          <span className="font-normal text-indigo-400">왼쪽 미리보기를 보며 오른쪽에서 유형·배열·구성·표시 항목을 한 번에 설정</span>
         </div>
         <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
-        <div className="grid grid-cols-1 gap-3 p-3 lg:grid-cols-[340px_1fr]">
-          {/* 라이브 미리보기 — 왼쪽(DS 포털식 회색 배경 + 폰 프레임). 편집하며 계속 보이도록 sticky. */}
-          <div className="self-start lg:sticky lg:top-3">
-            <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
-            <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#E2E6F1] p-3">
-              {(() => {
-                // 정의 기본값(문구·아이콘·카드 모양)을 그대로 미리보기에 반영.
-                // 신규 등록(값 미입력)은 슬롯 라벨(타이틀/디스크립션)로 구조만 보여준다. 편집 중이면 입력값 그대로.
-                const previewC = {
-                  ...compositionToPreviewCorner({
-                    base, detail: detailValid, composition: shownBlocks,
-                    mainTitle: useTitle ? (mainTitleText || (isNew ? '타이틀' : '코너 타이틀')) : null,
-                    subTitle: useSub ? (subTitleText || (isNew ? '디스크립션' : '서브타이틀')) : null,
-                    placeholder: isNew && !mainTitleText && !subTitleText,
-                  }),
-                  cardShape: cardShape || undefined,
-                  subTitleIcon,
-                };
-                // 폰 카드 프레임 없이 코너 카드(CornerBlock)를 폭 채워 렌더 → 이중 카드·좌우 여백 제거(2026-09-29).
-                return <CornerBlock corner={previewC} />;
-              })()}
-            </div>
-          </div>
-          {/* 자동 도출된 컴포넌트 구성(읽기 전용) — 오른쪽 */}
-          <div className="min-w-0 space-y-2">
+        <div className="grid grid-cols-1 gap-4 p-3 lg:grid-cols-[340px_1fr]">
+          {/* 왼쪽: 라이브 미리보기(sticky) — 기본 정보+컴포넌트 구성 통합, 미리보기 하나(2026-09-29 사용자 요청) */}
+          {livePreview}
+          {/* 오른쪽: 모든 설정 — 유형·배열 선택 → 채널/플랫폼/사용/설명 → 편집기 → 자동구성 → 세부 항목 */}
+          <div className="min-w-0 space-y-3">
+            {basicPickers}
+            {metaFields}
             {/* 스와이프형 — 코너 유형에서 배너를 '묶는다'(배너 캠페인 관리에서 선택 · 랜딩 URL 그대로 끌어옴). 순서는 드래그앤드롭. 2026-09-29 사용자 요청 */}
             {isBannerType && detailValid === '스와이프형' && (
               <SwipeBannerEditor
