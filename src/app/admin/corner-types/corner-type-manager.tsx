@@ -198,19 +198,21 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
 
 // 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
 //  fit='width'(기본): 폭 기준 고정 — 토글해도 배율 안 흔들림(편집용). fit='contain': 폭·높이 모두 맞춰 전체가 잘림 없이 들어감(상세·목록용).
-export function DevicePreview({ corner, fit: fitMode = 'width', align = 'top-center' }: { corner: PreviewCorner; fit?: 'width' | 'contain'; align?: 'top-center' | 'left-middle' | 'center-middle' }) {
+export function DevicePreview({ corner, fit: fitMode = 'width', align = 'top-center' }: { corner: PreviewCorner; fit?: 'width' | 'contain' | 'autoHeight'; align?: 'top-center' | 'left-middle' | 'center-middle' }) {
   const NAT_W = 320; // 자연 렌더 폭(폰 기준). 박스에 맞춰 scale로 축소.
+  const autoH = fitMode === 'autoHeight'; // 폭 기준 축소 + 박스 높이를 콘텐츠에 맞춤(빈 여백 제거)
   const boxRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.6);
+  const [natH, setNatH] = useState(0);
   useEffect(() => {
     const box = boxRef.current, content = contentRef.current;
     if (!box || !content) return;
     const fit = () => {
       const bw = box.clientWidth, bh = box.clientHeight, ch = content.scrollHeight || 1;
-      // contain: 폭·높이 모두 맞춰 전체가 들어가게(잘림 없음). width: 폭 기준 고정(토글 시 배율 불변).
+      // contain: 폭·높이 모두 맞춤. width/autoHeight: 폭 기준. autoHeight는 박스 높이를 콘텐츠 높이×배율로.
       const s = fitMode === 'contain' ? Math.min(bw / NAT_W, bh / ch, 1) : Math.min(bw / NAT_W, 1);
-      if (s > 0 && Number.isFinite(s)) setScale(s);
+      if (s > 0 && Number.isFinite(s)) { setScale(s); setNatH(ch); }
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -218,7 +220,7 @@ export function DevicePreview({ corner, fit: fitMode = 'width', align = 'top-cen
     return () => ro.disconnect();
   }, [corner]);
   return (
-    <div ref={boxRef} className="relative h-full w-full overflow-hidden">
+    <div ref={boxRef} className={autoH ? 'relative w-full overflow-hidden' : 'relative h-full w-full overflow-hidden'} style={autoH && natH ? { height: Math.round(natH * scale) } : undefined}>
       <div
         ref={contentRef}
         className={align === 'top-center' ? 'absolute top-0' : 'absolute left-1/2 top-1/2'}
@@ -1135,26 +1137,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
               </div>
             </div>
           ) : (
-            // 기본 정보 미리보기 — 실제 렌더(CornerBlock) + 신규는 슬롯 라벨(플레이스홀더). ③ 조합 결과와 동일한 실사 미리보기.
-            <div className="rounded-xl border bg-[#E2E6F1] p-4">
-              {(() => {
-                const previewC = {
-                  ...compositionToPreviewCorner({
-                    base, detail: detailValid, composition: shownBlocks,
-                    mainTitle: useTitle ? (mainTitleText || (isNew ? '타이틀' : '코너 타이틀')) : null,
-                    subTitle: useSub ? (subTitleText || (isNew ? '디스크립션' : '서브타이틀')) : null,
-                    placeholder: isNew && !mainTitleText && !subTitleText,
-                  }),
-                  cardShape: cardShape || undefined,
-                  subTitleIcon,
-                };
-                return isBannerType ? (
-                  <div className="mx-auto w-full max-w-[320px]"><CornerBlock corner={previewC} /></div>
-                ) : (
-                  <div className="mx-auto w-[300px] rounded-[24px] bg-white p-3 shadow-[0_4px_16px_rgba(20,22,40,0.12)] ring-1 ring-black/5"><CornerBlock corner={previewC} /></div>
-                );
-              })()}
-            </div>
+            // 기본 정보 미리보기 = '유형 보기' 스키매틱(타이틀/디스크립션/슬롯 라벨, 실제 이미지·콘텐츠 없음).
+            //  실제 컴포넌트 구성(이미지 포함 상세)은 아래 ③ 컴포넌트 구성에서 확인.
+            <TypeDetailPreview base={base} component={compValid} detail={detailValid} bigBanner={bigBannerOn} useTitle={useTitle} useSub={useSub} useMore={eff('useMoreButton')} badge={eff('useBadge')} image={imageOn} price={priceOn} desc={descOn} ctaLabel={moreLabel} />
           )}
           <div className="space-y-3">
             {/* 코너 유형 명은 [코너 유형 · 컴포넌트 · 배열]로 자동 구성 · 코너 레이아웃은 값 보존 */}
@@ -1775,8 +1760,8 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     ) : (
       <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
         <div className="flex-1 space-y-1.5">
-          <Slot label="텍스트" className="h-4 w-3/4 justify-start" />
-          <Slot label="설명" className="h-3 w-1/2 justify-start" />
+          <Slot label="타이틀" className="h-4 w-3/4 justify-start" />
+          <Slot label="디스크립션" className="h-3 w-1/2 justify-start" />
         </div>
         <Slot label="이미지" className="h-12 w-12 shrink-0 rounded-full" />
       </div>

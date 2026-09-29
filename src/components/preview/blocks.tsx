@@ -397,8 +397,8 @@ function InfoCard({ component }: { component: PreviewComponent }) {
   // 아이콘/이미지형: 아톰이 이미지면 사각 썸네일, 아이콘이면 원형 배경 — 빌더에서 아이콘/이미지 중 선택.
   const isImage = iconAtom?.atomType === 'IMAGE';
   return (
-    // 상태 안내형 카드 — 콘텐츠 높이에 맞춰 여백 최소화(과한 빈 공간 방지). 너무 납작하지 않게 최소 높이만.
-    <div className="flex items-center gap-3" style={{ minHeight: 44 }}>
+    // 상태 안내형 카드형 = 794×248 비율(2026-09-29 사용자 요청). 콘텐츠는 세로 중앙.
+    <div className="flex items-center gap-3" style={{ aspectRatio: '794 / 248' }}>
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="text-[17px] font-bold leading-tight text-slate-900">{resolveCvmSample(value?.content) || component.name}</p>
