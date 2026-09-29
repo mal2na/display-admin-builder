@@ -116,9 +116,10 @@ function ChipsView({ component }: { component: PreviewComponent }) {
     );
   }
 
-  // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩
+  // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩. chipRows=2면 두 줄(그리드)로.
+  const contentsTwoRows = component.chipRows === 2;
   return (
-    <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+    <div className={contentsTwoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-center gap-2 overflow-x-auto pb-1'}>
       {component.atoms.map((a, i) => (
         <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium ' + (i === sel ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500')}>
           {a.content ?? a.name}
@@ -387,7 +388,8 @@ function InfoCard({ component }: { component: PreviewComponent }) {
   // 아이콘/이미지형: 아톰이 이미지면 사각 썸네일, 아이콘이면 원형 배경 — 빌더에서 아이콘/이미지 중 선택.
   const isImage = iconAtom?.atomType === 'IMAGE';
   return (
-    <div className="flex items-center gap-3">
+    // 상태 안내형 카드형 = 796×248 비율(위아래로 너무 납작하지 않게). 콘텐츠는 세로 중앙.
+    <div className="flex items-center gap-3" style={{ aspectRatio: '796 / 248' }}>
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="text-[17px] font-bold leading-tight text-slate-900">{resolveCvmSample(value?.content) || component.name}</p>
