@@ -233,10 +233,6 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   const sub = first(component.atoms, 'INFO');
   const cta = first(component.atoms, 'BUTTON', 'CTA');
   const img = first(component.atoms, 'IMAGE', 'ICON');
-  // 배너 규격(layoutDetail의 W×H)으로 실제 비율을 잡는다 — 빅/스몰/띠/팝업이 눈에 보이게.
-  //  규격에 W×H가 없으면(예: '이미지형') 실제 배너 기본 비율(빅배너 672×460)로 렌더 — 뚱뚱한 콤포즈 박스 방지.
-  const m = (sizeDetail ?? '').match(/(\d+)\s*[×xX*]\s*(\d+)/);
-  const ratio = m ? `${m[1]} / ${m[2]}` : '672 / 460';
   const src = img?.imageUrl ?? '';
   const hasImg = isRenderableImg(src);
   // 완성형 배너 이미지(업로드 사진·banner-* 마커)는 규격 비율로 꽉 채우고,
@@ -244,6 +240,10 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   //  판정 기준을 '확장자'가 아니라 '완성형 마커(data/http · /banner- 접두)'로 한정 — 로고 .png가 전체 이미지로 잘못 렌더되던 문제 수정.
   //  단, ICON 아톰(로고 글리프)은 언제나 콤포즈형.
   const isFullBanner = img?.atomType !== 'ICON' && /(^data:|^https?:|\/banner-)/i.test(src);
+  // 배너 규격(layoutDetail의 W×H)으로 실제 비율을 잡는다 — 빅/스몰/띠/팝업이 눈에 보이게.
+  //  규격에 W×H가 없으면(예: '배너 단일형'): 완성형 이미지는 빅배너(672×460), 콤포즈형(타이틀+로고)은 납작한 띠 비율(672×260)로 → 뚱뚱한 박스 방지.
+  const m = (sizeDetail ?? '').match(/(\d+)\s*[×xX*]\s*(\d+)/);
+  const ratio = m ? `${m[1]} / ${m[2]}` : (isFullBanner ? '672 / 460' : '672 / 260');
   if (ratio) {
     if (hasImg && isFullBanner) {
       return (
