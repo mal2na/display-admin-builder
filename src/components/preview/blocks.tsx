@@ -244,6 +244,13 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   //  규격에 W×H가 없으면(예: '배너 단일형'): 완성형 이미지는 빅배너(672×460), 콤포즈형(타이틀+로고)은 납작한 띠 비율(672×260)로 → 뚱뚱한 박스 방지.
   const m = (sizeDetail ?? '').match(/(\d+)\s*[×xX*]\s*(\d+)/);
   const ratio = m ? `${m[1]} / ${m[2]}` : (isFullBanner ? '672 / 460' : '672 / 260');
+  // 콤포즈형(타이틀+로고)은 규격이 커도(빅배너 672×460 등) 세로가 길면 비어 보임(뚱뚱) → 폭 대비 최대 672:260 비율로 캡.
+  const composeRatio = (() => {
+    if (!m) return isFullBanner ? '672 / 460' : '672 / 260';
+    const w = Number(m[1]), h = Number(m[2]);
+    const capH = Math.round((w * 260) / 672);
+    return `${w} / ${Math.min(h, capH)}`;
+  })();
   if (ratio) {
     if (hasImg && isFullBanner) {
       return (
@@ -255,9 +262,9 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
         </div>
       );
     }
-    // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게.
+    // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게. 규격이 커도 세로는 캡(뚱뚱 방지).
     return (
-      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: ratio }}>
+      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: composeRatio }}>
         <div className="min-w-0 flex-1 py-3">
           <p className="line-clamp-2 whitespace-pre-line text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
           {sub?.content && <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{sub.content}</p>}

@@ -864,7 +864,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
   const [bannerIndicator, setBannerIndicator] = useState<boolean>(parseBannerOpt('showIndicator') as boolean);
   const [recSource, setRecSource] = useState(row.defaultRecSource ? normalizeRecSource(row.defaultRecSource) : ''); // 추천 수급 방식 기본값(controlled) — 노출·구성 노출 여부를 좌우
   // ③ 컴포넌트 조합 — 배열·레이아웃에서 자동 도출(읽기 전용, 2026-09-29 사용자 결정). 저장된 조합이 있으면 그대로 표시.
-  const [blocks] = useState<Composition>(() => parseComposition(row.composition) ?? []);
+  const [blocks, setBlocks] = useState<Composition>(() => parseComposition(row.composition) ?? []);
   // FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 유형에서
   const [userCustom, setUserCustom] = useState(row.userCustomizable ?? false);
   const [userMin, setUserMin] = useState(row.userMinItems != null ? String(row.userMinItems) : '');
@@ -961,9 +961,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
   const bigBannerOn = canBigBanner && bigBanner;
 
   // ③ 컴포넌트 조합 — 배열·레이아웃에서 자동 도출(읽기 전용). 저장된 조합이 있으면 우선, 없으면 유형 기본값.
-  const shownBlocks: Composition = blocks.length
-    ? blocks
-    : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc });
+  //  배너형 스와이프형은 배너 장수를 코너 유형에서 정한다(최소 2장) — 편집한 값 우선, 없으면 2장.
+  const isSwipeBannerType = (compValid === '배너형' || base === '배너형') && detailValid === '스와이프형';
+  const shownBlocks: Composition = isSwipeBannerType
+    ? [{ componentType: '배너형', count: Math.max(2, blocks.find((b) => b.componentType === '배너형')?.count ?? 2), image: true, price: true, desc: true }]
+    : blocks.length
+      ? blocks
+      : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc });
   // 코너 유형 명 = [코너 유형 · 컴포넌트 · 배열 (· 빅배너)] 자동 구성
   // 코너 유형 명 = 유형 · 배열·레이아웃 (컴포넌트는 표기에서 제외 — UI에서 컴포넌트 노출 안 함).
   const derivedName = [base, detailValid, bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
@@ -1358,6 +1362,24 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
           </div>
           {/* 자동 도출된 컴포넌트 구성(읽기 전용) — 오른쪽 */}
           <div className="min-w-0 space-y-2">
+            {/* 스와이프형만 예외 — 배너 장수를 코너 유형에서 정한다(실제 소재는 전시화면 관리에서). 2026-09-29 사용자 요청 */}
+            {isBannerType && detailValid === '스와이프형' && (() => {
+              const cur = Math.max(2, shownBlocks.find((b) => b.componentType === '배너형')?.count ?? 2);
+              const setN = (n: number) => setBlocks([{ componentType: '배너형', count: Math.max(2, Math.min(5, n)), image: true, price: true, desc: true }]);
+              return (
+                <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] font-semibold text-indigo-700">스와이프 배너 장수</span>
+                    <div className="ml-auto inline-flex items-center gap-1">
+                      <button type="button" onClick={() => setN(cur - 1)} disabled={cur <= 2} className="flex h-7 w-7 items-center justify-center rounded-md border bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40">－</button>
+                      <span className="w-10 text-center text-[13px] font-bold tabular-nums text-slate-800">{cur}장</span>
+                      <button type="button" onClick={() => setN(cur + 1)} disabled={cur >= 5} className="flex h-7 w-7 items-center justify-center rounded-md border bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40">＋</button>
+                    </div>
+                  </div>
+                  <p className="text-[10px] leading-relaxed text-indigo-500/80">스와이프에 담을 배너 장수(2~5장)를 코너 유형에서 정합니다. 실제 배너 소재는 <b>전시화면 관리(빌더)</b>의 배너 레일에서 추가·교체·순서 조정해요.</p>
+                </div>
+              );
+            })()}
             <p className="text-[10px] font-medium text-muted-foreground">자동 구성 · 이 유형의 배열·레이아웃에서 도출</p>
             {shownBlocks.map((b, i) => {
               const isProduct = b.componentType === '상품형';
