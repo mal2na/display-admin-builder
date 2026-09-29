@@ -1139,6 +1139,13 @@ async function main() {
           defaultSortStrategy: rep.sortStrategy && rep.sortStrategy !== 'MANUAL' ? rep.sortStrategy : null,
           defaultMoreButton: rep.moreButtonUse ?? false,
           defaultMoreButtonLabel: rep.moreButtonUse ? '전체보기' : null, // 유형 기본 CTA는 일반 라벨(대표 코너명 상속 금지)
+          // 정의(거버넌스) 기본값 — 코너 유형이 '무엇인가'를 정의(2026-09-29). 대표 코너 값을 유형 정의로 승격 → 빌더는 이를 상속.
+          //  배너형은 코너 제목을 두지 않으므로(배너 자체가 콘텐츠) 타이틀·서브 null.
+          defaultMainTitle: base === '배너형' ? null : (rep.mainTitle ?? null),
+          defaultSubTitle: base === '배너형' ? null : (rep.subTitle ?? null),
+          defaultSubTitleIcon: base === '배너형' ? null : (rep.subTitleIcon ?? null),
+          defaultCardShape: rep.cardShape ?? null,
+          defaultBannerOptions: rep.bannerOptions ?? null,
         },
       });
       // 생성 즉시 이 그룹의 코너들을 이 유형에 연결(코너별 분리라 정확 매핑 — 아래 fallback 백필은 미배치 코너용).
