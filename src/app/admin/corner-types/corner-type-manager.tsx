@@ -404,6 +404,69 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
   );
 }
 
+// 탭·메뉴 칩 한 줄 (드래그앤드롭 · 그립 핸들 · 라벨·링크 편집) — 코너 유형에서 탭 정의 순서를 바꾼다(2026-09-29 사용자 요청).
+type ChipDef = { label: string; linkUrl?: string };
+function SortableChipDefRow({ id, idx, chip, canRemove, onPatch, onRemove }: { id: string; idx: number; chip: ChipDef; canRemove: boolean; onPatch: (p: Partial<ChipDef>) => void; onRemove: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-1.5">
+      <button type="button" className="cursor-grab text-slate-400 active:cursor-grabbing" {...attributes} {...listeners} aria-label="순서 변경 (드래그)" title="드래그하여 순서 변경">
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-50 text-[10px] font-bold tabular-nums text-indigo-500">{idx + 1}</span>
+      <input value={chip.label} onChange={(e) => onPatch({ label: e.target.value })} placeholder="메뉴명" className="h-8 w-24 rounded-md border bg-white px-2 text-xs" />
+      <input value={chip.linkUrl ?? ''} onChange={(e) => onPatch({ linkUrl: e.target.value })} placeholder="이동 링크 URL" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
+      <button type="button" onClick={onRemove} disabled={!canRemove} className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive disabled:opacity-30">×</button>
+    </div>
+  );
+}
+
+// 탭·메뉴 정의 편집기 — 라벨·링크·줄수·순서(드래그앤드롭)를 코너 유형에서 정의. 빌더는 순서만(2026-09-29 사용자 요청).
+function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: number; onCommit: (chips: ChipDef[], rows?: number) => void }) {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const rowId = (_c: ChipDef, i: number) => `chip-${i}`;
+  const patch = (idx: number, p: Partial<ChipDef>) => onCommit(chips.map((c, j) => (j === idx ? { ...c, ...p } : c)), rows);
+  const add = () => onCommit([...chips, { label: `메뉴 ${chips.length + 1}` }], rows);
+  const remove = (idx: number) => onCommit(chips.filter((_, j) => j !== idx), rows);
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const from = chips.findIndex((c, i) => rowId(c, i) === active.id);
+    const to = chips.findIndex((c, i) => rowId(c, i) === over.id);
+    if (from < 0 || to < 0) return;
+    const next = [...chips];
+    next.splice(to, 0, next.splice(from, 1)[0]);
+    onCommit(next, rows);
+  };
+  return (
+    <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+      <div className="flex items-center gap-2">
+        <span className="text-[12px] font-semibold text-indigo-700">탭·메뉴 정의</span>
+        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{chips.length}개</span>
+        <span className="ml-auto text-[10px] text-indigo-500/80">드래그로 순서 변경</span>
+      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={chips.map((c, i) => rowId(c, i))} strategy={verticalListSortingStrategy}>
+          <div className="space-y-1.5">
+            {chips.map((c, idx) => (
+              <SortableChipDefRow key={rowId(c, idx)} id={rowId(c, idx)} idx={idx} chip={c} canRemove={chips.length > 1} onPatch={(p) => patch(idx, p)} onRemove={() => remove(idx)} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50"><Plus className="h-3.5 w-3.5" /> 탭 추가</button>
+        <span className="ml-auto text-[11px] text-slate-500">줄 수</span>
+        {[1, 2].map((r) => (
+          <button key={r} type="button" onClick={() => onCommit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-indigo-600 text-white' : 'border bg-white text-slate-600 hover:bg-slate-50')}>{r}줄</button>
+        ))}
+      </div>
+      <p className="text-[10px] leading-relaxed text-indigo-500/80">탭·메뉴 항목(라벨·이동 링크·줄 수·순서)을 코너 유형에서 정의합니다. 실서비스 코너는 이 정의를 상속하고, <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
+    </div>
+  );
+}
+
 // 코너 유형(거버넌스)별 설명 — 목적·허용 컴포넌트·비고 (정책서 기준 표).
 export const CORNER_TYPE_INFO: Record<string, { purpose: string; allow: string; note?: string }> = {
   '상품형': {
@@ -1300,25 +1363,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             </div>
           </div>
         ) : (
-        <div className="grid grid-cols-1 items-start gap-5 border-b p-3 md:grid-cols-[460px_minmax(0,1fr)]">
-          {bulk ? (
-            // 선택한 배열 전부 미리보기 (카드마다 각자)
-            <div>
-              <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">미리보기 · 선택한 배열 {selectedArrays.length}개</p>
-              <div className="flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
-                {(selectedArrays.length ? selectedArrays : ['']).map((d) => (
-                  <div key={d} className="w-[210px] shrink-0 snap-start">
-                    <TypeDetailPreview base={base} component={compForShape(base, d)} detail={d} useTitle={useTitle} useSub={useSub} useMore={eff('useMoreButton')} badge={eff('useBadge')} image={imageOn} price={priceOn} desc={descOn} ctaLabel={moreLabel} compact />
-                    <p className="mt-1 truncate text-center text-[11px] font-medium text-slate-600">{layoutLabel(d) || d || '기본'}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            // 기본 정보 미리보기 = '유형 보기' 스키매틱(타이틀/디스크립션/슬롯 라벨, 실제 이미지·콘텐츠 없음).
-            //  실제 컴포넌트 구성(이미지 포함 상세)은 아래 ③ 컴포넌트 구성에서 확인.
-            <TypeDetailPreview base={base} component={compValid} detail={detailValid} bigBanner={bigBannerOn} useTitle={useTitle} useSub={useSub} useMore={eff('useMoreButton')} badge={eff('useBadge')} image={imageOn} price={priceOn} desc={descOn} ctaLabel={moreLabel} />
-          )}
+        <div className="border-b p-3">
+          {/* 미리보기는 아래 ③ 컴포넌트 구성의 라이브 미리보기 하나로 통합 — 유형 스키매틱 중복 제거(2026-09-29 사용자 요청).
+              기본 정보 = 유형·배열 선택 + 채널/플랫폼만, '어떻게 보이나'는 ③에서 실시간 확인. */}
           <div className="space-y-3">
             {/* 코너 유형 명은 [코너 유형 · 컴포넌트 · 배열]로 자동 구성 · 코너 레이아웃은 값 보존 */}
             <input type="hidden" name="name" value={derivedName} />
@@ -1540,41 +1587,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* 선택형(탭·메뉴) — 칩 정의는 코너 유형이 소유(2026-09-29 사용자 결정). 빌더는 순서만 변경. */}
             {(compValid === '선택형' || base === '업무 진입형') && (() => {
               const block = shownBlocks.find((b) => b.componentType === '선택형') ?? shownBlocks[0];
-              const chips = (block?.chips && block.chips.length ? block.chips : [{ label: '메뉴 1' }, { label: '메뉴 2' }, { label: '메뉴 3' }]) as { label: string; linkUrl?: string }[];
+              const chips = (block?.chips && block.chips.length ? block.chips : [{ label: '메뉴 1' }, { label: '메뉴 2' }, { label: '메뉴 3' }]) as ChipDef[];
               const rows = block?.chipRows ?? 2;
-              const commit = (nextChips: { label: string; linkUrl?: string }[], nextRows = rows) => setBlocks([{ componentType: '선택형' as ComponentType, count: 1, chips: nextChips, chipRows: nextRows }]);
-              const patch = (idx: number, p: Partial<{ label: string; linkUrl?: string }>) => commit(chips.map((c, j) => (j === idx ? { ...c, ...p } : c)));
-              const add = () => commit([...chips, { label: `메뉴 ${chips.length + 1}` }]);
-              const remove = (idx: number) => commit(chips.filter((_, j) => j !== idx));
-              const move = (idx: number, dir: -1 | 1) => { const j = idx + dir; if (j < 0 || j >= chips.length) return; const n = chips.slice(); [n[idx], n[j]] = [n[j], n[idx]]; commit(n); };
               return (
-                <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] font-semibold text-indigo-700">탭·메뉴 정의</span>
-                    <span className="ml-auto text-[10px] text-indigo-500/80">빌더에선 순서만 변경</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {chips.map((c, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5">
-                        <div className="flex flex-col gap-0.5">
-                          <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} className="flex h-3.5 w-5 items-center justify-center rounded border bg-white text-[9px] text-slate-500 disabled:opacity-30">↑</button>
-                          <button type="button" onClick={() => move(idx, 1)} disabled={idx === chips.length - 1} className="flex h-3.5 w-5 items-center justify-center rounded border bg-white text-[9px] text-slate-500 disabled:opacity-30">↓</button>
-                        </div>
-                        <input value={c.label} onChange={(e) => patch(idx, { label: e.target.value })} placeholder="메뉴명" className="h-8 w-24 rounded-md border bg-white px-2 text-xs" />
-                        <input value={c.linkUrl ?? ''} onChange={(e) => patch(idx, { linkUrl: e.target.value })} placeholder="이동 링크 URL" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
-                        <button type="button" onClick={() => remove(idx)} disabled={chips.length <= 1} className="flex h-7 w-6 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive disabled:opacity-30">×</button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50"><Plus className="h-3.5 w-3.5" /> 탭 추가</button>
-                    <span className="ml-auto text-[11px] text-slate-500">줄 수</span>
-                    {[1, 2].map((r) => (
-                      <button key={r} type="button" onClick={() => commit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-indigo-600 text-white' : 'border bg-white text-slate-600 hover:bg-slate-50')}>{r}줄</button>
-                    ))}
-                  </div>
-                  <p className="text-[10px] leading-relaxed text-indigo-500/80">탭·메뉴 항목(라벨·이동 링크·줄 수·순서)을 코너 유형에서 정의합니다. 실서비스 코너는 이 정의를 상속하고, <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
-                </div>
+                <ChipDefEditor
+                  chips={chips}
+                  rows={rows}
+                  onCommit={(nextChips, nextRows = rows) => setBlocks([{ componentType: '선택형' as ComponentType, count: 1, chips: nextChips, chipRows: nextRows }])}
+                />
               );
             })()}
             <p className="text-[10px] font-medium text-muted-foreground">자동 구성 · 이 유형의 배열·레이아웃에서 도출</p>
