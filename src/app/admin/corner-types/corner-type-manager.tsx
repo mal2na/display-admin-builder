@@ -37,7 +37,10 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pencil, LayoutGrid, List } from 'lucide-react';
+import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical } from 'lucide-react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
 
@@ -239,6 +242,83 @@ export function DevicePreview({ corner, fit: fitMode = 'width', align = 'top-cen
         {/* CornerBlock이 자체 카드(흰 배경·라운드)를 렌더하므로 여기서 이중 카드로 감싸지 않는다(배너 full-bleed·여백 제거). */}
         <CornerBlock corner={corner} />
       </div>
+    </div>
+  );
+}
+
+// 스와이프 배너 한 줄 (드래그앤드롭 · 그립 핸들) — 코너 유형에서 배너 묶음 순서를 바꾼다(2026-09-29 사용자 요청).
+type SwipeBannerItem = { campaignId: string; title: string; imageUrl?: string; linkUrl?: string; size?: string };
+function SortableBannerRow({ id, idx, banner, onRemove, onLinkChange }: { id: string; idx: number; banner: SwipeBannerItem; onRemove: () => void; onLinkChange: (url: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-1.5 rounded-md border bg-white p-1.5">
+      <button type="button" className="cursor-grab text-slate-400 active:cursor-grabbing" {...attributes} {...listeners} aria-label="순서 변경 (드래그)" title="드래그하여 순서 변경">
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-50 text-[10px] font-bold tabular-nums text-indigo-500">{idx + 1}</span>
+      {banner.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={banner.imageUrl} alt="" className="h-8 w-12 shrink-0 rounded object-cover ring-1 ring-slate-200" />
+      )}
+      <div className="min-w-0 flex-1 space-y-1">
+        <p className="truncate text-[12px] font-medium text-slate-800">{banner.title}{banner.size ? <span className="ml-1 font-normal text-slate-400">· {banner.size}</span> : null}</p>
+        {/* 랜딩 URL — 캠페인에서 자동 매핑되지만 여기서 수동 변경 가능(2026-09-29 사용자 요청) */}
+        <input
+          value={banner.linkUrl ?? ''}
+          onChange={(e) => onLinkChange(e.target.value)}
+          placeholder="랜딩 URL (배너 캠페인에서 자동 · 수정 가능)"
+          className="h-7 w-full rounded border border-slate-200 bg-slate-50/60 px-2 text-[11px] text-slate-600 outline-none focus:border-indigo-400 focus:bg-white"
+        />
+      </div>
+      <button type="button" onClick={onRemove} className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive">×</button>
+    </div>
+  );
+}
+
+// 스와이프 배너 묶기 편집기 — 배너 캠페인에서 담고, 드래그앤드롭으로 순서 변경(2026-09-29 사용자 요청).
+//  빌더는 이 묶음을 그대로 생성만 하고 순서만 바꾼다(거버넌스: 정의는 코너 유형).
+function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: SwipeBannerItem[]; bannerCampaigns: BannerCampaignOption[]; onCommit: (next: SwipeBannerItem[]) => void }) {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const add = (id: string) => { const c = bannerCampaigns.find((b) => b.id === id); if (!c) return; onCommit([...banners, { campaignId: c.id, title: c.title, imageUrl: c.imageUrl ?? undefined, linkUrl: c.linkUrl ?? undefined, size: c.size ?? undefined }]); };
+  const remove = (idx: number) => onCommit(banners.filter((_, j) => j !== idx));
+  const patchLink = (idx: number, linkUrl: string) => onCommit(banners.map((b, j) => (j === idx ? { ...b, linkUrl } : b)));
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const from = banners.findIndex((b) => b.campaignId === active.id);
+    const to = banners.findIndex((b) => b.campaignId === over.id);
+    if (from < 0 || to < 0) return;
+    const next = [...banners];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    onCommit(next);
+  };
+  const usedIds = new Set(banners.map((b) => b.campaignId));
+  return (
+    <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+      <div className="flex items-center gap-2">
+        <span className="text-[12px] font-semibold text-indigo-700">스와이프 배너 묶기</span>
+        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{banners.length}장</span>
+        <span className="ml-auto text-[10px] text-indigo-500/80">드래그로 순서 변경</span>
+      </div>
+      {banners.length === 0 && <p className="rounded-md border border-dashed border-indigo-200 bg-white/60 px-2 py-2 text-[10px] text-indigo-400">아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.</p>}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={banners.map((b) => b.campaignId)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-1.5">
+            {banners.map((b, idx) => (
+              <SortableBannerRow key={b.campaignId} id={b.campaignId} idx={idx} banner={b} onRemove={() => remove(idx)} onLinkChange={(url) => patchLink(idx, url)} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+      <div className="flex items-center gap-2">
+        <select value="" onChange={(e) => { if (e.target.value) add(e.target.value); }} className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs">
+          <option value="">＋ 배너 캠페인에서 담기…</option>
+          {bannerCampaigns.filter((c) => !usedIds.has(c.id)).map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+        </select>
+      </div>
+      <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 순서는 <b>드래그</b>로 조정.</p>
     </div>
   );
 }
@@ -1346,46 +1426,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           </div>
           {/* 자동 도출된 컴포넌트 구성(읽기 전용) — 오른쪽 */}
           <div className="min-w-0 space-y-2">
-            {/* 스와이프형 — 코너 유형에서 배너를 '묶는다'(배너 캠페인 관리에서 선택 · 랜딩 URL 그대로 끌어옴). 빌더는 순서만. 2026-09-29 사용자 요청 */}
-            {isBannerType && detailValid === '스와이프형' && (() => {
-              const commit = (next: NonNullable<Composition[number]['banners']>) => setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, next.length), image: true, price: true, desc: true, banners: next }]);
-              const add = (id: string) => { const c = bannerCampaigns.find((b) => b.id === id); if (!c) return; commit([...swipeBanners, { campaignId: c.id, title: c.title, imageUrl: c.imageUrl ?? undefined, linkUrl: c.linkUrl ?? undefined, size: c.size ?? undefined }]); };
-              const remove = (idx: number) => commit(swipeBanners.filter((_, j) => j !== idx));
-              const move = (idx: number, dir: -1 | 1) => { const j = idx + dir; if (j < 0 || j >= swipeBanners.length) return; const n = swipeBanners.slice(); [n[idx], n[j]] = [n[j], n[idx]]; commit(n); };
-              const usedIds = new Set(swipeBanners.map((b) => b.campaignId));
-              return (
-                <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] font-semibold text-indigo-700">스와이프 배너 묶기</span>
-                    <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{swipeBanners.length}장</span>
-                    <span className="ml-auto text-[10px] text-indigo-500/80">빌더에선 순서만 변경</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {swipeBanners.length === 0 && <p className="rounded-md border border-dashed border-indigo-200 bg-white/60 px-2 py-2 text-[10px] text-indigo-400">아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.</p>}
-                    {swipeBanners.map((b, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5 rounded-md border bg-white p-1.5">
-                        <div className="flex flex-col gap-0.5">
-                          <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} className="flex h-3.5 w-5 items-center justify-center rounded border text-[9px] text-slate-500 disabled:opacity-30">↑</button>
-                          <button type="button" onClick={() => move(idx, 1)} disabled={idx === swipeBanners.length - 1} className="flex h-3.5 w-5 items-center justify-center rounded border text-[9px] text-slate-500 disabled:opacity-30">↓</button>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[12px] font-medium text-slate-800">{b.title}</p>
-                          <p className="truncate text-[10px] text-slate-400">{b.linkUrl || '랜딩 URL 없음'}{b.size ? ` · ${b.size}` : ''}</p>
-                        </div>
-                        <button type="button" onClick={() => remove(idx)} className="flex h-7 w-6 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive">×</button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <select value="" onChange={(e) => { if (e.target.value) add(e.target.value); }} className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs">
-                      <option value="">＋ 배너 캠페인에서 담기…</option>
-                      {bannerCampaigns.filter((c) => !usedIds.has(c.id)).map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-                    </select>
-                  </div>
-                  <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 빌더에선 <b>순서만</b> 조정.</p>
-                </div>
-              );
-            })()}
+            {/* 스와이프형 — 코너 유형에서 배너를 '묶는다'(배너 캠페인 관리에서 선택 · 랜딩 URL 그대로 끌어옴). 순서는 드래그앤드롭. 2026-09-29 사용자 요청 */}
+            {isBannerType && detailValid === '스와이프형' && (
+              <SwipeBannerEditor
+                banners={swipeBanners as SwipeBannerItem[]}
+                bannerCampaigns={bannerCampaigns}
+                onCommit={(next) => setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, next.length), image: true, price: true, desc: true, banners: next }])}
+              />
+            )}
             {/* 선택형(탭·메뉴) — 칩 정의는 코너 유형이 소유(2026-09-29 사용자 결정). 빌더는 순서만 변경. */}
             {(compValid === '선택형' || base === '업무 진입형') && (() => {
               const block = shownBlocks.find((b) => b.componentType === '선택형') ?? shownBlocks[0];
@@ -1454,20 +1502,15 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             })}
             <p className="text-[10px] leading-relaxed text-muted-foreground">
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
-              표시 항목(이미지·가격·배지·설명 등) on/off는 아래 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
+              표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* 세부 항목 (항목별 사용여부) — 이 코너 유형이 어떤 항목을 쓰는지. 유형에 맞지 않으면 자동 비활성. (bulk는 위 속성 패널로 대체) */}
-      {!bulk && (
-      <section className="overflow-hidden rounded-md border">
-        <div className="border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
-        <div className="grid grid-cols-[120px_1fr] items-start gap-3 px-3 py-3">
-          <label className="pt-1 text-xs font-medium text-muted-foreground">표시 항목</label>
-          <div>
+            {/* 세부 항목 (항목별 사용여부) — 미리보기 옆(같은 오른쪽 열)에 배치해 한눈에 본다(2026-09-29 사용자 요청). */}
+            {!bulk && (
+            <div className="overflow-hidden rounded-md border">
+              <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
+              <div className="px-3 py-3">
+                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">표시 항목</label>
+                <div>
           <div className="flex flex-wrap gap-x-6 gap-y-2">
             {CORNER_TYPE_FEATURES.map((f) => {
               const applies = featureApplies(f.key);
@@ -1587,9 +1630,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               ))}
             </ul>
             <p className="mt-2 border-t border-slate-200 pt-2 text-[10px] text-slate-400">유형에 맞지 않는 항목은 자동으로 비활성화돼요. · 노출 개수(최소·최대)는 빌더에서 코너별로 설정해요.</p>
+              </div>
+              </div>
+              </div>
+            </div>
+            )}
           </div>
-          </div>
-          </div>
+        </div>
       </section>
       )}
 

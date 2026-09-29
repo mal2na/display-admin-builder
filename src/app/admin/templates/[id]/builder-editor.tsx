@@ -47,7 +47,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download, GalleryHorizontalEnd, ChevronUp, ChevronDown, RotateCcw } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download, GalleryHorizontalEnd, RotateCcw } from 'lucide-react';
 import { TypeDetailPreview } from '../../corner-types/corner-type-manager';
 import {
   updateTemplateMeta,
@@ -61,7 +61,6 @@ import {
   removeComponent,
   toggleCornerTab,
   renameComponent,
-  moveComponent,
   reorderComponents,
   addExistingAtom,
   createAtom,
@@ -1832,6 +1831,40 @@ function BigBannerControl({ templateId, corner, banners }: { templateId: string;
 const BANNER_SIZES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (672×214)', '팝업배너 (720×600)'] as const;
 const bannerSizeShort = (detail: string) => detail.replace(/\s*\(.*\)\s*/, '').trim() || detail;
 
+// 배너 레일의 한 줄 — 드래그앤드롭(그립 핸들)로 순서 변경. 썸네일·이름·삭제·원본 변경 안내.
+function SortableBannerRailItem({ cc, i, thumb, onRemove, onRefresh }: { cc: ComponentNode; i: number; thumb: string | null; onRemove: () => void; onRefresh: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cc.cornerComponentId });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <li ref={setNodeRef} style={style} className="rounded-lg border bg-white px-2 py-1.5">
+      <div className="flex items-center gap-2">
+        <button type="button" className="cursor-grab text-slate-400 active:cursor-grabbing" {...attributes} {...listeners} aria-label="순서 변경 (드래그)" title="드래그하여 순서 변경">
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-bold text-slate-500">{i + 1}</span>
+        <div className="flex h-9 w-14 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50">
+          {thumb
+            ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={thumb} alt="" className="h-full w-full object-cover" />
+            : <GalleryHorizontalEnd className="h-4 w-4 text-slate-300" />}
+        </div>
+        <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-slate-700">{cc.name}</span>
+        <button type="button" onClick={onRemove} title="이 코너에서 배너 빼기"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded border text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+      </div>
+      {/* 원본 변경 전파 — 캠페인 원본이 편성 이후 바뀌면 갱신 안내 */}
+      {cc.sourceChanged && (
+        <div className="mt-1.5 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1">
+          <span className="flex-1 text-[10.5px] leading-snug text-amber-700">원본 배너 캠페인이 변경됐어요. 이 편성은 편성 시점 스냅샷입니다.</span>
+          <button type="button" onClick={onRefresh}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-white px-2 py-0.5 text-[10.5px] font-semibold text-amber-700 hover:bg-amber-100">
+            <RotateCcw className="h-3 w-3" /> 최신으로 갱신
+          </button>
+        </div>
+      )}
+    </li>
+  );
+}
+
 // ── 배너 레일 컨트롤 (배너형 코너 전용, '코너 구성' 안) ──────────────────
 //  한 코너에 여러 배너를 담아 순서·삭제하고, 규격/노출 방식(스와이프·자동 슬라이드)을 한 곳에서 설정.
 //  배너 추가는 배너 캠페인 관리(SSOT)에서 불러온다. 문구는 캠페인 소유 → 여기선 배치/노출만.
@@ -1850,9 +1883,26 @@ function BannerRailControl({
   const size = corner.layoutDetail ?? '';
   const opts = parseBannerOptions(corner.bannerOptions);
   const pickSize = (s: string) => start(() => setCornerBannerSize(templateId, corner.id, s));
-  const move = (ccId: string, dir: 'up' | 'down') => start(() => moveComponent(templateId, corner.id, ccId, dir));
   const remove = (ccId: string) => start(() => removeComponent(templateId, ccId));
   const refresh = (componentId: string) => start(() => refreshBannerComponent(templateId, componentId));
+
+  // 드래그앤드롭 순서 변경 — 코너 컴포넌트(배너) 순서를 reorderComponents로 저장. 낙관적 로컬 순서 유지(2026-09-29 사용자 요청).
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const [ids, setIds] = useState(banners.map((c) => c.cornerComponentId));
+  if (ids.length !== banners.length || banners.some((c) => !ids.includes(c.cornerComponentId))) setIds(banners.map((c) => c.cornerComponentId));
+  const byId = new Map(banners.map((c) => [c.cornerComponentId, c]));
+  const orderedBanners = ids.map((id) => byId.get(id)).filter(Boolean) as ComponentNode[];
+  const onDragEnd = async (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    if (from < 0 || to < 0) return;
+    const next = [...ids];
+    next.splice(to, 0, next.splice(from, 1)[0]);
+    setIds(next);
+    await reorderComponents(templateId, corner.id, next);
+  };
 
   const thumbOf = (c: ComponentNode) => c.atoms.find((a) => a.atomType === 'IMAGE' && isImgSrc(a.imageUrl))?.imageUrl ?? null;
 
@@ -1868,48 +1918,21 @@ function BannerRailControl({
         </button>
       </div>
 
-      {/* 담긴 배너 목록 — 썸네일·순서·삭제 */}
+      {/* 담긴 배너 목록 — 썸네일·드래그 순서·삭제 */}
       {banners.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-300 p-5 text-center text-[12px] text-muted-foreground">
           담긴 배너가 없습니다.<br /><span className="text-[11px]">‘배너 추가’로 배너 캠페인에서 불러오세요.</span>
         </div>
       ) : (
-        <ul className="space-y-1.5">
-          {banners.map((c, i) => {
-            const thumb = thumbOf(c);
-            return (
-              <li key={c.cornerComponentId} className="rounded-lg border bg-white px-2 py-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-bold text-slate-500">{i + 1}</span>
-                  <div className="flex h-9 w-14 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50">
-                    {thumb
-                      ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={thumb} alt="" className="h-full w-full object-cover" />
-                      : <GalleryHorizontalEnd className="h-4 w-4 text-slate-300" />}
-                  </div>
-                  <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-slate-700">{c.name}</span>
-                  <div className="flex shrink-0 items-center gap-0.5">
-                    <button type="button" disabled={i === 0} onClick={() => move(c.cornerComponentId, 'up')} title="위로"
-                      className="flex h-6 w-6 items-center justify-center rounded border text-slate-500 hover:bg-secondary disabled:opacity-30"><ChevronUp className="h-3.5 w-3.5" /></button>
-                    <button type="button" disabled={i === banners.length - 1} onClick={() => move(c.cornerComponentId, 'down')} title="아래로"
-                      className="flex h-6 w-6 items-center justify-center rounded border text-slate-500 hover:bg-secondary disabled:opacity-30"><ChevronDown className="h-3.5 w-3.5" /></button>
-                    <button type="button" onClick={() => remove(c.cornerComponentId)} title="이 코너에서 배너 빼기"
-                      className="flex h-6 w-6 items-center justify-center rounded border text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
-                  </div>
-                </div>
-                {/* 원본 변경 전파 — 캠페인 원본이 편성 이후 바뀌면 갱신 안내 */}
-                {c.sourceChanged && (
-                  <div className="mt-1.5 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1">
-                    <span className="flex-1 text-[10.5px] leading-snug text-amber-700">원본 배너 캠페인이 변경됐어요. 이 편성은 편성 시점 스냅샷입니다.</span>
-                    <button type="button" onClick={() => refresh(c.id)}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-white px-2 py-0.5 text-[10.5px] font-semibold text-amber-700 hover:bg-amber-100">
-                      <RotateCcw className="h-3 w-3" /> 최신으로 갱신
-                    </button>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <ul className="space-y-1.5">
+              {orderedBanners.map((c, i) => (
+                <SortableBannerRailItem key={c.cornerComponentId} cc={c} i={i} thumb={thumbOf(c)} onRemove={() => remove(c.cornerComponentId)} onRefresh={() => refresh(c.id)} />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* 배너 규격 — 코너 전체 공통 */}
