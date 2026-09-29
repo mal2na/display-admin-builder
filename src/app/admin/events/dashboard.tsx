@@ -28,6 +28,9 @@ export type ProjectCard = {
   publishState: '미노출' | '게시 예정' | '게시 중' | '종료';
   promoStatus: string; // 프로모션 상태(승인·배포): 작성 중 | 배포 완료 | 게시중 | 종료 …
   period: string; // 전시 기간
+  joinPeriod: string; // 참여 기간
+  commentUse: string; // 댓글 사용여부: 사용 | 미사용
+  commentCount: number; // 댓글 수
   pageId: string | null;
   nodeTypes: string[];
 };
@@ -147,28 +150,35 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
   const router = useRouter();
   const [pending, start] = useTransition();
   const SortableTh = ({ k, label, className = '' }: { k: SortKey; label: string; className?: string }) => (
-    <th className={`whitespace-nowrap px-2.5 py-2.5 text-left font-medium ${className}`}>
-      <button onClick={() => onSort(k)} className="inline-flex items-center gap-1 hover:text-foreground">
+    <th className={`whitespace-nowrap px-2.5 py-2.5 text-center font-medium ${className}`}>
+      <button onClick={() => onSort(k)} className="mx-auto inline-flex items-center gap-1 hover:text-foreground">
         {label}
         {sortKey === k && (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
       </button>
     </th>
   );
+  const th = 'whitespace-nowrap px-2.5 py-2.5 text-center font-medium';
   return (
+    // 프로토타입 컬럼: 번호·프로모션 ID·전시기간·참여기간·프로모션 유형·프로모션 명·전시상태·댓글 사용여부·댓글 수·등록자·등록일시·최종 수정자·최종 수정일시·프로모션 상태·관리
     <div className="overflow-x-auto border bg-card">
-      <table className="w-full min-w-[880px] text-sm">
+      <table className="w-full min-w-[1480px] text-center text-[12px]">
         <thead className="border-b bg-surface-subtle text-[12px] text-muted-foreground">
           <tr>
-            <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">No.</th>
-            <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">프로모션 ID</th>
-            <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">전시 상태</th>
-            <SortableTh k="name" label="프로모션명" />
-            <SortableTh k="type" label="유형" />
-            <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">진행 기간</th>
+            <th className={th}>번호</th>
+            <th className={th}>프로모션 ID</th>
+            <th className={th}>전시기간</th>
+            <th className={th}>참여기간</th>
+            <SortableTh k="type" label="프로모션 유형" />
+            <SortableTh k="name" label="프로모션 명" />
+            <th className={th}>전시상태</th>
+            <th className={th}>댓글 사용여부</th>
+            <th className={th}>댓글 수</th>
+            <SortableTh k="author" label="등록자" />
+            <SortableTh k="recent" label="등록일시" />
+            <th className={th}>최종 수정자</th>
+            <th className={th}>최종 수정일시</th>
             <SortableTh k="status" label="프로모션 상태" />
-            <SortableTh k="recent" label="등록" />
-            <th className="whitespace-nowrap px-2.5 py-2.5 text-left font-medium">최근 수정</th>
-            <th className="px-2.5 py-2.5 text-right font-medium">관리</th>
+            <th className={th}>관리</th>
           </tr>
         </thead>
         <tbody className="divide-y">
@@ -176,27 +186,27 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
             const href = p.pageId ? `/admin/events/pages/${p.pageId}` : '#';
             const builderHref = p.pageId ? `/admin/events/pages/${p.pageId}/builder` : '#';
             return (
-              <tr key={p.id} className="hover:bg-secondary/30">
-                <td className="whitespace-nowrap px-2.5 py-2.5 text-[12px] text-muted-foreground">{startIndex + i + 1}</td>
+              // 로우 클릭 = 상세로 이동(빌더 버튼은 stopPropagation으로 별도).
+              <tr key={p.id} onClick={() => p.pageId && router.push(href)} className="cursor-pointer hover:bg-secondary/40">
+                <td className="whitespace-nowrap px-2.5 py-2.5 text-muted-foreground">{startIndex + i + 1}</td>
                 <td className="whitespace-nowrap px-2.5 py-2.5 font-mono text-[11px] text-muted-foreground">{p.programId}</td>
-                <td className="px-2.5 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${EXPOSURE_BADGE[p.displayState] ?? EXPOSURE_BADGE['미노출']}`}>{p.displayState}</span></td>
-                <td className="whitespace-nowrap px-2.5 py-2.5"><Link href={href} className="font-medium hover:text-primary">{p.name}</Link></td>
+                <td className="whitespace-nowrap px-2.5 py-2.5 text-muted-foreground">{p.period}</td>
+                <td className="whitespace-nowrap px-2.5 py-2.5 text-muted-foreground">{p.joinPeriod}</td>
                 <td className="whitespace-nowrap px-2.5 py-2.5">
                   {p.kind !== '전시' && <span className="mr-1 text-[11px] text-muted-foreground">{p.kind}</span>}
                   <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${typeBadge(p.type)}`}>{p.type}</span>
                 </td>
-                <td className="whitespace-nowrap px-2.5 py-2.5 text-[12px] text-muted-foreground">{p.period}</td>
+                <td className="max-w-[260px] truncate px-2.5 py-2.5 text-left font-medium text-foreground">{p.name}</td>
+                <td className="px-2.5 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${EXPOSURE_BADGE[p.displayState] ?? EXPOSURE_BADGE['미노출']}`}>{p.displayState}</span></td>
+                <td className="whitespace-nowrap px-2.5 py-2.5 text-muted-foreground">{p.commentUse}</td>
+                <td className="whitespace-nowrap px-2.5 py-2.5 tabular-nums text-muted-foreground">{p.commentCount.toLocaleString()}</td>
+                <td className="whitespace-nowrap px-2.5 py-2.5 text-foreground">{p.author}</td>
+                <td className="whitespace-nowrap px-2.5 py-2.5 text-[11px] text-muted-foreground">{p.createdDateTime}</td>
+                <td className="whitespace-nowrap px-2.5 py-2.5 text-foreground">{p.editor}</td>
+                <td className="whitespace-nowrap px-2.5 py-2.5 text-[11px] text-muted-foreground">{p.updatedDateTime}</td>
                 <td className="px-2.5 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${PROMO_STATUS_BADGE[p.promoStatus] ?? PROMO_STATUS_BADGE['작성']}`}>{p.promoStatus}</span></td>
-                <td className="whitespace-nowrap px-2.5 py-2.5">
-                  <div className="text-[12px] text-foreground">{p.author}</div>
-                  <div className="text-[11px] text-muted-foreground">{p.createdDateTime}</div>
-                </td>
-                <td className="whitespace-nowrap px-2.5 py-2.5">
-                  <div className="text-[12px] text-foreground">{p.editor}</div>
-                  <div className="text-[11px] text-muted-foreground">{p.updatedDateTime}</div>
-                </td>
-                <td className="px-2.5 py-2.5">
-                  <div className="flex items-center justify-end gap-1.5">
+                <td className="whitespace-nowrap px-2.5 py-2.5" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-center gap-1.5">
                     <Link href={builderHref} className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-medium hover:bg-secondary"><PencilRuler className="h-3 w-3" /> 빌더</Link>
                     <button
                       onClick={() => { if (confirm(`"${p.name}" 프로모션을 휴지통으로 옮길까요?`)) start(() => deleteProject(p.id).then(() => router.refresh())); }}
@@ -221,30 +231,29 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   const [view, setView] = useState<'card' | 'table'>('table');
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  // 검색 조건 (SB-EVT-027)
-  const [kind, setKind] = useState<string>('전체'); // 상위 유형: 이벤트 | 미션
-  const [detailType, setDetailType] = useState<string>('전체'); // 세부 유형
+  // 검색 조건 (프로토타입 기준)
+  const [typeSel, setTypeSel] = useState<Set<string>>(new Set()); // 이벤트/미션 세부 유형 다중 선택(빈 셋 = 전체)
   const [periodBasis, setPeriodBasis] = useState<'created' | 'displayStart'>('created'); // 기간 기준
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [statusSel, setStatusSel] = useState<Set<string>>(new Set(PROMO_STATUSES)); // 프로모션 상태(다중)
   const [exposure, setExposure] = useState<string>('전체'); // 전시 상태
+  const [commentUseSel, setCommentUseSel] = useState<string>('전체'); // 댓글 사용여부: 전체 | 사용 | 미사용
   const [field, setField] = useState<'name' | 'programId' | 'author' | 'editor'>('name'); // 상세 조건 대상
   const [q, setQ] = useState('');
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
 
-  const KIND_OPTIONS = ['전체', '이벤트'];
-  // 프로모션 관리 유형 (안내형 + 응모형)
-  const typeOptions = ['전체', '안내형', '응모형'];
-  const FIELD_LABEL: Record<string, string> = { name: '프로모션명', programId: '프로모션 ID', author: '등록자', editor: '최근 수정자' };
-  const EXPOSURE_OPTIONS = ['전체', '노출', '미노출'];
-
-  // 프로모션 상태는 상단 언더라인 탭에서 단일 선택으로 제어(statusSel).
+  const FIELD_LABEL: Record<string, string> = { name: '프로모션 명', programId: '프로모션 ID', author: '등록자', editor: '최종 수정자' };
+  const EXPOSURE_OPTIONS = ['전체', '전시', '미전시'];
+  const COMMENT_OPTIONS = ['전체', '사용', '미사용'];
+  // 전시상태 표기 매핑(데이터는 노출/미노출) — 필터 라벨은 전시/미전시.
+  const exposureMatch = (p: ProjectCard) => exposure === '전체' || (exposure === '전시' ? p.displayState === '노출' : p.displayState !== '노출');
+  const toggleType = (t: string) => { setTypeSel((prev) => { const n = new Set(prev); if (n.has(t)) n.delete(t); else n.add(t); return n; }); setPage(1); };
 
   function resetFilters() {
-    setKind('전체'); setDetailType('전체'); setPeriodBasis('created'); setFromDate(''); setToDate('');
-    setStatusSel(new Set(PROMO_STATUSES)); setExposure('전체'); setField('name'); setQ(''); setPage(1);
+    setTypeSel(new Set()); setPeriodBasis('created'); setFromDate(''); setToDate('');
+    setStatusSel(new Set(PROMO_STATUSES)); setExposure('전체'); setCommentUseSel('전체'); setField('name'); setQ(''); setPage(1);
   }
 
   // 헤더 클릭 정렬 토글 (같은 키 재클릭 시 방향 반전)
@@ -264,10 +273,10 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
   };
   const filteredAll = projects
     .filter((p) =>
-      (kind === '전체' || p.kind === kind) &&
-      (detailType === '전체' || p.type === detailType) &&
+      (typeSel.size === 0 || typeSel.has(p.type)) &&
       statusSel.has(p.promoStatus) &&
-      (exposure === '전체' || p.displayState === exposure) &&
+      exposureMatch(p) &&
+      (commentUseSel === '전체' || p.commentUse === commentUseSel) &&
       (fromMs === null || basisMs(p) >= fromMs) &&
       (toMs === null || basisMs(p) < toMs) &&
       matchQuery(p))
@@ -290,8 +299,8 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
 
   // Excel(CSV) 다운로드 — 현재 검색 조건 기준 전체 (3-2)
   function downloadCsv() {
-    const header = ['No', '프로모션 ID', '전시 상태', '프로모션명', '상위 유형', '세부 유형', '진행 기간', '프로모션 상태', '등록자', '등록일시', '최근 수정자', '최근 수정일시'];
-    const lines = filteredAll.map((p, i) => [i + 1, p.programId, p.displayState, p.name, p.kind, p.type, p.period, p.promoStatus, p.author, p.createdDateTime, p.editor, p.updatedDateTime]);
+    const header = ['번호', '프로모션 ID', '전시기간', '참여기간', '프로모션 유형', '프로모션 명', '전시상태', '댓글 사용여부', '댓글 수', '등록자', '등록일시', '최종 수정자', '최종 수정일시', '프로모션 상태'];
+    const lines = filteredAll.map((p, i) => [i + 1, p.programId, p.period, p.joinPeriod, `${p.kind} · ${p.type}`, p.name, p.displayState, p.commentUse, p.commentCount, p.author, p.createdDateTime, p.editor, p.updatedDateTime, p.promoStatus]);
     const csv = [header, ...lines].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
@@ -343,11 +352,19 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
                   <div className="flex flex-wrap items-center gap-1.5">{children}</div>
                 </div>
               );
+              const typesAllOn = typeSel.size === 0;
               return (
                 <div className="mb-4 rounded-xl border bg-surface-subtle px-4">
-                  <Row label="유형">
-                    {['전체', '안내형', '응모형'].map((t) => (
-                      <button key={t} type="button" onClick={() => { setDetailType(t); setPage(1); }} className={chip(detailType === t)}>{t}</button>
+                  <Row label="이벤트 유형">
+                    <button type="button" onClick={() => { setTypeSel((prev) => { const n = new Set(prev); EVENT_TYPES.forEach((t) => n.delete(t)); return n; }); setPage(1); }} className={chip(typesAllOn || !EVENT_TYPES.some((t) => typeSel.has(t)))}>전체</button>
+                    {EVENT_TYPES.map((t) => (
+                      <button key={t} type="button" onClick={() => toggleType(t)} className={chip(typeSel.has(t))}>{t}</button>
+                    ))}
+                  </Row>
+                  <Row label="미션 유형">
+                    <button type="button" onClick={() => { setTypeSel((prev) => { const n = new Set(prev); MISSION_TYPES.forEach((t) => n.delete(t)); return n; }); setPage(1); }} className={chip(typesAllOn || !MISSION_TYPES.some((t) => typeSel.has(t)))}>전체</button>
+                    {MISSION_TYPES.map((t) => (
+                      <button key={t} type="button" onClick={() => toggleType(t)} className={chip(typeSel.has(t))}>{t}</button>
                     ))}
                   </Row>
                   <Row label="프로모션 상태">
@@ -358,27 +375,32 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
                       </button>
                     ))}
                   </Row>
-                  <Row label="전시 상태">
+                  <Row label="전시상태 / 댓글">
                     {EXPOSURE_OPTIONS.map((s) => (
                       <button key={s} type="button" onClick={() => { setExposure(s); setPage(1); }} className={chip(exposure === s)}>{s}</button>
+                    ))}
+                    <span className="mx-1 h-4 w-px bg-border" />
+                    <span className="text-xs text-muted-foreground">댓글 사용여부</span>
+                    {COMMENT_OPTIONS.map((s) => (
+                      <button key={s} type="button" onClick={() => { setCommentUseSel(s); setPage(1); }} className={chip(commentUseSel === s)}>{s}</button>
                     ))}
                   </Row>
                   <Row label="기간">
                     <select value={periodBasis} onChange={(e) => setPeriodBasis(e.target.value as typeof periodBasis)} className="h-9 w-28 rounded-lg border bg-background px-2.5 text-sm">
-                      <option value="created">등록일</option>
+                      <option value="created">등록일시</option>
                       <option value="displayStart">전시 시작일</option>
                     </select>
                     <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPage(1); }} className="h-9 rounded-lg border px-2.5 text-sm" />
                     <span className="text-muted-foreground">~</span>
                     <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(1); }} className="h-9 rounded-lg border px-2.5 text-sm" />
                   </Row>
-                  <Row label="검색어">
+                  <Row label="검색 항목">
                     <select value={field} onChange={(e) => { setField(e.target.value as typeof field); setPage(1); }} className="h-9 w-36 rounded-lg border bg-background px-2.5 text-sm">
                       {Object.entries(FIELD_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                     <div className="relative min-w-[220px] flex-1">
                       <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="검색어 입력" className="h-9 w-full rounded-lg border pl-9 pr-3 text-sm" />
+                      <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="내용을 입력하세요." className="h-9 w-full rounded-lg border pl-9 pr-3 text-sm" />
                     </div>
                     <button onClick={resetFilters} title="초기화" className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm text-muted-foreground hover:bg-secondary"><RotateCcw className="h-4 w-4" />초기화</button>
                     <button onClick={() => setPage(1)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"><Search className="h-4 w-4" />조회</button>

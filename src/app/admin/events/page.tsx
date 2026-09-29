@@ -55,9 +55,9 @@ function promoStatus(r: {
 }
 
 export default async function EventsPage() {
-  // 프로모션 관리 유형 (안내형 + 응모형)
+  // 프로모션 관리 — 이벤트·미션 전체(프로토타입 목록 기준)
   const rows = await prisma.eventProgram.findMany({
-    where: { parentId: null, programType: { in: ['안내형', '응모형'] } },
+    where: { parentId: null, programKind: { in: ['이벤트', '미션'] } },
     orderBy: { updatedAt: 'desc' },
     select: {
       id: true,
@@ -75,8 +75,13 @@ export default async function EventsPage() {
       displayStartAt: true,
       displayEndAt: true,
       displayNoEndDate: true,
+      startAt: true,
+      endAt: true,
+      noEndDate: true,
+      commentUse: true,
       partnerBrand: true,
       defaultPage: { select: { nodes: { select: { type: true }, orderBy: { order: 'asc' } } } },
+      _count: { select: { comments: true } },
     },
   });
 
@@ -104,7 +109,7 @@ export default async function EventsPage() {
     programId: codeOf(r.id),
     name: r.name,
     env: r.env,
-    kind: r.mode === 'display' ? '전시' : r.programKind || '이벤트', // 상위 유형
+    kind: r.mode === 'display' ? '전시' : r.programKind || '이벤트', // 상위 유형(이벤트|미션|전시)
     // 유형(세부): 전시(거버넌스) 프로젝트는 '전시', 그 외엔 이벤트/미션 세부 유형
     type: r.mode === 'display' ? '전시' : r.programType || r.category || '기타',
     updatedLabel: relTime(r.updatedAt),
@@ -117,7 +122,10 @@ export default async function EventsPage() {
     displayState: r.displayState,
     publishState: publishState(r),
     promoStatus: promoStatus(r),
-    period: `${fmt(r.displayStartAt)} ~ ${r.displayNoEndDate ? '상시' : fmt(r.displayEndAt)}`,
+    period: `${fmt(r.displayStartAt)} ~ ${r.displayNoEndDate ? '상시' : fmt(r.displayEndAt)}`, // 전시기간
+    joinPeriod: (r.startAt || r.endAt) ? `${fmt(r.startAt)} ~ ${r.noEndDate ? '상시' : fmt(r.endAt)}` : '—', // 참여기간
+    commentUse: r.commentUse ? '사용' : '미사용',
+    commentCount: r._count?.comments ?? 0,
     pageId: r.defaultPageId,
     nodeTypes: (r.defaultPage?.nodes ?? []).map((n) => n.type).slice(0, 8),
   }));
