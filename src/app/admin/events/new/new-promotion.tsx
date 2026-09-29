@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import * as LucideIcons from 'lucide-react';
 import { Check, Plus, Info, ChevronLeft } from 'lucide-react';
 import { createProject } from '../actions';
-import { TEMPLATES, PROGRAM_KINDS, typesForKind, createsStateFor, TYPE_META, toPromotionSkeleton, describeTemplate, type NodeSpec, type EventSectionGroup } from '@/lib/event-templates';
+import { TEMPLATES, PROGRAM_KINDS, PROMOTION_TYPES, typesForKind, createsStateFor, TYPE_META, toPromotionSkeleton, describeTemplate, type NodeSpec, type EventSectionGroup } from '@/lib/event-templates';
 
 // 섹션 유형별 배지 색 (구성 미리보기)
 const SECTION_GROUP_BADGE: Record<EventSectionGroup, string> = {
@@ -55,9 +56,13 @@ function ExamplePreview({ tplKey }: { tplKey: string }) {
 }
 
 export function NewPromotion() {
+  // 등록 마법사(문답형/선택형)에서 넘어온 유형을 초기 선택값으로 반영. 지원 유형(안내형/응모형)일 때만.
+  const sp = useSearchParams();
+  const paramType = sp.get('type');
+  const initialType = paramType && (PROMOTION_TYPES as readonly string[]).includes(paramType) ? paramType : '안내형';
   const [name, setName] = useState('');
   const [kind, setKind] = useState('이벤트');
-  const [type, setType] = useState('안내형');
+  const [type, setType] = useState(initialType);
   const [startAt, setStartAt] = useState('');
   const [endAt, setEndAt] = useState('');
   const [tpl, setTpl] = useState('blank');

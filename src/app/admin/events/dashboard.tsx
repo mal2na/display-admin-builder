@@ -3,10 +3,11 @@
 import { useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { deleteProject, restoreProject, purgeProject, setDisplayState } from './actions';
-import { LayoutTemplate, Rocket, Trash2, Plus, Search, LayoutGrid, Table2, MoreVertical, ArrowDownUp, ArrowUp, ArrowDown, Eye, EyeOff, RotateCcw, ExternalLink, PencilRuler, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { restoreProject, purgeProject, setDisplayState } from './actions';
+import { LayoutTemplate, Rocket, Trash2, Plus, Search, LayoutGrid, Table2, ArrowDownUp, ArrowUp, ArrowDown, Eye, EyeOff, RotateCcw, ExternalLink, PencilRuler, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { EVENT_TYPES, MISSION_TYPES } from '@/lib/event-taxonomy';
 import { PageHeader } from '@/components/page-header';
+import { RegisterWizard } from './register-wizard';
 
 type SortKey = 'recent' | 'name' | 'type' | 'status' | 'author';
 
@@ -99,9 +100,6 @@ function MiniPreview({ types }: { types: string[] }) {
 }
 
 function ProjectTile({ p }: { p: ProjectCard }) {
-  const router = useRouter();
-  const [pending, start] = useTransition();
-  const [menu, setMenu] = useState(false);
   const href = p.pageId ? `/admin/events/pages/${p.pageId}` : '#';
   return (
     <div className="group overflow-hidden rounded-xl border bg-card transition hover:shadow-md">
@@ -110,22 +108,6 @@ function ProjectTile({ p }: { p: ProjectCard }) {
       </Link>
       <div className="flex items-center justify-between px-4 pt-3">
         <Link href={href} className="truncate font-semibold hover:text-primary">{p.name}</Link>
-        <div className="relative flex items-center gap-1">
-          <button onClick={() => setMenu((v) => !v)} className="rounded p-0.5 text-slate-400 hover:bg-secondary" aria-label="메뉴">
-            <MoreVertical className="h-4 w-4" />
-          </button>
-          {menu && (
-            <div className="absolute right-0 top-6 z-20 w-32 overflow-hidden rounded-md border bg-white text-xs shadow-lg" onMouseLeave={() => setMenu(false)}>
-              <button
-                onClick={() => { if (confirm(`"${p.name}" 프로모션을 휴지통으로 옮길까요?`)) start(() => deleteProject(p.id).then(() => router.refresh())); }}
-                disabled={pending}
-                className="flex w-full items-center gap-2 px-3 py-2 text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> 휴지통으로
-              </button>
-            </div>
-          )}
-        </div>
       </div>
       <div className="space-y-1 px-4 pb-3.5 pt-2">
         <div className="flex items-center justify-between">
@@ -208,13 +190,6 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
                 <td className="whitespace-nowrap px-2.5 py-2.5" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-center gap-1.5">
                     <Link href={builderHref} className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-medium hover:bg-secondary"><PencilRuler className="h-3 w-3" /> 빌더</Link>
-                    <button
-                      onClick={() => { if (confirm(`"${p.name}" 프로모션을 휴지통으로 옮길까요?`)) start(() => deleteProject(p.id).then(() => router.refresh())); }}
-                      disabled={pending}
-                      className="inline-flex items-center gap-1 rounded-md border border-destructive/30 px-2 py-1 text-[11px] font-medium text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
                   </div>
                 </td>
               </tr>
@@ -228,6 +203,7 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
 
 export function EventsDashboard({ projects, deployRows, trashRows }: { projects: ProjectCard[]; deployRows: DeployRow[]; trashRows: TrashRow[] }) {
   const [section, setSection] = useState<Section>('projects'); // 프로모션 목록 ↔ 휴지통 전환
+  const [wizardOpen, setWizardOpen] = useState(false); // 등록 마법사(문답형/선택형)
   const [view, setView] = useState<'card' | 'table'>('table');
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -321,23 +297,13 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
               subtitle={`총 ${projects.length}개의 프로모션이 있습니다.`}
               className="mb-4"
               action={
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSection('trash')}
-                    className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm font-medium hover:bg-secondary"
-                    title="휴지통 — 삭제한 프로모션 복원/영구삭제"
-                  >
-                    <Trash2 className="h-4 w-4" /> 휴지통
-                    {trashRows.length > 0 && <span className="ml-0.5 rounded-full bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">{trashRows.length}</span>}
-                  </button>
-                  <Link
-                    href="/admin/events/new"
-                    className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                  >
-                    <Plus className="h-4 w-4" /> 새 프로모션
-                  </Link>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setWizardOpen(true)}
+                  className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  <Plus className="h-4 w-4" /> 등록
+                </button>
               }
             />
 
@@ -466,6 +432,8 @@ export function EventsDashboard({ projects, deployRows, trashRows }: { projects:
 
       {section === 'deploy' && <DeployView rows={deployRows} />}
       {section === 'trash' && <TrashView rows={trashRows} onBack={() => setSection('projects')} />}
+
+      <RegisterWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </div>
   );
 }
