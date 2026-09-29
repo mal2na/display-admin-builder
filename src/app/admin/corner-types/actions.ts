@@ -101,6 +101,12 @@ function readForm(formData: FormData) {
     defaultRecSource: opt('defaultRecSource'),
     defaultMoreButton: String(formData.get('defaultMoreButton') ?? '') === '1',
     defaultMoreButtonLabel: opt('defaultMoreButtonLabel'),
+    // 정의(거버넌스) 기본값 — 문구·개수·형태를 코너 유형에서 확정(2026-09-29)
+    defaultMainTitle: opt('defaultMainTitle'),
+    defaultSubTitle: opt('defaultSubTitle'),
+    defaultSubTitleIcon: opt('defaultSubTitleIcon'),
+    defaultCardShape: opt('defaultCardShape'),
+    defaultBannerOptions: opt('defaultBannerOptions'),
     cvmFields: formData.getAll('cvmFields').map(String).filter(Boolean).join(','), // CVM 연동 필드 keys
     // 컴포넌트 조합 — 유효성 검증 후 정규화 JSON 저장(유효하지 않으면 null → 절차적 scaffold 폴백)
     composition: (() => { const c = parseComposition(String(formData.get('composition') ?? '')); return c ? JSON.stringify(c) : null; })(),

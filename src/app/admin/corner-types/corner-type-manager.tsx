@@ -82,6 +82,12 @@ export type CornerTypeRow = {
   defaultRecSource: string | null; // 기본 추천 수급 방식 (상품형·개인화 추천형)
   defaultMoreButton: boolean;
   defaultMoreButtonLabel: string | null;
+  // 정의(거버넌스) 기본값 — 코너 유형이 '코너가 무엇인가'를 정의(2026-09-29)
+  defaultMainTitle: string | null;
+  defaultSubTitle: string | null;
+  defaultSubTitleIcon: string | null;
+  defaultCardShape: string | null;
+  defaultBannerOptions: string | null;
   cvmFields: string; // 고객정보 연동 필드 keys csv
   composition: string | null; // 컴포넌트 조합(JSON: CompositionBlock[]). null이면 절차적 scaffold 폴백.
   userCustomizable?: boolean;
@@ -133,6 +139,11 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   defaultRecSource: null,
   defaultMoreButton: false,
   defaultMoreButtonLabel: null,
+  defaultMainTitle: null,
+  defaultSubTitle: null,
+  defaultSubTitleIcon: null,
+  defaultCardShape: null,
+  defaultBannerOptions: null,
   cvmFields: '',
   composition: null,
   userCustomizable: false,
@@ -841,6 +852,16 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
   const [bigBanner, setBigBanner] = useState(row.bigBanner ?? false); // ④ 빅배너 구분자
   const [active, setActive] = useState(row.active);
   const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
+  // 정의(거버넌스) 기본값 — 코너 유형이 문구·개수·형태까지 정의(2026-09-29 거버넌스 분리). 빌더는 쌓기+CVM만.
+  const [mainTitleText, setMainTitleText] = useState(row.defaultMainTitle ?? '');
+  const [subTitleText, setSubTitleText] = useState(row.defaultSubTitle ?? '');
+  const [subTitleIcon, setSubTitleIcon] = useState(row.defaultSubTitleIcon ?? '화살표');
+  const [cardShape, setCardShape] = useState(row.defaultCardShape ?? '');
+  const [minItems, setMinItems] = useState(row.defaultMinItems != null ? String(row.defaultMinItems) : '');
+  const [maxItems, setMaxItems] = useState(row.defaultMaxItems != null ? String(row.defaultMaxItems) : '');
+  const parseBannerOpt = (k: 'mode' | 'showIndicator') => { try { const o = JSON.parse(row.defaultBannerOptions ?? ''); return k === 'mode' ? (o.mode === 'auto' ? 'auto' : 'swipe') : o.showIndicator !== false; } catch { return k === 'mode' ? 'swipe' : true; } };
+  const [bannerMode, setBannerMode] = useState<'swipe' | 'auto'>(parseBannerOpt('mode') as 'swipe' | 'auto');
+  const [bannerIndicator, setBannerIndicator] = useState<boolean>(parseBannerOpt('showIndicator') as boolean);
   const [recSource, setRecSource] = useState(row.defaultRecSource ? normalizeRecSource(row.defaultRecSource) : ''); // 추천 수급 방식 기본값(controlled) — 노출·구성 노출 여부를 좌우
   // ③ 컴포넌트 조합 — 배열·레이아웃에서 자동 도출(읽기 전용, 2026-09-29 사용자 결정). 저장된 조합이 있으면 그대로 표시.
   const [blocks] = useState<Composition>(() => parseComposition(row.composition) ?? []);
@@ -1294,16 +1315,20 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
           <div className="self-start lg:sticky lg:top-3">
             <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
             <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#E2E6F1] p-4">
-              {isBannerType ? (
-                // 배너형 = 폰 카드 프레임 없이 실제 배너 비율 그대로(이중 카드로 인한 과도한 여백 제거).
-                <div className="mx-auto w-full max-w-[300px]">
-                  <CornerBlock corner={compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? '코너 타이틀' : null, subTitle: useSub ? '서브타이틀' : null })} />
-                </div>
-              ) : (
-                <div className="mx-auto w-[300px] rounded-[24px] bg-white p-3 shadow-[0_4px_16px_rgba(20,22,40,0.12)] ring-1 ring-black/5">
-                  <CornerBlock corner={compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? '코너 타이틀' : null, subTitle: useSub ? '서브타이틀' : null })} />
-                </div>
-              )}
+              {(() => {
+                // 정의 기본값(문구·아이콘·카드 모양)을 그대로 미리보기에 반영.
+                const previewC = {
+                  ...compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? (mainTitleText || '코너 타이틀') : null, subTitle: useSub ? (subTitleText || '서브타이틀') : null }),
+                  cardShape: cardShape || undefined,
+                  subTitleIcon,
+                };
+                return isBannerType ? (
+                  // 배너형 = 폰 카드 프레임 없이 실제 배너 비율 그대로(이중 카드로 인한 과도한 여백 제거).
+                  <div className="mx-auto w-full max-w-[300px]"><CornerBlock corner={previewC} /></div>
+                ) : (
+                  <div className="mx-auto w-[300px] rounded-[24px] bg-white p-3 shadow-[0_4px_16px_rgba(20,22,40,0.12)] ring-1 ring-black/5"><CornerBlock corner={previewC} /></div>
+                );
+              })()}
             </div>
           </div>
           {/* 자동 도출된 컴포넌트 구성(읽기 전용) — 오른쪽 */}
@@ -1392,6 +1417,62 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
           )}
           {/* CTA(표시 항목) ON이면 빌더에도 기본 노출로 상속 */}
           <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
+
+          {/* 정의 기본값 — 문구·개수·형태 (거버넌스: 코너 유형이 '무엇인가'를 확정 · 빌더는 쌓기+CVM만). 2026-09-29 */}
+          {(useTitle || useSub || isListType || base === '상품형' || compValid === '상품형' || (isBannerType && detailValid === '스와이프형')) && (
+          <div className="mt-3 space-y-2.5 rounded-lg border border-indigo-100 bg-indigo-50/30 p-3">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700">
+              <Info className="h-3.5 w-3.5" /> 정의 기본값 <span className="font-normal text-indigo-400">문구·개수·형태를 여기서 확정 · 빌더는 쌓기+CVM만</span>
+            </p>
+            {useTitle && (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">타이틀</label>
+                <Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" />
+              </div>
+            )}
+            {useSub && (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">서브타이틀</label>
+                <Input name="defaultSubTitle" value={subTitleText} onChange={(e) => setSubTitleText(e.target.value)} placeholder="서브타이틀 문구" className="h-8 w-56 text-xs" />
+                <select name="defaultSubTitleIcon" value={subTitleIcon} onChange={(e) => setSubTitleIcon(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
+                  <option value="화살표">아이콘: 화살표</option>
+                  <option value="사용안함">아이콘: 없음</option>
+                </select>
+              </div>
+            )}
+            {isListType && (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">노출 개수</label>
+                <input name="defaultMinItems" type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} placeholder="최소" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
+                <span className="text-xs text-muted-foreground">~</span>
+                <input name="defaultMaxItems" type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} placeholder="최대" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
+                <span className="text-[10px] text-slate-400">코너에 노출할 아이템 개수</span>
+              </div>
+            )}
+            {(base === '상품형' || compValid === '상품형') && (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">카드 모양</label>
+                <select name="defaultCardShape" value={cardShape} onChange={(e) => setCardShape(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
+                  <option value="">기본 (정사각형 1:1)</option>
+                  <option value="1:1">정사각형 (1:1)</option>
+                  <option value="3:4">포스터 (3:4)</option>
+                  <option value="직사각형">직사각형</option>
+                </select>
+              </div>
+            )}
+            {isBannerType && detailValid === '스와이프형' && (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">배너 노출</label>
+                <select value={bannerMode} onChange={(e) => setBannerMode(e.target.value as 'swipe' | 'auto')} className="h-8 rounded-md border bg-background px-2 text-xs">
+                  <option value="swipe">스와이프(수동)</option>
+                  <option value="auto">자동 슬라이드</option>
+                </select>
+                <label className="flex items-center gap-1 text-[11px] text-slate-600"><input type="checkbox" checked={bannerIndicator} onChange={(e) => setBannerIndicator(e.target.checked)} className="accent-indigo-600" /> 인디케이터</label>
+                <input type="hidden" name="defaultBannerOptions" value={JSON.stringify({ mode: bannerMode, showIndicator: bannerIndicator, loop: true })} />
+              </div>
+            )}
+          </div>
+          )}
           <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
             <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
               <Info className="h-3.5 w-3.5 text-indigo-500" /> 체크한 항목만 이 유형의 코너에 나타나요
