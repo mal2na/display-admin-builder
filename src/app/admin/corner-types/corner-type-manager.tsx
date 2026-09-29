@@ -38,8 +38,8 @@ import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical } from 'lucide-react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
@@ -281,22 +281,24 @@ function SortableBannerRow({ id, idx, banner, onRemove, onLinkChange }: { id: st
 // 스와이프 배너 묶기 편집기 — 배너 캠페인에서 담고, 드래그앤드롭으로 순서 변경(2026-09-29 사용자 요청).
 //  빌더는 이 묶음을 그대로 생성만 하고 순서만 바꾼다(거버넌스: 정의는 코너 유형).
 function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: SwipeBannerItem[]; bannerCampaigns: BannerCampaignOption[]; onCommit: (next: SwipeBannerItem[]) => void }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  // 행 id = 인덱스 포함 복합키 — 시드 파생 배너엔 campaignId가 없어(중복 undefined) dnd-kit 정렬이 안 먹던 버그 방지(2026-09-29).
+  const rowId = (b: SwipeBannerItem, i: number) => `${b.campaignId ?? 'b'}-${i}`;
   const add = (id: string) => { const c = bannerCampaigns.find((b) => b.id === id); if (!c) return; onCommit([...banners, { campaignId: c.id, title: c.title, imageUrl: c.imageUrl ?? undefined, linkUrl: c.linkUrl ?? undefined, size: c.size ?? undefined }]); };
   const remove = (idx: number) => onCommit(banners.filter((_, j) => j !== idx));
   const patchLink = (idx: number, linkUrl: string) => onCommit(banners.map((b, j) => (j === idx ? { ...b, linkUrl } : b)));
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    const from = banners.findIndex((b) => b.campaignId === active.id);
-    const to = banners.findIndex((b) => b.campaignId === over.id);
+    const from = banners.findIndex((b, i) => rowId(b, i) === active.id);
+    const to = banners.findIndex((b, i) => rowId(b, i) === over.id);
     if (from < 0 || to < 0) return;
     const next = [...banners];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
     onCommit(next);
   };
-  const usedIds = new Set(banners.map((b) => b.campaignId));
+  const usedIds = new Set(banners.map((b) => b.campaignId).filter(Boolean));
   return (
     <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
       <div className="flex items-center gap-2">
@@ -306,10 +308,10 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
       </div>
       {banners.length === 0 && <p className="rounded-md border border-dashed border-indigo-200 bg-white/60 px-2 py-2 text-[10px] text-indigo-400">아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={banners.map((b) => b.campaignId)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={banners.map((b, i) => rowId(b, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
             {banners.map((b, idx) => (
-              <SortableBannerRow key={b.campaignId} id={b.campaignId} idx={idx} banner={b} onRemove={() => remove(idx)} onLinkChange={(url) => patchLink(idx, url)} />
+              <SortableBannerRow key={rowId(b, idx)} id={rowId(b, idx)} idx={idx} banner={b} onRemove={() => remove(idx)} onLinkChange={(url) => patchLink(idx, url)} />
             ))}
           </div>
         </SortableContext>
@@ -359,7 +361,7 @@ function SortableProductRow({ id, idx, item, onRemove, onLinkChange }: { id: str
 
 // 상품/혜택 묶기 편집기 — BSS 혜택 브랜드 카탈로그에서 담고, 드래그앤드롭으로 순서 변경. 빌더는 순서만(2026-09-29 사용자 요청).
 function ProductItemEditor({ items, productOptions, onCommit }: { items: ProductItem[]; productOptions: ProductOption[]; onCommit: (next: ProductItem[]) => void }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const rowId = (it: ProductItem, i: number) => `${it.productKey ?? 'item'}-${i}`;
   const add = (key: string) => { const p = productOptions.find((o) => o.key === key); if (!p) return; onCommit([...items, { productKey: p.key, title: p.title, brand: p.brand, imageUrl: p.imageUrl ?? undefined, price: p.price ?? undefined, badge: p.badge ?? undefined, linkUrl: '' }]); };
   const remove = (idx: number) => onCommit(items.filter((_, j) => j !== idx));
