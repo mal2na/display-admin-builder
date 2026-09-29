@@ -187,7 +187,7 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
 
 // 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
 //  fit='width'(기본): 폭 기준 고정 — 토글해도 배율 안 흔들림(편집용). fit='contain': 폭·높이 모두 맞춰 전체가 잘림 없이 들어감(상세·목록용).
-export function DevicePreview({ corner, fit: fitMode = 'width', align = 'top-center' }: { corner: PreviewCorner; fit?: 'width' | 'contain'; align?: 'top-center' | 'left-middle' }) {
+export function DevicePreview({ corner, fit: fitMode = 'width', align = 'top-center' }: { corner: PreviewCorner; fit?: 'width' | 'contain'; align?: 'top-center' | 'left-middle' | 'center-middle' }) {
   const NAT_W = 320; // 자연 렌더 폭(폰 기준). 박스에 맞춰 scale로 축소.
   const boxRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -210,11 +210,16 @@ export function DevicePreview({ corner, fit: fitMode = 'width', align = 'top-cen
     <div ref={boxRef} className="relative h-full w-full overflow-hidden">
       <div
         ref={contentRef}
-        className={align === 'left-middle' ? 'absolute left-0 top-1/2' : 'absolute top-0'}
-        style={align === 'left-middle'
-          // 리스트 보기 미리보기: 좌측 정렬 + 세로 중앙(배열·레이아웃 텍스트에 붙여 안정감).
-          ? { width: NAT_W, transform: `translateY(-50%) scale(${scale})`, transformOrigin: 'left center' }
-          : { width: NAT_W, left: `calc(50% - ${NAT_W / 2}px)`, transform: `scale(${scale})`, transformOrigin: 'top center' }}
+        className={align === 'top-center' ? 'absolute top-0' : 'absolute left-1/2 top-1/2'}
+        style={
+          align === 'left-middle'
+            // 좌측 정렬 + 세로 중앙
+            ? { width: NAT_W, left: 0, transform: `translateY(-50%) scale(${scale})`, transformOrigin: 'left center' }
+            : align === 'center-middle'
+              // 가로·세로 모두 중앙 — 셀마다 같은 위치에 고정되어 스캔이 편함(2026-09-29 사용자 요청).
+              ? { width: NAT_W, transform: `translate(-50%, -50%) scale(${scale})`, transformOrigin: 'center center' }
+              : { width: NAT_W, left: `calc(50% - ${NAT_W / 2}px)`, transform: `scale(${scale})`, transformOrigin: 'top center' }
+        }
       >
         {/* CornerBlock이 자체 카드(흰 배경·라운드)를 렌더하므로 여기서 이중 카드로 감싸지 않는다(배너 full-bleed·여백 제거). */}
         <CornerBlock corner={corner} />
@@ -742,9 +747,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             <thead>
               <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
                 <th className="w-14 px-3 py-2.5 text-left font-medium">NO</th>
+                <th className="w-44 px-3 py-2.5 text-center font-medium">미리보기</th>
                 <th className="px-3 py-2.5 text-left font-medium">코너 유형</th>
                 <th className="px-3 py-2.5 text-left font-medium">배열·레이아웃</th>
-                <th className="w-44 px-3 py-2.5 text-left font-medium">미리보기</th>
                 <th className="px-3 py-2.5 text-left font-medium">코너(케이스)</th>
                 <th className="w-20 px-3 py-2.5 text-left font-medium">사용여부</th>
                 <th className="w-28 px-3 py-2.5 text-left font-medium">승인상태</th>
@@ -758,14 +763,14 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               ) : pageRows.map((t, i) => (
                 <tr key={t.id} className="cursor-pointer border-b last:border-0 hover:bg-slate-50/70" onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
                   <td className="px-3 py-2.5 align-top tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
-                  <td className="px-3 py-2.5 align-top"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11.5px] font-semibold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
-                  <td className="px-3 py-2.5 align-top text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
                   <td className="px-3 py-2.5">
-                    {/* 리스트에서도 클릭 없이 바로 미리보기 — 카드 썸네일과 동일 렌더(실제 대표 코너) */}
-                    <div className="pointer-events-none h-24 w-40 overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#EEF1F8] px-2 py-1.5">
-                      <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" align="left-middle" />
+                    {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함 */}
+                    <div className="pointer-events-none mx-auto h-24 w-40 overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#EEF1F8] p-1.5">
+                      <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" align="center-middle" />
                     </div>
                   </td>
+                  <td className="px-3 py-2.5 align-top"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11.5px] font-semibold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
+                  <td className="px-3 py-2.5 align-top text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
                   <td className="px-3 py-2.5 align-top font-medium text-slate-800">{t.previewCorner?.name ?? '-'}</td>
                   <td className="px-3 py-2.5 align-top text-slate-600">{t.active ? '사용' : '미사용'}</td>
                   <td className="px-3 py-2.5 align-top"><span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span></td>
