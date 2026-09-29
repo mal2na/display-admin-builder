@@ -1039,7 +1039,7 @@ async function main() {
   const placed = await prisma.templateCorner.findMany({
     include: {
       corner: {
-        include: { cornerComponents: { include: { component: true }, orderBy: { order: 'asc' } } },
+        include: { cornerComponents: { include: { component: { include: { componentAtoms: { include: { atom: true }, orderBy: { order: 'asc' } } } } }, orderBy: { order: 'asc' } } },
       },
     },
     orderBy: { corner: { createdAt: 'asc' } },
@@ -1116,9 +1116,17 @@ async function main() {
       const sampleImageUrl = samples.length ? samples.join('\n') : null;
       // 이름: 코너별 분리라 코너명이 곧 식별자(배너형도 각 배너명).
       const name = rep.name;
+      // 선택형(탭·메뉴) 코너 유형: 칩 정의(라벨·링크·아이콘·줄수)를 composition으로 승격 → 빌더는 순서만 변경(2026-09-29).
+      let composition: string | null = null;
+      const selCC = rep.cornerComponents.find((cc) => cc.component.componentType === '선택형');
+      if (selCC && selCC.component.componentAtoms.length) {
+        const chips = selCC.component.componentAtoms.map((ca) => ({ label: ca.atom.content ?? ca.atom.name, linkUrl: ca.atom.linkUrl ?? undefined, icon: ca.atom.imageUrl ?? undefined }));
+        composition = JSON.stringify([{ componentType: '선택형', count: 1, chips, chipRows: selCC.component.chipRows ?? 1 }]);
+      }
       const created = await prisma.cornerType.create({
         data: {
           typeId: 'CY' + String(typeIdx).padStart(7, '0'),
+          composition,
           name,
           baseCategory: base,
           componentType,

@@ -127,6 +127,9 @@ export type CompositionBlock = {
   price?: boolean;
   badge?: boolean;
   desc?: boolean;
+  // 선택형(탭·메뉴/칩) — 칩 정의는 코너 유형이 소유(2026-09-29). 빌더는 순서만 변경. label/링크/줄수를 여기서 정의.
+  chips?: { label: string; linkUrl?: string; icon?: string }[];
+  chipRows?: number; // 칩 표시 줄 수(1|2)
 };
 export type Composition = CompositionBlock[];
 
@@ -160,6 +163,11 @@ export function parseComposition(raw: string | null | undefined): Composition | 
     for (const b of a) {
       if (!b || typeof b !== 'object') continue;
       if (!(COMPONENT_TYPES as readonly string[]).includes(b.componentType)) continue;
+      // 선택형(탭·메뉴) 칩 정의 보존 — 라벨/링크/아이콘/줄수(코너 유형이 소유).
+      const chips = Array.isArray(b.chips)
+        ? b.chips.filter((c: unknown) => c && typeof c === 'object' && typeof (c as { label?: unknown }).label === 'string')
+            .map((c: { label: string; linkUrl?: unknown; icon?: unknown }) => ({ label: c.label, linkUrl: typeof c.linkUrl === 'string' ? c.linkUrl : undefined, icon: typeof c.icon === 'string' ? c.icon : undefined }))
+        : undefined;
       out.push({
         componentType: b.componentType,
         count: Math.max(1, Math.min(20, Number(b.count) || 1)),
@@ -168,6 +176,8 @@ export function parseComposition(raw: string | null | undefined): Composition | 
         price: b.price !== false,
         badge: !!b.badge,
         desc: b.desc !== false,
+        ...(chips && chips.length ? { chips } : {}),
+        ...(b.chipRows === 2 ? { chipRows: 2 } : b.chipRows === 1 ? { chipRows: 1 } : {}),
       });
     }
     return out.length ? out : null;

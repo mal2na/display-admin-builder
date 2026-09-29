@@ -435,21 +435,7 @@ function DisclosureButton({ children }: { children: React.ReactNode }) {
 }
 
 // 정렬 가능한 칩 한 줄 (드래그앤드롭 · 그립 핸들) — 좌측 코너 리스트와 동일한 방식
-function SortableChipRow({
-  i,
-  chip,
-  onEdit,
-  onRemove,
-  onOpenIcon,
-  showMenuRole,
-}: {
-  i: number;
-  chip: ChipItem;
-  onEdit: (patch: Partial<ChipItem>) => void;
-  onRemove: () => void;
-  onOpenIcon: () => void;
-  showMenuRole?: boolean;
-}) {
+function SortableChipRow({ i, chip }: { i: number; chip: ChipItem }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(i) });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
@@ -465,75 +451,38 @@ function SortableChipRow({
         <GripVertical className="h-4 w-4" />
       </button>
 
-      {/* 아이콘: 슬롯 자체가 불러오기 버튼(설정 시 아이콘, 미설정 시 +). ×로 해제 */}
-      <div className="relative shrink-0">
-        <button
-          type="button"
-          onClick={onOpenIcon}
-          title={chip.iconUrl ? '아이콘 변경 (라이브러리에서 끌어오기)' : '아이콘 불러오기'}
-          className="flex h-8 w-8 items-center justify-center rounded-md border bg-slate-50 hover:border-primary/50 hover:bg-accent"
-        >
-          {chip.iconUrl ? (
-            isIconRef(chip.iconUrl) ? (
-              <IconGlyph name={chip.iconUrl} className="h-4 w-4 text-slate-700" />
-            ) : isRenderableIconUrl(chip.iconUrl) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={chip.iconUrl} alt={chip.iconAlt} className="h-4 w-4 rounded object-cover" />
-            ) : (
-              <span className="h-3.5 w-3.5 rounded-full bg-slate-300/70" title={chip.iconAlt || chip.iconUrl} />
-            )
+      {/* 아이콘(읽기 전용) — 정의는 코너 유형에서 */}
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-slate-50">
+        {chip.iconUrl ? (
+          isIconRef(chip.iconUrl) ? (
+            <IconGlyph name={chip.iconUrl} className="h-4 w-4 text-slate-700" />
+          ) : isRenderableIconUrl(chip.iconUrl) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={chip.iconUrl} alt={chip.iconAlt} className="h-4 w-4 rounded object-cover" />
           ) : (
-            <Plus className="h-4 w-4 text-slate-400" />
-          )}
-        </button>
-        {chip.iconUrl && (
-          <button
-            type="button"
-            onClick={() => onEdit({ iconUrl: '', iconAlt: '' })}
-            title="아이콘 해제"
-            className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-slate-500 text-white hover:bg-destructive"
-          >
-            <X className="h-2.5 w-2.5" />
-          </button>
+            <span className="h-3.5 w-3.5 rounded-full bg-slate-300/70" title={chip.iconAlt || chip.iconUrl} />
+          )
+        ) : (
+          <span className="h-3.5 w-3.5 rounded bg-slate-200" />
         )}
       </div>
 
-      <Input value={chip.content} onChange={(e) => onEdit({ content: e.target.value })} placeholder={`ChipLabel${String(i + 1).padStart(2, '0')}`} className="h-8 min-w-0 flex-1 text-xs" />
-      <Input value={chip.linkUrl} onChange={(e) => onEdit({ linkUrl: e.target.value })} placeholder="이동 링크 URL" className="h-8 min-w-0 flex-1 text-xs" />
-      {/* 고객 메뉴 역할: 고정(삭제불가) ↔ 편집가능 — 메뉴 리스트 코너에서만 */}
-      {showMenuRole && (
-        <button
-          type="button"
-          onClick={() => onEdit({ menuRole: chip.menuRole === 'FIXED' ? 'EDITABLE' : 'FIXED' })}
-          title={chip.menuRole === 'FIXED' ? '고정 (고객이 삭제·이동 불가) — 클릭 시 편집가능' : '편집가능 (고객이 삭제·순서변경 가능) — 클릭 시 고정'}
-          className={cn(
-            'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-medium transition',
-            chip.menuRole === 'FIXED' ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-border text-muted-foreground hover:border-primary/40',
-          )}
-        >
-          {chip.menuRole === 'FIXED' ? <><Lock className="h-3 w-3" /> 고정</> : <><Pencil className="h-3 w-3" /> 편집</>}
-        </button>
-      )}
-      <button type="button" onClick={onRemove} className="shrink-0 text-muted-foreground hover:text-destructive" title="칩 삭제" aria-label="칩 삭제">
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      {/* 라벨·링크는 읽기 전용(코너 유형에서 정의) — 빌더에선 순서만 변경 */}
+      <span className="min-w-0 flex-1 truncate rounded-md bg-slate-50 px-2 py-1.5 text-xs text-slate-600">{chip.content || `ChipLabel${String(i + 1).padStart(2, '0')}`}</span>
+      <span className="min-w-0 flex-1 truncate rounded-md bg-slate-50 px-2 py-1.5 text-[11px] text-slate-400">{chip.linkUrl || '이동 링크 —'}</span>
     </div>
   );
 }
 
 // ── 선택형(칩/탭) 편집기 = ChipPage (업무진입형.png) ─────────
 // 완전 제어형: 개별 저장 없이 로컬 draft만 수정 → 미리보기 즉시 반영, 저장은 카드의 "완료"가 일괄 처리.
-function ChipEditor({ draft, onChange, showMenuRole }: { draft: ChipDraft; onChange: (next: ChipDraft) => void; showMenuRole?: boolean }) {
+function ChipEditor({ draft, onChange }: { draft: ChipDraft; onChange: (next: ChipDraft) => void }) {
   const { chips, selectedIndex, chipRows } = draft;
-  const [iconFor, setIconFor] = useState<number | null>(null); // 아이콘 모달을 연 칩 index
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const setChips = (next: ChipItem[], sel = selectedIndex) =>
     onChange({ chips: next, selectedIndex: Math.max(0, Math.min(sel, Math.max(0, next.length - 1))), chipRows });
-  const editChip = (i: number, patch: Partial<ChipItem>) =>
-    setChips(chips.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
-  const removeChip = (i: number) => setChips(chips.filter((_, idx) => idx !== i), selectedIndex > i ? selectedIndex - 1 : selectedIndex);
-  // 드래그로 순서 변경 (선택된 칩도 함께 따라가도록 selectedIndex 보정)
+  // 드래그로 순서만 변경 (선택된 칩도 함께 따라가도록 selectedIndex 보정). 라벨·링크·줄수는 코너 유형에서 정의.
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
@@ -549,43 +498,26 @@ function ChipEditor({ draft, onChange, showMenuRole }: { draft: ChipDraft; onCha
     else if (from > selectedIndex && to <= selectedIndex) sel = selectedIndex + 1;
     setChips(next, sel);
   };
-  const addChip = () => setChips([...chips, { content: '', linkUrl: '', iconUrl: '', iconAlt: '', menuRole: 'EDITABLE' }]);
 
   return (
     <div className="mt-1 space-y-2 rounded-md bg-muted/40 p-2">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium text-muted-foreground">Chips · 드래그로 순서 변경 · 편집 후 상단 “완료”로 일괄 저장</span>
+        <span className="text-[11px] font-medium text-muted-foreground">드래그로 <b className="text-slate-600">순서만</b> 변경 · 상단 “완료”로 저장</span>
         <span className="rounded bg-white px-1.5 py-0.5 text-[11px] font-semibold">{chips.length}</span>
       </div>
 
-      {/* 각 칩 = 동일 레이아웃 한 줄: 드래그 핸들 · 아이콘(불러오기 버튼) · 라벨 · 이동 링크 · 삭제 */}
+      {/* 각 칩 = 드래그 핸들 · 아이콘(읽기) · 라벨(읽기) · 이동 링크(읽기). 순서만 변경. */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={chips.map((_, i) => String(i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {chips.map((c, i) => (
-              <SortableChipRow
-                key={i}
-                i={i}
-                chip={c}
-                onEdit={(patch) => editChip(i, patch)}
-                onRemove={() => removeChip(i)}
-                onOpenIcon={() => setIconFor(i)}
-                showMenuRole={showMenuRole}
-              />
+              <SortableChipRow key={i} i={i} chip={c} />
             ))}
           </div>
         </SortableContext>
       </DndContext>
 
-      <IconPickerModal
-        open={iconFor !== null}
-        onClose={() => setIconFor(null)}
-        onSelect={(def) => {
-          if (iconFor !== null) editChip(iconFor, { iconUrl: `icon:${def.key}`, iconAlt: def.label });
-        }}
-      />
-
-      {/* Selection: 활성 칩 */}
+      {/* Selection: 기본 활성 칩 */}
       {chips.length > 0 && (
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] text-muted-foreground">Selection</span>
@@ -604,30 +536,17 @@ function ChipEditor({ draft, onChange, showMenuRole }: { draft: ChipDraft; onCha
         </div>
       )}
 
-      {/* 표시 줄 수: 1줄 / 2줄 */}
+      {/* 표시 줄 수 — 읽기 전용(코너 유형에서 정의) */}
       <div className="flex items-center gap-1.5">
         <span className="text-[11px] text-muted-foreground">표시 줄 수</span>
-        {[1, 2].map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => onChange({ ...draft, chipRows: r })}
-            className={cn('rounded px-2 py-0.5 text-[11px] font-medium', (chipRows ?? 1) === r ? 'bg-primary text-primary-foreground' : 'border bg-white hover:bg-secondary')}
-          >
-            {r}줄
-          </button>
-        ))}
+        <span className="rounded bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200">{chipRows ?? 1}줄</span>
+        <span className="text-[10px] text-slate-400">· 코너 유형에서 정의</span>
       </div>
 
-      {/* 칩 추가 */}
-      <Button type="button" size="sm" variant="secondary" onClick={addChip}>
-        <Plus className="mr-1 h-3.5 w-3.5" /> 칩 추가
-      </Button>
-
-      {/* 아이콘 경계 안내 — 등록된 DS 아이콘 선택=무중단 / 새 커스텀 이미지=자산등록(개발) */}
+      {/* 거버넌스 안내 — 정의는 코너 유형, 빌더는 순서만 */}
       <p className="flex items-start gap-1.5 rounded-md bg-white/70 px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
         <Lock className="mt-[1px] h-3 w-3 shrink-0 text-slate-400" />
-        <span>아이콘·라벨·이동 링크·순서는 <b className="text-emerald-700">어드민 편집(무중단)</b>. 단, 아이콘은 <b className="text-slate-600">등록된 DS 아이콘</b> 중 선택입니다. 라이브러리에 없는 <b className="text-slate-600">새 커스텀 이미지</b>가 필요하면 아이콘 세트에 자산을 추가하는 <b className="text-slate-600">디자인/개발(자산 등록)</b> 영역입니다.</span>
+        <span>탭·메뉴의 <b className="text-slate-600">라벨·이동 링크·줄 수·아이콘</b>은 <b className="text-slate-600">코너 유형</b>에서 정의합니다. 빌더에선 <b className="text-emerald-700">순서만</b> 바꿀 수 있어요.</span>
       </p>
     </div>
   );
@@ -1401,7 +1320,7 @@ function ComponentCard({
 
       {edit ? (
         isChip ? (
-          <ChipEditor draft={draft} onChange={updateDraft} showMenuRole={/메뉴\s*리스트/.test(corner.layoutDetail ?? '')} />
+          <ChipEditor draft={draft} onChange={updateDraft} />
         ) : (
           <AtomManager
             key={cc.atoms.map((a) => a.componentAtomId).join(',')}

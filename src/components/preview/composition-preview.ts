@@ -70,6 +70,10 @@ const BENEFIT_BRANDS: { logo: string; text: string; brand: string }[] = [
 function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail?: string | null; placeholder?: boolean }): PreviewComponent {
   const badge = b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: i === 1 ? 'NEW' : '' })] : [];
   const base = { id: nid(), componentType: b.componentType };
+  // 선택형: 코너 유형에서 정의한 칩(탭·메뉴)이 있으면 그대로 렌더(라벨·줄수). 없으면 아래 기본/플레이스홀더.
+  if (b.componentType === '선택형' && b.chips && b.chips.length) {
+    return { ...base, name: '탭', selectedIndex: 0, chipRows: b.chipRows ?? 1, chipVariant: 'contents', atoms: b.chips.map((c) => atom({ name: c.label || '탭', atomType: 'TEXT', content: c.label || '탭', linkUrl: c.linkUrl ?? null })) };
+  }
   // 신규 등록 미리보기 = 실제 카피 대신 '슬롯 라벨'(타이틀/디스크립션/혜택 문구 등)로 구조만 보여준다. 로고·이미지는 샘플 유지(레이아웃 확인용).
   if (ctx?.placeholder) {
     const isBenefitList = ctx.base === '혜택·오퍼형' && (ctx.detail ?? '').includes('세로형');

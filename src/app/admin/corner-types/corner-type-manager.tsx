@@ -1365,6 +1365,46 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
                 </div>
               );
             })()}
+            {/* 선택형(탭·메뉴) — 칩 정의는 코너 유형이 소유(2026-09-29 사용자 결정). 빌더는 순서만 변경. */}
+            {(compValid === '선택형' || base === '업무 진입형') && (() => {
+              const block = shownBlocks.find((b) => b.componentType === '선택형') ?? shownBlocks[0];
+              const chips = (block?.chips && block.chips.length ? block.chips : [{ label: '메뉴 1' }, { label: '메뉴 2' }, { label: '메뉴 3' }]) as { label: string; linkUrl?: string }[];
+              const rows = block?.chipRows ?? 2;
+              const commit = (nextChips: { label: string; linkUrl?: string }[], nextRows = rows) => setBlocks([{ componentType: '선택형' as ComponentType, count: 1, chips: nextChips, chipRows: nextRows }]);
+              const patch = (idx: number, p: Partial<{ label: string; linkUrl?: string }>) => commit(chips.map((c, j) => (j === idx ? { ...c, ...p } : c)));
+              const add = () => commit([...chips, { label: `메뉴 ${chips.length + 1}` }]);
+              const remove = (idx: number) => commit(chips.filter((_, j) => j !== idx));
+              const move = (idx: number, dir: -1 | 1) => { const j = idx + dir; if (j < 0 || j >= chips.length) return; const n = chips.slice(); [n[idx], n[j]] = [n[j], n[idx]]; commit(n); };
+              return (
+                <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] font-semibold text-indigo-700">탭·메뉴 정의</span>
+                    <span className="ml-auto text-[10px] text-indigo-500/80">빌더에선 순서만 변경</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {chips.map((c, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5">
+                        <div className="flex flex-col gap-0.5">
+                          <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} className="flex h-3.5 w-5 items-center justify-center rounded border bg-white text-[9px] text-slate-500 disabled:opacity-30">↑</button>
+                          <button type="button" onClick={() => move(idx, 1)} disabled={idx === chips.length - 1} className="flex h-3.5 w-5 items-center justify-center rounded border bg-white text-[9px] text-slate-500 disabled:opacity-30">↓</button>
+                        </div>
+                        <input value={c.label} onChange={(e) => patch(idx, { label: e.target.value })} placeholder="메뉴명" className="h-8 w-24 rounded-md border bg-white px-2 text-xs" />
+                        <input value={c.linkUrl ?? ''} onChange={(e) => patch(idx, { linkUrl: e.target.value })} placeholder="이동 링크 URL" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
+                        <button type="button" onClick={() => remove(idx)} disabled={chips.length <= 1} className="flex h-7 w-6 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive disabled:opacity-30">×</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50"><Plus className="h-3.5 w-3.5" /> 탭 추가</button>
+                    <span className="ml-auto text-[11px] text-slate-500">줄 수</span>
+                    {[1, 2].map((r) => (
+                      <button key={r} type="button" onClick={() => commit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-indigo-600 text-white' : 'border bg-white text-slate-600 hover:bg-slate-50')}>{r}줄</button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] leading-relaxed text-indigo-500/80">탭·메뉴 항목(라벨·이동 링크·줄 수·순서)을 코너 유형에서 정의합니다. 실서비스 코너는 이 정의를 상속하고, <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
+                </div>
+              );
+            })()}
             <p className="text-[10px] font-medium text-muted-foreground">자동 구성 · 이 유형의 배열·레이아웃에서 도출</p>
             {shownBlocks.map((b, i) => {
               const isProduct = b.componentType === '상품형';

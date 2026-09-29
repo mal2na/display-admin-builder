@@ -540,6 +540,14 @@ function scaffoldSpecFor(componentType: string | null, typeDetail: string | null
 function specFromComposition(composition: Composition): ScaffoldComp[] {
   const comps: ScaffoldComp[] = [];
   for (const b of composition) {
+    // 선택형(탭·메뉴) — 칩 정의(라벨·링크·줄수)를 코너 유형에서 정의(2026-09-29). 그대로 생성, 빌더는 순서만 변경.
+    if (b.componentType === '선택형' && b.chips && b.chips.length) {
+      comps.push({
+        name: '탭', componentType: '선택형', selectedIndex: 0, chipRows: b.chipRows === 2 ? 2 : 1,
+        atoms: b.chips.map((c) => ({ name: c.label ? `칩:${c.label}` : '칩', atomType: 'TEXT', content: c.label ?? '', linkUrl: c.linkUrl ?? undefined })),
+      });
+      continue;
+    }
     const feats: CompFeats = { image: b.image, price: b.price, badge: b.badge, desc: b.desc };
     for (let i = 1; i <= b.count; i++) comps.push(buildComp(b.componentType, i, feats));
   }
