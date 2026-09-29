@@ -540,6 +540,20 @@ function scaffoldSpecFor(componentType: string | null, typeDetail: string | null
 function specFromComposition(composition: Composition): ScaffoldComp[] {
   const comps: ScaffoldComp[] = [];
   for (const b of composition) {
+    // 배너형 스와이프형 — 코너 유형에서 묶은 배너(배너 캠페인 스냅샷)를 그대로 생성. 랜딩 URL은 캠페인 값 그대로. 빌더는 순서만.
+    if (b.componentType === '배너형' && b.banners && b.banners.length) {
+      for (const bn of b.banners) {
+        comps.push({
+          name: bn.title || '배너', componentType: '배너형',
+          atoms: [
+            { name: '배너 타이틀', atomType: 'TEXT', content: bn.title },
+            ...(bn.linkUrl ? [{ name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: bn.linkUrl }] : []),
+            ...(bn.imageUrl ? [{ name: '배너 이미지', atomType: 'IMAGE', imageUrl: bn.imageUrl, altText: bn.title }] : []),
+          ],
+        });
+      }
+      continue;
+    }
     // 선택형(탭·메뉴) — 칩 정의(라벨·링크·줄수)를 코너 유형에서 정의(2026-09-29). 그대로 생성, 빌더는 순서만 변경.
     if (b.componentType === '선택형' && b.chips && b.chips.length) {
       comps.push({

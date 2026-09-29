@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import type { BuiltCornerOption, RegisteredCombo } from './corner-type-manager';
+import type { BuiltCornerOption, RegisteredCombo, BannerCampaignOption } from './corner-type-manager';
 
 /**
  * 전시화면관리(빌더)에서 실제로 만들어진 Corner의 유형 조합을 코너 유형 등록 후보로 반환한다.
@@ -21,6 +21,22 @@ export async function getBuiltCornerOptions(): Promise<BuiltCornerOption[]> {
       allowEmpty: set.has(''),
       details: [...set].filter(Boolean).sort((a, b) => a.localeCompare(b, 'ko')),
     }));
+}
+
+// 배너 캠페인 관리에 등록된 캠페인 → 스와이프형 코너 유형에서 '배너 묶기'로 선택할 후보.
+//  각 캠페인의 대표 이미지·랜딩 URL을 그대로 끌어와(스냅샷) 코너 유형 composition.banners에 저장한다.
+export async function getBannerCampaignOptions(): Promise<BannerCampaignOption[]> {
+  const rows = await prisma.bannerCampaign.findMany({
+    where: { exposeYn: true },
+    select: { id: true, title: true, landingUrl: true, typeDetails: true },
+    orderBy: { campaignCode: 'asc' },
+  });
+  return rows.map((r) => {
+    let sizes: { detail?: string; imageUrl?: string; rightImageUrl?: string }[] = [];
+    try { sizes = r.typeDetails ? JSON.parse(r.typeDetails) : []; } catch { sizes = []; }
+    const first = sizes[0];
+    return { id: r.id, title: r.title, linkUrl: r.landingUrl ?? null, imageUrl: first?.imageUrl || first?.rightImageUrl || null, size: first?.detail ?? null };
+  });
 }
 
 /**

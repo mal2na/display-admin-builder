@@ -43,6 +43,8 @@ import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCo
 
 // 등록된 코너 유형(코너 유형 관리 = 마스터)의 (코너유형·컴포넌트·배열) 조합. 등록 폼 ②③을 이걸로 좁힌다.
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
+// 배너 캠페인 후보 — 스와이프형 코너 유형에서 '배너 묶기'로 선택(랜딩 URL은 캠페인에서 끌어옴).
+export type BannerCampaignOption = { id: string; title: string; linkUrl: string | null; imageUrl: string | null; size: string | null };
 
 // 전시화면관리(빌더)에서 실제로 만들어진 코너 유형 조합. 등록 폼의 선택지를 이걸로 제한한다.
 export type BuiltCornerOption = {
@@ -834,7 +836,7 @@ function Switch({ checked, onChange, disabled }: { checked: boolean; onChange: (
   );
 }
 
-export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bulk = false, bulkArrays, submitAction }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; onClose: () => void; bulk?: boolean; bulkArrays?: string[]; submitAction?: (fd: FormData) => void | Promise<void> }) {
+export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampaigns = [], onClose, bulk = false, bulkArrays, submitAction }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; onClose: () => void; bulk?: boolean; bulkArrays?: string[]; submitAction?: (fd: FormData) => void | Promise<void> }) {
   const isNew = !row.id;
   // 2단 분류: ① 코너 유형(base) → ② 배열·레이아웃(detail). 구성 컴포넌트는 배열·레이아웃에서 자동 도출.
   const [base, setBase] = useState(row.baseCategory);
@@ -965,8 +967,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
   // ③ 컴포넌트 조합 — 배열·레이아웃에서 자동 도출(읽기 전용). 저장된 조합이 있으면 우선, 없으면 유형 기본값.
   //  배너형 스와이프형은 배너 장수를 코너 유형에서 정한다(최소 2장) — 편집한 값 우선, 없으면 2장.
   const isSwipeBannerType = (compValid === '배너형' || base === '배너형') && detailValid === '스와이프형';
+  const swipeBanners = isSwipeBannerType ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
   const shownBlocks: Composition = isSwipeBannerType
-    ? [{ componentType: '배너형', count: Math.max(2, blocks.find((b) => b.componentType === '배너형')?.count ?? 2), image: true, price: true, desc: true }]
+    ? [{ componentType: '배너형', count: Math.max(1, swipeBanners.length || 2), image: true, price: true, desc: true, ...(swipeBanners.length ? { banners: swipeBanners } : {}) }]
     : blocks.length
       ? blocks
       : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc });
@@ -1343,21 +1346,43 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
           </div>
           {/* 자동 도출된 컴포넌트 구성(읽기 전용) — 오른쪽 */}
           <div className="min-w-0 space-y-2">
-            {/* 스와이프형만 예외 — 배너 장수를 코너 유형에서 정한다(실제 소재는 전시화면 관리에서). 2026-09-29 사용자 요청 */}
+            {/* 스와이프형 — 코너 유형에서 배너를 '묶는다'(배너 캠페인 관리에서 선택 · 랜딩 URL 그대로 끌어옴). 빌더는 순서만. 2026-09-29 사용자 요청 */}
             {isBannerType && detailValid === '스와이프형' && (() => {
-              const cur = Math.max(2, shownBlocks.find((b) => b.componentType === '배너형')?.count ?? 2);
-              const setN = (n: number) => setBlocks([{ componentType: '배너형', count: Math.max(2, Math.min(5, n)), image: true, price: true, desc: true }]);
+              const commit = (next: NonNullable<Composition[number]['banners']>) => setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, next.length), image: true, price: true, desc: true, banners: next }]);
+              const add = (id: string) => { const c = bannerCampaigns.find((b) => b.id === id); if (!c) return; commit([...swipeBanners, { campaignId: c.id, title: c.title, imageUrl: c.imageUrl ?? undefined, linkUrl: c.linkUrl ?? undefined, size: c.size ?? undefined }]); };
+              const remove = (idx: number) => commit(swipeBanners.filter((_, j) => j !== idx));
+              const move = (idx: number, dir: -1 | 1) => { const j = idx + dir; if (j < 0 || j >= swipeBanners.length) return; const n = swipeBanners.slice(); [n[idx], n[j]] = [n[j], n[idx]]; commit(n); };
+              const usedIds = new Set(swipeBanners.map((b) => b.campaignId));
               return (
                 <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-[12px] font-semibold text-indigo-700">스와이프 배너 장수</span>
-                    <div className="ml-auto inline-flex items-center gap-1">
-                      <button type="button" onClick={() => setN(cur - 1)} disabled={cur <= 2} className="flex h-7 w-7 items-center justify-center rounded-md border bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40">－</button>
-                      <span className="w-10 text-center text-[13px] font-bold tabular-nums text-slate-800">{cur}장</span>
-                      <button type="button" onClick={() => setN(cur + 1)} disabled={cur >= 5} className="flex h-7 w-7 items-center justify-center rounded-md border bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40">＋</button>
-                    </div>
+                    <span className="text-[12px] font-semibold text-indigo-700">스와이프 배너 묶기</span>
+                    <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{swipeBanners.length}장</span>
+                    <span className="ml-auto text-[10px] text-indigo-500/80">빌더에선 순서만 변경</span>
                   </div>
-                  <p className="text-[10px] leading-relaxed text-indigo-500/80">스와이프에 담을 배너 장수(2~5장)를 코너 유형에서 정합니다. 실제 배너 소재는 <b>전시화면 관리(빌더)</b>의 배너 레일에서 추가·교체·순서 조정해요.</p>
+                  <div className="space-y-1.5">
+                    {swipeBanners.length === 0 && <p className="rounded-md border border-dashed border-indigo-200 bg-white/60 px-2 py-2 text-[10px] text-indigo-400">아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.</p>}
+                    {swipeBanners.map((b, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 rounded-md border bg-white p-1.5">
+                        <div className="flex flex-col gap-0.5">
+                          <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} className="flex h-3.5 w-5 items-center justify-center rounded border text-[9px] text-slate-500 disabled:opacity-30">↑</button>
+                          <button type="button" onClick={() => move(idx, 1)} disabled={idx === swipeBanners.length - 1} className="flex h-3.5 w-5 items-center justify-center rounded border text-[9px] text-slate-500 disabled:opacity-30">↓</button>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[12px] font-medium text-slate-800">{b.title}</p>
+                          <p className="truncate text-[10px] text-slate-400">{b.linkUrl || '랜딩 URL 없음'}{b.size ? ` · ${b.size}` : ''}</p>
+                        </div>
+                        <button type="button" onClick={() => remove(idx)} className="flex h-7 w-6 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive">×</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select value="" onChange={(e) => { if (e.target.value) add(e.target.value); }} className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs">
+                      <option value="">＋ 배너 캠페인에서 담기…</option>
+                      {bannerCampaigns.filter((c) => !usedIds.has(c.id)).map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+                    </select>
+                  </div>
+                  <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 빌더에선 <b>순서만</b> 조정.</p>
                 </div>
               );
             })()}

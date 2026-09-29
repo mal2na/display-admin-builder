@@ -10,6 +10,7 @@ import {
   EMPTY_CORNER_TYPE,
   type BuiltCornerOption,
   type RegisteredCombo,
+  type BannerCampaignOption,
   type CornerTypeRow,
 } from '../corner-type-manager';
 
@@ -17,7 +18,7 @@ import {
  * 코너 유형 등록 — 별도 페이지(/admin/corner-types/new).
  * 목록 위 인라인 폼이 아니라 독립 페이지라, 하단에 기존 코너 유형 목록이 보이지 않는다.
  */
-export function NewCornerType({ builtOptions, registered = [] }: { builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[] }) {
+export function NewCornerType({ builtOptions, registered = [], bannerCampaigns = [] }: { builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[] }) {
   const router = useRouter();
   // 등록 시작값 — 유형별 그룹 뷰의 '배열·레이아웃 추가'에서 넘어온 유형/배열·레이아웃(base·detail)으로 prefill.
   const sp = useSearchParams();
@@ -52,6 +53,7 @@ export function NewCornerType({ builtOptions, registered = [] }: { builtOptions:
         row={createRow}
         builtOptions={builtOptions}
         registered={registered}
+        bannerCampaigns={bannerCampaigns}
         onClose={() => router.push('/admin/corner-types')}
       />
     </div>

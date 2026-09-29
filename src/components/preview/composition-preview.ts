@@ -259,6 +259,19 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
       };
     }
     case '배너형': {
+      // 스와이프형: 코너 유형에서 묶은 배너(배너 캠페인 스냅샷)를 그대로 렌더. 없으면 샘플.
+      const bound = b.banners?.[i - 1];
+      if (bound) {
+        return {
+          ...base,
+          name: bound.title || (i > 1 ? `배너 ${i}` : '배너'),
+          atoms: [
+            atom({ name: '배너 타이틀', atomType: 'TEXT', content: bound.title }),
+            ...(bound.linkUrl ? [atom({ name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: bound.linkUrl })] : []),
+            ...(bound.imageUrl ? [atom({ name: '배너 이미지', atomType: 'IMAGE', imageUrl: bound.imageUrl })] : []),
+          ],
+        };
+      }
       // 콤포즈형 혜택 배너(제목 좌 + 로고/제품 우) — 롯데월드·AirPods. 배너 캠페인 관리 소재와 동일한 룩.
       const BANNERS = [
         { title: '이번 주말, 가족 나들이에\n쓰기 좋은 혜택', sub: '제휴사별 혜택 더보기', img: '/assets/lotteworld.png' },
