@@ -75,7 +75,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   if (variant === 'home') {
     const twoRows = component.chipRows === 2;
     return (
-      <div className={twoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'}>
+      <div className={twoRows ? 'flex flex-wrap items-start gap-2 pb-1' : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'}>
         {component.atoms.map((a, i) => (
           <span key={a.id} className={'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3.5 text-[12px] font-medium text-slate-800 shadow-sm ring-1 ' + (i === sel ? 'ring-indigo-400' : 'ring-slate-100')}>
             {a.imageUrl && (isIconRef(a.imageUrl)
@@ -119,7 +119,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩. chipRows=2면 두 줄(그리드)로.
   const contentsTwoRows = component.chipRows === 2;
   return (
-    <div className={contentsTwoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-center gap-2 overflow-x-auto pb-1'}>
+    <div className={contentsTwoRows ? 'flex flex-wrap items-center gap-2 pb-1' : 'flex flex-nowrap items-center gap-2 overflow-x-auto pb-1'}>
       {component.atoms.map((a, i) => (
         <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium ' + (i === sel ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500')}>
           {a.content ?? a.name}

@@ -1057,12 +1057,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     return next;
   });
 
-  // ① 코너 유형 = 정책서 7종 고정(PI-DSP-CMP-003 / TM-DSP-021). 수정 시 레거시 값 보존.
-  //   '배너형'은 배너 캠페인 관리(전시관리)로 분리 → 코너 유형 등록 선택지에서 제외(기존 레거시 값은 보존).
-  // 배너형은 목록·카드엔 노출되지만(정식 코너 유형), 신규 '등록'에서는 제외 — 배너 노출 옵션(규격·스와이프/자동)은
-  //  유형 배열이 아니라 '빌더 배너 코너'에서 코너 단위로 정하기 때문. (기존 배너형 값은 보존해 편집 가능)
+  // ① 코너 유형 = 정책서 거버넌스 8종(배너형 포함) + 현재 등록된 모든 케이스의 유형(전시 도메인). 2026-09-29 사용자 요청.
+  //   배너형도 정식 코너 유형(배너 단일형/스와이프형)으로 신규 등록 가능. 배너 소재·문구는 배너 캠페인 관리가 소유.
   const baseOptions = Array.from(
-    new Set<string>([...(CORNER_TYPES as readonly string[]).filter((t) => t !== '배너형'), ...(!isNew && row.baseCategory ? [row.baseCategory] : [])]),
+    new Set<string>([
+      ...(CORNER_TYPES as readonly string[]),
+      ...registered.map((r) => r.baseCategory).filter((b) => b && domainOf(b) === domainOf(base)), // 현재 등록된 케이스의 유형(같은 도메인)
+      ...(!isNew && row.baseCategory ? [row.baseCategory] : []),
+    ]),
   );
   const onOrigBase = !isNew && base === row.baseCategory;
 
