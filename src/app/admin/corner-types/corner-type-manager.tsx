@@ -1320,9 +1320,16 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
           <div className="self-start lg:sticky lg:top-3">
             <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
             <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#E2E6F1] p-4">
-              <div className="mx-auto w-[300px] rounded-[24px] bg-white p-3 shadow-[0_4px_16px_rgba(20,22,40,0.12)] ring-1 ring-black/5">
-                <CornerBlock corner={compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? '코너 타이틀' : null, subTitle: useSub ? '서브타이틀' : null })} />
-              </div>
+              {isBannerType ? (
+                // 배너형 = 폰 카드 프레임 없이 실제 배너 비율 그대로(이중 카드로 인한 과도한 여백 제거).
+                <div className="mx-auto w-full max-w-[300px]">
+                  <CornerBlock corner={compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? '코너 타이틀' : null, subTitle: useSub ? '서브타이틀' : null })} />
+                </div>
+              ) : (
+                <div className="mx-auto w-[300px] rounded-[24px] bg-white p-3 shadow-[0_4px_16px_rgba(20,22,40,0.12)] ring-1 ring-black/5">
+                  <CornerBlock corner={compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? '코너 타이틀' : null, subTitle: useSub ? '서브타이틀' : null })} />
+                </div>
+              )}
             </div>
           </div>
           {/* 블록 목록 편집 — 오른쪽 */}
