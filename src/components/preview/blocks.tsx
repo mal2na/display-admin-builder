@@ -397,8 +397,8 @@ function InfoCard({ component }: { component: PreviewComponent }) {
   // 아이콘/이미지형: 아톰이 이미지면 사각 썸네일, 아이콘이면 원형 배경 — 빌더에서 아이콘/이미지 중 선택.
   const isImage = iconAtom?.atomType === 'IMAGE';
   return (
-    // 상태 안내형 카드형 = 796×248 비율(위아래로 너무 납작하지 않게). 콘텐츠는 세로 중앙.
-    <div className="flex items-center gap-3" style={{ aspectRatio: '796 / 248' }}>
+    // 상태 안내형 카드 — 콘텐츠 높이에 맞춰 여백 최소화(과한 빈 공간 방지). 너무 납작하지 않게 최소 높이만.
+    <div className="flex items-center gap-3" style={{ minHeight: 44 }}>
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="text-[17px] font-bold leading-tight text-slate-900">{resolveCvmSample(value?.content) || component.name}</p>
@@ -632,7 +632,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       renderComps(corner.components, layoutMode)
     );
 
-  const wrapClass = isBanner ? '' : 'rounded-2xl bg-white p-4 shadow-sm';
+  const wrapClass = isBanner ? '' : 'rounded-2xl bg-white p-3 shadow-sm';
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
@@ -668,7 +668,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     return (
       <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
         {bannerEl}
-        <div className="space-y-2 p-4 pt-3">
+        <div className="space-y-2 p-3 pt-2.5">
           {heading && (
             <div>
               <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
