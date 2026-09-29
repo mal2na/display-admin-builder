@@ -762,20 +762,20 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                 <tr><td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">검색 결과가 없습니다.</td></tr>
               ) : pageRows.map((t, i) => (
                 <tr key={t.id} className="cursor-pointer border-b last:border-0 hover:bg-slate-50/70" onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
-                  <td className="px-3 py-2.5 align-top tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
+                  <td className="px-3 py-2.5 align-middle tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
                   <td className="px-3 py-2.5">
                     {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함 */}
                     <div className="pointer-events-none mx-auto h-24 w-40 overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#EEF1F8] p-1.5">
                       <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" align="center-middle" />
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 align-top"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11.5px] font-semibold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
-                  <td className="px-3 py-2.5 align-top text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
-                  <td className="px-3 py-2.5 align-top font-medium text-slate-800">{t.previewCorner?.name ?? '-'}</td>
-                  <td className="px-3 py-2.5 align-top text-slate-600">{t.active ? '사용' : '미사용'}</td>
-                  <td className="px-3 py-2.5 align-top"><span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span></td>
-                  <td className="px-3 py-2.5 align-top text-slate-600">{t.updatedBy ?? t.createdBy ?? '-'}</td>
-                  <td className="px-3 py-2.5 align-top text-[12px] text-slate-500">{(t.updatedAt ?? '').replace('T', ' ').slice(0, 16) || '-'}</td>
+                  <td className="px-3 py-2.5 align-middle"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11.5px] font-semibold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
+                  <td className="px-3 py-2.5 align-middle text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
+                  <td className="px-3 py-2.5 align-middle font-medium text-slate-800">{t.previewCorner?.name ?? '-'}</td>
+                  <td className="px-3 py-2.5 align-middle text-slate-600">{t.active ? '사용' : '미사용'}</td>
+                  <td className="px-3 py-2.5 align-middle"><span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span></td>
+                  <td className="px-3 py-2.5 align-middle text-slate-600">{t.updatedBy ?? t.createdBy ?? '-'}</td>
+                  <td className="px-3 py-2.5 align-middle text-[12px] text-slate-500">{(t.updatedAt ?? '').replace('T', ' ').slice(0, 16) || '-'}</td>
                 </tr>
               ))}
             </tbody>

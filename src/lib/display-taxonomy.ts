@@ -476,7 +476,8 @@ export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
   '혜택·오퍼형': ['가로형', '세로형', '세로형+배너', '세로형+칩'],
   '콘텐츠 안내형': ['가로형'],
   // ── 특이케이스: 목적별 특정 배열만 ──
-  배너형: ['이미지형'],
+  // 배너형 = 배너 단일형 / 스와이프형 (2026-09-29 사용자 확정). '이미지형'은 구 표기 → 폐기.
+  배너형: ['배너 단일형', '스와이프형'],
   '업무 진입형': ['카테고리 탭', '메뉴 리스트'],
   '상태 안내형': ['아이콘/이미지형'],
   '고정·필수 노출형': ['프로필형', '바코드'],
@@ -519,6 +520,7 @@ const LAYOUT_EN: Record<string, string> = {
   '카테고리 탭': 'Tab', '탭형': 'Tab', '메뉴 리스트': 'List', '리스트형': 'List', '메뉴형': 'Menu',
   '아이콘/이미지형': 'Card', '카드형': 'Card', '프로필형': 'Profile',
   '바코드': 'Barcode', '바코드형': 'Barcode', '이미지형': 'Image', '텍스트 고지형': 'Text Notice',
+  '배너 단일형': 'Single', '스와이프형': 'Swipe',
   '가로형(무비)': 'Horizontal (Movie)', '상태 리스트형': 'Status Card',
   '칩형(ChipHome)': 'ChipHome', '칩형(ChipContents)': 'ChipContents', '칩형(ChipFilter)': 'ChipFilter', '칩형(ChipPage)': 'ChipPage', '칩형': 'ChipHome',
 };
@@ -556,7 +558,7 @@ export function componentLabel(c?: string | null): string {
 export const COMPONENT_LAYOUT_DETAILS: Record<ComponentType, readonly string[]> = {
   // 빅배너는 배열이 아니라 '구분자'(bigBanner)로 분리 → 여기엔 순수 배열만 둔다.
   상품형: ['가로형(2.5배열)', '세로형', '단일강조(1.5배열)', '세로형(카테고리탭)', '그리드형', '단일 상품'],
-  배너형: ['이미지형', '이미지형/빅배너', '팝업배너형', '띠배너형', '텍스트배너'],
+  배너형: ['배너 단일형', '스와이프형', '이미지형', '이미지형/빅배너', '팝업배너형', '띠배너형', '텍스트배너'],
   정보형: ['아이콘/이미지형', '금액형', '사용량형', '카드형', '리스트형', '프로필형', '바코드', '고지형'],
   행동형: ['버튼형', '메뉴 리스트', '고정형(탭)', '바로가기'],
   혜택형: ['혜택 카드', '세로형', '그리드형', '쿠폰형'],
