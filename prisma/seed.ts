@@ -820,7 +820,7 @@ async function main() {
 
   // 2) 실시간 이용요금 (상태 안내형 · 금액 요약)
   const myBill = await comp('실시간 이용요금', '정보형', [
-    { name: '요금 아이콘', atomType: 'ICON', imageUrl: 'icon:general/Won', altText: '이용요금' },
+    { name: '요금 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-bill.png', altText: '이용요금' },
     { name: '요금 금액', atomType: 'PRICE', content: '@cvm:bill.amount' }, // CVM 연동
     { name: '요금 배지', atomType: 'BADGE', content: '3월 납부완료' },
     { name: '요금 라벨', atomType: 'TEXT', content: '실시간 이용요금' },
@@ -832,7 +832,7 @@ async function main() {
 
   // 3) T멤버십 포인트 (상태 안내형 · 금액 요약)
   const myPoint = await comp('T멤버십 포인트', '정보형', [
-    { name: '포인트 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Point', altText: '포인트' },
+    { name: '포인트 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-point.png', altText: '포인트' },
     { name: '포인트 값', atomType: 'PRICE', content: '@cvm:membership.point' }, // CVM 연동
     { name: '포인트 배지', atomType: 'BADGE', content: '3월 누적할인 1,700원' },
     { name: '포인트 라벨', atomType: 'TEXT', content: 'T멤버십 포인트' },
@@ -855,7 +855,7 @@ async function main() {
 
   // 5) 실시간 데이터 잔여량 (상태 안내형 · 사용량 요약)
   const myData = await comp('실시간 데이터 잔여량', '정보형', [
-    { name: '데이터 아이콘', atomType: 'ICON', imageUrl: 'icon:general/Data', altText: '데이터' },
+    { name: '데이터 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-data.png', altText: '데이터' },
     { name: '데이터 값', atomType: 'PRICE', content: '@cvm:data.remaining' }, // CVM 연동
     { name: '데이터 배지', atomType: 'BADGE', content: '20GB 제공' },
     { name: '데이터 라벨', atomType: 'TEXT', content: '실시간 잔여량' },
@@ -867,7 +867,7 @@ async function main() {
 
   // 6) 결합가족 (상태 안내형 · 금액 요약)
   const myCombine = await comp('결합가족', '정보형', [
-    { name: '결합 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Family', altText: '결합가족' },
+    { name: '결합 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-combine.png', altText: '결합가족' },
     { name: '결합 값', atomType: 'PRICE', content: '@cvm:combine.count' }, // CVM 연동 (값=가격 슬롯: 유형 표준 원자 구성 통일)
     { name: '결합 배지', atomType: 'BADGE', content: '15,000원 할인' },
     { name: '결합 라벨', atomType: 'TEXT', content: '결합가족' },
@@ -890,7 +890,7 @@ async function main() {
 
   // 8) 휴대폰 결제·콘텐츠 이용료 (상태 안내형 · 금액 요약)
   const myPay = await comp('휴대폰 결제·콘텐츠 이용료', '정보형', [
-    { name: '결제 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Bill', altText: '휴대폰 결제' }, // 유형 표준 원자 구성 통일 (아이콘 슬롯)
+    { name: '결제 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-pay.png', altText: '휴대폰 결제' }, // 유형 표준 원자 구성 통일 (아이콘 슬롯)
     { name: '결제 금액', atomType: 'PRICE', content: '23,800원' },
     { name: '결제 배지', atomType: 'BADGE', content: '80,000원 한도' },
     { name: '결제 라벨', atomType: 'TEXT', content: '휴대폰 결제 / 콘텐츠 이용료' },
@@ -902,7 +902,7 @@ async function main() {
 
   // 9) T 우주 월 구독료 (상태 안내형 · 금액 요약)
   const mySub = await comp('T 우주 월 구독료', '정보형', [
-    { name: '구독 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Subscribe', altText: 'T 우주 구독' }, // 유형 표준 원자 구성 통일 (아이콘 슬롯)
+    { name: '구독 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-sub.png', altText: 'T 우주 구독' }, // 유형 표준 원자 구성 통일 (아이콘 슬롯)
     { name: '구독 금액', atomType: 'PRICE', content: '67,500원' },
     { name: '구독 배지', atomType: 'BADGE', content: '3개 상품 구독중' },
     { name: '구독 라벨', atomType: 'TEXT', content: 'T 우주 월 구독료' },

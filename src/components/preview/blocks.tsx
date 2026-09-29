@@ -399,8 +399,9 @@ function InfoCard({ component }: { component: PreviewComponent }) {
       </div>
       {iconAtom && (
         isImage ? (
-          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-slate-50">
-            <PreviewImage src={iconAtom.imageUrl} alt={iconAtom.altText} className="h-full w-full object-cover" />
+          // 상태 카드 아이콘 이미지(마이1~6 등)는 자체 색/모양이 있으므로 회색 박스 없이 그대로(contain).
+          <div className="h-12 w-12 shrink-0">
+            <PreviewImage src={iconAtom.imageUrl} alt={iconAtom.altText} className="h-full w-full object-contain" />
           </div>
         ) : (
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-50 text-indigo-500">
