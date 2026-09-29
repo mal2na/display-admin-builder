@@ -40,17 +40,37 @@ export async function getBannerCampaignOptions(): Promise<BannerCampaignOption[]
   });
 }
 
-// BSS 혜택 브랜드 카탈로그 → 상품형·혜택형 코너 유형에서 '상품 담기'로 선택할 후보(2026-09-29 사용자 결정).
-//  브랜드명·대표 혜택·로고를 그대로 끌어와 코너 유형 composition.items에 저장. 랜딩 URL은 담은 뒤 수동 편집.
+// 디바이스·단말 카탈로그(SKT 판매 상품) → 상품형 코너 유형에서 '상품 담기'로 선택할 후보(2026-09-29 사용자 요청).
+//  ※ 브랜드 이미지 에셋이 제한적이라 대표 단말 이미지로 대체(프로토타입). 실제 상품 원장 연동 시 교체.
+const DEVICE_PRODUCTS: ProductOption[] = [
+  { key: 'iPhone 20 Pro', brand: 'Apple', title: 'iPhone 20 Pro', imageUrl: '/assets/ds/device-iphone.png', price: '1,550,000원', badge: 'NEW' },
+  { key: 'iPhone 20 Air', brand: 'Apple', title: 'iPhone 20 Air', imageUrl: '/assets/ds/device-iphone.png', price: '1,165,600원', badge: null },
+  { key: 'iPhone 20', brand: 'Apple', title: 'iPhone 20', imageUrl: '/assets/ds/device-iphone.png', price: '1,250,000원', badge: null },
+  { key: 'Galaxy S26 Ultra', brand: 'Samsung', title: 'Galaxy S26 Ultra', imageUrl: '/assets/ds/hero-device.png', price: '1,698,400원', badge: 'NEW' },
+  { key: 'Galaxy S26', brand: 'Samsung', title: 'Galaxy S26', imageUrl: '/assets/ds/hero-device.png', price: '1,155,000원', badge: null },
+  { key: 'Galaxy Z Flip8', brand: 'Samsung', title: 'Galaxy Z Flip8', imageUrl: '/assets/ds/hero-device.png', price: '1,485,000원', badge: null },
+  { key: 'Galaxy Z Fold8', brand: 'Samsung', title: 'Galaxy Z Fold8', imageUrl: '/assets/ds/hero-device.png', price: '2,398,000원', badge: null },
+  { key: 'AirPods Pro 3', brand: 'Apple', title: 'AirPods Pro 3', imageUrl: '/assets/ds/product-airpodspro.png', price: '359,000원', badge: null },
+  { key: 'AirPods Max 3', brand: 'Apple', title: 'AirPods Max 3', imageUrl: '/assets/ds/product-airpodsmax.png', price: '769,000원', badge: null },
+  { key: 'Galaxy Watch8', brand: 'Samsung', title: 'Galaxy Watch8', imageUrl: '/assets/ds/hero-device.png', price: '399,300원', badge: null },
+];
+
+// 상품형·혜택형 코너 유형에서 '상품 담기'로 선택할 후보(2026-09-29 사용자 결정).
+//  = BSS 혜택 브랜드(제휴 혜택) + 디바이스·단말(SKT 판매 상품). category로 구분(디바이스/혜택).
+//  브랜드명·대표 혜택/모델·이미지를 코너 유형 composition.items에 저장. 랜딩 URL은 담은 뒤 수동 편집.
 export async function getProductOptions(): Promise<ProductOption[]> {
-  return BSS_PRODUCTS.map((p) => ({
+  const benefits: ProductOption[] = BSS_PRODUCTS.map((p) => ({
     key: p.key,
     title: p.benefit || p.name, // 대표 혜택이 있으면 그걸 타이틀로, 없으면 브랜드명
     brand: p.name,
     imageUrl: p.logo || null,
     price: null,
     badge: p.badges[0] ?? null,
+    category: '혜택',
   }));
+  const devices: ProductOption[] = DEVICE_PRODUCTS.map((d) => ({ ...d, category: '디바이스' }));
+  // 디바이스를 먼저(상품형에서 자주 씀) 노출.
+  return [...devices, ...benefits];
 }
 
 /**

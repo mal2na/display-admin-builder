@@ -48,8 +48,8 @@ import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCo
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
 // 배너 캠페인 후보 — 스와이프형 코너 유형에서 '배너 묶기'로 선택(랜딩 URL은 캠페인에서 끌어옴).
 export type BannerCampaignOption = { id: string; title: string; linkUrl: string | null; imageUrl: string | null; size: string | null };
-// 상품/혜택 후보 — 상품형·혜택형 코너 유형에서 '상품 담기'로 선택(BSS 혜택 브랜드 카탈로그). 랜딩 URL은 담은 뒤 수동 편집.
-export type ProductOption = { key: string; title: string; brand: string; imageUrl: string | null; price: string | null; badge: string | null };
+// 상품/혜택 후보 — 상품형·혜택형 코너 유형에서 '상품 담기'로 선택(BSS 혜택 브랜드 + 디바이스·단말). 랜딩 URL은 담은 뒤 수동 편집.
+export type ProductOption = { key: string; title: string; brand: string; imageUrl: string | null; price: string | null; badge: string | null; category?: string };
 
 // 전시화면관리(빌더)에서 실제로 만들어진 코너 유형 조합. 등록 폼의 선택지를 이걸로 제한한다.
 export type BuiltCornerOption = {
@@ -278,13 +278,79 @@ function SortableBannerRow({ id, idx, banner, onRemove, onLinkChange }: { id: st
   );
 }
 
+// 배너 담기 모달 — 배너 캠페인을 체크박스로 여러 개 한 번에 선택해 담는다(2026-09-29 사용자 요청, 드롭다운 대체).
+function BannerPickerModal({ open, onClose, campaigns, usedIds, onAdd }: { open: boolean; onClose: () => void; campaigns: BannerCampaignOption[]; usedIds: Set<string | undefined>; onAdd: (ids: string[]) => void }) {
+  const [q, setQ] = useState('');
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  if (!open) return null;
+  const query = q.trim().toLowerCase();
+  const list = campaigns.filter((c) => !query || `${c.title} ${c.size ?? ''}`.toLowerCase().includes(query));
+  const toggle = (id: string) => setChecked((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const submit = () => { onAdd([...checked]); setChecked(new Set()); setQ(''); onClose(); };
+  const close = () => { setChecked(new Set()); setQ(''); onClose(); };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
+      <div className="flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b px-4 py-3">
+          <Plus className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold">배너 담기</h2>
+          <span className="text-xs text-muted-foreground">여러 개를 체크해 한 번에 담아요 · 랜딩 URL은 캠페인 값 그대로</span>
+          <button type="button" onClick={close} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="닫기"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="border-b p-3">
+          <div className="flex items-center gap-2 rounded-md border bg-background px-3">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="배너 캠페인 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {list.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</p>}
+          <div className="space-y-1">
+            {list.map((c) => {
+              const already = usedIds.has(c.id);
+              const on = checked.has(c.id);
+              return (
+                <label key={c.id} className={cn('flex cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-left', already ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-60' : on ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted/50')}>
+                  <input type="checkbox" checked={on || already} disabled={already} onChange={() => toggle(c.id)} className="accent-indigo-600" />
+                  {c.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.imageUrl} alt="" className="h-8 w-12 shrink-0 rounded object-cover ring-1 ring-slate-200" />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-medium text-slate-800">{c.title}</span>
+                    <span className="block truncate text-[11px] text-slate-400">{c.linkUrl || '랜딩 URL 없음'}{c.size ? ` · ${c.size}` : ''}</span>
+                  </span>
+                  {already && <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">담김</span>}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 border-t px-4 py-3">
+          <span className="text-xs text-muted-foreground">{checked.size}개 선택</span>
+          <button type="button" onClick={close} className="ml-auto rounded-md border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">취소</button>
+          <button type="button" onClick={submit} disabled={checked.size === 0} className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40">{checked.size > 0 ? `${checked.size}개 담기` : '담기'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 스와이프 배너 묶기 편집기 — 배너 캠페인에서 담고, 드래그앤드롭으로 순서 변경(2026-09-29 사용자 요청).
 //  빌더는 이 묶음을 그대로 생성만 하고 순서만 바꾼다(거버넌스: 정의는 코너 유형).
 function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: SwipeBannerItem[]; bannerCampaigns: BannerCampaignOption[]; onCommit: (next: SwipeBannerItem[]) => void }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const [pickerOpen, setPickerOpen] = useState(false);
   // 행 id = 인덱스 포함 복합키 — 시드 파생 배너엔 campaignId가 없어(중복 undefined) dnd-kit 정렬이 안 먹던 버그 방지(2026-09-29).
   const rowId = (b: SwipeBannerItem, i: number) => `${b.campaignId ?? 'b'}-${i}`;
-  const add = (id: string) => { const c = bannerCampaigns.find((b) => b.id === id); if (!c) return; onCommit([...banners, { campaignId: c.id, title: c.title, imageUrl: c.imageUrl ?? undefined, linkUrl: c.linkUrl ?? undefined, size: c.size ?? undefined }]); };
+  const usedIds = new Set(banners.map((b) => b.campaignId).filter(Boolean));
+  const addMany = (ids: string[]) => {
+    const news = ids
+      .map((id) => bannerCampaigns.find((b) => b.id === id))
+      .filter((c): c is BannerCampaignOption => !!c && !usedIds.has(c.id))
+      .map((c) => ({ campaignId: c.id, title: c.title, imageUrl: c.imageUrl ?? undefined, linkUrl: c.linkUrl ?? undefined, size: c.size ?? undefined }));
+    if (news.length) onCommit([...banners, ...news]);
+  };
   const remove = (idx: number) => onCommit(banners.filter((_, j) => j !== idx));
   const patchLink = (idx: number, linkUrl: string) => onCommit(banners.map((b, j) => (j === idx ? { ...b, linkUrl } : b)));
   const onDragEnd = (e: DragEndEvent) => {
@@ -298,7 +364,6 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
     next.splice(to, 0, moved);
     onCommit(next);
   };
-  const usedIds = new Set(banners.map((b) => b.campaignId).filter(Boolean));
   return (
     <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
       <div className="flex items-center gap-2">
@@ -316,13 +381,11 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
           </div>
         </SortableContext>
       </DndContext>
-      <div className="flex items-center gap-2">
-        <select value="" onChange={(e) => { if (e.target.value) add(e.target.value); }} className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs">
-          <option value="">＋ 배너 캠페인에서 담기…</option>
-          {bannerCampaigns.filter((c) => !usedIds.has(c.id)).map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-        </select>
-      </div>
+      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-2 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50">
+        <Plus className="h-3.5 w-3.5" /> 배너 캠페인에서 담기 (여러 개 선택)
+      </button>
       <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 순서는 <b>드래그</b>로 조정.</p>
+      <BannerPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} campaigns={bannerCampaigns} usedIds={usedIds} onAdd={addMany} />
     </div>
   );
 }
@@ -359,11 +422,81 @@ function SortableProductRow({ id, idx, item, onRemove, onLinkChange }: { id: str
   );
 }
 
+// 상품·혜택 담기 모달 — BSS 카탈로그를 체크박스로 여러 개 한 번에 선택해 담는다(2026-09-29 사용자 요청, 드롭다운 대체).
+function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open: boolean; onClose: () => void; options: ProductOption[]; usedKeys: Set<string>; onAdd: (keys: string[]) => void }) {
+  const [q, setQ] = useState('');
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  if (!open) return null;
+  const query = q.trim().toLowerCase();
+  const list = options.filter((o) => !query || `${o.brand} ${o.title}`.toLowerCase().includes(query));
+  const toggle = (k: string) => setChecked((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const submit = () => { onAdd([...checked]); setChecked(new Set()); setQ(''); onClose(); };
+  const close = () => { setChecked(new Set()); setQ(''); onClose(); };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
+      <div className="flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b px-4 py-3">
+          <Plus className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold">상품·혜택 담기</h2>
+          <span className="text-xs text-muted-foreground">여러 개를 체크해 한 번에 담아요</span>
+          <button type="button" onClick={close} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="닫기"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="border-b p-3">
+          <div className="flex items-center gap-2 rounded-md border bg-background px-3">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="브랜드·혜택 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {list.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</p>}
+          <div className="space-y-1">
+            {list.map((o) => {
+              const already = usedKeys.has(o.key);
+              const on = checked.has(o.key);
+              return (
+                <label key={o.key} className={cn('flex cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-left', already ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-60' : on ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted/50')}>
+                  <input type="checkbox" checked={on || already} disabled={already} onChange={() => toggle(o.key)} className="accent-indigo-600" />
+                  {o.imageUrl && !o.imageUrl.startsWith('icon:') && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={o.imageUrl} alt="" className="h-7 w-7 shrink-0 rounded object-cover ring-1 ring-slate-200" />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate text-[13px] font-medium text-slate-800">{o.brand}</span>
+                      {o.category && <span className={cn('shrink-0 rounded px-1 py-[1px] text-[9px] font-semibold', o.category === '디바이스' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700')}>{o.category}</span>}
+                    </span>
+                    {o.title && o.title !== o.brand && <span className="block truncate text-[11px] text-slate-400">{o.title}{o.price ? ` · ${o.price}` : ''}</span>}
+                  </span>
+                  {already && <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">담김</span>}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 border-t px-4 py-3">
+          <span className="text-xs text-muted-foreground">{checked.size}개 선택</span>
+          <button type="button" onClick={close} className="ml-auto rounded-md border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">취소</button>
+          <button type="button" onClick={submit} disabled={checked.size === 0} className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40">{checked.size > 0 ? `${checked.size}개 담기` : '담기'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 상품/혜택 묶기 편집기 — BSS 혜택 브랜드 카탈로그에서 담고, 드래그앤드롭으로 순서 변경. 빌더는 순서만(2026-09-29 사용자 요청).
 function ProductItemEditor({ items, productOptions, onCommit }: { items: ProductItem[]; productOptions: ProductOption[]; onCommit: (next: ProductItem[]) => void }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const [pickerOpen, setPickerOpen] = useState(false);
   const rowId = (it: ProductItem, i: number) => `${it.productKey ?? 'item'}-${i}`;
-  const add = (key: string) => { const p = productOptions.find((o) => o.key === key); if (!p) return; onCommit([...items, { productKey: p.key, title: p.title, brand: p.brand, imageUrl: p.imageUrl ?? undefined, price: p.price ?? undefined, badge: p.badge ?? undefined, linkUrl: '' }]); };
+  // 이미 담긴 것 = productKey ∪ brand (시드 파생 아이템은 productKey가 없고 brand만 있음 · BSS 옵션 key=브랜드명이라 브랜드로도 매칭). 중복 방지.
+  const usedKeys = new Set([...items.map((it) => it.productKey), ...items.map((it) => it.brand)].filter(Boolean) as string[]);
+  const addMany = (keys: string[]) => {
+    const news = keys
+      .map((k) => productOptions.find((o) => o.key === k))
+      .filter((p): p is ProductOption => !!p && !usedKeys.has(p.key))
+      .map((p) => ({ productKey: p.key, title: p.title, brand: p.brand, imageUrl: p.imageUrl ?? undefined, price: p.price ?? undefined, badge: p.badge ?? undefined, linkUrl: '' }));
+    if (news.length) onCommit([...items, ...news]);
+  };
   const remove = (idx: number) => onCommit(items.filter((_, j) => j !== idx));
   const patchLink = (idx: number, linkUrl: string) => onCommit(items.map((b, j) => (j === idx ? { ...b, linkUrl } : b)));
   const onDragEnd = (e: DragEndEvent) => {
@@ -393,13 +526,11 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
           </div>
         </SortableContext>
       </DndContext>
-      <div className="flex items-center gap-2">
-        <select value="" onChange={(e) => { if (e.target.value) add(e.target.value); }} className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs">
-          <option value="">＋ BSS 혜택 브랜드에서 담기…</option>
-          {productOptions.map((p) => <option key={p.key} value={p.key}>{p.brand}{p.title && p.title !== p.brand ? ` — ${p.title}` : ''}</option>)}
-        </select>
-      </div>
+      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-2 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50">
+        <Plus className="h-3.5 w-3.5" /> 상품·혜택 담기 (디바이스·혜택 브랜드 · 여러 개 선택)
+      </button>
       <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
+      <ProductPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} options={productOptions} usedKeys={usedKeys} onAdd={addMany} />
     </div>
   );
 }
@@ -1165,7 +1296,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   // 헤더(코너 타이틀/서브타이틀) 없는 유형 — 배너·아이콘/이미지 카드, 그리고 '순수 탭'(선택형)만.
   //  '세로형(카테고리탭)'처럼 상품형 리스트의 탭 변형은 헤더가 있으므로 제외(선택형일 때만 탭=무헤더).
   const isStandaloneTab = compValid === '선택형' && (/카테고리\s*탭/.test(dStr) || dStr.includes('고정형(탭)'));
-  const noHeaderType = isBannerType || isStandaloneTab || ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너'].some((k) => dStr.includes(k));
+  //  고정·필수 노출형(프로필형·바코드형 등)은 카드 자체가 완결형이라 코너 타이틀·디스크립션이 없다(2026-09-29 사용자 요청).
+  const noHeaderType = isBannerType || isStandaloneTab || base === '고정·필수 노출형' || ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
   // 여러 아이템을 나열하는 리스트형 코너 — 노출 개수·더보기가 의미 있는 유형(상품형/혜택형/정보형 리스트)
   const isListType = compValid === '상품형' || compValid === '혜택형' || (compValid === '정보형' && /리스트/.test(dStr));
   const featureApplies = (key: string) => {
@@ -1206,11 +1338,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     if (!replaced) updated.push({ componentType: target, count: Math.max(1, next.length || 1), image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc, items: next });
     setBlocks(updated);
   };
+  // 세부 항목(표시 항목) 토글을 미리보기·저장 조합에 실시간 반영 — 이미지·가격·설명·배지 on/off가 아이템 카드에 바로 적용(2026-09-29 사용자 요청).
+  const liveFeatFlags = { image: imageOn, price: priceOn, desc: descOn, badge: eff('useBadge') };
   const shownBlocks: Composition = isSwipeBannerType
     ? [{ componentType: '배너형', count: Math.max(1, swipeBanners.length || 2), image: true, price: true, desc: true, ...(swipeBanners.length ? { banners: swipeBanners } : {}) }]
-    : blocks.length
-      ? blocks
-      : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc });
+    : (blocks.length
+        ? blocks
+        : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc })
+      ).map((b) => (b.componentType === '상품형' || b.componentType === '혜택형' || b.componentType === '정보형' ? { ...b, ...liveFeatFlags } : b));
   // 코너 유형 명 = [코너 유형 · 컴포넌트 · 배열 (· 빅배너)] 자동 구성
   // 코너 유형 명 = 유형 · 배열·레이아웃 (컴포넌트는 표기에서 제외 — UI에서 컴포넌트 노출 안 함).
   const derivedName = [base, detailValid, bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
@@ -1492,8 +1627,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* ③ 컴포넌트 조합 — 이 코너 유형에 담을 컴포넌트를 순서대로 조립. (bulk 수정에선 컴포넌트 속성으로 대체 → 제외) */}
       {!bulk && (
-      <section className="overflow-hidden rounded-md border border-indigo-200">
-        <div className="flex flex-wrap items-center gap-2 border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-indigo-700">
+      /* overflow-hidden 제거 — position:sticky(좌측 미리보기)가 조상 overflow에 막히지 않도록 */
+      <section className="rounded-md border border-indigo-200">
+        <div className="flex flex-wrap items-center gap-2 rounded-t-md border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-indigo-700">
           코너 정의
           <span className="font-normal text-indigo-400">왼쪽 미리보기를 보며 오른쪽에서 유형·배열·구성·표시 항목을 한 번에 설정</span>
         </div>

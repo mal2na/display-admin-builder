@@ -166,14 +166,23 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
       return { ...base, name: '카테고리 탭', selectedIndex: 0, chipVariant: 'contents', atoms: T(['전체', '카테고리1', '카테고리2', '카테고리3']) };
     }
     case '상품형':
-      // 코너 유형에서 묶은 상품·혜택 아이템(BSS 카탈로그 스냅샷)이 있으면 그대로 렌더. 없으면 아래 샘플. 2026-09-29
+      // 코너 유형에서 묶은 상품·혜택 아이템(카탈로그 스냅샷)이 있으면 그대로 렌더. 없으면 아래 샘플. 2026-09-29
+      //  ※ 레이아웃에 맞춰 아톰을 만든다: 혜택 리스트(BenefitRow)=로고+혜택문구+브랜드, 그 외 상품/디바이스 카드(ProductCard)=이미지+브랜드(TEXT)+상품명(TEXT)+가격.
       if (b.items?.[i - 1]) {
         const it = b.items[i - 1]!;
-        return { ...base, name: it.brand || it.title, atoms: [
-          ...(it.imageUrl ? [atom({ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl })] : []),
+        if (isBenefitVertical) {
+          return { ...base, name: it.brand || it.title, atoms: [
+            ...(it.imageUrl ? [atom({ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl })] : []),
+            atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title }),
+            ...(it.brand ? [atom({ name: '브랜드', atomType: 'INFO', content: it.brand })] : []),
+          ] };
+        }
+        // 상품/디바이스 카드 — ProductCard가 이름 기반(브랜드/상품명)으로 읽으므로 TEXT 아톰으로 생성.
+        return { ...base, name: it.title || it.brand || '상품', atoms: [
+          ...(it.imageUrl && b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE', imageUrl: it.imageUrl })] : []),
+          ...(it.brand && it.brand !== it.title ? [atom({ name: '브랜드', atomType: 'TEXT', content: it.brand })] : []),
+          atom({ name: '상품명', atomType: 'TEXT', content: it.title }),
           ...(it.badge && b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: it.badge })] : []),
-          atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title }),
-          ...(it.brand ? [atom({ name: '브랜드', atomType: 'INFO', content: it.brand })] : []),
           ...(it.price && b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: it.price })] : []),
         ] };
       }

@@ -554,19 +554,29 @@ function specFromComposition(composition: Composition): ScaffoldComp[] {
       }
       continue;
     }
-    // 상품형·혜택형 — 코너 유형에서 묶은 상품·혜택 아이템(BSS 카탈로그 스냅샷)을 그대로 생성. 랜딩 URL은 담은 값 그대로. 빌더는 순서만. 2026-09-29
+    // 상품형·혜택형 — 코너 유형에서 묶은 상품·혜택 아이템(카탈로그 스냅샷)을 그대로 생성. 랜딩 URL은 담은 값 그대로. 빌더는 순서만. 2026-09-29
+    //  가격이 있으면 상품/디바이스 카드(ProductCard: 브랜드·상품명 TEXT + 가격), 없으면 혜택 리스트(BenefitRow: 로고 + 혜택문구 BENEFIT_TEXT + 브랜드 INFO).
     if ((b.componentType === '상품형' || b.componentType === '혜택형') && b.items && b.items.length) {
       for (const it of b.items) {
+        const isProductCard = !!it.price;
         comps.push({
-          name: it.brand || it.title || '상품', componentType: b.componentType,
-          atoms: [
-            ...(it.imageUrl ? [{ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl, altText: it.brand || it.title }] : []),
-            ...(it.badge && b.badge ? [{ name: '배지', atomType: 'BADGE', content: it.badge }] : []),
-            { name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title },
-            ...(it.brand ? [{ name: '브랜드', atomType: 'INFO', content: it.brand }] : []),
-            ...(it.price && b.price !== false ? [{ name: '가격', atomType: 'PRICE', content: it.price }] : []),
-            ...(it.linkUrl ? [{ name: 'CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: it.linkUrl }] : []),
-          ],
+          name: it.title || it.brand || '상품', componentType: b.componentType,
+          atoms: isProductCard
+            ? [
+                ...(it.imageUrl ? [{ name: '상품 이미지', atomType: 'IMAGE', imageUrl: it.imageUrl, altText: it.title || it.brand }] : []),
+                ...(it.brand && it.brand !== it.title ? [{ name: '브랜드', atomType: 'TEXT', content: it.brand }] : []),
+                { name: '상품명', atomType: 'TEXT', content: it.title },
+                ...(it.badge && b.badge ? [{ name: '배지', atomType: 'BADGE', content: it.badge }] : []),
+                ...(it.price && b.price !== false ? [{ name: '가격', atomType: 'PRICE', content: it.price }] : []),
+                ...(it.linkUrl ? [{ name: 'CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: it.linkUrl }] : []),
+              ]
+            : [
+                ...(it.imageUrl ? [{ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl, altText: it.brand || it.title }] : []),
+                ...(it.badge && b.badge ? [{ name: '배지', atomType: 'BADGE', content: it.badge }] : []),
+                { name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title },
+                ...(it.brand ? [{ name: '브랜드', atomType: 'INFO', content: it.brand }] : []),
+                ...(it.linkUrl ? [{ name: 'CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: it.linkUrl }] : []),
+              ],
         });
       }
       continue;
