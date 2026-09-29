@@ -187,7 +187,7 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
 
 // 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
 //  fit='width'(기본): 폭 기준 고정 — 토글해도 배율 안 흔들림(편집용). fit='contain': 폭·높이 모두 맞춰 전체가 잘림 없이 들어감(상세·목록용).
-export function DevicePreview({ corner, fit: fitMode = 'width' }: { corner: PreviewCorner; fit?: 'width' | 'contain' }) {
+export function DevicePreview({ corner, fit: fitMode = 'width', align = 'top-center' }: { corner: PreviewCorner; fit?: 'width' | 'contain'; align?: 'top-center' | 'left-middle' }) {
   const NAT_W = 320; // 자연 렌더 폭(폰 기준). 박스에 맞춰 scale로 축소.
   const boxRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -210,8 +210,11 @@ export function DevicePreview({ corner, fit: fitMode = 'width' }: { corner: Prev
     <div ref={boxRef} className="relative h-full w-full overflow-hidden">
       <div
         ref={contentRef}
-        className="absolute top-0"
-        style={{ width: NAT_W, left: `calc(50% - ${NAT_W / 2}px)`, transform: `scale(${scale})`, transformOrigin: 'top center' }}
+        className={align === 'left-middle' ? 'absolute left-0 top-1/2' : 'absolute top-0'}
+        style={align === 'left-middle'
+          // 리스트 보기 미리보기: 좌측 정렬 + 세로 중앙(배열·레이아웃 텍스트에 붙여 안정감).
+          ? { width: NAT_W, transform: `translateY(-50%) scale(${scale})`, transformOrigin: 'left center' }
+          : { width: NAT_W, left: `calc(50% - ${NAT_W / 2}px)`, transform: `scale(${scale})`, transformOrigin: 'top center' }}
       >
         {/* CornerBlock이 자체 카드(흰 배경·라운드)를 렌더하므로 여기서 이중 카드로 감싸지 않는다(배너 full-bleed·여백 제거). */}
         <CornerBlock corner={corner} />
@@ -462,9 +465,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   );
   const [field, setField] = useState<'typeId' | 'createdBy'>(sp.get('field') === 'createdBy' ? 'createdBy' : 'typeId');
   const [q, setQ] = useState(sp.get('q') ?? '');
-  const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 12);
+  const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 10);
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
-  const [view, setView] = useState<'card' | 'list'>(sp.get('view') === 'list' ? 'list' : 'card'); // 기본=카드, 리스트 보기 옵션
+  const [view, setView] = useState<'card' | 'list'>(sp.get('view') === 'card' ? 'card' : 'list'); // 기본=리스트(2026-09-29 사용자 결정), 카드 보기 옵션
 
   // 상위 분기(도메인) — 전시(상품형·이벤트미션 제외 6거버넌스) / 프로모션(이벤트·미션) / 상품(상품형).
   const domainTypes = types.filter((t) => domainOf(t.baseCategory) === domain);
@@ -509,9 +512,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
     if (statusSel.size < statusKeys.length) p.set('status', [...statusSel].join(','));
     if (field !== 'typeId') p.set('field', field);
     if (q.trim()) p.set('q', q.trim());
-    if (perPage !== 12) p.set('pp', String(perPage));
+    if (perPage !== 10) p.set('pp', String(perPage));
     if (curPage !== 1) p.set('p', String(curPage));
-    if (view === 'list') p.set('view', 'list');
+    if (view === 'card') p.set('view', 'card');
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -759,8 +762,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   <td className="px-3 py-2.5 align-top text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
                   <td className="px-3 py-2.5">
                     {/* 리스트에서도 클릭 없이 바로 미리보기 — 카드 썸네일과 동일 렌더(실제 대표 코너) */}
-                    <div className="pointer-events-none h-24 w-40 overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#EEF1F8] p-1.5">
-                      <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" />
+                    <div className="pointer-events-none h-24 w-40 overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#EEF1F8] px-2 py-1.5">
+                      <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" align="left-middle" />
                     </div>
                   </td>
                   <td className="px-3 py-2.5 align-top font-medium text-slate-800">{t.previewCorner?.name ?? '-'}</td>

@@ -283,7 +283,7 @@ async function main() {
   const banner3 = await comp('에어팟 사전예약 배너', '배너형', [
     { name: '에어팟 제목', atomType: 'TEXT', content: 'AirPods Max3 사전 예약 하셨나요?' },
     { name: '에어팟 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
-    { name: '에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/airpods-max.png', altText: 'AirPods Max3 헤드폰' },
+    { name: '에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-airpodsmax.png', altText: 'AirPods Max3 헤드폰' },
   ]);
   const cornerAirpods = await corner(
     { name: 'AirPods 사전예약', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
@@ -563,7 +563,7 @@ async function main() {
   const preorderComp = await comp('iPhone 20 사전예약 배너', '배너형', [
     { name: 'iPhone20 사전예약 타이틀', atomType: 'TEXT', content: 'iPhone 20 사전 예약 시\n에어팟 프로 증정' },
     { name: 'iPhone20 사전예약 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
-    { name: 'iPhone20 사전예약 이미지', atomType: 'IMAGE', imageUrl: '/assets/corner-samples/sh-preorder.png', altText: 'iPhone 20 사전예약 · 에어팟 프로 증정' },
+    { name: 'iPhone20 사전예약 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 사전예약 · 에어팟 프로 증정' },
   ]);
   const shopCornerPreorder = await corner(
     { name: 'iPhone 20 사전예약', cornerType: '배너형', layoutDetail: '이미지형' },
@@ -696,12 +696,40 @@ async function main() {
   const shopSpeaker = await comp('Marshall Stockwell 배너', '배너형', [
     { name: '스피커 제목', atomType: 'TEXT', content: 'Marshall Stockwell 블루투스 스피커' },
     { name: '스피커 서브', atomType: 'INFO', content: '사전예약 클립 멤버십 혜택' },
-    { name: '스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/marshall-speaker.png', altText: 'Marshall Stockwell 스피커' },
+    { name: '스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-marshall.png', altText: 'Marshall Stockwell 스피커' },
   ]);
   const shopCornerSpeaker = await corner(
     { name: 'Marshall 스피커', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
     [{ id: shopSpeaker.id, componentType: '배너형' }],
   );
+
+  // 7-2) 프로모션 배너 스와이프 (배너형 · 스와이프형) — 한 코너에 배너 3장을 담아 좌우 스와이프.
+  //   배너형 유형을 '배너 단일형'과 '스와이프형'으로 나누기 위한 대표 케이스(2026-09-29 사용자 결정).
+  const swipeBanner1 = await comp('프로모션 배너 A (요금제·OTT)', '배너형', [
+    { name: '스와이프A 제목', atomType: 'TEXT', content: '요금제 할인상품 구독가 안내' },
+    { name: '스와이프A 이미지', atomType: 'IMAGE', imageUrl: '/assets/banner-plan-ott.svg', altText: '요금제 할인상품 구독가 안내 배너' },
+  ]);
+  const swipeBanner2 = await comp('프로모션 배너 B (스타벅스)', '배너형', [
+    { name: '스와이프B 제목', atomType: 'TEXT', content: '스타벅스 옵션출시' },
+    { name: '스와이프B 이미지', atomType: 'IMAGE', imageUrl: '/assets/banner-starbucks.svg', altText: '스타벅스 옵션 출시 배너' },
+  ]);
+  const swipeBanner3 = await comp('프로모션 배너 C (프로모션)', '배너형', [
+    { name: '스와이프C 제목', atomType: 'TEXT', content: '이달의 프로모션' },
+    { name: '스와이프C 이미지', atomType: 'IMAGE', imageUrl: '/assets/banner-promo-event.png', altText: '이달의 프로모션 배너' },
+  ]);
+  const shopCornerSwipe = await corner(
+    { name: '프로모션 배너 스와이프', cornerType: '배너형', maxItems: 5, layoutDetail: '이미지형' },
+    [
+      { id: swipeBanner1.id, componentType: '배너형' },
+      { id: swipeBanner2.id, componentType: '배너형' },
+      { id: swipeBanner3.id, componentType: '배너형' },
+    ],
+  );
+  // 배너형 노출 방식 = 스와이프(수동) + 인디케이터 + 루프. (bannerOptions JSON, 단일 진실)
+  await prisma.corner.update({
+    where: { id: shopCornerSwipe.id },
+    data: { bannerOptions: JSON.stringify({ mode: 'swipe', showIndicator: true, loop: true }) },
+  });
 
   // 8) 구독 혜택 (상품형 · 가로 SWIPE)
   const sub1 = await comp('주말 장보기 패스', '상품형', [
@@ -774,7 +802,8 @@ async function main() {
           { cornerId: shopCornerData.id, order: 4 },
           { cornerId: shopCornerGift.id, order: 5 },
           { cornerId: shopCornerSpeaker.id, order: 6 },
-          { cornerId: shopCornerSub.id, order: 7 },
+          { cornerId: shopCornerSwipe.id, order: 7 }, // 프로모션 배너 스와이프(배너형·스와이프형)
+          { cornerId: shopCornerSub.id, order: 8 },
         ],
       },
     },
@@ -788,7 +817,8 @@ async function main() {
     { cornerId: shopCornerData.id, order: 4 },
     { cornerId: shopCornerGift.id, order: 5 },
     { cornerId: shopCornerSpeaker.id, order: 6 },
-    { cornerId: shopCornerSub.id, order: 7 },
+    { cornerId: shopCornerSwipe.id, order: 7 },
+    { cornerId: shopCornerSub.id, order: 8 },
   ];
   // 비로그인 Template
   await prisma.template.create({
@@ -1044,7 +1074,13 @@ async function main() {
     for (const grp of emitGroups) {
       const rep = grp[0];
       const { cleanDetail } = parseBanner(rep);
-      const detail = cleanDetail ?? null;
+      let detail = cleanDetail ?? null;
+      // 배너형 유형 = 배너 컴포넌트 수로 '배너 단일형' / '스와이프형' 구분 (2026-09-29 사용자 결정).
+      //   한 코너에 배너 1개 → 단일형, 2개 이상 → 스와이프형(BannerCarousel로 좌우 스와이프).
+      if (base === '배너형') {
+        const bannerCount = rep.cornerComponents.filter((cc) => cc.component.componentType === '배너형').length;
+        detail = bannerCount >= 2 ? '스와이프형' : '배너 단일형';
+      }
       // ② 구성 컴포넌트 유형 = 코너에서 가장 많은 컴포넌트 유형(동률이면 먼저 배치된 것).
       const freq = new Map<string, number>();
       for (const cc of rep.cornerComponents) freq.set(cc.component.componentType, (freq.get(cc.component.componentType) ?? 0) + 1);
@@ -1124,7 +1160,7 @@ async function main() {
   // 배너형·이미지형 = 홈의 '독립 이미지 배너'. 제휴(롯데월드)·AirPods·iPhone20 사전예약·Marshall + 루쥬 코코(마이 홈 추천 상품)
   const BANNER_IMAGE_SAMPLES = ['hb-partner-banner', 'hb-airpods', 'sh-preorder', 'sh-speaker', 'my-product']; // 배너형 이미지 배너 5장
   await prisma.cornerType.updateMany({
-    where: { baseCategory: '배너형', typeDetail: '이미지형' },
+    where: { baseCategory: '배너형', typeDetail: '배너 단일형' },
     data: { sampleImageUrl: BANNER_IMAGE_SAMPLES.map((s) => `/assets/corner-samples/${s}.png`).join('\n') },
   });
 
@@ -1499,12 +1535,6 @@ async function seedBannerCampaigns() {
       subtitle: null, purpose: '주말 가족 나들이 · 제휴사 혜택 안내 (직접 만들기)',
       landingType: 'event', landingUrl: 'EVT20260820006 (제휴사 혜택 기획전)', pageType: 'current', bannerAlt: '이번 주말, 가족 나들이에 쓰기 좋은 혜택 · 롯데월드 어드벤처',
       typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: '이번 주말, 가족 나들이에\n쓰기 좋은 혜택', subtitle: '제휴사별 혜택 더보기', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/lotteworld.png' })),
-    },
-    {
-      campaignCode: 'BC-202609-005', title: '갤럭시 신제품 사전예약',
-      subtitle: null, purpose: '갤럭시 신제품 사전예약 안내',
-      landingType: 'direct', landingUrl: 'https://tworld/galaxy-preorder', pageType: 'current', bannerAlt: '갤럭시 신제품 사전예약',
-      typeDetails: S4.map((detail) => ({ type: '이미지형', detail, useYn: true, imageUrl: '/assets/cardhome/cardhome-banner-BannerSrc-0.png' })),
     },
     {
       // AirPods Max3 사전예약 — 콤포즈형 혜택 배너(제목 좌 + 제품 우). 롯데월드와 동일 룩. (2026-09-28)
