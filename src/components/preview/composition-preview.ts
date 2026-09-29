@@ -67,9 +67,59 @@ const BENEFIT_BRANDS: { logo: string; text: string; brand: string }[] = [
 ];
 
 // 한 블록의 한 인스턴스(i번째) → PreviewComponent. buildComp(서버)과 같은 아톰 구성.
-function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail?: string | null }): PreviewComponent {
+function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail?: string | null; placeholder?: boolean }): PreviewComponent {
   const badge = b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: i === 1 ? 'NEW' : '' })] : [];
   const base = { id: nid(), componentType: b.componentType };
+  // 신규 등록 미리보기 = 실제 카피 대신 '슬롯 라벨'(타이틀/디스크립션/혜택 문구 등)로 구조만 보여준다. 로고·이미지는 샘플 유지(레이아웃 확인용).
+  if (ctx?.placeholder) {
+    const isBenefitList = ctx.base === '혜택·오퍼형' && (ctx.detail ?? '').includes('세로형');
+    switch (b.componentType) {
+      case '선택형':
+        return { ...base, name: '탭', selectedIndex: 0, chipVariant: 'contents', atoms: ['메뉴 1', '메뉴 2', '메뉴 3', '메뉴 4'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) };
+      case '배너형':
+        return { ...base, name: '배너', atoms: [
+          atom({ name: '타이틀', atomType: 'TEXT', content: '타이틀' }),
+          atom({ name: '디스크립션', atomType: 'INFO', content: '디스크립션' }),
+          atom({ name: '이미지', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png' }),
+        ] };
+      case '정보형':
+        return { ...base, name: '상태', atoms: [
+          atom({ name: '값', atomType: 'PRICE', content: '0000' }),
+          atom({ name: '상태', atomType: 'BADGE', content: '상태' }),
+          atom({ name: '라벨', atomType: 'TEXT', content: '라벨' }),
+          atom({ name: '아이콘', atomType: 'ICON', imageUrl: 'icon:general/Info' }),
+        ] };
+      case '혜택형':
+        return { ...base, name: '혜택', atoms: [
+          atom({ name: '로고', atomType: 'ICON', imageUrl: pick(LOGO_POOL, i) }),
+          atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: '혜택 문구' }),
+          atom({ name: '브랜드', atomType: 'INFO', content: '브랜드명' }),
+        ] };
+      case '행동형':
+        return { ...base, name: '바로가기', atoms: [
+          atom({ name: '제목', atomType: 'TEXT', content: '메뉴' }),
+          atom({ name: '버튼', atomType: 'CTA', content: '바로가기', linkUrl: '/' }),
+        ] };
+      case '상품형':
+        // 혜택·오퍼형 세로형 = 로고+혜택문구+브랜드(BenefitRow). 그 외 = 카드(이미지+상품명+가격+설명).
+        if (isBenefitList) {
+          return { ...base, name: '혜택', atoms: [
+            atom({ name: '로고', atomType: 'ICON', imageUrl: pick(LOGO_POOL, i) }),
+            atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: '혜택 문구' }),
+            atom({ name: '브랜드', atomType: 'INFO', content: '브랜드명' }),
+          ] };
+        }
+        return { ...base, name: '상품', atoms: [
+          ...(b.image !== false ? [atom({ name: '이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png' })] : []),
+          atom({ name: '상품명', atomType: 'TEXT', content: '상품명' }),
+          ...(b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: '배지' })] : []),
+          ...(b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: '가격' })] : []),
+          ...(b.desc !== false ? [atom({ name: '설명', atomType: 'INFO', content: '설명' })] : []),
+        ] };
+      default:
+        return { ...base, name: b.componentType, atoms: [] };
+    }
+  }
   const isMovie = ctx?.base === '콘텐츠 안내형' || /무비/.test(ctx?.detail ?? '');
   // 상품형 · 세로형 = SKT 요금제 안내 리스트(참고 이미지). 세로형+배너/칩/카테고리탭은 제외.
   const isPlan = ctx?.base === '상품형' && ctx?.detail === '세로형';
@@ -262,10 +312,11 @@ export function compositionToPreviewCorner(opts: {
   mainTitle?: string | null;
   subTitle?: string | null;
   composition: Composition;
+  placeholder?: boolean; // 신규 등록: 슬롯 라벨(타이틀/디스크립션/혜택 문구 등)로 구조만 표시
 }): PreviewCorner {
   uid = 0;
   const components: PreviewComponent[] = [];
-  const ctx = { base: opts.base, detail: opts.detail };
+  const ctx = { base: opts.base, detail: opts.detail, placeholder: opts.placeholder };
   for (const b of opts.composition) for (let i = 1; i <= b.count; i++) components.push(blockComp(b, i, ctx));
   // 세로형+배너 = 요금제 히어로, 가로형+배너 = 아이폰 히어로. 둘 다 상단 히어로 배너(빅배너) 자동 표시.
   const isPlanBanner = opts.base === '상품형' && /세로형\+배너|세로형\(배너\)/.test(opts.detail ?? '');

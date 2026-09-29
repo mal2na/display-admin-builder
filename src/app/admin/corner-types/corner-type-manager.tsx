@@ -1317,8 +1317,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], onClose, bu
             <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#E2E6F1] p-4">
               {(() => {
                 // 정의 기본값(문구·아이콘·카드 모양)을 그대로 미리보기에 반영.
+                // 신규 등록(값 미입력)은 슬롯 라벨(타이틀/디스크립션)로 구조만 보여준다. 편집 중이면 입력값 그대로.
                 const previewC = {
-                  ...compositionToPreviewCorner({ base, detail: detailValid, composition: shownBlocks, mainTitle: useTitle ? (mainTitleText || '코너 타이틀') : null, subTitle: useSub ? (subTitleText || '서브타이틀') : null }),
+                  ...compositionToPreviewCorner({
+                    base, detail: detailValid, composition: shownBlocks,
+                    mainTitle: useTitle ? (mainTitleText || (isNew ? '타이틀' : '코너 타이틀')) : null,
+                    subTitle: useSub ? (subTitleText || (isNew ? '디스크립션' : '서브타이틀')) : null,
+                    placeholder: isNew && !mainTitleText && !subTitleText,
+                  }),
                   cardShape: cardShape || undefined,
                   subTitleIcon,
                 };
