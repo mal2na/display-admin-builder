@@ -389,6 +389,12 @@ model CornerType {
   defaultRecSource      String? // 기본 추천 수급 방식 (상품형 등): CVM 기반 | 운영자 편성. 코너 불러오기 시 corner.recSource로 상속.
   defaultMoreButton     Boolean @default(false) // 더보기 버튼 기본 ON 여부(라벨은 아래, 링크는 코너별 입력)
   defaultMoreButtonLabel String? // 더보기 기본 라벨(예: 더보기, 전체보기)
+  // 정의(거버넌스) 기본값 — 코너 유형 관리가 '코너가 무엇인가'를 전부 정의(2026-09-29 거버넌스 분리). 빌더는 쌓기+CVM만.
+  defaultMainTitle       String? // 코너 타이틀 고정 문구(정의)
+  defaultSubTitle        String? // 서브타이틀 고정 문구(정의)
+  defaultSubTitleIcon    String? // 서브타이틀 아이콘(화살표 | 사용안함)
+  defaultCardShape       String? // 카드 모양(상품형): 1:1 | 3:4 | 직사각형 등
+  defaultBannerOptions   String? // 배너 노출 방식(JSON {mode:'swipe'|'auto',intervalSec,showIndicator,loop}) — 스와이프형
   // CVM 연동 필드 — 이 코너 유형이 CVM/BSS에서 자동으로 가져오는 회원 데이터(FN-EVTMSN-FORM-001). CVM_FIELDS key csv.
   cvmFields String @default("")
 

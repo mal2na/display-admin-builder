@@ -7,7 +7,9 @@ import type { PreviewCorner } from '@/components/preview/blocks';
 export function cornerToPreviewCorner(c: any): PreviewCorner {
   return {
     id: c.id, name: c.name, cornerType: c.cornerType, title: c.title, maxItems: c.maxItems,
-    mainTitle: c.mainTitle, subTitle: c.subTitle, cornerLayout: c.cornerLayout, layoutDetail: c.layoutDetail,
+    mainTitle: c.mainTitle, subTitle: c.subTitle, cornerLayout: c.cornerLayout,
+    // 코너 유형 관리 미리보기에서 배너형 이미지는 672×214(띠배너) 비율로 통일 노출(2026-09-29 사용자 요청). 실제 코너 규격은 그대로.
+    layoutDetail: c.cornerType === '배너형' ? '띠배너 (672×214)' : c.layoutDetail,
     subTitleIcon: c.subTitleIcon, moreButtonUse: c.moreButtonUse, moreButtonLabel: c.moreButtonLabel,
     bigBanner: c.bigBanner, cardShape: c.cardShape, titleLines: c.titleLines,
     bannerImageUrl: c.banner?.imageUrl ?? null, bannerOptions: c.bannerOptions,

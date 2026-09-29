@@ -283,7 +283,7 @@ async function main() {
   const banner3 = await comp('에어팟 사전예약 배너', '배너형', [
     { name: '에어팟 제목', atomType: 'TEXT', content: 'AirPods Max3 사전 예약 하셨나요?' },
     { name: '에어팟 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
-    { name: '에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/airpods-max.png', altText: 'AirPods Max3 헤드폰' },
+    { name: '에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-airpodsmax.png', altText: 'AirPods Max3 헤드폰' },
   ]);
   const cornerAirpods = await corner(
     { name: 'AirPods 사전예약', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
@@ -563,7 +563,7 @@ async function main() {
   const preorderComp = await comp('iPhone 20 사전예약 배너', '배너형', [
     { name: 'iPhone20 사전예약 타이틀', atomType: 'TEXT', content: 'iPhone 20 사전 예약 시\n에어팟 프로 증정' },
     { name: 'iPhone20 사전예약 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
-    { name: 'iPhone20 사전예약 이미지', atomType: 'IMAGE', imageUrl: '/assets/corner-samples/sh-preorder.png', altText: 'iPhone 20 사전예약 · 에어팟 프로 증정' },
+    { name: 'iPhone20 사전예약 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 사전예약 · 에어팟 프로 증정' },
   ]);
   const shopCornerPreorder = await corner(
     { name: 'iPhone 20 사전예약', cornerType: '배너형', layoutDetail: '이미지형' },
@@ -696,12 +696,56 @@ async function main() {
   const shopSpeaker = await comp('Marshall Stockwell 배너', '배너형', [
     { name: '스피커 제목', atomType: 'TEXT', content: 'Marshall Stockwell 블루투스 스피커' },
     { name: '스피커 서브', atomType: 'INFO', content: '사전예약 클립 멤버십 혜택' },
-    { name: '스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/marshall-speaker.png', altText: 'Marshall Stockwell 스피커' },
+    { name: '스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-marshall.png', altText: 'Marshall Stockwell 스피커' },
   ]);
   const shopCornerSpeaker = await corner(
     { name: 'Marshall 스피커', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형' },
     [{ id: shopSpeaker.id, componentType: '배너형' }],
   );
+
+  // 7-2) 프로모션 배너 스와이프 (배너형 · 스와이프형) — 기존 배너 단일형 5개를 한 코너에 담아 좌우 스와이프.
+  //   배너형 유형을 '배너 단일형'과 '스와이프형'으로 나누기 위한 대표 케이스(2026-09-29 사용자 결정).
+  //   이름은 단일형과 겹치지 않게 접두 'SW-' — linkBannerCampaignUsage(이름 매칭)가 이 코너 규격을 덮어쓰지 않도록.
+  const swipeBanner1 = await comp('SW-제휴 혜택 배너', '배너형', [
+    { name: 'SW 가족나들이 제목', atomType: 'TEXT', content: '이번 주말, 가족 나들이에 쓰기 좋은 혜택' },
+    { name: 'SW 가족나들이 서브', atomType: 'INFO', content: '제휴사별 혜택 더보기' },
+    { name: 'SW 롯데월드 이미지', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png', altText: '롯데월드 어드벤처' },
+  ]);
+  const swipeBanner2 = await comp('SW-AirPods 사전예약', '배너형', [
+    { name: 'SW 에어팟 제목', atomType: 'TEXT', content: 'AirPods Max3 사전 예약 하셨나요?' },
+    { name: 'SW 에어팟 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
+    { name: 'SW 에어팟 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-airpodsmax.png', altText: 'AirPods Max3 헤드폰' },
+  ]);
+  const swipeBanner3 = await comp('SW-iPhone 20 사전예약', '배너형', [
+    { name: 'SW iPhone 제목', atomType: 'TEXT', content: 'iPhone 20 사전 예약 시\n에어팟 프로 증정' },
+    { name: 'SW iPhone 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
+    { name: 'SW iPhone 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png', altText: 'iPhone 20 사전예약' },
+  ]);
+  const swipeBanner4 = await comp('SW-Marshall 스피커', '배너형', [
+    { name: 'SW 스피커 제목', atomType: 'TEXT', content: 'Marshall Stockwell 블루투스 스피커' },
+    { name: 'SW 스피커 서브', atomType: 'INFO', content: '사전예약 클럽 멤버십 혜택' },
+    { name: 'SW 스피커 이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/product-marshall.png', altText: 'Marshall Stockwell 스피커' },
+  ]);
+  const swipeBanner5 = await comp('SW-추천 상품 (CHANEL)', '배너형', [
+    { name: 'SW 루쥬코코 제목', atomType: 'TEXT', content: 'CHANEL 루쥬 코코 립스틱' },
+    { name: 'SW 루쥬코코 서브', atomType: 'INFO', content: '봄 뮤트 핑크 #130' },
+    { name: 'SW 루쥬코코 이미지', atomType: 'IMAGE', imageUrl: '/assets/chanel-lipstick.png', altText: 'CHANEL 루쥬 코코 립스틱' },
+  ]);
+  const shopCornerSwipe = await corner(
+    { name: '프로모션 배너 스와이프', cornerType: '배너형', maxItems: 5, layoutDetail: '이미지형' },
+    [
+      { id: swipeBanner1.id, componentType: '배너형' },
+      { id: swipeBanner2.id, componentType: '배너형' },
+      { id: swipeBanner3.id, componentType: '배너형' },
+      { id: swipeBanner4.id, componentType: '배너형' },
+      { id: swipeBanner5.id, componentType: '배너형' },
+    ],
+  );
+  // 배너형 노출 방식 = 스와이프(수동) + 인디케이터 + 루프. (bannerOptions JSON, 단일 진실)
+  await prisma.corner.update({
+    where: { id: shopCornerSwipe.id },
+    data: { bannerOptions: JSON.stringify({ mode: 'swipe', showIndicator: true, loop: true }) },
+  });
 
   // 8) 구독 혜택 (상품형 · 가로 SWIPE)
   const sub1 = await comp('주말 장보기 패스', '상품형', [
@@ -774,7 +818,8 @@ async function main() {
           { cornerId: shopCornerData.id, order: 4 },
           { cornerId: shopCornerGift.id, order: 5 },
           { cornerId: shopCornerSpeaker.id, order: 6 },
-          { cornerId: shopCornerSub.id, order: 7 },
+          { cornerId: shopCornerSwipe.id, order: 7 }, // 프로모션 배너 스와이프(배너형·스와이프형)
+          { cornerId: shopCornerSub.id, order: 8 },
         ],
       },
     },
@@ -788,7 +833,8 @@ async function main() {
     { cornerId: shopCornerData.id, order: 4 },
     { cornerId: shopCornerGift.id, order: 5 },
     { cornerId: shopCornerSpeaker.id, order: 6 },
-    { cornerId: shopCornerSub.id, order: 7 },
+    { cornerId: shopCornerSwipe.id, order: 7 },
+    { cornerId: shopCornerSub.id, order: 8 },
   ];
   // 비로그인 Template
   await prisma.template.create({
@@ -820,7 +866,7 @@ async function main() {
 
   // 2) 실시간 이용요금 (상태 안내형 · 금액 요약)
   const myBill = await comp('실시간 이용요금', '정보형', [
-    { name: '요금 아이콘', atomType: 'ICON', imageUrl: 'icon:general/Won', altText: '이용요금' },
+    { name: '요금 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-bill.png', altText: '이용요금' },
     { name: '요금 금액', atomType: 'PRICE', content: '@cvm:bill.amount' }, // CVM 연동
     { name: '요금 배지', atomType: 'BADGE', content: '3월 납부완료' },
     { name: '요금 라벨', atomType: 'TEXT', content: '실시간 이용요금' },
@@ -832,7 +878,7 @@ async function main() {
 
   // 3) T멤버십 포인트 (상태 안내형 · 금액 요약)
   const myPoint = await comp('T멤버십 포인트', '정보형', [
-    { name: '포인트 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Point', altText: '포인트' },
+    { name: '포인트 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-point.png', altText: '포인트' },
     { name: '포인트 값', atomType: 'PRICE', content: '@cvm:membership.point' }, // CVM 연동
     { name: '포인트 배지', atomType: 'BADGE', content: '3월 누적할인 1,700원' },
     { name: '포인트 라벨', atomType: 'TEXT', content: 'T멤버십 포인트' },
@@ -855,7 +901,7 @@ async function main() {
 
   // 5) 실시간 데이터 잔여량 (상태 안내형 · 사용량 요약)
   const myData = await comp('실시간 데이터 잔여량', '정보형', [
-    { name: '데이터 아이콘', atomType: 'ICON', imageUrl: 'icon:general/Data', altText: '데이터' },
+    { name: '데이터 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-data.png', altText: '데이터' },
     { name: '데이터 값', atomType: 'PRICE', content: '@cvm:data.remaining' }, // CVM 연동
     { name: '데이터 배지', atomType: 'BADGE', content: '20GB 제공' },
     { name: '데이터 라벨', atomType: 'TEXT', content: '실시간 잔여량' },
@@ -867,7 +913,7 @@ async function main() {
 
   // 6) 결합가족 (상태 안내형 · 금액 요약)
   const myCombine = await comp('결합가족', '정보형', [
-    { name: '결합 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Family', altText: '결합가족' },
+    { name: '결합 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-combine.png', altText: '결합가족' },
     { name: '결합 값', atomType: 'PRICE', content: '@cvm:combine.count' }, // CVM 연동 (값=가격 슬롯: 유형 표준 원자 구성 통일)
     { name: '결합 배지', atomType: 'BADGE', content: '15,000원 할인' },
     { name: '결합 라벨', atomType: 'TEXT', content: '결합가족' },
@@ -890,7 +936,7 @@ async function main() {
 
   // 8) 휴대폰 결제·콘텐츠 이용료 (상태 안내형 · 금액 요약)
   const myPay = await comp('휴대폰 결제·콘텐츠 이용료', '정보형', [
-    { name: '결제 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Bill', altText: '휴대폰 결제' }, // 유형 표준 원자 구성 통일 (아이콘 슬롯)
+    { name: '결제 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-pay.png', altText: '휴대폰 결제' }, // 유형 표준 원자 구성 통일 (아이콘 슬롯)
     { name: '결제 금액', atomType: 'PRICE', content: '23,800원' },
     { name: '결제 배지', atomType: 'BADGE', content: '80,000원 한도' },
     { name: '결제 라벨', atomType: 'TEXT', content: '휴대폰 결제 / 콘텐츠 이용료' },
@@ -902,7 +948,7 @@ async function main() {
 
   // 9) T 우주 월 구독료 (상태 안내형 · 금액 요약)
   const mySub = await comp('T 우주 월 구독료', '정보형', [
-    { name: '구독 아이콘', atomType: 'ICON', imageUrl: 'icon:graphic/Subscribe', altText: 'T 우주 구독' }, // 유형 표준 원자 구성 통일 (아이콘 슬롯)
+    { name: '구독 아이콘', atomType: 'IMAGE', imageUrl: '/assets/ds/my-sub.png', altText: 'T 우주 구독' }, // 유형 표준 원자 구성 통일 (아이콘 슬롯)
     { name: '구독 금액', atomType: 'PRICE', content: '67,500원' },
     { name: '구독 배지', atomType: 'BADGE', content: '3개 상품 구독중' },
     { name: '구독 라벨', atomType: 'TEXT', content: 'T 우주 월 구독료' },
@@ -1044,7 +1090,13 @@ async function main() {
     for (const grp of emitGroups) {
       const rep = grp[0];
       const { cleanDetail } = parseBanner(rep);
-      const detail = cleanDetail ?? null;
+      let detail = cleanDetail ?? null;
+      // 배너형 유형 = 배너 컴포넌트 수로 '배너 단일형' / '스와이프형' 구분 (2026-09-29 사용자 결정).
+      //   한 코너에 배너 1개 → 단일형, 2개 이상 → 스와이프형(BannerCarousel로 좌우 스와이프).
+      if (base === '배너형') {
+        const bannerCount = rep.cornerComponents.filter((cc) => cc.component.componentType === '배너형').length;
+        detail = bannerCount >= 2 ? '스와이프형' : '배너 단일형';
+      }
       // ② 구성 컴포넌트 유형 = 코너에서 가장 많은 컴포넌트 유형(동률이면 먼저 배치된 것).
       const freq = new Map<string, number>();
       for (const cc of rep.cornerComponents) freq.set(cc.component.componentType, (freq.get(cc.component.componentType) ?? 0) + 1);
@@ -1087,6 +1139,13 @@ async function main() {
           defaultSortStrategy: rep.sortStrategy && rep.sortStrategy !== 'MANUAL' ? rep.sortStrategy : null,
           defaultMoreButton: rep.moreButtonUse ?? false,
           defaultMoreButtonLabel: rep.moreButtonUse ? '전체보기' : null, // 유형 기본 CTA는 일반 라벨(대표 코너명 상속 금지)
+          // 정의(거버넌스) 기본값 — 코너 유형이 '무엇인가'를 정의(2026-09-29). 대표 코너 값을 유형 정의로 승격 → 빌더는 이를 상속.
+          //  배너형은 코너 제목을 두지 않으므로(배너 자체가 콘텐츠) 타이틀·서브 null.
+          defaultMainTitle: base === '배너형' ? null : (rep.mainTitle ?? null),
+          defaultSubTitle: base === '배너형' ? null : (rep.subTitle ?? null),
+          defaultSubTitleIcon: base === '배너형' ? null : (rep.subTitleIcon ?? null),
+          defaultCardShape: rep.cardShape ?? null,
+          defaultBannerOptions: rep.bannerOptions ?? null,
         },
       });
       // 생성 즉시 이 그룹의 코너들을 이 유형에 연결(코너별 분리라 정확 매핑 — 아래 fallback 백필은 미배치 코너용).
@@ -1124,7 +1183,7 @@ async function main() {
   // 배너형·이미지형 = 홈의 '독립 이미지 배너'. 제휴(롯데월드)·AirPods·iPhone20 사전예약·Marshall + 루쥬 코코(마이 홈 추천 상품)
   const BANNER_IMAGE_SAMPLES = ['hb-partner-banner', 'hb-airpods', 'sh-preorder', 'sh-speaker', 'my-product']; // 배너형 이미지 배너 5장
   await prisma.cornerType.updateMany({
-    where: { baseCategory: '배너형', typeDetail: '이미지형' },
+    where: { baseCategory: '배너형', typeDetail: '배너 단일형' },
     data: { sampleImageUrl: BANNER_IMAGE_SAMPLES.map((s) => `/assets/corner-samples/${s}.png`).join('\n') },
   });
 
@@ -1499,12 +1558,6 @@ async function seedBannerCampaigns() {
       subtitle: null, purpose: '주말 가족 나들이 · 제휴사 혜택 안내 (직접 만들기)',
       landingType: 'event', landingUrl: 'EVT20260820006 (제휴사 혜택 기획전)', pageType: 'current', bannerAlt: '이번 주말, 가족 나들이에 쓰기 좋은 혜택 · 롯데월드 어드벤처',
       typeDetails: S3.map((detail) => ({ type: '리스트형', detail, useYn: true, imageUrl: '', bgColor: '#EDEFF6', bgColor2: '#DDE3F0', bgType: 'solid', title: '이번 주말, 가족 나들이에\n쓰기 좋은 혜택', subtitle: '제휴사별 혜택 더보기', titleColor: '#1E293B', subColor: '#64748B', align: 'left', imagePos: 'right', imgSize: 'lg', rightImageUrl: '/assets/lotteworld.png' })),
-    },
-    {
-      campaignCode: 'BC-202609-005', title: '갤럭시 신제품 사전예약',
-      subtitle: null, purpose: '갤럭시 신제품 사전예약 안내',
-      landingType: 'direct', landingUrl: 'https://tworld/galaxy-preorder', pageType: 'current', bannerAlt: '갤럭시 신제품 사전예약',
-      typeDetails: S4.map((detail) => ({ type: '이미지형', detail, useYn: true, imageUrl: '/assets/cardhome/cardhome-banner-BannerSrc-0.png' })),
     },
     {
       // AirPods Max3 사전예약 — 콤포즈형 혜택 배너(제목 좌 + 제품 우). 롯데월드와 동일 룩. (2026-09-28)
