@@ -404,7 +404,7 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
           </div>
         </div>
       ) : (
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row">
+      <div className="flex flex-col gap-4 md:flex-row">
         {/* 미리보기 (같은 페이지 · 인라인) */}
         <div className="shrink-0">
           <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
@@ -421,7 +421,7 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
               <button type="button" onClick={() => onShared({ bannerType: '' })} className="ml-auto inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600">유형 변경</button>
             </div>
             {/* 규격 정보 — 폰트·이미지·배너 규격 안내 */}
-            <div className="mb-4 grid grid-cols-3 gap-2 rounded-lg border border-slate-100 bg-slate-50/70 p-2.5 text-[11px]">
+            <div className="mb-4 grid grid-cols-3 gap-2 rounded-lg bg-slate-50/70 p-2.5 text-[11px]">
               <div className="min-w-0"><p className="text-slate-400">배너 규격</p><p className="truncate font-medium text-slate-700">{row.detail || '—'}</p></div>
               <div className="min-w-0"><p className="text-slate-400">폰트</p><p className="truncate font-medium text-slate-700" title={dsBannerType(row.bannerType).font}>{dsBannerType(row.bannerType).font}</p></div>
               <div className="min-w-0"><p className="text-slate-400">권장 이미지</p><p className="truncate font-medium text-slate-700" title={dsBannerType(row.bannerType).image}>{dsBannerType(row.bannerType).image}</p></div>
@@ -645,8 +645,8 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
               </div>
             );
             return (
-            <div key={i} className="overflow-hidden rounded-lg border border-slate-200">
-              {/* 배너유형 · 규격 · 사용여부 (한 줄) — 직접 만들기 우선(회의 결정) */}
+            <div key={i} className="border-t border-[#E8ECEF] first:border-t-0">
+              {/* 배너유형 · 규격 (한 줄) — 직접 만들기 우선(회의 결정). 사용여부는 별도 줄(배너의 사용, 2026-09-30) */}
               <FieldRow label="배너유형" required>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                   <div className="flex flex-wrap gap-3">
@@ -660,11 +660,15 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
                   <div className="flex items-center gap-2"><span className="text-[12px] text-muted-foreground">배너 규격 <span className="text-rose-500">*</span></span>
                     <Select value={row.detail} onChange={(e) => setRow(i, { detail: e.target.value })} className="h-9 w-48 text-sm">{sizesFor(row.type).map((d) => <option key={d} value={d}>{d}</option>)}</Select>
                   </div>
-                  <div className="flex items-center gap-2 text-sm"><span className="text-[12px] text-muted-foreground">사용여부 <span className="text-rose-500">*</span></span>
-                    <label className="flex items-center gap-1"><input type="radio" checked={row.useYn} onChange={() => setRow(i, { useYn: true })} className="accent-indigo-600" />사용</label>
-                    <label className="flex items-center gap-1"><input type="radio" checked={!row.useYn} onChange={() => setRow(i, { useYn: false })} className="accent-indigo-600" />미사용</label>
-                  </div>
                   {rows.length > 1 && <button type="button" onClick={() => removeRow(i)} title="이 베리에이션 삭제" className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 px-2 text-[12px] text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"><Minus className="h-3.5 w-3.5" />삭제</button>}
+                </div>
+              </FieldRow>
+
+              {/* 사용여부 — 이 배너(규격)의 사용/미사용. 배너유형 줄과 분리(2026-09-30 사용자 요청) */}
+              <FieldRow label="사용여부" required>
+                <div className="flex items-center gap-3 text-sm">
+                  <label className="flex items-center gap-1"><input type="radio" checked={row.useYn} onChange={() => setRow(i, { useYn: true })} className="accent-indigo-600" />사용</label>
+                  <label className="flex items-center gap-1"><input type="radio" checked={!row.useYn} onChange={() => setRow(i, { useYn: false })} className="accent-indigo-600" />미사용</label>
                 </div>
               </FieldRow>
 
