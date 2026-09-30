@@ -1680,7 +1680,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         await formAction(fd);
         onClose();
       }}
-      className="space-y-4 rounded-lg border bg-card p-5"
+      className="space-y-4 p-5"
     >
       {bulk && <input type="hidden" name="bulkArraysJson" value={JSON.stringify(selectedArrays)} />}
       <div className="flex items-center gap-2 border-b pb-3">
@@ -1802,6 +1802,40 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 />
               );
             })()}
+            {/* FO 사용자 설정 — 탭·메뉴 정의 바로 아래(우측 컨트롤 열). 선택형/업무 진입형에서만. */}
+            {(base === '업무 진입형' || compValid === '선택형') && (
+              <section className="overflow-hidden rounded-md border border-[#E8ECEF]">
+                <div className="flex items-center gap-1.5 border-b border-[#E8ECEF] bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
+                  <Info className="h-3.5 w-3.5 text-sky-500" /> FO 사용자 설정 (고객 커스터마이즈)
+                </div>
+                <div className="space-y-2.5 p-3">
+                  <label className="flex items-center justify-between gap-2">
+                    <span className="flex flex-col">
+                      <span className="text-xs font-medium text-foreground">사용자 설정 가능</span>
+                      <span className="text-[10px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
+                    </span>
+                    <button type="button" role="switch" aria-checked={userCustom} onClick={() => setUserCustom((v) => !v)}
+                      className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-sky-500' : 'bg-slate-300')}>
+                      <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
+                    </button>
+                  </label>
+                  <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
+                  {userCustom && (
+                    <div className="grid grid-cols-2 gap-2 border-t pt-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground">고객 노출 최소 개수</label>
+                        <Input name="userMinItems" type="number" min={0} value={userMin} onChange={(e) => setUserMin(e.target.value)} placeholder="예: 3 (고정 포함)" className="h-8 text-xs" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground">고객 노출 최대 개수</label>
+                        <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
+                      </div>
+                      <p className="col-span-2 text-[10px] text-muted-foreground">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함.</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
             {/* 자동 구성(배열·레이아웃 요약) 카드는 제거 — 등록 결과·상품/혜택 묶기와 중복(2026-09-30 사용자 요청). */}
             <p className="text-[10px] leading-relaxed text-muted-foreground">
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
@@ -1970,46 +2004,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* (제거됨) 고객정보 연동 필드 — 코너 유형 단계에선 실제 바인딩을 하지 않아 삭제.
           실제 고객정보 연동은 빌더의 아톰 단계('고객정보 가져오기' = @cvm:key)에서 처리한다. */}
-
-      {/* FO 사용자 설정 — 선택형/업무 진입형(메뉴·탭) 유형에서. 고객이 직접 편집 + 노출 개수 범위 */}
-      {(base === '업무 진입형' || compValid === '선택형') && (
-        <section className="overflow-hidden rounded-md border">
-          <div className="flex items-center gap-1.5 border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
-            <Info className="h-3.5 w-3.5 text-sky-500" /> FO 사용자 설정 (고객 커스터마이즈)
-          </div>
-          <div className="space-y-2.5 p-3">
-            <label className="flex items-center justify-between gap-2">
-              <span className="flex flex-col">
-                <span className="text-xs font-medium text-foreground">사용자 설정 가능</span>
-                <span className="text-[10px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={userCustom}
-                onClick={() => setUserCustom((v) => !v)}
-                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-sky-500' : 'bg-slate-300')}
-              >
-                <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
-              </button>
-            </label>
-            <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
-            {userCustom && (
-              <div className="grid grid-cols-2 gap-2 border-t pt-2.5">
-                <div className="space-y-1">
-                  <label className="text-[10px] text-muted-foreground">고객 노출 최소 개수</label>
-                  <Input name="userMinItems" type="number" min={0} value={userMin} onChange={(e) => setUserMin(e.target.value)} placeholder="예: 3 (고정 포함)" className="h-8 text-xs" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] text-muted-foreground">고객 노출 최대 개수</label>
-                  <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
-                </div>
-                <p className="col-span-2 text-[10px] text-muted-foreground">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함.</p>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
 
       {/* 유형 샘플 이미지 제거(2026-09-28) — 컴포넌트 조합의 실시간 미리보기(미리보기·조합 결과)로 통일. 중복 방지. */}
 
