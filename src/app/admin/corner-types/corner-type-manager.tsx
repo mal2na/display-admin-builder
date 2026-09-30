@@ -1461,68 +1461,55 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     </div>
   );
 
-  // 유형·배열 선택(비-bulk) — 통합 섹션 우측 열 상단. (안내 + ① 코너 유형 + ② 배열·레이아웃 + 요약)
+  // 유형·배열 선택(비-bulk) — 테이블(TRow) 형태로 통일(2026-09-30 사용자 요청). 코너 유형 ID / 코너 유형 / 배열·레이아웃 / 결과.
   const basicPickers = (
-    <div className="space-y-3">
+    <div className="overflow-hidden rounded-md border border-[#E8ECEF]">
       <input type="hidden" name="name" value={derivedName} />
       <input type="hidden" name="layout" value={row.layout ?? ''} />
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2">
-        <span className="flex items-center gap-1.5 text-[11px] text-indigo-700">
-          <Info className="h-3.5 w-3.5 shrink-0" />
-          <span><b className="font-semibold">2단계</b>로 코너를 정의해요 — 코너 유형 → 배열·레이아웃</span>
-        </span>
-        <span className="text-[11px] text-slate-500">
-          코너 유형 ID <span className="ml-0.5 rounded border bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-700">{row.typeId}</span>
-        </span>
-      </div>
-      {/* ① 코너 유형 */}
-      <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-        <StepHead n={1} title="코너 유형" required hint="이 코너가 화면에서 맡는 역할이에요" />
-        <div className="flex flex-wrap gap-1.5">
-          {baseOptions.map((c) => (
-            <label key={c} className="cursor-pointer">
-              <input type="radio" name="baseCategory" value={c} checked={base === c} onChange={() => { setBase(c); setDetail(defaultShapeFor(c)); }} className="peer sr-only" />
-              <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">{c}</span>
-            </label>
-          ))}
-        </div>
-        {cornerTypePurpose(base) && (
-          <p className="mt-2 flex gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-indigo-700">
-            <span className="shrink-0 font-semibold">목적</span>
-            <span>{cornerTypePurpose(base)}</span>
-          </p>
-        )}
-      </div>
       <input type="hidden" name="componentType" value={compValid} />
-      {/* ② 배열·레이아웃 */}
-      <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-        <StepHead n={2} title="배열·레이아웃" hint="이 유형을 어떤 형태로 보여줄지 골라요" />
-        <div className="flex flex-wrap gap-1.5">
-          {allowEmptyDetail && (
-            <label className="cursor-pointer">
-              <input type="radio" name="typeDetail" value="" checked={detailValid === ''} onChange={() => setDetail('')} className="peer sr-only" />
-              <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">선택 안 함</span>
-            </label>
-          )}
-          {typeShapes.map((d) => {
-            const isReg = registered.some((r) => r.baseCategory === base && (r.typeDetail ?? '') === d);
-            return (
-              <label key={d} className="cursor-pointer" title={isReg ? '이미 등록된 유형·배열이에요(다시 등록해도 됩니다)' : undefined}>
-                <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
-                <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white', isReg && 'border-emerald-300 bg-emerald-50/60')}>
-                  {layoutLabel(d)}
-                  {isReg && <span className="inline-flex items-center rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold leading-none text-white">등록됨</span>}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">배열은 <b>형태(레이아웃)</b>만 정합니다. 알약 안 <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span> 표시는 그 배열이 이미 등록돼 있다는 뜻(다시 등록 가능). <b>노출 개수</b>는 빌더에서 코너별로 조정.</p>
-      </div>
       <input type="hidden" name="bigBanner" value="" />
-      <div className="rounded-md border border-dashed bg-slate-50 px-3 py-2 text-[11px] text-muted-foreground">
-        이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span>
-      </div>
+      <TRow label="코너 유형 ID"><span className="font-mono text-[12px] text-slate-700">{row.typeId}</span></TRow>
+      <TRow label="코너 유형" required hint="이 코너가 화면에서 맡는 역할">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {baseOptions.map((c) => (
+              <label key={c} className="cursor-pointer">
+                <input type="radio" name="baseCategory" value={c} checked={base === c} onChange={() => { setBase(c); setDetail(defaultShapeFor(c)); }} className="peer sr-only" />
+                <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">{c}</span>
+              </label>
+            ))}
+          </div>
+          {cornerTypePurpose(base) && (
+            <p className="flex gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-indigo-700"><span className="shrink-0 font-semibold">목적</span><span>{cornerTypePurpose(base)}</span></p>
+          )}
+        </div>
+      </TRow>
+      <TRow label="배열·레이아웃" hint="어떤 형태로 보여줄지">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {allowEmptyDetail && (
+              <label className="cursor-pointer">
+                <input type="radio" name="typeDetail" value="" checked={detailValid === ''} onChange={() => setDetail('')} className="peer sr-only" />
+                <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">선택 안 함</span>
+              </label>
+            )}
+            {typeShapes.map((d) => {
+              const isReg = registered.some((r) => r.baseCategory === base && (r.typeDetail ?? '') === d);
+              return (
+                <label key={d} className="cursor-pointer" title={isReg ? '이미 등록된 유형·배열이에요(다시 등록해도 됩니다)' : undefined}>
+                  <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
+                  <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white', isReg && 'border-emerald-300 bg-emerald-50/60')}>
+                    {layoutLabel(d)}
+                    {isReg && <span className="inline-flex items-center rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold leading-none text-white">등록됨</span>}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">배열은 <b>형태(레이아웃)</b>만 정합니다. <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span>은 이미 등록된 배열(다시 등록 가능) · 노출 개수는 빌더에서.</p>
+        </div>
+      </TRow>
+      <TRow label="등록 결과" flat><span className="text-[12px]">이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span></span></TRow>
     </div>
   );
 
