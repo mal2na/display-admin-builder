@@ -1193,6 +1193,8 @@ function Switch({ checked, onChange, disabled }: { checked: boolean; onChange: (
 
 export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], onClose, bulk = false, bulkArrays, submitAction }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; onClose: () => void; bulk?: boolean; bulkArrays?: string[]; submitAction?: (fd: FormData) => void | Promise<void> }) {
   const isNew = !row.id;
+  // 등록(신규)은 스텝퍼로 단계별 설정 — 프로모션 등록처럼(2026-09-30 사용자 요청). 수정은 전체를 한 화면에.
+  const [step, setStep] = useState(0);
   // 2단 분류: ① 코너 유형(base) → ② 배열·레이아웃(detail). 구성 컴포넌트는 배열·레이아웃에서 자동 도출.
   const [base, setBase] = useState(row.baseCategory);
   const [detail, setDetail] = useState(row.typeDetail ?? '');
@@ -1535,6 +1537,30 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     </div>
   );
 
+  // 등록 스텝퍼 — 신규 등록만(수정은 전체 한 화면). 단계: 유형·배열 → 컴포넌트 구성 → 표시 항목·정의.
+  const WIZARD_STEPS = [
+    { title: '유형·배열', desc: '역할과 형태' },
+    { title: '컴포넌트 구성', desc: '담을 상품·배너·탭' },
+    { title: '표시 항목·정의', desc: '노출 항목·기본값' },
+  ];
+  const wizard = isNew && !bulk;
+  const lastStep = WIZARD_STEPS.length - 1;
+  const showStep = (n: number) => !wizard || step === n;
+  const stepValid = !wizard || (step === 0 ? !!base && (allowEmptyDetail || !!detailValid) : true); // 1단계는 유형·배열 선택 필수
+  const stepperHead = wizard ? (
+    <div className="flex items-center gap-1.5 rounded-lg border border-[#E8ECEF] bg-[#F8F9FB] px-3 py-2.5">
+      {WIZARD_STEPS.map((s, i) => (
+        <div key={i} className="flex flex-1 items-center gap-1.5">
+          <button type="button" onClick={() => i < step && setStep(i)} disabled={i > step} className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition', i === step ? 'bg-indigo-600 text-white' : i < step ? 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50' : 'text-slate-400')}>
+            <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold', i === step ? 'bg-white/25 text-white' : i < step ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400')}>{i < step ? <Check className="h-3 w-3" /> : i + 1}</span>
+            <span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold leading-tight">{s.title}</span><span className={cn('block truncate text-[10px] leading-tight', i === step ? 'text-indigo-100' : 'text-slate-400')}>{s.desc}</span></span>
+          </button>
+          {i < WIZARD_STEPS.length - 1 && <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />}
+        </div>
+      ))}
+    </div>
+  ) : null;
+
   return (
     <form
       action={async (fd) => {
@@ -1546,7 +1572,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       {bulk && <input type="hidden" name="bulkArraysJson" value={JSON.stringify(selectedArrays)} />}
       <div className="flex items-center gap-2 border-b pb-3">
         <h2 className="text-sm font-semibold">{isNew ? '코너 유형 등록' : `코너 유형 수정 · ${row.typeId}`}</h2>
+        {wizard && <span className="ml-auto text-[11px] text-slate-400">단계 {step + 1} / {WIZARD_STEPS.length}</span>}
       </div>
+      {stepperHead}
 
       {/* 기본 정보 — bulk(다중 배열 일괄 수정) 전용. 비-bulk 등록/수정은 아래 통합 '코너 정의' 섹션에서 미리보기와 함께. */}
       {bulk && (
@@ -1624,10 +1652,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         <div className="grid grid-cols-1 gap-4 p-3 lg:grid-cols-[340px_1fr]">
           {/* 왼쪽: 라이브 미리보기(sticky) — 기본 정보+컴포넌트 구성 통합, 미리보기 하나(2026-09-29 사용자 요청) */}
           {livePreview}
-          {/* 오른쪽: 모든 설정 — 유형·배열 선택 → 채널/플랫폼/사용/설명 → 편집기 → 자동구성 → 세부 항목 */}
+          {/* 오른쪽: 모든 설정 — (등록은 스텝별) 유형·배열 → 컴포넌트 구성 → 표시 항목 */}
           <div className="min-w-0 space-y-3">
-            {basicPickers}
-            {metaFields}
+            {/* 스텝은 unmount 대신 hidden으로 숨김 — 이전 스텝 입력값(유형·채널 등)이 submit에서 빠지지 않도록 */}
+            <div className={cn('space-y-3', !showStep(0) && 'hidden')}>
+              {basicPickers}
+              {metaFields}
+            </div>
+            <div className={cn('space-y-3', !showStep(1) && 'hidden')}>
             {/* 스와이프형 — 코너 유형에서 배너를 '묶는다'(배너 캠페인 관리에서 선택 · 랜딩 URL 그대로 끌어옴). 순서는 드래그앤드롭. 2026-09-29 사용자 요청 */}
             {isBannerType && detailValid === '스와이프형' && (
               <SwipeBannerEditor
@@ -1687,9 +1719,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
+            </div>
             {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로 통일(2026-09-30 사용자 요청). */}
             {!bulk && (
-            <div className="overflow-hidden rounded-md border border-[#E8ECEF]">
+            <div className={cn('overflow-hidden rounded-md border border-[#E8ECEF]', !showStep(2) && 'hidden')}>
               <div className="border-b border-[#E8ECEF] bg-[#F8F9FB] px-3 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
               <TRow label="표시 항목">
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
@@ -1786,7 +1819,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* 추천 수급 · 노출 구성 = 한 섹션. 콘텐츠 출처(수급 방식)를 먼저 정하고, 그에 따라 노출 구성(정렬·CTA)을 설정.
           CVM 수급이면 정렬·구성을 CVM이 고객마다 결정하므로 노출 구성은 '선택 불가'(비활성)로 잠근다. */}
-      {(isRecEligible || isListType) && (
+      {showStep(2) && (isRecEligible || isListType) && (
       <section className="overflow-hidden rounded-md border border-violet-200">
         <div className="flex items-center gap-2 border-b border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-xs font-semibold text-violet-700">
           추천 수급 · 노출 구성 기본값
@@ -1888,13 +1921,18 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* 유형 샘플 이미지 제거(2026-09-28) — 컴포넌트 조합의 실시간 미리보기(미리보기·조합 결과)로 통일. 중복 방지. */}
 
-      <div className="flex justify-end gap-2 border-t pt-3">
-        <Button type="button" variant="secondary" size="sm" onClick={onClose}>
-          취소
-        </Button>
-        <Button type="submit" size="sm">
-          <Check className="mr-1 h-4 w-4" /> {isNew ? '등록' : '저장'}
-        </Button>
+      <div className="flex items-center justify-end gap-2 border-t pt-3">
+        <Button type="button" variant="secondary" size="sm" onClick={onClose}>취소</Button>
+        {wizard ? (
+          <>
+            {step > 0 && <Button type="button" variant="secondary" size="sm" onClick={() => setStep((s) => Math.max(0, s - 1))}>이전</Button>}
+            {step < lastStep
+              ? <Button type="button" size="sm" disabled={!stepValid} onClick={() => setStep((s) => Math.min(lastStep, s + 1))}>다음 <ChevronRight className="ml-1 h-4 w-4" /></Button>
+              : <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> 등록</Button>}
+          </>
+        ) : (
+          <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> 저장</Button>
+        )}
       </div>
     </form>
   );
