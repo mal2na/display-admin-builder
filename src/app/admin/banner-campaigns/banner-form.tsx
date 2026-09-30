@@ -651,93 +651,89 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
           <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">이미지 대체텍스트(alt)는 <b className="text-slate-600">규격(사이즈)별로 개별</b> 입력합니다 — 아래 각 베리에이션 카드에서 입력하세요. (페이지마다 다른 문구가 들어갈 수 있어요)</p>
           {rows.map((row, i) => {
             const imgDim = pvDims(row.detail, 340);
-            // 이미지 업로드 블록 (이미지형·팝업배너형·상품배너형 공통)
-            const imageUploadEl = (
-              <div className="flex items-start gap-3">
+            const isUpload = isImageUploadType(row.type);
+            // 미리보기(이미지 업로드형) — 이미지 자리 + 파일 정보. 2026-09-30 목업 통일.
+            const previewEl = (
+              <div className="flex items-start gap-4">
                 <div className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-slate-300 bg-slate-50" style={{ width: imgDim.w, height: imgDim.h }}>
                   {row.imageUrl
                     ? <><img src={row.imageUrl} alt="" className="h-full w-full object-contain p-1" /><button type="button" onClick={() => setRow(i, { imageUrl: '' })} className="absolute right-1 top-1 rounded-full bg-white/90 p-0.5 text-slate-400 shadow ring-1 ring-slate-200 hover:text-slate-700"><X className="h-3.5 w-3.5" /></button></>
-                    : <div className="flex flex-col items-center gap-1 text-slate-300"><Plus className="h-5 w-5" /><ImageIcon className="h-4 w-4" /><span className="text-[10px]">{imgDim.label}</span></div>}
+                    : <div className="flex flex-col items-center gap-1 text-slate-300"><ImageIcon className="h-6 w-6" /></div>}
                 </div>
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50">
-                      <Upload className="h-3.5 w-3.5" /> 로컬 업로드
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(i, 'imageUrl', e.target.files?.[0])} />
-                    </label>
-                    <LibraryPickButton images={libImages} onPick={(url) => setRow(i, { imageUrl: url })} label="DB에서 가져오기" />
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">완성된 배너 이미지를 <b>로컬 파일 업로드</b> 또는 <b>DB 이미지 라이브러리</b>에서 선택해 등록합니다 · 권장 규격: {row.detail} · JPG/PNG</p>
+                <div className="min-w-0 flex-1 space-y-1.5 pt-1 text-[12px] text-muted-foreground">
+                  <p className="text-slate-400">업로드 된 파일명 : {row.imageUrl ? '업로드됨' : '없음'}</p>
+                  <p>권장 규격 : {imgDim.label}</p>
+                  <p>권장 형식 : JPG, JPEG, PNG, GIF, BMP Format</p>
                 </div>
               </div>
             );
             return (
-            <div key={i} className="rounded-lg border border-slate-200 p-3">
-              <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                {/* 제작 방식(유형) 선택 */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] text-muted-foreground">유형</span>
-                  <div className="inline-flex overflow-hidden rounded-lg border border-slate-200">
+            <div key={i} className="overflow-hidden rounded-lg border border-slate-200">
+              {/* 배너유형 · 규격 · 사용여부 (한 줄) — 직접 만들기 우선(회의 결정) */}
+              <FieldRow label="배너유형" required>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <div className="flex flex-wrap gap-3">
                     {METHODS.map((m) => (
-                      <button key={m.value} type="button"
-                        onClick={() => { const sizes = sizesFor(m.value); setRow(i, { type: m.value, detail: sizes.includes(row.detail) ? row.detail : sizes[0] }); }}
-                        title={m.desc}
-                        className={'px-3 py-1.5 text-[13px] font-medium ' + (row.type === m.value ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50')}>
+                      <label key={m.value} className="flex items-center gap-1.5 text-sm" title={m.desc}>
+                        <input type="radio" checked={row.type === m.value} onChange={() => { const sizes = sizesFor(m.value); setRow(i, { type: m.value, detail: sizes.includes(row.detail) ? row.detail : sizes[0] }); }} className="accent-indigo-600" />
                         {m.label}
-                      </button>
+                      </label>
                     ))}
                   </div>
+                  <div className="flex items-center gap-2"><span className="text-[12px] text-muted-foreground">배너 규격 <span className="text-rose-500">*</span></span>
+                    <Select value={row.detail} onChange={(e) => setRow(i, { detail: e.target.value })} className="h-9 w-48 text-sm">{sizesFor(row.type).map((d) => <option key={d} value={d}>{d}</option>)}</Select>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm"><span className="text-[12px] text-muted-foreground">사용여부 <span className="text-rose-500">*</span></span>
+                    <label className="flex items-center gap-1"><input type="radio" checked={row.useYn} onChange={() => setRow(i, { useYn: true })} className="accent-indigo-600" />사용</label>
+                    <label className="flex items-center gap-1"><input type="radio" checked={!row.useYn} onChange={() => setRow(i, { useYn: false })} className="accent-indigo-600" />미사용</label>
+                  </div>
+                  {rows.length > 1 && <button type="button" onClick={() => removeRow(i)} title="이 베리에이션 삭제" className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 px-2 text-[12px] text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"><Minus className="h-3.5 w-3.5" />삭제</button>}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] text-muted-foreground">배너 규격</span>
-                  <Select value={row.detail} onChange={(e) => setRow(i, { detail: e.target.value })} className="h-9 w-52 text-sm">
-                    {sizesFor(row.type).map((d) => <option key={d} value={d}>{d}</option>)}
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-[12px] text-muted-foreground">사용여부</span>
-                  <label className="flex items-center gap-1"><input type="radio" checked={row.useYn} onChange={() => setRow(i, { useYn: true })} className="accent-indigo-600" />사용</label>
-                  <label className="flex items-center gap-1"><input type="radio" checked={!row.useYn} onChange={() => setRow(i, { useYn: false })} className="accent-indigo-600" />미사용</label>
-                </div>
-                {rows.length > 1 && (
-                  <button type="button" onClick={() => removeRow(i)} title="이 베리에이션 삭제" className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 px-2 text-[12px] text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"><Minus className="h-3.5 w-3.5" />삭제</button>
-                )}
-              </div>
+              </FieldRow>
 
-              {/* 대체텍스트(alt) — 이 규격(사이즈) 전용 · 페이지마다 다른 문구 가능(2026-09-30 회의) */}
-              <div className="mb-3 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
-                <span className="shrink-0 text-[12px] font-medium text-slate-600">대체텍스트(alt) <span className="text-[10px] text-muted-foreground">· 이 규격 전용</span></span>
-                <Input value={row.altText ?? ''} onChange={(e) => setRow(i, { altText: e.target.value })} placeholder="이 배너 이미지의 주요 내용(규격별)" className="h-8 flex-1 text-[13px]" />
-              </div>
+              {/* 대체텍스트(ALT) — 이 규격(사이즈) 전용 · 페이지마다 다른 문구 가능(2026-09-30) */}
+              <FieldRow label="대체텍스트(ALT)">
+                <Input value={row.altText ?? ''} onChange={(e) => setRow(i, { altText: e.target.value })} placeholder="이 규격 전용 · 접근성을 위해 배너 이미지의 주요 내용(규격별)" className="h-9 text-sm" />
+              </FieldRow>
 
               {/* 상품 지정 — 상품배너형 · 이미지형(띠배너) */}
               {canPickProduct(row.type, row.detail) && (
-                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
-                  <span className="text-[12px] font-medium text-slate-600">상품 지정 <span className="text-rose-500">*</span></span>
-                  <label className="flex items-center gap-1"><input type="radio" name={`ps-${i}`} checked={(row.productScope ?? 'all') === 'all'} onChange={() => setRow(i, { productScope: 'all' })} className="accent-indigo-600" />전체 상품(또는 선택 안함)</label>
-                  <label className="flex items-center gap-1"><input type="radio" name={`ps-${i}`} checked={row.productScope === 'partial'} onChange={() => setRow(i, { productScope: 'partial' })} className="accent-indigo-600" />일부 상품</label>
-                  {row.productScope === 'partial' && <Button type="button" variant="outline" onClick={() => setProdPicker(i)}>상품 추가</Button>}
-                  {row.productScope === 'partial' && row.productRef && (
-                    <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-700">{row.productRef}<button type="button" onClick={() => setRow(i, { productRef: '' })} className="text-slate-400 hover:text-slate-700"><X className="h-3 w-3" /></button></span>
-                  )}
-                </div>
+                <FieldRow label="상품 지정" required>
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <label className="flex items-center gap-1"><input type="radio" name={`ps-${i}`} checked={(row.productScope ?? 'all') === 'all'} onChange={() => setRow(i, { productScope: 'all' })} className="accent-indigo-600" />전체 상품(또는 선택 안함)</label>
+                    <label className="flex items-center gap-1"><input type="radio" name={`ps-${i}`} checked={row.productScope === 'partial'} onChange={() => setRow(i, { productScope: 'partial' })} className="accent-indigo-600" />일부 상품</label>
+                    {row.productScope === 'partial' && <Button type="button" variant="outline" onClick={() => setProdPicker(i)}>상품 추가</Button>}
+                    {row.productScope === 'partial' && row.productRef && (
+                      <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-700">{row.productRef}<button type="button" onClick={() => setRow(i, { productRef: '' })} className="text-slate-400 hover:text-slate-700"><X className="h-3 w-3" /></button></span>
+                    )}
+                  </div>
+                </FieldRow>
               )}
 
-              {/* 유형별 상세 입력 — 이미지 업로드형 vs 직접 만들기(조립 편집기) */}
-              {isImageUploadType(row.type) ? (
-                imageUploadEl
-              ) : (
-                /* 직접 만들기(리스트형): 배경 + 텍스트 + (선택)이미지 인라인 조립 편집기 */
-                <ComposeEditorInline row={row} onPatch={(patch) => setRow(i, patch)} onShared={setAllCompose} onFile={(key, file) => pickFile(i, key, file)} images={libImages} />
+              {/* 미리보기 — 이미지 업로드형은 자리+파일정보, 직접 만들기는 조립 편집기 */}
+              <FieldRow label="미리보기">
+                {isUpload ? previewEl : <ComposeEditorInline row={row} onPatch={(patch) => setRow(i, patch)} onShared={setAllCompose} onFile={(key, file) => pickFile(i, key, file)} images={libImages} />}
+              </FieldRow>
+
+              {/* 이미지 불러오기 — 이미지 업로드형만 */}
+              {isUpload && (
+                <FieldRow label="이미지 불러오기">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50">
+                      <Upload className="h-3.5 w-3.5" /> 이미지 업로드
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(i, 'imageUrl', e.target.files?.[0])} />
+                    </label>
+                    <LibraryPickButton images={libImages} onPick={(url) => setRow(i, { imageUrl: url })} label="DB 에서 가져오기" />
+                  </div>
+                </FieldRow>
               )}
             </div>
             );
           })}
-          {/* 베리에이션 추가 — 한 곳에서. 직전 디자인을 복제해 다음 사이즈로 채운다(비슷한 배너 여러 개) */}
-          <button type="button" onClick={addRow} className="flex w-full items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-slate-200 py-3 text-[13px] font-medium text-slate-500 transition hover:border-indigo-300 hover:text-indigo-600">
-            <Plus className="h-4 w-4" /> 베리에이션 추가 <span className="text-[11px] font-normal text-slate-400">· 같은 디자인 · 다음 사이즈</span>
+          {/* 배너 유형 추가 — 직전 디자인을 복제해 다음 규격으로 채운다(같은 배너 여러 규격) */}
+          <button type="button" onClick={addRow} className="flex w-full items-center justify-center gap-1.5 py-3 text-[13px] font-medium text-slate-500 transition hover:text-indigo-600">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-300"><Plus className="h-4 w-4" /></span> 배너 유형 추가
           </button>
-          <p className="text-[11px] text-muted-foreground">유형(이미지형·텍스트형·상품배너형·팝업배너형)과 배너 규격을 베리에이션으로 추가합니다. 미리보기는 선택한 규격의 실제 비율로 표시되며, 사용여부는 규격별로 개별 설정됩니다.</p>
         </div>
       </OpsSection>
 

@@ -35,7 +35,7 @@ export function OpsSection({ title, children }: { no?: number | string; title: s
 export function FieldRow({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[140px_1fr] items-center border-b border-slate-100 last:border-b-0">
-      <div className="flex h-full items-center bg-slate-50/60 px-4 py-3 text-[13px] font-medium text-slate-600">
+      <div className="flex h-full items-center bg-[#E8ECEF] px-4 py-3 text-[13px] font-medium text-slate-600">
         {label}
         {required && <span className="ml-0.5 text-rose-500">*</span>}
       </div>
