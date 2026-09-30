@@ -172,6 +172,7 @@ function DsTypePickButton({ onPick, label = 'DS 배너 유형 가져오기' }: {
 // 이미지형 = 완성 이미지 업로드 / 리스트형 = 배경색+텍스트+우측이미지로 직접 조립
 type TypeDetailRow = {
   type: string; detail: string; useYn: boolean; imageUrl: string;
+  altText?: string; // 대체텍스트 — 사이즈(규격)별 개별 입력(2026-09-30 회의). 페이지마다 다른 문구 가능.
   bgColor: string; bgColor2: string; bgType: string;
   title: string; subtitle: string; titleColor: string; subColor: string; titleSize: string;
   align: string; imagePos: string; imgSize: string; imgShape: string;
@@ -182,7 +183,7 @@ type TypeDetailRow = {
   productRef?: string;   // 선택한 상품 (표시용 라벨/ID)
 };
 const emptyRow = (): TypeDetailRow => ({
-  type: '이미지형', detail: DETAIL_TYPES[0], useYn: true, imageUrl: '',
+  type: '리스트형', detail: DETAIL_TYPES[0], useYn: true, imageUrl: '', altText: '',
   bgColor: '#EEF1F8', bgColor2: '#DDE3F0', bgType: 'solid',
   title: '', subtitle: '', titleColor: '#0F172A', subColor: '#64748B', titleSize: 'md',
   align: 'left', imagePos: 'right', imgSize: 'md', imgShape: 'square',
@@ -201,11 +202,11 @@ const PALETTES = [
   { name: '네이비', c1: '#334155', c2: '#0F172A' },
 ] as const;
 
-// 배너 제작 방식(유형) — 원안 4종. 각 유형이 가질 수 있는 규격은 SIZES_BY_TYPE.
-// legacy '리스트형'(직접 만들기·조립)은 버튼에 노출하지 않지만 기존 데이터 편집/렌더는 계속 지원.
+// 배너 제작 방식(유형) — 직접 만들기(템플릿 편집형)를 우선 노출·기본값으로. 개인화(세그·CVM)를 위해 템플릿 기반이 기본(2026-09-30 회의).
+//  '텍스트 띠 배너'는 별도 유형이 아니라 직접 만들기의 '텍스트띠배너' 규격으로 통합.
 const METHODS = [
-  { value: '이미지형', label: '이미지형', desc: '완성 배너 이미지를 업로드 (띠배너는 상품 지정 가능)' },
-  { value: '리스트형', label: '직접 만들기', desc: '배경색 + 텍스트 + (선택) 이미지로 직접 조립' },
+  { value: '리스트형', label: '직접 만들기 (템플릿 편집형)', desc: '템플릿에 배경색·문구·(선택)이미지를 조립 · 개인화(세그·CVM) 기본 방식 · 텍스트 띠 배너 포함' },
+  { value: '이미지형', label: '이미지 업로드', desc: '완성 배너 이미지를 업로드 (띠배너는 상품 지정 가능)' },
   { value: '상품배너형', label: '상품배너형', desc: '상품 지정 + 배너 이미지' },
   { value: '팝업배너형', label: '팝업배너형', desc: '팝업 이미지 업로드' },
 ] as const;
@@ -520,7 +521,8 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
   const [noEnd, setNoEnd] = useState(mode === 'edit' && !!v.publishStart && !v.publishEnd);
   const [rows, setRows] = useState<TypeDetailRow[]>(
     v.typeDetails && v.typeDetails.length
-      ? v.typeDetails.map((r) => ({ ...emptyRow(), ...r, useYn: r.useYn !== false }))
+      // 기존 데이터엔 규격별 alt가 없을 수 있음 → 캠페인 공통 alt(v.bannerAlt)로 하위호환 채움(2026-09-30 규격별 alt 전환).
+      ? v.typeDetails.map((r) => ({ ...emptyRow(), ...r, useYn: r.useYn !== false, altText: (r as { altText?: string }).altText ?? v.bannerAlt ?? '' }))
       : [emptyRow()],
   );
   const [bannerAlt, setBannerAlt] = useState(v.bannerAlt ?? '');
@@ -601,13 +603,11 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
 
       <OpsSection title="유형상세">
         <input type="hidden" name="typeDetailsJson" value={JSON.stringify(rows)} />
-        <input type="hidden" name="bannerAlt" value={bannerAlt} />
+        {/* 대표(campaign-level) alt = 첫 규격 alt로 하위호환 유지. 실제 alt는 규격별 개별(row.altText). */}
+        <input type="hidden" name="bannerAlt" value={rows.find((r) => r.altText)?.altText ?? bannerAlt} />
         <div className="space-y-3 p-4">
-          {/* 공통 대체텍스트 — 같은 배너의 사이즈 공유 */}
-          <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
-            <span className="shrink-0 text-[13px] font-medium text-slate-600">이미지 대체텍스트(alt) <span className="text-[11px] text-muted-foreground">(모든 사이즈 공통)</span></span>
-            <Input value={bannerAlt} onChange={(e) => setBannerAlt(e.target.value)} placeholder="접근성을 위해 배너 이미지의 주요 내용을 입력해주세요" className="h-9 flex-1 text-sm" />
-          </div>
+          {/* 대체텍스트(alt)는 규격(사이즈)별 개별 입력 — 각 베리에이션 카드에서(2026-09-30 회의). 페이지마다 다른 문구 가능. */}
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">이미지 대체텍스트(alt)는 <b className="text-slate-600">규격(사이즈)별로 개별</b> 입력합니다 — 아래 각 베리에이션 카드에서 입력하세요. (페이지마다 다른 문구가 들어갈 수 있어요)</p>
           {rows.map((row, i) => {
             const imgDim = pvDims(row.detail, 340);
             // 이미지 업로드 블록 (이미지형·팝업배너형·상품배너형 공통)
@@ -661,6 +661,12 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
                 {rows.length > 1 && (
                   <button type="button" onClick={() => removeRow(i)} title="이 베리에이션 삭제" className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 px-2 text-[12px] text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"><Minus className="h-3.5 w-3.5" />삭제</button>
                 )}
+              </div>
+
+              {/* 대체텍스트(alt) — 이 규격(사이즈) 전용 · 페이지마다 다른 문구 가능(2026-09-30 회의) */}
+              <div className="mb-3 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                <span className="shrink-0 text-[12px] font-medium text-slate-600">대체텍스트(alt) <span className="text-[10px] text-muted-foreground">· 이 규격 전용</span></span>
+                <Input value={row.altText ?? ''} onChange={(e) => setRow(i, { altText: e.target.value })} placeholder="이 배너 이미지의 주요 내용(규격별)" className="h-8 flex-1 text-[13px]" />
               </div>
 
               {/* 상품 지정 — 상품배너형 · 이미지형(띠배너) */}
