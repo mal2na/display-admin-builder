@@ -642,12 +642,11 @@ function ChipIconPicker({ value, onPick }: { value?: string; onPick: (icon: stri
 function SortableChipDefRow({ id, idx, chip, canRemove, onPatch, onRemove }: { id: string; idx: number; chip: ChipDef; canRemove: boolean; onPatch: (p: Partial<ChipDef>) => void; onRemove: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
-  // 라벨 변경 시 URL·아이콘 자동 매핑(수동으로 바꾼 값은 보존).
+  // 라벨 변경 시 아이콘만 자동 유추(수동 지정값은 보존). 이동 링크는 자동 채우지 않음 — 직접 입력.
   const onLabel = (label: string) => {
     const auto = autoMapChip(label);
     const prevAuto = autoMapChip(chip.label);
     const p: Partial<ChipDef> = { label };
-    if (!chip.linkUrl || chip.linkUrl === prevAuto.url) p.linkUrl = auto.url;
     if (!chip.icon || chip.icon === prevAuto.icon) p.icon = auto.icon;
     onPatch(p);
   };
@@ -659,7 +658,7 @@ function SortableChipDefRow({ id, idx, chip, canRemove, onPatch, onRemove }: { i
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-50 text-[10px] font-bold tabular-nums text-indigo-500">{idx + 1}</span>
       <ChipIconPicker value={chip.icon} onPick={(icon) => onPatch({ icon })} />
       <input value={chip.label} onChange={(e) => onLabel(e.target.value)} placeholder="메뉴명" className="h-8 w-24 rounded-md border bg-white px-2 text-xs" />
-      <input value={chip.linkUrl ?? ''} onChange={(e) => onPatch({ linkUrl: e.target.value })} placeholder="이동 링크 URL (자동)" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
+      <input value={chip.linkUrl ?? ''} onChange={(e) => onPatch({ linkUrl: e.target.value })} placeholder="URL을 입력하세요" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
       <button type="button" onClick={onRemove} disabled={!canRemove} className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive disabled:opacity-30">×</button>
     </div>
   );
@@ -670,7 +669,8 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const rowId = (_c: ChipDef, i: number) => `chip-${i}`;
   const patch = (idx: number, p: Partial<ChipDef>) => onCommit(chips.map((c, j) => (j === idx ? { ...c, ...p } : c)), rows);
-  const add = () => { const l = `메뉴 ${chips.length + 1}`; const a = autoMapChip(l); onCommit([...chips, { label: l, linkUrl: a.url, icon: a.icon }], rows); };
+  // 탭 추가 — 이동 링크는 비워 두고(직접 입력) 라벨만 기본값. 아이콘은 라벨로 자동 유추.
+  const add = () => onCommit([...chips, { label: `메뉴 ${chips.length + 1}` }], rows);
   const remove = (idx: number) => onCommit(chips.filter((_, j) => j !== idx), rows);
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
@@ -1224,7 +1224,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
 
       {/* 리스트 보기 — 케이스(코너 유형) 플랫 테이블. 배열별 그룹 없이 한 줄씩. 클릭 시 상세로. */}
       {view === 'list' && (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="border-y border-[#E8ECEF] bg-white">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
@@ -1808,8 +1808,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
             </div>
-            {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 좌우 보더 없이 가로줄만(목업 105). */}
-            {!bulk && (
+            {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 업무 진입형(탭·메뉴)은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
+            {!bulk && base !== '업무 진입형' && (
             <div className={cn('border-t border-[#E8ECEF]', !showStep(2) && 'hidden')}>
               <div className="border-b border-[#E8ECEF] px-1 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
               <TRow label="표시 항목">
