@@ -1687,135 +1687,96 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
-            {/* 세부 항목 (항목별 사용여부) — 미리보기 옆(같은 오른쪽 열)에 배치해 한눈에 본다(2026-09-29 사용자 요청). */}
+            {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로 통일(2026-09-30 사용자 요청). */}
             {!bulk && (
-            <div className="overflow-hidden rounded-md border">
-              <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
-              <div className="px-3 py-3">
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">표시 항목</label>
-                <div>
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
-            {CORNER_TYPE_FEATURES.map((f) => {
-              const applies = featureApplies(f.key);
-              // 배지는 가격에 종속 — 가격이 꺼져 있으면 배지도 없다(배지는 가격 앞에만 붙음).
-              const badgeLocked = f.key === 'useBadge' && !features.usePrice;
-              const disabled = !applies || badgeLocked;
-              const checked = applies && features[f.key as keyof typeof features] && !badgeLocked;
-              const toggle = (on: boolean) => {
-                setFeatures((prev) => {
-                  const next = { ...prev, [f.key]: on };
-                  if (f.key === 'useMainTitle' && !on) next.useSubTitle = false; // 타이틀 끄면 서브타이틀도(단독 불가)
-                  if (f.key === 'useSubTitle' && on) next.useMainTitle = true; // 서브타이틀 켜면 타이틀 자동 ON
-                  if (f.key === 'usePrice' && !on) next.useBadge = false; // 가격 끄면 배지도 (배지는 가격 앞에만)
-                  if (f.key === 'useBadge' && on) next.usePrice = true; // 배지 켜면 가격 자동 ON
-                  return next;
-                });
-              };
-              return (
-                <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', disabled && 'cursor-not-allowed text-muted-foreground/40')} title={!applies ? '이 코너 유형에는 해당 항목이 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
-                  <input
-                    type="checkbox"
-                    name={f.key}
-                    checked={checked}
-                    disabled={disabled}
-                    onChange={(e) => toggle(e.target.checked)}
-                    className="accent-indigo-600 disabled:opacity-40"
-                  />
-                  {f.label}
-                </label>
-              );
-            })}
-          </div>
-          {/* CTA 문구 — 'CTA' 표시 항목 ON일 때. (노출 구성이 아니라 여기서 관리 · 미리보기 버튼·빌더 상속에 쓰임) */}
-          {eff('useMoreButton') && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <label className="text-[11px] font-medium text-muted-foreground">CTA 문구</label>
-              <Input name="defaultMoreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} placeholder="예: 담기 / 자세히 / 전체보기" className="h-8 w-52 text-xs" />
-              <span className="text-[10px] text-slate-400">미리보기 버튼에 그대로 노출 · 링크는 코너별로</span>
-            </div>
-          )}
-          {/* CTA(표시 항목) ON이면 빌더에도 기본 노출로 상속 */}
-          <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
+            <div className="overflow-hidden rounded-md border border-[#E8ECEF]">
+              <div className="border-b border-[#E8ECEF] bg-[#F8F9FB] px-3 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
+              <TRow label="표시 항목">
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                  {CORNER_TYPE_FEATURES.map((f) => {
+                    const applies = featureApplies(f.key);
+                    const badgeLocked = f.key === 'useBadge' && !features.usePrice; // 배지는 가격에 종속
+                    const disabled = !applies || badgeLocked;
+                    const checked = applies && features[f.key as keyof typeof features] && !badgeLocked;
+                    const toggle = (on: boolean) => {
+                      setFeatures((prev) => {
+                        const next = { ...prev, [f.key]: on };
+                        if (f.key === 'useMainTitle' && !on) next.useSubTitle = false;
+                        if (f.key === 'useSubTitle' && on) next.useMainTitle = true;
+                        if (f.key === 'usePrice' && !on) next.useBadge = false;
+                        if (f.key === 'useBadge' && on) next.usePrice = true;
+                        return next;
+                      });
+                    };
+                    return (
+                      <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', disabled && 'cursor-not-allowed text-muted-foreground/40')} title={!applies ? '이 코너 유형에는 해당 항목이 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
+                        <input type="checkbox" name={f.key} checked={checked} disabled={disabled} onChange={(e) => toggle(e.target.checked)} className="accent-indigo-600 disabled:opacity-40" />
+                        {f.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </TRow>
 
-          {/* 정의 기본값 — 문구·개수·형태 (거버넌스: 코너 유형이 '무엇인가'를 확정 · 빌더는 쌓기+CVM만). 2026-09-29 */}
-          {(useTitle || useSub || isListType || base === '상품형' || compValid === '상품형' || (isBannerType && detailValid === '스와이프형')) && (
-          <div className="mt-3 space-y-2.5 rounded-lg border border-indigo-100 bg-indigo-50/30 p-3">
-            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700">
-              <Info className="h-3.5 w-3.5" /> 정의 기본값 <span className="font-normal text-indigo-400">문구·개수·형태를 여기서 확정 · 빌더는 쌓기+CVM만</span>
-            </p>
-            {useTitle && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">타이틀</label>
-                <Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" />
-              </div>
-            )}
-            {useSub && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">서브타이틀</label>
-                <Input name="defaultSubTitle" value={subTitleText} onChange={(e) => setSubTitleText(e.target.value)} placeholder="서브타이틀 문구" className="h-8 w-56 text-xs" />
-                <select name="defaultSubTitleIcon" value={subTitleIcon} onChange={(e) => setSubTitleIcon(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
-                  <option value="화살표">아이콘: 화살표</option>
-                  <option value="사용안함">아이콘: 없음</option>
-                </select>
-              </div>
-            )}
-            {isListType && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">노출 개수</label>
-                <input name="defaultMinItems" type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} placeholder="최소" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
-                <span className="text-xs text-muted-foreground">~</span>
-                <input name="defaultMaxItems" type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} placeholder="최대" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
-                <span className="text-[10px] text-slate-400">코너에 노출할 아이템 개수</span>
-              </div>
-            )}
-            {(base === '상품형' || compValid === '상품형') && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">카드 모양</label>
-                <select name="defaultCardShape" value={cardShape} onChange={(e) => setCardShape(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
-                  <option value="">기본 (정사각형 1:1)</option>
-                  <option value="1:1">정사각형 (1:1)</option>
-                  <option value="3:4">포스터 (3:4)</option>
-                  <option value="직사각형">직사각형</option>
-                </select>
-              </div>
-            )}
-            {isBannerType && detailValid === '스와이프형' && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">배너 노출</label>
-                <select value={bannerMode} onChange={(e) => setBannerMode(e.target.value as 'swipe' | 'auto')} className="h-8 rounded-md border bg-background px-2 text-xs">
-                  <option value="swipe">스와이프(수동)</option>
-                  <option value="auto">자동 슬라이드</option>
-                </select>
-                <label className="flex items-center gap-1 text-[11px] text-slate-600"><input type="checkbox" checked={bannerIndicator} onChange={(e) => setBannerIndicator(e.target.checked)} className="accent-indigo-600" /> 인디케이터</label>
-                <input type="hidden" name="defaultBannerOptions" value={JSON.stringify({ mode: bannerMode, showIndicator: bannerIndicator, loop: true })} />
-              </div>
-            )}
-          </div>
-          )}
-          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
-            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
-              <Info className="h-3.5 w-3.5 text-indigo-500" /> 체크한 항목만 이 유형의 코너에 나타나요
-            </p>
-            <ul className="space-y-1.5 text-[11px] leading-relaxed text-slate-500">
-              {[
-                ['타이틀·서브타이틀', '미리보기 상단에 표시돼요 · 빌더에서도 코너별로 수정 가능 (서브타이틀은 타이틀 없이 못 켜요)'],
-                ['배지·가격', '정책상 배지는 가격 앞에 붙어요(할인·NEW 등). 배지는 가격에 종속(가격 없으면 배지 없음).'],
-                ['가격·설명', '같은 자리라도 코너에 따라 가격이거나 설명(흐린 글씨, 예 ‘데이터 500’)이라 따로 둡니다.'],
-                ['CTA', 'CTA를 켜면 바로 옆 ‘CTA 문구’가 버튼 텍스트로 노출 → 빌더에서 코너별로 문구·링크 조정'],
-                ['미노출 조건은 여기 없어요', '‘언제 숨길지’는 표시 항목이 아니라 코너별(빌드 시점) 규칙이라 빌더에서 정합니다(재고 소진·혜택 종료·개인화 제한 등).'],
-              ].map(([k, v]) => (
-                <li key={k} className="flex items-start gap-1.5">
-                  <span className="mt-[5px] h-1 w-1 shrink-0 rounded-full bg-indigo-300" />
-                  <span>
-                    <b className="font-medium text-slate-700">{k}</b> — {v}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 border-t border-slate-200 pt-2 text-[10px] text-slate-400">유형에 맞지 않는 항목은 자동으로 비활성화돼요. · 노출 개수(최소·최대)는 빌더에서 코너별로 설정해요.</p>
-              </div>
-              </div>
-              </div>
+              {/* CTA 문구 — 'CTA' 표시 항목 ON일 때 */}
+              {eff('useMoreButton') && (
+                <TRow label="CTA 문구">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input name="defaultMoreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} placeholder="예: 담기 / 자세히 / 전체보기" className="h-8 w-52 text-xs" />
+                    <span className="text-[10px] text-slate-400">미리보기 버튼에 그대로 노출 · 링크는 코너별로</span>
+                  </div>
+                </TRow>
+              )}
+              <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
+
+              {/* 정의 기본값 — 문구·개수·형태 (거버넌스: 코너 유형이 확정 · 빌더는 쌓기+CVM만) */}
+              {useTitle && (
+                <TRow label="타이틀"><Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" /></TRow>
+              )}
+              {useSub && (
+                <TRow label="서브타이틀">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input name="defaultSubTitle" value={subTitleText} onChange={(e) => setSubTitleText(e.target.value)} placeholder="서브타이틀 문구" className="h-8 w-56 text-xs" />
+                    <select name="defaultSubTitleIcon" value={subTitleIcon} onChange={(e) => setSubTitleIcon(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
+                      <option value="화살표">아이콘: 화살표</option>
+                      <option value="사용안함">아이콘: 없음</option>
+                    </select>
+                  </div>
+                </TRow>
+              )}
+              {isListType && (
+                <TRow label="노출 개수">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input name="defaultMinItems" type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} placeholder="최소" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
+                    <span className="text-xs text-muted-foreground">~</span>
+                    <input name="defaultMaxItems" type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} placeholder="최대" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
+                    <span className="text-[10px] text-slate-400">코너에 노출할 아이템 개수</span>
+                  </div>
+                </TRow>
+              )}
+              {(base === '상품형' || compValid === '상품형') && (
+                <TRow label="카드 모양">
+                  <select name="defaultCardShape" value={cardShape} onChange={(e) => setCardShape(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
+                    <option value="">기본 (정사각형 1:1)</option>
+                    <option value="1:1">정사각형 (1:1)</option>
+                    <option value="3:4">포스터 (3:4)</option>
+                    <option value="직사각형">직사각형</option>
+                  </select>
+                </TRow>
+              )}
+              {isBannerType && detailValid === '스와이프형' && (
+                <TRow label="배너 노출">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select value={bannerMode} onChange={(e) => setBannerMode(e.target.value as 'swipe' | 'auto')} className="h-8 rounded-md border bg-background px-2 text-xs">
+                      <option value="swipe">스와이프(수동)</option>
+                      <option value="auto">자동 슬라이드</option>
+                    </select>
+                    <label className="flex items-center gap-1 text-[11px] text-slate-600"><input type="checkbox" checked={bannerIndicator} onChange={(e) => setBannerIndicator(e.target.checked)} className="accent-indigo-600" /> 인디케이터</label>
+                    <input type="hidden" name="defaultBannerOptions" value={JSON.stringify({ mode: bannerMode, showIndicator: bannerIndicator, loop: true })} />
+                  </div>
+                </TRow>
+              )}
+              <TRow label="안내" flat><span className="text-[10px] leading-relaxed text-slate-400">체크한 항목만 이 유형 코너에 노출 · 유형에 맞지 않는 항목은 자동 비활성 · 서브타이틀은 타이틀 없이 못 켬 · 배지는 가격에 종속 · 노출 개수는 빌더에서 코너별.</span></TRow>
             </div>
             )}
           </div>
