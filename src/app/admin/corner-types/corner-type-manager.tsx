@@ -1656,7 +1656,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     { title: '컴포넌트 구성', desc: '담을 상품·배너·탭' },
     { title: '표시 항목·정의', desc: '노출 항목·기본값' },
   ];
-  const wizard = isNew && !bulk;
+  const wizard = false; // 스텝퍼 제거 — 등록도 상세/수정과 동일하게 한 화면에서(2026-09-30 사용자 요청)
   const lastStep = WIZARD_STEPS.length - 1;
   const showStep = (n: number) => !wizard || step === n;
   const stepValid = !wizard || (step === 0 ? !!base && (allowEmptyDetail || !!detailValid) : true); // 1단계는 유형·배열 선택 필수
@@ -2023,7 +2023,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               : <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> 등록</Button>}
           </>
         ) : (
-          <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> 저장</Button>
+          <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> {isNew ? '등록' : '저장'}</Button>
         )}
       </div>
     </form>
