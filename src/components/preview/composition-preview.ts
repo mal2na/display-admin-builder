@@ -72,7 +72,32 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
   const base = { id: nid(), componentType: b.componentType };
   // 선택형: 코너 유형에서 정의한 칩(탭·메뉴)이 있으면 그대로 렌더(라벨·줄수). 없으면 아래 기본/플레이스홀더.
   if (b.componentType === '선택형' && b.chips && b.chips.length) {
-    return { ...base, name: '탭', selectedIndex: 0, chipRows: b.chipRows ?? 1, chipVariant: 'contents', atoms: b.chips.map((c) => atom({ name: c.label || '탭', atomType: 'TEXT', content: c.label || '탭', linkUrl: c.linkUrl ?? null })) };
+    // 아이콘이 하나라도 있으면 아이콘+라벨 퀵칩(ChipHome), 없으면 콘텐츠 필터 칩.
+    const hasIcon = b.chips.some((c) => c.icon);
+    return {
+      ...base, name: hasIcon ? 'ChipHome' : '탭', selectedIndex: 0,
+      chipRows: b.chipRows ?? (hasIcon ? 2 : 1), chipVariant: hasIcon ? 'home' : 'contents',
+      atoms: b.chips.map((c) => atom({ name: c.label || '탭', atomType: 'TEXT', content: c.label || '탭', linkUrl: c.linkUrl ?? null, imageUrl: c.icon ?? null })),
+    };
+  }
+  // 코너 유형에서 묶은 상품·혜택 아이템이 있으면 신규 등록(placeholder)에서도 그대로 렌더 —
+  //  좌측 미리보기 = 우측 '상품·혜택 묶기'가 그대로 반영되도록(2026-09-30 사용자 요청). 가격 있으면 상품 카드, 없으면 혜택 로고+문구.
+  if ((b.componentType === '상품형' || b.componentType === '혜택형') && b.items?.[i - 1]) {
+    const it = b.items[i - 1]!;
+    if (it.price) {
+      return { ...base, name: it.title || it.brand || '상품', atoms: [
+        ...(it.imageUrl && b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE', imageUrl: it.imageUrl })] : []),
+        ...(it.brand && it.brand !== it.title ? [atom({ name: '브랜드', atomType: 'TEXT', content: it.brand })] : []),
+        atom({ name: '상품명', atomType: 'TEXT', content: it.title }),
+        ...(it.badge && b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: it.badge })] : []),
+        ...(it.price && b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: it.price })] : []),
+      ] };
+    }
+    return { ...base, name: it.brand || it.title, atoms: [
+      ...(it.imageUrl ? [atom({ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl })] : []),
+      atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title }),
+      ...(it.brand ? [atom({ name: '브랜드', atomType: 'INFO', content: it.brand })] : []),
+    ] };
   }
   // 신규 등록 미리보기 = 실제 카피 대신 '슬롯 라벨'(타이틀/디스크립션/혜택 문구 등)로 구조만 보여준다. 로고·이미지는 샘플 유지(레이아웃 확인용).
   if (ctx?.placeholder) {

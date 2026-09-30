@@ -41,6 +41,7 @@ import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pe
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
 
@@ -365,13 +366,13 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
     onCommit(next);
   };
   return (
-    <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+    <div className="space-y-2 rounded-md border border-[#E8ECEF] bg-white p-3">
       <div className="flex items-center gap-2">
-        <span className="text-[12px] font-semibold text-indigo-700">스와이프 배너 묶기</span>
-        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{banners.length}장</span>
-        <span className="ml-auto text-[10px] text-indigo-500/80">드래그로 순서 변경</span>
+        <span className="text-[12px] font-semibold text-slate-700">스와이프 배너 묶기</span>
+        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{banners.length}장</span>
+        <span className="ml-auto text-[10px] text-slate-400">드래그로 순서 변경</span>
       </div>
-      {banners.length === 0 && <p className="rounded-md border border-dashed border-indigo-200 bg-white/60 px-2 py-2 text-[10px] text-indigo-400">아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.</p>}
+      {banners.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[10px] text-slate-400">아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={banners.map((b, i) => rowId(b, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
@@ -381,10 +382,10 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
           </div>
         </SortableContext>
       </DndContext>
-      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-2 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50">
+      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">
         <Plus className="h-3.5 w-3.5" /> 배너 캠페인에서 담기 (여러 개 선택)
       </button>
-      <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 순서는 <b>드래그</b>로 조정.</p>
+      <p className="text-[10px] leading-relaxed text-slate-400">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 순서는 <b>드래그</b>로 조정.</p>
       <BannerPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} campaigns={bannerCampaigns} usedIds={usedIds} onAdd={addMany} />
     </div>
   );
@@ -423,15 +424,29 @@ function SortableProductRow({ id, idx, item, onRemove, onLinkChange }: { id: str
 }
 
 // 상품·혜택 담기 모달 — BSS 카탈로그를 체크박스로 여러 개 한 번에 선택해 담는다(2026-09-29 사용자 요청, 드롭다운 대체).
+// 카테고리 뱃지 색상 — 디바이스/음식/쇼핑/문화·여가/혜택.
+const PICKER_CAT_CLASS: Record<string, string> = {
+  '디바이스': 'bg-sky-100 text-sky-700',
+  '음식': 'bg-amber-100 text-amber-700',
+  '쇼핑': 'bg-emerald-100 text-emerald-700',
+  '문화·여가': 'bg-violet-100 text-violet-700',
+};
 function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open: boolean; onClose: () => void; options: ProductOption[]; usedKeys: Set<string>; onAdd: (keys: string[]) => void }) {
   const [q, setQ] = useState('');
+  const [cat, setCat] = useState('전체');
   const [checked, setChecked] = useState<Set<string>>(new Set());
   if (!open) return null;
+  // 카테고리 탭 = 옵션에 등장하는 순서대로(디바이스 먼저) + '전체'.
+  const cats: string[] = [];
+  for (const o of options) { const c = o.category ?? '기타'; if (!cats.includes(c)) cats.push(c); }
   const query = q.trim().toLowerCase();
-  const list = options.filter((o) => !query || `${o.brand} ${o.title}`.toLowerCase().includes(query));
+  const list = options.filter((o) =>
+    (cat === '전체' || (o.category ?? '기타') === cat) &&
+    (!query || `${o.brand} ${o.title}`.toLowerCase().includes(query)));
   const toggle = (k: string) => setChecked((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
-  const submit = () => { onAdd([...checked]); setChecked(new Set()); setQ(''); onClose(); };
-  const close = () => { setChecked(new Set()); setQ(''); onClose(); };
+  const reset = () => { setChecked(new Set()); setQ(''); setCat('전체'); };
+  const submit = () => { onAdd([...checked]); reset(); onClose(); };
+  const close = () => { reset(); onClose(); };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
       <div className="flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -441,10 +456,19 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
           <span className="text-xs text-muted-foreground">여러 개를 체크해 한 번에 담아요</span>
           <button type="button" onClick={close} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="닫기"><X className="h-4 w-4" /></button>
         </div>
-        <div className="border-b p-3">
+        <div className="space-y-2 border-b p-3">
           <div className="flex items-center gap-2 rounded-md border bg-background px-3">
             <Search className="h-4 w-4 text-muted-foreground" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="브랜드·혜택 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+          </div>
+          {/* 카테고리 구분 탭 — 디바이스·음식·쇼핑·문화·여가 등 (2026-09-30 사용자 요청) */}
+          <div className="flex flex-wrap gap-1">
+            {['전체', ...cats].map((c) => (
+              <button key={c} type="button" onClick={() => setCat(c)}
+                className={cn('rounded-full border px-2.5 py-1 text-[11px] font-medium transition', cat === c ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-300')}>
+                {c}
+              </button>
+            ))}
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
@@ -463,7 +487,7 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
                       <span className="truncate text-[13px] font-medium text-slate-800">{o.brand}</span>
-                      {o.category && <span className={cn('shrink-0 rounded px-1 py-[1px] text-[9px] font-semibold', o.category === '디바이스' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700')}>{o.category}</span>}
+                      {o.category && <span className={cn('shrink-0 rounded px-1 py-[1px] text-[9px] font-semibold', PICKER_CAT_CLASS[o.category] ?? 'bg-slate-100 text-slate-500')}>{o.category}</span>}
                     </span>
                     {o.title && o.title !== o.brand && <span className="block truncate text-[11px] text-slate-400">{o.title}{o.price ? ` · ${o.price}` : ''}</span>}
                   </span>
@@ -490,11 +514,16 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
   const rowId = (it: ProductItem, i: number) => `${it.productKey ?? 'item'}-${i}`;
   // 이미 담긴 것 = productKey ∪ brand (시드 파생 아이템은 productKey가 없고 brand만 있음 · BSS 옵션 key=브랜드명이라 브랜드로도 매칭). 중복 방지.
   const usedKeys = new Set([...items.map((it) => it.productKey), ...items.map((it) => it.brand)].filter(Boolean) as string[]);
+  // 담을 때 랜딩 URL 자동 매핑 — 디바이스는 상품 상세, 그 외(혜택 브랜드)는 혜택 상세로. 담은 뒤 수동 편집 가능.
+  const autoLink = (p: ProductOption) => {
+    const slug = encodeURIComponent(p.key.replace(/\s+/g, '-').toLowerCase());
+    return p.category === '디바이스' ? `tworld://shop/device/${slug}` : `tworld://benefit/${slug}`;
+  };
   const addMany = (keys: string[]) => {
     const news = keys
       .map((k) => productOptions.find((o) => o.key === k))
       .filter((p): p is ProductOption => !!p && !usedKeys.has(p.key))
-      .map((p) => ({ productKey: p.key, title: p.title, brand: p.brand, imageUrl: p.imageUrl ?? undefined, price: p.price ?? undefined, badge: p.badge ?? undefined, linkUrl: '' }));
+      .map((p) => ({ productKey: p.key, title: p.title, brand: p.brand, imageUrl: p.imageUrl ?? undefined, price: p.price ?? undefined, badge: p.badge ?? undefined, linkUrl: autoLink(p) }));
     if (news.length) onCommit([...items, ...news]);
   };
   const remove = (idx: number) => onCommit(items.filter((_, j) => j !== idx));
@@ -510,13 +539,13 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
     onCommit(next);
   };
   return (
-    <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+    <div className="space-y-2 rounded-md border border-[#E8ECEF] bg-white p-3">
       <div className="flex items-center gap-2">
-        <span className="text-[12px] font-semibold text-indigo-700">상품·혜택 묶기</span>
-        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{items.length}개</span>
-        <span className="ml-auto text-[10px] text-indigo-500/80">드래그로 순서 변경</span>
+        <span className="text-[12px] font-semibold text-slate-700">상품·혜택 묶기</span>
+        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{items.length}개</span>
+        <span className="ml-auto text-[10px] text-slate-400">드래그로 순서 변경</span>
       </div>
-      {items.length === 0 && <p className="rounded-md border border-dashed border-indigo-200 bg-white/60 px-2 py-2 text-[10px] text-indigo-400">아래에서 상품·혜택을 골라 담으세요. 랜딩 URL은 담은 뒤 수정할 수 있어요.</p>}
+      {items.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[10px] text-slate-400">아래에서 상품·혜택을 골라 담으세요. 랜딩 URL은 담은 뒤 수정할 수 있어요.</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={items.map((it, i) => rowId(it, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
@@ -526,28 +555,103 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
           </div>
         </SortableContext>
       </DndContext>
-      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-2 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50">
-        <Plus className="h-3.5 w-3.5" /> 상품·혜택 담기 (디바이스·혜택 브랜드 · 여러 개 선택)
+      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">
+        <Plus className="h-3.5 w-3.5" /> 상품·혜택 담기 (디바이스·음식·쇼핑 등 · 여러 개 선택)
       </button>
-      <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
+      <p className="text-[10px] leading-relaxed text-slate-400">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
       <ProductPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} options={productOptions} usedKeys={usedKeys} onAdd={addMany} />
     </div>
   );
 }
 
 // 탭·메뉴 칩 한 줄 (드래그앤드롭 · 그립 핸들 · 라벨·링크 편집) — 코너 유형에서 탭 정의 순서를 바꾼다(2026-09-29 사용자 요청).
-type ChipDef = { label: string; linkUrl?: string };
+type ChipDef = { label: string; linkUrl?: string; icon?: string };
+
+// 퀵메뉴 라벨 → 기본 이동 링크·아이콘 자동 매핑. 운영자가 라벨만 정하면 URL·아이콘이 채워지고, 이후 수동 편집 가능.
+const QUICK_MENU_MAP: Record<string, { url: string; icon: string }> = {
+  '혜택': { url: 'tworld://benefit', icon: 'icon:general/Benefit' },
+  '혜택 줍기': { url: 'tworld://benefit/pickup', icon: 'icon:general/Location' },
+  '카테고리': { url: 'tworld://category', icon: 'icon:general/Category' },
+  '이벤트': { url: 'tworld://event', icon: 'icon:general/Event' },
+  '영화 예매': { url: 'tworld://movie', icon: 'icon:general/Movie' },
+  '글쓰기': { url: 'tworld://post/new', icon: 'icon:general/NewChat' },
+  '더보기': { url: 'tworld://more', icon: 'icon:general/Menu' },
+  '이용요금': { url: 'tworld://bill', icon: 'icon:general/Won' },
+  '데이터': { url: 'tworld://data', icon: 'icon:general/Data' },
+  '멤버십': { url: 'tworld://membership', icon: 'icon:general/Vip' },
+  '매장': { url: 'tworld://store', icon: 'icon:general/Store' },
+  '고객센터': { url: 'tworld://support', icon: 'icon:general/Call' },
+  '검색': { url: 'tworld://search', icon: 'icon:general/Search' },
+  '쇼핑': { url: 'tworld://shop', icon: 'icon:general/Cart' },
+  '로밍': { url: 'tworld://roaming', icon: 'icon:general/Roaming' },
+};
+function autoMapChip(label: string): { url: string; icon: string } {
+  const key = label.trim();
+  if (QUICK_MENU_MAP[key]) return QUICK_MENU_MAP[key];
+  const hit = key ? Object.keys(QUICK_MENU_MAP).find((k) => key.includes(k) || k.includes(key)) : undefined;
+  if (hit) return QUICK_MENU_MAP[hit];
+  const slug = key.replace(/\s+/g, '-').toLowerCase() || 'menu';
+  return { url: `tworld://quickmenu/${encodeURIComponent(slug)}`, icon: 'icon:general/Category' };
+}
+// 선택형(탭·메뉴) 기본 칩 — 아이콘+라벨+자동 링크. 편집기·미리보기 공용.
+const CHIP_DEFAULTS: ChipDef[] = ['혜택', '카테고리', '이벤트'].map((l) => ({ label: l, ...autoMapChip(l) }));
+
+// 칩 아이콘 선택 팝오버 — 일반 아이콘 그리드에서 1개 선택. 선택 안 함(라벨만)도 가능.
+function ChipIconPicker({ value, onPick }: { value?: string; onPick: (icon: string | undefined) => void }) {
+  const [open, setOpen] = useState(false);
+  const general = ICON_CATEGORIES.find((c) => c.key === 'general')?.icons.filter((i) => i.key !== 'general/Dummy') ?? [];
+  return (
+    <div className="relative shrink-0">
+      <button type="button" onClick={() => setOpen((v) => !v)} title="아이콘 선택" className="flex h-8 w-8 items-center justify-center rounded-md border bg-white text-slate-500 hover:border-indigo-300 hover:text-indigo-600">
+        {value && isIconRef(value) ? <IconGlyph name={value} className="h-4 w-4" /> : <Plus className="h-3.5 w-3.5" />}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-9 z-30 w-52 rounded-md border bg-white p-2 shadow-lg">
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-600">아이콘</span>
+              <button type="button" onClick={() => { onPick(undefined); setOpen(false); }} className="text-[10px] text-slate-400 hover:text-slate-600">선택 안 함</button>
+            </div>
+            <div className="grid max-h-40 grid-cols-6 gap-1 overflow-y-auto">
+              {general.map((ic) => {
+                const ref = `icon:${ic.key}`;
+                return (
+                  <button key={ic.key} type="button" title={ic.label} onClick={() => { onPick(ref); setOpen(false); }}
+                    className={cn('flex h-7 w-7 items-center justify-center rounded hover:bg-indigo-50', value === ref ? 'bg-indigo-100 text-indigo-600 ring-1 ring-indigo-300' : 'text-slate-500')}>
+                    <IconGlyph name={ref} className="h-4 w-4" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function SortableChipDefRow({ id, idx, chip, canRemove, onPatch, onRemove }: { id: string; idx: number; chip: ChipDef; canRemove: boolean; onPatch: (p: Partial<ChipDef>) => void; onRemove: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  // 라벨 변경 시 URL·아이콘 자동 매핑(수동으로 바꾼 값은 보존).
+  const onLabel = (label: string) => {
+    const auto = autoMapChip(label);
+    const prevAuto = autoMapChip(chip.label);
+    const p: Partial<ChipDef> = { label };
+    if (!chip.linkUrl || chip.linkUrl === prevAuto.url) p.linkUrl = auto.url;
+    if (!chip.icon || chip.icon === prevAuto.icon) p.icon = auto.icon;
+    onPatch(p);
+  };
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-1.5">
       <button type="button" className="cursor-grab text-slate-400 active:cursor-grabbing" {...attributes} {...listeners} aria-label="순서 변경 (드래그)" title="드래그하여 순서 변경">
         <GripVertical className="h-4 w-4" />
       </button>
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-50 text-[10px] font-bold tabular-nums text-indigo-500">{idx + 1}</span>
-      <input value={chip.label} onChange={(e) => onPatch({ label: e.target.value })} placeholder="메뉴명" className="h-8 w-24 rounded-md border bg-white px-2 text-xs" />
-      <input value={chip.linkUrl ?? ''} onChange={(e) => onPatch({ linkUrl: e.target.value })} placeholder="이동 링크 URL" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
+      <ChipIconPicker value={chip.icon} onPick={(icon) => onPatch({ icon })} />
+      <input value={chip.label} onChange={(e) => onLabel(e.target.value)} placeholder="메뉴명" className="h-8 w-24 rounded-md border bg-white px-2 text-xs" />
+      <input value={chip.linkUrl ?? ''} onChange={(e) => onPatch({ linkUrl: e.target.value })} placeholder="이동 링크 URL (자동)" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
       <button type="button" onClick={onRemove} disabled={!canRemove} className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive disabled:opacity-30">×</button>
     </div>
   );
@@ -558,7 +662,7 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const rowId = (_c: ChipDef, i: number) => `chip-${i}`;
   const patch = (idx: number, p: Partial<ChipDef>) => onCommit(chips.map((c, j) => (j === idx ? { ...c, ...p } : c)), rows);
-  const add = () => onCommit([...chips, { label: `메뉴 ${chips.length + 1}` }], rows);
+  const add = () => { const l = `메뉴 ${chips.length + 1}`; const a = autoMapChip(l); onCommit([...chips, { label: l, linkUrl: a.url, icon: a.icon }], rows); };
   const remove = (idx: number) => onCommit(chips.filter((_, j) => j !== idx), rows);
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
@@ -571,11 +675,11 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
     onCommit(next, rows);
   };
   return (
-    <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+    <div className="space-y-2 rounded-md border border-[#E8ECEF] bg-white p-3">
       <div className="flex items-center gap-2">
-        <span className="text-[12px] font-semibold text-indigo-700">탭·메뉴 정의</span>
-        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{chips.length}개</span>
-        <span className="ml-auto text-[10px] text-indigo-500/80">드래그로 순서 변경</span>
+        <span className="text-[12px] font-semibold text-slate-700">탭·메뉴 정의</span>
+        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{chips.length}개</span>
+        <span className="ml-auto text-[10px] text-slate-400">드래그로 순서 변경</span>
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={chips.map((c, i) => rowId(c, i))} strategy={verticalListSortingStrategy}>
@@ -587,13 +691,13 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
         </SortableContext>
       </DndContext>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50"><Plus className="h-3.5 w-3.5" /> 탭 추가</button>
+        <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"><Plus className="h-3.5 w-3.5" /> 탭 추가</button>
         <span className="ml-auto text-[11px] text-slate-500">줄 수</span>
         {[1, 2].map((r) => (
           <button key={r} type="button" onClick={() => onCommit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-indigo-600 text-white' : 'border bg-white text-slate-600 hover:bg-slate-50')}>{r}줄</button>
         ))}
       </div>
-      <p className="text-[10px] leading-relaxed text-indigo-500/80">탭·메뉴 항목(라벨·이동 링크·줄 수·순서)을 코너 유형에서 정의합니다. 실서비스 코너는 이 정의를 상속하고, <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
+      <p className="text-[10px] leading-relaxed text-slate-400">탭·메뉴 항목(<b>아이콘·라벨·이동 링크</b>·줄 수·순서)을 코너 유형에서 정의합니다. 라벨을 정하면 <b>이동 링크 URL과 아이콘이 자동 매핑</b>되고(수동 편집 가능), 실서비스 코너는 이 정의를 상속하며 <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
     </div>
   );
 }
@@ -1347,10 +1451,15 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     : (blocks.length
         ? blocks
         : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc })
-      ).map((b) => (b.componentType === '상품형' || b.componentType === '혜택형' || b.componentType === '정보형' ? { ...b, ...liveFeatFlags } : b));
+      ).map((b) => {
+        if (b.componentType === '상품형' || b.componentType === '혜택형' || b.componentType === '정보형') return { ...b, ...liveFeatFlags };
+        // 선택형(탭·메뉴) 칩이 아직 정의 전이면 기본 칩(아이콘+라벨)으로 미리보기 — 편집기와 동일. 단, '메뉴 리스트'(세로 메뉴)는 제외.
+        if (b.componentType === '선택형' && !(b.chips && b.chips.length) && !dStr.includes('메뉴 리스트')) return { ...b, chips: CHIP_DEFAULTS, chipRows: b.chipRows ?? 2 };
+        return b;
+      });
   // 코너 유형 명 = [코너 유형 · 컴포넌트 · 배열 (· 빅배너)] 자동 구성
   // 코너 유형 명 = 유형 · 배열·레이아웃 (컴포넌트는 표기에서 제외 — UI에서 컴포넌트 노출 안 함).
-  const derivedName = [base, detailValid, bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
+  const derivedName = [base, layoutLabel(detailValid), bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
   const channels = row.channels.split(',').filter(Boolean);
   const platforms = row.platforms.split(',').filter(Boolean);
   const action = isNew ? createCornerType : updateCornerType.bind(null, row.id);
@@ -1427,25 +1536,29 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
   // 기본 정보 하단 메타(운영 채널·플랫폼·사용 여부·승인상태·설명) — bulk 섹션·통합 섹션에서 공용.
   //  통합 섹션의 우측 열(1fr)에서도 안 눌리게 bulk일 때만 2열, 통합(비-bulk)에선 1열로 쌓는다.
-  // 단일 열 TRow 나열 — basicPickers 표에 이어 하나의 가로줄 테이블로(좌우 보더 없음, 목업 105).
+  // 운영 채널·플랫폼, 사용 여부·승인상태는 좌우 2열(목업 랜딩 설정처럼). 설명은 전폭. 좌우 보더 없음.
   const metaFields = (
     <>
-      <TRow label="운영 채널"><OpsCheckGroup name="channels" options={OPERATION_CHANNELS} initial={channels} /></TRow>
-      <TRow label="운영 플랫폼"><OpsCheckGroup name="platforms" options={OPERATION_PLATFORMS} initial={platforms} /></TRow>
-      <TRow label="사용 여부" required>
-        <div className="flex gap-4 text-xs">
-          <label className="flex items-center gap-1.5"><input type="radio" checked={active} onChange={() => setActive(true)} className="accent-indigo-600" /> 사용</label>
-          <label className="flex items-center gap-1.5"><input type="radio" checked={!active} onChange={() => setActive(false)} className="accent-indigo-600" /> 미사용</label>
-        </div>
-        {active && <input type="hidden" name="active" value="on" />}
-      </TRow>
-      <TRow label="승인상태" hint="승인 결과는 별도 승인 프로세스에서 반영됩니다">
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
-          <span className="text-[10px] text-muted-foreground">(읽기 전용)</span>
-        </div>
-        <input type="hidden" name="status" value={row.status} />
-      </TRow>
+      <div className="grid grid-cols-1 md:grid-cols-2">
+        <TRow label="운영 채널"><OpsCheckGroup name="channels" options={OPERATION_CHANNELS} initial={channels} /></TRow>
+        <TRow label="운영 플랫폼"><OpsCheckGroup name="platforms" options={OPERATION_PLATFORMS} initial={platforms} /></TRow>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2">
+        <TRow label="사용 여부" required>
+          <div className="flex gap-4 text-xs">
+            <label className="flex items-center gap-1.5"><input type="radio" checked={active} onChange={() => setActive(true)} className="accent-indigo-600" /> 사용</label>
+            <label className="flex items-center gap-1.5"><input type="radio" checked={!active} onChange={() => setActive(false)} className="accent-indigo-600" /> 미사용</label>
+          </div>
+          {active && <input type="hidden" name="active" value="on" />}
+        </TRow>
+        <TRow label="승인상태" hint="승인 결과는 별도 승인 프로세스에서 반영됩니다">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
+            <span className="text-[10px] text-muted-foreground">(읽기 전용)</span>
+          </div>
+          <input type="hidden" name="status" value={row.status} />
+        </TRow>
+      </div>
       <TRow label="코너 유형 설명"><Input name="description" defaultValue={row.description ?? ''} placeholder="100자 이내" className="h-8 text-xs" /></TRow>
     </>
   );
@@ -1666,7 +1779,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* 선택형(탭·메뉴) — 칩 정의는 코너 유형이 소유(2026-09-29 사용자 결정). 빌더는 순서만 변경. */}
             {(compValid === '선택형' || base === '업무 진입형') && (() => {
               const block = shownBlocks.find((b) => b.componentType === '선택형') ?? shownBlocks[0];
-              const chips = (block?.chips && block.chips.length ? block.chips : [{ label: '메뉴 1' }, { label: '메뉴 2' }, { label: '메뉴 3' }]) as ChipDef[];
+              const chips = (block?.chips && block.chips.length ? block.chips : CHIP_DEFAULTS) as ChipDef[];
               const rows = block?.chipRows ?? 2;
               return (
                 <ChipDefEditor
@@ -1676,7 +1789,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 />
               );
             })()}
-            <p className="text-[10px] font-medium text-muted-foreground">자동 구성 · 이 유형의 배열·레이아웃에서 도출</p>
+            <p className="text-[10px] font-medium text-muted-foreground">자동 구성 · <span className="font-semibold text-slate-600">{derivedName}</span></p>
             {shownBlocks.map((b, i) => {
               const isProduct = b.componentType === '상품형';
               const usesBadge = ['상품형', '혜택형', '정보형'].includes(b.componentType);
@@ -1691,7 +1804,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 <div key={i} className="rounded-md border bg-white p-2.5">
                   <div className="flex items-center gap-2">
                     <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-bold text-slate-500">{i + 1}</span>
-                    <span className="text-[12.5px] font-semibold text-slate-800">{componentLabel(b.componentType)}</span>
+                    <span className="text-[12.5px] font-semibold text-slate-800">{layoutLabel(detailValid) || detailValid || base}</span>
+                    {shownBlocks.length > 1 && (b.componentType === '선택형' || b.componentType === '배너형') && (
+                      <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-500">{b.componentType === '선택형' ? '탭·메뉴' : '배너'}</span>
+                    )}
                     {b.count > 1 && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500">×{b.count}</span>}
                   </div>
                   {items.length > 0 && (

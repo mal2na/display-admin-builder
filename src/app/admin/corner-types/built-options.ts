@@ -58,6 +58,8 @@ const DEVICE_PRODUCTS: ProductOption[] = [
 // 상품형·혜택형 코너 유형에서 '상품 담기'로 선택할 후보(2026-09-29 사용자 결정).
 //  = BSS 혜택 브랜드(제휴 혜택) + 디바이스·단말(SKT 판매 상품). category로 구분(디바이스/혜택).
 //  브랜드명·대표 혜택/모델·이미지를 코너 유형 composition.items에 저장. 랜딩 URL은 담은 뒤 수동 편집.
+// BSS 대분류(EAT/BUY/PLAY) → 모달에서 구분해 보여줄 한글 카테고리(2026-09-30 사용자 요청: 디바이스·음식 등 구분).
+const BSS_CAT_KO: Record<string, string> = { EAT: '음식', BUY: '쇼핑', PLAY: '문화·여가' };
 export async function getProductOptions(): Promise<ProductOption[]> {
   const benefits: ProductOption[] = BSS_PRODUCTS.map((p) => ({
     key: p.key,
@@ -66,7 +68,7 @@ export async function getProductOptions(): Promise<ProductOption[]> {
     imageUrl: p.logo || null,
     price: null,
     badge: p.badges[0] ?? null,
-    category: '혜택',
+    category: BSS_CAT_KO[p.category] ?? '혜택',
   }));
   const devices: ProductOption[] = DEVICE_PRODUCTS.map((d) => ({ ...d, category: '디바이스' }));
   // 디바이스를 먼저(상품형에서 자주 씀) 노출.

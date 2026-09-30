@@ -71,18 +71,18 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const variant = component.chipVariant ?? (component.atoms.some((a) => a.imageUrl) ? 'home' : 'contents');
 
-  // ChipHome — 아이콘+라벨 pill, 1/2행(2행 그리드+가로 스크롤)
+  // ChipHome — 아이콘 뱃지(네이비 원형)+라벨 pill, 1/2행(2행 그리드+가로 스크롤)
   if (variant === 'home') {
     const twoRows = component.chipRows === 2;
     return (
       <div className={twoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max justify-items-start items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'}>
         {component.atoms.map((a, i) => (
-          <span key={a.id} className={'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3.5 text-[12px] font-medium text-slate-800 shadow-sm ring-1 ' + (i === sel ? 'ring-indigo-400' : 'ring-slate-100')}>
-            {a.imageUrl && (isIconRef(a.imageUrl)
-              ? <IconGlyph name={a.imageUrl} className="-ml-0.5 h-4 w-4 text-indigo-600" />
-              : isRenderableImg(a.imageUrl)
-                ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="-ml-0.5 h-4 w-4 rounded-full object-cover" />
-                : <span className="-ml-0.5 flex h-4 w-4 items-center justify-center rounded-full text-indigo-600" title={a.altText ?? a.imageUrl}><Sparkles className="h-3.5 w-3.5" /></span>)}
+          <span key={a.id} className={'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#EEF1F8] py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 ring-1 ' + (i === sel ? 'ring-indigo-300' : 'ring-transparent')}>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1a1a8c] text-white">
+              {a.imageUrl && isRenderableImg(a.imageUrl) && !isIconRef(a.imageUrl)
+                ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="h-6 w-6 rounded-full object-cover" />
+                : <IconGlyph name={a.imageUrl && isIconRef(a.imageUrl) ? a.imageUrl : 'icon:general/Category'} className="h-3.5 w-3.5" />}
+            </span>
             {a.content ?? a.name}
           </span>
         ))}
