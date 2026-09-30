@@ -1802,35 +1802,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 />
               );
             })()}
-            <p className="text-[10px] font-medium text-muted-foreground">자동 구성 · <span className="font-semibold text-slate-600">{derivedName}</span></p>
-            {shownBlocks.map((b, i) => {
-              const isProduct = b.componentType === '상품형';
-              const usesBadge = ['상품형', '혜택형', '정보형'].includes(b.componentType);
-              const items: string[] = [];
-              if (isProduct) {
-                if (b.image !== false) items.push('이미지');
-                if (b.price !== false) items.push('가격');
-                if (b.badge && b.price !== false) items.push('배지');
-                if (b.desc !== false) items.push('설명');
-              } else if (usesBadge && b.badge) items.push('배지');
-              return (
-                <div key={i} className="rounded-md border bg-white p-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-bold text-slate-500">{i + 1}</span>
-                    <span className="text-[12.5px] font-semibold text-slate-800">{layoutLabel(detailValid) || detailValid || base}</span>
-                    {shownBlocks.length > 1 && (b.componentType === '선택형' || b.componentType === '배너형') && (
-                      <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-500">{b.componentType === '선택형' ? '탭·메뉴' : '배너'}</span>
-                    )}
-                    {b.count > 1 && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500">×{b.count}</span>}
-                  </div>
-                  {items.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1 pl-7">
-                      {items.map((x) => <span key={x} className="rounded bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-500 ring-1 ring-slate-100">{x}</span>)}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {/* 자동 구성(배열·레이아웃 요약) 카드는 제거 — 등록 결과·상품/혜택 묶기와 중복(2026-09-30 사용자 요청). */}
             <p className="text-[10px] leading-relaxed text-muted-foreground">
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
@@ -1935,8 +1907,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* 추천 수급 · 노출 구성 = 한 섹션. 콘텐츠 출처(수급 방식)를 먼저 정하고, 그에 따라 노출 구성(정렬·CTA)을 설정.
           CVM 수급이면 정렬·구성을 CVM이 고객마다 결정하므로 노출 구성은 '선택 불가'(비활성)로 잠근다. */}
+      {/* 추천 수급 섹션은 미리보기(좌측) 가로 영역을 침범하지 않도록 우측 컨트롤 열에 정렬(2026-09-30 사용자 요청). */}
       {showStep(2) && (isRecEligible || isListType) && (
-      <section className="overflow-hidden rounded-md border border-violet-200">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
+        <div aria-hidden className="hidden lg:block" />
+        <section className="min-w-0 overflow-hidden rounded-md border border-violet-200">
         <div className="flex items-center gap-2 border-b border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-xs font-semibold text-violet-700">
           추천 수급 · 노출 구성 기본값
           <span className="font-normal text-violet-400">콘텐츠 <b className="font-semibold">출처</b>를 먼저 정하고 노출 구성을 설정 · 빌더에서 코너별로 조정 가능</span>
@@ -1990,6 +1965,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           )}
         </div>
       </section>
+      </div>
       )}
 
       {/* (제거됨) 고객정보 연동 필드 — 코너 유형 단계에선 실제 바인딩을 하지 않아 삭제.
