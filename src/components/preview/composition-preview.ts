@@ -16,6 +16,30 @@ const atom = (a: Partial<PreviewAtom> & { atomType: string; name: string }): Pre
   ...a,
 });
 
+// 퀵칩(ChipHome) 라벨 → 아이콘 자동 유추. 코너 유형에서 아이콘을 지정하지 않은(시드) 칩도 레퍼런스 퀵칩처럼 아이콘 뱃지가 보이게 한다.
+const CHIP_ICON_RULES: [RegExp, string][] = [
+  [/\d*\s*월/, 'Calender'],       // 4월 혜택 → 달력
+  [/줍기/, 'Location'],           // 혜택 줍기 → 위치
+  [/카테고리/, 'Category'],
+  [/vip/i, 'Vip'],                // VIP Pick → 왕관
+  [/0?\s*week/i, 'Benefit'],      // 0 Week → 혜택
+  [/이벤트/, 'Event'],
+  [/영화|예매|공연/, 'Movie'],
+  [/글로벌|여행|로밍/, 'Global'],
+  [/멤버십/, 'Vip'],
+  [/쇼핑|장바구니/, 'Cart'],
+  [/검색/, 'Search'],
+  [/구독/, 'Subscribe'],
+  [/가족/, 'Family'],
+  [/글|작성/, 'NewChat'],
+  [/혜택/, 'Benefit'],            // 그 외 '혜택' 포함
+];
+export function chipIconForLabel(label?: string | null): string {
+  const s = (label ?? '').trim();
+  for (const [re, ic] of CHIP_ICON_RULES) if (re.test(s)) return `icon:general/${ic}`;
+  return 'icon:general/Category';
+}
+
 // 상품형 카드 이미지(단말·요금제·구독) / 콘텐츠 무비 포스터 — 유형별로 카테고리 맞춰 배정
 const PRODUCT_POOL = ['/assets/ds/device-iphone.png', '/assets/ds/plan-5gx.png', '/assets/ds/sub-tving.png', '/assets/ds/sub-streaming.png'];
 // 상품형 · 세로형 — SKT 요금제 안내 리스트(참고 이미지). 아이콘 타일 + 안내 문구 + 구간·가격.
@@ -79,12 +103,13 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
   const base = { id: nid(), componentType: b.componentType };
   // 선택형: 코너 유형에서 정의한 칩(탭·메뉴)이 있으면 그대로 렌더(라벨·줄수). 없으면 아래 기본/플레이스홀더.
   if (b.componentType === '선택형' && b.chips && b.chips.length) {
-    // 아이콘이 하나라도 있으면 아이콘+라벨 퀵칩(ChipHome), 없으면 콘텐츠 필터 칩.
-    const hasIcon = b.chips.some((c) => c.icon);
+    // 퀵메뉴(업무 진입형)이거나 아이콘이 하나라도 있으면 아이콘+라벨 퀵칩(ChipHome). 그 외는 콘텐츠 필터 칩.
+    //  아이콘이 비어 있어도 라벨에서 자동 유추해 채운다(레퍼런스 퀵칩과 동일한 모양).
+    const quick = ctx?.base === '업무 진입형' || b.chips.some((c) => c.icon);
     return {
-      ...base, name: hasIcon ? 'ChipHome' : '탭', selectedIndex: 0,
-      chipRows: b.chipRows ?? (hasIcon ? 2 : 1), chipVariant: hasIcon ? 'home' : 'contents',
-      atoms: b.chips.map((c) => atom({ name: c.label || '탭', atomType: 'TEXT', content: c.label || '탭', linkUrl: c.linkUrl ?? null, imageUrl: c.icon ?? null })),
+      ...base, name: quick ? 'ChipHome' : '탭', selectedIndex: 0,
+      chipRows: b.chipRows ?? (quick ? 2 : 1), chipVariant: quick ? 'home' : 'contents',
+      atoms: b.chips.map((c) => atom({ name: c.label || '탭', atomType: 'TEXT', content: c.label || '탭', linkUrl: c.linkUrl ?? null, imageUrl: quick ? (c.icon ?? chipIconForLabel(c.label)) : (c.icon ?? null) })),
     };
   }
   // 코너 유형에서 묶은 상품·혜택 아이템이 있으면 신규 등록(placeholder)에서도 그대로 렌더 —

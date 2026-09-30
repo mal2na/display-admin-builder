@@ -30,7 +30,7 @@ import {
   type ComponentType,
 } from '@/lib/display-taxonomy';
 import { CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
-import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
+import { compositionToPreviewCorner, chipIconForLabel } from '@/components/preview/composition-preview';
 import { isEventCornerFamily } from '@/lib/event-taxonomy';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -587,14 +587,18 @@ const QUICK_MENU_MAP: Record<string, { url: string; icon: string }> = {
 };
 function autoMapChip(label: string): { url: string; icon: string } {
   const key = label.trim();
-  if (QUICK_MENU_MAP[key]) return QUICK_MENU_MAP[key];
+  // 아이콘은 라벨 규칙(chipIconForLabel)으로 통일 — VIP/0 Week/4월/글로벌 등도 알맞은 아이콘.
+  const icon = chipIconForLabel(key);
+  if (QUICK_MENU_MAP[key]) return { url: QUICK_MENU_MAP[key].url, icon };
   const hit = key ? Object.keys(QUICK_MENU_MAP).find((k) => key.includes(k) || k.includes(key)) : undefined;
-  if (hit) return QUICK_MENU_MAP[hit];
+  if (hit) return { url: QUICK_MENU_MAP[hit].url, icon };
   const slug = key.replace(/\s+/g, '-').toLowerCase() || 'menu';
-  return { url: `tworld://quickmenu/${encodeURIComponent(slug)}`, icon: 'icon:general/Category' };
+  return { url: `tworld://quickmenu/${encodeURIComponent(slug)}`, icon };
 }
 // 선택형(탭·메뉴) 기본 칩 — 아이콘+라벨+자동 링크. 편집기·미리보기 공용.
 const CHIP_DEFAULTS: ChipDef[] = ['혜택', '카테고리', '이벤트'].map((l) => ({ label: l, ...autoMapChip(l) }));
+// 불러온 칩의 빈 아이콘·이동 링크를 라벨에서 자동 채움 — 등록 정의를 그대로 '불러오기'(수정 시 데이터가 쌓여 보이게). 추가는 직접 입력. 2026-09-30
+const hydrateChips = (chips: ChipDef[]): ChipDef[] => chips.map((c) => { const a = autoMapChip(c.label); return { ...c, icon: c.icon ?? a.icon, linkUrl: c.linkUrl || a.url }; });
 
 // 칩 아이콘 선택 팝오버 — 일반 아이콘 그리드에서 1개 선택. 선택 안 함(라벨만)도 가능.
 function ChipIconPicker({ value, onPick }: { value?: string; onPick: (icon: string | undefined) => void }) {
@@ -1329,7 +1333,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const [bannerIndicator, setBannerIndicator] = useState<boolean>(parseBannerOpt('showIndicator') as boolean);
   const [recSource, setRecSource] = useState(row.defaultRecSource ? normalizeRecSource(row.defaultRecSource) : ''); // 추천 수급 방식 기본값(controlled) — 노출·구성 노출 여부를 좌우
   // ③ 컴포넌트 조합 — 배열·레이아웃에서 자동 도출(읽기 전용, 2026-09-29 사용자 결정). 저장된 조합이 있으면 그대로 표시.
-  const [blocks, setBlocks] = useState<Composition>(() => parseComposition(row.composition) ?? []);
+  const [blocks, setBlocks] = useState<Composition>(() => {
+    const parsed = parseComposition(row.composition) ?? [];
+    // 수정 진입 시 선택형(탭·메뉴) 칩의 빈 아이콘·이동 링크를 라벨에서 자동 채워 '데이터가 쌓인' 상태로 불러온다.
+    return parsed.map((b) => (b.componentType === '선택형' && b.chips && b.chips.length) ? { ...b, chips: hydrateChips(b.chips as ChipDef[]) } : b);
+  });
   // FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 유형에서
   const [userCustom, setUserCustom] = useState(row.userCustomizable ?? false);
   const [userMin, setUserMin] = useState(row.userMinItems != null ? String(row.userMinItems) : '');
