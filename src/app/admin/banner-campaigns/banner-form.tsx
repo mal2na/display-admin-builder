@@ -278,7 +278,7 @@ const SAMPLE_EVENTS = [
 
 export type BannerFormValue = {
   campaignCode?: string; title?: string; subtitle?: string | null; purpose?: string | null; platform?: string;
-  applyChannels?: string | null; landingChannels?: string | null; chargeYn?: boolean | null; statCode?: string | null; ownerDept?: string | null; targetCampaignId?: string | null;
+  applyChannels?: string | null; landingChannels?: string | null;
   exposeYn?: boolean; publishStart?: string | null; publishEnd?: string | null;
   landingType?: string | null; landingUrl?: string | null; pageType?: string | null; bannerAlt?: string | null;
   typeDetails?: { type: string; detail: string; useYn?: boolean; imageUrl?: string; altText?: string; bgColor?: string; bgColor2?: string; bgType?: string; title?: string; subtitle?: string; titleColor?: string; subColor?: string; titleSize?: string; align?: string; imagePos?: string; imgSize?: string; imgShape?: string; badgeText?: string; badgeColor?: string; ctaText?: string; ctaColor?: string; rightImageUrl?: string; bannerType?: string }[];
@@ -390,20 +390,6 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
 
   return (
     <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-      {/* AI 배너 생성 — 클릭하면 우측 AI 어시스턴트(채팅) 패널을 연다. 생성 정책은 TBD(미정). */}
-      <button
-        type="button"
-        onClick={() => setAiOpen(true)}
-        title="정책 미정(TBD) — ① 생성 범위(문구만 vs 이미지·레이아웃) ② 이미지 저작권·생성 소스 ③ 자동 카피 검수(승인 연계) ④ CVM 타겟별 문구 베리에이션 연결 ⑤ 모델·비용·PII"
-        className="mb-3 flex w-full items-center gap-2.5 rounded-lg border border-dashed border-indigo-300 bg-indigo-50/50 px-3 py-2.5 text-left transition hover:border-indigo-400 hover:bg-indigo-50"
-      >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100"><Sparkles className="h-4 w-4 text-indigo-600" /></span>
-        <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-indigo-800">AI 배너 생성 <span className="rounded bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">TBD</span></span>
-          <span className="mt-0.5 block text-[11px] text-indigo-500/90">클릭하면 우측 AI 어시스턴트에서 문구·디자인을 대화로 생성해요 (정책 미정)</span>
-        </span>
-        <Send className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
-      </button>
       {!row.bannerType ? (
         /* DS 배너 유형 가져오기 — 이미지 등록과 동일한 UI(박스 + 가져오기 버튼). 등록된 유형(기본형)을 끌어오면 배경·레이아웃·색이 고정되고 텍스트·이미지만 편집 */
         <div className="flex items-start gap-3">
@@ -440,13 +426,20 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
               <div className="min-w-0"><p className="text-slate-400">폰트</p><p className="truncate font-medium text-slate-700" title={dsBannerType(row.bannerType).font}>{dsBannerType(row.bannerType).font}</p></div>
               <div className="min-w-0"><p className="text-slate-400">권장 이미지</p><p className="truncate font-medium text-slate-700" title={dsBannerType(row.bannerType).image}>{dsBannerType(row.bannerType).image}</p></div>
             </div>
-            <div className="mb-4 inline-flex rounded-lg bg-slate-100 p-0.5 text-[12.5px]">
-              {(['text', 'image'] as const).map((k) => (
-                <button key={k} type="button" onClick={() => setTab(k)}
-                  className={'rounded-md px-3 py-1 font-medium transition ' + (tab === k ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
-                  {k === 'text' ? '텍스트' : '이미지'}
-                </button>
-              ))}
+            <div className="mb-4 flex items-center gap-2">
+              <div className="inline-flex rounded-lg bg-slate-100 p-0.5 text-[12.5px]">
+                {(['text', 'image'] as const).map((k) => (
+                  <button key={k} type="button" onClick={() => setTab(k)}
+                    className={'rounded-md px-3 py-1 font-medium transition ' + (tab === k ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
+                    {k === 'text' ? '텍스트' : '이미지'}
+                  </button>
+                ))}
+              </div>
+              {/* AI 문구 생성 — 작은 버튼으로 텍스트 편집 옆에(2026-09-30 사용자 요청: 미리보기에 크게 넣지 말 것). 정책 TBD */}
+              <button type="button" onClick={() => setAiOpen(true)} title="정책 미정(TBD) — 생성 범위·저작권·검수·CVM 베리에이션 등"
+                className="ml-auto inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-600 transition hover:bg-indigo-100">
+                <Sparkles className="h-3.5 w-3.5" /> AI 문구 생성 <span className="rounded bg-amber-200/80 px-1 text-[9px] font-bold text-amber-800">TBD</span>
+              </button>
             </div>
 
             {tab === 'text' && (
@@ -544,10 +537,9 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
   const [bannerAlt, setBannerAlt] = useState(v.bannerAlt ?? '');
   const [picker, setPicker] = useState<null | 'product' | 'event'>(null);
   const [prodPicker, setProdPicker] = useState<number | null>(null); // 유형상세 행별 상품 지정 피커
-  // 2026-09-30 목업 통일 — 적용채널(기본·랜딩)/과금/통계코드/사업부/타겟캠페인
+  // 2026-09-30 목업 통일 — 적용채널(기본·랜딩). 과금/통계/사업부/타겟캠페인은 제외(사용자 요청).
   const [applyChannels, setApplyChannels] = useState<string[]>((v.applyChannels ?? '모바일').split(',').map((s) => s.trim()).filter(Boolean));
   const [landingChannels, setLandingChannels] = useState<string[]>((v.landingChannels ?? '모바일').split(',').map((s) => s.trim()).filter(Boolean));
-  const [chargeYn, setChargeYn] = useState<boolean>(v.chargeYn ?? false);
 
   // 베리에이션 추가 — 직전 디자인(제작 방식·색·문구·이미지 등)을 복제하고 '다음 사이즈'로 채운다(비슷한 배너 여러 개).
   const addRow = () => setRows((r) => {
@@ -624,21 +616,6 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
           <FieldRow label="페이지 타입">
             <div className="flex gap-4">{PAGE_TYPES.map((p) => <Radio key={p.value} name="pageType" value={p.value} checked={(v.pageType ?? 'current') === p.value}>{p.label}</Radio>)}</div>
           </FieldRow>
-          <FieldRow label="과금유무">
-            <input type="hidden" name="chargeYn" value={chargeYn ? 'true' : 'false'} />
-            <div className="flex gap-4 text-sm">
-              <label className="flex items-center gap-1.5"><input type="radio" checked={!chargeYn} onChange={() => setChargeYn(false)} className="accent-indigo-600" />비과금</label>
-              <label className="flex items-center gap-1.5"><input type="radio" checked={chargeYn} onChange={() => setChargeYn(true)} className="accent-indigo-600" />과금</label>
-            </div>
-          </FieldRow>
-          <FieldRow label="통계코드"><Input name="statCode" defaultValue={v.statCode ?? ''} placeholder="예: T_BN__002145" className="h-9 text-sm" /></FieldRow>
-          <FieldRow label="담당 사업부">
-            <Select name="ownerDept" defaultValue={v.ownerDept ?? ''} className="h-9 w-full max-w-[240px] text-sm">
-              <option value="">선택</option>
-              {['MT사업부', 'MNO사업부', '구독사업부', '제휴사업부', '마케팅담당'].map((d) => <option key={d} value={d}>{d}</option>)}
-            </Select>
-          </FieldRow>
-          <FieldRow label="타겟캠페인 ID"><Input name="targetCampaignId" defaultValue={v.targetCampaignId ?? ''} placeholder="타겟캠페인 ID를 입력하세요" className="h-9 text-sm" /></FieldRow>
         </div>
       </OpsSection>
 
