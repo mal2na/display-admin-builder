@@ -78,7 +78,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
     return (
       <div className={twoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max justify-items-start items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'}>
         {component.atoms.map((a, i) => (
-          <span key={a.id} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm">
+          <span key={a.id} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/50 py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEFF7] text-[#3617CE]">
               {a.imageUrl && isRenderableImg(a.imageUrl) && !isIconRef(a.imageUrl)
                 ? /* 디자인 제공 퀵칩 아이콘(#3617CE svg) — 흰 원형 뱃지 위 글리프 크기로 렌더 */
