@@ -1627,6 +1627,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               mainTitle: useTitle ? (mainTitleText || (isNew ? '타이틀' : '코너 타이틀')) : null,
               subTitle: useSub ? (subTitleText || (isNew ? '디스크립션' : '서브타이틀')) : null,
               placeholder: isNew && !mainTitleText && !subTitleText,
+              emptyImages: isNew, // 신규 등록은 이미지/배너를 빈 영역(가이드 폼)으로. 수정은 실제 이미지 유지.
             }),
             cardShape: cardShape || undefined,
             subTitleIcon,

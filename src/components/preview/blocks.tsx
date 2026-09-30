@@ -1,4 +1,4 @@
-import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles } from 'lucide-react';
+import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles, ImageIcon } from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 import { resolveCvmSample, cvmBindingLabel } from '@/lib/display-taxonomy';
 import { PreviewImage } from './preview-image';
@@ -17,7 +17,7 @@ export type PreviewAtom = {
   linkUrl: string | null;
   menuRole?: string; // FIXED(고정) | EDITABLE(편집가능)
 };
-export type PreviewComponent = { id: string; name: string; componentType: string; atoms: PreviewAtom[]; selectedIndex?: number; chipRows?: number; chipVariant?: string };
+export type PreviewComponent = { id: string; name: string; componentType: string; atoms: PreviewAtom[]; selectedIndex?: number; chipRows?: number; chipVariant?: string; emptyImages?: boolean };
 export type PreviewCorner = {
   id: string;
   name: string;
@@ -48,6 +48,7 @@ export type PreviewCorner = {
   showPrice?: boolean | null;
   showBadge?: boolean | null;
   showDesc?: boolean | null;
+  emptyImages?: boolean | null; // 신규 등록 가이드 폼 — 이미지/배너 영역을 빈 자리로만 보여줌(여기 채우세요)
 };
 
 const byType = (atoms: PreviewAtom[], ...types: string[]) => atoms.filter((a) => types.includes(a.atomType));
@@ -346,7 +347,9 @@ function PlanBannerRow({ component }: { component: PreviewComponent }) {
     <div className="flex items-center gap-3 py-2.5">
       {isRenderableImg(thumb?.imageUrl)
         ? <ImageBox atom={thumb} className="h-14 w-14 shrink-0 rounded-2xl" />
-        : <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#4B63E6] to-[#3A4FCC]' : 'bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]')}>{label || '요금제'}</div>}
+        : component.emptyImages
+          ? <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-slate-100 text-slate-400"><ImageIcon className="h-4 w-4 opacity-60" /><span className="text-[9px] font-medium">이미지</span></div>
+          : <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#4B63E6] to-[#3A4FCC]' : 'bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]')}>{label || '요금제'}</div>}
       <div className="min-w-0 flex-1">
         {name?.content && <p className="truncate text-[13px] text-slate-700">{name.content}</p>}
         {price?.content && <p className="truncate text-[15px] font-bold text-slate-900">{price.content}</p>}
@@ -658,9 +661,17 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       </div>
     )
   ) : corner.bigBanner && !isBanner ? (
-    <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-500 px-4 text-center text-[16px] font-bold leading-snug text-white">
-      {corner.mainTitle || corner.name}
-    </div>
+    corner.emptyImages ? (
+      // 신규 등록 가이드 — 상단 배너를 빈 영역으로(여기 이미지 등록)
+      <div className="flex aspect-[16/10] w-full flex-col items-center justify-center gap-1 bg-slate-100 text-slate-400">
+        <ImageIcon className="h-5 w-5 opacity-60" />
+        <span className="text-[11px] font-medium">배너 이미지</span>
+      </div>
+    ) : (
+      <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-500 px-4 text-center text-[16px] font-bold leading-snug text-white">
+        {corner.mainTitle || corner.name}
+      </div>
+    )
   ) : null;
 
   // 히어로가 있으면 카드는 패딩 없이(overflow-hidden) 배너를 꼭대기 full-bleed로, 본문만 패딩.

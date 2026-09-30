@@ -66,8 +66,15 @@ const BENEFIT_BRANDS: { logo: string; text: string; brand: string }[] = [
   { logo: '/assets/ds/benefit-nonfiction.png', text: '논픽션 영 메모리즈 향수', brand: 'NONFICTION' },
 ];
 
+// 신규 등록 가이드 폼(emptyImages) — 이미지/아이콘/로고 아톰을 빈 영역으로. 단, 선택형 칩 아이콘(정의값)은 유지.
+function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail?: string | null; placeholder?: boolean; emptyImages?: boolean }): PreviewComponent {
+  const c = blockCompRaw(b, i, ctx);
+  if (!ctx?.emptyImages || c.componentType === '선택형') return c;
+  return { ...c, emptyImages: true, atoms: c.atoms.map((a) => (a.atomType === 'IMAGE' || a.atomType === 'ICON') ? { ...a, imageUrl: null, altText: a.altText ?? a.name } : a) };
+}
+
 // 한 블록의 한 인스턴스(i번째) → PreviewComponent. buildComp(서버)과 같은 아톰 구성.
-function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail?: string | null; placeholder?: boolean }): PreviewComponent {
+function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; detail?: string | null; placeholder?: boolean; emptyImages?: boolean }): PreviewComponent {
   const badge = b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: i === 1 ? 'NEW' : '' })] : [];
   const base = { id: nid(), componentType: b.componentType };
   // 선택형: 코너 유형에서 정의한 칩(탭·메뉴)이 있으면 그대로 렌더(라벨·줄수). 없으면 아래 기본/플레이스홀더.
@@ -385,10 +392,11 @@ export function compositionToPreviewCorner(opts: {
   subTitle?: string | null;
   composition: Composition;
   placeholder?: boolean; // 신규 등록: 슬롯 라벨(타이틀/디스크립션/혜택 문구 등)로 구조만 표시
+  emptyImages?: boolean; // 신규 등록: 이미지/배너 영역을 빈 자리로만(여기 채우세요) — 등록 가이드 폼
 }): PreviewCorner {
   uid = 0;
   const components: PreviewComponent[] = [];
-  const ctx = { base: opts.base, detail: opts.detail, placeholder: opts.placeholder };
+  const ctx = { base: opts.base, detail: opts.detail, placeholder: opts.placeholder, emptyImages: opts.emptyImages };
   for (const b of opts.composition) for (let i = 1; i <= b.count; i++) components.push(blockComp(b, i, ctx));
   // 세로형+배너 = 요금제 히어로, 가로형+배너 = 아이폰 히어로. 둘 다 상단 히어로 배너(빅배너) 자동 표시.
   const isPlanBanner = opts.base === '상품형' && /세로형\+배너|세로형\(배너\)/.test(opts.detail ?? '');
@@ -406,7 +414,9 @@ export function compositionToPreviewCorner(opts: {
     layoutDetail: opts.detail ?? null,
     cornerLayout: opts.layout ?? null,
     bigBanner: isPlanBanner || isDeviceBanner || isBenefitBanner || undefined,
-    bannerImageUrl: isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : undefined,
+    // 신규 등록 가이드 폼에선 배너 히어로도 빈 영역(샘플 히어로 미노출).
+    bannerImageUrl: opts.emptyImages ? null : (isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : undefined),
+    emptyImages: opts.emptyImages ?? null,
     components,
   };
 }
