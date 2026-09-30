@@ -913,12 +913,18 @@ model BannerCampaign {
   campaignCode String   @unique // 예: BC-202604-001
   title        String   // 배너캠페인(타이틀)
   purpose      String?  // 캠페인 목적
-  platform     String   @default("APP") // APP | WEB
+  platform     String   @default("APP") // APP | WEB (legacy)
+  applyChannels String? // 기본 정보 적용채널 — 전체/모바일/PC (콤마) 2026-09-30 목업 통일
   subtitle     String?
   bannerContentType String? // 텍스트형 | 이미지형
   landingType  String?  // direct | product | event | none
   landingUrl   String?
+  landingChannels String? // 랜딩 적용채널 — 전체/모바일/PC (콤마)
   pageType     String?  // current | external | none
+  chargeYn     Boolean? // 과금유무 (true=과금)
+  statCode     String?  // 통계코드 (예: T_BN__002145)
+  ownerDept    String?  // 담당 사업부
+  targetCampaignId String? // 타겟캠페인 ID
   thumbnailUrl String?  // 카드형 뷰 썸네일 이미지
   bannerAlt    String?  // 배너 이미지 공통 대체텍스트(유형상세 사이즈 공유)
   typeDetails  String?  // 유형상세 행 JSON: [{type:'텍스트형|이미지형', detail:'빅배너|스몰배너|띠배너|팝업배너'}]

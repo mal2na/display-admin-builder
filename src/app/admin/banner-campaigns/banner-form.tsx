@@ -239,6 +239,21 @@ const PAGE_TYPES = [
   { value: 'none', label: '선택안함' },
 ] as const;
 
+// 적용채널 체크박스 (전체/모바일/PC) — '전체'는 모바일·PC 둘 다 선택하는 마스터. 2026-09-30 목업 통일.
+const CH_OPTS = ['모바일', 'PC'] as const;
+function ChannelChecks({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
+  const allOn = CH_OPTS.every((c) => value.includes(c));
+  const toggle = (c: string) => onChange(value.includes(c) ? value.filter((x) => x !== c) : [...value, c]);
+  return (
+    <div className="flex items-center gap-4 text-sm">
+      <label className="flex items-center gap-1.5"><input type="checkbox" checked={allOn} onChange={() => onChange(allOn ? [] : [...CH_OPTS])} className="accent-indigo-600" />전체</label>
+      {CH_OPTS.map((c) => (
+        <label key={c} className="flex items-center gap-1.5"><input type="checkbox" checked={value.includes(c)} onChange={() => toggle(c)} className="accent-indigo-600" />{c}</label>
+      ))}
+    </div>
+  );
+}
+
 // 상품 조회 샘플 데이터 (실서비스는 상품 API 연동)
 const SAMPLE_PRODUCTS = [
   { id: 'PRD20260415001', name: '5G 다이렉트 34', kind: '요금제' },
@@ -263,9 +278,10 @@ const SAMPLE_EVENTS = [
 
 export type BannerFormValue = {
   campaignCode?: string; title?: string; subtitle?: string | null; purpose?: string | null; platform?: string;
+  applyChannels?: string | null; landingChannels?: string | null; chargeYn?: boolean | null; statCode?: string | null; ownerDept?: string | null; targetCampaignId?: string | null;
   exposeYn?: boolean; publishStart?: string | null; publishEnd?: string | null;
   landingType?: string | null; landingUrl?: string | null; pageType?: string | null; bannerAlt?: string | null;
-  typeDetails?: { type: string; detail: string; useYn?: boolean; imageUrl?: string; bgColor?: string; bgColor2?: string; bgType?: string; title?: string; subtitle?: string; titleColor?: string; subColor?: string; titleSize?: string; align?: string; imagePos?: string; imgSize?: string; imgShape?: string; badgeText?: string; badgeColor?: string; ctaText?: string; ctaColor?: string; rightImageUrl?: string; bannerType?: string }[];
+  typeDetails?: { type: string; detail: string; useYn?: boolean; imageUrl?: string; altText?: string; bgColor?: string; bgColor2?: string; bgType?: string; title?: string; subtitle?: string; titleColor?: string; subColor?: string; titleSize?: string; align?: string; imagePos?: string; imgSize?: string; imgShape?: string; badgeText?: string; badgeColor?: string; ctaText?: string; ctaColor?: string; rightImageUrl?: string; bannerType?: string }[];
 };
 
 // 규격 문자열 (W×H) → 미리보기 비율/크기 (maxW 폭 기준으로 스케일)
@@ -528,6 +544,10 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
   const [bannerAlt, setBannerAlt] = useState(v.bannerAlt ?? '');
   const [picker, setPicker] = useState<null | 'product' | 'event'>(null);
   const [prodPicker, setProdPicker] = useState<number | null>(null); // 유형상세 행별 상품 지정 피커
+  // 2026-09-30 목업 통일 — 적용채널(기본·랜딩)/과금/통계코드/사업부/타겟캠페인
+  const [applyChannels, setApplyChannels] = useState<string[]>((v.applyChannels ?? '모바일').split(',').map((s) => s.trim()).filter(Boolean));
+  const [landingChannels, setLandingChannels] = useState<string[]>((v.landingChannels ?? '모바일').split(',').map((s) => s.trim()).filter(Boolean));
+  const [chargeYn, setChargeYn] = useState<boolean>(v.chargeYn ?? false);
 
   // 베리에이션 추가 — 직전 디자인(제작 방식·색·문구·이미지 등)을 복제하고 '다음 사이즈'로 채운다(비슷한 배너 여러 개).
   const addRow = () => setRows((r) => {
@@ -553,10 +573,11 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
       <OpsSection title="기본 정보">
         <div className="grid grid-cols-1">
           <FieldRow label="배너캠페인 ID"><span className="text-[13px] text-slate-700">{v.campaignCode ?? '저장 시 자동 채번 (BC-YYYYMM-000)'}</span></FieldRow>
-          <FieldRow label="배너캠페인(타이틀)" required><Input name="title" defaultValue={v.title ?? ''} placeholder="배너캠페인명을 입력하세요" className="h-9 text-sm" /></FieldRow>
-          <FieldRow label="서브타이틀"><Input name="subtitle" defaultValue={v.subtitle ?? ''} placeholder="서브타이틀을 입력하세요" className="h-9 text-sm" /></FieldRow>
-          <FieldRow label="플랫폼" required>
-            <div className="flex gap-4">{['APP', 'WEB'].map((p) => <Radio key={p} name="platform" value={p} checked={(v.platform ?? 'APP') === p}>{p}</Radio>)}</div>
+          <FieldRow label="배너캠페인명" required><Input name="title" defaultValue={v.title ?? ''} placeholder="배너캠페인명을 입력하세요" className="h-9 text-sm" /></FieldRow>
+          <FieldRow label="서브 타이틀"><Input name="subtitle" defaultValue={v.subtitle ?? ''} placeholder="서브타이틀을 입력하세요" className="h-9 text-sm" /></FieldRow>
+          <FieldRow label="적용채널" required>
+            <input type="hidden" name="applyChannels" value={applyChannels.join(',')} />
+            <ChannelChecks value={applyChannels} onChange={setApplyChannels} />
           </FieldRow>
         </div>
       </OpsSection>
@@ -578,26 +599,46 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
       </OpsSection>
 
       <OpsSection title="랜딩 설정">
-        <div className="grid grid-cols-1">
+        {/* 2열 레이아웃 — 목업 통일(2026-09-30): 랜딩유형|적용채널 / 랜딩URL|페이지타입 / 과금유무|통계코드 / 담당사업부|타겟캠페인ID */}
+        <div className="grid grid-cols-1 lg:grid-cols-2">
+          <FieldRow label="랜딩유형" required>
+            <div className="flex flex-wrap gap-3">{LANDING_TYPES.map((l) => (
+              <label key={l.value} className="flex items-center gap-1.5 text-sm"><input type="radio" name="landingType" value={l.value} checked={landing === l.value} onChange={() => setLanding(l.value)} className="accent-indigo-600" />{l.value === 'direct' ? 'URL 입력' : l.label}</label>
+            ))}</div>
+          </FieldRow>
+          <FieldRow label="적용채널" required>
+            <input type="hidden" name="landingChannels" value={landingChannels.join(',')} />
+            <ChannelChecks value={landingChannels} onChange={setLandingChannels} />
+          </FieldRow>
           <FieldRow label="랜딩 URL" required>
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-3">{LANDING_TYPES.map((l) => (
-                <label key={l.value} className="flex items-center gap-1.5 text-sm"><input type="radio" name="landingType" value={l.value} checked={landing === l.value} onChange={() => setLanding(l.value)} className="accent-indigo-600" />{l.label}</label>
-              ))}</div>
-              {landing === 'direct' && <Input name="landingUrl" value={landingUrl} onChange={(e) => setLandingUrl(e.target.value)} placeholder="https:// 랜딩 URL" className="h-9 text-sm" />}
-              {(landing === 'product' || landing === 'event') && (
-                <div className="flex items-center gap-2">
-                  <input type="hidden" name="landingUrl" value={landingUrl} />
-                  <span className="min-w-0 flex-1 truncate rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] text-slate-700">{landingUrl || (landing === 'product' ? '선택된 상품 없음' : '선택된 이벤트 없음')}</span>
-                  <Button type="button" variant="outline" onClick={() => setPicker(landing)}>{landing === 'product' ? '상품조회' : '이벤트조회'}</Button>
-                </div>
-              )}
-              {landing === 'none' && <input type="hidden" name="landingUrl" value="" />}
-            </div>
+            {landing === 'direct' && <Input name="landingUrl" value={landingUrl} onChange={(e) => setLandingUrl(e.target.value)} placeholder="https:// 랜딩 URL" className="h-9 text-sm" />}
+            {(landing === 'product' || landing === 'event') && (
+              <div className="flex items-center gap-2">
+                <input type="hidden" name="landingUrl" value={landingUrl} />
+                <span className="min-w-0 flex-1 truncate rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] text-slate-700">{landingUrl || (landing === 'product' ? '선택된 상품 없음' : '선택된 이벤트 없음')}</span>
+                <Button type="button" variant="outline" onClick={() => setPicker(landing)}>{landing === 'product' ? '상품조회' : '이벤트조회'}</Button>
+              </div>
+            )}
+            {landing === 'none' && <input type="hidden" name="landingUrl" value="" />}
           </FieldRow>
           <FieldRow label="페이지 타입">
             <div className="flex gap-4">{PAGE_TYPES.map((p) => <Radio key={p.value} name="pageType" value={p.value} checked={(v.pageType ?? 'current') === p.value}>{p.label}</Radio>)}</div>
           </FieldRow>
+          <FieldRow label="과금유무">
+            <input type="hidden" name="chargeYn" value={chargeYn ? 'true' : 'false'} />
+            <div className="flex gap-4 text-sm">
+              <label className="flex items-center gap-1.5"><input type="radio" checked={!chargeYn} onChange={() => setChargeYn(false)} className="accent-indigo-600" />비과금</label>
+              <label className="flex items-center gap-1.5"><input type="radio" checked={chargeYn} onChange={() => setChargeYn(true)} className="accent-indigo-600" />과금</label>
+            </div>
+          </FieldRow>
+          <FieldRow label="통계코드"><Input name="statCode" defaultValue={v.statCode ?? ''} placeholder="예: T_BN__002145" className="h-9 text-sm" /></FieldRow>
+          <FieldRow label="담당 사업부">
+            <Select name="ownerDept" defaultValue={v.ownerDept ?? ''} className="h-9 w-full max-w-[240px] text-sm">
+              <option value="">선택</option>
+              {['MT사업부', 'MNO사업부', '구독사업부', '제휴사업부', '마케팅담당'].map((d) => <option key={d} value={d}>{d}</option>)}
+            </Select>
+          </FieldRow>
+          <FieldRow label="타겟캠페인 ID"><Input name="targetCampaignId" defaultValue={v.targetCampaignId ?? ''} placeholder="타겟캠페인 ID를 입력하세요" className="h-9 text-sm" /></FieldRow>
         </div>
       </OpsSection>
 
@@ -700,7 +741,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
         </div>
       </OpsSection>
 
-      <div className="flex items-center justify-center gap-2 pt-2">
+      <div className="flex items-center justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={() => router.back()}>취소</Button>
         <Button type="submit">저장</Button>
       </div>

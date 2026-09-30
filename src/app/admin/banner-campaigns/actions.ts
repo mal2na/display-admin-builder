@@ -34,12 +34,18 @@ function readForm(fd: FormData) {
     subtitle: str(fd, 'subtitle'),
     purpose: str(fd, 'purpose'),
     platform: str(fd, 'platform') ?? 'APP',
+    applyChannels: str(fd, 'applyChannels'),      // 기본 정보 적용채널 (전체/모바일/PC) 2026-09-30
     exposeYn: fd.get('exposeYn') !== 'false',
     publishStart: dt(fd, 'publishStart'),
     publishEnd: dt(fd, 'publishEnd'),
     landingType: str(fd, 'landingType') ?? 'direct',
     landingUrl: str(fd, 'landingUrl'),
+    landingChannels: str(fd, 'landingChannels'),  // 랜딩 적용채널
     pageType: str(fd, 'pageType') ?? 'current',
+    chargeYn: fd.get('chargeYn') === 'true',      // 과금유무
+    statCode: str(fd, 'statCode'),                // 통계코드
+    ownerDept: str(fd, 'ownerDept'),              // 담당 사업부
+    targetCampaignId: str(fd, 'targetCampaignId'),// 타겟캠페인 ID
     bannerAlt: str(fd, 'bannerAlt'),
     typeDetails,
   };
