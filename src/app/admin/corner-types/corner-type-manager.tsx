@@ -2005,8 +2005,8 @@ function TRow({
 }) {
   // 배너 캠페인 폼(FieldRow)과 통일 — 라벨 셀 배경 #E8ECEF(2026-09-30 사용자 요청).
   return (
-    <div className={cn('grid grid-cols-[120px_1fr] items-stretch overflow-hidden', !flat && 'border-b border-slate-100')}>
-      <label className="flex h-full flex-col justify-center bg-[#E8ECEF] px-3 py-2.5 text-xs font-medium text-slate-600">
+    <div className={cn('grid grid-cols-[120px_1fr] items-stretch overflow-hidden', !flat && 'border-b border-[#E8ECEF]')}>
+      <label className="flex h-full flex-col justify-center bg-[#F8F9FB] px-3 py-2.5 text-xs font-medium text-slate-600">
         <span>{label} {required && <span className="text-rose-500">*</span>}</span>
         {hint && <span className="mt-0.5 block text-[10px] font-normal text-slate-500/80">{hint}</span>}
       </label>

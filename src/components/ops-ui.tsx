@@ -26,7 +26,7 @@ export function OpsSection({ title, children }: { no?: number | string; title: s
       <div className="mb-2 flex items-center gap-2">
         <h3 className="text-[15px] font-bold text-slate-900">{title}</h3>
       </div>
-      <div className="border-y border-slate-200">{children}</div>
+      <div className="border-y border-[#E8ECEF]">{children}</div>
     </section>
   );
 }
@@ -34,8 +34,8 @@ export function OpsSection({ title, children }: { no?: number | string; title: s
 // 라벨/값 2열 그리드 행 (상세·수정 공용). readOnly면 회색 박스.
 export function FieldRow({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] items-center border-b border-slate-100 last:border-b-0">
-      <div className="flex h-full items-center bg-[#E8ECEF] px-4 py-3 text-[13px] font-medium text-slate-600">
+    <div className="grid grid-cols-[140px_1fr] items-center border-b border-[#E8ECEF] last:border-b-0">
+      <div className="flex h-full items-center bg-[#F8F9FB] px-4 py-3 text-[13px] font-medium text-slate-600">
         {label}
         {required && <span className="ml-0.5 text-rose-500">*</span>}
       </div>
