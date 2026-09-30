@@ -78,10 +78,10 @@ function ChipsView({ component }: { component: PreviewComponent }) {
     return (
       <div className={twoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max justify-items-start items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'}>
         {component.atoms.map((a, i) => (
-          <span key={a.id} className={'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm ' + (i === sel ? 'ring-1 ring-[#3617CE]' : '')}>
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3617CE] text-white">
+          <span key={a.id} className={'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#EDEFF7] py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm ' + (i === sel ? 'ring-1 ring-[#3617CE]' : '')}>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[#3617CE]">
               {a.imageUrl && isRenderableImg(a.imageUrl) && !isIconRef(a.imageUrl)
-                ? /* 디자인 제공 퀵칩 아이콘(흰색 svg) — 뱃지 위 글리프 크기로 렌더 */
+                ? /* 디자인 제공 퀵칩 아이콘(#3617CE svg) — 흰 원형 뱃지 위 글리프 크기로 렌더 */
                   /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="h-3.5 w-3.5 object-contain" />
                 : <IconGlyph name={a.imageUrl && isIconRef(a.imageUrl) ? a.imageUrl : 'icon:general/Category'} className="h-3.5 w-3.5" />}
             </span>

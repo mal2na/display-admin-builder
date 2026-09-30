@@ -610,7 +610,7 @@ function ChipIconPicker({ value, onPick }: { value?: string; onPick: (icon: stri
         {value && isIconRef(value)
           ? <IconGlyph name={value} className="h-4 w-4" />
           : value && value.startsWith('/assets/')
-            ? /* 흰색 svg는 뱃지 위에 올려 미리보기(칩과 동일) */ <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3617CE]">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={value} alt="" className="h-3 w-3 object-contain" /></span>
+            ? /* 브랜드색 svg를 흰 원형 뱃지 위에 미리보기(칩과 동일) */ <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white ring-1 ring-slate-200">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={value} alt="" className="h-3 w-3 object-contain" /></span>
             : <Plus className="h-3.5 w-3.5" />}
       </button>
       {open && (
