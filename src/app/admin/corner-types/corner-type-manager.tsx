@@ -1427,45 +1427,32 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
   // 기본 정보 하단 메타(운영 채널·플랫폼·사용 여부·승인상태·설명) — bulk 섹션·통합 섹션에서 공용.
   //  통합 섹션의 우측 열(1fr)에서도 안 눌리게 bulk일 때만 2열, 통합(비-bulk)에선 1열로 쌓는다.
+  // 단일 열 TRow 나열 — basicPickers 표에 이어 하나의 가로줄 테이블로(좌우 보더 없음, 목업 105).
   const metaFields = (
-    <div className={cn('grid grid-cols-1', bulk && 'md:grid-cols-2')}>
-      <TRow label="운영 채널">
-        <OpsCheckGroup name="channels" options={OPERATION_CHANNELS} initial={channels} />
-      </TRow>
-      <TRow label="운영 플랫폼">
-        <OpsCheckGroup name="platforms" options={OPERATION_PLATFORMS} initial={platforms} />
-      </TRow>
+    <>
+      <TRow label="운영 채널"><OpsCheckGroup name="channels" options={OPERATION_CHANNELS} initial={channels} /></TRow>
+      <TRow label="운영 플랫폼"><OpsCheckGroup name="platforms" options={OPERATION_PLATFORMS} initial={platforms} /></TRow>
       <TRow label="사용 여부" required>
-        <div className="flex gap-4 py-0.5 text-xs">
-          <label className="flex items-center gap-1.5">
-            <input type="radio" checked={active} onChange={() => setActive(true)} className="accent-indigo-600" /> 사용
-          </label>
-          <label className="flex items-center gap-1.5">
-            <input type="radio" checked={!active} onChange={() => setActive(false)} className="accent-indigo-600" /> 미사용
-          </label>
+        <div className="flex gap-4 text-xs">
+          <label className="flex items-center gap-1.5"><input type="radio" checked={active} onChange={() => setActive(true)} className="accent-indigo-600" /> 사용</label>
+          <label className="flex items-center gap-1.5"><input type="radio" checked={!active} onChange={() => setActive(false)} className="accent-indigo-600" /> 미사용</label>
         </div>
         {active && <input type="hidden" name="active" value="on" />}
       </TRow>
       <TRow label="승인상태" hint="승인 결과는 별도 승인 프로세스에서 반영됩니다">
-        <div className="flex items-center gap-2 py-0.5">
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-            {CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}
-          </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
           <span className="text-[10px] text-muted-foreground">(읽기 전용)</span>
         </div>
         <input type="hidden" name="status" value={row.status} />
       </TRow>
-      <div className="p-3 md:col-span-2">
-        <TRow label="코너 유형 설명" flat>
-          <Input name="description" defaultValue={row.description ?? ''} placeholder="100자 이내" className="h-8 text-xs" />
-        </TRow>
-      </div>
-    </div>
+      <TRow label="코너 유형 설명"><Input name="description" defaultValue={row.description ?? ''} placeholder="100자 이내" className="h-8 text-xs" /></TRow>
+    </>
   );
 
-  // 유형·배열 선택(비-bulk) — 테이블(TRow) 형태로 통일(2026-09-30 사용자 요청). 코너 유형 ID / 코너 유형 / 배열·레이아웃 / 결과.
+  // 유형·배열 선택(비-bulk) — 테이블(TRow) 형태. 좌우 보더 없이 가로줄만(2026-09-30 사용자 요청, 목업 105).
   const basicPickers = (
-    <div className="overflow-hidden rounded-md border border-[#E8ECEF]">
+    <>
       <input type="hidden" name="name" value={derivedName} />
       <input type="hidden" name="layout" value={row.layout ?? ''} />
       <input type="hidden" name="componentType" value={compValid} />
@@ -1511,8 +1498,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           <p className="text-[11px] leading-relaxed text-muted-foreground">배열은 <b>형태(레이아웃)</b>만 정합니다. <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span>은 이미 등록된 배열(다시 등록 가능) · 노출 개수는 빌더에서.</p>
         </div>
       </TRow>
-      <TRow label="등록 결과" flat><span className="text-[12px]">이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span></span></TRow>
-    </div>
+      <TRow label="등록 결과"><span className="text-[12px]">이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span></span></TRow>
+    </>
   );
 
   // 통합 미리보기(라이브) — 좌측 sticky. 정의 기본값(문구·아이콘·카드 모양) 반영.
@@ -1642,20 +1629,20 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* ③ 컴포넌트 조합 — 이 코너 유형에 담을 컴포넌트를 순서대로 조립. (bulk 수정에선 컴포넌트 속성으로 대체 → 제외) */}
       {!bulk && (
-      /* overflow-hidden 제거 — position:sticky(좌측 미리보기)가 조상 overflow에 막히지 않도록 */
-      <section className="rounded-md border border-indigo-200">
-        <div className="flex flex-wrap items-center gap-2 rounded-t-md border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-indigo-700">
+      /* 좌우 보더 없는 섹션(목업 105) — 굵은 제목 + 가로줄 테이블만. */
+      <section className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2 text-[15px] font-bold text-slate-900">
           코너 정의
-          <span className="font-normal text-indigo-400">왼쪽 미리보기를 보며 오른쪽에서 유형·배열·구성·표시 항목을 한 번에 설정</span>
+          <span className="text-[11px] font-normal text-slate-400">왼쪽 미리보기를 보며 오른쪽에서 설정</span>
         </div>
         <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
-        <div className="grid grid-cols-1 gap-4 p-3 lg:grid-cols-[340px_1fr]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
           {/* 왼쪽: 라이브 미리보기(sticky) — 기본 정보+컴포넌트 구성 통합, 미리보기 하나(2026-09-29 사용자 요청) */}
           {livePreview}
           {/* 오른쪽: 모든 설정 — (등록은 스텝별) 유형·배열 → 컴포넌트 구성 → 표시 항목 */}
           <div className="min-w-0 space-y-3">
-            {/* 스텝은 unmount 대신 hidden으로 숨김 — 이전 스텝 입력값(유형·채널 등)이 submit에서 빠지지 않도록 */}
-            <div className={cn('space-y-3', !showStep(0) && 'hidden')}>
+            {/* 스텝은 unmount 대신 hidden으로 숨김 — 이전 스텝 입력값(유형·채널 등)이 submit에서 빠지지 않도록. 좌우 보더 없는 한 표. */}
+            <div className={cn('border-t border-[#E8ECEF]', !showStep(0) && 'hidden')}>
               {basicPickers}
               {metaFields}
             </div>
@@ -1720,10 +1707,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
             </div>
-            {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로 통일(2026-09-30 사용자 요청). */}
+            {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 좌우 보더 없이 가로줄만(목업 105). */}
             {!bulk && (
-            <div className={cn('overflow-hidden rounded-md border border-[#E8ECEF]', !showStep(2) && 'hidden')}>
-              <div className="border-b border-[#E8ECEF] bg-[#F8F9FB] px-3 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
+            <div className={cn('border-t border-[#E8ECEF]', !showStep(2) && 'hidden')}>
+              <div className="border-b border-[#E8ECEF] px-1 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
               <TRow label="표시 항목">
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
                   {CORNER_TYPE_FEATURES.map((f) => {
