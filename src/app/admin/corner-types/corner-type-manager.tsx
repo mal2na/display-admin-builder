@@ -558,7 +558,7 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
       <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">
         <Plus className="h-3.5 w-3.5" /> 상품·혜택 담기 (디바이스·음식·쇼핑 등 · 여러 개 선택)
       </button>
-      <p className="text-[10px] leading-relaxed text-slate-400">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
+      <p className="text-[11px] leading-relaxed text-slate-400">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
       <ProductPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} options={productOptions} usedKeys={usedKeys} onAdd={addMany} />
     </div>
   );
@@ -1766,13 +1766,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           {/* 왼쪽: 라이브 미리보기(sticky) — 기본 정보+컴포넌트 구성 통합, 미리보기 하나(2026-09-29 사용자 요청) */}
           {livePreview}
           {/* 오른쪽: 모든 설정 — (등록은 스텝별) 유형·배열 → 컴포넌트 구성 → 표시 항목 */}
-          <div className="min-w-0 space-y-3">
-            {/* 스텝은 unmount 대신 hidden으로 숨김 — 이전 스텝 입력값(유형·채널 등)이 submit에서 빠지지 않도록. 좌우 보더 없는 한 표. */}
-            <div className={cn('border-t border-[#E8ECEF]', !showStep(0) && 'hidden')}>
+          <div className="flex min-w-0 flex-col gap-3">
+            {/* 순서(order): 기본정보 → 세부 항목 → 상품·혜택 묶기(편집기). 세부 항목 아래에 묶기가 오도록(2026-09-30 사용자 요청). */}
+            <div className={cn('order-1 border-t border-[#E8ECEF]', !showStep(0) && 'hidden')}>
               {basicPickers}
               {metaFields}
             </div>
-            <div className={cn('space-y-3', !showStep(1) && 'hidden')}>
+            <div className={cn('order-3 space-y-3', !showStep(1) && 'hidden')}>
             {/* 스와이프형 — 코너 유형에서 배너를 '묶는다'(배너 캠페인 관리에서 선택 · 랜딩 URL 그대로 끌어옴). 순서는 드래그앤드롭. 2026-09-29 사용자 요청 */}
             {isBannerType && detailValid === '스와이프형' && (
               <SwipeBannerEditor
@@ -1844,7 +1844,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             </div>
             {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 업무 진입형(탭·메뉴)은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
             {!bulk && base !== '업무 진입형' && (
-            <div className={cn('border-t border-[#E8ECEF]', !showStep(2) && 'hidden')}>
+            <div className={cn('order-2 border-t border-[#E8ECEF]', !showStep(2) && 'hidden')}>
               <div className="border-b border-[#E8ECEF] px-1 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
               <TRow label="표시 항목">
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
