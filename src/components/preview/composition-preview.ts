@@ -16,16 +16,19 @@ const atom = (a: Partial<PreviewAtom> & { atomType: string; name: string }): Pre
   ...a,
 });
 
-// 퀵칩(ChipHome) 라벨 → 아이콘 자동 유추. 코너 유형에서 아이콘을 지정하지 않은(시드) 칩도 레퍼런스 퀵칩처럼 아이콘 뱃지가 보이게 한다.
+// 퀵칩(ChipHome) 라벨 → 디자인 제공 아이콘(빌더 사용 이미지 아이콘1~8, public/assets/quickchip). 흰색 채움 · 뱃지 위 렌더.
+const CHIP_SVG_RULES: [RegExp, string][] = [
+  [/\d+\s*월/, '/assets/quickchip/qc-month.svg'],   // 4월 혜택 → 아이콘1(월 뱃지)
+  [/줍기/, '/assets/quickchip/qc-pin.svg'],         // 혜택 줍기 → 아이콘2(핀)
+  [/카테고리/, '/assets/quickchip/qc-grid.svg'],     // 카테고리 → 아이콘3(그리드)
+  [/vip/i, '/assets/quickchip/qc-crown.svg'],       // VIP Pick → 아이콘4(왕관)
+  [/0?\s*week/i, '/assets/quickchip/qc-drop.svg'],  // 0 Week → 아이콘5(드롭)
+  [/이벤트/, '/assets/quickchip/qc-star.svg'],       // 이벤트 → 아이콘6(별)
+  [/영화|예매|공연/, '/assets/quickchip/qc-ticket.svg'], // 영화 예매 → 아이콘7(티켓)
+  [/글로벌|여행|로밍/, '/assets/quickchip/qc-globe.svg'], // 글로벌 여행 → 아이콘8(글로브)
+];
+// 그 외 라벨은 기존 일반 아이콘(lucide) 폴백.
 const CHIP_ICON_RULES: [RegExp, string][] = [
-  [/\d*\s*월/, 'Calender'],       // 4월 혜택 → 달력
-  [/줍기/, 'Location'],           // 혜택 줍기 → 위치
-  [/카테고리/, 'Category'],
-  [/vip/i, 'Vip'],                // VIP Pick → 왕관
-  [/0?\s*week/i, 'Benefit'],      // 0 Week → 혜택
-  [/이벤트/, 'Event'],
-  [/영화|예매|공연/, 'Movie'],
-  [/글로벌|여행|로밍/, 'Global'],
   [/멤버십/, 'Vip'],
   [/쇼핑|장바구니/, 'Cart'],
   [/검색/, 'Search'],
@@ -36,8 +39,9 @@ const CHIP_ICON_RULES: [RegExp, string][] = [
 ];
 export function chipIconForLabel(label?: string | null): string {
   const s = (label ?? '').trim();
+  for (const [re, svg] of CHIP_SVG_RULES) if (re.test(s)) return svg;
   for (const [re, ic] of CHIP_ICON_RULES) if (re.test(s)) return `icon:general/${ic}`;
-  return 'icon:general/Category';
+  return '/assets/quickchip/qc-grid.svg';
 }
 
 // 상품형 카드 이미지(단말·요금제·구독) / 콘텐츠 무비 포스터 — 유형별로 카테고리 맞춰 배정
