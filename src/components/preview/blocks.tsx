@@ -648,7 +648,8 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     );
 
   // 퀵메뉴(아이콘 칩) 전용 코너는 칩이 라벤더 배경 위에 흰 칩으로 떠 보이게(레퍼런스 퀵칩) — 흰 카드 대신 라벤더 배경.
-  const isChipHomeOnly = !isBanner && corner.components.length > 0 && corner.components.every((c) => c.componentType === '선택형' && (c.chipVariant === 'home' || c.atoms.some((a) => a.imageUrl)));
+  // 아이콘 퀵칩(ChipHome)만 라벤더 배경. 메뉴 리스트(세로 메뉴)는 칩이 아니라 흰 배경(2026-10-01 사용자 요청).
+  const isChipHomeOnly = !isBanner && !isMenuList && corner.components.length > 0 && corner.components.every((c) => c.componentType === '선택형' && (c.chipVariant === 'home' || c.atoms.some((a) => a.imageUrl)));
   const wrapClass = isBanner ? '' : (isChipHomeOnly ? 'rounded-2xl bg-[#E2E6F1] p-3' : 'rounded-2xl bg-white p-3 shadow-sm');
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
