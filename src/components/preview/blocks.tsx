@@ -72,23 +72,34 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const variant = component.chipVariant ?? (component.atoms.some((a) => a.imageUrl) ? 'home' : 'contents');
 
-  // ChipHome — 아이콘 뱃지(네이비 원형)+라벨 pill, 1/2행(2행 그리드+가로 스크롤)
+  // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
   if (variant === 'home') {
     const twoRows = component.chipRows === 2;
+    const chip = (a: PreviewAtom) => (
+      <span key={a.id} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/50 py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEFF7] text-[#3617CE]">
+          {a.imageUrl && isRenderableImg(a.imageUrl) && !isIconRef(a.imageUrl)
+            ? /* 디자인 제공 퀵칩 아이콘(#3617CE svg) — 흰 원형 뱃지 위 글리프 크기로 렌더 */
+              /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="h-3.5 w-3.5 object-contain" />
+            : <IconGlyph name={a.imageUrl && isIconRef(a.imageUrl) ? a.imageUrl : 'icon:general/Category'} className="h-3.5 w-3.5" />}
+        </span>
+        {a.content ?? a.name}
+      </span>
+    );
+    if (twoRows) {
+      // 가로(행) 우선 배치: 앞 절반이 윗줄, 뒤 절반이 아랫줄 — 번호가 좌→우로 이어지게.
+      const mid = Math.ceil(component.atoms.length / 2);
+      const grid = [component.atoms.slice(0, mid), component.atoms.slice(mid)];
+      return (
+        <div className="flex flex-col gap-2 overflow-x-auto pb-1">
+          {grid.map((r, ri) => (
+            <div key={ri} className="flex w-max items-start gap-2">{r.map(chip)}</div>
+          ))}
+        </div>
+      );
+    }
     return (
-      <div className={twoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max justify-items-start items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'}>
-        {component.atoms.map((a, i) => (
-          <span key={a.id} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/50 py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEFF7] text-[#3617CE]">
-              {a.imageUrl && isRenderableImg(a.imageUrl) && !isIconRef(a.imageUrl)
-                ? /* 디자인 제공 퀵칩 아이콘(#3617CE svg) — 흰 원형 뱃지 위 글리프 크기로 렌더 */
-                  /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="h-3.5 w-3.5 object-contain" />
-                : <IconGlyph name={a.imageUrl && isIconRef(a.imageUrl) ? a.imageUrl : 'icon:general/Category'} className="h-3.5 w-3.5" />}
-            </span>
-            {a.content ?? a.name}
-          </span>
-        ))}
-      </div>
+      <div className="flex flex-nowrap items-start gap-2 overflow-x-auto pb-1">{component.atoms.map(chip)}</div>
     );
   }
 
