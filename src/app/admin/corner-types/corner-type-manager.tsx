@@ -1671,6 +1671,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   // 통합 미리보기(라이브) — 좌측 sticky. 정의 기본값(문구·아이콘·카드 모양) 반영.
   const livePreview = (
     <div className="self-start lg:sticky lg:top-3">
+      {/* '코너 정의' 헤더는 미리보기 열 상단에 — 오른쪽 '기본 정보' 헤더와 같은 로우로 정렬(2026-10-01 사용자 요청) */}
+      <div className="mb-2 flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
+        <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
+        코너 정의
+        <span className="text-[11px] font-normal text-slate-400">왼쪽 미리보기를 보며 오른쪽에서 설정</span>
+      </div>
       <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#F0F2F9] p-3">
         {(() => {
           const previewC = {
@@ -1804,11 +1810,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       {!bulk && (
       /* 좌우 보더 없는 섹션(목업 105) — 굵은 제목 + 가로줄 테이블만. */
       <section className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
-          <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
-          코너 정의
-          <span className="text-[11px] font-normal text-slate-400">왼쪽 미리보기를 보며 오른쪽에서 설정</span>
-        </div>
         <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
           {/* 왼쪽: 라이브 미리보기(sticky) — 기본 정보+컴포넌트 구성 통합, 미리보기 하나(2026-09-29 사용자 요청) */}
@@ -1999,12 +2000,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       {showStep(2) && (isRecEligible || isListType) && (
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
         <div aria-hidden className="hidden lg:block" />
-        <section className="min-w-0 overflow-hidden rounded-md border border-[#e8ebef]">
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#e8ebef] bg-[#f0f2f4] px-3.5 py-2.5 text-xs font-semibold text-slate-700">
+        <section className="min-w-0">
+        <div className="mb-2.5 flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
+          <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
           콘텐츠 채우는 방식 · 노출 기본값
-          <span className="font-normal text-slate-400">콘텐츠를 <b className="font-semibold text-slate-600">무엇으로 채울지</b> 먼저 정하고, 정렬·CTA를 설정 · 빌더에서 코너별로 조정 가능</span>
+          <span className="text-[11px] font-normal text-slate-400">콘텐츠를 <b className="font-semibold text-slate-600">무엇으로 채울지</b> 먼저 정하고, 정렬·CTA를 설정 · 빌더에서 코너별로 조정 가능</span>
         </div>
-        <div className="space-y-3 p-3">
+        <div className="space-y-3 border-t border-[#cfd3e0] pt-3">
           {/* ① 추천 수급 방식 (출처) — 상품형·혜택·오퍼형·콘텐츠 안내형에만 */}
           {isRecEligible && (
             <div className="space-y-2">
@@ -2015,14 +2017,18 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
                 ))}
               </select>
-              <dl className="space-y-1 rounded-md bg-[#f0f2f4] p-2.5 text-[11px] leading-relaxed">
+              {/* 설명 — .frow 규격 미니 테이블(라벨 #f0f2f4·150px). 고정폭 클램프로 폰트 잘리던 문제 해결(2026-10-01). */}
+              <div className="overflow-hidden rounded-md border border-[#e8ebef]">
                 {REC_SOURCE_METHODS.map((k) => (
-                  <div key={k} className="flex gap-1.5">
-                    <dt className="w-24 shrink-0 font-semibold text-slate-700">{k} <span className="font-normal text-slate-400">· {REC_SOURCE_INFO[k].tag}</span></dt>
-                    <dd className="min-w-0 flex-1 text-muted-foreground">{REC_SOURCE_INFO[k].how}</dd>
+                  <div key={k} className="grid grid-cols-[150px_minmax(0,1fr)] border-b border-[#e8ebef] last:border-b-0">
+                    <div className="bg-[#f0f2f4] px-3 py-2 text-[11px] leading-relaxed">
+                      <b className="font-semibold text-slate-700">{k}</b>
+                      <span className="block font-normal text-slate-400">· {REC_SOURCE_INFO[k].tag}</span>
+                    </div>
+                    <div className="min-w-0 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">{REC_SOURCE_INFO[k].how}</div>
                   </div>
                 ))}
-              </dl>
+              </div>
             </div>
           )}
           {/* ② 노출 구성 (정렬·CTA) — CVM 수급이면 CVM이 결정하므로 비활성(선택 불가) */}

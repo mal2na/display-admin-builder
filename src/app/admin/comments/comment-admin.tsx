@@ -388,7 +388,7 @@ function LabeledSelect({ label, opts }: { label: string; opts: string[] }) {
   return (
     <div className="flex items-center gap-2">
       <span className="w-16 shrink-0 text-[12px] text-muted-foreground">{label}</span>
-      <Select className="h-9 flex-1">{opts.map((o) => <option key={o}>{o}</option>)}</Select>
+      <Select className="h-9 flex-1 bg-white">{opts.map((o) => <option key={o}>{o}</option>)}</Select>
     </div>
   );
 }
@@ -397,7 +397,7 @@ function Filt({ label, children }: { label: string; children: React.ReactNode })
   return <div className="flex items-center gap-2"><span className="shrink-0 text-[13px] font-medium text-slate-600">{label}</span>{children}</div>;
 }
 function LabelSel({ opts, w }: { opts: string[]; w?: string }) {
-  return <Select className={cn('h-9', w ?? 'w-36')}>{opts.map((o) => <option key={o}>{o}</option>)}</Select>;
+  return <Select className={cn('h-9 bg-white', w ?? 'w-36')}>{opts.map((o) => <option key={o}>{o}</option>)}</Select>;
 }
 function Radio({ name, label, checked, disabled }: { name: string; label: string; checked?: boolean; disabled?: boolean }) {
   return <label className={cn('flex items-center gap-1.5', disabled ? 'cursor-default text-slate-400' : 'cursor-pointer')}><input type="radio" name={name} defaultChecked={checked} disabled={disabled} className="h-4 w-4 accent-indigo-600 disabled:accent-slate-300" /> {label}</label>;
