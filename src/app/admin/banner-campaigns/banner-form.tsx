@@ -324,7 +324,8 @@ function FitBanner({ f, ratio = 0.37 }: { f: ComposeFields; ratio?: number }) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  return <div ref={ref} className="w-full overflow-hidden rounded-2xl">{w > 0 && <ComposedBanner f={f} width={w} height={Math.round(w * ratio)} preview />}</div>;
+  // 래퍼 overflow-hidden은 ComposedBanner의 radius(28)를 덮어쓰지 않게 radius 없이(모서리는 ComposedBanner가 그림).
+  return <div ref={ref} className="w-full">{w > 0 && <ComposedBanner f={f} width={w} height={Math.round(w * ratio)} preview />}</div>;
 }
 
 // 직접 만들기 인라인 편집기 — 같은 페이지에서 미리보기 + 탭 컨트롤(모달 아님)
