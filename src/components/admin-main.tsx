@@ -20,10 +20,10 @@ export function AdminMain({ children }: { children: React.ReactNode }) {
     // 빌더·새 프로모션: 라벤더 여백 위에 자식(루트 div)이 라운드 패널로 뜬다.
     return <main className="min-h-0 flex-1 overflow-hidden bg-[#ebeef6] p-3">{children}</main>;
   }
-  // 라벤더 여백 위에 흰 라운드 패널 — LNB와 콘텐츠 사이에 라운드가 생긴다.
+  // 흰 패널을 LNB 바로 옆·헤더 바로 밑에 붙인다(좌/상 여백 제거). 우/하 라벤더 여백만 유지.
   return (
-    <main className="min-h-0 flex-1 overflow-hidden bg-[#ebeef6] p-3">
-      <div className="h-full overflow-y-auto rounded-2xl border bg-card shadow-sm">{children}</div>
+    <main className="min-h-0 flex-1 overflow-hidden bg-[#ebeef6] pb-3 pr-3">
+      <div className="h-full overflow-y-auto rounded-2xl rounded-tl-none border border-l-0 border-t-0 bg-card shadow-sm">{children}</div>
     </main>
   );
 }
