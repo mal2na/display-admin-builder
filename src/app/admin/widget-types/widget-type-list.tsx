@@ -29,7 +29,7 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border bg-white p-4 shadow-sm">
+      <div className="rounded-xl border border-[#e3e6ef] bg-[#f6f7fb] p-4">
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">위젯유형
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="위젯유형" className="h-9 w-56 text-sm" />
@@ -51,27 +51,27 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
         </div>
       </div>
 
-      <p className="text-sm font-semibold">위젯 유형 목록 <span className="text-indigo-600">{filtered.length}건</span></p>
+      <p className="text-sm font-semibold">위젯 유형 목록 <span className="text-[#3a2ee6]">{filtered.length}건</span></p>
 
-      <div className="border-y border-slate-200 bg-white">
-        <table className="w-full text-sm">
+      <div className="border-y border-[#e3e6ef] bg-white">
+        <table className="w-full text-[13px] font-normal">
           <thead>
-            <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
-              <th className="w-16 px-3 py-2.5 text-left font-medium">번호</th>
-              <th className="px-3 py-2.5 text-left font-medium">위젯 유형</th>
-              <th className="px-3 py-2.5 text-left font-medium">유형설명</th>
-              <th className="w-24 px-3 py-2.5 text-left font-medium">사용여부</th>
-              <th className="px-3 py-2.5 text-left font-medium">최근 수정자</th>
-              <th className="px-3 py-2.5 text-left font-medium">최근 수정일시</th>
+            <tr className="border-b border-[#e3e6ef] bg-[#f6f7fb] text-[12px] text-[#6b7086]">
+              <th className="w-16 px-3 py-2.5 text-left font-normal">번호</th>
+              <th className="px-3 py-2.5 text-left font-normal">위젯 유형</th>
+              <th className="px-3 py-2.5 text-left font-normal">유형설명</th>
+              <th className="w-24 px-3 py-2.5 text-left font-normal">사용여부</th>
+              <th className="px-3 py-2.5 text-left font-normal">최근 수정자</th>
+              <th className="px-3 py-2.5 text-left font-normal">최근 수정일시</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr><td colSpan={6} className="px-3 py-10 text-center text-muted-foreground">조회 결과가 없습니다.</td></tr>
             ) : filtered.map((r, i) => (
-              <tr key={r.id} className="cursor-pointer border-b last:border-b-0 hover:bg-slate-50/60" onClick={() => router.push(`/admin/widget-types/${r.id}`)}>
+              <tr key={r.id} className="cursor-pointer border-b border-[#e3e6ef] last:border-b-0 hover:bg-[#f6f7fb]" onClick={() => router.push(`/admin/widget-types/${r.id}`)}>
                 <td className="px-3 py-2.5 text-slate-500">{i + 1}</td>
-                <td className="px-3 py-2.5 font-medium text-slate-800">{r.typeName}</td>
+                <td className="px-3 py-2.5 text-slate-800">{r.typeName}</td>
                 <td className="px-3 py-2.5 text-slate-600">{r.description ?? '-'}</td>
                 <td className="px-3 py-2.5">{r.useYn ? <StatusPill label="사용중" tone="green" /> : <StatusPill label="미사용" tone="amber" dot />}</td>
                 <td className="px-3 py-2.5 text-slate-600">{r.updatedBy ?? '-'}</td>
