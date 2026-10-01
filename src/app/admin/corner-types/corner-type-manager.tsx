@@ -275,7 +275,7 @@ function SortableBannerRow({ id, idx, banner, onRemove, onLinkChange }: { id: st
           value={banner.linkUrl ?? ''}
           onChange={(e) => onLinkChange(e.target.value)}
           placeholder="랜딩 URL (배너 캠페인에서 자동 · 수정 가능)"
-          className="h-7 w-full rounded border border-slate-200 bg-slate-50/60 px-2 text-[11px] text-slate-600 outline-none focus:border-indigo-400 focus:bg-white"
+          className="h-7 w-full rounded border border-[#e8ebef] bg-white px-2 text-[11px] text-slate-600 outline-none focus:border-indigo-400 focus:bg-white"
         />
       </div>
       <button type="button" onClick={onRemove} className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive">×</button>
@@ -315,7 +315,7 @@ function BannerPickerModal({ open, onClose, campaigns, usedIds, onAdd }: { open:
               const already = usedIds.has(c.id);
               const on = checked.has(c.id);
               return (
-                <label key={c.id} className={cn('flex cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-left', already ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-60' : on ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted/50')}>
+                <label key={c.id} className={cn('flex cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-left', already ? 'cursor-not-allowed border-[#e8ebef] bg-[#f0f2f4] opacity-60' : on ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted/50')}>
                   <input type="checkbox" checked={on || already} disabled={already} onChange={() => toggle(c.id)} className="accent-[#3616cd]" />
                   {c.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -325,7 +325,7 @@ function BannerPickerModal({ open, onClose, campaigns, usedIds, onAdd }: { open:
                     <span className="block truncate text-[13px] font-medium text-slate-800">{c.title}</span>
                     <span className="block truncate text-[11px] text-slate-400">{c.linkUrl || '랜딩 URL 없음'}{c.size ? ` · ${c.size}` : ''}</span>
                   </span>
-                  {already && <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">담김</span>}
+                  {already && <span className="shrink-0 rounded bg-[#e8ebef] px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">담김</span>}
                 </label>
               );
             })}
@@ -333,7 +333,7 @@ function BannerPickerModal({ open, onClose, campaigns, usedIds, onAdd }: { open:
         </div>
         <div className="flex items-center gap-2 border-t px-4 py-3">
           <span className="text-xs text-muted-foreground">{checked.size}개 선택</span>
-          <button type="button" onClick={close} className="ml-auto rounded-md border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">취소</button>
+          <button type="button" onClick={close} className="ml-auto rounded-md border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-[#f0f2f4]">취소</button>
           <button type="button" onClick={submit} disabled={checked.size === 0} className="rounded-md bg-[#3616cd] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#2c13b0] disabled:opacity-40">{checked.size > 0 ? `${checked.size}개 담기` : '담기'}</button>
         </div>
       </div>
@@ -375,10 +375,10 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit, single = false 
     <div className="space-y-2 rounded-md border border-[#e8ebef] bg-white p-3">
       <div className="flex items-center gap-2">
         <span className="text-[12px] font-semibold text-slate-700">{single ? '배너 불러오기 (단일)' : '스와이프 배너 묶기'}</span>
-        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{banners.length}{single ? '개' : '장'}</span>
+        <span className="rounded-full bg-[#f0f2f4] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{banners.length}{single ? '개' : '장'}</span>
         {!single && <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>}
       </div>
-      {banners.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[11px] text-slate-400">{single ? '배너 캠페인 관리에서 배너 1개를 불러오세요. 소재·문구·랜딩 URL은 캠페인 값을 그대로 씁니다.' : '아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.'}</p>}
+      {banners.length === 0 && <p className="rounded-md border border-dashed border-[#e8ebef] bg-white px-2 py-2 text-[11px] text-slate-400">{single ? '배너 캠페인 관리에서 배너 1개를 불러오세요. 소재·문구·랜딩 URL은 캠페인 값을 그대로 씁니다.' : '아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.'}</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={banners.map((b, i) => rowId(b, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
@@ -389,7 +389,7 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit, single = false 
         </SortableContext>
       </DndContext>
       {(!single || banners.length === 0) && (
-        <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">
+        <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-[#f0f2f4]">
           <Plus className="h-3.5 w-3.5" /> {single ? '배너 캠페인에서 불러오기 (1개)' : '배너 캠페인에서 담기 (여러 개 선택)'}
         </button>
       )}
@@ -412,7 +412,7 @@ function SortableProductRow({ id, idx, item, onRemove, onLinkChange }: { id: str
         <GripVertical className="h-4 w-4" />
       </button>
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-50 text-[10px] font-bold tabular-nums text-indigo-500">{idx + 1}</span>
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded border border-[#e8ebef] bg-[#f0f2f4]">
         {item.imageUrl && !item.imageUrl.startsWith('icon:')
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
@@ -425,7 +425,7 @@ function SortableProductRow({ id, idx, item, onRemove, onLinkChange }: { id: str
           value={item.linkUrl ?? ''}
           onChange={(e) => onLinkChange(e.target.value)}
           placeholder="랜딩 URL (자동 매핑 · 수정 가능)"
-          className="h-7 w-full rounded border border-slate-200 bg-slate-50/60 px-2 text-[11px] text-slate-600 outline-none focus:border-indigo-400 focus:bg-white"
+          className="h-7 w-full rounded border border-[#e8ebef] bg-white px-2 text-[11px] text-slate-600 outline-none focus:border-indigo-400 focus:bg-white"
         />
       </div>
       <button type="button" onClick={onRemove} className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive">×</button>
@@ -475,7 +475,7 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
           <div className="flex flex-wrap gap-1">
             {['전체', ...cats].map((c) => (
               <button key={c} type="button" onClick={() => setCat(c)}
-                className={cn('rounded-full border px-2.5 py-1 text-[11px] font-medium transition', cat === c ? 'border-[#3616cd] bg-[#3616cd] text-white' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-300')}>
+                className={cn('rounded-full border px-2.5 py-1 text-[11px] font-medium transition', cat === c ? 'border-[#3616cd] bg-[#3616cd] text-white' : 'border-[#e8ebef] bg-white text-slate-500 hover:border-indigo-300')}>
                 {c}
               </button>
             ))}
@@ -488,7 +488,7 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
               const already = usedKeys.has(o.key);
               const on = checked.has(o.key);
               return (
-                <label key={o.key} className={cn('flex cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-left', already ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-60' : on ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted/50')}>
+                <label key={o.key} className={cn('flex cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-left', already ? 'cursor-not-allowed border-[#e8ebef] bg-[#f0f2f4] opacity-60' : on ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted/50')}>
                   <input type="checkbox" checked={on || already} disabled={already} onChange={() => toggle(o.key)} className="accent-[#3616cd]" />
                   {o.imageUrl && !o.imageUrl.startsWith('icon:') && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -497,11 +497,11 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
                       <span className="truncate text-[13px] font-medium text-slate-800">{o.brand}</span>
-                      {o.category && <span className={cn('shrink-0 rounded px-1 py-[1px] text-[9px] font-semibold', PICKER_CAT_CLASS[o.category] ?? 'bg-slate-100 text-slate-500')}>{o.category}</span>}
+                      {o.category && <span className={cn('shrink-0 rounded px-1 py-[1px] text-[9px] font-semibold', PICKER_CAT_CLASS[o.category] ?? 'bg-[#e8ebef] text-slate-500')}>{o.category}</span>}
                     </span>
                     {o.title && o.title !== o.brand && <span className="block truncate text-[11px] text-slate-400">{o.title}{o.price ? ` · ${o.price}` : ''}</span>}
                   </span>
-                  {already && <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">담김</span>}
+                  {already && <span className="shrink-0 rounded bg-[#e8ebef] px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">담김</span>}
                 </label>
               );
             })}
@@ -509,7 +509,7 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
         </div>
         <div className="flex items-center gap-2 border-t px-4 py-3">
           <span className="text-xs text-muted-foreground">{checked.size}개 선택</span>
-          <button type="button" onClick={close} className="ml-auto rounded-md border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">취소</button>
+          <button type="button" onClick={close} className="ml-auto rounded-md border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-[#f0f2f4]">취소</button>
           <button type="button" onClick={submit} disabled={checked.size === 0} className="rounded-md bg-[#3616cd] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#2c13b0] disabled:opacity-40">{checked.size > 0 ? `${checked.size}개 담기` : '담기'}</button>
         </div>
       </div>
@@ -552,10 +552,10 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
     <div className="space-y-2 rounded-md border border-[#e8ebef] bg-white p-3">
       <div className="flex items-center gap-2">
         <span className="text-[12px] font-semibold text-slate-700">상품·혜택 묶기</span>
-        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{items.length}개</span>
+        <span className="rounded-full bg-[#f0f2f4] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{items.length}개</span>
         <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>
       </div>
-      {items.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[11px] text-slate-400">아래에서 상품·혜택을 골라 담으세요. 랜딩 URL은 담은 뒤 수정할 수 있어요.</p>}
+      {items.length === 0 && <p className="rounded-md border border-dashed border-[#e8ebef] bg-white px-2 py-2 text-[11px] text-slate-400">아래에서 상품·혜택을 골라 담으세요. 랜딩 URL은 담은 뒤 수정할 수 있어요.</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={items.map((it, i) => rowId(it, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
@@ -565,7 +565,7 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
           </div>
         </SortableContext>
       </DndContext>
-      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">
+      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-[#f0f2f4]">
         <Plus className="h-3.5 w-3.5" /> 상품·혜택 담기 (디바이스·음식·쇼핑 등 · 여러 개 선택)
       </button>
       <p className="text-[11px] leading-relaxed text-slate-400">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
@@ -696,7 +696,7 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
     <div className="space-y-2 rounded-md border border-[#e8ebef] bg-white p-3">
       <div className="flex items-center gap-2">
         <span className="text-[12px] font-semibold text-slate-700">탭·메뉴 정의</span>
-        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{chips.length}개</span>
+        <span className="rounded-full bg-[#f0f2f4] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{chips.length}개</span>
         <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -709,10 +709,10 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
         </SortableContext>
       </DndContext>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"><Plus className="h-3.5 w-3.5" /> 탭 추가</button>
+        <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-[#f0f2f4]"><Plus className="h-3.5 w-3.5" /> 탭 추가</button>
         <span className="ml-auto text-[11px] text-slate-500">줄 수</span>
         {[1, 2].map((r) => (
-          <button key={r} type="button" onClick={() => onCommit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-[#3616cd] text-white' : 'border bg-white text-slate-600 hover:bg-slate-50')}>{r}줄</button>
+          <button key={r} type="button" onClick={() => onCommit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-[#3616cd] text-white' : 'border bg-white text-slate-600 hover:bg-[#f0f2f4]')}>{r}줄</button>
         ))}
       </div>
       <p className="text-[11px] leading-relaxed text-slate-400">탭·메뉴 항목(<b>아이콘·라벨·이동 링크</b>·줄 수·순서)을 코너 유형에서 정의합니다. 라벨을 정하면 <b>이동 링크 URL과 아이콘이 자동 매핑</b>되고(수동 편집 가능), 실서비스 코너는 이 정의를 상속하며 <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
@@ -770,7 +770,7 @@ export function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: 
     <div className={cn('group flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.04] shadow-[0_1px_3px_rgba(20,22,40,0.05),0_10px_28px_rgba(20,22,40,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_6px_rgba(20,22,40,0.08),0_18px_42px_rgba(20,22,40,0.14)]', busy && 'pointer-events-none opacity-60')}>
       {/* 미리보기(클릭 → 상세) — 은은한 라벤더 배경 위 라운드 프레임에 코너 전체를 축소해 통째로 보여준다. */}
       <button type="button" onClick={onOpen} className="block w-full p-3 text-left">
-        <div className="rounded-xl bg-[#EEF1F8] p-3">
+        <div className="rounded-xl bg-[#f0f2f4] p-3">
           <div className="pointer-events-none h-52">
             <DevicePreview corner={previewCorner} fit="contain" />
           </div>
@@ -787,7 +787,7 @@ export function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: 
           <span className="text-[11px] font-medium tabular-nums text-slate-400">· {compMeta}</span>
           {t.liveVersion != null && t.active
             ? <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
-            : <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">미사용</span>}
+            : <span className="rounded-full bg-[#e8ebef] px-1.5 py-0.5 text-[10px] text-slate-500">미사용</span>}
           <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span>
           {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-[#2c13b0]">반영 필요</span>}
         </div>
@@ -797,7 +797,7 @@ export function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: 
         <button type="button" onClick={onOpen} className="inline-flex items-center gap-1 rounded-lg border border-[#C7D2FE] bg-[#EEF2FF] px-3.5 py-2 text-[12.5px] font-bold text-[#4A5CF0] transition hover:bg-[#E0E7FF]">
           <Pencil className="h-3.5 w-3.5" /> 수정하기
         </button>
-        <button type="button" onClick={onDuplicate} className="inline-flex items-center gap-1 rounded-lg border border-[#EBEDF3] bg-white px-3.5 py-2 text-[12.5px] font-medium text-[#5A5A6A] transition hover:bg-slate-50">
+        <button type="button" onClick={onDuplicate} className="inline-flex items-center gap-1 rounded-lg border border-[#EBEDF3] bg-white px-3.5 py-2 text-[12.5px] font-medium text-[#5A5A6A] transition hover:bg-[#f0f2f4]">
           <Copy className="h-3.5 w-3.5" /> 복제
         </button>
         <button type="button" onClick={onDelete} className="ml-auto inline-flex items-center gap-1 rounded-lg border border-[#EBEDF3] bg-white px-3.5 py-2 text-[12.5px] font-medium text-[#5A5A6A] transition hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive">
@@ -845,13 +845,13 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
   const btn = 'inline-flex items-center justify-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold transition disabled:opacity-50';
 
   return (
-    <div className={cn('flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition', busy && 'opacity-60')}>
+    <div className={cn('flex flex-col overflow-hidden rounded-xl border border-[#e8ebef] bg-white transition', busy && 'opacity-60')}>
       <button
         type="button"
         onClick={onOpen}
         className="group/vc flex flex-1 flex-col text-left transition hover:-translate-y-0.5 hover:shadow-[0_8px_22px_rgba(20,22,40,0.10)]"
       >
-        <div className="bg-[#EEF1F8] p-2.5">
+        <div className="bg-[#f0f2f4] p-2.5">
           {/* 썸네일 = 실제 배치된 대표 코너(있으면). 상세 첫 타일과 동일 코너라 이미지가 일치한다. 미배치면 조합 샘플. */}
           <div className="pointer-events-none h-40"><DevicePreview corner={v.previewCorner ?? cornerRowPreview(v)} fit="contain" /></div>
         </div>
@@ -862,7 +862,7 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
           <div className="flex flex-wrap items-center gap-1">
             {v.liveVersion != null && v.active
               ? <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{v.liveVersion}</span>
-              : <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">미사용</span>}
+              : <span className="rounded-full bg-[#e8ebef] px-1.5 py-0.5 text-[10px] text-slate-500">미사용</span>}
             <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[st] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[st] ?? st}</span>
             {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-[#2c13b0]">반영 필요</span>}
           </div>
@@ -870,13 +870,13 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
       </button>
 
       {/* 상태별 인라인 액션 */}
-      <div className="border-t border-slate-100 px-3 py-2" onClick={stop}>
+      <div className="border-t border-[#e8ebef] px-3 py-2" onClick={stop}>
         {err && <p className="mb-1.5 text-[10px] leading-snug text-rose-600">{err}</p>}
         {rejecting ? (
           <div className="space-y-1.5">
             <select
               autoFocus value={preset} onChange={(e) => { setPreset(e.target.value); setErr(null); }}
-              className="h-7 w-full rounded-md border border-slate-200 bg-white px-1.5 text-[11px] outline-none focus:border-rose-400"
+              className="h-7 w-full rounded-md border border-[#e8ebef] bg-white px-1.5 text-[11px] outline-none focus:border-rose-400"
             >
               <option value="">반려 사유 선택 (필수)</option>
               {REJECT_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -885,13 +885,13 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
               <input
                 value={detail} onChange={(e) => setDetail(e.target.value)}
                 placeholder={preset === '기타' ? '사유 입력 (필수)' : '보완 안내 (선택)'}
-                className="h-7 w-full rounded-md border border-slate-200 px-2 text-[11px] outline-none focus:border-rose-400"
+                className="h-7 w-full rounded-md border border-[#e8ebef] px-2 text-[11px] outline-none focus:border-rose-400"
                 onKeyDown={(e) => { if (e.key === 'Enter') doReject(); if (e.key === 'Escape') closeReject(); }}
               />
             )}
             <div className="flex gap-1.5">
               <button type="button" disabled={busy} onClick={doReject} className={cn(btn, 'flex-1 border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100')}>반려 확정</button>
-              <button type="button" disabled={busy} onClick={closeReject} className={cn(btn, 'border-slate-200 text-slate-500 hover:bg-slate-50')}>취소</button>
+              <button type="button" disabled={busy} onClick={closeReject} className={cn(btn, 'border-[#e8ebef] text-slate-500 hover:bg-[#f0f2f4]')}>취소</button>
             </div>
           </div>
         ) : st === 'REVIEW' ? (
@@ -924,8 +924,8 @@ function LayoutGroupCard({ cases, onOpen }: { cases: CornerTypeRow[]; onOpen: ()
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.04] shadow-[0_1px_3px_rgba(20,22,40,0.05),0_10px_28px_rgba(20,22,40,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_6px_rgba(20,22,40,0.08),0_18px_42px_rgba(20,22,40,0.14)]">
       <button type="button" onClick={onOpen} className="flex flex-1 flex-col text-left">
-        <div className="relative bg-[#EEF1F8] p-2.5">
-          {/* 대표 미리보기(첫 케이스) + 여러 케이스면 개수 배지. 배경은 단일/다중 동일(#EEF1F8). */}
+        <div className="relative bg-[#f0f2f4] p-2.5">
+          {/* 대표 미리보기(첫 케이스) + 여러 케이스면 개수 배지. 배경은 단일/다중 동일(#f0f2f4). */}
           <div className="pointer-events-none relative h-40"><DevicePreview corner={preview} fit="contain" /></div>
           {multi && <span className="absolute right-3 top-3 rounded-full bg-slate-900/85 px-2 py-0.5 text-[11px] font-bold text-white">{cases.length}개 케이스</span>}
         </div>
@@ -1100,7 +1100,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           {baseOptions.map((b) => {
             const active = base === b;
             const count = b === '전체' ? domainTypes.length : domainTypes.filter((t) => t.baseCategory === b).length;
-            const color = b === '전체' ? 'border-slate-200 bg-white text-slate-600' : cornerTypeChipClass(b);
+            const color = b === '전체' ? 'border-[#e8ebef] bg-white text-slate-600' : cornerTypeChipClass(b);
             return (
               <button
                 key={b}
@@ -1137,7 +1137,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
+          <div className="flex flex-wrap items-center gap-2 border-t border-[#e8ebef] pt-3">
             <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">직접 검색</span>
             <select value={field} onChange={(e) => setField(e.target.value as typeof field)} className={selectCls}>
               <option value="typeId">코너 유형 ID</option>
@@ -1158,7 +1158,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       {/* 보기 전환 — 카드(배열 그룹) / 리스트(플랫 테이블). 기본=카드. */}
       <div className="flex items-center justify-between">
         <p className="text-[13px] text-muted-foreground">검색결과 <b className="text-[#3616cd] tabular-nums">{filtered.length}</b>건</p>
-        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+        <div className="inline-flex rounded-lg border border-[#e8ebef] bg-white p-0.5">
           {([['card', '카드'], ['list', '리스트']] as const).map(([v, label]) => (
             <button
               key={v}
@@ -1205,7 +1205,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                             <div className="flex flex-wrap items-center gap-2">
                               <span className={cn('inline-flex items-center rounded-md px-2.5 py-1 text-[15px] font-bold', cornerTypeChipClass(bc))}>{bc}</span>
                               {cornerTypeEn(bc) && <span className="text-[12px] font-medium text-slate-400">{cornerTypeEn(bc)}</span>}
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-slate-600">{layoutGroups.length}개 배열</span>
+                              <span className="rounded-full bg-[#e8ebef] px-2 py-0.5 text-[12px] font-medium tabular-nums text-slate-600">{layoutGroups.length}개 배열</span>
                             </div>
                             {info && <p className="mt-2 text-[13px] leading-relaxed text-slate-600">{info.purpose}</p>}
                             {info && <p className="mt-1 text-[12px] text-slate-400">허용 컴포넌트: {info.allow}</p>}
@@ -1265,7 +1265,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   <td className="px-3 py-2.5 align-middle tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
                   <td className="px-3 py-2.5">
                     {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함 */}
-                    <div className="pointer-events-none mx-auto h-24 w-40 overflow-hidden rounded-lg border border-[#e8ebef] bg-[#EEF1F8] p-1.5">
+                    <div className="pointer-events-none mx-auto h-24 w-40 overflow-hidden rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-1.5">
                       <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" align="center-middle" />
                     </div>
                   </td>
@@ -1552,10 +1552,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   const badgeLocked = it.key === 'useBadge' && !features.usePrice;
                   const on = it.locked ? true : (features[it.key] as boolean) && !badgeLocked;
                   return (
-                    <div key={String(it.key)} className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2">
+                    <div key={String(it.key)} className="flex items-center gap-2 rounded-lg border border-[#e8ebef] bg-white px-3 py-2">
                       <div className="min-w-0 flex-1">
                         <span className="text-[13px] font-medium text-slate-700">{it.label}</span>
-                        {it.locked && <span className="ml-1.5 rounded bg-slate-100 px-1 text-[9px] text-slate-500">필수</span>}
+                        {it.locked && <span className="ml-1.5 rounded bg-[#e8ebef] px-1 text-[9px] text-slate-500">필수</span>}
                         <span className="block text-[11px] text-slate-400">{it.sub}{it.dep ? ` · ${it.dep}` : ''}</span>
                       </div>
                       <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[9px] font-medium text-indigo-500">공통</span>
@@ -1590,7 +1590,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         </TRow>
         <TRow label="승인상태">
           <div className="flex items-center gap-1.5">
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
+            <span className="rounded-full bg-[#e8ebef] px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
             <span className="whitespace-nowrap text-[11px] text-muted-foreground" title="승인은 별도 승인 프로세스에서 반영됩니다">(읽기 전용)</span>
           </div>
           <input type="hidden" name="status" value={row.status} />
@@ -1671,7 +1671,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   // 통합 미리보기(라이브) — 좌측 sticky. 정의 기본값(문구·아이콘·카드 모양) 반영.
   const livePreview = (
     <div className="self-start lg:sticky lg:top-3">
-      <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
       <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#F0F2F9] p-3">
         {(() => {
           const previewC = {
@@ -1710,8 +1709,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     <div className="flex items-center gap-1.5 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] px-3 py-2.5">
       {WIZARD_STEPS.map((s, i) => (
         <div key={i} className="flex flex-1 items-center gap-1.5">
-          <button type="button" onClick={() => i < step && setStep(i)} disabled={i > step} className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition', i === step ? 'bg-[#3616cd] text-white' : i < step ? 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50' : 'text-slate-400')}>
-            <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold', i === step ? 'bg-white/25 text-white' : i < step ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400')}>{i < step ? <Check className="h-3 w-3" /> : i + 1}</span>
+          <button type="button" onClick={() => i < step && setStep(i)} disabled={i > step} className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition', i === step ? 'bg-[#3616cd] text-white' : i < step ? 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-[#f0f2f4]' : 'text-slate-400')}>
+            <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold', i === step ? 'bg-white/25 text-white' : i < step ? 'bg-emerald-100 text-emerald-600' : 'bg-[#e8ebef] text-slate-400')}>{i < step ? <Check className="h-3 w-3" /> : i + 1}</span>
             <span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold leading-tight">{s.title}</span><span className={cn('block truncate text-[10px] leading-tight', i === step ? 'text-indigo-100' : 'text-slate-400')}>{s.desc}</span></span>
           </button>
           {i < WIZARD_STEPS.length - 1 && <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />}
@@ -1740,7 +1739,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       {/* 기본 정보 — bulk(다중 배열 일괄 수정) 전용. 비-bulk 등록/수정은 아래 통합 '코너 정의' 섹션에서 미리보기와 함께. */}
       {bulk && (
       <section className="overflow-hidden rounded-md border">
-        <div className="border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">기본 정보</div>
+        <div className="border-b bg-[#f0f2f4] px-3.5 py-2.5 text-xs font-semibold text-slate-700">기본 정보</div>
           <div className="space-y-4 border-b p-3">
             <input type="hidden" name="name" value={derivedName} />
             <input type="hidden" name="layout" value={row.layout ?? ''} />
@@ -1751,7 +1750,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[12px] font-medium text-muted-foreground">코너 유형</span>
               <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold', cornerTypeChipClass(base))}>{base}</span>
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">고정</span>
+              <span className="rounded bg-[#e8ebef] px-1.5 py-0.5 text-[10px] font-medium text-slate-500">고정</span>
               {cornerTypePurpose(base) && <span className="text-[11px] text-muted-foreground">{cornerTypePurpose(base)}</span>}
             </div>
             {/* 좌: 배열 미리보기 카드 · 우: 컴포넌트 속성 토글(고정) — 켜고 끄면 좌측 미리보기가 바로 바뀐다 */}
@@ -1766,18 +1765,18 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   {selectedArrays.map((d, i) => {
                     const locked = i < lockedCount; // 기존 등록 배열 = 유형 변경/삭제 불가
                     return (
-                    <div key={i} className="relative rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                      {!locked && <button type="button" onClick={() => removeArrAt(i)} className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:border-rose-300 hover:text-rose-600" aria-label="삭제"><X className="h-3.5 w-3.5" /></button>}
-                      <div className="rounded-lg bg-[#EEF1F8] p-3">
+                    <div key={i} className="relative rounded-xl border border-[#e8ebef] bg-white p-3 shadow-sm">
+                      {!locked && <button type="button" onClick={() => removeArrAt(i)} className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-[#e8ebef] bg-white text-slate-400 hover:border-rose-300 hover:text-rose-600" aria-label="삭제"><X className="h-3.5 w-3.5" /></button>}
+                      <div className="rounded-lg bg-[#f0f2f4] p-3">
                         {/* 배너·칩은 CornerBlock 내부에서 코너 상단에 붙어 렌더됨. 전체를 축소해 담아 2.5배열도 다 보인다. */}
                         <div className="pointer-events-none h-[260px]"><DevicePreview corner={cardPreview(d)} /></div>
                       </div>
                       <div className="mt-2 flex items-center gap-1">
                         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-100 text-[10px] font-bold text-[#3616cd]">{i + 1}</span>
                         {locked ? (
-                          <span className="flex h-8 w-full items-center gap-1.5 rounded-md bg-slate-50 px-2 text-xs font-medium text-slate-700">
+                          <span className="flex h-8 w-full items-center gap-1.5 rounded-md bg-[#f0f2f4] px-2 text-xs font-medium text-slate-700">
                             {layoutLabel(d) || d || '기본'}
-                            <span className="ml-auto rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">고정</span>
+                            <span className="ml-auto rounded bg-[#e8ebef] px-1.5 py-0.5 text-[10px] font-medium text-slate-500">고정</span>
                           </span>
                         ) : (
                           <input list="arr-catalog" value={d} onChange={(e) => renameArr(i, e.target.value)} placeholder="배열 이름 (예: 세로형+배너)" className="h-8 w-full rounded-md border border-indigo-200 px-2 text-xs" />
@@ -1787,7 +1786,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                     );
                   })}
                   {/* 배열 추가 카드 */}
-                  <button type="button" onClick={addBlankArr} className="flex min-h-[220px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 transition hover:border-indigo-300 hover:text-indigo-500">
+                  <button type="button" onClick={addBlankArr} className="flex min-h-[220px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#e8ebef] text-slate-400 transition hover:border-indigo-300 hover:text-indigo-500">
                     <Plus className="h-6 w-6" /><span className="text-[12px] font-medium">배열 추가</span>
                   </button>
                 </div>
@@ -1817,6 +1816,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           <div className="flex min-w-0 flex-col gap-3">
             {/* 순서(order): 기본정보 → 세부 항목 → 상품·혜택 묶기(편집기). 세부 항목 아래에 묶기가 오도록(2026-09-30 사용자 요청). */}
             <div className={cn('order-1 border-t border-[#e8ebef]', !showStep(0) && 'hidden')}>
+              <div className="border-b border-[#e8ebef] px-1 py-2 text-[14px] font-bold text-slate-800">기본 정보</div>
               {basicPickers}
               {metaFields}
             </div>
@@ -1854,7 +1854,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* FO 사용자 설정 — 탭·메뉴 정의 바로 아래(우측 컨트롤 열). 선택형/업무 진입형에서만. */}
             {(base === '업무 진입형' || compValid === '선택형') && (
               <section className="overflow-hidden rounded-md border border-[#e8ebef]">
-                <div className="flex items-center gap-1.5 border-b border-[#e8ebef] bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
+                <div className="flex items-center gap-1.5 border-b border-[#e8ebef] bg-[#f0f2f4] px-3.5 py-2.5 text-xs font-semibold text-slate-700">
                   <Info className="h-3.5 w-3.5 text-sky-500" /> FO 사용자 설정 (고객 커스터마이즈)
                 </div>
                 <div className="space-y-2.5 p-3">
@@ -1893,8 +1893,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             </div>
             {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 업무 진입형(탭·메뉴)은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
             {!bulk && base !== '업무 진입형' && base !== '배너형' && (
-            <div className={cn('order-2 border-t border-[#e8ebef]', !showStep(2) && 'hidden')}>
-              <div className="border-b border-[#e8ebef] px-1 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
+            <div className={cn('order-2', !showStep(2) && 'hidden')}>
+              <div className="border-b border-[#e8ebef] px-1 py-2 text-[14px] font-bold text-slate-800">세부 항목 (항목별 사용여부)</div>
               <TRow label="표시 항목">
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
                   {CORNER_TYPE_FEATURES.map((f) => {
@@ -1995,7 +1995,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
         <div aria-hidden className="hidden lg:block" />
         <section className="min-w-0 overflow-hidden rounded-md border border-[#e8ebef]">
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#e8ebef] bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#e8ebef] bg-[#f0f2f4] px-3.5 py-2.5 text-xs font-semibold text-slate-700">
           콘텐츠 채우는 방식 · 노출 기본값
           <span className="font-normal text-slate-400">콘텐츠를 <b className="font-semibold text-slate-600">무엇으로 채울지</b> 먼저 정하고, 정렬·CTA를 설정 · 빌더에서 코너별로 조정 가능</span>
         </div>
@@ -2004,13 +2004,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           {isRecEligible && (
             <div className="space-y-2">
               <label className="text-[11px] font-semibold text-slate-700">① 콘텐츠를 무엇으로 채울까 <span className="font-normal text-slate-400">· 출처</span></label>
-              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-8 w-full max-w-xs rounded-md border border-slate-200 bg-background px-2 text-xs">
+              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-8 w-full max-w-xs rounded-md border border-[#e8ebef] bg-background px-2 text-xs">
                 <option value="">기본값 미지정 — 빌더에서 코너별로 선택</option>
                 {REC_SOURCE_METHODS.map((s) => (
                   <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
                 ))}
               </select>
-              <dl className="space-y-1 rounded-md bg-slate-50 p-2.5 text-[11px] leading-relaxed">
+              <dl className="space-y-1 rounded-md bg-[#f0f2f4] p-2.5 text-[11px] leading-relaxed">
                 {REC_SOURCE_METHODS.map((k) => (
                   <div key={k} className="flex gap-1.5">
                     <dt className="w-24 shrink-0 font-semibold text-slate-700">{k} <span className="font-normal text-slate-400">· {REC_SOURCE_INFO[k].tag}</span></dt>
@@ -2025,10 +2025,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             <div className={cn('space-y-2', isRecEligible && 'border-t border-[#e8ebef] pt-3')}>
               <div className="flex flex-wrap items-center gap-2">
                 <label className="text-[11px] font-semibold text-slate-700">② 노출 구성 <span className="font-normal text-slate-400">· 정렬·CTA 기본값</span></label>
-                {cvmChosen && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600">CVM이 자동 결정 · 선택 불가</span>}
+                {cvmChosen && <span className="rounded bg-[#e8ebef] px-1.5 py-0.5 text-[9px] font-semibold text-slate-600">CVM이 자동 결정 · 선택 불가</span>}
               </div>
               {cvmChosen && (
-                <p className="rounded-md border border-[#e8ebef] bg-slate-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-slate-600">
+                <p className="rounded-md border border-[#e8ebef] bg-[#f0f2f4] px-2.5 py-1.5 text-[11px] leading-relaxed text-slate-600">
                 <b>CVM이 고객마다 순서를 자동으로 정하므로</b>, 정렬·노출 구성은 <b>운영자 편성</b>일 때만 직접 설정할 수 있어요.
                 </p>
               )}
@@ -2140,7 +2140,7 @@ function TRow({
 export function TypeDetailPreview({ base, component, detail, bigBanner = false, useTitle = true, useSub = true, useMore, badge = false, image = true, price = true, desc = true, ctaLabel, compact = false }: { base: string; component?: string; detail: string; bigBanner?: boolean; useTitle?: boolean; useSub?: boolean; useMore?: boolean; badge?: boolean; image?: boolean; price?: boolean; desc?: boolean; ctaLabel?: string; compact?: boolean }) {
   // 스켈레톤(회색 막대) 대신 '위치에 이름'을 적는 라벨 슬롯 — Title / Description / img / Badge / Price …
   const Slot = ({ label, className = '' }: { label: string; className?: string }) => (
-    <div className={cn('flex items-center justify-center overflow-hidden rounded border border-dashed border-slate-400 bg-slate-100 px-1 text-center text-[9px] font-semibold leading-none text-slate-600', className)}>
+    <div className={cn('flex items-center justify-center overflow-hidden rounded border border-dashed border-slate-400 bg-[#e8ebef] px-1 text-center text-[9px] font-semibold leading-none text-slate-600', className)}>
       {label}
     </div>
   );
@@ -2148,7 +2148,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
   //  · 이미지 OFF → 이미지 자리를 비우지 않고 '이미지 없음' 점선으로 표시(상품형만 image=false 가능)
   const ImgSlot = ({ className = '' }: { className?: string }) => (
     <div className={cn('relative', className)}>
-      <Slot label={image ? '이미지' : '이미지 없음'} className={cn('h-full w-full', !image && 'border-slate-300 bg-slate-50 text-slate-400')} />
+      <Slot label={image ? '이미지' : '이미지 없음'} className={cn('h-full w-full', !image && 'border-slate-300 bg-[#f0f2f4] text-slate-400')} />
     </div>
   );
   // 배열 이름 접미사 반영 — '+태그'면 배지 노출, '+배너'면 상단 배너를 얹는다.
@@ -2163,7 +2163,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     </div>
   ) : null);
   // 설명 행(부가/흐린 글씨, 예: '데이터 500') — 혜택 문구/정보값 Atom. 가격과 별개로 존재 가능.
-  const DescSlot = ({ className = '' }: { className?: string }) => (desc ? <Slot label="설명" className={cn('border-slate-300 bg-slate-50 text-slate-400', className)} /> : null);
+  const DescSlot = ({ className = '' }: { className?: string }) => (desc ? <Slot label="설명" className={cn('border-slate-300 bg-[#f0f2f4] text-slate-400', className)} /> : null);
   // CTA 텍스트 — 세부 항목 CTA ON일 때 실제 문구(② 노출 구성의 CTA 기본 문구)로 표시. 미입력 시 'CTA' 안내.
   const ctaText = (ctaLabel && ctaLabel.trim()) || 'CTA';
   // 가로형(2.5배열) 카드 비율 미리보기 뷰 — 1:1(상품)/3:4(포스터)/4:3(와이드) 전환
@@ -2184,7 +2184,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     body = has('띠', '텍스트배너') ? (
       <Slot label="텍스트 배너" className="h-8 w-full" />
     ) : (
-      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-center gap-2 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-3">
         <div className="flex-1 space-y-1.5">
           <Slot label="타이틀" className="h-4 w-3/4 justify-start" />
           <Slot label="디스크립션" className="h-3 w-1/2 justify-start" />
@@ -2194,7 +2194,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     );
   } else if (isProduct && has('단일 상품')) {
     body = (
-      <div className="flex gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+      <div className="flex gap-2 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-2">
         <div className="flex-1 space-y-1.5">
           <Slot label="텍스트" className="h-3 w-1/3 justify-start" />
           <Slot label="텍스트" className="h-4 w-3/4 justify-start" />
@@ -2216,7 +2216,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
           </div>
         )}
         {[0, 1, 2].map((i) => (
-          <div key={i} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
+          <div key={i} className="flex items-center gap-2 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-1.5">
             <ImgSlot className="h-10 w-10 shrink-0" />
             <div className="flex-1 space-y-1">
               <Slot label="텍스트" className="h-3 w-3/4 justify-start" />
@@ -2232,7 +2232,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     body = (
       <div className="grid grid-cols-2 gap-2">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
+          <div key={i} className="space-y-1 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-1.5">
             <ImgSlot className="aspect-[4/3] w-full" />
             <Slot label="텍스트" className="h-2.5 w-3/4 justify-start" />
           </div>
@@ -2253,7 +2253,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
                 key={sh}
                 type="button"
                 onClick={() => setShapeView(sh)}
-                className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold transition', shapeView === sh ? 'border-primary bg-primary text-primary-foreground' : 'border-slate-300 text-slate-500 hover:bg-slate-100')}
+                className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold transition', shapeView === sh ? 'border-primary bg-primary text-primary-foreground' : 'border-slate-300 text-slate-500 hover:bg-[#e8ebef]')}
               >
                 {sh}
               </button>
@@ -2262,7 +2262,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         )}
         <div className="flex gap-2 overflow-hidden">
           {[0, 1, 2].map((i) => (
-            <div key={i} className={cn('shrink-0 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5', cardW)}>
+            <div key={i} className={cn('shrink-0 space-y-1 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-1.5', cardW)}>
               <ImgSlot className={cn('w-full', ratioCls)} />
               <Slot label="텍스트" className="h-3 w-full justify-start" />
               <PriceRow className="h-3 w-2/3 justify-start" />
@@ -2279,7 +2279,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
       <div className="space-y-1">
         <div className="flex gap-2 overflow-hidden">
           {[0, 1].map((i) => (
-            <div key={i} className="w-[66%] shrink-0 space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2">
+            <div key={i} className="w-[66%] shrink-0 space-y-1.5 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-2">
               <ImgSlot className="aspect-[16/10] w-full" />
               <Slot label="텍스트" className="h-4 w-3/4 justify-start" />
               <PriceRow className="h-3 w-1/2 justify-start" />
@@ -2294,7 +2294,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     body = (
       <div className="flex gap-2 overflow-hidden">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="w-[42%] shrink-0 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
+          <div key={i} className="w-[42%] shrink-0 space-y-1 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-1.5">
             {/* 상품 이미지 = 세로로 긴 카드 이미지 영역 */}
             <ImgSlot className="h-28 w-full" />
             <Slot label="텍스트" className="h-3 w-full justify-start" />
@@ -2306,7 +2306,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     );
   } else if (has('바코드')) {
     body = (
-      <div className="space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="space-y-1.5 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-3">
         <Slot label="텍스트" className="h-3 w-1/4 justify-start" />
         <Slot label="바코드" className="h-12 w-full" />
         <div className="flex justify-between gap-2">
@@ -2318,7 +2318,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
   } else if (has('프로필')) {
     // 고정·필수 노출형·정보형·프로필형: [원형 사진][이름·번호] … [CTA] (my-profile.png 기준)
     body = (
-      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-center gap-2 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-3">
         <Slot label="이미지" className="h-9 w-9 shrink-0 rounded-full" />
         <div className="flex-1 space-y-1">
           <Slot label="텍스트" className="h-3 w-1/2 justify-start" />
@@ -2330,7 +2330,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
   } else if (base === '상태 안내형' || has('아이콘', '금액형', '사용량형', '요약')) {
     // 마이.png 상태 카드(아이콘/이미지형): 값(Value) + 상태(Status) + 라벨(Label) + 우측 icon/이미지
     body = (
-      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-center gap-2 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-3">
         <div className="flex-1 space-y-1.5">
           <div className="flex items-center gap-1.5">
             <Slot label="설명" className="h-5 w-1/2 justify-start" />
@@ -2361,7 +2361,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     body = (
       <div className="grid grid-cols-2 gap-2">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
+          <div key={i} className="space-y-1 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-1.5">
             <Slot label="이미지" className="h-10 w-full" />
             <Slot label="텍스트" className="h-3 w-3/4 justify-start" />
           </div>
@@ -2388,7 +2388,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     body = (
       <div className="space-y-1.5">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
+          <div key={i} className="flex items-center gap-2 rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-1.5">
             <Slot label="이미지" className="h-9 w-9 shrink-0 rounded-full" />
             <div className="flex-1 space-y-1">
               <Slot label="텍스트" className="h-3 w-3/4 justify-start" />
@@ -2408,7 +2408,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
   // 세부 항목 토글(타이틀/서브타이틀 사용여부)에 따라 헤더 슬롯을 켜고 끈다
   const showHeader = !noHeader && (useTitle || useSub);
   return (
-    <div className={compact ? 'flex h-full flex-col' : 'rounded-md border bg-slate-50 p-3'}>
+    <div className={compact ? 'flex h-full flex-col' : 'rounded-md border bg-[#f0f2f4] p-3'}>
       {!compact && (
         <p className="mb-2 text-xs font-medium text-muted-foreground">
           미리보기 · {base}
