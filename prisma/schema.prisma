@@ -1000,3 +1000,53 @@ model FullPage {
   @@index([status])
   @@index([parentId])
 }
+
+// ─────────────────────────────────────────────────────────────
+// 전시 관리 — 메뉴 관리 (SB BO-AIM-DSP-PG460/461/462) · 정책 DSP
+//   FO GNB 메뉴 트리(뎁스)의 노출/비노출·순서·연결 페이지를 관리. 변경은 승인 워크플로우.
+// ─────────────────────────────────────────────────────────────
+model Menu {
+  id        String  @id @default(cuid())
+  pageCode  String? // 연결 페이지ID(전체페이지)
+  menuCode  String? // 메뉴 코드
+  menuName  String
+  path      String? // 경로 텍스트
+  depth     Int     @default(1)
+  sortOrder Int     @default(0)
+  parentId  String?
+  parent    Menu?   @relation("MenuTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Menu[]  @relation("MenuTree")
+  category  String? // 1depth 분류: MY | 상품서비스 | T 다이렉트샵 | 혜택 | 고객지원 | English | COMMON
+  frontExposeYn Boolean @default(true) // Front 노출여부(노출/미노출)
+  channels  String  @default("")       // 운영채널 CSV: PC웹,모바일웹,Android앱,iOS앱
+  iconUrl   String? // 메뉴 아이콘(1depth only)
+  landingType String?
+  landingUrl  String?
+
+  createdBy String?
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+  @@index([depth])
+}
+
+// 메뉴 관리 변경/승인 이력 (회차 단위) — 임시저장은 리스트업 안 함(승인요청/승인완료/반려/요청취소)
+model MenuHistory {
+  id        String   @id @default(cuid())
+  seq       Int      // 회차(내림차순 표시)
+  status    String   // requested | approved | rejected | cancelled
+  version   Int?     // 승인완료 회차에만 부여
+  requester String?
+  manager   String?
+  requestedAt   DateTime?
+  requestReason String?
+  processedAt   DateTime?
+  processReason String?
+  changeNote    String? // 변경 요약(메뉴 등록 N / 정보 변경 N / 순서 변경 N)
+  reflectedAt   DateTime? // FO 최종 반영일(승인완료)
+  createdAt DateTime @default(now())
+
+  @@index([seq])
+}
