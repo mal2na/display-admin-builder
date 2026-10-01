@@ -155,7 +155,7 @@ function MenuInfoTab({ nodes, headInfo }: { nodes: MenuNode[]; headInfo: HeadInf
           <span>최종 반영일 <b className="text-slate-700">{fmtDT(headInfo.reflectedAt)}</b></span>
           <span>최종 수정자 <b className="text-slate-700">{headInfo.updatedBy}</b></span>
           <span>최종 수정일시 <b className="text-slate-700">{fmtDT(headInfo.updatedAt)}</b></span>
-          <span>승인상태 <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px]', HIST_TONE[headInfo.approvalLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{headInfo.approvalLabel}</span></span>
+          <span>승인상태 <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', HIST_TONE[headInfo.approvalLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{headInfo.approvalLabel}</span></span>
         </div>
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => setRedisOpen(true)} className="inline-flex h-9 items-center rounded-lg border border-[#cfd3e0] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f0f2f4]">Redis Reload</button>
@@ -228,7 +228,7 @@ function HistoryTab({ history }: { history: MenuHistoryRow[] }) {
             {filtered.map((h) => (
               <tr key={h.id} className="border-b border-[#e8ebef] text-center text-slate-700">
                 <td className="h-11 px-3 tabular-nums text-slate-400">{h.seq}</td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px]', HIST_TONE[h.statusLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{h.statusLabel}</span></td>
+                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', HIST_TONE[h.statusLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{h.statusLabel}</span></td>
                 <td className="h-11 px-3">{h.requester}</td>
                 <td className="h-11 px-3">{h.manager}</td>
                 <td className="h-11 px-3 text-slate-500">{fmtDT(h.requestedAt)}</td>

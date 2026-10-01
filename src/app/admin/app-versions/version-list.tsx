@@ -136,9 +136,9 @@ export function VersionList({ rows }: { rows: VersionRow[] }) {
                   <td className="h-11 px-3 tabular-nums text-slate-500">{no}</td>
                   <td className="h-11 px-3">{r.targetApp}</td>
                   <td className="h-11 px-3">{r.osType}</td>
-                  <td className="h-11 px-3">{r.applyState === '-' ? <span className="text-slate-400">-</span> : <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px]', APPLY_TONE[r.applyState])}>{r.applyState}</span>}</td>
-                  <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px]', APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.approvalLabel}</span></td>
-                  <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px] tabular-nums', verTone(r.osType))}>{r.version}</span></td>
+                  <td className="h-11 px-3">{r.applyState === '-' ? <span className="text-slate-400">-</span> : <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPLY_TONE[r.applyState])}>{r.applyState}</span>}</td>
+                  <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.approvalLabel}</span></td>
+                  <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px] tabular-nums', verTone(r.osType))}>{r.version}</span></td>
                   <td className="h-11 px-3 tabular-nums text-slate-600">{r.recommendVersion}</td>
                   <td className="h-11 px-3 tabular-nums text-slate-600">{r.forceVersion}</td>
                   <td className="h-11 px-3 text-slate-500">{fmtDT(r.updateDate)}</td>

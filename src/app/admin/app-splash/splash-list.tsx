@@ -159,8 +159,8 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
                   <td className="h-11 px-3 tabular-nums text-slate-500">{no}</td>
                   <td className="h-11 px-3">{r.osType}</td>
                   <td className="h-11 px-3 tabular-nums">{r.version}</td>
-                  <td className="h-11 px-3">{r.applyState === '-' ? <span className="text-slate-400">-</span> : <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px]', APPLY_TONE[r.applyState] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.applyState}</span>}</td>
-                  <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px]', APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.approvalLabel}</span></td>
+                  <td className="h-11 px-3">{r.applyState === '-' ? <span className="text-slate-400">-</span> : <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPLY_TONE[r.applyState] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.applyState}</span>}</td>
+                  <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.approvalLabel}</span></td>
                   <td className="h-11 max-w-[260px] truncate px-3 text-left" title={r.title}>{r.title}</td>
                   <td className="h-11 px-3 text-slate-500">{fmtDT(r.applyStartAt)}</td>
                   <td className="h-11 px-3 text-slate-600">{r.createdBy}</td>

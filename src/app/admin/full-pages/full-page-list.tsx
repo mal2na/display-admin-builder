@@ -123,8 +123,8 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
                 <td className="h-11 px-3">{r.menuName}</td>
                 <td className="h-11 px-3 text-left text-slate-600">{r.path}</td>
                 <td className="h-11 px-3 text-left text-slate-600">{r.url}</td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px]', STATUS_TONE[r.statusLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.statusLabel}</span></td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px]', r.useYn ? 'bg-[#e6efff] text-[#2d5fd9]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.useYn ? '사용' : '미사용'}</span></td>
+                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', STATUS_TONE[r.statusLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.statusLabel}</span></td>
+                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.useYn ? 'bg-[#e6efff] text-[#2d5fd9]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.useYn ? '사용' : '미사용'}</span></td>
                 <td className="h-11 px-3 text-left">
                   <div className="flex flex-wrap gap-1">
                     {r.channels.length === 0 ? <span className="text-slate-400">-</span> : r.channels.map((c) => (
@@ -190,8 +190,8 @@ function IaTab({ rows }: { rows: FPRow[] }) {
               {hasChildren && (open ? <ChevronDown className="ml-1 h-3.5 w-3.5 text-slate-300" /> : <ChevronRight className="ml-1 h-3.5 w-3.5 text-slate-300" />)}
             </div>
           </td>
-          <td className="h-11 px-3 text-center"><span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px]', r.useYn ? 'bg-[#e6efff] text-[#2d5fd9]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.useYn ? '사용' : '미사용'}</span></td>
-          <td className="h-11 px-3 text-center"><span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[12px]', r.frontExposeYn ? 'bg-[#e3f6ea] text-[#1f8a4c]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.frontExposeYn ? '노출' : '미노출'}</span></td>
+          <td className="h-11 px-3 text-center"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.useYn ? 'bg-[#e6efff] text-[#2d5fd9]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.useYn ? '사용' : '미사용'}</span></td>
+          <td className="h-11 px-3 text-center"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.frontExposeYn ? 'bg-[#e3f6ea] text-[#1f8a4c]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.frontExposeYn ? '노출' : '미노출'}</span></td>
           <td className="h-11 px-3 text-center text-slate-500">{fmtD(r.createdAt)}</td>
         </tr>
       );

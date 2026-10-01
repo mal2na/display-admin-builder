@@ -12,7 +12,7 @@ const TONES: Record<string, string> = {
 
 export function StatusPill({ label, tone = 'muted', dot }: { label: string; tone?: string; dot?: boolean }) {
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset', TONES[tone] ?? TONES.muted)}>
+    <span className={cn('inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset', TONES[tone] ?? TONES.muted)}>
       {dot && <span className={cn('h-1.5 w-1.5 rounded-full', tone === 'amber' ? 'bg-amber-500' : tone === 'blue' ? 'bg-indigo-500' : tone === 'green' ? 'bg-emerald-500' : 'bg-slate-400')} />}
       {label}
     </span>
