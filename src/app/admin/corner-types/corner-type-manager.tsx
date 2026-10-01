@@ -1439,7 +1439,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const featureApplies = (key: string) => {
     if (key === 'useMainTitle' || key === 'useSubTitle') return !noHeaderType;
     if (key === 'useMoreButton') return isListType; // CTA 노출은 리스트형에서 의미
-    if (key === 'useImage' || key === 'usePrice' || key === 'useBadge' || key === 'useDesc') return compValid === '상품형'; // 상품 이미지·가격·설명·배지는 상품형 카드에서만
+    // 상품 이미지·가격·설명·배지 = 상품/혜택/정보 카드가 있는 코너에서 적용(콘텐츠 안내형 등 상품형 외 유형이 상품 카드를 담는 경우 포함).
+    //  shownBlocks가 liveFeatFlags를 적용하는 블록 유형(상품형·혜택형·정보형)과 일치시켜, 체크 해제가 미리보기에 바로 반영되게 한다.
+    if (key === 'useImage' || key === 'usePrice' || key === 'useBadge' || key === 'useDesc')
+      return ['상품형', '혜택형', '정보형'].includes(compValid) || blocks.some((b) => ['상품형', '혜택형', '정보형'].includes(b.componentType));
     return true; // 그 외 표시 항목은 기본 노출 (미노출 조건은 세부 항목이 아니라 빌더에서 코너별로 관리)
   };
   // 실제 적용값 = 토글 ON && 유형에 적용 가능
@@ -1680,6 +1683,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             }),
             cardShape: cardShape || undefined,
             subTitleIcon,
+            // 표시 항목 토글 → 미리보기 parts로 전달(체크 해제 시 ProductCard/BenefitRow에서 바로 숨김).
+            showImage: imageOn,
+            showPrice: priceOn,
+            showBadge: eff('useBadge'),
+            showDesc: descOn,
           };
           return <CornerBlock corner={previewC} />;
         })()}

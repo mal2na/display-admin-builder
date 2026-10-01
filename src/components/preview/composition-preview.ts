@@ -129,10 +129,20 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
         ...(it.price && b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: it.price })] : []),
       ] };
     }
+    // 가격 없는 상품형(영화 포스터 등) → ProductCard용. 포스터=이미지, 상품명=TEXT(영화명), 평점·예매율=설명(INFO).
+    //  이미지·설명은 각각 b.image·b.desc 토글에 종속. (브랜드명이 아니라 '설명'으로 넣어 ProductCard가 설명(desc)으로 취급 → 설명 토글로 제어)
+    if (b.componentType === '상품형') {
+      return { ...base, name: it.title || it.brand || '상품', atoms: [
+        ...(it.imageUrl && b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE', imageUrl: it.imageUrl })] : []),
+        atom({ name: '상품명', atomType: 'TEXT', content: it.title }),
+        ...(it.brand && b.desc !== false ? [atom({ name: '설명', atomType: 'INFO', content: it.brand })] : []),
+      ] };
+    }
+    // 가격 없는 혜택형(혜택 로고+문구) → BenefitRow용. 로고=이미지(b.image), 브랜드=부가(b.desc).
     return { ...base, name: it.brand || it.title, atoms: [
-      ...(it.imageUrl ? [atom({ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl })] : []),
+      ...(it.imageUrl && b.image !== false ? [atom({ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl })] : []),
       atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title }),
-      ...(it.brand ? [atom({ name: '브랜드', atomType: 'INFO', content: it.brand })] : []),
+      ...(it.brand && b.desc !== false ? [atom({ name: '브랜드', atomType: 'INFO', content: it.brand })] : []),
     ] };
   }
   // 신규 등록 미리보기 = 실제 카피 대신 '슬롯 라벨'(타이틀/디스크립션/혜택 문구 등)로 구조만 보여준다. 로고·이미지는 샘플 유지(레이아웃 확인용).
@@ -304,7 +314,8 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
         return { ...base, name: `영화 ${i}`, atoms: [
           ...(b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE', imageUrl: pick(MOVIE_POOL, i) })] : []),
           atom({ name: '상품명', atomType: 'TEXT', content: m[0] }),
-          atom({ name: '용량', atomType: 'INFO', content: m[1] }),
+          // 평점·예매율 = 설명(desc) 토글에 종속 — 체크 해제 시 미리보기에서 숨김.
+          ...(b.desc !== false ? [atom({ name: '평점·예매율', atomType: 'INFO', content: m[1] })] : []),
         ] };
       }
       // DS ListProductGrid 기준 — 브랜드·상품명·가격기준·할인율·가격·기간·서브텍스트·용량 캡션.
