@@ -39,6 +39,7 @@ import {
 } from '@/lib/display-taxonomy';
 import { cn } from '@/lib/utils';
 import { DeviceFrame, CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
+import { chipIconForLabel } from '@/components/preview/composition-preview';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 import { IconPickerModal } from './icon-picker-modal';
 import { AssetPickerModal } from '@/components/asset-picker-modal';
@@ -404,24 +405,29 @@ function toPreviewCorner(c: CornerNode): PreviewCorner {
     showPrice: c.showPrice,
     showBadge: c.showBadge,
     showDesc: c.showDesc,
-    components: c.components.map((cc) => ({
-      id: cc.cornerComponentId,
-      name: cc.name,
-      componentType: cc.componentType,
-      selectedIndex: cc.selectedIndex,
-      chipRows: cc.chipRows,
-      atoms: cc.atoms.filter((a) => a.atomType === 'IMAGE' || a.visible !== false).map((a) => ({
-        id: a.componentAtomId,
-        name: a.name,
-        atomType: a.atomType,
-        content: a.content,
-        contentVariants: a.contentVariants,
-        imageUrl: a.imageUrl,
-        altText: a.altText,
-        linkUrl: a.linkUrl,
-        menuRole: a.menuRole,
-      })),
-    })),
+    // 업무 진입형 '탭형'(메뉴 리스트 제외)은 코너 유형 관리와 동일하게 아이콘 퀵칩(ChipHome)으로 — 아이콘 미저장 칩도 라벨에서 자동 유추.
+    components: c.components.map((cc) => {
+      const isQuickChip = cc.componentType === '선택형' && c.cornerType === '업무 진입형' && !/메뉴/.test(c.layoutDetail ?? '');
+      return {
+        id: cc.cornerComponentId,
+        name: cc.name,
+        componentType: cc.componentType,
+        selectedIndex: cc.selectedIndex,
+        chipRows: isQuickChip ? (cc.chipRows ?? 2) : cc.chipRows,
+        ...(isQuickChip ? { chipVariant: 'home' as const } : {}),
+        atoms: cc.atoms.filter((a) => a.atomType === 'IMAGE' || a.visible !== false).map((a) => ({
+          id: a.componentAtomId,
+          name: a.name,
+          atomType: a.atomType,
+          content: a.content,
+          contentVariants: a.contentVariants,
+          imageUrl: isQuickChip && a.atomType === 'TEXT' ? (a.imageUrl || chipIconForLabel(a.content ?? a.name)) : a.imageUrl,
+          altText: a.altText,
+          linkUrl: a.linkUrl,
+          menuRole: a.menuRole,
+        })),
+      };
+    }),
   };
 }
 
