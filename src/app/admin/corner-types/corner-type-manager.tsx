@@ -1014,6 +1014,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   }, [domain, base, detail, useOn, useOff, statusSel, field, q, perPage, curPage, view]);
 
   const selectCls = 'h-9 rounded-lg border bg-white px-2.5 text-sm';
+  const chkCls = 'flex cursor-pointer items-center gap-1.5 text-[13px] text-slate-600';
+  const chkInput = 'h-4 w-4 rounded accent-indigo-600';
 
   return (
     <div className="space-y-4">
@@ -1107,39 +1109,44 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             );
           })}
         </div>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">유형 상세</span>
-            <select value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={`${selectCls} w-40`}>
-              {detailOptions.map((o) => <option key={o} value={o}>{o === '전체' ? '전체' : layoutLabel(o)}</option>)}
-            </select>
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+            <div className="flex items-center gap-2">
+              <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">유형 상세</span>
+              <select value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={`${selectCls} w-40`}>
+                {detailOptions.map((o) => <option key={o} value={o}>{o === '전체' ? '전체' : layoutLabel(o)}</option>)}
+              </select>
+            </div>
+            {/* 사용여부 — 체크박스(전체/사용/미사용). 2026-10-01 목업 참고. */}
+            <div className="flex items-center gap-3">
+              <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">사용여부</span>
+              <label className={chkCls}><input type="checkbox" className={chkInput} checked={useOn && useOff} onChange={(e) => { setUseOn(e.target.checked); setUseOff(e.target.checked); setPage(1); }} />전체</label>
+              <label className={chkCls}><input type="checkbox" className={chkInput} checked={useOn} onChange={(e) => { setUseOn(e.target.checked); setPage(1); }} />사용</label>
+              <label className={chkCls}><input type="checkbox" className={chkInput} checked={useOff} onChange={(e) => { setUseOff(e.target.checked); setPage(1); }} />미사용</label>
+            </div>
+            {/* 승인상태 — 체크박스(전체 + 상태별). */}
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">승인상태</span>
+              <label className={chkCls}><input type="checkbox" className={chkInput} checked={statusSel.size === statusKeys.length} onChange={(e) => { setStatusSel(e.target.checked ? new Set(statusKeys) : new Set()); setPage(1); }} />전체</label>
+              {statusKeys.map((k) => (
+                <label key={k} className={chkCls}><input type="checkbox" className={chkInput} checked={statusSel.has(k)} onChange={(e) => { const n = new Set(statusSel); if (e.target.checked) n.add(k); else n.delete(k); setStatusSel(n); setPage(1); }} />{CORNER_TYPE_STATUS_LABEL[k] ?? k}</label>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">사용여부</span>
-            <select
-              value={useOn && useOff ? '전체' : useOn ? '사용' : '미사용'}
-              onChange={(e) => { const v = e.target.value; setUseOn(v !== '미사용'); setUseOff(v !== '사용'); setPage(1); }}
-              className={`${selectCls} w-28`}
-            >
-              <option value="전체">전체</option>
-              <option value="사용">사용</option>
-              <option value="미사용">미사용</option>
-            </select>
-          </div>
-          <div className="flex flex-1 items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">검색</span>
+          <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
+            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">직접 검색</span>
             <select value={field} onChange={(e) => setField(e.target.value as typeof field)} className={selectCls}>
               <option value="typeId">코너 유형 ID</option>
               <option value="createdBy">등록자</option>
             </select>
-            <div className="relative min-w-[180px] flex-1">
+            <div className="relative min-w-[200px] max-w-md flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="내용을 입력하세요." className="h-9 w-full rounded-lg border pl-8 pr-3 text-sm" />
+              <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="영문/숫자 포함 10자 이내로 입력해 주세요." className="h-9 w-full rounded-lg border pl-8 pr-3 text-sm" />
             </div>
-          </div>
-          <div className="ml-auto flex gap-2">
-            <Button size="sm" variant="outline" className="h-9" onClick={reset}><RotateCcw className="mr-1 h-3.5 w-3.5" />초기화</Button>
-            <Button size="sm" className="h-9" onClick={() => setPage(1)}><Search className="mr-1 h-4 w-4" />조회</Button>
+            <div className="ml-auto flex gap-2">
+              <Button size="sm" variant="outline" className="h-9" onClick={reset}><RotateCcw className="mr-1 h-3.5 w-3.5" />초기화</Button>
+              <Button size="sm" className="h-9" onClick={() => setPage(1)}><Search className="mr-1 h-4 w-4" />조회</Button>
+            </div>
           </div>
         </div>
       </div>
