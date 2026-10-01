@@ -664,7 +664,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
               </div>
             );
             return (
-            <div key={i} className="border-t border-[#E8ECEF] first:border-t-0">
+            <div key={i} className="border-t border-[#e3e6ef] first:border-t-0">
               {/* 배너유형 · 규격 (한 줄) — 직접 만들기 우선(회의 결정). 사용여부는 별도 줄(배너의 사용, 2026-09-30) */}
               <FieldRow label="배너유형" required>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
