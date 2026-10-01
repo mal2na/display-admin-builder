@@ -34,46 +34,34 @@ export function VersionDetailView({ v, topExtra, footer }: { v: VersionView; top
       {topExtra}
 
       <OpsSection title="기본정보">
+        {/* 디자인 시스템 통일 — 단일 2열 그리드, 보더는 FieldRow border-b(1px #e3e6ef)만. 긴 항목은 col-span-2 전폭 */}
         <div className="grid grid-cols-2">
           <FieldRow label="대상 App"><ReadValue value={v.targetApp} /></FieldRow>
-          <FieldRow label="업데이트 날짜"><ReadValue value={fmtDateTime(v.updateDate)} /></FieldRow>
           <FieldRow label="OS 유형"><ReadValue value={v.osType} /></FieldRow>
+          <FieldRow label="업데이트 일시"><ReadValue value={fmtDateTime(v.updateDate)} /></FieldRow>
           <FieldRow label="승인상태"><StatusPill label={ap.label} tone={ap.tone} /></FieldRow>
           <FieldRow label="App 버전"><ReadValue value={v.version} /></FieldRow>
-          <div className="border-b border-slate-100 bg-white" />
+          <FieldRow label="버전 내용"><ReadValue value={v.versionContent ?? '-'} /></FieldRow>
           <FieldRow label="권장 업데이트 기준"><ReadValue value={v.recommendVersion ?? '없음'} /></FieldRow>
           <FieldRow label="강제 업데이트 기준"><ReadValue value={v.forceVersion ?? '없음'} /></FieldRow>
-        </div>
-        <div className="grid grid-cols-2 border-t border-slate-100">
-          <FieldRow label="상세내용"><ReadValue value={v.detailContent ?? '-'} /></FieldRow>
-          <FieldRow label="버전내용"><ReadValue value={v.versionContent ?? '-'} /></FieldRow>
-        </div>
-        <div className="grid grid-cols-2 border-t border-slate-100">
+          <div className="col-span-2"><FieldRow label="상세내용"><ReadValue value={v.detailContent ?? '-'} /></FieldRow></div>
           <FieldRow label="권장 업데이트 팝업">
-            <div className="space-y-1">
-              <ReadValue value={v.recommendPopupTitle ?? '-'} />
-              <ReadValue value={v.recommendPopupContent ?? '-'} />
-            </div>
+            <div className="space-y-1"><ReadValue value={v.recommendPopupTitle ?? '-'} /><ReadValue value={v.recommendPopupContent ?? '-'} /></div>
           </FieldRow>
           <FieldRow label="강제 업데이트 팝업">
-            <div className="space-y-1">
-              <ReadValue value={v.forcePopupTitle ?? '-'} />
-              <ReadValue value={v.forcePopupContent ?? '-'} />
-            </div>
+            <div className="space-y-1"><ReadValue value={v.forcePopupTitle ?? '-'} /><ReadValue value={v.forcePopupContent ?? '-'} /></div>
           </FieldRow>
-        </div>
-        <div className="grid grid-cols-2 border-t border-slate-100">
-          <FieldRow label="권장 업데이트 팝업 (제목/내용)">
+          <FieldRow label="권장 업데이트 이미지">
             <div className="space-y-1.5">
               <Thumb url={v.recommendPopupImageUrl} onOpen={() => setPreview(v.recommendPopupImageUrl)} />
-              <ReadValue value={v.recommendPopupImageAlt ?? '접근성을 위해 이미지의 주요 내용을 입력해주세요'} />
+              <ReadValue value={v.recommendPopupImageAlt ?? '-'} />
               <p className="text-[11px] text-muted-foreground">업로드 된 파일명: app_YYMMDD.jpg</p>
             </div>
           </FieldRow>
-          <FieldRow label="강제 업데이트 팝업 (제목/내용)">
+          <FieldRow label="강제 업데이트 이미지">
             <div className="space-y-1.5">
               <Thumb url={v.forcePopupImageUrl} onOpen={() => setPreview(v.forcePopupImageUrl)} />
-              <ReadValue value={v.forcePopupImageAlt ?? '접근성을 위해 이미지의 주요 내용을 입력해주세요'} />
+              <ReadValue value={v.forcePopupImageAlt ?? '-'} />
               <p className="text-[11px] text-muted-foreground">업로드 된 파일명: app_YYMMDD.jpg</p>
             </div>
           </FieldRow>
