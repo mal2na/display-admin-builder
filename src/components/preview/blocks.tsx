@@ -6,6 +6,11 @@ import { cn } from '@/lib/utils';
 import { parseBannerOptions } from '@/lib/banner-options';
 import { BannerCarousel } from './banner-carousel';
 
+// 카드 규격 상수 — 레퍼런스(T우주 앱, 빌더 사용 이미지/아이콘3.html) 기준. radius 26px · padding 세로28/가로26px.
+//  소수점 무시(border-radius:26.718→26, padding:28.626/26.718→28/26). 3개 관리 화면(코너유형·배너·전시) 공유.
+const CARD_PAD_X = 'px-[26px]';
+const CARD_PAD = `${CARD_PAD_X} py-[28px]`;
+
 export type PreviewAtom = {
   id: string;
   name: string;
@@ -650,7 +655,9 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 퀵메뉴(아이콘 칩) 전용 코너는 칩이 라벤더 배경 위에 흰 칩으로 떠 보이게(레퍼런스 퀵칩) — 흰 카드 대신 라벤더 배경.
   // 아이콘 퀵칩(ChipHome)만 라벤더 배경. 메뉴 리스트(세로 메뉴)는 칩이 아니라 흰 배경(2026-10-01 사용자 요청).
   const isChipHomeOnly = !isBanner && !isMenuList && corner.components.length > 0 && corner.components.every((c) => c.componentType === '선택형' && (c.chipVariant === 'home' || c.atoms.some((a) => a.imageUrl)));
-  const wrapClass = isBanner ? '' : (isChipHomeOnly ? 'rounded-2xl bg-[#E2E6F1] p-3' : 'rounded-2xl bg-white p-3 shadow-sm');
+  // 카드 규격 — 레퍼런스(T우주 앱) 기준 통일: radius 26px · padding 28/26px. 소수점 무시(26.718→26, 28.626→28).
+  //  코너유형관리·배너캠페인관리·전시화면관리 미리보기 모두 이 blocks.tsx CornerBlock을 공유하므로 여기서만 바꾸면 3곳 동일.
+  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `rounded-[26px] bg-[#E2E6F1] ${CARD_PAD}` : `rounded-[26px] bg-white ${CARD_PAD} shadow-sm`);
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
@@ -692,9 +699,9 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 히어로가 있으면 카드는 패딩 없이(overflow-hidden) 배너를 꼭대기 full-bleed로, 본문만 패딩.
   if (bannerEl && !isBanner) {
     return (
-      <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
+      <section className="overflow-hidden rounded-[26px] bg-white shadow-sm">
         {bannerEl}
-        <div className="space-y-2 p-3 pt-2.5">
+        <div className={`space-y-2 ${CARD_PAD_X} pb-[28px] pt-[20px]`}>
           {heading && (
             <div>
               <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
@@ -785,19 +792,30 @@ export function DeviceFrame({
           </div>
         </div>
         <div className="border-b bg-white px-4 py-2 text-sm font-semibold text-slate-700">{headerLabel}</div>
-        <div style={{ height: bodyHeight }} className="space-y-3 overflow-y-auto bg-slate-200 p-3">
+        <div style={{ height: bodyHeight }} className="space-y-4 overflow-y-auto bg-slate-200 px-5 py-4">
           {children}
         </div>
-        <div className="flex justify-around border-t bg-white py-2 text-[11px]">
-          <span className="flex flex-col items-center gap-0.5 font-semibold text-indigo-600">
-            <Percent className="h-4 w-4" /> 혜택
-          </span>
-          <span className="flex flex-col items-center gap-0.5 text-slate-400">
-            <ShoppingBag className="h-4 w-4" /> 쇼핑
-          </span>
-          <span className="flex flex-col items-center gap-0.5 text-slate-400">
-            <User className="h-4 w-4" /> 마이
-          </span>
+        {/* 하단 네비 — 좌측 플로팅 컴포즈 버튼(T+) + 혜택(활성·채운 배지)·쇼핑·마이. T우주 앱 기준. */}
+        <div className="flex items-center border-t bg-white px-3 py-1.5 text-[11px]">
+          <div className="-translate-y-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-b from-indigo-100 to-indigo-50 shadow-sm ring-1 ring-indigo-100">
+            <span className="relative text-[15px] font-bold leading-none text-indigo-600">
+              T<span className="absolute -right-2 -top-0.5 text-[9px] font-bold">+</span>
+            </span>
+          </div>
+          <div className="flex flex-1 items-center justify-around">
+            <span className="flex flex-col items-center gap-1 font-semibold text-indigo-600">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white shadow-sm">
+                <Percent className="h-3.5 w-3.5" />
+              </span>
+              혜택
+            </span>
+            <span className="flex flex-col items-center gap-1 text-slate-400">
+              <ShoppingBag className="h-5 w-5" /> 쇼핑
+            </span>
+            <span className="flex flex-col items-center gap-1 text-slate-400">
+              <User className="h-5 w-5" /> 마이
+            </span>
+          </div>
         </div>
       </div>
     </div>
