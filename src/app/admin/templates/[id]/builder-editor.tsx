@@ -1157,6 +1157,30 @@ function ReadOnlyAtoms({ component }: { component: ComponentNode }) {
       </div>
     );
   }
+  // API 자동 연동(상품형) — 아톰을 하나하나 나열하지 않고, 실제 보일 모습(아이콘+텍스트+설명)만 한 줄로.
+  //  소재·문구는 상품 원장(API)에서 자동이라 개별 편집 대상이 아님 → 읽기 전용 미리보기 + 단일 'API 자동' 배지(2026-10-01 사용자 요청).
+  if (component.componentType === '상품형') {
+    const iconA = component.atoms.find((a) => a.atomType === 'ICON' || a.atomType === 'IMAGE');
+    const textA = component.atoms.find((a) => a.atomType === 'TEXT' || a.atomType === 'BENEFIT_TEXT');
+    const descA = component.atoms.find((a) => a.atomType === 'INFO' || a.atomType === 'PRICE');
+    const iconUrl = iconA?.imageUrl ?? '';
+    const renderableIcon = !!iconUrl && (iconUrl.startsWith('/assets/') || iconUrl.startsWith('http') || iconUrl.startsWith('data:'));
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+          {renderableIcon
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={iconUrl} alt="" className="h-full w-full object-cover" />
+            : <ImageIcon className="h-3.5 w-3.5 text-slate-300" />}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-medium text-slate-700">{textA?.content || textA?.name || '상품명'}</p>
+          {descA?.content && <p className="truncate text-[11px] text-slate-400">{descA.content}</p>}
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700"><span className="rounded bg-amber-600 px-1 text-[9px] font-bold text-white">API</span>자동</span>
+      </div>
+    );
+  }
   return (
     <div className="space-y-1">
       {component.atoms.map((a) => {
@@ -1312,6 +1336,11 @@ function ComponentCard({
               <Check className="h-3 w-3" /> {saving ? '저장 중…' : '완료'}
             </button>
           </div>
+        ) : cc.componentType === '상품형' ? (
+          // API 자동 연동 콘텐츠 — 아이콘·텍스트·설명은 개별 수정 대상 아님. 내용 변경은 '상품 불러오기'로 한 번에.
+          <span className="ml-0.5 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400" title="아이콘·텍스트·설명은 상품 정보 API에서 자동 — 내용 변경은 아래 '상품 불러오기'로 교체하세요.">
+            <Lock className="h-3 w-3" /> API 자동
+          </span>
         ) : (
           <button
             type="button"
