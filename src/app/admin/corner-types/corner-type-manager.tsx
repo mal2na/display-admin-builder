@@ -1983,26 +1983,26 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       {showStep(2) && (isRecEligible || isListType) && (
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
         <div aria-hidden className="hidden lg:block" />
-        <section className="min-w-0 overflow-hidden rounded-md border border-violet-200">
-        <div className="flex items-center gap-2 border-b border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-xs font-semibold text-violet-700">
+        <section className="min-w-0 overflow-hidden rounded-md border border-[#E8ECEF]">
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#E8ECEF] bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
           콘텐츠 채우는 방식 · 노출 기본값
-          <span className="font-normal text-violet-400">콘텐츠를 <b className="font-semibold">무엇으로 채울지</b> 먼저 정하고, 정렬·CTA를 설정 · 빌더에서 코너별로 조정 가능</span>
+          <span className="font-normal text-slate-400">콘텐츠를 <b className="font-semibold text-slate-600">무엇으로 채울지</b> 먼저 정하고, 정렬·CTA를 설정 · 빌더에서 코너별로 조정 가능</span>
         </div>
         <div className="space-y-3 p-3">
           {/* ① 추천 수급 방식 (출처) — 상품형·혜택·오퍼형·콘텐츠 안내형에만 */}
           {isRecEligible && (
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-violet-700">① 콘텐츠를 무엇으로 채울까 <span className="font-normal text-violet-400">· 출처</span></label>
-              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-8 w-full max-w-xs rounded-md border border-violet-200 bg-background px-2 text-xs">
+              <label className="text-[11px] font-semibold text-slate-700">① 콘텐츠를 무엇으로 채울까 <span className="font-normal text-slate-400">· 출처</span></label>
+              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-8 w-full max-w-xs rounded-md border border-slate-200 bg-background px-2 text-xs">
                 <option value="">기본값 미지정 — 빌더에서 코너별로 선택</option>
                 {REC_SOURCE_METHODS.map((s) => (
                   <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
                 ))}
               </select>
-              <dl className="space-y-1 rounded-md bg-violet-50/50 p-2.5 text-[11px] leading-relaxed">
+              <dl className="space-y-1 rounded-md bg-slate-50 p-2.5 text-[11px] leading-relaxed">
                 {REC_SOURCE_METHODS.map((k) => (
                   <div key={k} className="flex gap-1.5">
-                    <dt className="w-24 shrink-0 font-semibold text-violet-700">{k} <span className="font-normal text-violet-400">· {REC_SOURCE_INFO[k].tag}</span></dt>
+                    <dt className="w-24 shrink-0 font-semibold text-slate-700">{k} <span className="font-normal text-slate-400">· {REC_SOURCE_INFO[k].tag}</span></dt>
                     <dd className="min-w-0 flex-1 text-muted-foreground">{REC_SOURCE_INFO[k].how}</dd>
                   </div>
                 ))}
@@ -2011,13 +2011,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           )}
           {/* ② 노출 구성 (정렬·CTA) — CVM 수급이면 CVM이 결정하므로 비활성(선택 불가) */}
           {isListType && (
-            <div className={cn('space-y-2', isRecEligible && 'border-t border-violet-100 pt-3')}>
+            <div className={cn('space-y-2', isRecEligible && 'border-t border-[#E8ECEF] pt-3')}>
               <div className="flex flex-wrap items-center gap-2">
                 <label className="text-[11px] font-semibold text-slate-700">② 노출 구성 <span className="font-normal text-slate-400">· 정렬·CTA 기본값</span></label>
-                {cvmChosen && <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-600">CVM이 자동 결정 · 선택 불가</span>}
+                {cvmChosen && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600">CVM이 자동 결정 · 선택 불가</span>}
               </div>
               {cvmChosen && (
-                <p className="rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-1.5 text-[11px] leading-relaxed text-violet-600/90">
+                <p className="rounded-md border border-[#E8ECEF] bg-slate-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-slate-600">
                 <b>CVM이 고객마다 순서를 자동으로 정하므로</b>, 정렬·노출 구성은 <b>운영자 편성</b>일 때만 직접 설정할 수 있어요.
                 </p>
               )}
