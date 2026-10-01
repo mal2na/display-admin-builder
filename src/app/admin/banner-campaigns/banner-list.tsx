@@ -1,7 +1,7 @@
 'use client';
 
 // SB BO-AIM-ETC-PG061 배너 캠페인 관리 목록 — 검색 영역 + 목록 + 등록.
-//  디자인 시스템: accent #3a2ee6 · 헤더/필터 #f6f7fb · 보더 #e3e6ef · 13px 레귤러.
+//  디자인 시스템: accent #3616cd · 헤더/필터 #f0f2f4 · 보더 #e8ebef · 13px 레귤러.
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -64,7 +64,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
       <h1 className="mb-4 text-[22px] font-bold text-slate-900">배너 캠페인 관리</h1>
 
       {/* 검색 영역 */}
-      <div className="mb-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-[#e3e6ef] bg-[#f6f7fb] p-5">
+      <div className="mb-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-5">
         <div className="flex items-center gap-2">
           <span className="text-[12.5px] font-medium text-slate-600">검색 항목</span>
           <select value={draft.field} onChange={(e) => set({ field: e.target.value, q: '' })} className={cn(selectCls, 'w-36')}>{['배너캠페인 ID', '배너캠페인명'].map((o) => <option key={o}>{o}</option>)}</select>
@@ -82,16 +82,16 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
           <select value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={cn(selectCls, 'w-32')}>{['전체', '승인요청', '승인완료', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <button type="button" onClick={() => { setDraft(DEF); setApplied(DEF); setPage(1); }} className="h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-4 text-[12.5px] font-medium text-slate-600 hover:bg-[#f6f7fb]">초기화</button>
-          <button type="button" onClick={() => { setApplied(draft); setPage(1); }} className="h-[34px] rounded-lg bg-[#3a2ee6] px-5 text-[12.5px] font-medium text-white hover:brightness-110">조회</button>
+          <button type="button" onClick={() => { setDraft(DEF); setApplied(DEF); setPage(1); }} className="h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-4 text-[12.5px] font-medium text-slate-600 hover:bg-[#f0f2f4]">초기화</button>
+          <button type="button" onClick={() => { setApplied(draft); setPage(1); }} className="h-[34px] rounded-lg bg-[#3616cd] px-5 text-[12.5px] font-medium text-white hover:brightness-110">조회</button>
         </div>
       </div>
 
-      <p className="mb-2 text-[13px] text-slate-500">검색결과 <b className="text-[#3a2ee6] tabular-nums">{filtered.length}</b>건</p>
-      <div className="overflow-x-auto border-t border-[#e3e6ef]">
+      <p className="mb-2 text-[13px] text-slate-500">검색결과 <b className="text-[#3616cd] tabular-nums">{filtered.length}</b>건</p>
+      <div className="overflow-x-auto border-t border-[#e8ebef]">
         <table className="w-full min-w-[1200px] text-[13px] font-normal whitespace-nowrap">
           <thead>
-            <tr className="border-b border-[#e3e6ef] bg-[#f6f7fb] text-[#6b7086]">
+            <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086]">
               {['NO.', '배너캠페인 ID', '배너캠페인명', '전시여부', '전시기간', '승인상태', '등록자', '등록일시', '최종 수정자', '최종 수정일시'].map((h) => (
                 <th key={h} className={cn('h-11 px-3 font-normal', h === '배너캠페인명' || h === '전시기간' ? 'text-left' : 'text-center')}>{h}</th>
               ))}
@@ -101,7 +101,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
             {paged.length === 0 ? (
               <tr><td colSpan={10} className="px-3 py-16 text-center text-slate-400">조회된 배너 캠페인이 없습니다.</td></tr>
             ) : paged.map((r, i) => (
-              <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b border-[#e3e6ef] text-center text-slate-700 hover:bg-[#f6f7fb]">
+              <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b border-[#e8ebef] text-center text-slate-700 hover:bg-[#f0f2f4]">
                 <td className="h-11 px-3 tabular-nums text-slate-500">{filtered.length - ((curPage - 1) * PER_PAGE + i)}</td>
                 <td className="h-11 px-3 tabular-nums">{r.campaignCode}</td>
                 <td className="h-11 px-3 text-left">{r.title}</td>
@@ -122,11 +122,11 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
         {totalPages > 1 && (
           <div className="flex items-center gap-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-[13px]', p === curPage ? 'bg-[#3a2ee6] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
+              <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-[13px]', p === curPage ? 'bg-[#3616cd] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
             ))}
           </div>
         )}
-        <Link href="/admin/banner-campaigns/new" className="absolute right-0 inline-flex h-9 items-center rounded-lg bg-[#3a2ee6] px-5 text-[13px] font-semibold text-white hover:brightness-110">등록</Link>
+        <Link href="/admin/banner-campaigns/new" className="absolute right-0 inline-flex h-9 items-center rounded-lg bg-[#3616cd] px-5 text-[13px] font-semibold text-white hover:brightness-110">등록</Link>
       </div>
     </div>
   );

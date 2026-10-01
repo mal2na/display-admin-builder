@@ -121,7 +121,7 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
           {uses.map((u) => (
             <Fragment key={u}>
               {u === '타이틀' && <span className="mx-0.5 h-4 w-px self-center bg-slate-200" title="아래는 아톰 유형이 아니라 코너 속성" />}
-              <button onClick={() => setUseF(u)} className={cn('rounded-md px-2.5 py-1 font-medium', useF === u ? 'bg-[#3a2ee6] text-white' : 'text-slate-500 hover:bg-slate-100')}>{useLabel(u)}</button>
+              <button onClick={() => setUseF(u)} className={cn('rounded-md px-2.5 py-1 font-medium', useF === u ? 'bg-[#3616cd] text-white' : 'text-slate-500 hover:bg-slate-100')}>{useLabel(u)}</button>
             </Fragment>
           ))}
         </div>
@@ -135,11 +135,11 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
           <button onClick={exportCsv} className="inline-flex h-8 items-center gap-1 rounded-lg border bg-white px-2.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"><Download className="h-3.5 w-3.5" /> 엑셀 다운로드</button>
           {/* 뷰 토글 — 매트릭스(타겟 커버리지) ↔ 편집 */}
           <div className="flex rounded-lg border bg-white p-0.5">
-            <button onClick={() => setMode('matrix')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'matrix' ? 'bg-[#3a2ee6] text-white' : 'text-slate-500')} title="매트릭스"><Grid3x3 className="h-3.5 w-3.5" /> 매트릭스</button>
-            <button onClick={() => setMode('edit')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'edit' ? 'bg-[#3a2ee6] text-white' : 'text-slate-500')} title="편집"><List className="h-3.5 w-3.5" /> 편집</button>
+            <button onClick={() => setMode('matrix')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'matrix' ? 'bg-[#3616cd] text-white' : 'text-slate-500')} title="매트릭스"><Grid3x3 className="h-3.5 w-3.5" /> 매트릭스</button>
+            <button onClick={() => setMode('edit')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'edit' ? 'bg-[#3616cd] text-white' : 'text-slate-500')} title="편집"><List className="h-3.5 w-3.5" /> 편집</button>
           </div>
           <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
-            <input type="checkbox" checked={onlyVar} onChange={(e) => setOnlyVar(e.target.checked)} className="accent-[#3a2ee6]" />
+            <input type="checkbox" checked={onlyVar} onChange={(e) => setOnlyVar(e.target.checked)} className="accent-[#3616cd]" />
             배리에이션 있는 것만 <span className="text-slate-400">(끄면 전체 {items.length})</span>
           </label>
           <div className="relative">
@@ -166,11 +166,11 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
                     return (
                       <button key={it.id} onClick={() => setSelId(it.id)}
                         className={cn('flex w-full items-start gap-2 rounded-xl border p-2.5 text-left transition-colors', sel ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-200' : 'bg-card hover:border-slate-300')}>
-                        <span className={cn('mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md', it.kind === 'title' ? 'bg-indigo-100 text-[#3a2ee6]' : 'bg-sky-100 text-sky-600')}><Icon className="h-3.5 w-3.5" /></span>
+                        <span className={cn('mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md', it.kind === 'title' ? 'bg-indigo-100 text-[#3616cd]' : 'bg-sky-100 text-sky-600')}><Icon className="h-3.5 w-3.5" /></span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[13px] font-semibold text-foreground">{it.base || it.label}</span>
                           <span className="mt-0.5 flex items-center gap-2 text-[10px]">
-                            {it.variants.length > 0 && <span className="text-[#3a2ee6]">후보 {it.variants.length}</span>}
+                            {it.variants.length > 0 && <span className="text-[#3616cd]">후보 {it.variants.length}</span>}
                             {off > 0 && <span className="text-slate-400">제외 {off}</span>}
                             <span className="flex items-center gap-0.5 text-muted-foreground"><MapPin className="h-2.5 w-2.5" />{it.usages.length}곳</span>
                           </span>
@@ -200,12 +200,12 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
   return (
     <div className="mt-4 flex min-h-0 flex-1 flex-col">
       <p className="mb-1.5 px-1 text-[11px] text-muted-foreground">
-        <span className="font-semibold text-slate-500">열 = 후보 속성(성격·맥락 힌트, 소수)</span> · CVM이 고객 세그(수천~수만)를 이 속성에 매핑해 후보를 택1. <b className="text-[#3a2ee6]">세그를 문구마다 매핑하지 않음</b> — 채널은 후보 풀만 관리.
+        <span className="font-semibold text-slate-500">열 = 후보 속성(성격·맥락 힌트, 소수)</span> · CVM이 고객 세그(수천~수만)를 이 속성에 매핑해 후보를 택1. <b className="text-[#3616cd]">세그를 문구마다 매핑하지 않음</b> — 채널은 후보 풀만 관리.
       </p>
       <div className="min-h-0 flex-1 overflow-auto rounded-xl border bg-card">
         <table className="w-full border-separate border-spacing-0 text-[13px] font-normal" style={{ minWidth: 400 + targetCols.length * 150 }}>
           <thead className="sticky top-0 z-10">
-            <tr className="[&>th]:border-b-2 [&>th]:border-[#e3e6ef] [&>th]:bg-[#f6f7fb] [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-normal [&>th]:text-[#6b7086]">
+            <tr className="[&>th]:border-b-2 [&>th]:border-[#e8ebef] [&>th]:bg-[#f0f2f4] [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-normal [&>th]:text-[#6b7086]">
               <th className="sticky left-0 z-20 min-w-[240px]">문구</th>
               <th className="min-w-[160px]">기본 <span className="font-normal text-slate-400">· 폴백</span></th>
               {targetCols.map((c) => <th key={c} className="min-w-[150px]">{c}</th>)}
@@ -221,15 +221,15 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
                   const byT = new Map(it.variants.map((v) => [v.target, v]));
                   return (
                     <tr key={it.id} className="group cursor-pointer" onClick={() => onOpen(it.id)}>
-                      <td className="sticky left-0 z-10 max-w-[240px] border-b border-slate-100 bg-white px-3 py-2 align-top group-hover:bg-[#f6f7fb]">
+                      <td className="sticky left-0 z-10 max-w-[240px] border-b border-slate-100 bg-white px-3 py-2 align-top group-hover:bg-[#f0f2f4]">
                         <span className="block truncate text-slate-800">{it.label}</span>
                         <span className="block truncate text-slate-400">{it.base || '—'}</span>
                       </td>
-                      <td className="max-w-[160px] truncate border-b border-slate-100 px-3 py-2 align-top text-slate-500 group-hover:bg-[#f6f7fb]">{it.base || '—'}</td>
+                      <td className="max-w-[160px] truncate border-b border-slate-100 px-3 py-2 align-top text-slate-500 group-hover:bg-[#f0f2f4]">{it.base || '—'}</td>
                       {targetCols.map((c) => {
                         const v = byT.get(c);
                         return (
-                          <td key={c} className={cn('max-w-[150px] border-b border-l border-slate-100 px-3 py-2 align-top group-hover:bg-[#f6f7fb]', v ? (v.enabled ? 'text-slate-700' : 'text-slate-400') : 'text-slate-300')}>
+                          <td key={c} className={cn('max-w-[150px] border-b border-l border-slate-100 px-3 py-2 align-top group-hover:bg-[#f0f2f4]', v ? (v.enabled ? 'text-slate-700' : 'text-slate-400') : 'text-slate-300')}>
                             {v ? <span className={cn('line-clamp-2 whitespace-pre-line', !v.enabled && 'line-through')}>{v.text}</span> : '—'}
                           </td>
                         );
@@ -257,7 +257,7 @@ function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: Msg
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-start gap-3 border-b p-5">
-        <span className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-lg', item.kind === 'title' ? 'bg-indigo-100 text-[#3a2ee6]' : 'bg-sky-100 text-sky-600')}>{item.kind === 'title' ? <Type className="h-4 w-4" /> : <AlignLeft className="h-4 w-4" />}</span>
+        <span className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-lg', item.kind === 'title' ? 'bg-indigo-100 text-[#3616cd]' : 'bg-sky-100 text-sky-600')}>{item.kind === 'title' ? <Type className="h-4 w-4" /> : <AlignLeft className="h-4 w-4" />}</span>
         <div className="min-w-0 flex-1">
           <p className="text-[15px] font-bold text-foreground">{item.label} <span className="text-[12px] font-normal text-muted-foreground">· {useLabel(item.use)}</span></p>
           {rule && <p className="mt-0.5 text-[11px] text-muted-foreground">표기 제한: {rule.hint} · 최대 {rule.max}자</p>}
@@ -274,7 +274,7 @@ function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: Msg
         </div>
 
         {/* 타겟별 배리에이션 */}
-        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-[#3326c9]"><Sparkles className="h-3.5 w-3.5" /> 문구 후보 <span className="font-normal text-indigo-400">· 속성(힌트)만 태그 · CVM이 세그(수만) 매핑해 택1 · 세그 열거 아님</span></p>
+        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-[#2c13b0]"><Sparkles className="h-3.5 w-3.5" /> 문구 후보 <span className="font-normal text-indigo-400">· 속성(힌트)만 태그 · CVM이 세그(수만) 매핑해 택1 · 세그 열거 아님</span></p>
         {item.variants.length > 0 && (
           <div className="overflow-hidden rounded-lg border">
             <table className="w-full text-[12px]">
@@ -339,21 +339,21 @@ function AddVariant({ item, library }: { item: MsgItem; library: LibEntry[] }) {
   const libHits = library.filter((e) => e.use === item.use && !own.has(e.text) && e.text.toLowerCase().includes(libQ.trim().toLowerCase())).slice(0, 40);
   const aiHits = aiSuggest(item.base, target || undefined);
 
-  if (!open) return <button type="button" onClick={() => setOpen(true)} className="mt-2 inline-flex items-center gap-1 rounded-md border border-indigo-300 bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-[#3326c9] hover:bg-indigo-100"><Plus className="h-3 w-3" /> 후보 추가</button>;
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="mt-2 inline-flex items-center gap-1 rounded-md border border-indigo-300 bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-[#2c13b0] hover:bg-indigo-100"><Plus className="h-3 w-3" /> 후보 추가</button>;
   return (
     <div className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50/40 p-2.5">
       <div className="flex items-center gap-1.5">
         <select value={target} onChange={(e) => setTarget(e.target.value)} className="h-8 w-28 shrink-0 rounded-md border bg-white px-1.5 text-[11px]"><option value="">속성 없음</option>{CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}</select>
         <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !over) add(); }} placeholder="문구 직접 입력 / 아래에서 불러오기" className={cn('h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-[12px] outline-none focus:ring-2', over ? 'border-rose-300 focus:ring-rose-200' : 'focus:ring-indigo-200')} />
-        <button type="button" onClick={() => setMode(mode === 'lib' ? null : 'lib')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'lib' ? 'border-indigo-400 bg-white text-[#3326c9]' : 'bg-white text-slate-600 hover:bg-slate-50')}><Library className="h-3.5 w-3.5" /> 라이브러리</button>
-        <button type="button" onClick={() => setMode(mode === 'ai' ? null : 'ai')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'ai' ? 'border-indigo-400 bg-white text-[#3326c9]' : 'bg-white text-slate-600 hover:bg-slate-50')}><Wand2 className="h-3.5 w-3.5" /> AI 제안</button>
-        <button type="button" onClick={() => add()} disabled={!text.trim() || over} className="h-8 shrink-0 rounded-md bg-[#3a2ee6] px-3 text-[11px] font-semibold text-white disabled:opacity-40">추가</button>
+        <button type="button" onClick={() => setMode(mode === 'lib' ? null : 'lib')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'lib' ? 'border-indigo-400 bg-white text-[#2c13b0]' : 'bg-white text-slate-600 hover:bg-slate-50')}><Library className="h-3.5 w-3.5" /> 라이브러리</button>
+        <button type="button" onClick={() => setMode(mode === 'ai' ? null : 'ai')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'ai' ? 'border-indigo-400 bg-white text-[#2c13b0]' : 'bg-white text-slate-600 hover:bg-slate-50')}><Wand2 className="h-3.5 w-3.5" /> AI 제안</button>
+        <button type="button" onClick={() => add()} disabled={!text.trim() || over} className="h-8 shrink-0 rounded-md bg-[#3616cd] px-3 text-[11px] font-semibold text-white disabled:opacity-40">추가</button>
         <button type="button" onClick={() => { setOpen(false); setMode(null); }} className="grid h-8 w-7 shrink-0 place-items-center rounded-md border bg-white text-slate-400 hover:text-slate-600"><X className="h-3.5 w-3.5" /></button>
       </div>
       {rule && <p className={cn('mt-1.5 pl-1 text-[10px]', over ? 'text-rose-500' : 'text-muted-foreground')}>용도 <b>{item.use}</b> · {rule.hint} · {text.trim().length}/{rule.max}자{over ? ' — 초과' : ''}</p>}
       {mode === 'lib' && (
         <div className="mt-2 rounded-md border bg-white p-2">
-          <div className="mb-1.5 flex items-center gap-1.5"><Library className="h-3.5 w-3.5 text-indigo-500" /><span className="text-[10px] font-semibold text-slate-500">라이브러리 <span className="font-normal text-slate-400">· 같은 용도(<b className="text-[#3a2ee6]">{item.use}</b>)만</span></span><input value={libQ} onChange={(e) => setLibQ(e.target.value)} placeholder="검색" className="ml-auto h-6 w-32 rounded border px-2 text-[11px] outline-none" /></div>
+          <div className="mb-1.5 flex items-center gap-1.5"><Library className="h-3.5 w-3.5 text-indigo-500" /><span className="text-[10px] font-semibold text-slate-500">라이브러리 <span className="font-normal text-slate-400">· 같은 용도(<b className="text-[#3616cd]">{item.use}</b>)만</span></span><input value={libQ} onChange={(e) => setLibQ(e.target.value)} placeholder="검색" className="ml-auto h-6 w-32 rounded border px-2 text-[11px] outline-none" /></div>
           <div className="max-h-40 space-y-0.5 overflow-y-auto">
             {libHits.length === 0 && <p className="py-2 text-center text-[11px] text-slate-400">이 용도의 재사용 문구 없음</p>}
             {libHits.map((e, i) => <button key={i} type="button" onClick={() => setText(e.text)} className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-indigo-50"><span className="min-w-0 flex-1 truncate text-[12px] text-slate-700">{e.text}</span>{e.target && <span className="shrink-0 rounded bg-rose-50 px-1 text-[9px] font-bold text-rose-500">{e.target}</span>}<span className="shrink-0 text-[9px] text-slate-400">{e.sources[0]}{e.sources.length > 1 ? ` 외 ${e.sources.length - 1}` : ''}</span></button>)}

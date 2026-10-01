@@ -34,7 +34,7 @@ export function VersionDetailView({ v, topExtra, footer }: { v: VersionView; top
       {topExtra}
 
       <OpsSection title="기본정보">
-        {/* 디자인 시스템 통일 — 단일 2열 그리드, 보더는 FieldRow border-b(1px #e3e6ef)만. 긴 항목은 col-span-2 전폭 */}
+        {/* 디자인 시스템 통일 — 단일 2열 그리드, 보더는 FieldRow border-b(1px #e8ebef)만. 긴 항목은 col-span-2 전폭 */}
         <div className="grid grid-cols-2">
           <FieldRow label="대상 App"><ReadValue value={v.targetApp} /></FieldRow>
           <FieldRow label="OS 유형"><ReadValue value={v.osType} /></FieldRow>

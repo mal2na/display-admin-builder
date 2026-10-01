@@ -26,16 +26,16 @@ export function OpsSection({ title, children }: { no?: number | string; title: s
       <div className="mb-2 flex items-center gap-2">
         <h3 className="text-[15px] font-bold text-slate-900">{title}</h3>
       </div>
-      <div className="border-t border-[#e3e6ef]">{children}</div>
+      <div className="border-t border-[#e8ebef]">{children}</div>
     </section>
   );
 }
 
-// 라벨/값 2열 그리드 행 (상세·수정 공용). 보더는 디자인 시스템 통일(1px #e3e6ef · 라벨 bg #f6f7fb).
+// 라벨/값 2열 그리드 행 (상세·수정 공용). 보더는 디자인 시스템 통일(1px #e8ebef · 라벨 bg #f0f2f4).
 export function FieldRow({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] items-stretch border-b border-[#e3e6ef]">
-      <div className="flex items-center bg-[#f6f7fb] px-4 py-3 text-[13px] font-medium text-slate-600">
+    <div className="grid grid-cols-[140px_1fr] items-stretch border-b border-[#e8ebef]">
+      <div className="flex items-center bg-[#f0f2f4] px-4 py-3 text-[13px] font-medium text-slate-600">
         {label}
         {required && <span className="ml-0.5 text-rose-500">*</span>}
       </div>
