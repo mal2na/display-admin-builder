@@ -779,7 +779,7 @@ export function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: 
       {/* 이름 · 태그 · 개수 */}
       <div className="flex flex-1 flex-col gap-2 px-5 pt-1">
         <button type="button" onClick={onOpen} className="text-left">
-          <p className="text-[16px] font-bold leading-tight text-[#1A1A2E] group-hover:text-[#4A6CF7]">{name}</p>
+          <p className="text-[16px] font-bold leading-tight text-[#1A1A2E] group-hover:text-[#3616cd]">{name}</p>
           <span className="mt-1 block font-mono text-[11px] text-slate-400">{t.typeId}</span>
         </button>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -857,7 +857,7 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
         </div>
         <div className="flex flex-1 flex-col gap-1.5 px-3 py-2.5">
           {/* 코너명(실제 케이스) = 주 식별자. 같은 배열이 여러 케이스로 분리돼도 코너명으로 구분된다. */}
-          <p className="truncate text-[13.5px] font-semibold text-[#1A1A2E] group-hover/vc:text-[#4A6CF7]">{v.previewCorner?.name ?? (layoutBi(v.typeDetail) || v.typeDetail || '기본')}</p>
+          <p className="truncate text-[13.5px] font-semibold text-[#1A1A2E] group-hover/vc:text-[#3616cd]">{v.previewCorner?.name ?? (layoutBi(v.typeDetail) || v.typeDetail || '기본')}</p>
           <p className="truncate text-[11px] text-slate-500">{layoutBi(v.typeDetail) || v.typeDetail || '기본'}</p>
           <div className="flex flex-wrap items-center gap-1">
             {v.liveVersion != null && v.active
@@ -930,7 +930,7 @@ function LayoutGroupCard({ cases, onOpen }: { cases: CornerTypeRow[]; onOpen: ()
           {multi && <span className="absolute right-3 top-3 rounded-full bg-slate-900/85 px-2 py-0.5 text-[11px] font-bold text-white">{cases.length}개 케이스</span>}
         </div>
         <div className="flex flex-1 flex-col gap-1.5 px-3 py-2.5">
-          <p className="truncate text-[13.5px] font-semibold text-[#1A1A2E] group-hover:text-[#4A6CF7]">{layoutBi(rep.typeDetail) || rep.typeDetail || '기본'}</p>
+          <p className="truncate text-[13.5px] font-semibold text-[#1A1A2E] group-hover:text-[#3616cd]">{layoutBi(rep.typeDetail) || rep.typeDetail || '기본'}</p>
           {/* 이 배열에 속한 케이스(코너)명 — 어떤 코너들이 묶였는지 한눈에 */}
           <p className="line-clamp-2 text-[11px] leading-tight text-slate-500">{caseNames.join(' · ')}</p>
           <div className="mt-0.5 flex flex-wrap items-center gap-1">
@@ -1036,7 +1036,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       />
 
       {/* ── 최상위 분기: 전시 / 프로모션 / 상품 (DS 포털식 세그먼트) ── */}
-      <div className="inline-flex rounded-xl border border-[#E6E8EF] bg-[#EEF1F6] p-1">
+      <div className="inline-flex rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-1">
         {DOMAINS.map((d) => {
           const active = domain === d;
           const cnt = types.filter((t) => domainOf(t.baseCategory) === d).length;
@@ -1048,12 +1048,12 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition',
                 active
-                  ? 'bg-white text-[#4A6CF7] shadow-[0_1px_3px_rgba(0,0,0,0.1),0_0_0_1px_rgba(74,108,247,0.18)]'
+                  ? 'bg-white text-[#3616cd] shadow-[0_1px_3px_rgba(0,0,0,0.1),0_0_0_1px_rgba(74,108,247,0.18)]'
                   : 'text-slate-500 hover:text-slate-700',
               )}
             >
               {d}
-              <span className={cn('rounded-full px-1.5 text-[11px] tabular-nums', active ? 'bg-[#4A6CF7]/10 text-[#4A6CF7]' : 'bg-black/5')}>{cnt}</span>
+              <span className={cn('rounded-full px-1.5 text-[11px] tabular-nums', active ? 'bg-[#3616cd]/10 text-[#3616cd]' : 'bg-black/5')}>{cnt}</span>
             </button>
           );
         })}
@@ -1078,7 +1078,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   onClick={() => setStatusTab(t.key)}
                   className={cn(
                     '-mb-px border-b-2 pb-2.5 text-sm font-semibold transition',
-                    active ? 'border-[#4A6CF7] text-[#4A6CF7]' : 'border-transparent text-slate-400 hover:text-slate-600',
+                    active ? 'border-[#3616cd] text-[#3616cd]' : 'border-transparent text-slate-400 hover:text-slate-600',
                   )}
                 >
                   {t.label}
@@ -1093,7 +1093,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       {/* 코너 유형은 상위 탭이 아니라 아래 상세 필터에서 고른다 (승인 상태만 상위 거버넌스 탭). */}
 
       {/* 검색 필터 — 인라인 라벨 바. 코너 유형(상품형·배너형 등)·유형 상세·사용여부·검색을 한 줄에. (2026-09-28 사용자 요청 UI) */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+      <div className="rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-4">
         {/* 코너 유형 — 바로 클릭 칩(드롭다운 대신 한눈에 선택·전환) */}
         <div className="mb-3 flex flex-wrap items-center gap-1.5">
           <span className="mr-1 whitespace-nowrap text-[13px] font-medium text-slate-600">코너 유형</span>
@@ -1106,9 +1106,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                 key={b}
                 type="button"
                 onClick={() => { setBase(b); setPage(1); }}
-                className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12.5px] font-medium transition', color, active ? 'ring-2 ring-primary ring-offset-1 font-semibold' : 'opacity-80 hover:opacity-100')}
+                className={cn('inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12.5px] font-medium transition', color, active ? 'ring-2 ring-[#3616cd] ring-offset-1 font-semibold' : 'opacity-80 hover:opacity-100')}
               >
-                {b}<span className="rounded-full bg-black/5 px-1.5 text-[11px] tabular-nums">{count}</span>
+                {b}<span className="rounded bg-black/5 px-1.5 text-[11px] tabular-nums">{count}</span>
               </button>
             );
           })}
@@ -1265,7 +1265,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   <td className="px-3 py-2.5 align-middle tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
                   <td className="px-3 py-2.5">
                     {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함 */}
-                    <div className="pointer-events-none mx-auto h-24 w-40 overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#EEF1F8] p-1.5">
+                    <div className="pointer-events-none mx-auto h-24 w-40 overflow-hidden rounded-lg border border-[#e8ebef] bg-[#EEF1F8] p-1.5">
                       <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" align="center-middle" />
                     </div>
                   </td>
