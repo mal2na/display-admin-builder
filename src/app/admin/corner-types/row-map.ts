@@ -11,6 +11,7 @@ export function toCornerTypeRow(r: any, updatedBy: string | null): CornerTypeRow
     componentType: r.componentType ?? null,
     typeDetail: r.typeDetail,
     bigBanner: r.bigBanner ?? false,
+    componentLayoutMode: r.componentLayoutMode ?? '고정형',
     markupId: r.markupId,
     layout: r.layout,
     description: r.description,

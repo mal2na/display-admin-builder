@@ -30,7 +30,7 @@ import {
   type ComponentType,
 } from '@/lib/display-taxonomy';
 import { CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
-import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
+import { compositionToPreviewCorner, chipIconForLabel } from '@/components/preview/composition-preview';
 import { isEventCornerFamily } from '@/lib/event-taxonomy';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,7 @@ import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pe
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
 
@@ -66,6 +67,7 @@ export type CornerTypeRow = {
   componentType: string | null;
   typeDetail: string | null;
   bigBanner: boolean;
+  componentLayoutMode: string; // 지정형 | 고정형
   markupId: string | null;
   layout: string | null;
   description: string | null;
@@ -124,6 +126,7 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   componentType: '상품형',
   typeDetail: null,
   bigBanner: false,
+  componentLayoutMode: '고정형',
   markupId: null,
   layout: null,
   description: null,
@@ -206,7 +209,9 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
 // 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
 //  fit='width'(기본): 폭 기준 고정 — 토글해도 배율 안 흔들림(편집용). fit='contain': 폭·높이 모두 맞춰 전체가 잘림 없이 들어감(상세·목록용).
 export function DevicePreview({ corner, fit: fitMode = 'width', align = 'top-center' }: { corner: PreviewCorner; fit?: 'width' | 'contain' | 'autoHeight'; align?: 'top-center' | 'left-middle' | 'center-middle' }) {
-  const NAT_W = 320; // 자연 렌더 폭(폰 기준). 박스에 맞춰 scale로 축소.
+  // 자연 렌더 폭 = 빌더(전시화면 관리) 카드 폭과 동일하게 맞춘다(패딩 비율 일치).
+  //  빌더 디바이스 393 − 프레임 보더(10px×2=20) − 바디 여백(px-5 ×2=40) = 카드 폭 333. (영화 등 가로형 카드 패딩이 빌더와 어긋나던 원인)
+  const NAT_W = 333;
   const autoH = fitMode === 'autoHeight'; // 폭 기준 축소 + 박스 높이를 콘텐츠에 맞춤(빈 여백 제거)
   const boxRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -311,7 +316,7 @@ function BannerPickerModal({ open, onClose, campaigns, usedIds, onAdd }: { open:
               const on = checked.has(c.id);
               return (
                 <label key={c.id} className={cn('flex cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-left', already ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-60' : on ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted/50')}>
-                  <input type="checkbox" checked={on || already} disabled={already} onChange={() => toggle(c.id)} className="accent-indigo-600" />
+                  <input type="checkbox" checked={on || already} disabled={already} onChange={() => toggle(c.id)} className="accent-[#3a2ee6]" />
                   {c.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={c.imageUrl} alt="" className="h-8 w-12 shrink-0 rounded object-cover ring-1 ring-slate-200" />
@@ -329,7 +334,7 @@ function BannerPickerModal({ open, onClose, campaigns, usedIds, onAdd }: { open:
         <div className="flex items-center gap-2 border-t px-4 py-3">
           <span className="text-xs text-muted-foreground">{checked.size}개 선택</span>
           <button type="button" onClick={close} className="ml-auto rounded-md border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">취소</button>
-          <button type="button" onClick={submit} disabled={checked.size === 0} className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40">{checked.size > 0 ? `${checked.size}개 담기` : '담기'}</button>
+          <button type="button" onClick={submit} disabled={checked.size === 0} className="rounded-md bg-[#3a2ee6] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#3326c9] disabled:opacity-40">{checked.size > 0 ? `${checked.size}개 담기` : '담기'}</button>
         </div>
       </div>
     </div>
@@ -338,7 +343,7 @@ function BannerPickerModal({ open, onClose, campaigns, usedIds, onAdd }: { open:
 
 // 스와이프 배너 묶기 편집기 — 배너 캠페인에서 담고, 드래그앤드롭으로 순서 변경(2026-09-29 사용자 요청).
 //  빌더는 이 묶음을 그대로 생성만 하고 순서만 바꾼다(거버넌스: 정의는 코너 유형).
-function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: SwipeBannerItem[]; bannerCampaigns: BannerCampaignOption[]; onCommit: (next: SwipeBannerItem[]) => void }) {
+function SwipeBannerEditor({ banners, bannerCampaigns, onCommit, single = false }: { banners: SwipeBannerItem[]; bannerCampaigns: BannerCampaignOption[]; onCommit: (next: SwipeBannerItem[]) => void; single?: boolean }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const [pickerOpen, setPickerOpen] = useState(false);
   // 행 id = 인덱스 포함 복합키 — 시드 파생 배너엔 campaignId가 없어(중복 undefined) dnd-kit 정렬이 안 먹던 버그 방지(2026-09-29).
@@ -349,7 +354,9 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
       .map((id) => bannerCampaigns.find((b) => b.id === id))
       .filter((c): c is BannerCampaignOption => !!c && !usedIds.has(c.id))
       .map((c) => ({ campaignId: c.id, title: c.title, imageUrl: c.imageUrl ?? undefined, linkUrl: c.linkUrl ?? undefined, size: c.size ?? undefined }));
-    if (news.length) onCommit([...banners, ...news]);
+    if (!news.length) return;
+    if (single) { onCommit([news[0]]); return; } // 배너 단일형 — 배너 캠페인에서 1개만 불러옴(교체)
+    onCommit([...banners, ...news]);
   };
   const remove = (idx: number) => onCommit(banners.filter((_, j) => j !== idx));
   const patchLink = (idx: number, linkUrl: string) => onCommit(banners.map((b, j) => (j === idx ? { ...b, linkUrl } : b)));
@@ -365,13 +372,13 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
     onCommit(next);
   };
   return (
-    <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+    <div className="space-y-2 rounded-md border border-[#e3e6ef] bg-white p-3">
       <div className="flex items-center gap-2">
-        <span className="text-[12px] font-semibold text-indigo-700">스와이프 배너 묶기</span>
-        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{banners.length}장</span>
-        <span className="ml-auto text-[10px] text-indigo-500/80">드래그로 순서 변경</span>
+        <span className="text-[12px] font-semibold text-slate-700">{single ? '배너 불러오기 (단일)' : '스와이프 배너 묶기'}</span>
+        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{banners.length}{single ? '개' : '장'}</span>
+        {!single && <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>}
       </div>
-      {banners.length === 0 && <p className="rounded-md border border-dashed border-indigo-200 bg-white/60 px-2 py-2 text-[10px] text-indigo-400">아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.</p>}
+      {banners.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[11px] text-slate-400">{single ? '배너 캠페인 관리에서 배너 1개를 불러오세요. 소재·문구·랜딩 URL은 캠페인 값을 그대로 씁니다.' : '아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.'}</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={banners.map((b, i) => rowId(b, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
@@ -381,10 +388,14 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
           </div>
         </SortableContext>
       </DndContext>
-      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-2 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50">
-        <Plus className="h-3.5 w-3.5" /> 배너 캠페인에서 담기 (여러 개 선택)
-      </button>
-      <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 순서는 <b>드래그</b>로 조정.</p>
+      {(!single || banners.length === 0) && (
+        <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">
+          <Plus className="h-3.5 w-3.5" /> {single ? '배너 캠페인에서 불러오기 (1개)' : '배너 캠페인에서 담기 (여러 개 선택)'}
+        </button>
+      )}
+      <p className="text-[11px] leading-relaxed text-slate-400">{single
+        ? <>배너형 · <b>단일형</b>은 <b>배너 캠페인 관리</b>에서 <b>배너 1개</b>를 불러옵니다. 소재·문구·<b>랜딩 URL</b>은 캠페인 값을 그대로 쓰고, 코너에서는 배치·규격·노출 방식만 정해요. 여러 장을 돌리려면 <b>스와이프형</b>으로 등록하세요.</>
+        : <>배너형 · <b>스와이프형</b>은 <b>배너 캠페인 관리</b>에서 <b>2개 이상</b>을 불러와 묶습니다. 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 캠페인 값을 그대로 쓰고, 순서는 <b>드래그</b>로 조정.</>}</p>
       <BannerPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} campaigns={bannerCampaigns} usedIds={usedIds} onAdd={addMany} />
     </div>
   );
@@ -423,15 +434,29 @@ function SortableProductRow({ id, idx, item, onRemove, onLinkChange }: { id: str
 }
 
 // 상품·혜택 담기 모달 — BSS 카탈로그를 체크박스로 여러 개 한 번에 선택해 담는다(2026-09-29 사용자 요청, 드롭다운 대체).
+// 카테고리 뱃지 색상 — 디바이스/음식/쇼핑/문화·여가/혜택.
+const PICKER_CAT_CLASS: Record<string, string> = {
+  '디바이스': 'bg-sky-100 text-sky-700',
+  '음식': 'bg-amber-100 text-amber-700',
+  '쇼핑': 'bg-emerald-100 text-emerald-700',
+  '문화·여가': 'bg-violet-100 text-violet-700',
+};
 function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open: boolean; onClose: () => void; options: ProductOption[]; usedKeys: Set<string>; onAdd: (keys: string[]) => void }) {
   const [q, setQ] = useState('');
+  const [cat, setCat] = useState('전체');
   const [checked, setChecked] = useState<Set<string>>(new Set());
   if (!open) return null;
+  // 카테고리 탭 = 옵션에 등장하는 순서대로(디바이스 먼저) + '전체'.
+  const cats: string[] = [];
+  for (const o of options) { const c = o.category ?? '기타'; if (!cats.includes(c)) cats.push(c); }
   const query = q.trim().toLowerCase();
-  const list = options.filter((o) => !query || `${o.brand} ${o.title}`.toLowerCase().includes(query));
+  const list = options.filter((o) =>
+    (cat === '전체' || (o.category ?? '기타') === cat) &&
+    (!query || `${o.brand} ${o.title}`.toLowerCase().includes(query)));
   const toggle = (k: string) => setChecked((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
-  const submit = () => { onAdd([...checked]); setChecked(new Set()); setQ(''); onClose(); };
-  const close = () => { setChecked(new Set()); setQ(''); onClose(); };
+  const reset = () => { setChecked(new Set()); setQ(''); setCat('전체'); };
+  const submit = () => { onAdd([...checked]); reset(); onClose(); };
+  const close = () => { reset(); onClose(); };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
       <div className="flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -441,10 +466,19 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
           <span className="text-xs text-muted-foreground">여러 개를 체크해 한 번에 담아요</span>
           <button type="button" onClick={close} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="닫기"><X className="h-4 w-4" /></button>
         </div>
-        <div className="border-b p-3">
+        <div className="space-y-2 border-b p-3">
           <div className="flex items-center gap-2 rounded-md border bg-background px-3">
             <Search className="h-4 w-4 text-muted-foreground" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="브랜드·혜택 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+          </div>
+          {/* 카테고리 구분 탭 — 디바이스·음식·쇼핑·문화·여가 등 (2026-09-30 사용자 요청) */}
+          <div className="flex flex-wrap gap-1">
+            {['전체', ...cats].map((c) => (
+              <button key={c} type="button" onClick={() => setCat(c)}
+                className={cn('rounded-full border px-2.5 py-1 text-[11px] font-medium transition', cat === c ? 'border-[#3a2ee6] bg-[#3a2ee6] text-white' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-300')}>
+                {c}
+              </button>
+            ))}
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
@@ -455,7 +489,7 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
               const on = checked.has(o.key);
               return (
                 <label key={o.key} className={cn('flex cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-left', already ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-60' : on ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted/50')}>
-                  <input type="checkbox" checked={on || already} disabled={already} onChange={() => toggle(o.key)} className="accent-indigo-600" />
+                  <input type="checkbox" checked={on || already} disabled={already} onChange={() => toggle(o.key)} className="accent-[#3a2ee6]" />
                   {o.imageUrl && !o.imageUrl.startsWith('icon:') && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={o.imageUrl} alt="" className="h-7 w-7 shrink-0 rounded object-cover ring-1 ring-slate-200" />
@@ -463,7 +497,7 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
                       <span className="truncate text-[13px] font-medium text-slate-800">{o.brand}</span>
-                      {o.category && <span className={cn('shrink-0 rounded px-1 py-[1px] text-[9px] font-semibold', o.category === '디바이스' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700')}>{o.category}</span>}
+                      {o.category && <span className={cn('shrink-0 rounded px-1 py-[1px] text-[9px] font-semibold', PICKER_CAT_CLASS[o.category] ?? 'bg-slate-100 text-slate-500')}>{o.category}</span>}
                     </span>
                     {o.title && o.title !== o.brand && <span className="block truncate text-[11px] text-slate-400">{o.title}{o.price ? ` · ${o.price}` : ''}</span>}
                   </span>
@@ -476,7 +510,7 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
         <div className="flex items-center gap-2 border-t px-4 py-3">
           <span className="text-xs text-muted-foreground">{checked.size}개 선택</span>
           <button type="button" onClick={close} className="ml-auto rounded-md border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">취소</button>
-          <button type="button" onClick={submit} disabled={checked.size === 0} className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40">{checked.size > 0 ? `${checked.size}개 담기` : '담기'}</button>
+          <button type="button" onClick={submit} disabled={checked.size === 0} className="rounded-md bg-[#3a2ee6] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#3326c9] disabled:opacity-40">{checked.size > 0 ? `${checked.size}개 담기` : '담기'}</button>
         </div>
       </div>
     </div>
@@ -490,11 +524,16 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
   const rowId = (it: ProductItem, i: number) => `${it.productKey ?? 'item'}-${i}`;
   // 이미 담긴 것 = productKey ∪ brand (시드 파생 아이템은 productKey가 없고 brand만 있음 · BSS 옵션 key=브랜드명이라 브랜드로도 매칭). 중복 방지.
   const usedKeys = new Set([...items.map((it) => it.productKey), ...items.map((it) => it.brand)].filter(Boolean) as string[]);
+  // 담을 때 랜딩 URL 자동 매핑 — 디바이스는 상품 상세, 그 외(혜택 브랜드)는 혜택 상세로. 담은 뒤 수동 편집 가능.
+  const autoLink = (p: ProductOption) => {
+    const slug = encodeURIComponent(p.key.replace(/\s+/g, '-').toLowerCase());
+    return p.category === '디바이스' ? `tworld://shop/device/${slug}` : `tworld://benefit/${slug}`;
+  };
   const addMany = (keys: string[]) => {
     const news = keys
       .map((k) => productOptions.find((o) => o.key === k))
       .filter((p): p is ProductOption => !!p && !usedKeys.has(p.key))
-      .map((p) => ({ productKey: p.key, title: p.title, brand: p.brand, imageUrl: p.imageUrl ?? undefined, price: p.price ?? undefined, badge: p.badge ?? undefined, linkUrl: '' }));
+      .map((p) => ({ productKey: p.key, title: p.title, brand: p.brand, imageUrl: p.imageUrl ?? undefined, price: p.price ?? undefined, badge: p.badge ?? undefined, linkUrl: autoLink(p) }));
     if (news.length) onCommit([...items, ...news]);
   };
   const remove = (idx: number) => onCommit(items.filter((_, j) => j !== idx));
@@ -510,13 +549,13 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
     onCommit(next);
   };
   return (
-    <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+    <div className="space-y-2 rounded-md border border-[#e3e6ef] bg-white p-3">
       <div className="flex items-center gap-2">
-        <span className="text-[12px] font-semibold text-indigo-700">상품·혜택 묶기</span>
-        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{items.length}개</span>
-        <span className="ml-auto text-[10px] text-indigo-500/80">드래그로 순서 변경</span>
+        <span className="text-[12px] font-semibold text-slate-700">상품·혜택 묶기</span>
+        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{items.length}개</span>
+        <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>
       </div>
-      {items.length === 0 && <p className="rounded-md border border-dashed border-indigo-200 bg-white/60 px-2 py-2 text-[10px] text-indigo-400">아래에서 상품·혜택을 골라 담으세요. 랜딩 URL은 담은 뒤 수정할 수 있어요.</p>}
+      {items.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[11px] text-slate-400">아래에서 상품·혜택을 골라 담으세요. 랜딩 URL은 담은 뒤 수정할 수 있어요.</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={items.map((it, i) => rowId(it, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
@@ -526,28 +565,110 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
           </div>
         </SortableContext>
       </DndContext>
-      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-2 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50">
-        <Plus className="h-3.5 w-3.5" /> 상품·혜택 담기 (디바이스·혜택 브랜드 · 여러 개 선택)
+      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">
+        <Plus className="h-3.5 w-3.5" /> 상품·혜택 담기 (디바이스·음식·쇼핑 등 · 여러 개 선택)
       </button>
-      <p className="text-[10px] leading-relaxed text-indigo-500/80">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
+      <p className="text-[11px] leading-relaxed text-slate-400">코너 유형에서 상품·혜택을 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 아이템의 <b>랜딩 URL</b>은 담은 뒤 여기서 수정하고, 순서는 <b>드래그</b>로 조정.</p>
       <ProductPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} options={productOptions} usedKeys={usedKeys} onAdd={addMany} />
     </div>
   );
 }
 
 // 탭·메뉴 칩 한 줄 (드래그앤드롭 · 그립 핸들 · 라벨·링크 편집) — 코너 유형에서 탭 정의 순서를 바꾼다(2026-09-29 사용자 요청).
-type ChipDef = { label: string; linkUrl?: string };
+type ChipDef = { label: string; linkUrl?: string; icon?: string };
+
+// 퀵메뉴 라벨 → 기본 이동 링크·아이콘 자동 매핑. 운영자가 라벨만 정하면 URL·아이콘이 채워지고, 이후 수동 편집 가능.
+const QUICK_MENU_MAP: Record<string, { url: string; icon: string }> = {
+  '혜택': { url: 'tworld://benefit', icon: 'icon:general/Benefit' },
+  '혜택 줍기': { url: 'tworld://benefit/pickup', icon: 'icon:general/Location' },
+  '카테고리': { url: 'tworld://category', icon: 'icon:general/Category' },
+  '이벤트': { url: 'tworld://event', icon: 'icon:general/Event' },
+  '영화 예매': { url: 'tworld://movie', icon: 'icon:general/Movie' },
+  '글쓰기': { url: 'tworld://post/new', icon: 'icon:general/NewChat' },
+  '더보기': { url: 'tworld://more', icon: 'icon:general/Menu' },
+  '이용요금': { url: 'tworld://bill', icon: 'icon:general/Won' },
+  '데이터': { url: 'tworld://data', icon: 'icon:general/Data' },
+  '멤버십': { url: 'tworld://membership', icon: 'icon:general/Vip' },
+  '매장': { url: 'tworld://store', icon: 'icon:general/Store' },
+  '고객센터': { url: 'tworld://support', icon: 'icon:general/Call' },
+  '검색': { url: 'tworld://search', icon: 'icon:general/Search' },
+  '쇼핑': { url: 'tworld://shop', icon: 'icon:general/Cart' },
+  '로밍': { url: 'tworld://roaming', icon: 'icon:general/Roaming' },
+};
+function autoMapChip(label: string): { url: string; icon: string } {
+  const key = label.trim();
+  // 아이콘은 라벨 규칙(chipIconForLabel)으로 통일 — VIP/0 Week/4월/글로벌 등도 알맞은 아이콘.
+  const icon = chipIconForLabel(key);
+  if (QUICK_MENU_MAP[key]) return { url: QUICK_MENU_MAP[key].url, icon };
+  const hit = key ? Object.keys(QUICK_MENU_MAP).find((k) => key.includes(k) || k.includes(key)) : undefined;
+  if (hit) return { url: QUICK_MENU_MAP[hit].url, icon };
+  const slug = key.replace(/\s+/g, '-').toLowerCase() || 'menu';
+  return { url: `tworld://quickmenu/${encodeURIComponent(slug)}`, icon };
+}
+// 선택형(탭·메뉴) 기본 칩 — 아이콘+라벨+자동 링크. 편집기·미리보기 공용.
+const CHIP_DEFAULTS: ChipDef[] = ['혜택', '카테고리', '이벤트'].map((l) => ({ label: l, ...autoMapChip(l) }));
+// 불러온 칩의 빈 아이콘·이동 링크를 라벨에서 자동 채움 — 등록 정의를 그대로 '불러오기'(수정 시 데이터가 쌓여 보이게). 추가는 직접 입력. 2026-09-30
+const hydrateChips = (chips: ChipDef[]): ChipDef[] => chips.map((c) => { const a = autoMapChip(c.label); return { ...c, icon: c.icon ?? a.icon, linkUrl: c.linkUrl || a.url }; });
+
+// 칩 아이콘 선택 팝오버 — 일반 아이콘 그리드에서 1개 선택. 선택 안 함(라벨만)도 가능.
+function ChipIconPicker({ value, onPick }: { value?: string; onPick: (icon: string | undefined) => void }) {
+  const [open, setOpen] = useState(false);
+  const general = ICON_CATEGORIES.find((c) => c.key === 'general')?.icons.filter((i) => i.key !== 'general/Dummy') ?? [];
+  return (
+    <div className="relative shrink-0">
+      <button type="button" onClick={() => setOpen((v) => !v)} title="아이콘 선택" className="flex h-8 w-8 items-center justify-center rounded-md border bg-white text-slate-500 hover:border-indigo-300 hover:text-[#3a2ee6]">
+        {value && isIconRef(value)
+          ? <IconGlyph name={value} className="h-4 w-4" />
+          : value && value.startsWith('/assets/')
+            ? /* 브랜드색 svg를 연한 원형 뱃지 위에 미리보기(칩과 동일) */ <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#EDEFF7]">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={value} alt="" className="h-3 w-3 object-contain" /></span>
+            : <Plus className="h-3.5 w-3.5" />}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-9 z-30 w-52 rounded-md border bg-white p-2 shadow-lg">
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-600">아이콘</span>
+              <button type="button" onClick={() => { onPick(undefined); setOpen(false); }} className="text-[11px] text-slate-400 hover:text-slate-600">선택 안 함</button>
+            </div>
+            <div className="grid max-h-40 grid-cols-6 gap-1 overflow-y-auto">
+              {general.map((ic) => {
+                const ref = `icon:${ic.key}`;
+                return (
+                  <button key={ic.key} type="button" title={ic.label} onClick={() => { onPick(ref); setOpen(false); }}
+                    className={cn('flex h-7 w-7 items-center justify-center rounded hover:bg-indigo-50', value === ref ? 'bg-indigo-100 text-[#3a2ee6] ring-1 ring-indigo-300' : 'text-slate-500')}>
+                    <IconGlyph name={ref} className="h-4 w-4" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function SortableChipDefRow({ id, idx, chip, canRemove, onPatch, onRemove }: { id: string; idx: number; chip: ChipDef; canRemove: boolean; onPatch: (p: Partial<ChipDef>) => void; onRemove: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  // 라벨 변경 시 아이콘만 자동 유추(수동 지정값은 보존). 이동 링크는 자동 채우지 않음 — 직접 입력.
+  const onLabel = (label: string) => {
+    const auto = autoMapChip(label);
+    const prevAuto = autoMapChip(chip.label);
+    const p: Partial<ChipDef> = { label };
+    if (!chip.icon || chip.icon === prevAuto.icon) p.icon = auto.icon;
+    onPatch(p);
+  };
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-1.5">
       <button type="button" className="cursor-grab text-slate-400 active:cursor-grabbing" {...attributes} {...listeners} aria-label="순서 변경 (드래그)" title="드래그하여 순서 변경">
         <GripVertical className="h-4 w-4" />
       </button>
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-50 text-[10px] font-bold tabular-nums text-indigo-500">{idx + 1}</span>
-      <input value={chip.label} onChange={(e) => onPatch({ label: e.target.value })} placeholder="메뉴명" className="h-8 w-24 rounded-md border bg-white px-2 text-xs" />
-      <input value={chip.linkUrl ?? ''} onChange={(e) => onPatch({ linkUrl: e.target.value })} placeholder="이동 링크 URL" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
+      <ChipIconPicker value={chip.icon} onPick={(icon) => onPatch({ icon })} />
+      <input value={chip.label} onChange={(e) => onLabel(e.target.value)} placeholder="메뉴명" className="h-8 w-24 rounded-md border bg-white px-2 text-xs" />
+      <input value={chip.linkUrl ?? ''} onChange={(e) => onPatch({ linkUrl: e.target.value })} placeholder="URL을 입력하세요" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
       <button type="button" onClick={onRemove} disabled={!canRemove} className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive disabled:opacity-30">×</button>
     </div>
   );
@@ -558,6 +679,7 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const rowId = (_c: ChipDef, i: number) => `chip-${i}`;
   const patch = (idx: number, p: Partial<ChipDef>) => onCommit(chips.map((c, j) => (j === idx ? { ...c, ...p } : c)), rows);
+  // 탭 추가 — 이동 링크는 비워 두고(직접 입력) 라벨만 기본값. 아이콘은 라벨로 자동 유추.
   const add = () => onCommit([...chips, { label: `메뉴 ${chips.length + 1}` }], rows);
   const remove = (idx: number) => onCommit(chips.filter((_, j) => j !== idx), rows);
   const onDragEnd = (e: DragEndEvent) => {
@@ -571,11 +693,11 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
     onCommit(next, rows);
   };
   return (
-    <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+    <div className="space-y-2 rounded-md border border-[#e3e6ef] bg-white p-3">
       <div className="flex items-center gap-2">
-        <span className="text-[12px] font-semibold text-indigo-700">탭·메뉴 정의</span>
-        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-indigo-600 ring-1 ring-indigo-200">{chips.length}개</span>
-        <span className="ml-auto text-[10px] text-indigo-500/80">드래그로 순서 변경</span>
+        <span className="text-[12px] font-semibold text-slate-700">탭·메뉴 정의</span>
+        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{chips.length}개</span>
+        <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={chips.map((c, i) => rowId(c, i))} strategy={verticalListSortingStrategy}>
@@ -587,13 +709,13 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
         </SortableContext>
       </DndContext>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-indigo-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50"><Plus className="h-3.5 w-3.5" /> 탭 추가</button>
+        <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"><Plus className="h-3.5 w-3.5" /> 탭 추가</button>
         <span className="ml-auto text-[11px] text-slate-500">줄 수</span>
         {[1, 2].map((r) => (
-          <button key={r} type="button" onClick={() => onCommit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-indigo-600 text-white' : 'border bg-white text-slate-600 hover:bg-slate-50')}>{r}줄</button>
+          <button key={r} type="button" onClick={() => onCommit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-[#3a2ee6] text-white' : 'border bg-white text-slate-600 hover:bg-slate-50')}>{r}줄</button>
         ))}
       </div>
-      <p className="text-[10px] leading-relaxed text-indigo-500/80">탭·메뉴 항목(라벨·이동 링크·줄 수·순서)을 코너 유형에서 정의합니다. 실서비스 코너는 이 정의를 상속하고, <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
+      <p className="text-[11px] leading-relaxed text-slate-400">탭·메뉴 항목(<b>아이콘·라벨·이동 링크</b>·줄 수·순서)을 코너 유형에서 정의합니다. 라벨을 정하면 <b>이동 링크 URL과 아이콘이 자동 매핑</b>되고(수동 편집 가능), 실서비스 코너는 이 정의를 상속하며 <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
     </div>
   );
 }
@@ -606,9 +728,9 @@ export const CORNER_TYPE_INFO: Record<string, { purpose: string; allow: string; 
     note: '상품은 SKT에서 판매하는 상품만 제공됩니다. (외부에서 임의로 가져오지 않고, 판매 상품 원장에서 선택)',
   },
   '배너형': {
-    purpose: '이미지 배너를 노출하는 코너입니다. 한 코너에 여러 배너를 담아 스와이프(수동)·자동 슬라이드로 노출할 수 있습니다.',
+    purpose: '배너 캠페인 관리에 등록된 배너를 불러와 노출하는 코너입니다. 배너 소재·문구는 코너에서 직접 만들지 않고, 무조건 배너 캠페인 관리에서 불러옵니다. — 배너 단일형: 배너 1개를 불러와 단독 노출 / 스와이프형: 배너 2개 이상을 불러와 수동 스와이프·자동 슬라이드로 노출.',
     allow: '배너형',
-    note: '배너 소재·문구는 배너 캠페인 관리(전시관리)가 소유합니다(공통 1벌·변경 시 승인 재요청). 코너에서는 배치·순서·규격·노출 방식만 정합니다.',
+    note: '배너 소재·문구·랜딩 URL은 배너 캠페인 관리(전시관리)가 소유합니다(공통 1벌·변경 시 승인 재요청). 코너에서는 어떤 배너를 불러올지와 배치·순서·규격·노출 방식만 정합니다. 배너 단일형=1개 불러오기, 스와이프형=여러 개 불러오기.',
   },
   '혜택·오퍼형': {
     purpose: '고객이 받을 수 있는 혜택·쿠폰·제휴 오퍼를 제안하는 코너입니다. 브랜드 로고+혜택 문구 카드나 오퍼 배너 등으로 구성합니다.',
@@ -658,7 +780,7 @@ export function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: 
       <div className="flex flex-1 flex-col gap-2 px-5 pt-1">
         <button type="button" onClick={onOpen} className="text-left">
           <p className="text-[16px] font-bold leading-tight text-[#1A1A2E] group-hover:text-[#4A6CF7]">{name}</p>
-          <span className="mt-1 block font-mono text-[10px] text-slate-400">{t.typeId}</span>
+          <span className="mt-1 block font-mono text-[11px] text-slate-400">{t.typeId}</span>
         </button>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className={cn('inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span>
@@ -667,7 +789,7 @@ export function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: 
             ? <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{t.liveVersion}</span>
             : <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">미사용</span>}
           <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span>
-          {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
+          {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-[#3326c9]">반영 필요</span>}
         </div>
       </div>
       {/* 액션 — 수정하기(DS 블루) · 복제 · 삭제 */}
@@ -742,7 +864,7 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
               ? <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{v.liveVersion}</span>
               : <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">미사용</span>}
             <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', CORNER_TYPE_STATUS_COLOR[st] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[st] ?? st}</span>
-            {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">반영 필요</span>}
+            {g.needsPublish && <span className="rounded-full border border-indigo-300 bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-[#3326c9]">반영 필요</span>}
           </div>
         </div>
       </button>
@@ -778,11 +900,11 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
             <button type="button" disabled={busy} onClick={() => setRejecting(true)} className={cn(btn, 'flex-1 border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100')}><X className="h-3 w-3" /> 반려</button>
           </div>
         ) : st === 'DRAFT' || st === 'REJECTED' ? (
-          <button type="button" disabled={busy} onClick={request} className={cn(btn, 'w-full border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100')}>승인 요청</button>
+          <button type="button" disabled={busy} onClick={request} className={cn(btn, 'w-full border-indigo-200 bg-indigo-50 text-[#3326c9] hover:bg-indigo-100')}>승인 요청</button>
         ) : st === 'APPROVED' && g.needsPublish ? (
-          <button type="button" disabled={busy} onClick={publish} className={cn(btn, 'w-full border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100')}>반영(사용)</button>
+          <button type="button" disabled={busy} onClick={publish} className={cn(btn, 'w-full border-indigo-200 bg-indigo-50 text-[#3326c9] hover:bg-indigo-100')}>반영(사용)</button>
         ) : (
-          <p className="text-center text-[10px] text-slate-400">사용 중 · 조치 없음</p>
+          <p className="text-center text-[11px] text-slate-400">사용 중 · 조치 없음</p>
         )}
       </div>
     </div>
@@ -896,6 +1018,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   }, [domain, base, detail, useOn, useOff, statusSel, field, q, perPage, curPage, view]);
 
   const selectCls = 'h-9 rounded-lg border bg-white px-2.5 text-sm';
+  const chkCls = 'flex cursor-pointer items-center gap-1.5 text-[13px] text-slate-600';
+  const chkInput = 'h-4 w-4 rounded accent-[#3a2ee6]';
 
   return (
     <div className="space-y-4">
@@ -989,53 +1113,58 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             );
           })}
         </div>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">유형 상세</span>
-            <select value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={`${selectCls} w-40`}>
-              {detailOptions.map((o) => <option key={o} value={o}>{o === '전체' ? '전체' : layoutLabel(o)}</option>)}
-            </select>
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+            <div className="flex items-center gap-2">
+              <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">유형 상세</span>
+              <select value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={`${selectCls} w-40`}>
+                {detailOptions.map((o) => <option key={o} value={o}>{o === '전체' ? '전체' : layoutLabel(o)}</option>)}
+              </select>
+            </div>
+            {/* 사용여부 — 체크박스(전체/사용/미사용). 2026-10-01 목업 참고. */}
+            <div className="flex items-center gap-3">
+              <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">사용여부</span>
+              <label className={chkCls}><input type="checkbox" className={chkInput} checked={useOn && useOff} onChange={(e) => { setUseOn(e.target.checked); setUseOff(e.target.checked); setPage(1); }} />전체</label>
+              <label className={chkCls}><input type="checkbox" className={chkInput} checked={useOn} onChange={(e) => { setUseOn(e.target.checked); setPage(1); }} />사용</label>
+              <label className={chkCls}><input type="checkbox" className={chkInput} checked={useOff} onChange={(e) => { setUseOff(e.target.checked); setPage(1); }} />미사용</label>
+            </div>
+            {/* 승인상태 — 체크박스(전체 + 상태별). */}
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">승인상태</span>
+              <label className={chkCls}><input type="checkbox" className={chkInput} checked={statusSel.size === statusKeys.length} onChange={(e) => { setStatusSel(e.target.checked ? new Set(statusKeys) : new Set()); setPage(1); }} />전체</label>
+              {statusKeys.map((k) => (
+                <label key={k} className={chkCls}><input type="checkbox" className={chkInput} checked={statusSel.has(k)} onChange={(e) => { const n = new Set(statusSel); if (e.target.checked) n.add(k); else n.delete(k); setStatusSel(n); setPage(1); }} />{CORNER_TYPE_STATUS_LABEL[k] ?? k}</label>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">사용여부</span>
-            <select
-              value={useOn && useOff ? '전체' : useOn ? '사용' : '미사용'}
-              onChange={(e) => { const v = e.target.value; setUseOn(v !== '미사용'); setUseOff(v !== '사용'); setPage(1); }}
-              className={`${selectCls} w-28`}
-            >
-              <option value="전체">전체</option>
-              <option value="사용">사용</option>
-              <option value="미사용">미사용</option>
-            </select>
-          </div>
-          <div className="flex flex-1 items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">검색</span>
+          <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
+            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">직접 검색</span>
             <select value={field} onChange={(e) => setField(e.target.value as typeof field)} className={selectCls}>
               <option value="typeId">코너 유형 ID</option>
               <option value="createdBy">등록자</option>
             </select>
-            <div className="relative min-w-[180px] flex-1">
+            <div className="relative min-w-[200px] max-w-md flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="내용을 입력하세요." className="h-9 w-full rounded-lg border pl-8 pr-3 text-sm" />
+              <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="영문/숫자 포함 10자 이내로 입력해 주세요." className="h-9 w-full rounded-lg border pl-8 pr-3 text-sm" />
             </div>
-          </div>
-          <div className="ml-auto flex gap-2">
-            <Button size="sm" variant="outline" className="h-9" onClick={reset}><RotateCcw className="mr-1 h-3.5 w-3.5" />초기화</Button>
-            <Button size="sm" className="h-9" onClick={() => setPage(1)}><Search className="mr-1 h-4 w-4" />조회</Button>
+            <div className="ml-auto flex gap-2">
+              <Button size="sm" variant="outline" className="h-9" onClick={reset}><RotateCcw className="mr-1 h-3.5 w-3.5" />초기화</Button>
+              <Button size="sm" className="h-9" onClick={() => setPage(1)}><Search className="mr-1 h-4 w-4" />조회</Button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* 보기 전환 — 카드(배열 그룹) / 리스트(플랫 테이블). 기본=카드. */}
       <div className="flex items-center justify-between">
-        <p className="text-[13px] text-muted-foreground">검색결과 <b className="text-indigo-600 tabular-nums">{filtered.length}</b>건</p>
+        <p className="text-[13px] text-muted-foreground">검색결과 <b className="text-[#3a2ee6] tabular-nums">{filtered.length}</b>건</p>
         <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
           {([['card', '카드'], ['list', '리스트']] as const).map(([v, label]) => (
             <button
               key={v}
               type="button"
               onClick={() => { setView(v); setPage(1); }}
-              className={cn('inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-[12.5px] font-semibold transition', view === v ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-700')}
+              className={cn('inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-[12.5px] font-semibold transition', view === v ? 'bg-[#3a2ee6] text-white' : 'text-slate-500 hover:text-slate-700')}
             >
               {v === 'card' ? <LayoutGrid className="h-3.5 w-3.5" /> : <List className="h-3.5 w-3.5" />}{label}
             </button>
@@ -1112,10 +1241,10 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
 
       {/* 리스트 보기 — 케이스(코너 유형) 플랫 테이블. 배열별 그룹 없이 한 줄씩. 클릭 시 상세로. */}
       {view === 'list' && (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="border-y border-[#e3e6ef] bg-white">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
+              <tr className="border-b border-[#e3e6ef] bg-[#f6f7fb] text-[12px] text-[#6b7086]">
                 <th className="w-14 px-3 py-2.5 text-left font-medium">NO</th>
                 <th className="w-44 px-3 py-2.5 text-center font-medium">미리보기</th>
                 <th className="px-3 py-2.5 text-left font-medium">코너 유형</th>
@@ -1131,7 +1260,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               {pageRows.length === 0 ? (
                 <tr><td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">검색 결과가 없습니다.</td></tr>
               ) : pageRows.map((t, i) => (
-                <tr key={t.id} className="cursor-pointer border-b last:border-0 hover:bg-slate-50/70" onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
+                <tr key={t.id} className="cursor-pointer border-b border-[#e3e6ef] last:border-0 hover:bg-[#f6f7fb]" onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
                   <td className="px-3 py-2.5 align-middle tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
                   <td className="px-3 py-2.5">
                     {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함 */}
@@ -1153,7 +1282,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-1 border-t p-3">
               {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
-                <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-xs', p === curPage ? 'bg-indigo-600 text-white' : 'hover:bg-secondary')}>{p}</button>
+                <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-xs', p === curPage ? 'bg-[#3a2ee6] text-white' : 'hover:bg-secondary')}>{p}</button>
               ))}
             </div>
           )}
@@ -1168,7 +1297,7 @@ function StepHead({ n, title, required, hint }: { n: number; title: string; requ
   return (
     <div className="mb-2.5">
       <div className="flex items-center gap-2">
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-bold leading-none text-white">{n}</span>
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#3a2ee6] text-[11px] font-bold leading-none text-white">{n}</span>
         <span className="text-sm font-semibold text-slate-800">
           {title}
           {required && <span className="ml-0.5 text-rose-500">*</span>}
@@ -1184,7 +1313,7 @@ function StepHead({ n, title, required, hint }: { n: number; title: string; requ
 function Switch({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button type="button" disabled={disabled} onClick={() => onChange(!checked)}
-      className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition', checked ? 'bg-indigo-600' : 'bg-slate-300', disabled && 'cursor-not-allowed opacity-40')}
+      className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition', checked ? 'bg-[#3a2ee6]' : 'bg-slate-300', disabled && 'cursor-not-allowed opacity-40')}
       aria-pressed={checked}>
       <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition', checked ? 'translate-x-4' : 'translate-x-0.5')} />
     </button>
@@ -1193,6 +1322,8 @@ function Switch({ checked, onChange, disabled }: { checked: boolean; onChange: (
 
 export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], onClose, bulk = false, bulkArrays, submitAction }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; onClose: () => void; bulk?: boolean; bulkArrays?: string[]; submitAction?: (fd: FormData) => void | Promise<void> }) {
   const isNew = !row.id;
+  // 등록(신규)은 스텝퍼로 단계별 설정 — 프로모션 등록처럼(2026-09-30 사용자 요청). 수정은 전체를 한 화면에.
+  const [step, setStep] = useState(0);
   // 2단 분류: ① 코너 유형(base) → ② 배열·레이아웃(detail). 구성 컴포넌트는 배열·레이아웃에서 자동 도출.
   const [base, setBase] = useState(row.baseCategory);
   const [detail, setDetail] = useState(row.typeDetail ?? '');
@@ -1209,6 +1340,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const renameArr = (i: number, val: string) => setSelectedArrays((xs) => { const n = xs.map((x, j) => (j === i ? val : x)); setDetail(n[0] ?? ''); return n; });
   const removeArrAt = (i: number) => setSelectedArrays((xs) => { const n = xs.filter((_, j) => j !== i); setDetail(n[0] ?? ''); return n; });
   const [bigBanner, setBigBanner] = useState(row.bigBanner ?? false); // ④ 빅배너 구분자
+  const [layoutMode, setLayoutMode] = useState(row.componentLayoutMode || '고정형'); // 컴포넌트 레이아웃: 지정형(여러 노출유형 택1) | 고정형
   const [active, setActive] = useState(row.active);
   const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
   // 정의(거버넌스) 기본값 — 코너 유형이 문구·개수·형태까지 정의(2026-09-29 거버넌스 분리). 빌더는 쌓기+CVM만.
@@ -1223,7 +1355,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const [bannerIndicator, setBannerIndicator] = useState<boolean>(parseBannerOpt('showIndicator') as boolean);
   const [recSource, setRecSource] = useState(row.defaultRecSource ? normalizeRecSource(row.defaultRecSource) : ''); // 추천 수급 방식 기본값(controlled) — 노출·구성 노출 여부를 좌우
   // ③ 컴포넌트 조합 — 배열·레이아웃에서 자동 도출(읽기 전용, 2026-09-29 사용자 결정). 저장된 조합이 있으면 그대로 표시.
-  const [blocks, setBlocks] = useState<Composition>(() => parseComposition(row.composition) ?? []);
+  const [blocks, setBlocks] = useState<Composition>(() => {
+    const parsed = parseComposition(row.composition) ?? [];
+    // 수정 진입 시 선택형(탭·메뉴) 칩의 빈 아이콘·이동 링크를 라벨에서 자동 채워 '데이터가 쌓인' 상태로 불러온다.
+    return parsed.map((b) => (b.componentType === '선택형' && b.chips && b.chips.length) ? { ...b, chips: hydrateChips(b.chips as ChipDef[]) } : b);
+  });
   // FO 사용자 설정(고객 커스터마이즈) 기본값 — 선택형·메뉴 유형에서
   const [userCustom, setUserCustom] = useState(row.userCustomizable ?? false);
   const [userMin, setUserMin] = useState(row.userMinItems != null ? String(row.userMinItems) : '');
@@ -1303,7 +1439,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const featureApplies = (key: string) => {
     if (key === 'useMainTitle' || key === 'useSubTitle') return !noHeaderType;
     if (key === 'useMoreButton') return isListType; // CTA 노출은 리스트형에서 의미
-    if (key === 'useImage' || key === 'usePrice' || key === 'useBadge' || key === 'useDesc') return compValid === '상품형'; // 상품 이미지·가격·설명·배지는 상품형 카드에서만
+    // 상품 이미지·가격·설명·배지 = 상품/혜택/정보 카드가 있는 코너에서 적용(콘텐츠 안내형 등 상품형 외 유형이 상품 카드를 담는 경우 포함).
+    //  shownBlocks가 liveFeatFlags를 적용하는 블록 유형(상품형·혜택형·정보형)과 일치시켜, 체크 해제가 미리보기에 바로 반영되게 한다.
+    if (key === 'useImage' || key === 'usePrice' || key === 'useBadge' || key === 'useDesc')
+      return ['상품형', '혜택형', '정보형'].includes(compValid) || blocks.some((b) => ['상품형', '혜택형', '정보형'].includes(b.componentType));
     return true; // 그 외 표시 항목은 기본 노출 (미노출 조건은 세부 항목이 아니라 빌더에서 코너별로 관리)
   };
   // 실제 적용값 = 토글 ON && 유형에 적용 가능
@@ -1324,10 +1463,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
   // ③ 컴포넌트 조합 — 배열·레이아웃에서 자동 도출(읽기 전용). 저장된 조합이 있으면 우선, 없으면 유형 기본값.
   //  배너형 스와이프형은 배너 장수를 코너 유형에서 정한다(최소 2장) — 편집한 값 우선, 없으면 2장.
-  const isSwipeBannerType = (compValid === '배너형' || base === '배너형') && detailValid === '스와이프형';
-  const swipeBanners = isSwipeBannerType ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
+  // 배너형(단일형·스와이프형)은 '무조건' 배너 캠페인 관리에서 불러온다(직접 만들지 않음). 2026-09-30 사용자 확정.
+  const isBannerLoader = compValid === '배너형' || base === '배너형';
+  const isSwipeBannerType = isBannerLoader && detailValid === '스와이프형';
+  const isSingleBannerType = isBannerLoader && !isSwipeBannerType; // 배너 단일형(기본) — 1개만 불러옴
+  const swipeBanners = isBannerLoader ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
   // 상품형·혜택형 — 상품·혜택 아이템 묶음(BSS 카탈로그에서 담기 · 순서 드래그 · URL 수동). 2026-09-29 사용자 요청.
-  const isProductItemsType = !isSwipeBannerType && (compValid === '상품형' || compValid === '혜택형');
+  const isProductItemsType = !isBannerLoader && (compValid === '상품형' || compValid === '혜택형');
   const productItems = isProductItemsType ? (blocks.find((b) => b.componentType === compValid)?.items ?? blocks.find((b) => b.items)?.items ?? []) : [];
   // 상품 아이템 커밋 — 대상 컴포넌트 블록의 items·count만 갱신하고 다른 블록(예: 상단 탭)은 보존.
   const commitProductItems = (next: ProductItem[]) => {
@@ -1340,15 +1482,20 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   };
   // 세부 항목(표시 항목) 토글을 미리보기·저장 조합에 실시간 반영 — 이미지·가격·설명·배지 on/off가 아이템 카드에 바로 적용(2026-09-29 사용자 요청).
   const liveFeatFlags = { image: imageOn, price: priceOn, desc: descOn, badge: eff('useBadge') };
-  const shownBlocks: Composition = isSwipeBannerType
-    ? [{ componentType: '배너형', count: Math.max(1, swipeBanners.length || 2), image: true, price: true, desc: true, ...(swipeBanners.length ? { banners: swipeBanners } : {}) }]
+  const shownBlocks: Composition = isBannerLoader
+    ? [{ componentType: '배너형', count: isSingleBannerType ? 1 : Math.max(1, swipeBanners.length || 2), image: true, price: true, desc: true, ...(swipeBanners.length ? { banners: isSingleBannerType ? swipeBanners.slice(0, 1) : swipeBanners } : {}) }]
     : (blocks.length
         ? blocks
         : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc })
-      ).map((b) => (b.componentType === '상품형' || b.componentType === '혜택형' || b.componentType === '정보형' ? { ...b, ...liveFeatFlags } : b));
+      ).map((b) => {
+        if (b.componentType === '상품형' || b.componentType === '혜택형' || b.componentType === '정보형') return { ...b, ...liveFeatFlags };
+        // 선택형(탭·메뉴) 칩이 아직 정의 전이면 기본 칩(아이콘+라벨)으로 미리보기 — 편집기와 동일. 단, '메뉴 리스트'(세로 메뉴)는 제외.
+        if (b.componentType === '선택형' && !(b.chips && b.chips.length) && !dStr.includes('메뉴 리스트')) return { ...b, chips: CHIP_DEFAULTS, chipRows: b.chipRows ?? 2 };
+        return b;
+      });
   // 코너 유형 명 = [코너 유형 · 컴포넌트 · 배열 (· 빅배너)] 자동 구성
   // 코너 유형 명 = 유형 · 배열·레이아웃 (컴포넌트는 표기에서 제외 — UI에서 컴포넌트 노출 안 함).
-  const derivedName = [base, detailValid, bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
+  const derivedName = [base, layoutLabel(detailValid), bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
   const channels = row.channels.split(',').filter(Boolean);
   const platforms = row.platforms.split(',').filter(Boolean);
   const action = isNew ? createCornerType : updateCornerType.bind(null, row.id);
@@ -1391,7 +1538,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     const groups = GROUPS.map((g) => ({ ...g, items: g.items.filter((it) => panelApplies(it.key)) })).filter((g) => g.items.length);
     return (
       <section className="overflow-hidden rounded-xl border border-indigo-200">
-        <div className="border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-indigo-700">컴포넌트 속성 <span className="font-normal text-indigo-400">· DS 공식 기준</span></div>
+        <div className="border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-[#3326c9]">컴포넌트 속성 <span className="font-normal text-indigo-400">· DS 공식 기준</span></div>
         <div className="flex items-start gap-1.5 border-b bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>배열 <b className="font-semibold">{selectedArrays.length}개</b>에 공통 적용 — 끄면 모든 배열에서 함께 꺼집니다.</span>
         </div>
@@ -1408,7 +1555,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                       <div className="min-w-0 flex-1">
                         <span className="text-[13px] font-medium text-slate-700">{it.label}</span>
                         {it.locked && <span className="ml-1.5 rounded bg-slate-100 px-1 text-[9px] text-slate-500">필수</span>}
-                        <span className="block text-[10px] text-slate-400">{it.sub}{it.dep ? ` · ${it.dep}` : ''}</span>
+                        <span className="block text-[11px] text-slate-400">{it.sub}{it.dep ? ` · ${it.dep}` : ''}</span>
                       </div>
                       <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[9px] font-medium text-indigo-500">공통</span>
                       <Switch checked={on} disabled={it.locked || badgeLocked} onChange={(v) => toggleFeature(it.key, v)} />
@@ -1425,112 +1572,106 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
   // 기본 정보 하단 메타(운영 채널·플랫폼·사용 여부·승인상태·설명) — bulk 섹션·통합 섹션에서 공용.
   //  통합 섹션의 우측 열(1fr)에서도 안 눌리게 bulk일 때만 2열, 통합(비-bulk)에선 1열로 쌓는다.
+  // 운영 채널·플랫폼, 사용 여부·승인상태는 좌우 2열(목업 랜딩 설정처럼). 설명은 전폭. 좌우 보더 없음.
   const metaFields = (
-    <div className={cn('grid grid-cols-1', bulk && 'md:grid-cols-2')}>
-      <TRow label="운영 채널">
-        <OpsCheckGroup name="channels" options={OPERATION_CHANNELS} initial={channels} />
-      </TRow>
-      <TRow label="운영 플랫폼">
-        <OpsCheckGroup name="platforms" options={OPERATION_PLATFORMS} initial={platforms} />
-      </TRow>
-      <TRow label="사용 여부" required>
-        <div className="flex gap-4 py-0.5 text-xs">
-          <label className="flex items-center gap-1.5">
-            <input type="radio" checked={active} onChange={() => setActive(true)} className="accent-indigo-600" /> 사용
-          </label>
-          <label className="flex items-center gap-1.5">
-            <input type="radio" checked={!active} onChange={() => setActive(false)} className="accent-indigo-600" /> 미사용
-          </label>
-        </div>
-        {active && <input type="hidden" name="active" value="on" />}
-      </TRow>
-      <TRow label="승인상태" hint="승인 결과는 별도 승인 프로세스에서 반영됩니다">
-        <div className="flex items-center gap-2 py-0.5">
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-            {CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}
-          </span>
-          <span className="text-[10px] text-muted-foreground">(읽기 전용)</span>
-        </div>
-        <input type="hidden" name="status" value={row.status} />
-      </TRow>
-      <div className="p-3 md:col-span-2">
-        <TRow label="코너 유형 설명" flat>
-          <Input name="description" defaultValue={row.description ?? ''} placeholder="100자 이내" className="h-8 text-xs" />
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2">
+        <TRow label="운영 채널"><OpsCheckGroup name="channels" options={OPERATION_CHANNELS} initial={channels} /></TRow>
+        <TRow label="운영 플랫폼"><OpsCheckGroup name="platforms" options={OPERATION_PLATFORMS} initial={platforms} /></TRow>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2">
+        <TRow label="사용 여부" required>
+          <div className="flex gap-4 text-xs">
+            <label className="flex items-center gap-1.5"><input type="radio" checked={active} onChange={() => setActive(true)} className="accent-[#3a2ee6]" /> 사용</label>
+            <label className="flex items-center gap-1.5"><input type="radio" checked={!active} onChange={() => setActive(false)} className="accent-[#3a2ee6]" /> 미사용</label>
+          </div>
+          {active && <input type="hidden" name="active" value="on" />}
+        </TRow>
+        <TRow label="승인상태">
+          <div className="flex items-center gap-1.5">
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
+            <span className="whitespace-nowrap text-[11px] text-muted-foreground" title="승인은 별도 승인 프로세스에서 반영됩니다">(읽기 전용)</span>
+          </div>
+          <input type="hidden" name="status" value={row.status} />
         </TRow>
       </div>
-    </div>
+      <TRow label="코너 유형 설명"><Input name="description" defaultValue={row.description ?? ''} placeholder="100자 이내" className="h-8 text-xs" /></TRow>
+    </>
   );
 
-  // 유형·배열 선택(비-bulk) — 통합 섹션 우측 열 상단. (안내 + ① 코너 유형 + ② 배열·레이아웃 + 요약)
+  // 유형·배열 선택(비-bulk) — 테이블(TRow) 형태. 좌우 보더 없이 가로줄만(2026-09-30 사용자 요청, 목업 105).
   const basicPickers = (
-    <div className="space-y-3">
+    <>
       <input type="hidden" name="name" value={derivedName} />
       <input type="hidden" name="layout" value={row.layout ?? ''} />
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2">
-        <span className="flex items-center gap-1.5 text-[11px] text-indigo-700">
-          <Info className="h-3.5 w-3.5 shrink-0" />
-          <span><b className="font-semibold">2단계</b>로 코너를 정의해요 — 코너 유형 → 배열·레이아웃</span>
-        </span>
-        <span className="text-[11px] text-slate-500">
-          코너 유형 ID <span className="ml-0.5 rounded border bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-700">{row.typeId}</span>
-        </span>
-      </div>
-      {/* ① 코너 유형 */}
-      <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-        <StepHead n={1} title="코너 유형" required hint="이 코너가 화면에서 맡는 역할이에요" />
-        <div className="flex flex-wrap gap-1.5">
-          {baseOptions.map((c) => (
-            <label key={c} className="cursor-pointer">
-              <input type="radio" name="baseCategory" value={c} checked={base === c} onChange={() => { setBase(c); setDetail(defaultShapeFor(c)); }} className="peer sr-only" />
-              <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">{c}</span>
-            </label>
-          ))}
-        </div>
-        {cornerTypePurpose(base) && (
-          <p className="mt-2 flex gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-indigo-700">
-            <span className="shrink-0 font-semibold">목적</span>
-            <span>{cornerTypePurpose(base)}</span>
-          </p>
-        )}
-      </div>
       <input type="hidden" name="componentType" value={compValid} />
-      {/* ② 배열·레이아웃 */}
-      <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-        <StepHead n={2} title="배열·레이아웃" hint="이 유형을 어떤 형태로 보여줄지 골라요" />
-        <div className="flex flex-wrap gap-1.5">
-          {allowEmptyDetail && (
-            <label className="cursor-pointer">
-              <input type="radio" name="typeDetail" value="" checked={detailValid === ''} onChange={() => setDetail('')} className="peer sr-only" />
-              <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white">선택 안 함</span>
-            </label>
-          )}
-          {typeShapes.map((d) => {
-            const isReg = registered.some((r) => r.baseCategory === base && (r.typeDetail ?? '') === d);
-            return (
-              <label key={d} className="cursor-pointer" title={isReg ? '이미 등록된 유형·배열이에요(다시 등록해도 됩니다)' : undefined}>
-                <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
-                <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white', isReg && 'border-emerald-300 bg-emerald-50/60')}>
-                  {layoutLabel(d)}
-                  {isReg && <span className="inline-flex items-center rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold leading-none text-white">등록됨</span>}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">배열은 <b>형태(레이아웃)</b>만 정합니다. 알약 안 <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span> 표시는 그 배열이 이미 등록돼 있다는 뜻(다시 등록 가능). <b>노출 개수</b>는 빌더에서 코너별로 조정.</p>
-      </div>
       <input type="hidden" name="bigBanner" value="" />
-      <div className="rounded-md border border-dashed bg-slate-50 px-3 py-2 text-[11px] text-muted-foreground">
-        이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span>
-      </div>
-    </div>
+      <TRow label="코너 유형 ID"><span className="font-mono text-[12px] text-slate-700">{row.typeId}</span></TRow>
+      <TRow label="코너 유형" required hint="이 코너가 화면에서 맡는 역할">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {baseOptions.map((c) => (
+              <label key={c} className="cursor-pointer">
+                <input type="radio" name="baseCategory" value={c} checked={base === c} onChange={() => { setBase(c); setDetail(defaultShapeFor(c)); }} className="peer sr-only" />
+                <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-[#3a2ee6] peer-checked:bg-[#3a2ee6] peer-checked:text-white">{c}</span>
+              </label>
+            ))}
+          </div>
+          {cornerTypePurpose(base) && (
+            <p className="flex gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-[#3326c9]"><span className="shrink-0 font-semibold">목적</span><span>{cornerTypePurpose(base)}</span></p>
+          )}
+        </div>
+      </TRow>
+      <TRow label="배열·레이아웃" hint="어떤 형태로 보여줄지">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {allowEmptyDetail && (
+              <label className="cursor-pointer">
+                <input type="radio" name="typeDetail" value="" checked={detailValid === ''} onChange={() => setDetail('')} className="peer sr-only" />
+                <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-[#3a2ee6] peer-checked:bg-[#3a2ee6] peer-checked:text-white">선택 안 함</span>
+              </label>
+            )}
+            {typeShapes.map((d) => {
+              const isReg = registered.some((r) => r.baseCategory === base && (r.typeDetail ?? '') === d);
+              return (
+                <label key={d} className="cursor-pointer" title={isReg ? '이미 등록된 유형·배열이에요(다시 등록해도 됩니다)' : undefined}>
+                  <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
+                  <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-[#3a2ee6] peer-checked:bg-[#3a2ee6] peer-checked:text-white', isReg && 'border-emerald-300 bg-emerald-50/60')}>
+                    {layoutLabel(d)}
+                    {isReg && <span className="inline-flex items-center rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold leading-none text-white">등록됨</span>}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">배열은 <b>형태(레이아웃)</b>만 정합니다. <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span>은 이미 등록된 배열(다시 등록 가능) · 노출 개수는 빌더에서.</p>
+        </div>
+      </TRow>
+      {/* 컴포넌트 레이아웃 — 노출유형을 빌더에서 택1(지정형)할지, 하나로 고정(고정형)할지. 2026-10-01 목업 참고(추정 기능). */}
+      <TRow label="컴포넌트 레이아웃" required>
+        <div className="flex flex-wrap items-center gap-4">
+          <input type="hidden" name="componentLayoutMode" value={layoutMode} />
+          <label className="flex items-center gap-1.5 text-sm"><input type="radio" checked={layoutMode === '지정형'} onChange={() => setLayoutMode('지정형')} className="accent-[#3a2ee6]" />지정형</label>
+          <label className="flex items-center gap-1.5 text-sm"><input type="radio" checked={layoutMode === '고정형'} onChange={() => setLayoutMode('고정형')} className="accent-[#3a2ee6]" />고정형</label>
+          <span className="group relative inline-flex">
+            <Info className="h-3.5 w-3.5 cursor-help text-slate-400" />
+            <span className="pointer-events-none absolute right-0 top-6 z-30 hidden w-[min(20rem,80vw)] rounded-md bg-slate-800 px-3 py-2.5 text-[11px] leading-relaxed text-white shadow-lg group-hover:block">
+              <b className="text-indigo-200">지정형</b> · 여러 노출유형(배열·레이아웃)을 등록해두고, 전시화면 관리(빌더)에서 코너를 등록할 때 그중 <b>하나를 선택</b>해 적용합니다.<br />
+              <b className="text-indigo-200">고정형</b> · 등록한 노출유형 <b>하나로 고정</b> — 빌더에서 코너 등록 시 그 유형이 그대로 적용됩니다.
+            </span>
+          </span>
+          <span className="text-[11px] text-slate-400">{layoutMode === '지정형' ? '빌더에서 노출유형 택1' : '빌더에서 이 노출유형 고정 적용'}</span>
+        </div>
+      </TRow>
+      <TRow label="등록 결과"><span className="text-[12px]">이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span></span></TRow>
+    </>
   );
 
   // 통합 미리보기(라이브) — 좌측 sticky. 정의 기본값(문구·아이콘·카드 모양) 반영.
   const livePreview = (
     <div className="self-start lg:sticky lg:top-3">
       <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">미리보기 · 조합 결과</p>
-      <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#E2E6F1] p-3">
+      <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#F0F2F9] p-3">
         {(() => {
           const previewC = {
             ...compositionToPreviewCorner({
@@ -1538,9 +1679,15 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               mainTitle: useTitle ? (mainTitleText || (isNew ? '타이틀' : '코너 타이틀')) : null,
               subTitle: useSub ? (subTitleText || (isNew ? '디스크립션' : '서브타이틀')) : null,
               placeholder: isNew && !mainTitleText && !subTitleText,
+              emptyImages: isNew, // 신규 등록은 이미지/배너를 빈 영역(가이드 폼)으로. 수정은 실제 이미지 유지.
             }),
             cardShape: cardShape || undefined,
             subTitleIcon,
+            // 표시 항목 토글 → 미리보기 parts로 전달(체크 해제 시 ProductCard/BenefitRow에서 바로 숨김).
+            showImage: imageOn,
+            showPrice: priceOn,
+            showBadge: eff('useBadge'),
+            showDesc: descOn,
           };
           return <CornerBlock corner={previewC} />;
         })()}
@@ -1548,18 +1695,46 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     </div>
   );
 
+  // 등록 스텝퍼 — 신규 등록만(수정은 전체 한 화면). 단계: 유형·배열 → 컴포넌트 구성 → 표시 항목·정의.
+  const WIZARD_STEPS = [
+    { title: '유형·배열', desc: '역할과 형태' },
+    { title: '컴포넌트 구성', desc: '담을 상품·배너·탭' },
+    { title: '표시 항목·정의', desc: '노출 항목·기본값' },
+  ];
+  const wizard = false; // 스텝퍼 제거 — 등록도 상세/수정과 동일하게 한 화면에서(2026-09-30 사용자 요청)
+  const lastStep = WIZARD_STEPS.length - 1;
+  const showStep = (n: number) => !wizard || step === n;
+  const stepValid = !wizard || (step === 0 ? !!base && (allowEmptyDetail || !!detailValid) : true); // 1단계는 유형·배열 선택 필수
+  const stepperHead = wizard ? (
+    <div className="flex items-center gap-1.5 rounded-lg border border-[#e3e6ef] bg-[#f6f7fb] px-3 py-2.5">
+      {WIZARD_STEPS.map((s, i) => (
+        <div key={i} className="flex flex-1 items-center gap-1.5">
+          <button type="button" onClick={() => i < step && setStep(i)} disabled={i > step} className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition', i === step ? 'bg-[#3a2ee6] text-white' : i < step ? 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50' : 'text-slate-400')}>
+            <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold', i === step ? 'bg-white/25 text-white' : i < step ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400')}>{i < step ? <Check className="h-3 w-3" /> : i + 1}</span>
+            <span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold leading-tight">{s.title}</span><span className={cn('block truncate text-[10px] leading-tight', i === step ? 'text-indigo-100' : 'text-slate-400')}>{s.desc}</span></span>
+          </button>
+          {i < WIZARD_STEPS.length - 1 && <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />}
+        </div>
+      ))}
+    </div>
+  ) : null;
+
   return (
     <form
       action={async (fd) => {
         await formAction(fd);
         onClose();
       }}
-      className="space-y-4 rounded-lg border bg-card p-5"
+      className="space-y-4 p-5"
     >
       {bulk && <input type="hidden" name="bulkArraysJson" value={JSON.stringify(selectedArrays)} />}
-      <div className="flex items-center gap-2 border-b pb-3">
-        <h2 className="text-sm font-semibold">{isNew ? '코너 유형 등록' : `코너 유형 수정 · ${row.typeId}`}</h2>
-      </div>
+      {/* 폼 내부 제목 제거 — 페이지 상단 브레드크럼으로 대체(2026-10-01 사용자 요청). bulk(배열 일괄 수정)만 제목 유지. */}
+      {bulk && (
+        <div className="flex items-center gap-2 border-b pb-3">
+          <h2 className="text-sm font-semibold">배열 일괄 수정</h2>
+        </div>
+      )}
+      {stepperHead}
 
       {/* 기본 정보 — bulk(다중 배열 일괄 수정) 전용. 비-bulk 등록/수정은 아래 통합 '코너 정의' 섹션에서 미리보기와 함께. */}
       {bulk && (
@@ -1597,7 +1772,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                         <div className="pointer-events-none h-[260px]"><DevicePreview corner={cardPreview(d)} /></div>
                       </div>
                       <div className="mt-2 flex items-center gap-1">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-100 text-[10px] font-bold text-indigo-600">{i + 1}</span>
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-100 text-[10px] font-bold text-[#3a2ee6]">{i + 1}</span>
                         {locked ? (
                           <span className="flex h-8 w-full items-center gap-1.5 rounded-md bg-slate-50 px-2 text-xs font-medium text-slate-700">
                             {layoutLabel(d) || d || '기본'}
@@ -1627,26 +1802,31 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* ③ 컴포넌트 조합 — 이 코너 유형에 담을 컴포넌트를 순서대로 조립. (bulk 수정에선 컴포넌트 속성으로 대체 → 제외) */}
       {!bulk && (
-      /* overflow-hidden 제거 — position:sticky(좌측 미리보기)가 조상 overflow에 막히지 않도록 */
-      <section className="rounded-md border border-indigo-200">
-        <div className="flex flex-wrap items-center gap-2 rounded-t-md border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-indigo-700">
+      /* 좌우 보더 없는 섹션(목업 105) — 굵은 제목 + 가로줄 테이블만. */
+      <section className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2 text-[15px] font-bold text-slate-900">
           코너 정의
-          <span className="font-normal text-indigo-400">왼쪽 미리보기를 보며 오른쪽에서 유형·배열·구성·표시 항목을 한 번에 설정</span>
+          <span className="text-[11px] font-normal text-slate-400">왼쪽 미리보기를 보며 오른쪽에서 설정</span>
         </div>
         <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
-        <div className="grid grid-cols-1 gap-4 p-3 lg:grid-cols-[340px_1fr]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
           {/* 왼쪽: 라이브 미리보기(sticky) — 기본 정보+컴포넌트 구성 통합, 미리보기 하나(2026-09-29 사용자 요청) */}
           {livePreview}
-          {/* 오른쪽: 모든 설정 — 유형·배열 선택 → 채널/플랫폼/사용/설명 → 편집기 → 자동구성 → 세부 항목 */}
-          <div className="min-w-0 space-y-3">
-            {basicPickers}
-            {metaFields}
-            {/* 스와이프형 — 코너 유형에서 배너를 '묶는다'(배너 캠페인 관리에서 선택 · 랜딩 URL 그대로 끌어옴). 순서는 드래그앤드롭. 2026-09-29 사용자 요청 */}
-            {isBannerType && detailValid === '스와이프형' && (
+          {/* 오른쪽: 모든 설정 — (등록은 스텝별) 유형·배열 → 컴포넌트 구성 → 표시 항목 */}
+          <div className="flex min-w-0 flex-col gap-3">
+            {/* 순서(order): 기본정보 → 세부 항목 → 상품·혜택 묶기(편집기). 세부 항목 아래에 묶기가 오도록(2026-09-30 사용자 요청). */}
+            <div className={cn('order-1 border-t border-[#e3e6ef]', !showStep(0) && 'hidden')}>
+              {basicPickers}
+              {metaFields}
+            </div>
+            <div className={cn('order-3 space-y-3', !showStep(1) && 'hidden')}>
+            {/* 배너형 — 무조건 배너 캠페인 관리에서 불러오기. 단일형=1개, 스와이프형=여러 개. 2026-09-30 사용자 확정 */}
+            {isBannerLoader && (
               <SwipeBannerEditor
                 banners={swipeBanners as SwipeBannerItem[]}
                 bannerCampaigns={bannerCampaigns}
-                onCommit={(next) => setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, next.length), image: true, price: true, desc: true, banners: next }])}
+                single={isSingleBannerType}
+                onCommit={(next) => { const n = isSingleBannerType ? next.slice(0, 1) : next; setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, n.length || 1), image: true, price: true, desc: true, banners: n }]); }}
               />
             )}
             {/* 상품형·혜택형 — BSS 혜택 브랜드 카탈로그에서 상품·혜택을 담고 드래그로 순서 변경(랜딩 URL 자동 매핑 후 수동 편집). 2026-09-29 사용자 요청 */}
@@ -1660,7 +1840,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* 선택형(탭·메뉴) — 칩 정의는 코너 유형이 소유(2026-09-29 사용자 결정). 빌더는 순서만 변경. */}
             {(compValid === '선택형' || base === '업무 진입형') && (() => {
               const block = shownBlocks.find((b) => b.componentType === '선택형') ?? shownBlocks[0];
-              const chips = (block?.chips && block.chips.length ? block.chips : [{ label: '메뉴 1' }, { label: '메뉴 2' }, { label: '메뉴 3' }]) as ChipDef[];
+              const chips = (block?.chips && block.chips.length ? block.chips : CHIP_DEFAULTS) as ChipDef[];
               const rows = block?.chipRows ?? 2;
               return (
                 <ChipDefEditor
@@ -1670,165 +1850,136 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 />
               );
             })()}
-            <p className="text-[10px] font-medium text-muted-foreground">자동 구성 · 이 유형의 배열·레이아웃에서 도출</p>
-            {shownBlocks.map((b, i) => {
-              const isProduct = b.componentType === '상품형';
-              const usesBadge = ['상품형', '혜택형', '정보형'].includes(b.componentType);
-              const items: string[] = [];
-              if (isProduct) {
-                if (b.image !== false) items.push('이미지');
-                if (b.price !== false) items.push('가격');
-                if (b.badge && b.price !== false) items.push('배지');
-                if (b.desc !== false) items.push('설명');
-              } else if (usesBadge && b.badge) items.push('배지');
-              return (
-                <div key={i} className="rounded-md border bg-white p-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-bold text-slate-500">{i + 1}</span>
-                    <span className="text-[12.5px] font-semibold text-slate-800">{componentLabel(b.componentType)}</span>
-                    {b.count > 1 && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500">×{b.count}</span>}
-                  </div>
-                  {items.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1 pl-7">
-                      {items.map((x) => <span key={x} className="rounded bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-500 ring-1 ring-slate-100">{x}</span>)}
+            {/* FO 사용자 설정 — 탭·메뉴 정의 바로 아래(우측 컨트롤 열). 선택형/업무 진입형에서만. */}
+            {(base === '업무 진입형' || compValid === '선택형') && (
+              <section className="overflow-hidden rounded-md border border-[#e3e6ef]">
+                <div className="flex items-center gap-1.5 border-b border-[#e3e6ef] bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
+                  <Info className="h-3.5 w-3.5 text-sky-500" /> FO 사용자 설정 (고객 커스터마이즈)
+                </div>
+                <div className="space-y-2.5 p-3">
+                  <label className="flex items-center justify-between gap-2">
+                    <span className="flex flex-col">
+                      <span className="text-xs font-medium text-foreground">사용자 설정 가능</span>
+                      <span className="text-[11px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
+                    </span>
+                    <button type="button" role="switch" aria-checked={userCustom} onClick={() => setUserCustom((v) => !v)}
+                      className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-sky-500' : 'bg-slate-300')}>
+                      <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
+                    </button>
+                  </label>
+                  <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
+                  {userCustom && (
+                    <div className="grid grid-cols-2 gap-2 border-t pt-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">고객 노출 최소 개수</label>
+                        <Input name="userMinItems" type="number" min={0} value={userMin} onChange={(e) => setUserMin(e.target.value)} placeholder="예: 3 (고정 포함)" className="h-8 text-xs" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">고객 노출 최대 개수</label>
+                        <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
+                      </div>
+                      <p className="col-span-2 text-[11px] text-muted-foreground">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함.</p>
                     </div>
                   )}
                 </div>
-              );
-            })}
-            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              </section>
+            )}
+            {/* 자동 구성(배열·레이아웃 요약) 카드는 제거 — 등록 결과·상품/혜택 묶기와 중복(2026-09-30 사용자 요청). */}
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
-            {/* 세부 항목 (항목별 사용여부) — 미리보기 옆(같은 오른쪽 열)에 배치해 한눈에 본다(2026-09-29 사용자 요청). */}
-            {!bulk && (
-            <div className="overflow-hidden rounded-md border">
-              <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
-              <div className="px-3 py-3">
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">표시 항목</label>
-                <div>
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
-            {CORNER_TYPE_FEATURES.map((f) => {
-              const applies = featureApplies(f.key);
-              // 배지는 가격에 종속 — 가격이 꺼져 있으면 배지도 없다(배지는 가격 앞에만 붙음).
-              const badgeLocked = f.key === 'useBadge' && !features.usePrice;
-              const disabled = !applies || badgeLocked;
-              const checked = applies && features[f.key as keyof typeof features] && !badgeLocked;
-              const toggle = (on: boolean) => {
-                setFeatures((prev) => {
-                  const next = { ...prev, [f.key]: on };
-                  if (f.key === 'useMainTitle' && !on) next.useSubTitle = false; // 타이틀 끄면 서브타이틀도(단독 불가)
-                  if (f.key === 'useSubTitle' && on) next.useMainTitle = true; // 서브타이틀 켜면 타이틀 자동 ON
-                  if (f.key === 'usePrice' && !on) next.useBadge = false; // 가격 끄면 배지도 (배지는 가격 앞에만)
-                  if (f.key === 'useBadge' && on) next.usePrice = true; // 배지 켜면 가격 자동 ON
-                  return next;
-                });
-              };
-              return (
-                <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', disabled && 'cursor-not-allowed text-muted-foreground/40')} title={!applies ? '이 코너 유형에는 해당 항목이 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
-                  <input
-                    type="checkbox"
-                    name={f.key}
-                    checked={checked}
-                    disabled={disabled}
-                    onChange={(e) => toggle(e.target.checked)}
-                    className="accent-indigo-600 disabled:opacity-40"
-                  />
-                  {f.label}
-                </label>
-              );
-            })}
-          </div>
-          {/* CTA 문구 — 'CTA' 표시 항목 ON일 때. (노출 구성이 아니라 여기서 관리 · 미리보기 버튼·빌더 상속에 쓰임) */}
-          {eff('useMoreButton') && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <label className="text-[11px] font-medium text-muted-foreground">CTA 문구</label>
-              <Input name="defaultMoreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} placeholder="예: 담기 / 자세히 / 전체보기" className="h-8 w-52 text-xs" />
-              <span className="text-[10px] text-slate-400">미리보기 버튼에 그대로 노출 · 링크는 코너별로</span>
             </div>
-          )}
-          {/* CTA(표시 항목) ON이면 빌더에도 기본 노출로 상속 */}
-          <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
+            {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 업무 진입형(탭·메뉴)은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
+            {!bulk && base !== '업무 진입형' && base !== '배너형' && (
+            <div className={cn('order-2 border-t border-[#e3e6ef]', !showStep(2) && 'hidden')}>
+              <div className="border-b border-[#e3e6ef] px-1 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
+              <TRow label="표시 항목">
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                  {CORNER_TYPE_FEATURES.map((f) => {
+                    const applies = featureApplies(f.key);
+                    const badgeLocked = f.key === 'useBadge' && !features.usePrice; // 배지는 가격에 종속
+                    const disabled = !applies || badgeLocked;
+                    const checked = applies && features[f.key as keyof typeof features] && !badgeLocked;
+                    const toggle = (on: boolean) => {
+                      setFeatures((prev) => {
+                        const next = { ...prev, [f.key]: on };
+                        if (f.key === 'useMainTitle' && !on) next.useSubTitle = false;
+                        if (f.key === 'useSubTitle' && on) next.useMainTitle = true;
+                        if (f.key === 'usePrice' && !on) next.useBadge = false;
+                        if (f.key === 'useBadge' && on) next.usePrice = true;
+                        return next;
+                      });
+                    };
+                    return (
+                      <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', disabled && 'cursor-not-allowed text-muted-foreground/40')} title={!applies ? '이 코너 유형에는 해당 항목이 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
+                        <input type="checkbox" name={f.key} checked={checked} disabled={disabled} onChange={(e) => toggle(e.target.checked)} className="accent-[#3a2ee6] disabled:opacity-40" />
+                        {f.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </TRow>
 
-          {/* 정의 기본값 — 문구·개수·형태 (거버넌스: 코너 유형이 '무엇인가'를 확정 · 빌더는 쌓기+CVM만). 2026-09-29 */}
-          {(useTitle || useSub || isListType || base === '상품형' || compValid === '상품형' || (isBannerType && detailValid === '스와이프형')) && (
-          <div className="mt-3 space-y-2.5 rounded-lg border border-indigo-100 bg-indigo-50/30 p-3">
-            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700">
-              <Info className="h-3.5 w-3.5" /> 정의 기본값 <span className="font-normal text-indigo-400">문구·개수·형태를 여기서 확정 · 빌더는 쌓기+CVM만</span>
-            </p>
-            {useTitle && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">타이틀</label>
-                <Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" />
-              </div>
-            )}
-            {useSub && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">서브타이틀</label>
-                <Input name="defaultSubTitle" value={subTitleText} onChange={(e) => setSubTitleText(e.target.value)} placeholder="서브타이틀 문구" className="h-8 w-56 text-xs" />
-                <select name="defaultSubTitleIcon" value={subTitleIcon} onChange={(e) => setSubTitleIcon(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
-                  <option value="화살표">아이콘: 화살표</option>
-                  <option value="사용안함">아이콘: 없음</option>
-                </select>
-              </div>
-            )}
-            {isListType && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">노출 개수</label>
-                <input name="defaultMinItems" type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} placeholder="최소" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
-                <span className="text-xs text-muted-foreground">~</span>
-                <input name="defaultMaxItems" type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} placeholder="최대" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
-                <span className="text-[10px] text-slate-400">코너에 노출할 아이템 개수</span>
-              </div>
-            )}
-            {(base === '상품형' || compValid === '상품형') && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">카드 모양</label>
-                <select name="defaultCardShape" value={cardShape} onChange={(e) => setCardShape(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
-                  <option value="">기본 (정사각형 1:1)</option>
-                  <option value="1:1">정사각형 (1:1)</option>
-                  <option value="3:4">포스터 (3:4)</option>
-                  <option value="직사각형">직사각형</option>
-                </select>
-              </div>
-            )}
-            {isBannerType && detailValid === '스와이프형' && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="w-16 shrink-0 text-[11px] font-medium text-muted-foreground">배너 노출</label>
-                <select value={bannerMode} onChange={(e) => setBannerMode(e.target.value as 'swipe' | 'auto')} className="h-8 rounded-md border bg-background px-2 text-xs">
-                  <option value="swipe">스와이프(수동)</option>
-                  <option value="auto">자동 슬라이드</option>
-                </select>
-                <label className="flex items-center gap-1 text-[11px] text-slate-600"><input type="checkbox" checked={bannerIndicator} onChange={(e) => setBannerIndicator(e.target.checked)} className="accent-indigo-600" /> 인디케이터</label>
-                <input type="hidden" name="defaultBannerOptions" value={JSON.stringify({ mode: bannerMode, showIndicator: bannerIndicator, loop: true })} />
-              </div>
-            )}
-          </div>
-          )}
-          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
-            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
-              <Info className="h-3.5 w-3.5 text-indigo-500" /> 체크한 항목만 이 유형의 코너에 나타나요
-            </p>
-            <ul className="space-y-1.5 text-[11px] leading-relaxed text-slate-500">
-              {[
-                ['타이틀·서브타이틀', '미리보기 상단에 표시돼요 · 빌더에서도 코너별로 수정 가능 (서브타이틀은 타이틀 없이 못 켜요)'],
-                ['배지·가격', '정책상 배지는 가격 앞에 붙어요(할인·NEW 등). 배지는 가격에 종속(가격 없으면 배지 없음).'],
-                ['가격·설명', '같은 자리라도 코너에 따라 가격이거나 설명(흐린 글씨, 예 ‘데이터 500’)이라 따로 둡니다.'],
-                ['CTA', 'CTA를 켜면 바로 옆 ‘CTA 문구’가 버튼 텍스트로 노출 → 빌더에서 코너별로 문구·링크 조정'],
-                ['미노출 조건은 여기 없어요', '‘언제 숨길지’는 표시 항목이 아니라 코너별(빌드 시점) 규칙이라 빌더에서 정합니다(재고 소진·혜택 종료·개인화 제한 등).'],
-              ].map(([k, v]) => (
-                <li key={k} className="flex items-start gap-1.5">
-                  <span className="mt-[5px] h-1 w-1 shrink-0 rounded-full bg-indigo-300" />
-                  <span>
-                    <b className="font-medium text-slate-700">{k}</b> — {v}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 border-t border-slate-200 pt-2 text-[10px] text-slate-400">유형에 맞지 않는 항목은 자동으로 비활성화돼요. · 노출 개수(최소·최대)는 빌더에서 코너별로 설정해요.</p>
-              </div>
-              </div>
-              </div>
+              {/* CTA 문구 — 'CTA' 표시 항목 ON일 때 */}
+              {eff('useMoreButton') && (
+                <TRow label="CTA 문구">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input name="defaultMoreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} placeholder="예: 담기 / 자세히 / 전체보기" className="h-8 w-52 text-xs" />
+                    <span className="text-[11px] text-slate-400">미리보기 버튼에 그대로 노출 · 링크는 코너별로</span>
+                  </div>
+                </TRow>
+              )}
+              <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
+
+              {/* 정의 기본값 — 문구·개수·형태 (거버넌스: 코너 유형이 확정 · 빌더는 쌓기+CVM만) */}
+              {useTitle && (
+                <TRow label="타이틀"><Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" /></TRow>
+              )}
+              {useSub && (
+                <TRow label="서브타이틀">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input name="defaultSubTitle" value={subTitleText} onChange={(e) => setSubTitleText(e.target.value)} placeholder="서브타이틀 문구" className="h-8 w-56 text-xs" />
+                    <select name="defaultSubTitleIcon" value={subTitleIcon} onChange={(e) => setSubTitleIcon(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
+                      <option value="화살표">아이콘: 화살표</option>
+                      <option value="사용안함">아이콘: 없음</option>
+                    </select>
+                  </div>
+                </TRow>
+              )}
+              {isListType && (
+                <TRow label="노출 개수">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input name="defaultMinItems" type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} placeholder="최소" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
+                    <span className="text-xs text-muted-foreground">~</span>
+                    <input name="defaultMaxItems" type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} placeholder="최대" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
+                    <span className="text-[11px] text-slate-400">코너에 노출할 아이템 개수</span>
+                  </div>
+                </TRow>
+              )}
+              {(base === '상품형' || compValid === '상품형') && (
+                <TRow label="카드 모양">
+                  <select name="defaultCardShape" value={cardShape} onChange={(e) => setCardShape(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
+                    <option value="">기본 (정사각형 1:1)</option>
+                    <option value="1:1">정사각형 (1:1)</option>
+                    <option value="3:4">포스터 (3:4)</option>
+                    <option value="직사각형">직사각형</option>
+                  </select>
+                </TRow>
+              )}
+              {isBannerType && detailValid === '스와이프형' && (
+                <TRow label="배너 노출">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select value={bannerMode} onChange={(e) => setBannerMode(e.target.value as 'swipe' | 'auto')} className="h-8 rounded-md border bg-background px-2 text-xs">
+                      <option value="swipe">스와이프(수동)</option>
+                      <option value="auto">자동 슬라이드</option>
+                    </select>
+                    <label className="flex items-center gap-1 text-[11px] text-slate-600"><input type="checkbox" checked={bannerIndicator} onChange={(e) => setBannerIndicator(e.target.checked)} className="accent-[#3a2ee6]" /> 인디케이터</label>
+                    <input type="hidden" name="defaultBannerOptions" value={JSON.stringify({ mode: bannerMode, showIndicator: bannerIndicator, loop: true })} />
+                  </div>
+                </TRow>
+              )}
+              <TRow label="안내" flat><span className="text-[11px] leading-relaxed text-slate-400">체크한 항목만 이 유형 코너에 노출 · 유형에 맞지 않는 항목은 자동 비활성 · 서브타이틀은 타이틀 없이 못 켬 · 배지는 가격에 종속 · 노출 개수는 빌더에서 코너별.</span></TRow>
             </div>
             )}
           </div>
@@ -1838,27 +1989,30 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* 추천 수급 · 노출 구성 = 한 섹션. 콘텐츠 출처(수급 방식)를 먼저 정하고, 그에 따라 노출 구성(정렬·CTA)을 설정.
           CVM 수급이면 정렬·구성을 CVM이 고객마다 결정하므로 노출 구성은 '선택 불가'(비활성)로 잠근다. */}
-      {(isRecEligible || isListType) && (
-      <section className="overflow-hidden rounded-md border border-violet-200">
-        <div className="flex items-center gap-2 border-b border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-xs font-semibold text-violet-700">
-          추천 수급 · 노출 구성 기본값
-          <span className="font-normal text-violet-400">콘텐츠 <b className="font-semibold">출처</b>를 먼저 정하고 노출 구성을 설정 · 빌더에서 코너별로 조정 가능</span>
+      {/* 추천 수급 섹션은 미리보기(좌측) 가로 영역을 침범하지 않도록 우측 컨트롤 열에 정렬(2026-09-30 사용자 요청). */}
+      {showStep(2) && (isRecEligible || isListType) && (
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
+        <div aria-hidden className="hidden lg:block" />
+        <section className="min-w-0 overflow-hidden rounded-md border border-[#e3e6ef]">
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#e3e6ef] bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
+          콘텐츠 채우는 방식 · 노출 기본값
+          <span className="font-normal text-slate-400">콘텐츠를 <b className="font-semibold text-slate-600">무엇으로 채울지</b> 먼저 정하고, 정렬·CTA를 설정 · 빌더에서 코너별로 조정 가능</span>
         </div>
         <div className="space-y-3 p-3">
           {/* ① 추천 수급 방식 (출처) — 상품형·혜택·오퍼형·콘텐츠 안내형에만 */}
           {isRecEligible && (
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-violet-700">① 추천 수급 방식 <span className="font-normal text-violet-400">· 무엇으로 채우나(출처)</span></label>
-              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-8 w-full max-w-xs rounded-md border border-violet-200 bg-background px-2 text-xs">
+              <label className="text-[11px] font-semibold text-slate-700">① 콘텐츠를 무엇으로 채울까 <span className="font-normal text-slate-400">· 출처</span></label>
+              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-8 w-full max-w-xs rounded-md border border-slate-200 bg-background px-2 text-xs">
                 <option value="">기본값 미지정 — 빌더에서 코너별로 선택</option>
                 {REC_SOURCE_METHODS.map((s) => (
                   <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
                 ))}
               </select>
-              <dl className="space-y-1 rounded-md bg-violet-50/50 p-2.5 text-[10px] leading-relaxed">
+              <dl className="space-y-1 rounded-md bg-slate-50 p-2.5 text-[11px] leading-relaxed">
                 {REC_SOURCE_METHODS.map((k) => (
                   <div key={k} className="flex gap-1.5">
-                    <dt className="w-24 shrink-0 font-semibold text-violet-700">{k} <span className="font-normal text-violet-400">· {REC_SOURCE_INFO[k].tag}</span></dt>
+                    <dt className="w-24 shrink-0 font-semibold text-slate-700">{k} <span className="font-normal text-slate-400">· {REC_SOURCE_INFO[k].tag}</span></dt>
                     <dd className="min-w-0 flex-1 text-muted-foreground">{REC_SOURCE_INFO[k].how}</dd>
                   </div>
                 ))}
@@ -1867,14 +2021,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           )}
           {/* ② 노출 구성 (정렬·CTA) — CVM 수급이면 CVM이 결정하므로 비활성(선택 불가) */}
           {isListType && (
-            <div className={cn('space-y-2', isRecEligible && 'border-t border-violet-100 pt-3')}>
+            <div className={cn('space-y-2', isRecEligible && 'border-t border-[#e3e6ef] pt-3')}>
               <div className="flex flex-wrap items-center gap-2">
                 <label className="text-[11px] font-semibold text-slate-700">② 노출 구성 <span className="font-normal text-slate-400">· 정렬·CTA 기본값</span></label>
-                {cvmChosen && <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-600">CVM이 자동 결정 · 선택 불가</span>}
+                {cvmChosen && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600">CVM이 자동 결정 · 선택 불가</span>}
               </div>
               {cvmChosen && (
-                <p className="rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-1.5 text-[10px] leading-relaxed text-violet-600/90">
-                  <b>CVM 수급</b>이라 정렬·노출 구성을 <b>CVM이 고객마다 자동 결정</b>합니다. 노출 구성은 <b>운영자 편성</b>일 때만 설정할 수 있어요.
+                <p className="rounded-md border border-[#e3e6ef] bg-slate-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-slate-600">
+                <b>CVM이 고객마다 순서를 자동으로 정하므로</b>, 정렬·노출 구성은 <b>운영자 편성</b>일 때만 직접 설정할 수 있어요.
                 </p>
               )}
               <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2', cvmChosen && 'opacity-50')} aria-disabled={cvmChosen}>
@@ -1893,60 +2047,26 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           )}
         </div>
       </section>
+      </div>
       )}
 
       {/* (제거됨) 고객정보 연동 필드 — 코너 유형 단계에선 실제 바인딩을 하지 않아 삭제.
           실제 고객정보 연동은 빌더의 아톰 단계('고객정보 가져오기' = @cvm:key)에서 처리한다. */}
 
-      {/* FO 사용자 설정 — 선택형/업무 진입형(메뉴·탭) 유형에서. 고객이 직접 편집 + 노출 개수 범위 */}
-      {(base === '업무 진입형' || compValid === '선택형') && (
-        <section className="overflow-hidden rounded-md border">
-          <div className="flex items-center gap-1.5 border-b bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700">
-            <Info className="h-3.5 w-3.5 text-sky-500" /> FO 사용자 설정 (고객 커스터마이즈)
-          </div>
-          <div className="space-y-2.5 p-3">
-            <label className="flex items-center justify-between gap-2">
-              <span className="flex flex-col">
-                <span className="text-xs font-medium text-foreground">사용자 설정 가능</span>
-                <span className="text-[10px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={userCustom}
-                onClick={() => setUserCustom((v) => !v)}
-                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-sky-500' : 'bg-slate-300')}
-              >
-                <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
-              </button>
-            </label>
-            <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
-            {userCustom && (
-              <div className="grid grid-cols-2 gap-2 border-t pt-2.5">
-                <div className="space-y-1">
-                  <label className="text-[10px] text-muted-foreground">고객 노출 최소 개수</label>
-                  <Input name="userMinItems" type="number" min={0} value={userMin} onChange={(e) => setUserMin(e.target.value)} placeholder="예: 3 (고정 포함)" className="h-8 text-xs" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] text-muted-foreground">고객 노출 최대 개수</label>
-                  <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
-                </div>
-                <p className="col-span-2 text-[10px] text-muted-foreground">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함.</p>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
       {/* 유형 샘플 이미지 제거(2026-09-28) — 컴포넌트 조합의 실시간 미리보기(미리보기·조합 결과)로 통일. 중복 방지. */}
 
-      <div className="flex justify-end gap-2 border-t pt-3">
-        <Button type="button" variant="secondary" size="sm" onClick={onClose}>
-          취소
-        </Button>
-        <Button type="submit" size="sm">
-          <Check className="mr-1 h-4 w-4" /> {isNew ? '등록' : '저장'}
-        </Button>
+      <div className="flex items-center justify-end gap-2 border-t pt-3">
+        <Button type="button" variant="secondary" size="sm" onClick={onClose}>취소</Button>
+        {wizard ? (
+          <>
+            {step > 0 && <Button type="button" variant="secondary" size="sm" onClick={() => setStep((s) => Math.max(0, s - 1))}>이전</Button>}
+            {step < lastStep
+              ? <Button type="button" size="sm" disabled={!stepValid} onClick={() => setStep((s) => Math.min(lastStep, s + 1))}>다음 <ChevronRight className="ml-1 h-4 w-4" /></Button>
+              : <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> 등록</Button>}
+          </>
+        ) : (
+          <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> {isNew ? '등록' : '저장'}</Button>
+        )}
       </div>
     </form>
   );
@@ -1979,11 +2099,11 @@ function OpsCheckGroup({ name, options, initial }: { name: string; options: read
   return (
     <div className="flex flex-wrap gap-3 py-0.5">
       <label className="flex items-center gap-1.5 text-xs">
-        <input ref={allRef} type="checkbox" checked={allOn} onChange={toggleAll} className="accent-indigo-600" /> 전체
+        <input ref={allRef} type="checkbox" checked={allOn} onChange={toggleAll} className="accent-[#3a2ee6]" /> 전체
       </label>
       {reals.map((r) => (
         <label key={r} className="flex items-center gap-1.5 text-xs">
-          <input type="checkbox" name={name} value={r} checked={sel.has(r)} onChange={() => toggle(r)} className="accent-indigo-600" /> {r}
+          <input type="checkbox" name={name} value={r} checked={sel.has(r)} onChange={() => toggle(r)} className="accent-[#3a2ee6]" /> {r}
         </label>
       ))}
     </div>
@@ -2003,13 +2123,14 @@ function TRow({
   flat?: boolean;
   children: React.ReactNode;
 }) {
+  // 배너 캠페인 폼(FieldRow)과 통일 — 라벨 셀 배경 #e3e6ef(2026-09-30 사용자 요청).
   return (
-    <div className={cn('grid grid-cols-[120px_1fr] items-center gap-3', !flat && 'border-b px-3 py-2.5')}>
-      <label className="text-xs font-medium text-muted-foreground">
-        {label} {required && <span className="text-rose-500">*</span>}
-        {hint && <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground/70">{hint}</span>}
+    <div className={cn('grid grid-cols-[120px_1fr] items-stretch overflow-hidden', !flat && 'border-b border-[#e3e6ef]')}>
+      <label className="flex h-full flex-col justify-center bg-[#f6f7fb] px-3 py-2.5 text-xs font-medium text-slate-600">
+        <span>{label} {required && <span className="text-rose-500">*</span>}</span>
+        {hint && <span className="mt-0.5 block text-[11px] font-normal text-slate-500/80">{hint}</span>}
       </label>
-      <div className="min-w-0">{children}</div>
+      <div className="min-w-0 px-3 py-2">{children}</div>
     </div>
   );
 }

@@ -62,7 +62,7 @@ export function GroupDetail({ base, variations }: { base: string; variations: Co
               ))}
             </div>
             {/* 고정 미리보기 — 선택된 배열만 표시(실사 렌더). 배너·칩·바코드·프로필·메뉴·상태 모두 CornerBlock이 처리 */}
-            <div className="overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#E2E6F1] p-4">
+            <div className="overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#F0F2F9] p-4">
               <div className="pointer-events-none h-[400px]"><DevicePreview corner={cornerRowPreview(cur)} fit="contain" /></div>
             </div>
           </div>

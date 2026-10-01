@@ -16,6 +16,34 @@ const atom = (a: Partial<PreviewAtom> & { atomType: string; name: string }): Pre
   ...a,
 });
 
+// 퀵칩(ChipHome) 라벨 → 디자인 제공 아이콘(빌더 사용 이미지 아이콘1~8, public/assets/quickchip). 흰색 채움 · 뱃지 위 렌더.
+const CHIP_SVG_RULES: [RegExp, string][] = [
+  [/\d+\s*월/, '/assets/quickchip/qc-month.svg'],   // 4월 혜택 → 아이콘1(월 뱃지)
+  [/줍기/, '/assets/quickchip/qc-pin.svg'],         // 혜택 줍기 → 아이콘2(핀)
+  [/카테고리/, '/assets/quickchip/qc-grid.svg'],     // 카테고리 → 아이콘3(그리드)
+  [/vip/i, '/assets/quickchip/qc-crown.svg'],       // VIP Pick → 아이콘4(왕관)
+  [/0?\s*week/i, '/assets/quickchip/qc-drop.svg'],  // 0 Week → 아이콘5(드롭)
+  [/이벤트/, '/assets/quickchip/qc-star.svg'],       // 이벤트 → 아이콘6(별)
+  [/영화|예매|공연/, '/assets/quickchip/qc-ticket.svg'], // 영화 예매 → 아이콘7(티켓)
+  [/글로벌|여행|로밍/, '/assets/quickchip/qc-globe.svg'], // 글로벌 여행 → 아이콘8(글로브)
+];
+// 그 외 라벨은 기존 일반 아이콘(lucide) 폴백.
+const CHIP_ICON_RULES: [RegExp, string][] = [
+  [/멤버십/, 'Vip'],
+  [/쇼핑|장바구니/, 'Cart'],
+  [/검색/, 'Search'],
+  [/구독/, 'Subscribe'],
+  [/가족/, 'Family'],
+  [/글|작성/, 'NewChat'],
+  [/혜택/, 'Benefit'],            // 그 외 '혜택' 포함
+];
+export function chipIconForLabel(label?: string | null): string {
+  const s = (label ?? '').trim();
+  for (const [re, svg] of CHIP_SVG_RULES) if (re.test(s)) return svg;
+  for (const [re, ic] of CHIP_ICON_RULES) if (re.test(s)) return `icon:general/${ic}`;
+  return '/assets/quickchip/qc-grid.svg';
+}
+
 // 상품형 카드 이미지(단말·요금제·구독) / 콘텐츠 무비 포스터 — 유형별로 카테고리 맞춰 배정
 const PRODUCT_POOL = ['/assets/ds/device-iphone.png', '/assets/ds/plan-5gx.png', '/assets/ds/sub-tving.png', '/assets/ds/sub-streaming.png'];
 // 상품형 · 세로형 — SKT 요금제 안내 리스트(참고 이미지). 아이콘 타일 + 안내 문구 + 구간·가격.
@@ -66,13 +94,56 @@ const BENEFIT_BRANDS: { logo: string; text: string; brand: string }[] = [
   { logo: '/assets/ds/benefit-nonfiction.png', text: '논픽션 영 메모리즈 향수', brand: 'NONFICTION' },
 ];
 
+// 신규 등록 가이드 폼(emptyImages) — 이미지/아이콘/로고 아톰을 빈 영역으로. 단, 선택형 칩 아이콘(정의값)은 유지.
+function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail?: string | null; placeholder?: boolean; emptyImages?: boolean }): PreviewComponent {
+  const c = blockCompRaw(b, i, ctx);
+  if (!ctx?.emptyImages || c.componentType === '선택형') return c;
+  return { ...c, emptyImages: true, atoms: c.atoms.map((a) => (a.atomType === 'IMAGE' || a.atomType === 'ICON') ? { ...a, imageUrl: null, altText: a.altText ?? a.name } : a) };
+}
+
 // 한 블록의 한 인스턴스(i번째) → PreviewComponent. buildComp(서버)과 같은 아톰 구성.
-function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail?: string | null; placeholder?: boolean }): PreviewComponent {
+function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; detail?: string | null; placeholder?: boolean; emptyImages?: boolean }): PreviewComponent {
   const badge = b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: i === 1 ? 'NEW' : '' })] : [];
   const base = { id: nid(), componentType: b.componentType };
   // 선택형: 코너 유형에서 정의한 칩(탭·메뉴)이 있으면 그대로 렌더(라벨·줄수). 없으면 아래 기본/플레이스홀더.
   if (b.componentType === '선택형' && b.chips && b.chips.length) {
-    return { ...base, name: '탭', selectedIndex: 0, chipRows: b.chipRows ?? 1, chipVariant: 'contents', atoms: b.chips.map((c) => atom({ name: c.label || '탭', atomType: 'TEXT', content: c.label || '탭', linkUrl: c.linkUrl ?? null })) };
+    // 퀵메뉴(업무 진입형)이거나 아이콘이 하나라도 있으면 아이콘+라벨 퀵칩(ChipHome). 그 외는 콘텐츠 필터 칩.
+    //  아이콘이 비어 있어도 라벨에서 자동 유추해 채운다(레퍼런스 퀵칩과 동일한 모양).
+    const quick = ctx?.base === '업무 진입형' || b.chips.some((c) => c.icon);
+    return {
+      ...base, name: quick ? 'ChipHome' : '탭', selectedIndex: 0,
+      chipRows: b.chipRows ?? (quick ? 2 : 1), chipVariant: quick ? 'home' : 'contents',
+      atoms: b.chips.map((c) => atom({ name: c.label || '탭', atomType: 'TEXT', content: c.label || '탭', linkUrl: c.linkUrl ?? null, imageUrl: quick ? (c.icon ?? chipIconForLabel(c.label)) : (c.icon ?? null) })),
+    };
+  }
+  // 코너 유형에서 묶은 상품·혜택 아이템이 있으면 신규 등록(placeholder)에서도 그대로 렌더 —
+  //  좌측 미리보기 = 우측 '상품·혜택 묶기'가 그대로 반영되도록(2026-09-30 사용자 요청). 가격 있으면 상품 카드, 없으면 혜택 로고+문구.
+  if ((b.componentType === '상품형' || b.componentType === '혜택형') && b.items?.[i - 1]) {
+    const it = b.items[i - 1]!;
+    if (it.price) {
+      return { ...base, name: it.title || it.brand || '상품', atoms: [
+        ...(it.imageUrl && b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE', imageUrl: it.imageUrl })] : []),
+        ...(it.brand && it.brand !== it.title ? [atom({ name: '브랜드', atomType: 'TEXT', content: it.brand })] : []),
+        atom({ name: '상품명', atomType: 'TEXT', content: it.title }),
+        ...(it.badge && b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: it.badge })] : []),
+        ...(it.price && b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: it.price })] : []),
+      ] };
+    }
+    // 가격 없는 상품형(영화 포스터 등) → ProductCard용. 포스터=이미지, 상품명=TEXT(영화명), 평점·예매율=설명(INFO).
+    //  이미지·설명은 각각 b.image·b.desc 토글에 종속. (브랜드명이 아니라 '설명'으로 넣어 ProductCard가 설명(desc)으로 취급 → 설명 토글로 제어)
+    if (b.componentType === '상품형') {
+      return { ...base, name: it.title || it.brand || '상품', atoms: [
+        ...(it.imageUrl && b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE', imageUrl: it.imageUrl })] : []),
+        atom({ name: '상품명', atomType: 'TEXT', content: it.title }),
+        ...(it.brand && b.desc !== false ? [atom({ name: '설명', atomType: 'INFO', content: it.brand })] : []),
+      ] };
+    }
+    // 가격 없는 혜택형(혜택 로고+문구) → BenefitRow용. 로고=이미지(b.image), 브랜드=부가(b.desc).
+    return { ...base, name: it.brand || it.title, atoms: [
+      ...(it.imageUrl && b.image !== false ? [atom({ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl })] : []),
+      atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title }),
+      ...(it.brand && b.desc !== false ? [atom({ name: '브랜드', atomType: 'INFO', content: it.brand })] : []),
+    ] };
   }
   // 신규 등록 미리보기 = 실제 카피 대신 '슬롯 라벨'(타이틀/디스크립션/혜택 문구 등)로 구조만 보여준다. 로고·이미지는 샘플 유지(레이아웃 확인용).
   if (ctx?.placeholder) {
@@ -243,7 +314,8 @@ function blockComp(b: CompositionBlock, i: number, ctx?: { base?: string; detail
         return { ...base, name: `영화 ${i}`, atoms: [
           ...(b.image !== false ? [atom({ name: '상품 이미지', atomType: 'IMAGE', imageUrl: pick(MOVIE_POOL, i) })] : []),
           atom({ name: '상품명', atomType: 'TEXT', content: m[0] }),
-          atom({ name: '용량', atomType: 'INFO', content: m[1] }),
+          // 평점·예매율 = 설명(desc) 토글에 종속 — 체크 해제 시 미리보기에서 숨김.
+          ...(b.desc !== false ? [atom({ name: '평점·예매율', atomType: 'INFO', content: m[1] })] : []),
         ] };
       }
       // DS ListProductGrid 기준 — 브랜드·상품명·가격기준·할인율·가격·기간·서브텍스트·용량 캡션.
@@ -360,10 +432,11 @@ export function compositionToPreviewCorner(opts: {
   subTitle?: string | null;
   composition: Composition;
   placeholder?: boolean; // 신규 등록: 슬롯 라벨(타이틀/디스크립션/혜택 문구 등)로 구조만 표시
+  emptyImages?: boolean; // 신규 등록: 이미지/배너 영역을 빈 자리로만(여기 채우세요) — 등록 가이드 폼
 }): PreviewCorner {
   uid = 0;
   const components: PreviewComponent[] = [];
-  const ctx = { base: opts.base, detail: opts.detail, placeholder: opts.placeholder };
+  const ctx = { base: opts.base, detail: opts.detail, placeholder: opts.placeholder, emptyImages: opts.emptyImages };
   for (const b of opts.composition) for (let i = 1; i <= b.count; i++) components.push(blockComp(b, i, ctx));
   // 세로형+배너 = 요금제 히어로, 가로형+배너 = 아이폰 히어로. 둘 다 상단 히어로 배너(빅배너) 자동 표시.
   const isPlanBanner = opts.base === '상품형' && /세로형\+배너|세로형\(배너\)/.test(opts.detail ?? '');
@@ -381,7 +454,9 @@ export function compositionToPreviewCorner(opts: {
     layoutDetail: opts.detail ?? null,
     cornerLayout: opts.layout ?? null,
     bigBanner: isPlanBanner || isDeviceBanner || isBenefitBanner || undefined,
-    bannerImageUrl: isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : undefined,
+    // 신규 등록 가이드 폼에선 배너 히어로도 빈 영역(샘플 히어로 미노출).
+    bannerImageUrl: opts.emptyImages ? null : (isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : undefined),
+    emptyImages: opts.emptyImages ?? null,
     components,
   };
 }

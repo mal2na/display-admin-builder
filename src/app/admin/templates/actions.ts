@@ -585,7 +585,7 @@ function specFromComposition(composition: Composition): ScaffoldComp[] {
     if (b.componentType === '선택형' && b.chips && b.chips.length) {
       comps.push({
         name: '탭', componentType: '선택형', selectedIndex: 0, chipRows: b.chipRows === 2 ? 2 : 1,
-        atoms: b.chips.map((c) => ({ name: c.label ? `칩:${c.label}` : '칩', atomType: 'TEXT', content: c.label ?? '', linkUrl: c.linkUrl ?? undefined })),
+        atoms: b.chips.map((c) => ({ name: c.label ? `칩:${c.label}` : '칩', atomType: 'TEXT', content: c.label ?? '', linkUrl: c.linkUrl ?? undefined, imageUrl: c.icon ?? undefined })),
       });
       continue;
     }

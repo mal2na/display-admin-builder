@@ -20,6 +20,7 @@ export default async function BannerCampaignEditPage({ params }: { params: { id:
       <h1 className="mb-5 text-2xl font-bold">배너 캠페인 수정</h1>
       <BannerForm mode="edit" action={updateBannerCampaign.bind(null, b.id)} value={{
         campaignCode: b.campaignCode, title: b.title, subtitle: b.subtitle, purpose: b.purpose, platform: b.platform,
+        applyChannels: b.applyChannels, landingChannels: b.landingChannels,
         exposeYn: b.exposeYn, publishStart: b.publishStart?.toISOString() ?? null, publishEnd: b.publishEnd?.toISOString() ?? null,
         landingType: b.landingType, landingUrl: b.landingUrl, pageType: b.pageType, bannerAlt: b.bannerAlt, typeDetails,
       }} libImages={libImages} />

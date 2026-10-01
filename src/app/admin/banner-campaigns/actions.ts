@@ -34,11 +34,13 @@ function readForm(fd: FormData) {
     subtitle: str(fd, 'subtitle'),
     purpose: str(fd, 'purpose'),
     platform: str(fd, 'platform') ?? 'APP',
+    applyChannels: str(fd, 'applyChannels'),      // 기본 정보 적용채널 (전체/모바일/PC) 2026-09-30
     exposeYn: fd.get('exposeYn') !== 'false',
     publishStart: dt(fd, 'publishStart'),
     publishEnd: dt(fd, 'publishEnd'),
     landingType: str(fd, 'landingType') ?? 'direct',
     landingUrl: str(fd, 'landingUrl'),
+    landingChannels: str(fd, 'landingChannels'),  // 랜딩 적용채널
     pageType: str(fd, 'pageType') ?? 'current',
     bannerAlt: str(fd, 'bannerAlt'),
     typeDetails,

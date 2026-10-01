@@ -64,8 +64,9 @@ const PER_PAGE = 10;
 
 export function BannerList({ rows }: { rows: BannerRow[] }) {
   const router = useRouter();
-  const [code, setCode] = useState('');
-  const [title, setTitle] = useState('');
+  // 검색 항목(선택) + 단일 검색어 — 목업 통일(2026-09-30).
+  const [field, setField] = useState<'code' | 'title'>('code');
+  const [q, setQ] = useState('');
   const [expose, setExpose] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -77,8 +78,8 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
   const [deleting, startDelete] = useTransition();
   const doDelete = () => { if (!confirmDel) return; const id = confirmDel.id; startDelete(async () => { await deleteBannerCampaign(id); setConfirmDel(null); router.refresh(); }); };
 
-  const reset = () => { setCode(''); setTitle(''); setExpose(''); setFrom(''); setTo(''); setStatus(''); setApplied({ code: '', title: '', expose: '', from: '', to: '', status: '' }); setPage(1); };
-  const search = () => { setApplied({ code, title, expose, from, to, status }); setPage(1); };
+  const reset = () => { setField('code'); setQ(''); setExpose(''); setFrom(''); setTo(''); setStatus(''); setApplied({ code: '', title: '', expose: '', from: '', to: '', status: '' }); setPage(1); };
+  const search = () => { setApplied({ code: field === 'code' ? q : '', title: field === 'title' ? q : '', expose, from, to, status }); setPage(1); };
 
   const filtered = useMemo(() => rows
     .filter((r) => (applied.code ? r.campaignCode.toLowerCase().includes(applied.code.toLowerCase()) : true))
@@ -95,48 +96,51 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
 
   return (
     <div className="space-y-4">
-      {/* 검색 조건 */}
-      <div className="rounded-xl border bg-white p-4 shadow-sm">
-        <p className="mb-3 text-[13px] font-semibold text-slate-700">검색 조건</p>
-        <div className="flex flex-wrap items-end gap-4">
-          <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">배너캠페인 ID
-            <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="배너캠페인 ID를 입력해주세요" className="h-9 w-56 text-sm" />
-          </label>
-          <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">배너캠페인(타이틀)
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="배너캠페인 타이틀을 입력해주세요" className="h-9 w-64 text-sm" />
-          </label>
-          <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">전시여부
+      {/* 검색 조건 — 검색 항목(선택) + 단일 검색어. 목업 통일(2026-09-30) */}
+      <div className="rounded-xl border border-[#e3e6ef] bg-[#f6f7fb] px-4 py-3.5">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-medium text-slate-500">검색 항목</span>
+            <Select value={field} onChange={(e) => setField(e.target.value as 'code' | 'title')} className="h-9 w-40 text-sm">
+              <option value="code">배너캠페인 ID</option>
+              <option value="title">배너캠페인명</option>
+            </Select>
+            <span className="text-slate-300">|</span>
+            <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') search(); }} placeholder="검색 항목을 선택 후 검색하세요" className="h-9 w-64 text-sm" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-medium text-slate-500">전시여부</span>
             <Select value={expose} onChange={(e) => setExpose(e.target.value)} className="h-9 w-28 text-sm">
               <option value="">전체</option>
               <option value="true">전시</option>
               <option value="false">미전시</option>
             </Select>
-          </label>
-          <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">전시기간
-            <div className="flex items-center gap-1">
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-36 text-sm" />
-              <span className="text-muted-foreground">-</span>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-36 text-sm" />
-            </div>
-          </label>
-          <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">승인상태
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-medium text-slate-500">전시기간</span>
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-36 text-sm" />
+            <span className="text-muted-foreground">-</span>
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-36 text-sm" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-medium text-slate-500">승인상태</span>
             <Select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-32 text-sm">
               <option value="">전체</option>
               {Object.entries(BANNER_APPROVAL).map(([v, s]) => <option key={v} value={v}>{s.label}</option>)}
             </Select>
-          </label>
+          </div>
           <div className="ml-auto flex gap-2">
-            <Button type="button" onClick={search}><Search className="mr-1 h-3.5 w-3.5" />조회</Button>
             <Button type="button" variant="outline" onClick={reset}><RotateCcw className="mr-1 h-3.5 w-3.5" />초기화</Button>
+            <Button type="button" onClick={search}><Search className="mr-1 h-3.5 w-3.5" />조회</Button>
           </div>
         </div>
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">배너 캠페인 목록 <span className="text-indigo-600">{filtered.length}건</span></p>
+        <p className="text-sm font-semibold">검색결과 <span className="text-[#3a2ee6]">{filtered.length}건</span></p>
         <div className="inline-flex overflow-hidden rounded-lg border border-slate-200 text-[12px]">
-          <button type="button" onClick={() => setView('list')} className={'flex items-center gap-1 px-3 py-1.5 font-medium ' + (view === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50')}><List className="h-3.5 w-3.5" />리스트형</button>
-          <button type="button" onClick={() => setView('card')} className={'flex items-center gap-1 px-3 py-1.5 font-medium ' + (view === 'card' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50')}><LayoutGrid className="h-3.5 w-3.5" />카드형</button>
+          <button type="button" onClick={() => setView('list')} className={'flex items-center gap-1 px-3 py-1.5 font-medium ' + (view === 'list' ? 'bg-[#3a2ee6] text-white' : 'bg-white text-slate-600 hover:bg-slate-50')}><List className="h-3.5 w-3.5" />리스트형</button>
+          <button type="button" onClick={() => setView('card')} className={'flex items-center gap-1 px-3 py-1.5 font-medium ' + (view === 'card' ? 'bg-[#3a2ee6] text-white' : 'bg-white text-slate-600 hover:bg-slate-50')}><LayoutGrid className="h-3.5 w-3.5" />카드형</button>
         </div>
       </div>
 
@@ -162,7 +166,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
                     <BannerThumb preview={r.preview} />
                   </div>
                   <div className="flex flex-1 flex-col gap-1.5 p-4">
-                    <p className="line-clamp-1 text-[15px] font-bold text-slate-900 group-hover:text-indigo-600">{r.title}</p>
+                    <p className="line-clamp-1 text-[15px] font-bold text-slate-900 group-hover:text-[#3a2ee6]">{r.title}</p>
                     <p className="font-mono text-[11px] text-slate-400">{r.campaignCode}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       <StatusPill label={ex.label} tone={ex.tone} />
@@ -192,7 +196,8 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
       <div className="overflow-x-auto border-y border-slate-200 bg-white">
         <table className="w-full min-w-[1140px] text-sm">
           <thead>
-            <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
+            <tr className="border-b border-[#e3e6ef] bg-[#f6f7fb] text-[12px] text-[#6b7086]">
+              <th className="w-14 px-4 py-2.5 text-center font-medium">NO.</th>
               <th className="px-4 py-2.5 text-left font-medium">배너캠페인 ID</th>
               <th className="w-24 px-4 py-2.5 text-left font-medium">썸네일</th>
               <th className="px-4 py-2.5 text-left font-medium">배너캠페인(타이틀)</th>
@@ -209,15 +214,17 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
           </thead>
           <tbody>
             {paged.length === 0 ? (
-              <tr><td colSpan={12} className="px-4 py-16 text-center text-muted-foreground">
+              <tr><td colSpan={13} className="px-4 py-16 text-center text-muted-foreground">
                 <div>조회된 배너 캠페인이 없습니다.</div>
                 <div className="mt-1 text-[12px]">검색 조건을 설정하여 조회해주세요.</div>
               </td></tr>
-            ) : paged.map((r) => {
+            ) : paged.map((r, i) => {
               const ex = r.exposeYn ? BANNER_EXPOSE.true : BANNER_EXPOSE.false;
               const ap = BANNER_APPROVAL[r.approvalStatus as keyof typeof BANNER_APPROVAL] ?? BANNER_APPROVAL.requested;
+              const no = filtered.length - ((pageSafe - 1) * PER_PAGE + i); // NO 내림차순(최신=큰 번호)
               return (
-                <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b last:border-b-0 hover:bg-slate-50/60">
+                <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b border-[#e3e6ef] last:border-b-0 hover:bg-[#f6f7fb]">
+                  <td className="px-4 py-3 text-center text-slate-500">{no}</td>
                   <td className="px-4 py-3 font-medium text-slate-800">{r.campaignCode}</td>
                   <td className="px-4 py-2">
                     <div className="flex h-11 w-20 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
@@ -240,7 +247,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
                               <span className="max-w-[150px] truncate" title={`${u.containerName} › ${u.cornerName}${u.sizeDetail ? ` › ${u.sizeDetail}` : ''}`}>
                                 {u.containerName} <span className="text-slate-300">·</span> {u.cornerName}
                               </span>
-                              {u.sizeDetail && <span className="shrink-0 rounded bg-indigo-50 px-1 py-0.5 text-[9.5px] font-medium text-indigo-600">{u.sizeDetail.split(' ')[0]}</span>}
+                              {u.sizeDetail && <span className="shrink-0 rounded bg-indigo-50 px-1 py-0.5 text-[9.5px] font-medium text-[#3a2ee6]">{u.sizeDetail.split(' ')[0]}</span>}
                             </div>
                           ))}
                           {uniq.length > 2 && <span className="pl-4 text-[11px] text-slate-400">외 {uniq.length - 2}곳</span>}
@@ -272,7 +279,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
         {totalPages > 1 && (
           <div className="mx-auto flex items-center gap-1 text-sm">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={'h-8 w-8 rounded-md ' + (p === pageSafe ? 'bg-indigo-600 font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
+              <button key={p} onClick={() => setPage(p)} className={'h-8 w-8 rounded-md ' + (p === pageSafe ? 'bg-[#3a2ee6] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
             ))}
           </div>
         )}

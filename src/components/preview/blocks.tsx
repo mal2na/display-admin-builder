@@ -1,10 +1,20 @@
-import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles } from 'lucide-react';
+import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles, ImageIcon } from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 import { resolveCvmSample, cvmBindingLabel } from '@/lib/display-taxonomy';
 import { PreviewImage } from './preview-image';
 import { cn } from '@/lib/utils';
 import { parseBannerOptions } from '@/lib/banner-options';
 import { BannerCarousel } from './banner-carousel';
+
+// 카드 규격 상수 — 레퍼런스(T우주 앱 Figma) 실측값. radius 28px · padding 세로30/가로28px.
+//  주의: 레퍼런스 HTML의 '혜택' 페이지는 0.954 배율로 export돼 26.718/28.626으로 보이지만(=28·30×0.954), '마이' 페이지 원본은 px:28 py:30 radius:28. 원본(정수) 기준으로 통일.
+//  3개 관리 화면(코너유형·배너·전시) 공유.
+const CARD_PAD_X = 'px-[28px]';
+const CARD_PAD = `${CARD_PAD_X} py-[30px]`;
+const CARD_PAD_BARCODE = `${CARD_PAD_X} py-[32px]`; // 바코드 카드는 레퍼런스 h:163 px:28 py:32 — 세로만 +2
+const CARD_RADIUS = 'rounded-[28px]';
+// 업무 진입형 chip형(퀵칩 라벤더 카드)은 일반 카드 패딩이 과해 보여 타이트하게(레퍼런스 퀵칩 컨테이너 padding:0 20px 기준).
+const CHIP_CARD_PAD = 'px-[20px] py-[14px]';
 
 export type PreviewAtom = {
   id: string;
@@ -17,7 +27,7 @@ export type PreviewAtom = {
   linkUrl: string | null;
   menuRole?: string; // FIXED(고정) | EDITABLE(편집가능)
 };
-export type PreviewComponent = { id: string; name: string; componentType: string; atoms: PreviewAtom[]; selectedIndex?: number; chipRows?: number; chipVariant?: string };
+export type PreviewComponent = { id: string; name: string; componentType: string; atoms: PreviewAtom[]; selectedIndex?: number; chipRows?: number; chipVariant?: string; emptyImages?: boolean };
 export type PreviewCorner = {
   id: string;
   name: string;
@@ -48,6 +58,7 @@ export type PreviewCorner = {
   showPrice?: boolean | null;
   showBadge?: boolean | null;
   showDesc?: boolean | null;
+  emptyImages?: boolean | null; // 신규 등록 가이드 폼 — 이미지/배너 영역을 빈 자리로만 보여줌(여기 채우세요)
 };
 
 const byType = (atoms: PreviewAtom[], ...types: string[]) => atoms.filter((a) => types.includes(a.atomType));
@@ -71,22 +82,34 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const variant = component.chipVariant ?? (component.atoms.some((a) => a.imageUrl) ? 'home' : 'contents');
 
-  // ChipHome — 아이콘+라벨 pill, 1/2행(2행 그리드+가로 스크롤)
+  // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
   if (variant === 'home') {
     const twoRows = component.chipRows === 2;
+    const chip = (a: PreviewAtom) => (
+      <span key={a.id} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/50 py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEFF7] text-[#3617CE]">
+          {a.imageUrl && isRenderableImg(a.imageUrl) && !isIconRef(a.imageUrl)
+            ? /* 디자인 제공 퀵칩 아이콘(#3617CE svg) — 흰 원형 뱃지 위 글리프 크기로 렌더 */
+              /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="h-3.5 w-3.5 object-contain" />
+            : <IconGlyph name={a.imageUrl && isIconRef(a.imageUrl) ? a.imageUrl : 'icon:general/Category'} className="h-3.5 w-3.5" />}
+        </span>
+        {a.content ?? a.name}
+      </span>
+    );
+    if (twoRows) {
+      // 가로(행) 우선 배치: 앞 절반이 윗줄, 뒤 절반이 아랫줄 — 번호가 좌→우로 이어지게.
+      const mid = Math.ceil(component.atoms.length / 2);
+      const grid = [component.atoms.slice(0, mid), component.atoms.slice(mid)];
+      return (
+        <div className="flex flex-col gap-2 overflow-x-auto pb-1">
+          {grid.map((r, ri) => (
+            <div key={ri} className="flex w-max items-start gap-2">{r.map(chip)}</div>
+          ))}
+        </div>
+      );
+    }
     return (
-      <div className={twoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max justify-items-start items-start gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-start gap-2 overflow-x-auto pb-1'}>
-        {component.atoms.map((a, i) => (
-          <span key={a.id} className={'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3.5 text-[12px] font-medium text-slate-800 shadow-sm ring-1 ' + (i === sel ? 'ring-indigo-400' : 'ring-slate-100')}>
-            {a.imageUrl && (isIconRef(a.imageUrl)
-              ? <IconGlyph name={a.imageUrl} className="-ml-0.5 h-4 w-4 text-indigo-600" />
-              : isRenderableImg(a.imageUrl)
-                ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="-ml-0.5 h-4 w-4 rounded-full object-cover" />
-                : <span className="-ml-0.5 flex h-4 w-4 items-center justify-center rounded-full text-indigo-600" title={a.altText ?? a.imageUrl}><Sparkles className="h-3.5 w-3.5" /></span>)}
-            {a.content ?? a.name}
-          </span>
-        ))}
-      </div>
+      <div className="flex flex-nowrap items-start gap-2 overflow-x-auto pb-1">{component.atoms.map(chip)}</div>
     );
   }
 
@@ -254,7 +277,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   if (ratio) {
     if (hasImg && isFullBanner) {
       return (
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-white">
+        <div className="overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-white">
           <div className="flex w-full items-center justify-center bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5]" style={{ aspectRatio: ratio }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt={img?.altText ?? title?.content ?? ''} className="h-full w-full object-contain" />
@@ -264,7 +287,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     }
     // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게. 규격이 커도 세로는 캡(뚱뚱 방지).
     return (
-      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: composeRatio }}>
+      <div className="flex items-center gap-3 overflow-hidden rounded-[28px] bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: composeRatio }}>
         <div className="min-w-0 flex-1 py-3">
           <p className="line-clamp-2 whitespace-pre-line text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
           {sub?.content && <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{sub.content}</p>}
@@ -278,7 +301,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     );
   }
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-white">
+    <div className="flex items-center gap-3 rounded-[28px] bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-white">
       <div className="min-w-0 flex-1 space-y-1">
         <p className="whitespace-pre-line text-[15px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
         {sub && <p className="text-[12px] text-slate-500">{sub.content}</p>}
@@ -346,7 +369,9 @@ function PlanBannerRow({ component }: { component: PreviewComponent }) {
     <div className="flex items-center gap-3 py-2.5">
       {isRenderableImg(thumb?.imageUrl)
         ? <ImageBox atom={thumb} className="h-14 w-14 shrink-0 rounded-2xl" />
-        : <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#4B63E6] to-[#3A4FCC]' : 'bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]')}>{label || '요금제'}</div>}
+        : component.emptyImages
+          ? <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-slate-100 text-slate-400"><ImageIcon className="h-4 w-4 opacity-60" /><span className="text-[9px] font-medium">이미지</span></div>
+          : <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#4B63E6] to-[#3A4FCC]' : 'bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]')}>{label || '요금제'}</div>}
       <div className="min-w-0 flex-1">
         {name?.content && <p className="truncate text-[13px] text-slate-700">{name.content}</p>}
         {price?.content && <p className="truncate text-[15px] font-bold text-slate-900">{price.content}</p>}
@@ -397,8 +422,8 @@ function InfoCard({ component }: { component: PreviewComponent }) {
   // 아이콘/이미지형: 아톰이 이미지면 사각 썸네일, 아이콘이면 원형 배경 — 빌더에서 아이콘/이미지 중 선택.
   const isImage = iconAtom?.atomType === 'IMAGE';
   return (
-    // 상태 안내형 카드형 = 794×248 비율(2026-09-29 사용자 요청). 콘텐츠는 세로 중앙.
-    <div className="flex items-center gap-3" style={{ aspectRatio: '794 / 248' }}>
+    // 상태 안내형 카드형 — 높이는 내용에 맞춤(카드 패딩은 CornerBlock 래퍼가 담당). 강제 비율 제거: 래퍼 패딩과 겹쳐 위아래가 뚱뚱해지던 문제(2026-10-01).
+    <div className="flex items-center gap-3">
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="text-[17px] font-bold leading-tight text-slate-900">{resolveCvmSample(value?.content) || component.name}</p>
@@ -439,7 +464,7 @@ function BarcodeCard({ component }: { component?: PreviewComponent }) {
   return (
     <div>
       <p className="text-[13px] font-medium text-slate-500">{label?.content ?? component?.name ?? 'T멤버십'}</p>
-      <div className="mt-3 flex h-16 w-full items-stretch gap-[2px] overflow-hidden bg-white">
+      <div className="mt-3 flex h-[76px] w-full items-stretch gap-[2px] overflow-hidden bg-white">
         {bars.map((w, i) => (
           <span key={i} style={{ flex: `${w} 0 0` }} className="bg-slate-900" />
         ))}
@@ -632,7 +657,15 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       renderComps(corner.components, layoutMode)
     );
 
-  const wrapClass = isBanner ? '' : 'rounded-2xl bg-white p-3 shadow-sm';
+  // 퀵메뉴(아이콘 칩) 전용 코너는 칩이 라벤더 배경 위에 흰 칩으로 떠 보이게(레퍼런스 퀵칩) — 흰 카드 대신 라벤더 배경.
+  // 아이콘 퀵칩(ChipHome)만 라벤더 배경. 메뉴 리스트(세로 메뉴)는 칩이 아니라 흰 배경(2026-10-01 사용자 요청).
+  const isChipHomeOnly = !isBanner && !isMenuList && corner.components.length > 0 && corner.components.every((c) => c.componentType === '선택형' && (c.chipVariant === 'home' || c.atoms.some((a) => a.imageUrl)));
+  // 카드 규격 — 레퍼런스(T우주 앱) 기준 통일: radius 26px · padding 28/26px. 소수점 무시(26.718→26, 28.626→28).
+  //  코너유형관리·배너캠페인관리·전시화면관리 미리보기 모두 이 blocks.tsx CornerBlock을 공유하므로 여기서만 바꾸면 3곳 동일.
+  // 바코드 카드는 세로 패딩만 +2(레퍼런스 py:32). 그 외는 표준 카드 패딩.
+  const hasBarcode = corner.components.some((c) => c.atoms.some((a) => a.atomType === 'BARCODE'));
+  const stdPad = hasBarcode ? CARD_PAD_BARCODE : CARD_PAD;
+  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#E2E6F1] ${CHIP_CARD_PAD}` : `${CARD_RADIUS} bg-white ${stdPad} shadow-sm`);
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
@@ -658,17 +691,25 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       </div>
     )
   ) : corner.bigBanner && !isBanner ? (
-    <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-500 px-4 text-center text-[16px] font-bold leading-snug text-white">
-      {corner.mainTitle || corner.name}
-    </div>
+    corner.emptyImages ? (
+      // 신규 등록 가이드 — 상단 배너를 빈 영역으로(여기 이미지 등록)
+      <div className="flex aspect-[16/10] w-full flex-col items-center justify-center gap-1 bg-slate-100 text-slate-400">
+        <ImageIcon className="h-5 w-5 opacity-60" />
+        <span className="text-[11px] font-medium">배너 이미지</span>
+      </div>
+    ) : (
+      <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-500 px-4 text-center text-[16px] font-bold leading-snug text-white">
+        {corner.mainTitle || corner.name}
+      </div>
+    )
   ) : null;
 
   // 히어로가 있으면 카드는 패딩 없이(overflow-hidden) 배너를 꼭대기 full-bleed로, 본문만 패딩.
   if (bannerEl && !isBanner) {
     return (
-      <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
+      <section className={`overflow-hidden ${CARD_RADIUS} bg-white shadow-sm`}>
         {bannerEl}
-        <div className="space-y-2 p-3 pt-2.5">
+        <div className={`space-y-2 ${CARD_PAD_X} pb-[30px] pt-[20px]`}>
           {heading && (
             <div>
               <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
@@ -759,19 +800,30 @@ export function DeviceFrame({
           </div>
         </div>
         <div className="border-b bg-white px-4 py-2 text-sm font-semibold text-slate-700">{headerLabel}</div>
-        <div style={{ height: bodyHeight }} className="space-y-3 overflow-y-auto bg-slate-200 p-3">
+        <div style={{ height: bodyHeight }} className="space-y-4 overflow-y-auto bg-slate-200 px-5 py-4">
           {children}
         </div>
-        <div className="flex justify-around border-t bg-white py-2 text-[11px]">
-          <span className="flex flex-col items-center gap-0.5 font-semibold text-indigo-600">
-            <Percent className="h-4 w-4" /> 혜택
-          </span>
-          <span className="flex flex-col items-center gap-0.5 text-slate-400">
-            <ShoppingBag className="h-4 w-4" /> 쇼핑
-          </span>
-          <span className="flex flex-col items-center gap-0.5 text-slate-400">
-            <User className="h-4 w-4" /> 마이
-          </span>
+        {/* 하단 네비 — 좌측 플로팅 컴포즈 버튼(T+) + 혜택(활성·채운 배지)·쇼핑·마이. T우주 앱 기준. */}
+        <div className="flex items-center border-t bg-white px-3 py-1.5 text-[11px]">
+          <div className="-translate-y-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-b from-indigo-100 to-indigo-50 shadow-sm ring-1 ring-indigo-100">
+            <span className="relative text-[15px] font-bold leading-none text-indigo-600">
+              T<span className="absolute -right-2 -top-0.5 text-[9px] font-bold">+</span>
+            </span>
+          </div>
+          <div className="flex flex-1 items-center justify-around">
+            <span className="flex flex-col items-center gap-1 font-semibold text-indigo-600">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white shadow-sm">
+                <Percent className="h-3.5 w-3.5" />
+              </span>
+              혜택
+            </span>
+            <span className="flex flex-col items-center gap-1 text-slate-400">
+              <ShoppingBag className="h-5 w-5" /> 쇼핑
+            </span>
+            <span className="flex flex-col items-center gap-1 text-slate-400">
+              <User className="h-5 w-5" /> 마이
+            </span>
+          </div>
         </div>
       </div>
     </div>
