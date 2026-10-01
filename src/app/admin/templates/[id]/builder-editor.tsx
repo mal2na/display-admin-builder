@@ -2899,12 +2899,14 @@ function CornerLoadModal({
       return {
         id: t.id,
         base: t.baseCategory,
+        name: t.name, // 케이스(코너) 이름 — 코너 유형 관리 '코너(케이스)' 열과 동일하게 노출
         component,
         detail: t.typeDetail ?? '',
         bigBanner,
         sampleImageUrl: t.sampleImageUrl ?? null,
         rest,
-        label: `${nameMap[t.baseCategory] ?? t.baseCategory}${rest ? ` · ${rest}` : ''}`,
+        // 검색은 이름 + 배열 + 유형 모두 매칭(코너 유형 관리와 동일 기준).
+        label: `${t.name} ${rest} ${nameMap[t.baseCategory] ?? t.baseCategory}`,
       };
     });
   const query = q.trim().toLowerCase();
@@ -3015,7 +3017,8 @@ function CornerLoadModal({
                               <img src={t.sampleImageUrl!.split('\n')[0]} alt="" className="h-8 w-12 shrink-0 rounded border object-cover object-top" />
                             )}
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate text-[13px] font-medium text-foreground">{layoutLabel(t.detail) || componentLabel(t.component) || '기본'}</span>
+                              <span className="block truncate text-[13px] font-medium text-foreground">{t.name}</span>
+                              <span className="block truncate text-[11px] text-muted-foreground">{layoutLabel(t.detail) || componentLabel(t.component) || '기본'}</span>
                             </span>
                             {isCurrent && <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600">현재</span>}
                             {t.bigBanner && <BigBannerBadge className="shrink-0" />}
