@@ -531,7 +531,15 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
   const [rows, setRows] = useState<TypeDetailRow[]>(
     v.typeDetails && v.typeDetails.length
       // 기존 데이터엔 규격별 alt가 없을 수 있음 → 캠페인 공통 alt(v.bannerAlt)로 하위호환 채움(2026-09-30 규격별 alt 전환).
-      ? v.typeDetails.map((r) => ({ ...emptyRow(), ...r, useYn: r.useYn !== false, altText: (r as { altText?: string }).altText ?? v.bannerAlt ?? '' }))
+      ? v.typeDetails.map((r) => {
+          const row = { ...emptyRow(), ...r, useYn: r.useYn !== false, altText: (r as { altText?: string }).altText ?? v.bannerAlt ?? '' };
+          // 기존(시드) 직접 만들기 배너는 bannerType 없이 저장됨 → 조립 데이터가 있으면 기본형(basic)으로 보정해
+          //  수정 시 빈 'DS 유형 선택' 대신 완성 배너 미리보기가 보이게 한다(2026-10-01 사용자 요청).
+          if (!row.bannerType && row.type === '리스트형' && (row.title || row.subtitle || row.rightImageUrl || row.imageUrl || row.bgColor)) {
+            row.bannerType = 'basic';
+          }
+          return row;
+        })
       : [emptyRow()],
   );
   const [bannerAlt, setBannerAlt] = useState(v.bannerAlt ?? '');

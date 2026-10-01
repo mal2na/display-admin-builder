@@ -1853,7 +1853,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             </p>
             </div>
             {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 업무 진입형(탭·메뉴)은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
-            {!bulk && base !== '업무 진입형' && (
+            {!bulk && base !== '업무 진입형' && base !== '배너형' && (
             <div className={cn('order-2 border-t border-[#E8ECEF]', !showStep(2) && 'hidden')}>
               <div className="border-b border-[#E8ECEF] px-1 py-2 text-xs font-semibold text-slate-700">세부 항목 (항목별 사용여부)</div>
               <TRow label="표시 항목">
