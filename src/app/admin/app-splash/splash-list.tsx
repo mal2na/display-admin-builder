@@ -139,6 +139,7 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
         </div>
       </div>
 
+      <p className="mb-2 text-[13px] text-slate-500">조회결과 <b className="text-[#3616cd] tabular-nums">{filtered.length}</b>건</p>
       {/* 목록 (2) */}
       <div className="overflow-x-auto border-t border-[#e8ebef]">
         <table className="w-full min-w-[1200px] text-[13px] font-normal">

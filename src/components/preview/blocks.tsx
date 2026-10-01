@@ -13,8 +13,8 @@ const CARD_PAD_X = 'px-[28px]';
 const CARD_PAD = `${CARD_PAD_X} py-[30px]`;
 const CARD_PAD_BARCODE = `${CARD_PAD_X} py-[32px]`; // 바코드 카드는 레퍼런스 h:163 px:28 py:32 — 세로만 +2
 const CARD_RADIUS = 'rounded-[28px]';
-// 업무 진입형 chip형(퀵칩 라벤더 카드)은 일반 카드 패딩이 과해 보여 타이트하게(레퍼런스 퀵칩 컨테이너 padding:0 20px 기준).
-const CHIP_CARD_PAD = 'px-[20px] py-[14px]';
+// 업무 진입형 chip형(퀵칩 라벤더 카드)은 일반 카드 패딩이 과해 보여 더 타이트하게(상하좌우, 2026-10-01 사용자 요청).
+const CHIP_CARD_PAD = 'px-[12px] py-[10px]';
 
 export type PreviewAtom = {
   id: string;
@@ -142,7 +142,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩. chipRows=2면 두 줄(그리드)로.
   const contentsTwoRows = component.chipRows === 2;
   return (
-    <div className={contentsTwoRows ? 'grid grid-flow-col grid-rows-2 auto-cols-max justify-items-start items-center gap-2 overflow-x-auto pb-1' : 'flex flex-nowrap items-center gap-2 overflow-x-auto pb-1'}>
+    <div className={contentsTwoRows ? 'flex flex-wrap items-center gap-2 pb-1' : 'flex flex-nowrap items-center gap-2 overflow-x-auto pb-1'}>
       {component.atoms.map((a, i) => (
         <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium ' + (i === sel ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500')}>
           {a.content ?? a.name}

@@ -10,16 +10,16 @@ import { cn } from '@/lib/utils';
 
 // ── 공통 ──
 const box = 'h-9 w-full rounded-lg border bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-indigo-200';
-// 칩 색 — 목업(SB-ETC-089) 기준: 문의 앰버 / 반응 블루 / 답변완료·노출 그린 / 답변대기 앰버 / 미노출 레드 / 검수중 오렌지
+// 상태 배지 — 디자인 시스템(전체페이지 관리 테이블) 팔레트: 그린/레드/앰버/블루/슬레이트 pastel 쌍.
 const TONE: Record<string, string> = {
-  노출: 'bg-emerald-50 text-emerald-600', 미노출: 'bg-rose-50 text-rose-500', '검수 중': 'bg-orange-50 text-orange-600', 검수중: 'bg-orange-50 text-orange-600',
-  답변완료: 'bg-emerald-50 text-emerald-600', 답변대기: 'bg-amber-50 text-amber-600',
-  접수: 'bg-amber-50 text-amber-600', 처리완료: 'bg-emerald-50 text-emerald-600', 반려: 'bg-slate-100 text-slate-500',
-  차단중: 'bg-rose-50 text-rose-500', 해제: 'bg-slate-100 text-slate-500',
-  문의: 'bg-amber-50 text-amber-600', 반응: 'bg-blue-50 text-blue-600',
+  노출: 'bg-[#e3f6ea] text-[#1f8a4c]', 미노출: 'bg-[#ffe9e9] text-[#d93b3b]', '검수 중': 'bg-[#fff0de] text-[#c46a0b]', 검수중: 'bg-[#fff0de] text-[#c46a0b]',
+  답변완료: 'bg-[#e3f6ea] text-[#1f8a4c]', 답변대기: 'bg-[#fff0de] text-[#c46a0b]',
+  접수: 'bg-[#fff0de] text-[#c46a0b]', 처리완료: 'bg-[#e3f6ea] text-[#1f8a4c]', 반려: 'bg-[#eceef3] text-[#5d6275]',
+  차단중: 'bg-[#ffe9e9] text-[#d93b3b]', 해제: 'bg-[#eceef3] text-[#5d6275]',
+  문의: 'bg-[#fff0de] text-[#c46a0b]', 반응: 'bg-[#e6efff] text-[#2d5fd9]',
 };
 function Pill({ children }: { children: string }) {
-  return <span className={cn('inline-block rounded-md px-2 py-1 text-[11px] font-semibold', TONE[children] ?? 'bg-slate-100 text-slate-500')}>{children}</span>;
+  return <span className={cn('inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[12px]', TONE[children] ?? 'bg-[#eceef3] text-[#5d6275]')}>{children}</span>;
 }
 const TABS = [
   { key: 'comment', label: '댓글 관리' },
@@ -52,7 +52,7 @@ export function CommentAdmin({ promoHref = '/admin/events' }: { promoHref?: stri
         <div className="mt-4 flex gap-1 border-b">
           {TABS.map((t) => (
             <button key={t.key} onClick={() => { setTab(t.key); setDetailOpen(false); }}
-              className={cn('-mb-px border-b-2 px-4 py-2 text-[14px] font-medium', tab === t.key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-400 hover:text-slate-600')}>{t.label}</button>
+              className={cn('-mb-px border-b-2 px-4 py-2.5 text-[14px] font-semibold', tab === t.key ? 'border-[#3616cd] text-[#3616cd]' : 'border-transparent text-slate-500 hover:text-slate-700')}>{t.label}</button>
           ))}
         </div>
       )}
@@ -90,8 +90,8 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
   const toggle = (no: number) => setChecked((s) => { const n = new Set(s); n.has(no) ? n.delete(no) : n.add(no); return n; });
   return (
     <div className="space-y-4">
-      {/* 검색 — 목업(SB-ETC-089): 노출여부·댓글유형·답변여부·기간(+날짜) / 검색 + 초기화·조회 */}
-      <div className="rounded-xl border bg-card p-4">
+      {/* 검색 — 디자인 시스템(전체페이지 관리): 필터밴드 #f0f2f4·보더 #e8ebef */}
+      <div className="rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-5">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <Filt label="노출여부"><LabelSel opts={['전체', '노출', '미노출', '검수 중']} /></Filt>
           <Filt label="댓글유형"><LabelSel opts={['전체', '문의', '반응']} /></Filt>
@@ -111,17 +111,18 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
         </div>
       </div>
 
-      {/* 목록 — 목업(SB-ETC-089): 좌우 보더 없이 가로줄만, 흰 헤더 + 굵은 라벨 + 하단 굵은 선 */}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1140px] text-[12px]">
-          <thead className="bg-slate-50 text-[12px] text-slate-700">
-            <tr className="border-b-2 border-slate-200 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3 [&>th]:font-bold">
+      <p className="mb-2 text-[13px] text-slate-500">조회결과 <b className="text-[#3616cd] tabular-nums">{COMMENTS.length}</b>건</p>
+      {/* 목록 — 디자인 시스템(전체페이지 관리 테이블): 헤더 #f0f2f4·보더 #e8ebef·13px 레귤러 */}
+      <div className="overflow-x-auto border-t border-[#e8ebef]">
+        <table className="w-full min-w-[1140px] text-[13px] font-normal">
+          <thead>
+            <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086] [&>th]:h-11 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:font-normal">
               <th className="w-8"></th><th>번호</th><th className="text-left">멤버십 채널 ID</th><th>프로모션 ID</th><th>댓글유형</th><th className="text-left">댓글내용</th><th>노출여부</th><th>좋아요 수</th><th>등록일시</th><th className="text-left">답글내용</th><th>답글 등록자</th><th>총 답글 수</th><th>답변여부</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {COMMENTS.map((c) => (
-              <tr key={c.no} className="cursor-pointer text-center hover:bg-indigo-50/40" onClick={() => open(c)}>
+              <tr key={c.no} className="cursor-pointer border-b border-[#e8ebef] text-center hover:bg-[#f0f2f4] [&>td]:h-11" onClick={() => open(c)}>
                 <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={checked.has(c.no)} onChange={() => toggle(c.no)} className="h-4 w-4 accent-indigo-600" /></td>
                 <td className="px-3 py-2.5 text-slate-600">{c.no}</td>
                 <td className="px-3 py-2.5 text-left"><span className="font-mono text-[11px] text-slate-500">{c.ch.slice(0, 10)}…</span></td>
@@ -260,7 +261,7 @@ const REVIEWS: Review[] = [
 function ReviewsTab() {
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border bg-card p-3">
+      <div className="rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-5">
         <div className="grid grid-cols-[repeat(4,minmax(0,1fr))] gap-x-4 gap-y-2">
           <LabeledSelect label="노출여부" opts={['전체', '노출', '미노출', '검수 중']} />
           <LabeledSelect label="별점" opts={['전체', '5점', '4점', '3점', '2점', '1점']} />
@@ -275,16 +276,17 @@ function ReviewsTab() {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px] text-[12px]">
-          <thead className="bg-slate-50 text-[12px] text-slate-700">
-              <tr className="border-b-2 border-slate-200 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold">
+      <p className="mb-2 text-[13px] text-slate-500">조회결과 <b className="text-[#3616cd] tabular-nums">{REVIEWS.length}</b>건</p>
+      <div className="overflow-x-auto border-t border-[#e8ebef]">
+        <table className="w-full min-w-[1000px] text-[13px] font-normal">
+          <thead>
+              <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086] [&>th]:h-11 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:text-left [&>th]:font-normal">
               <th>번호</th><th>멤버십 채널 ID</th><th>상품</th><th>별점</th><th>리뷰내용</th><th>사진</th><th>좋아요</th><th>등록일시</th><th>신고</th><th>노출여부</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody>
             {REVIEWS.map((r) => (
-              <tr key={r.no} className="hover:bg-indigo-50/40">
+              <tr key={r.no} className="border-b border-[#e8ebef] hover:bg-[#f0f2f4] [&>td]:h-11">
                 <td className="px-3 py-2.5 text-slate-500">{r.no}</td>
                 <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{r.ch.slice(0, 10)}…</span></td>
                 <td className="px-3 py-2.5 text-slate-700">{r.product}</td>
@@ -323,21 +325,21 @@ function BlockTab() {
     <div className="space-y-4">
       <div className="flex gap-1 rounded-lg border bg-white p-0.5 text-[13px]">
         {([['report', '신고 접수', ShieldAlert], ['history', '차단 이력', ShieldOff]] as const).map(([k, l, Icon]) => (
-          <button key={k} onClick={() => setSub(k)} className={cn('inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium', sub === k ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-700')}><Icon className="h-3.5 w-3.5" /> {l}</button>
+          <button key={k} onClick={() => setSub(k)} className={cn('inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium', sub === k ? 'bg-[#3616cd] text-white' : 'text-slate-500 hover:text-slate-700')}><Icon className="h-3.5 w-3.5" /> {l}</button>
         ))}
       </div>
 
       {sub === 'report' ? (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-[12px]">
-            <thead className="bg-slate-50 text-[12px] text-slate-700">
-              <tr className="border-b-2 border-slate-200 [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold">
+        <div className="overflow-x-auto border-t border-[#e8ebef]">
+          <table className="w-full min-w-[900px] text-[13px] font-normal">
+            <thead>
+              <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086] [&>th]:h-11 [&>th]:px-3 [&>th]:text-left [&>th]:font-normal">
                 <th>번호</th><th>대상(작성자)</th><th>위치</th><th>내용</th><th>신고 사유</th><th>신고자</th><th>접수일시</th><th>상태</th><th className="text-center">처리</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {REPORTS.map((r) => (
-                <tr key={r.no} className="hover:bg-indigo-50/40">
+                <tr key={r.no} className="border-b border-[#e8ebef] hover:bg-[#f0f2f4] [&>td]:h-11">
                   <td className="px-3 py-2.5 text-slate-500">{r.no}</td>
                   <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{r.target.slice(0, 10)}…</span></td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{r.where}</td>
@@ -353,16 +355,16 @@ function BlockTab() {
           </table>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-[12px]">
-            <thead className="bg-slate-50 text-[12px] text-slate-700">
-              <tr className="border-b-2 border-slate-200 [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold">
+        <div className="overflow-x-auto border-t border-[#e8ebef]">
+          <table className="w-full min-w-[800px] text-[13px] font-normal">
+            <thead>
+              <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086] [&>th]:h-11 [&>th]:px-3 [&>th]:text-left [&>th]:font-normal">
                 <th>번호</th><th>차단 사용자(멤버십 채널 ID)</th><th>차단 사유</th><th>차단 기간</th><th>처리자</th><th>상태</th><th className="text-center">관리</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {BLOCKS.map((b) => (
-                <tr key={b.no} className="hover:bg-indigo-50/40">
+                <tr key={b.no} className="border-b border-[#e8ebef] hover:bg-[#f0f2f4] [&>td]:h-11">
                   <td className="px-3 py-2.5 text-slate-500">{b.no}</td>
                   <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{b.member}</span></td>
                   <td className="px-3 py-2.5 text-slate-700">{b.reason}</td>
@@ -404,7 +406,7 @@ function Pagination() {
   return (
     <div className="flex items-center gap-1 text-[12px] text-slate-500">
       <button className="grid h-7 w-7 place-items-center rounded border hover:bg-slate-50"><ChevronLeft className="h-3.5 w-3.5" /></button>
-      {[1, 2, 3, 4, 5].map((n) => <button key={n} className={cn('grid h-7 w-7 place-items-center rounded', n === 1 ? 'bg-indigo-600 text-white' : 'border hover:bg-slate-50')}>{n}</button>)}
+      {[1, 2, 3, 4, 5].map((n) => <button key={n} className={cn('grid h-7 w-7 place-items-center rounded-md', n === 1 ? 'bg-[#3616cd] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{n}</button>)}
       <button className="grid h-7 w-7 place-items-center rounded border hover:bg-slate-50"><ChevronRight className="h-3.5 w-3.5" /></button>
     </div>
   );

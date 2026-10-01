@@ -41,7 +41,7 @@ function SortableRow({ r, onOpen }: { r: ViewRow; onOpen: () => void }) {
   const ps = PUBLISH_STATUS[r.publishStatus];
   const style = { transform: CSS.Transform.toString(transform), transition } as React.CSSProperties;
   return (
-    <tr ref={setNodeRef} style={style} className={cn('border-b border-[#e8ebef] last:border-b-0 hover:bg-[#f0f2f4]', isDragging && 'relative z-10 bg-[#f0f0ff] shadow-lg')}>
+    <tr ref={setNodeRef} style={style} className={cn('border-b border-[#e8ebef] hover:bg-[#f0f2f4] [&>td]:h-11', isDragging && 'relative z-10 bg-[#f0f0ff] shadow-lg')}>
       <td className="px-3 py-2">
         <div className="flex items-center gap-1.5">
           <button type="button" className="cursor-grab touch-none text-slate-300 hover:text-slate-500 active:cursor-grabbing" {...attributes} {...listeners} aria-label="드래그하여 순서 변경">
@@ -135,7 +135,7 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
   return (
     <div className="space-y-4">
       {/* 검색 영역 — 라벨 인라인, 버튼 우측 (SB) */}
-      <div className="rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-4">
+      <div className="rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-5">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <div className="flex items-center gap-2">
             <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">게시상태</span>
@@ -170,24 +170,24 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
 
       {/* 테이블 정보 */}
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">App 위젯 관리 목록 <span className="text-[#3616cd]">{orderedView.length}건</span></p>
+        <p className="text-[13px] text-slate-500">조회결과 <b className="text-[#3616cd] tabular-nums">{orderedView.length}</b>건</p>
         {dirty && <span className="text-[12px] font-medium text-amber-600">순서가 변경되었습니다. ‘순서저장’을 눌러 반영하세요.</span>}
       </div>
 
       {/* 목록 — 드래그앤드롭 순서 변경 */}
-      <div className="overflow-x-auto border-y border-[#e8ebef] bg-white">
+      <div className="overflow-x-auto border-t border-[#e8ebef]">
         <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
             <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086]">
-              <th className="w-24 px-3 py-2.5 text-left font-normal">노출순서</th>
-              <th className="px-3 py-2.5 text-left font-normal">위젯유형</th>
-              <th className="w-24 px-3 py-2.5 text-left font-normal">승인상태</th>
-              <th className="w-24 px-3 py-2.5 text-left font-normal">게시상태</th>
-              <th className="w-24 px-3 py-2.5 text-left font-normal">배포상태</th>
-              <th className="px-3 py-2.5 text-left font-normal">배너명</th>
-              <th className="px-3 py-2.5 text-left font-normal">게시기간</th>
-              <th className="px-3 py-2.5 text-left font-normal">최근 수정자</th>
-              <th className="px-3 py-2.5 text-left font-normal">최근 수정일시</th>
+              <th className="w-24 h-11 px-3 text-left font-normal">노출순서</th>
+              <th className="h-11 px-3 text-left font-normal">위젯유형</th>
+              <th className="w-24 h-11 px-3 text-left font-normal">승인상태</th>
+              <th className="w-24 h-11 px-3 text-left font-normal">게시상태</th>
+              <th className="w-24 h-11 px-3 text-left font-normal">배포상태</th>
+              <th className="h-11 px-3 text-left font-normal">배너명</th>
+              <th className="h-11 px-3 text-left font-normal">게시기간</th>
+              <th className="h-11 px-3 text-left font-normal">최근 수정자</th>
+              <th className="h-11 px-3 text-left font-normal">최근 수정일시</th>
             </tr>
           </thead>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
