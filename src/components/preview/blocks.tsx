@@ -6,12 +6,15 @@ import { cn } from '@/lib/utils';
 import { parseBannerOptions } from '@/lib/banner-options';
 import { BannerCarousel } from './banner-carousel';
 
-// 카드 규격 상수 — 레퍼런스(T우주 앱, 빌더 사용 이미지/아이콘3.html) 기준. radius 26px · padding 세로28/가로26px.
-//  소수점 무시(border-radius:26.718→26, padding:28.626/26.718→28/26). 3개 관리 화면(코너유형·배너·전시) 공유.
-const CARD_PAD_X = 'px-[26px]';
-const CARD_PAD = `${CARD_PAD_X} py-[28px]`;
-// 업무 진입형 chip형(퀵칩 라벤더 카드)은 일반 카드 패딩이 과해 보여 타이트하게(레퍼런스 퀵칩 간격 기준, 2026-10-01).
-const CHIP_CARD_PAD = 'px-[18px] py-[14px]';
+// 카드 규격 상수 — 레퍼런스(T우주 앱 Figma) 실측값. radius 28px · padding 세로30/가로28px.
+//  주의: 레퍼런스 HTML의 '혜택' 페이지는 0.954 배율로 export돼 26.718/28.626으로 보이지만(=28·30×0.954), '마이' 페이지 원본은 px:28 py:30 radius:28. 원본(정수) 기준으로 통일.
+//  3개 관리 화면(코너유형·배너·전시) 공유.
+const CARD_PAD_X = 'px-[28px]';
+const CARD_PAD = `${CARD_PAD_X} py-[30px]`;
+const CARD_PAD_BARCODE = `${CARD_PAD_X} py-[32px]`; // 바코드 카드는 레퍼런스 h:163 px:28 py:32 — 세로만 +2
+const CARD_RADIUS = 'rounded-[28px]';
+// 업무 진입형 chip형(퀵칩 라벤더 카드)은 일반 카드 패딩이 과해 보여 타이트하게(레퍼런스 퀵칩 컨테이너 padding:0 20px 기준).
+const CHIP_CARD_PAD = 'px-[20px] py-[14px]';
 
 export type PreviewAtom = {
   id: string;
@@ -274,7 +277,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   if (ratio) {
     if (hasImg && isFullBanner) {
       return (
-        <div className="overflow-hidden rounded-[26px] bg-white shadow-sm ring-1 ring-white">
+        <div className="overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-white">
           <div className="flex w-full items-center justify-center bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5]" style={{ aspectRatio: ratio }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt={img?.altText ?? title?.content ?? ''} className="h-full w-full object-contain" />
@@ -284,7 +287,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     }
     // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게. 규격이 커도 세로는 캡(뚱뚱 방지).
     return (
-      <div className="flex items-center gap-3 overflow-hidden rounded-[26px] bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: composeRatio }}>
+      <div className="flex items-center gap-3 overflow-hidden rounded-[28px] bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: composeRatio }}>
         <div className="min-w-0 flex-1 py-3">
           <p className="line-clamp-2 whitespace-pre-line text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
           {sub?.content && <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{sub.content}</p>}
@@ -298,7 +301,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     );
   }
   return (
-    <div className="flex items-center gap-3 rounded-[26px] bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-white">
+    <div className="flex items-center gap-3 rounded-[28px] bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-white">
       <div className="min-w-0 flex-1 space-y-1">
         <p className="whitespace-pre-line text-[15px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
         {sub && <p className="text-[12px] text-slate-500">{sub.content}</p>}
@@ -461,7 +464,7 @@ function BarcodeCard({ component }: { component?: PreviewComponent }) {
   return (
     <div>
       <p className="text-[13px] font-medium text-slate-500">{label?.content ?? component?.name ?? 'T멤버십'}</p>
-      <div className="mt-3 flex h-16 w-full items-stretch gap-[2px] overflow-hidden bg-white">
+      <div className="mt-3 flex h-[76px] w-full items-stretch gap-[2px] overflow-hidden bg-white">
         {bars.map((w, i) => (
           <span key={i} style={{ flex: `${w} 0 0` }} className="bg-slate-900" />
         ))}
@@ -659,7 +662,10 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const isChipHomeOnly = !isBanner && !isMenuList && corner.components.length > 0 && corner.components.every((c) => c.componentType === '선택형' && (c.chipVariant === 'home' || c.atoms.some((a) => a.imageUrl)));
   // 카드 규격 — 레퍼런스(T우주 앱) 기준 통일: radius 26px · padding 28/26px. 소수점 무시(26.718→26, 28.626→28).
   //  코너유형관리·배너캠페인관리·전시화면관리 미리보기 모두 이 blocks.tsx CornerBlock을 공유하므로 여기서만 바꾸면 3곳 동일.
-  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `rounded-[26px] bg-[#E2E6F1] ${CHIP_CARD_PAD}` : `rounded-[26px] bg-white ${CARD_PAD} shadow-sm`);
+  // 바코드 카드는 세로 패딩만 +2(레퍼런스 py:32). 그 외는 표준 카드 패딩.
+  const hasBarcode = corner.components.some((c) => c.atoms.some((a) => a.atomType === 'BARCODE'));
+  const stdPad = hasBarcode ? CARD_PAD_BARCODE : CARD_PAD;
+  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#E2E6F1] ${CHIP_CARD_PAD}` : `${CARD_RADIUS} bg-white ${stdPad} shadow-sm`);
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
@@ -701,9 +707,9 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 히어로가 있으면 카드는 패딩 없이(overflow-hidden) 배너를 꼭대기 full-bleed로, 본문만 패딩.
   if (bannerEl && !isBanner) {
     return (
-      <section className="overflow-hidden rounded-[26px] bg-white shadow-sm">
+      <section className={`overflow-hidden ${CARD_RADIUS} bg-white shadow-sm`}>
         {bannerEl}
-        <div className={`space-y-2 ${CARD_PAD_X} pb-[28px] pt-[20px]`}>
+        <div className={`space-y-2 ${CARD_PAD_X} pb-[30px] pt-[20px]`}>
           {heading && (
             <div>
               <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
