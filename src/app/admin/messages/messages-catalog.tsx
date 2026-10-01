@@ -13,6 +13,7 @@ export type LibEntry = { text: string; use: string; target?: string; sources: st
 export type MsgItem = {
   id: string; kind: 'title' | 'atom'; use: string; label: string;
   base: string; variants: MsgVariant[]; usages: string[]; editHref: string; cornerId: string;
+  subtitle?: string; readOnly?: boolean; // 배너 문구: 배너 캠페인 소유 → 읽기전용
 };
 
 // 용도별 표기 규칙(권장) — 표기 검증 PG-DSP-ACC-001
@@ -24,10 +25,8 @@ const USE_RULE: Record<string, { max: number; hint: string }> = {
 };
 const useIcon = (kind: string) => (kind === 'title' ? Type : AlignLeft);
 
-// 유형 정렬·표기 — 정책 PI-DSP-CMP-001의 Atom 유형(텍스트·버튼(CTA)·배지·정보값(설명))을 앞에,
-//  '타이틀'은 아톰이 아니라 코너 속성이므로 맨 뒤에 '코너 타이틀'로 구분 표기.
-const USE_ORDER = ['텍스트', 'CTA', '배지', '설명'];
-const useRank = (u: string) => (u === '타이틀' ? 99 : USE_ORDER.indexOf(u) < 0 ? 50 : USE_ORDER.indexOf(u));
+// 문구 관리 2축(2026-10-01 재편): ① 코너 타이틀(여기서 편집) ② 배너 문구(배너 캠페인 소유 · 읽기전용).
+const useRank = (u: string) => (u === '타이틀' ? 0 : u === '배너 문구' ? 1 : 50);
 const useLabel = (u: string) => (u === '타이틀' ? '코너 타이틀' : u);
 
 export function MessagesCatalog({ items, library }: { items: MsgItem[]; library: LibEntry[] }) {
@@ -55,7 +54,7 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
   const list = useMemo(() => {
     const kw = q.trim().toLowerCase();
     return items.filter((it) => {
-      if (onlyVar && it.variants.length === 0) return false;
+      if (onlyVar && !it.readOnly && it.variants.length === 0) return false;
       if (useF !== '전체' && it.use !== useF) return false;
       if (!kw) return true;
       return [it.label, it.base, ...it.variants.map((v) => `${v.target ?? ''} ${v.text}`), ...it.usages].join(' ').toLowerCase().includes(kw);
@@ -112,7 +111,7 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
       <PageHeader
         trail={['전시 관리', '문구 관리']}
         title="문구 관리"
-        subtitle={<>문구를 <b>Atom(표준 단위)</b>로 관리합니다 — 유형별로 모으고, 재사용·사용처로 추적. 하나를 고치면 쓰이는 모든 코너에 반영. 매칭·성과는 CVM.</>}
+        subtitle={<><b>코너 타이틀</b>과 <b>배너 문구</b> 2축으로 관리합니다 — 코너 타이틀은 여기서 편집(후보·사용처 추적, 매칭·성과는 CVM), 배너 문구는 <b>배너 캠페인 관리</b> 소유라 현황만 보고 편집은 배너 캠페인·빌더에서.</>}
       />
 
       {/* 유형 필터 + 요약 */}
@@ -120,7 +119,7 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
         <div className="flex flex-wrap items-center gap-1">
           {uses.map((u) => (
             <Fragment key={u}>
-              {u === '타이틀' && <span className="mx-0.5 h-4 w-px self-center bg-slate-200" title="아래는 아톰 유형이 아니라 코너 속성" />}
+              {u === '배너 문구' && <span className="mx-0.5 h-4 w-px self-center bg-slate-200" title="여기부터는 읽기전용(배너 캠페인 관리 소유)" />}
               <button onClick={() => setUseF(u)} className={cn('rounded-md px-2.5 py-1 font-medium', useF === u ? 'bg-[#3616cd] text-white' : 'text-slate-500 hover:bg-slate-100')}>{useLabel(u)}</button>
             </Fragment>
           ))}
@@ -249,6 +248,7 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
 
 function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: MsgItem, i: number) => void; library: LibEntry[] }) {
   const rule = USE_RULE[item.use];
+  const ro = !!item.readOnly; // 배너 문구 = 배너 캠페인 소유 → 읽기전용
   const [, startBase] = useTransition();
   const saveBase = (text: string) => {
     if (text.trim() === (item.base ?? '').trim()) return;
@@ -257,22 +257,32 @@ function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: Msg
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-start gap-3 border-b p-5">
-        <span className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-lg', item.kind === 'title' ? 'bg-indigo-100 text-[#3616cd]' : 'bg-sky-100 text-sky-600')}>{item.kind === 'title' ? <Type className="h-4 w-4" /> : <AlignLeft className="h-4 w-4" />}</span>
+        <span className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-lg', ro ? 'bg-amber-100 text-amber-600' : item.kind === 'title' ? 'bg-indigo-100 text-[#3616cd]' : 'bg-sky-100 text-sky-600')}>{ro ? <Library className="h-4 w-4" /> : item.kind === 'title' ? <Type className="h-4 w-4" /> : <AlignLeft className="h-4 w-4" />}</span>
         <div className="min-w-0 flex-1">
           <p className="text-[15px] font-bold text-foreground">{item.label} <span className="text-[12px] font-normal text-muted-foreground">· {useLabel(item.use)}</span></p>
-          {rule && <p className="mt-0.5 text-[11px] text-muted-foreground">표기 제한: {rule.hint} · 최대 {rule.max}자</p>}
+          {ro ? <p className="mt-0.5 text-[11px] text-amber-600">배너 캠페인 관리 소유 · 여기선 읽기전용</p> : rule && <p className="mt-0.5 text-[11px] text-muted-foreground">표기 제한: {rule.hint} · 최대 {rule.max}자</p>}
         </div>
-        <Link href={item.editHref} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border px-3 text-[12px] font-medium text-muted-foreground hover:bg-secondary"><PenLine className="h-3.5 w-3.5" /> 빌더에서 보기</Link>
+        <Link href={item.editHref} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border px-3 text-[12px] font-medium text-muted-foreground hover:bg-secondary"><PenLine className="h-3.5 w-3.5" /> {ro ? '배너 캠페인에서 편집' : '빌더에서 보기'}</Link>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-5">
-        {/* 기본(폴백) — 여기(문구 관리)가 편집 장소. 빌더는 가져오기만. */}
+        {ro ? (
+          /* 배너 문구 — 현황만. 텍스트·세그 베리에이션 편집은 배너 캠페인/빌더. */
+          <div className="mb-4 space-y-2 rounded-lg border border-[#e8ebef] bg-white p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">배너 문구 <span className="font-normal normal-case text-slate-400">· 배너 캠페인 소유 · 읽기전용</span></p>
+            <p className="whitespace-pre-line text-[14px] font-semibold text-slate-800">{item.base || <span className="text-slate-400">(제목 없음)</span>}</p>
+            {item.subtitle && <p className="whitespace-pre-line text-[12.5px] text-slate-500">{item.subtitle}</p>}
+          </div>
+        ) : (
+        /* 기본(폴백) — 여기(문구 관리)가 편집 장소. 빌더는 가져오기만. */
         <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3">
           <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">기본 <span className="font-normal normal-case text-slate-400">· CVM 미매칭·실패 시 폴백 · 여기서 편집</span></p>
           <textarea key={item.id} defaultValue={item.base} onBlur={(e) => saveBase(e.target.value)} placeholder="기본 문구를 입력하세요"
             className="min-h-[52px] w-full resize-y whitespace-pre-line rounded-md border border-slate-200 bg-slate-50 p-2.5 text-[13px] text-slate-800 outline-none focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-200" />
         </div>
+        )}
 
+        {!ro && (<>
         {/* 타겟별 배리에이션 */}
         <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-[#2c13b0]"><Sparkles className="h-3.5 w-3.5" /> 문구 후보 <span className="font-normal text-indigo-400">· 속성(힌트)만 태그 · CVM이 세그(수만) 매핑해 택1 · 세그 열거 아님</span></p>
         {item.variants.length > 0 && (
@@ -295,16 +305,21 @@ function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: Msg
           </div>
         )}
         <AddVariant item={item} library={library} />
+        </>)}
 
-        {/* 사용처 (운영 영향 범위 — FN-DSP-CMP-001) */}
+        {/* 사용처 / 현황 (운영 영향 범위 — FN-DSP-CMP-001) */}
         <div className="mt-5 rounded-lg border bg-slate-50/60 p-3">
-          <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-600"><MapPin className="h-3.5 w-3.5 text-slate-400" /> 사용처 <span className="font-normal text-slate-400">· 이 문구를 고치면 아래 전부에 반영</span></p>
+          <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-600"><MapPin className="h-3.5 w-3.5 text-slate-400" /> {ro ? '전시 현황' : '사용처'} <span className="font-normal text-slate-400">· {ro ? '배너 캠페인 상태' : '이 문구를 고치면 아래 전부에 반영'}</span></p>
           <div className="flex flex-wrap gap-1.5">
             {item.usages.map((u, i) => <span key={i} className="rounded bg-white px-2 py-1 text-[11px] text-slate-600 ring-1 ring-slate-200">{u}</span>)}
           </div>
         </div>
 
-        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">채널은 <b>후보 몇 개(배리에이션 수)와 속성·표기·노출/제외</b>만 관리하고, 수만 세그 각각에 어느 후보를 붙일지는 <b>CVM이 매핑</b>한다 — <b>세그를 문구마다 매핑하지 않는다.</b> 문구는 직접입력·라이브러리·AI 제안으로 author. (정책 PI-DSP-CMP-001 · PI-DSP-PER-001 · PI-DSP-AI-001)</p>
+        {ro ? (
+          <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">배너 문구는 <b>배너 캠페인 관리</b>가 소유합니다(공통 1벌 · 변경 시 승인 재요청). 세그먼트별 <b>문구 베리에이션</b>은 <b>빌더</b>에서 배너별로 설정합니다. 여기(문구 관리)에서는 현황만 조회합니다. (banner-copy-ssot)</p>
+        ) : (
+          <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">채널은 <b>후보 몇 개(배리에이션 수)와 속성·표기·노출/제외</b>만 관리하고, 수만 세그 각각에 어느 후보를 붙일지는 <b>CVM이 매핑</b>한다 — <b>세그를 문구마다 매핑하지 않는다.</b> 문구는 직접입력·라이브러리·AI 제안으로 author. (정책 PI-DSP-CMP-001 · PI-DSP-PER-001 · PI-DSP-AI-001)</p>
+        )}
       </div>
     </div>
   );
