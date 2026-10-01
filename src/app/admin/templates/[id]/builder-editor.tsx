@@ -2137,6 +2137,12 @@ function CornerInfoForm({
       />
 
       <form key={resetKey} action={updateCornerMeta.bind(null, templateId, corner.id)} className="grid grid-cols-2 gap-3">
+        {/* 수정 가능/불가 구분 범례 — 빌더에서 바꾸는 값 vs 코너 유형에서 정의(읽기 전용). 2026-10-01 사용자 요청 */}
+        <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-[#E8ECEF] bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
+          <span className="inline-flex items-center gap-1"><Pencil className="h-3 w-3 text-indigo-500" /><b className="text-slate-600">빌더에서 수정</b> · 코너명 · 추천 수급 · 표시 항목 on/off · 순서·노출</span>
+          <span className="text-slate-300">|</span>
+          <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3 text-slate-400" /><b className="text-slate-600">코너 유형에서 정의(읽기 전용)</b> · 유형 · 배열 · 타이틀·서브타이틀 문구 — ‘코너 유형에서 수정’으로 변경</span>
+        </div>
         {/* 공통 */}
         <div className="col-span-2 space-y-1">
           <label className="text-[11px] text-muted-foreground">코너명 *</label>
