@@ -194,22 +194,23 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
       {/* 리스트형 뷰 */}
       {view === 'list' && (
       <div className="overflow-x-auto border-y border-slate-200 bg-white">
-        <table className="w-full min-w-[1140px] text-sm">
+        {/* 테이블 폰트 통일: 모든 셀 13px · 레귤러 */}
+        <table className="w-full min-w-[1140px] text-[13px] font-normal">
           <thead>
-            <tr className="border-b border-[#e3e6ef] bg-[#f6f7fb] text-[12px] text-[#6b7086]">
-              <th className="w-14 px-4 py-2.5 text-center font-medium">NO.</th>
-              <th className="px-4 py-2.5 text-left font-medium">배너캠페인 ID</th>
-              <th className="w-24 px-4 py-2.5 text-left font-medium">썸네일</th>
-              <th className="px-4 py-2.5 text-left font-medium">배너캠페인(타이틀)</th>
-              <th className="w-24 px-4 py-2.5 text-left font-medium">전시여부</th>
-              <th className="px-4 py-2.5 text-left font-medium">전시기간</th>
-              <th className="px-4 py-2.5 text-left font-medium">노출 위치</th>
-              <th className="w-24 px-4 py-2.5 text-left font-medium">승인상태</th>
-              <th className="px-4 py-2.5 text-left font-medium">등록자</th>
-              <th className="px-4 py-2.5 text-left font-medium">등록일시</th>
-              <th className="px-4 py-2.5 text-left font-medium">수정자</th>
-              <th className="px-4 py-2.5 text-left font-medium">수정일시</th>
-              <th className="w-16 px-4 py-2.5 text-center font-medium">관리</th>
+            <tr className="border-b border-[#e3e6ef] bg-[#f6f7fb] text-[#6b7086]">
+              <th className="w-14 px-4 py-2.5 text-center font-normal">NO.</th>
+              <th className="px-4 py-2.5 text-left font-normal">배너캠페인 ID</th>
+              <th className="w-24 px-4 py-2.5 text-left font-normal">썸네일</th>
+              <th className="px-4 py-2.5 text-left font-normal">배너캠페인(타이틀)</th>
+              <th className="w-24 px-4 py-2.5 text-left font-normal">전시여부</th>
+              <th className="px-4 py-2.5 text-left font-normal">전시기간</th>
+              <th className="px-4 py-2.5 text-left font-normal">노출 위치</th>
+              <th className="w-24 px-4 py-2.5 text-left font-normal">승인상태</th>
+              <th className="px-4 py-2.5 text-left font-normal">등록자</th>
+              <th className="px-4 py-2.5 text-left font-normal">등록일시</th>
+              <th className="px-4 py-2.5 text-left font-normal">수정자</th>
+              <th className="px-4 py-2.5 text-left font-normal">수정일시</th>
+              <th className="w-16 px-4 py-2.5 text-center font-normal">관리</th>
             </tr>
           </thead>
           <tbody>
@@ -225,7 +226,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
               return (
                 <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b border-[#e3e6ef] last:border-b-0 hover:bg-[#f6f7fb]">
                   <td className="px-4 py-3 text-center text-slate-500">{no}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800">{r.campaignCode}</td>
+                  <td className="px-4 py-3 text-slate-800">{r.campaignCode}</td>
                   <td className="px-4 py-2">
                     <div className="flex h-11 w-20 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
                       <BannerThumb preview={r.preview} />
@@ -233,7 +234,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
                   </td>
                   <td className="px-4 py-3 text-slate-700">{r.title}</td>
                   <td className="px-4 py-3"><StatusPill label={ex.label} tone={ex.tone} /></td>
-                  <td className="px-4 py-3 text-[12px] text-slate-500">{fmtPeriod(r.publishStart, r.publishEnd)}</td>
+                  <td className="px-4 py-3 text-slate-500">{fmtPeriod(r.publishStart, r.publishEnd)}</td>
                   <td className="px-4 py-3">
                     {(() => {
                       // 목록 요약 — 같은 전시화면·코너는 한 번만(템플릿 로그인/비로그인 중복 제거)
@@ -257,9 +258,9 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
                   </td>
                   <td className="px-4 py-3"><StatusPill label={ap.label} tone={ap.tone} /></td>
                   <td className="px-4 py-3 text-slate-600">{r.createdBy ?? '-'}</td>
-                  <td className="px-4 py-3 text-[12px] text-slate-500">{fmtDateTime(r.createdAt)}</td>
+                  <td className="px-4 py-3 text-slate-500">{fmtDateTime(r.createdAt)}</td>
                   <td className="px-4 py-3 text-slate-600">{r.updatedBy ?? '-'}</td>
-                  <td className="px-4 py-3 text-[12px] text-slate-500">{fmtDateTime(r.updatedAt)}</td>
+                  <td className="px-4 py-3 text-slate-500">{fmtDateTime(r.updatedAt)}</td>
                   <td className="px-4 py-3 text-center">
                     <button type="button" title="삭제" onClick={(e) => { e.stopPropagation(); setConfirmDel(r); }}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-rose-50 hover:text-rose-600">

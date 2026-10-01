@@ -11,12 +11,14 @@ export default async function AppWidgetsPage() {
     prisma.widgetType.findMany({ orderBy: { createdAt: 'asc' }, select: { id: true, typeName: true } }),
   ]);
 
+  const APPROVAL_LABEL: Record<string, string> = { draft: '임시저장', requested: '승인요청', approved: '승인완료', rejected: '반려', cancelled: '요청취소' };
   const data: WidgetRow[] = rows.map((r) => ({
     id: r.id,
     displayOrder: r.displayOrder,
     bannerName: r.bannerName,
     widgetTypeId: r.widgetTypeId,
     widgetTypeName: r.widgetType?.typeName ?? null,
+    approvalLabel: APPROVAL_LABEL[r.approvalStatus] ?? r.approvalStatus,
     exposeYn: r.exposeYn,
     deployStatus: r.deployStatus,
     publishStart: r.publishStart?.toISOString() ?? null,

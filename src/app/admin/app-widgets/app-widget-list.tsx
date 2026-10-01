@@ -20,6 +20,7 @@ export type WidgetRow = {
   bannerName: string;
   widgetTypeId: string | null;
   widgetTypeName: string | null;
+  approvalLabel: string;
   exposeYn: boolean;
   deployStatus: string;
   publishStart: string | null;
@@ -29,6 +30,8 @@ export type WidgetRow = {
 };
 
 const PER_PAGE = 10;
+// 승인상태 배지 톤 (ops-ui StatusPill)
+const APPROVAL_TONE: Record<string, string> = { 승인완료: 'green', 승인요청: 'blue', 임시저장: 'slate', 반려: 'red', 요청취소: 'amber' };
 
 type ViewRow = WidgetRow & { publishStatus: PublishStatus; rank: number };
 
@@ -38,22 +41,23 @@ function SortableRow({ r, onOpen }: { r: ViewRow; onOpen: () => void }) {
   const ps = PUBLISH_STATUS[r.publishStatus];
   const style = { transform: CSS.Transform.toString(transform), transition } as React.CSSProperties;
   return (
-    <tr ref={setNodeRef} style={style} className={cn('border-b last:border-b-0 hover:bg-slate-50/60', isDragging && 'relative z-10 bg-indigo-50/70 shadow-lg')}>
+    <tr ref={setNodeRef} style={style} className={cn('border-b border-[#e3e6ef] last:border-b-0 hover:bg-[#f6f7fb]', isDragging && 'relative z-10 bg-[#f0f0ff] shadow-lg')}>
       <td className="px-3 py-2">
         <div className="flex items-center gap-1.5">
           <button type="button" className="cursor-grab touch-none text-slate-300 hover:text-slate-500 active:cursor-grabbing" {...attributes} {...listeners} aria-label="드래그하여 순서 변경">
             <GripVertical className="h-4 w-4" />
           </button>
-          <span className="text-xs font-medium tabular-nums text-slate-700">{r.rank}</span>
+          <span className="tabular-nums text-slate-700">{r.rank}</span>
         </div>
       </td>
-      <td className="cursor-pointer px-3 py-2 font-medium text-slate-800 hover:text-indigo-600" onClick={onOpen}>{r.bannerName}</td>
-      <td className="px-3 py-2 text-slate-600">{r.widgetTypeName ?? '-'}</td>
+      <td className="px-3 py-2 text-slate-700">{r.widgetTypeName ?? '-'}</td>
+      <td className="px-3 py-2"><StatusPill label={r.approvalLabel} tone={APPROVAL_TONE[r.approvalLabel] ?? 'slate'} /></td>
       <td className="px-3 py-2"><StatusPill label={ps.label} tone={ps.tone} dot={r.publishStatus === 'live' || r.publishStatus === 'unpublished'} /></td>
       <td className="px-3 py-2 text-slate-600">{DEPLOY_STATUS[r.deployStatus as keyof typeof DEPLOY_STATUS]?.label ?? r.deployStatus}</td>
-      <td className="px-3 py-2 text-[12px] text-slate-500">{fmtPeriod(r.publishStart, r.publishEnd)}</td>
+      <td className="cursor-pointer px-3 py-2 text-slate-800 hover:text-[#3a2ee6]" onClick={onOpen}>{r.bannerName}</td>
+      <td className="px-3 py-2 text-slate-500">{fmtPeriod(r.publishStart, r.publishEnd)}</td>
       <td className="px-3 py-2 text-slate-600">{r.updatedBy ?? '-'}</td>
-      <td className="px-3 py-2 text-[12px] text-slate-500">{fmtDateTime(r.updatedAt)}</td>
+      <td className="px-3 py-2 text-slate-500">{fmtDateTime(r.updatedAt)}</td>
     </tr>
   );
 }
@@ -131,7 +135,7 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
   return (
     <div className="space-y-4">
       {/* 검색 영역 — 라벨 인라인, 버튼 우측 (SB) */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+      <div className="rounded-xl border border-[#e3e6ef] bg-[#f6f7fb] p-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <div className="flex items-center gap-2">
             <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">게시상태</span>
@@ -166,30 +170,31 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
 
       {/* 테이블 정보 */}
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">App 위젯 관리 목록 <span className="text-indigo-600">{orderedView.length}건</span></p>
+        <p className="text-sm font-semibold">App 위젯 관리 목록 <span className="text-[#3a2ee6]">{orderedView.length}건</span></p>
         {dirty && <span className="text-[12px] font-medium text-amber-600">순서가 변경되었습니다. ‘순서저장’을 눌러 반영하세요.</span>}
       </div>
 
       {/* 목록 — 드래그앤드롭 순서 변경 */}
-      <div className="border-y border-slate-200 bg-white">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto border-y border-[#e3e6ef] bg-white">
+        <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
-            <tr className="border-b bg-slate-50 text-[12px] text-slate-600">
-              <th className="w-24 px-3 py-2.5 text-left font-medium">노출순서</th>
-              <th className="px-3 py-2.5 text-left font-medium">배너명</th>
-              <th className="px-3 py-2.5 text-left font-medium">위젯유형</th>
-              <th className="w-24 px-3 py-2.5 text-left font-medium">게시상태</th>
-              <th className="w-24 px-3 py-2.5 text-left font-medium">배포상태</th>
-              <th className="px-3 py-2.5 text-left font-medium">게시기간</th>
-              <th className="px-3 py-2.5 text-left font-medium">최근 수정자</th>
-              <th className="px-3 py-2.5 text-left font-medium">최근 수정일시</th>
+            <tr className="border-b border-[#e3e6ef] bg-[#f6f7fb] text-[#6b7086]">
+              <th className="w-24 px-3 py-2.5 text-left font-normal">노출순서</th>
+              <th className="px-3 py-2.5 text-left font-normal">위젯유형</th>
+              <th className="w-24 px-3 py-2.5 text-left font-normal">승인상태</th>
+              <th className="w-24 px-3 py-2.5 text-left font-normal">게시상태</th>
+              <th className="w-24 px-3 py-2.5 text-left font-normal">배포상태</th>
+              <th className="px-3 py-2.5 text-left font-normal">배너명</th>
+              <th className="px-3 py-2.5 text-left font-normal">게시기간</th>
+              <th className="px-3 py-2.5 text-left font-normal">최근 수정자</th>
+              <th className="px-3 py-2.5 text-left font-normal">최근 수정일시</th>
             </tr>
           </thead>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={pageRows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
               <tbody>
                 {pageRows.length === 0 ? (
-                  <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">조회 결과가 없습니다.</td></tr>
+                  <tr><td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">조회 결과가 없습니다.</td></tr>
                 ) : pageRows.map((r) => (
                   <SortableRow key={r.id} r={r} onOpen={() => router.push(`/admin/app-widgets/${r.id}`)} />
                 ))}
@@ -203,7 +208,7 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 text-sm">
           {totalPages > 1 && Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
-            <button key={p} onClick={() => setPage(p)} className={`h-8 w-8 rounded-md text-xs ${p === page ? 'bg-indigo-600 text-white' : 'hover:bg-secondary'}`}>{p}</button>
+            <button key={p} onClick={() => setPage(p)} className={`h-8 w-8 rounded-md text-xs ${p === page ? 'bg-[#3a2ee6] text-white' : 'hover:bg-secondary'}`}>{p}</button>
           ))}
         </div>
         <div className="flex items-center gap-2">
