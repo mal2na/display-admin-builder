@@ -209,8 +209,9 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
 // 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
 //  fit='width'(기본): 폭 기준 고정 — 토글해도 배율 안 흔들림(편집용). fit='contain': 폭·높이 모두 맞춰 전체가 잘림 없이 들어감(상세·목록용).
 export function DevicePreview({ corner, fit: fitMode = 'width', align = 'top-center' }: { corner: PreviewCorner; fit?: 'width' | 'contain' | 'autoHeight'; align?: 'top-center' | 'left-middle' | 'center-middle' }) {
-  // 자연 렌더 폭 = 빌더(전시화면 관리) 카드 폭과 동일하게 맞춘다(패딩 비율 일치). 빌더 디바이스 393 - 바디 좌우 여백(px-5 ×2=40) = 353.
-  const NAT_W = 353;
+  // 자연 렌더 폭 = 빌더(전시화면 관리) 카드 폭과 동일하게 맞춘다(패딩 비율 일치).
+  //  빌더 디바이스 393 − 프레임 보더(10px×2=20) − 바디 여백(px-5 ×2=40) = 카드 폭 333. (영화 등 가로형 카드 패딩이 빌더와 어긋나던 원인)
+  const NAT_W = 333;
   const autoH = fitMode === 'autoHeight'; // 폭 기준 축소 + 박스 높이를 콘텐츠에 맞춤(빈 여백 제거)
   const boxRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
