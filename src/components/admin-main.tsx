@@ -9,12 +9,12 @@ import { usePathname } from 'next/navigation';
  */
 export function AdminMain({ children }: { children: React.ReactNode }) {
   const path = usePathname() ?? '';
-  // 프로모션 목록(/admin/events)은 코너유형처럼 흰 패널에 담고, 그 하위(빌더·미리보기·새 프로모션)만 풀블리드
-  const fullBleed = path.includes('/builder') || path.startsWith('/admin/containers') || (path.startsWith('/admin/events') && path !== '/admin/events');
+  // 프로모션 관리(/admin/events)는 정적 프로토타입(자체 풀페이지 크롬)이라 여백 없이 edge-to-edge로 렌더.
+  const fullBleed = path.includes('/builder') || path.startsWith('/admin/containers') || path.startsWith('/admin/events');
 
   if (fullBleed) {
-    // 컨테이너 영역은 자체 레이아웃에서 라벤더+라운드를 처리 → 여백 없이 그대로.
-    if (path.startsWith('/admin/containers')) {
+    // 컨테이너·프로모션 영역은 자체 레이아웃(또는 프로토타입)이 전체를 채운다 → 여백 없이 그대로.
+    if (path.startsWith('/admin/containers') || path.startsWith('/admin/events')) {
       return <main className="min-h-0 flex-1 overflow-hidden bg-background">{children}</main>;
     }
     // 빌더·새 프로모션: 라벤더 여백 위에 자식(루트 div)이 라운드 패널로 뜬다.
