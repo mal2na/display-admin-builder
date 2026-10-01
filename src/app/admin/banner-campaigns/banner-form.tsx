@@ -13,7 +13,7 @@ import { AssetPickerModal, type ImageAsset } from '@/components/asset-picker-mod
 import { generateComposeDraft, refineComposeDraft, AI_EXAMPLES, AI_REFINE_SUGGESTIONS } from './ai-compose';
 import { REGISTERED_DS_BANNER_TYPES, dsBannerTypeName, dsBannerType, type DsBannerType } from './ds-banner-types';
 import type { ComposeFields } from './composed-banner';
-import { Plus, Minus, X, Search, Image as ImageIcon, Upload, Database, Sparkles, Send, LayoutTemplate, Check } from 'lucide-react';
+import { Plus, Minus, X, Search, Image as ImageIcon, Upload, Database, Sparkles, Send, LayoutTemplate, Check, Copy } from 'lucide-react';
 
 type AiMsg = { role: 'user' | 'ai'; text: string };
 
@@ -564,6 +564,16 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
     reader.readAsDataURL(file);
   };
   const removeRow = (i: number) => setRows((r) => (r.length > 1 ? r.filter((_, idx) => idx !== i) : r));
+  // 이 디자인을 '다른 규격'으로 복제 — 문구·색·레이아웃은 그대로, 규격(detail)만 비어있는 다음 규격으로(이미지는 규격별로 다시).
+  const cloneRow = (i: number) => setRows((r) => {
+    const src = r[i];
+    const used = r.map((x) => x.detail);
+    const nextDetail = sizesFor(src.type).find((d) => !used.includes(d)) ?? src.detail;
+    const clone = { ...src, detail: nextDetail, useYn: true };
+    const next = [...r];
+    next.splice(i + 1, 0, clone);
+    return next;
+  });
   const setRow = (i: number, patch: Partial<TypeDetailRow>) => setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
   // 문구·유형은 배너 공통 1벌 → 모든 규격 행에 동일 적용(이미지·사용여부만 규격별).
   const setAllCompose = (patch: Partial<TypeDetailRow>) => setRows((r) => r.map((row) => ({ ...row, ...patch })));
@@ -668,7 +678,8 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
                   <div className="flex items-center gap-2"><span className="text-[12px] text-muted-foreground">배너 규격 <span className="text-rose-500">*</span></span>
                     <Select value={row.detail} onChange={(e) => setRow(i, { detail: e.target.value })} className="h-9 w-48 text-sm">{sizesFor(row.type).map((d) => <option key={d} value={d}>{d}</option>)}</Select>
                   </div>
-                  {rows.length > 1 && <button type="button" onClick={() => removeRow(i)} title="이 베리에이션 삭제" className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 px-2 text-[12px] text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"><Minus className="h-3.5 w-3.5" />삭제</button>}
+                  <button type="button" onClick={() => cloneRow(i)} title="이 디자인을 다른 규격으로 복제 (문구·색·레이아웃 유지, 규격만 변경)" className="ml-auto inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 px-2 text-[12px] text-slate-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"><Copy className="h-3.5 w-3.5" />복제(다른 규격)</button>
+                  {rows.length > 1 && <button type="button" onClick={() => removeRow(i)} title="이 베리에이션 삭제" className="inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 px-2 text-[12px] text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"><Minus className="h-3.5 w-3.5" />삭제</button>}
                 </div>
               </FieldRow>
 
