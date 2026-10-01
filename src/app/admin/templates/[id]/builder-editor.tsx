@@ -1886,9 +1886,21 @@ const BANNER_SIZES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배
 const bannerSizeShort = (detail: string) => detail.replace(/\s*\(.*\)\s*/, '').trim() || detail;
 
 // 배너 레일의 한 줄 — 드래그앤드롭(그립 핸들)로 순서 변경. 썸네일·이름·삭제·원본 변경 안내.
-function SortableBannerRailItem({ cc, i, thumb, onRemove, onRefresh }: { cc: ComponentNode; i: number; thumb: string | null; onRemove: () => void; onRefresh: () => void }) {
+function SortableBannerRailItem({ templateId, cc, i, thumb, onRemove, onRefresh }: { templateId: string; cc: ComponentNode; i: number; thumb: string | null; onRemove: () => void; onRefresh: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cc.cornerComponentId });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const [open, setOpen] = useState(false);
+  const [, startVar] = useTransition();
+  // 배너 문구 = 제목 텍스트 아톰(배너 캠페인에서 등록 = 공통 기본). 빌더에선 '타겟별 대체 문구(베리에이션)'만 추가/편집.
+  const textAtom = cc.atoms.find((a) => a.atomType === 'TEXT' || a.atomType === 'BENEFIT_TEXT');
+  const [vars, setVarsState] = useState<{ text: string; target?: string; enabled?: boolean }[]>(textAtom?.contentVariants ?? []);
+  const saveVars = (next: { text: string; target?: string; enabled?: boolean }[]) => {
+    setVarsState(next);
+    if (!textAtom) return;
+    startVar(() => saveAtoms(templateId, [{ atomId: textAtom.id, componentAtomId: textAtom.componentAtomId, visible: textAtom.visible !== false, atomType: textAtom.atomType, content: textAtom.content, contentVariants: next.length ? JSON.stringify(next) : null, imageUrl: textAtom.imageUrl, altText: textAtom.altText, linkUrl: textAtom.linkUrl }]));
+  };
+  const patchVar = (idx: number, p: Partial<{ text: string; target?: string; enabled?: boolean }>) => saveVars(vars.map((v, k) => (k === idx ? { ...v, ...p } : v)));
+  const baseCopy = textAtom?.content ?? '';
   return (
     <li ref={setNodeRef} style={style} className="rounded-lg border bg-white px-2 py-1.5">
       <div className="flex items-center gap-2">
@@ -1905,6 +1917,62 @@ function SortableBannerRailItem({ cc, i, thumb, onRemove, onRefresh }: { cc: Com
         <button type="button" onClick={onRemove} title="이 코너에서 배너 빼기"
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded border text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
       </div>
+
+      {/* 문구 베리에이션 — 기본 문구는 배너 캠페인 소유(읽기 전용), 타겟별 대체 문구는 빌더에서 설정. 이 액션을 배너마다 눈에 띄게. */}
+      {textAtom && (
+        <>
+          <button type="button" onClick={() => setOpen((o) => !o)}
+            className={cn('mt-1.5 flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[10.5px] font-medium transition', open ? 'bg-violet-100 text-violet-800' : 'bg-violet-50 text-violet-700 hover:bg-violet-100')}>
+            <Sparkles className="h-3 w-3" /> 문구 베리에이션
+            {vars.length > 0
+              ? <span className="rounded-full bg-violet-600 px-1.5 text-[9px] font-bold text-white">{vars.length}</span>
+              : <span className="rounded-full bg-white px-1.5 text-[9px] font-medium text-violet-400 ring-1 ring-inset ring-violet-200">설정 안 함</span>}
+            <span className="ml-auto text-violet-400">{open ? '접기' : '타겟별 문구 추가'}</span>
+          </button>
+          {open && (
+            <div className="mt-1.5 space-y-1.5 rounded-md border border-dashed border-violet-200 bg-violet-50/40 px-2 py-2">
+              {/* 기본 문구 — 배너 캠페인에서 등록(공통). 여기선 수정 불가. */}
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex shrink-0 items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-medium text-slate-500" title="배너 캠페인 관리에서 등록한 공통 문구 — 변경은 배너 캠페인에서">
+                  <Lock className="h-2.5 w-2.5" /> 배너 캠페인 등록
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[11px] text-slate-700">{baseCopy || '문구 없음'}</span>
+              </div>
+              {/* 타겟별 대체 문구 — 빌더에서 추가 */}
+              <div className="flex items-center justify-between gap-2 border-t border-violet-100 pt-1.5">
+                <span className="text-[10px] font-semibold text-violet-700">타겟별 대체 문구 <span className="font-normal text-violet-400">· 빌더에서 설정 · 실서비스 CVM 택1</span></span>
+                <button type="button" onClick={() => saveVars([...vars, { text: '', target: '', enabled: true }])}
+                  className="inline-flex shrink-0 items-center gap-0.5 rounded border border-violet-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100">
+                  <Plus className="h-3 w-3" /> 문구
+                </button>
+              </div>
+              {vars.length === 0 ? (
+                <p className="text-[10px] leading-relaxed text-violet-400">기본 문구만 노출됩니다. <span className="font-medium text-violet-500">＋문구</span>로 타겟별 대체 문구를 추가하면 실서비스에서 세그먼트별로 노출됩니다.</p>
+              ) : (
+                vars.map((v, k) => {
+                  const on = v.enabled !== false;
+                  return (
+                    <div key={k} className={cn('flex items-center gap-1', !on && 'opacity-55')}>
+                      <input value={v.text} onChange={(e) => patchVar(k, { text: e.target.value })} placeholder="대체 문구"
+                        className="h-7 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2 text-[11px] text-slate-800 focus:border-violet-400 focus:outline-none" />
+                      <input value={v.target ?? ''} onChange={(e) => patchVar(k, { target: e.target.value })} placeholder="타겟" title="노출 타겟 힌트 (예: VIP, 신규, 20대) — CVM 세그먼트 매칭용"
+                        className="h-7 w-16 shrink-0 rounded-md border border-slate-200 bg-white px-1.5 text-[10px] text-violet-700 focus:border-violet-400 focus:outline-none" />
+                      <button type="button" onClick={() => patchVar(k, { enabled: !on })} title={on ? '노출 중 — 클릭 시 후보에서 제외' : '제외됨 — 클릭 시 후보 포함'}
+                        className={cn('h-7 shrink-0 rounded px-1.5 text-[9px] font-semibold ring-1 ring-inset', on ? 'bg-emerald-50 text-emerald-600 ring-emerald-200' : 'bg-slate-100 text-slate-400 ring-slate-200')}>
+                        {on ? '노출' : '제외'}
+                      </button>
+                      <button type="button" onClick={() => saveVars(vars.filter((_, idx) => idx !== k))} title="문구 삭제"
+                        className="flex h-7 w-6 shrink-0 items-center justify-center rounded-md border text-muted-foreground hover:bg-secondary"><X className="h-3 w-3" /></button>
+                    </div>
+                  );
+                })
+              )}
+              <p className="text-[9.5px] leading-relaxed text-violet-400/90">기본 문구는 <b className="text-violet-500">배너 캠페인 관리</b>에서 등록(공통 1벌). 타겟별 대체 문구는 <b className="text-violet-500">여기(빌더)</b>에서 추가합니다 — 미리보기는 기본 문구, 실서비스는 세그먼트별 택1.</p>
+            </div>
+          )}
+        </>
+      )}
+
       {/* 원본 변경 전파 — 캠페인 원본이 편성 이후 바뀌면 갱신 안내 */}
       {cc.sourceChanged && (
         <div className="mt-1.5 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1">
@@ -1982,7 +2050,7 @@ function BannerRailControl({
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             <ul className="space-y-1.5">
               {orderedBanners.map((c, i) => (
-                <SortableBannerRailItem key={c.cornerComponentId} cc={c} i={i} thumb={thumbOf(c)} onRemove={() => remove(c.cornerComponentId)} onRefresh={() => refresh(c.id)} />
+                <SortableBannerRailItem key={c.cornerComponentId} templateId={templateId} cc={c} i={i} thumb={thumbOf(c)} onRemove={() => remove(c.cornerComponentId)} onRefresh={() => refresh(c.id)} />
               ))}
             </ul>
           </SortableContext>
@@ -2018,10 +2086,11 @@ function BannerRailControl({
         </div>
       </div>
 
-      {/* 문구 안내 — 배너 문구는 캠페인이 소유(SSOT). 여기선 배치/노출만. */}
-      <p className="border-t border-slate-100 pt-2 text-[10px] leading-relaxed text-muted-foreground">
-        배너 문구·이미지는 <b>배너 캠페인 관리</b>가 소유합니다(공통 1벌 · 변경 시 승인 재요청). 이 코너에서는 <b>배치·순서·노출 방식</b>만 정합니다. 타겟별 다른 배너는 여러 장을 담아 실서비스에서 CVM이 택1합니다.
-      </p>
+      {/* 문구 안내 — 기본 문구·이미지는 캠페인 소유(SSOT), 타겟별 문구 베리에이션은 빌더에서([[banner-copy-ssot]]). */}
+      <div className="space-y-1 border-t border-slate-100 pt-2 text-[10px] leading-relaxed text-muted-foreground">
+        <p>배너 <b>이미지·기본 문구</b>는 <b>배너 캠페인 관리</b>가 소유합니다(공통 1벌 · 변경 시 승인 재요청).</p>
+        <p>이 코너(빌더)에서는 <b>배치·순서·노출 방식</b>과, 각 배너의 <b className="text-violet-600">타겟별 문구 베리에이션</b>(위 <span className="inline-flex items-center gap-0.5 align-middle text-violet-600"><Sparkles className="h-2.5 w-2.5" />문구 베리에이션</span>)을 설정합니다. 타겟별 다른 <b>배너(이미지)</b>는 여러 장을 담아 실서비스에서 CVM이 택1합니다.</p>
+      </div>
 
       <BannerLoadModal
         open={addOpen}
