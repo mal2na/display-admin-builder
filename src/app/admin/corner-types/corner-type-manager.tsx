@@ -339,7 +339,7 @@ function BannerPickerModal({ open, onClose, campaigns, usedIds, onAdd }: { open:
 
 // 스와이프 배너 묶기 편집기 — 배너 캠페인에서 담고, 드래그앤드롭으로 순서 변경(2026-09-29 사용자 요청).
 //  빌더는 이 묶음을 그대로 생성만 하고 순서만 바꾼다(거버넌스: 정의는 코너 유형).
-function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: SwipeBannerItem[]; bannerCampaigns: BannerCampaignOption[]; onCommit: (next: SwipeBannerItem[]) => void }) {
+function SwipeBannerEditor({ banners, bannerCampaigns, onCommit, single = false }: { banners: SwipeBannerItem[]; bannerCampaigns: BannerCampaignOption[]; onCommit: (next: SwipeBannerItem[]) => void; single?: boolean }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const [pickerOpen, setPickerOpen] = useState(false);
   // 행 id = 인덱스 포함 복합키 — 시드 파생 배너엔 campaignId가 없어(중복 undefined) dnd-kit 정렬이 안 먹던 버그 방지(2026-09-29).
@@ -350,7 +350,9 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
       .map((id) => bannerCampaigns.find((b) => b.id === id))
       .filter((c): c is BannerCampaignOption => !!c && !usedIds.has(c.id))
       .map((c) => ({ campaignId: c.id, title: c.title, imageUrl: c.imageUrl ?? undefined, linkUrl: c.linkUrl ?? undefined, size: c.size ?? undefined }));
-    if (news.length) onCommit([...banners, ...news]);
+    if (!news.length) return;
+    if (single) { onCommit([news[0]]); return; } // 배너 단일형 — 배너 캠페인에서 1개만 불러옴(교체)
+    onCommit([...banners, ...news]);
   };
   const remove = (idx: number) => onCommit(banners.filter((_, j) => j !== idx));
   const patchLink = (idx: number, linkUrl: string) => onCommit(banners.map((b, j) => (j === idx ? { ...b, linkUrl } : b)));
@@ -368,11 +370,11 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
   return (
     <div className="space-y-2 rounded-md border border-[#E8ECEF] bg-white p-3">
       <div className="flex items-center gap-2">
-        <span className="text-[12px] font-semibold text-slate-700">스와이프 배너 묶기</span>
-        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{banners.length}장</span>
-        <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>
+        <span className="text-[12px] font-semibold text-slate-700">{single ? '배너 불러오기 (단일)' : '스와이프 배너 묶기'}</span>
+        <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{banners.length}{single ? '개' : '장'}</span>
+        {!single && <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>}
       </div>
-      {banners.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[11px] text-slate-400">아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.</p>}
+      {banners.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[11px] text-slate-400">{single ? '배너 캠페인 관리에서 배너 1개를 불러오세요. 소재·문구·랜딩 URL은 캠페인 값을 그대로 씁니다.' : '아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.'}</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={banners.map((b, i) => rowId(b, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
@@ -382,10 +384,14 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
           </div>
         </SortableContext>
       </DndContext>
-      <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">
-        <Plus className="h-3.5 w-3.5" /> 배너 캠페인에서 담기 (여러 개 선택)
-      </button>
-      <p className="text-[11px] leading-relaxed text-slate-400">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 순서는 <b>드래그</b>로 조정.</p>
+      {(!single || banners.length === 0) && (
+        <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">
+          <Plus className="h-3.5 w-3.5" /> {single ? '배너 캠페인에서 불러오기 (1개)' : '배너 캠페인에서 담기 (여러 개 선택)'}
+        </button>
+      )}
+      <p className="text-[11px] leading-relaxed text-slate-400">{single
+        ? <>배너형 · <b>단일형</b>은 <b>배너 캠페인 관리</b>에서 <b>배너 1개</b>를 불러옵니다. 소재·문구·<b>랜딩 URL</b>은 캠페인 값을 그대로 쓰고, 코너에서는 배치·규격·노출 방식만 정해요. 여러 장을 돌리려면 <b>스와이프형</b>으로 등록하세요.</>
+        : <>배너형 · <b>스와이프형</b>은 <b>배너 캠페인 관리</b>에서 <b>2개 이상</b>을 불러와 묶습니다. 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 캠페인 값을 그대로 쓰고, 순서는 <b>드래그</b>로 조정.</>}</p>
       <BannerPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} campaigns={bannerCampaigns} usedIds={usedIds} onAdd={addMany} />
     </div>
   );
@@ -718,9 +724,9 @@ export const CORNER_TYPE_INFO: Record<string, { purpose: string; allow: string; 
     note: '상품은 SKT에서 판매하는 상품만 제공됩니다. (외부에서 임의로 가져오지 않고, 판매 상품 원장에서 선택)',
   },
   '배너형': {
-    purpose: '이미지 배너를 노출하는 코너입니다. 한 코너에 여러 배너를 담아 스와이프(수동)·자동 슬라이드로 노출할 수 있습니다.',
+    purpose: '배너 캠페인 관리에 등록된 배너를 불러와 노출하는 코너입니다. 배너 소재·문구는 코너에서 직접 만들지 않고, 무조건 배너 캠페인 관리에서 불러옵니다. — 배너 단일형: 배너 1개를 불러와 단독 노출 / 스와이프형: 배너 2개 이상을 불러와 수동 스와이프·자동 슬라이드로 노출.',
     allow: '배너형',
-    note: '배너 소재·문구는 배너 캠페인 관리(전시관리)가 소유합니다(공통 1벌·변경 시 승인 재요청). 코너에서는 배치·순서·규격·노출 방식만 정합니다.',
+    note: '배너 소재·문구·랜딩 URL은 배너 캠페인 관리(전시관리)가 소유합니다(공통 1벌·변경 시 승인 재요청). 코너에서는 어떤 배너를 불러올지와 배치·순서·규격·노출 방식만 정합니다. 배너 단일형=1개 불러오기, 스와이프형=여러 개 불러오기.',
   },
   '혜택·오퍼형': {
     purpose: '고객이 받을 수 있는 혜택·쿠폰·제휴 오퍼를 제안하는 코너입니다. 브랜드 로고+혜택 문구 카드나 오퍼 배너 등으로 구성합니다.',
@@ -1442,10 +1448,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
   // ③ 컴포넌트 조합 — 배열·레이아웃에서 자동 도출(읽기 전용). 저장된 조합이 있으면 우선, 없으면 유형 기본값.
   //  배너형 스와이프형은 배너 장수를 코너 유형에서 정한다(최소 2장) — 편집한 값 우선, 없으면 2장.
-  const isSwipeBannerType = (compValid === '배너형' || base === '배너형') && detailValid === '스와이프형';
-  const swipeBanners = isSwipeBannerType ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
+  // 배너형(단일형·스와이프형)은 '무조건' 배너 캠페인 관리에서 불러온다(직접 만들지 않음). 2026-09-30 사용자 확정.
+  const isBannerLoader = compValid === '배너형' || base === '배너형';
+  const isSwipeBannerType = isBannerLoader && detailValid === '스와이프형';
+  const isSingleBannerType = isBannerLoader && !isSwipeBannerType; // 배너 단일형(기본) — 1개만 불러옴
+  const swipeBanners = isBannerLoader ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
   // 상품형·혜택형 — 상품·혜택 아이템 묶음(BSS 카탈로그에서 담기 · 순서 드래그 · URL 수동). 2026-09-29 사용자 요청.
-  const isProductItemsType = !isSwipeBannerType && (compValid === '상품형' || compValid === '혜택형');
+  const isProductItemsType = !isBannerLoader && (compValid === '상품형' || compValid === '혜택형');
   const productItems = isProductItemsType ? (blocks.find((b) => b.componentType === compValid)?.items ?? blocks.find((b) => b.items)?.items ?? []) : [];
   // 상품 아이템 커밋 — 대상 컴포넌트 블록의 items·count만 갱신하고 다른 블록(예: 상단 탭)은 보존.
   const commitProductItems = (next: ProductItem[]) => {
@@ -1458,8 +1467,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   };
   // 세부 항목(표시 항목) 토글을 미리보기·저장 조합에 실시간 반영 — 이미지·가격·설명·배지 on/off가 아이템 카드에 바로 적용(2026-09-29 사용자 요청).
   const liveFeatFlags = { image: imageOn, price: priceOn, desc: descOn, badge: eff('useBadge') };
-  const shownBlocks: Composition = isSwipeBannerType
-    ? [{ componentType: '배너형', count: Math.max(1, swipeBanners.length || 2), image: true, price: true, desc: true, ...(swipeBanners.length ? { banners: swipeBanners } : {}) }]
+  const shownBlocks: Composition = isBannerLoader
+    ? [{ componentType: '배너형', count: isSingleBannerType ? 1 : Math.max(1, swipeBanners.length || 2), image: true, price: true, desc: true, ...(swipeBanners.length ? { banners: isSingleBannerType ? swipeBanners.slice(0, 1) : swipeBanners } : {}) }]
     : (blocks.length
         ? blocks
         : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc })
@@ -1773,12 +1782,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               {metaFields}
             </div>
             <div className={cn('order-3 space-y-3', !showStep(1) && 'hidden')}>
-            {/* 스와이프형 — 코너 유형에서 배너를 '묶는다'(배너 캠페인 관리에서 선택 · 랜딩 URL 그대로 끌어옴). 순서는 드래그앤드롭. 2026-09-29 사용자 요청 */}
-            {isBannerType && detailValid === '스와이프형' && (
+            {/* 배너형 — 무조건 배너 캠페인 관리에서 불러오기. 단일형=1개, 스와이프형=여러 개. 2026-09-30 사용자 확정 */}
+            {isBannerLoader && (
               <SwipeBannerEditor
                 banners={swipeBanners as SwipeBannerItem[]}
                 bannerCampaigns={bannerCampaigns}
-                onCommit={(next) => setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, next.length), image: true, price: true, desc: true, banners: next }])}
+                single={isSingleBannerType}
+                onCommit={(next) => { const n = isSingleBannerType ? next.slice(0, 1) : next; setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, n.length || 1), image: true, price: true, desc: true, banners: n }]); }}
               />
             )}
             {/* 상품형·혜택형 — BSS 혜택 브랜드 카탈로그에서 상품·혜택을 담고 드래그로 순서 변경(랜딩 URL 자동 매핑 후 수동 편집). 2026-09-29 사용자 요청 */}
