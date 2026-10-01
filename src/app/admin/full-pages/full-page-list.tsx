@@ -36,7 +36,7 @@ export function FullPageManager({ rows }: { rows: FPRow[] }) {
   const [tab, setTab] = useState<'search' | 'ia'>('search');
   return (
     <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-slate-400">홈 › 전시관리 › 전체페이지 관리</nav>
+      <nav className="mb-1 text-[12px] text-slate-400">홈 › 운영관리 › 전체페이지 관리</nav>
       <h1 className="mb-4 text-[22px] font-bold text-slate-900">전체페이지 관리</h1>
       {/* 상단 탭 */}
       <div className="mb-5 flex gap-1 border-b border-[#e3e6ef]">
