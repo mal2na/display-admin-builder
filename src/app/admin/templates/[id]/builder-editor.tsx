@@ -1576,8 +1576,31 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
   return (
     <div className="rounded-md border bg-muted/20 px-3">
       <InfoRow label="코너명" value={corner.name} />
-      <InfoRow label="코너 유형" value={<CornerTypeChip corner={corner} />} />
-      {corner.cornerLayout && <InfoRow label="코너 레이아웃" value={corner.cornerLayout} />}
+      {/* 코너 유형 관리와 1:1 — '코너 유형'(유형만) + '배열·레이아웃'을 각각의 행으로 분리해 라벨·표기를 동일하게. */}
+      {(() => {
+        const { base, rest, bigBanner } = cornerTypeParts(corner);
+        const isBanner = base === '배너형';
+        const baseEn = isBanner ? 'Banner' : cornerTypeEn(base);
+        const restEn = rest ? layoutEn(rest) : '';
+        return (
+          <>
+            <InfoRow label="코너 유형" value={
+              <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold', cornerTypeChipClass(base))}>
+                {isBanner ? '배너' : base}{baseEn && <span className="ml-1 font-normal opacity-70">{baseEn}</span>}
+              </span>
+            } />
+            {!isBanner && (rest || corner.cornerLayout) && (
+              <InfoRow label="배열·레이아웃" value={
+                <span className="inline-flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium">{rest ? `${rest}${restEn ? ` (${restEn})` : ''}` : (corner.cornerLayout || '—')}</span>
+                  {rest && corner.cornerLayout && <span className="text-[11px] text-muted-foreground">· {corner.cornerLayout}</span>}
+                  {bigBanner && <BigBannerBadge />}
+                </span>
+              } />
+            )}
+          </>
+        );
+      })()}
       {corner.mainTitle && <InfoRow label="타이틀" value={corner.mainTitle} />}
       {corner.subTitle && <InfoRow label="서브타이틀" value={corner.subTitle} />}
       {corner.subTitleIcon && corner.subTitleIcon !== '사용안함' && <InfoRow label="서브타이틀 아이콘" value={corner.subTitleIcon} />}
@@ -1589,7 +1612,7 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
         try { const a = JSON.parse(corner.recSourcePlan ?? ''); if (Array.isArray(a)) plan = a.filter((x) => typeof x === 'string'); } catch { /* noop */ }
         const fb = plan.slice(1);
         return (
-          <InfoRow label="추천 수급 방식" value={
+          <InfoRow label="추천 수급" value={
             <span className="inline-flex flex-wrap items-center gap-1">
               <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold', corner.recSource === 'CVM 기반' ? 'border-violet-200 bg-violet-50 text-violet-700' : 'border-slate-200 bg-slate-50 text-slate-600')}>{corner.recSource}{corner.recSource === 'CVM 기반' ? ' · 런타임 판정' : ''}</span>
               {fb.length > 0 && <span className="text-[10px] text-muted-foreground">폴백 → {fb.join(' → ')}</span>}
