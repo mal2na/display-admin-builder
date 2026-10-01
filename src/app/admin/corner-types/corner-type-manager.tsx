@@ -1804,7 +1804,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       {!bulk && (
       /* 좌우 보더 없는 섹션(목업 105) — 굵은 제목 + 가로줄 테이블만. */
       <section className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2 text-[15px] font-bold text-slate-900">
+        <div className="flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
+          <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
           코너 정의
           <span className="text-[11px] font-normal text-slate-400">왼쪽 미리보기를 보며 오른쪽에서 설정</span>
         </div>
@@ -1815,10 +1816,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           {/* 오른쪽: 모든 설정 — (등록은 스텝별) 유형·배열 → 컴포넌트 구성 → 표시 항목 */}
           <div className="flex min-w-0 flex-col gap-3">
             {/* 순서(order): 기본정보 → 세부 항목 → 상품·혜택 묶기(편집기). 세부 항목 아래에 묶기가 오도록(2026-09-30 사용자 요청). */}
-            <div className={cn('order-1 border-t border-[#e8ebef]', !showStep(0) && 'hidden')}>
-              <div className="border-b border-[#e8ebef] px-1 py-2 text-[14px] font-bold text-slate-800">기본 정보</div>
-              {basicPickers}
-              {metaFields}
+            <div className={cn('order-1', !showStep(0) && 'hidden')}>
+              <div className="mb-2.5 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />기본 정보</div>
+              <div className="border-t border-[#cfd3e0]">
+                {basicPickers}
+                {metaFields}
+              </div>
             </div>
             <div className={cn('order-3 space-y-3', !showStep(1) && 'hidden')}>
             {/* 배너형 — 무조건 배너 캠페인 관리에서 불러오기. 단일형=1개, 스와이프형=여러 개. 2026-09-30 사용자 확정 */}
@@ -1894,7 +1897,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 업무 진입형(탭·메뉴)은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
             {!bulk && base !== '업무 진입형' && base !== '배너형' && (
             <div className={cn('order-2', !showStep(2) && 'hidden')}>
-              <div className="border-b border-[#e8ebef] px-1 py-2 text-[14px] font-bold text-slate-800">세부 항목 (항목별 사용여부)</div>
+              <div className="mb-2.5 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />세부 항목 (항목별 사용여부)</div>
+              <div className="border-t border-[#cfd3e0]">
               <TRow label="표시 항목">
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
                   {CORNER_TYPE_FEATURES.map((f) => {
@@ -1981,6 +1985,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 </TRow>
               )}
               <TRow label="안내" flat><span className="text-[11px] leading-relaxed text-slate-400">체크한 항목만 이 유형 코너에 노출 · 유형에 맞지 않는 항목은 자동 비활성 · 서브타이틀은 타이틀 없이 못 켬 · 배지는 가격에 종속 · 노출 개수는 빌더에서 코너별.</span></TRow>
+              </div>
             </div>
             )}
           </div>
@@ -2124,14 +2129,14 @@ function TRow({
   flat?: boolean;
   children: React.ReactNode;
 }) {
-  // 배너 캠페인 폼(FieldRow)과 통일 — 라벨 셀 배경 #e8ebef(2026-09-30 사용자 요청).
+  // 프로모션 상세 .frow 규격에 통일 — 라벨 셀 #f0f2f4·150px·12.5px, 값 셀 px3.5 py2.5(2026-10-01 사용자 요청).
   return (
-    <div className={cn('grid grid-cols-[120px_1fr] items-stretch overflow-hidden', !flat && 'border-b border-[#e8ebef]')}>
-      <label className="flex h-full flex-col justify-center bg-[#f0f2f4] px-3 py-2.5 text-xs font-medium text-slate-600">
+    <div className={cn('grid grid-cols-[150px_1fr] items-stretch overflow-hidden', !flat && 'border-b border-[#e8ebef]')}>
+      <label className="flex h-full flex-col justify-center bg-[#f0f2f4] px-3.5 py-3 text-[12.5px] font-medium text-slate-600">
         <span>{label} {required && <span className="text-rose-500">*</span>}</span>
         {hint && <span className="mt-0.5 block text-[11px] font-normal text-slate-500/80">{hint}</span>}
       </label>
-      <div className="min-w-0 px-3 py-2">{children}</div>
+      <div className="min-w-0 px-3.5 py-2.5">{children}</div>
     </div>
   );
 }
