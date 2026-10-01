@@ -1572,10 +1572,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           </div>
           {active && <input type="hidden" name="active" value="on" />}
         </TRow>
-        <TRow label="승인상태" hint="승인 결과는 별도 승인 프로세스에서 반영됩니다">
-          <div className="flex items-center gap-2">
+        <TRow label="승인상태">
+          <div className="flex items-center gap-1.5">
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
-            <span className="text-[11px] text-muted-foreground">(읽기 전용)</span>
+            <span className="whitespace-nowrap text-[11px] text-muted-foreground" title="승인은 별도 승인 프로세스에서 반영됩니다">(읽기 전용)</span>
           </div>
           <input type="hidden" name="status" value={row.status} />
         </TRow>
@@ -1692,10 +1692,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       className="space-y-4 p-5"
     >
       {bulk && <input type="hidden" name="bulkArraysJson" value={JSON.stringify(selectedArrays)} />}
-      <div className="flex items-center gap-2 border-b pb-3">
-        <h2 className="text-sm font-semibold">{isNew ? '코너 유형 등록' : `코너 유형 수정 · ${row.typeId}`}</h2>
-        {wizard && <span className="ml-auto text-[11px] text-slate-400">단계 {step + 1} / {WIZARD_STEPS.length}</span>}
-      </div>
+      {/* 폼 내부 제목 제거 — 페이지 상단 브레드크럼으로 대체(2026-10-01 사용자 요청). bulk(배열 일괄 수정)만 제목 유지. */}
+      {bulk && (
+        <div className="flex items-center gap-2 border-b pb-3">
+          <h2 className="text-sm font-semibold">배열 일괄 수정</h2>
+        </div>
+      )}
       {stepperHead}
 
       {/* 기본 정보 — bulk(다중 배열 일괄 수정) 전용. 비-bulk 등록/수정은 아래 통합 '코너 정의' 섹션에서 미리보기와 함께. */}
@@ -1957,14 +1959,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         <div aria-hidden className="hidden lg:block" />
         <section className="min-w-0 overflow-hidden rounded-md border border-violet-200">
         <div className="flex items-center gap-2 border-b border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-xs font-semibold text-violet-700">
-          추천 수급 · 노출 구성 기본값
-          <span className="font-normal text-violet-400">콘텐츠 <b className="font-semibold">출처</b>를 먼저 정하고 노출 구성을 설정 · 빌더에서 코너별로 조정 가능</span>
+          콘텐츠 채우는 방식 · 노출 기본값
+          <span className="font-normal text-violet-400">콘텐츠를 <b className="font-semibold">무엇으로 채울지</b> 먼저 정하고, 정렬·CTA를 설정 · 빌더에서 코너별로 조정 가능</span>
         </div>
         <div className="space-y-3 p-3">
           {/* ① 추천 수급 방식 (출처) — 상품형·혜택·오퍼형·콘텐츠 안내형에만 */}
           {isRecEligible && (
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-violet-700">① 추천 수급 방식 <span className="font-normal text-violet-400">· 무엇으로 채우나(출처)</span></label>
+              <label className="text-[11px] font-semibold text-violet-700">① 콘텐츠를 무엇으로 채울까 <span className="font-normal text-violet-400">· 출처</span></label>
               <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-8 w-full max-w-xs rounded-md border border-violet-200 bg-background px-2 text-xs">
                 <option value="">기본값 미지정 — 빌더에서 코너별로 선택</option>
                 {REC_SOURCE_METHODS.map((s) => (
@@ -1990,7 +1992,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               </div>
               {cvmChosen && (
                 <p className="rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-1.5 text-[11px] leading-relaxed text-violet-600/90">
-                  <b>CVM 수급</b>이라 정렬·노출 구성을 <b>CVM이 고객마다 자동 결정</b>합니다. 노출 구성은 <b>운영자 편성</b>일 때만 설정할 수 있어요.
+                <b>CVM이 고객마다 순서를 자동으로 정하므로</b>, 정렬·노출 구성은 <b>운영자 편성</b>일 때만 직접 설정할 수 있어요.
                 </p>
               )}
               <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2', cvmChosen && 'opacity-50')} aria-disabled={cvmChosen}>
