@@ -62,10 +62,12 @@ export function ComposedBanner({ f, width, height, preview = false }: { f: Compo
     </div>
   );
 
+  // 배너 라운드 = 레퍼런스(T우주 앱) 카드와 동일 26px, 단 작은 썸네일에선 과하지 않게 높이에 비례(최대 26). 전시화면 카드 radius와 통일.
+  const radius = Math.min(26, Math.round(height / 4));
   return (
     <div
-      className={'flex overflow-hidden rounded-2xl px-4 shadow-sm ring-1 ring-white ' + (vertical ? 'flex-col items-center justify-center gap-2 py-3' : 'items-center gap-3')}
-      style={{ background: composeBg(f), width, height }}
+      className={'flex overflow-hidden px-4 shadow-sm ring-1 ring-white ' + (vertical ? 'flex-col items-center justify-center gap-2 py-3' : 'items-center gap-3')}
+      style={{ background: composeBg(f), width, height, borderRadius: radius }}
     >
       {(pos === 'left' || pos === 'top') && imageEl}
       {textBlock}

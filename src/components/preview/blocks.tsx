@@ -10,6 +10,8 @@ import { BannerCarousel } from './banner-carousel';
 //  소수점 무시(border-radius:26.718→26, padding:28.626/26.718→28/26). 3개 관리 화면(코너유형·배너·전시) 공유.
 const CARD_PAD_X = 'px-[26px]';
 const CARD_PAD = `${CARD_PAD_X} py-[28px]`;
+// 업무 진입형 chip형(퀵칩 라벤더 카드)은 일반 카드 패딩이 과해 보여 타이트하게(레퍼런스 퀵칩 간격 기준, 2026-10-01).
+const CHIP_CARD_PAD = 'px-[18px] py-[14px]';
 
 export type PreviewAtom = {
   id: string;
@@ -272,7 +274,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   if (ratio) {
     if (hasImg && isFullBanner) {
       return (
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-white">
+        <div className="overflow-hidden rounded-[26px] bg-white shadow-sm ring-1 ring-white">
           <div className="flex w-full items-center justify-center bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5]" style={{ aspectRatio: ratio }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt={img?.altText ?? title?.content ?? ''} className="h-full w-full object-contain" />
@@ -282,7 +284,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     }
     // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게. 규격이 커도 세로는 캡(뚱뚱 방지).
     return (
-      <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: composeRatio }}>
+      <div className="flex items-center gap-3 overflow-hidden rounded-[26px] bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: composeRatio }}>
         <div className="min-w-0 flex-1 py-3">
           <p className="line-clamp-2 whitespace-pre-line text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
           {sub?.content && <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{sub.content}</p>}
@@ -296,7 +298,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     );
   }
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-white">
+    <div className="flex items-center gap-3 rounded-[26px] bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-white">
       <div className="min-w-0 flex-1 space-y-1">
         <p className="whitespace-pre-line text-[15px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
         {sub && <p className="text-[12px] text-slate-500">{sub.content}</p>}
@@ -417,8 +419,8 @@ function InfoCard({ component }: { component: PreviewComponent }) {
   // 아이콘/이미지형: 아톰이 이미지면 사각 썸네일, 아이콘이면 원형 배경 — 빌더에서 아이콘/이미지 중 선택.
   const isImage = iconAtom?.atomType === 'IMAGE';
   return (
-    // 상태 안내형 카드형 = 794×248 비율(2026-09-29 사용자 요청). 콘텐츠는 세로 중앙.
-    <div className="flex items-center gap-3" style={{ aspectRatio: '794 / 248' }}>
+    // 상태 안내형 카드형 — 높이는 내용에 맞춤(카드 패딩은 CornerBlock 래퍼가 담당). 강제 비율 제거: 래퍼 패딩과 겹쳐 위아래가 뚱뚱해지던 문제(2026-10-01).
+    <div className="flex items-center gap-3">
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="text-[17px] font-bold leading-tight text-slate-900">{resolveCvmSample(value?.content) || component.name}</p>
@@ -657,7 +659,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const isChipHomeOnly = !isBanner && !isMenuList && corner.components.length > 0 && corner.components.every((c) => c.componentType === '선택형' && (c.chipVariant === 'home' || c.atoms.some((a) => a.imageUrl)));
   // 카드 규격 — 레퍼런스(T우주 앱) 기준 통일: radius 26px · padding 28/26px. 소수점 무시(26.718→26, 28.626→28).
   //  코너유형관리·배너캠페인관리·전시화면관리 미리보기 모두 이 blocks.tsx CornerBlock을 공유하므로 여기서만 바꾸면 3곳 동일.
-  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `rounded-[26px] bg-[#E2E6F1] ${CARD_PAD}` : `rounded-[26px] bg-white ${CARD_PAD} shadow-sm`);
+  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `rounded-[26px] bg-[#E2E6F1] ${CHIP_CARD_PAD}` : `rounded-[26px] bg-white ${CARD_PAD} shadow-sm`);
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
