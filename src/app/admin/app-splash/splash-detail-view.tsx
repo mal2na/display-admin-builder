@@ -37,24 +37,19 @@ export function SplashDetailView({ s, footer }: { s: SplashView; footer?: React.
           <FieldRow label="승인 요청일"><ReadValue value={fmtDateTime(s.approvalRequestedAt)} /></FieldRow>
           <FieldRow label="승인 담당자"><ReadValue value={s.approvalManager ?? '-'} /></FieldRow>
           <FieldRow label="승인 처리일"><ReadValue value={fmtDateTime(s.approvalProcessedAt)} /></FieldRow>
-          <FieldRow label="승인 상태"><StatusPill label={ap.label} tone={ap.tone} /></FieldRow>
+          <div className="col-span-2"><FieldRow label="승인 상태"><StatusPill label={ap.label} tone={ap.tone} /></FieldRow></div>
         </div>
       </OpsSection>
 
       <OpsSection no={3} title="기본 정보">
+        {/* 디자인 시스템 통일 — 단일 2열 그리드, 보더는 FieldRow border-b(1px #e3e6ef)만. 긴 항목·미디어는 col-span-2로 정렬 */}
         <div className="grid grid-cols-2">
           <FieldRow label="버전"><ReadValue value={s.version} /></FieldRow>
           <FieldRow label="OS 유형"><ReadValue value={s.osType} /></FieldRow>
           <FieldRow label="적용 상태"><ReadValue value={s.applyLabel} /></FieldRow>
           <FieldRow label="적용시작일시"><ReadValue value={fmtDateTime(s.applyStartAt)} /></FieldRow>
-        </div>
-        <div className="border-t border-slate-100">
-          <FieldRow label="제목"><ReadValue value={s.title ?? '-'} /></FieldRow>
-        </div>
-        <div className="border-t border-slate-100">
-          <FieldRow label="업데이트 주요 내용"><ReadValue value={s.updateContent ?? '-'} /></FieldRow>
-        </div>
-        <div className="grid grid-cols-2 border-t border-slate-100">
+          <div className="col-span-2"><FieldRow label="제목"><ReadValue value={s.title ?? '-'} /></FieldRow></div>
+          <div className="col-span-2"><FieldRow label="업데이트 주요 내용"><ReadValue value={s.updateContent ?? '-'} /></FieldRow></div>
           <FieldRow label="배경 이미지">
             <div className="space-y-1.5">
               <Thumb url={s.bgImageUrl} onOpen={() => setPreview(s.bgImageUrl)} />
@@ -71,23 +66,21 @@ export function SplashDetailView({ s, footer }: { s: SplashView; footer?: React.
           </FieldRow>
           <FieldRow label="배경 이미지 사용 여부"><ReadValue value={s.bgUseYn ? 'Y' : 'N'} /></FieldRow>
           <FieldRow label="애니메이션 사용 여부"><ReadValue value={s.animUseYn ? 'Y' : 'N'} /></FieldRow>
-        </div>
-        {/* 이벤트 이미지 (정의서 3-10~3-13) */}
-        <div className="grid grid-cols-2 border-t border-slate-100">
-          <FieldRow label="이벤트 이미지">
-            <div className="space-y-1.5">
-              <Thumb url={s.eventImageUrl} onOpen={() => setPreview(s.eventImageUrl)} />
-              <ReadValue value={s.eventImageAlt ?? '-'} />
-              <p className="text-[11px] text-muted-foreground">권장 720 x 200 px · JPG/JPEG/PNG/GIF/BMP</p>
-            </div>
-          </FieldRow>
-          <div className="divide-y divide-slate-100">
-            <FieldRow label="이벤트 이미지 URL"><ReadValue value={s.eventImageUrl ?? '-'} /></FieldRow>
-            <FieldRow label="이벤트 이미지 게시 기간">
-              <ReadValue value={s.eventPostStart || s.eventPostEnd ? `${fmtDateTime(s.eventPostStart)} ~ ${fmtDateTime(s.eventPostEnd)}` : '-'} />
+          {/* 이벤트 이미지 (정의서 3-10~3-13) — 이미지는 전폭, 하위 속성은 2열 */}
+          <div className="col-span-2">
+            <FieldRow label="이벤트 이미지">
+              <div className="space-y-1.5">
+                <Thumb url={s.eventImageUrl} onOpen={() => setPreview(s.eventImageUrl)} />
+                <ReadValue value={s.eventImageAlt ?? '-'} />
+                <p className="text-[11px] text-muted-foreground">권장 720 x 200 px · JPG/JPEG/PNG/GIF/BMP</p>
+              </div>
             </FieldRow>
-            <FieldRow label="이벤트 이미지 사용 여부"><ReadValue value={s.eventUseYn ? 'Y' : 'N'} /></FieldRow>
           </div>
+          <FieldRow label="이벤트 이미지 URL"><ReadValue value={s.eventImageUrl ?? '-'} /></FieldRow>
+          <FieldRow label="이벤트 이미지 게시 기간">
+            <ReadValue value={s.eventPostStart || s.eventPostEnd ? `${fmtDateTime(s.eventPostStart)} ~ ${fmtDateTime(s.eventPostEnd)}` : '-'} />
+          </FieldRow>
+          <div className="col-span-2"><FieldRow label="이벤트 이미지 사용 여부"><ReadValue value={s.eventUseYn ? 'Y' : 'N'} /></FieldRow></div>
         </div>
       </OpsSection>
 
