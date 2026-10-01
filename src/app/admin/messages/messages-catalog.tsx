@@ -203,9 +203,9 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
         <span className="font-semibold text-slate-500">열 = 후보 속성(성격·맥락 힌트, 소수)</span> · CVM이 고객 세그(수천~수만)를 이 속성에 매핑해 후보를 택1. <b className="text-[#3a2ee6]">세그를 문구마다 매핑하지 않음</b> — 채널은 후보 풀만 관리.
       </p>
       <div className="min-h-0 flex-1 overflow-auto rounded-xl border bg-card">
-        <table className="w-full border-separate border-spacing-0 text-[12px]" style={{ minWidth: 400 + targetCols.length * 150 }}>
+        <table className="w-full border-separate border-spacing-0 text-[13px] font-normal" style={{ minWidth: 400 + targetCols.length * 150 }}>
           <thead className="sticky top-0 z-10">
-            <tr className="[&>th]:border-b-2 [&>th]:border-[#e3e6ef] [&>th]:bg-[#f6f7fb] [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-bold [&>th]:text-[#6b7086]">
+            <tr className="[&>th]:border-b-2 [&>th]:border-[#e3e6ef] [&>th]:bg-[#f6f7fb] [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-normal [&>th]:text-[#6b7086]">
               <th className="sticky left-0 z-20 min-w-[240px]">문구</th>
               <th className="min-w-[160px]">기본 <span className="font-normal text-slate-400">· 폴백</span></th>
               {targetCols.map((c) => <th key={c} className="min-w-[150px]">{c}</th>)}
@@ -222,8 +222,8 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
                   return (
                     <tr key={it.id} className="group cursor-pointer" onClick={() => onOpen(it.id)}>
                       <td className="sticky left-0 z-10 max-w-[240px] border-b border-slate-100 bg-white px-3 py-2 align-top group-hover:bg-[#f6f7fb]">
-                        <span className="block truncate font-semibold text-slate-800">{it.label}</span>
-                        <span className="block truncate text-[10px] text-slate-400">{it.base || '—'}</span>
+                        <span className="block truncate text-slate-800">{it.label}</span>
+                        <span className="block truncate text-slate-400">{it.base || '—'}</span>
                       </td>
                       <td className="max-w-[160px] truncate border-b border-slate-100 px-3 py-2 align-top text-slate-500 group-hover:bg-[#f6f7fb]">{it.base || '—'}</td>
                       {targetCols.map((c) => {

@@ -1242,18 +1242,19 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       {/* 리스트 보기 — 케이스(코너 유형) 플랫 테이블. 배열별 그룹 없이 한 줄씩. 클릭 시 상세로. */}
       {view === 'list' && (
         <div className="border-y border-[#e3e6ef] bg-white">
-          <table className="w-full text-sm">
+          {/* 테이블 폰트 통일: 모든 셀 13px · 레귤러(헤더/셀 동일) */}
+          <table className="w-full text-[13px] font-normal">
             <thead>
-              <tr className="border-b border-[#e3e6ef] bg-[#f6f7fb] text-[12px] text-[#6b7086]">
-                <th className="w-14 px-3 py-2.5 text-left font-medium">NO</th>
-                <th className="w-44 px-3 py-2.5 text-center font-medium">미리보기</th>
-                <th className="px-3 py-2.5 text-left font-medium">코너 유형</th>
-                <th className="px-3 py-2.5 text-left font-medium">배열·레이아웃</th>
-                <th className="px-3 py-2.5 text-left font-medium">코너(케이스)</th>
-                <th className="w-20 px-3 py-2.5 text-left font-medium">사용여부</th>
-                <th className="w-28 px-3 py-2.5 text-left font-medium">승인상태</th>
-                <th className="px-3 py-2.5 text-left font-medium">최근 수정자</th>
-                <th className="px-3 py-2.5 text-left font-medium">최근 수정일시</th>
+              <tr className="border-b border-[#e3e6ef] bg-[#f6f7fb] text-[#6b7086]">
+                <th className="w-14 px-3 py-2.5 text-left font-normal">NO</th>
+                <th className="w-44 px-3 py-2.5 text-center font-normal">미리보기</th>
+                <th className="px-3 py-2.5 text-left font-normal">코너 유형</th>
+                <th className="px-3 py-2.5 text-left font-normal">배열·레이아웃</th>
+                <th className="px-3 py-2.5 text-left font-normal">코너(케이스)</th>
+                <th className="w-20 px-3 py-2.5 text-left font-normal">사용여부</th>
+                <th className="w-28 px-3 py-2.5 text-left font-normal">승인상태</th>
+                <th className="px-3 py-2.5 text-left font-normal">최근 수정자</th>
+                <th className="px-3 py-2.5 text-left font-normal">최근 수정일시</th>
               </tr>
             </thead>
             <tbody>
@@ -1268,13 +1269,13 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                       <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" align="center-middle" />
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 align-middle"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11.5px] font-semibold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
+                  <td className="px-3 py-2.5 align-middle"><span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[12px]', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
                   <td className="px-3 py-2.5 align-middle text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
-                  <td className="px-3 py-2.5 align-middle font-medium text-slate-800">{t.previewCorner?.name ?? '-'}</td>
+                  <td className="px-3 py-2.5 align-middle text-slate-800">{t.previewCorner?.name ?? '-'}</td>
                   <td className="px-3 py-2.5 align-middle text-slate-600">{t.active ? '사용' : '미사용'}</td>
-                  <td className="px-3 py-2.5 align-middle"><span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-semibold', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span></td>
+                  <td className="px-3 py-2.5 align-middle"><span className={cn('rounded-full border px-2 py-0.5 text-[12px]', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span></td>
                   <td className="px-3 py-2.5 align-middle text-slate-600">{t.updatedBy ?? t.createdBy ?? '-'}</td>
-                  <td className="px-3 py-2.5 align-middle text-[12px] text-slate-500">{(t.updatedAt ?? '').replace('T', ' ').slice(0, 16) || '-'}</td>
+                  <td className="px-3 py-2.5 align-middle text-slate-500">{(t.updatedAt ?? '').replace('T', ' ').slice(0, 16) || '-'}</td>
                 </tr>
               ))}
             </tbody>
