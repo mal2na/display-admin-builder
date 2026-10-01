@@ -78,6 +78,7 @@ function readForm(formData: FormData) {
     markupId: opt('markupId'),
     typeDetail: opt('typeDetail'),
     bigBanner: String(formData.get('bigBanner') ?? '') === '1', // ④ 빅배너 구분자
+    componentLayoutMode: opt('componentLayoutMode') ?? '고정형', // 지정형(빌더 택1) | 고정형
 
     layout: opt('layout'),
     description: opt('description'),

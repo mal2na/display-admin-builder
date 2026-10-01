@@ -54,6 +54,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     componentType: ct.componentType ?? null,
     typeDetail: ct.typeDetail,
     bigBanner: ct.bigBanner ?? false,
+    componentLayoutMode: ct.componentLayoutMode ?? '고정형',
     markupId: ct.markupId,
     layout: ct.layout,
     description: ct.description,

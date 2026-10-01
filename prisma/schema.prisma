@@ -364,6 +364,7 @@ model CornerType {
   typeDetail    String? // ③ 배열/레이아웃 상세 (예: 가로형(2.5배열), 세로형 …) — 순수 배열만(빅배너 접미사 제거)
   bigBanner     Boolean @default(false) // ④ 빅배너 구분자: 상단 빅배너 부속 유무(배열과 직교, TM-DSP-019)
   layout       String? // 코너 레이아웃 (예: 가로 SWIPE형)
+  componentLayoutMode String @default("고정형") // 컴포넌트 레이아웃: 지정형(여러 노출유형 등록 → 빌더가 코너 등록 시 택1) | 고정형(단일 노출유형 고정)
   description  String?
 
   channels  String  @default("전체") // 운영 채널 csv: 전체 | FO | BO

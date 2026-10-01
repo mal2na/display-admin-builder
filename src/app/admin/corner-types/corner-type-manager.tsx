@@ -67,6 +67,7 @@ export type CornerTypeRow = {
   componentType: string | null;
   typeDetail: string | null;
   bigBanner: boolean;
+  componentLayoutMode: string; // 지정형 | 고정형
   markupId: string | null;
   layout: string | null;
   description: string | null;
@@ -125,6 +126,7 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   componentType: '상품형',
   typeDetail: null,
   bigBanner: false,
+  componentLayoutMode: '고정형',
   markupId: null,
   layout: null,
   description: null,
@@ -1336,6 +1338,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const renameArr = (i: number, val: string) => setSelectedArrays((xs) => { const n = xs.map((x, j) => (j === i ? val : x)); setDetail(n[0] ?? ''); return n; });
   const removeArrAt = (i: number) => setSelectedArrays((xs) => { const n = xs.filter((_, j) => j !== i); setDetail(n[0] ?? ''); return n; });
   const [bigBanner, setBigBanner] = useState(row.bigBanner ?? false); // ④ 빅배너 구분자
+  const [layoutMode, setLayoutMode] = useState(row.componentLayoutMode || '고정형'); // 컴포넌트 레이아웃: 지정형(여러 노출유형 택1) | 고정형
   const [active, setActive] = useState(row.active);
   const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
   // 정의(거버넌스) 기본값 — 코너 유형이 문구·개수·형태까지 정의(2026-09-29 거버넌스 분리). 빌더는 쌓기+CVM만.
@@ -1637,6 +1640,22 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             })}
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">배열은 <b>형태(레이아웃)</b>만 정합니다. <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span>은 이미 등록된 배열(다시 등록 가능) · 노출 개수는 빌더에서.</p>
+        </div>
+      </TRow>
+      {/* 컴포넌트 레이아웃 — 노출유형을 빌더에서 택1(지정형)할지, 하나로 고정(고정형)할지. 2026-10-01 목업 참고(추정 기능). */}
+      <TRow label="컴포넌트 레이아웃" required>
+        <div className="flex flex-wrap items-center gap-4">
+          <input type="hidden" name="componentLayoutMode" value={layoutMode} />
+          <label className="flex items-center gap-1.5 text-sm"><input type="radio" checked={layoutMode === '지정형'} onChange={() => setLayoutMode('지정형')} className="accent-indigo-600" />지정형</label>
+          <label className="flex items-center gap-1.5 text-sm"><input type="radio" checked={layoutMode === '고정형'} onChange={() => setLayoutMode('고정형')} className="accent-indigo-600" />고정형</label>
+          <span className="group relative inline-flex">
+            <Info className="h-3.5 w-3.5 cursor-help text-slate-400" />
+            <span className="pointer-events-none absolute right-0 top-6 z-30 hidden w-[min(20rem,80vw)] rounded-md bg-slate-800 px-3 py-2.5 text-[11px] leading-relaxed text-white shadow-lg group-hover:block">
+              <b className="text-indigo-200">지정형</b> · 여러 노출유형(배열·레이아웃)을 등록해두고, 전시화면 관리(빌더)에서 코너를 등록할 때 그중 <b>하나를 선택</b>해 적용합니다.<br />
+              <b className="text-indigo-200">고정형</b> · 등록한 노출유형 <b>하나로 고정</b> — 빌더에서 코너 등록 시 그 유형이 그대로 적용됩니다.
+            </span>
+          </span>
+          <span className="text-[11px] text-slate-400">{layoutMode === '지정형' ? '빌더에서 노출유형 택1' : '빌더에서 이 노출유형 고정 적용'}</span>
         </div>
       </TRow>
       <TRow label="등록 결과"><span className="text-[12px]">이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span></span></TRow>
