@@ -370,9 +370,9 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
       <div className="flex items-center gap-2">
         <span className="text-[12px] font-semibold text-slate-700">스와이프 배너 묶기</span>
         <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{banners.length}장</span>
-        <span className="ml-auto text-[10px] text-slate-400">드래그로 순서 변경</span>
+        <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>
       </div>
-      {banners.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[10px] text-slate-400">아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.</p>}
+      {banners.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[11px] text-slate-400">아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={banners.map((b, i) => rowId(b, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
@@ -385,7 +385,7 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit }: { banners: Sw
       <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">
         <Plus className="h-3.5 w-3.5" /> 배너 캠페인에서 담기 (여러 개 선택)
       </button>
-      <p className="text-[10px] leading-relaxed text-slate-400">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 순서는 <b>드래그</b>로 조정.</p>
+      <p className="text-[11px] leading-relaxed text-slate-400">코너 유형에서 배너를 <b>묶어</b> 등록하면, 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 배너 캠페인 관리에서 이어진 값을 그대로 씁니다. 순서는 <b>드래그</b>로 조정.</p>
       <BannerPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} campaigns={bannerCampaigns} usedIds={usedIds} onAdd={addMany} />
     </div>
   );
@@ -543,9 +543,9 @@ function ProductItemEditor({ items, productOptions, onCommit }: { items: Product
       <div className="flex items-center gap-2">
         <span className="text-[12px] font-semibold text-slate-700">상품·혜택 묶기</span>
         <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{items.length}개</span>
-        <span className="ml-auto text-[10px] text-slate-400">드래그로 순서 변경</span>
+        <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>
       </div>
-      {items.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[10px] text-slate-400">아래에서 상품·혜택을 골라 담으세요. 랜딩 URL은 담은 뒤 수정할 수 있어요.</p>}
+      {items.length === 0 && <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-2 py-2 text-[11px] text-slate-400">아래에서 상품·혜택을 골라 담으세요. 랜딩 URL은 담은 뒤 수정할 수 있어요.</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={items.map((it, i) => rowId(it, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
@@ -619,7 +619,7 @@ function ChipIconPicker({ value, onPick }: { value?: string; onPick: (icon: stri
           <div className="absolute left-0 top-9 z-30 w-52 rounded-md border bg-white p-2 shadow-lg">
             <div className="mb-1.5 flex items-center justify-between">
               <span className="text-[11px] font-semibold text-slate-600">아이콘</span>
-              <button type="button" onClick={() => { onPick(undefined); setOpen(false); }} className="text-[10px] text-slate-400 hover:text-slate-600">선택 안 함</button>
+              <button type="button" onClick={() => { onPick(undefined); setOpen(false); }} className="text-[11px] text-slate-400 hover:text-slate-600">선택 안 함</button>
             </div>
             <div className="grid max-h-40 grid-cols-6 gap-1 overflow-y-auto">
               {general.map((ic) => {
@@ -687,7 +687,7 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
       <div className="flex items-center gap-2">
         <span className="text-[12px] font-semibold text-slate-700">탭·메뉴 정의</span>
         <span className="rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{chips.length}개</span>
-        <span className="ml-auto text-[10px] text-slate-400">드래그로 순서 변경</span>
+        <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={chips.map((c, i) => rowId(c, i))} strategy={verticalListSortingStrategy}>
@@ -705,7 +705,7 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
           <button key={r} type="button" onClick={() => onCommit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-indigo-600 text-white' : 'border bg-white text-slate-600 hover:bg-slate-50')}>{r}줄</button>
         ))}
       </div>
-      <p className="text-[10px] leading-relaxed text-slate-400">탭·메뉴 항목(<b>아이콘·라벨·이동 링크</b>·줄 수·순서)을 코너 유형에서 정의합니다. 라벨을 정하면 <b>이동 링크 URL과 아이콘이 자동 매핑</b>되고(수동 편집 가능), 실서비스 코너는 이 정의를 상속하며 <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
+      <p className="text-[11px] leading-relaxed text-slate-400">탭·메뉴 항목(<b>아이콘·라벨·이동 링크</b>·줄 수·순서)을 코너 유형에서 정의합니다. 라벨을 정하면 <b>이동 링크 URL과 아이콘이 자동 매핑</b>되고(수동 편집 가능), 실서비스 코너는 이 정의를 상속하며 <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
     </div>
   );
 }
@@ -770,7 +770,7 @@ export function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: 
       <div className="flex flex-1 flex-col gap-2 px-5 pt-1">
         <button type="button" onClick={onOpen} className="text-left">
           <p className="text-[16px] font-bold leading-tight text-[#1A1A2E] group-hover:text-[#4A6CF7]">{name}</p>
-          <span className="mt-1 block font-mono text-[10px] text-slate-400">{t.typeId}</span>
+          <span className="mt-1 block font-mono text-[11px] text-slate-400">{t.typeId}</span>
         </button>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className={cn('inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span>
@@ -894,7 +894,7 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
         ) : st === 'APPROVED' && g.needsPublish ? (
           <button type="button" disabled={busy} onClick={publish} className={cn(btn, 'w-full border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100')}>반영(사용)</button>
         ) : (
-          <p className="text-center text-[10px] text-slate-400">사용 중 · 조치 없음</p>
+          <p className="text-center text-[11px] text-slate-400">사용 중 · 조치 없음</p>
         )}
       </div>
     </div>
@@ -1531,7 +1531,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                       <div className="min-w-0 flex-1">
                         <span className="text-[13px] font-medium text-slate-700">{it.label}</span>
                         {it.locked && <span className="ml-1.5 rounded bg-slate-100 px-1 text-[9px] text-slate-500">필수</span>}
-                        <span className="block text-[10px] text-slate-400">{it.sub}{it.dep ? ` · ${it.dep}` : ''}</span>
+                        <span className="block text-[11px] text-slate-400">{it.sub}{it.dep ? ` · ${it.dep}` : ''}</span>
                       </div>
                       <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[9px] font-medium text-indigo-500">공통</span>
                       <Switch checked={on} disabled={it.locked || badgeLocked} onChange={(v) => toggleFeature(it.key, v)} />
@@ -1566,7 +1566,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         <TRow label="승인상태" hint="승인 결과는 별도 승인 프로세스에서 반영됩니다">
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
-            <span className="text-[10px] text-muted-foreground">(읽기 전용)</span>
+            <span className="text-[11px] text-muted-foreground">(읽기 전용)</span>
           </div>
           <input type="hidden" name="status" value={row.status} />
         </TRow>
@@ -1812,7 +1812,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   <label className="flex items-center justify-between gap-2">
                     <span className="flex flex-col">
                       <span className="text-xs font-medium text-foreground">사용자 설정 가능</span>
-                      <span className="text-[10px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
+                      <span className="text-[11px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
                     </span>
                     <button type="button" role="switch" aria-checked={userCustom} onClick={() => setUserCustom((v) => !v)}
                       className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-sky-500' : 'bg-slate-300')}>
@@ -1823,21 +1823,21 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   {userCustom && (
                     <div className="grid grid-cols-2 gap-2 border-t pt-2.5">
                       <div className="space-y-1">
-                        <label className="text-[10px] text-muted-foreground">고객 노출 최소 개수</label>
+                        <label className="text-[11px] text-muted-foreground">고객 노출 최소 개수</label>
                         <Input name="userMinItems" type="number" min={0} value={userMin} onChange={(e) => setUserMin(e.target.value)} placeholder="예: 3 (고정 포함)" className="h-8 text-xs" />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] text-muted-foreground">고객 노출 최대 개수</label>
+                        <label className="text-[11px] text-muted-foreground">고객 노출 최대 개수</label>
                         <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
                       </div>
-                      <p className="col-span-2 text-[10px] text-muted-foreground">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함.</p>
+                      <p className="col-span-2 text-[11px] text-muted-foreground">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함.</p>
                     </div>
                   )}
                 </div>
               </section>
             )}
             {/* 자동 구성(배열·레이아웃 요약) 카드는 제거 — 등록 결과·상품/혜택 묶기와 중복(2026-09-30 사용자 요청). */}
-            <p className="text-[10px] leading-relaxed text-muted-foreground">
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
@@ -1878,7 +1878,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 <TRow label="CTA 문구">
                   <div className="flex flex-wrap items-center gap-2">
                     <Input name="defaultMoreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} placeholder="예: 담기 / 자세히 / 전체보기" className="h-8 w-52 text-xs" />
-                    <span className="text-[10px] text-slate-400">미리보기 버튼에 그대로 노출 · 링크는 코너별로</span>
+                    <span className="text-[11px] text-slate-400">미리보기 버튼에 그대로 노출 · 링크는 코너별로</span>
                   </div>
                 </TRow>
               )}
@@ -1905,7 +1905,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                     <input name="defaultMinItems" type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} placeholder="최소" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
                     <span className="text-xs text-muted-foreground">~</span>
                     <input name="defaultMaxItems" type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} placeholder="최대" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
-                    <span className="text-[10px] text-slate-400">코너에 노출할 아이템 개수</span>
+                    <span className="text-[11px] text-slate-400">코너에 노출할 아이템 개수</span>
                   </div>
                 </TRow>
               )}
@@ -1931,7 +1931,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   </div>
                 </TRow>
               )}
-              <TRow label="안내" flat><span className="text-[10px] leading-relaxed text-slate-400">체크한 항목만 이 유형 코너에 노출 · 유형에 맞지 않는 항목은 자동 비활성 · 서브타이틀은 타이틀 없이 못 켬 · 배지는 가격에 종속 · 노출 개수는 빌더에서 코너별.</span></TRow>
+              <TRow label="안내" flat><span className="text-[11px] leading-relaxed text-slate-400">체크한 항목만 이 유형 코너에 노출 · 유형에 맞지 않는 항목은 자동 비활성 · 서브타이틀은 타이틀 없이 못 켬 · 배지는 가격에 종속 · 노출 개수는 빌더에서 코너별.</span></TRow>
             </div>
             )}
           </div>
@@ -1961,7 +1961,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
                 ))}
               </select>
-              <dl className="space-y-1 rounded-md bg-violet-50/50 p-2.5 text-[10px] leading-relaxed">
+              <dl className="space-y-1 rounded-md bg-violet-50/50 p-2.5 text-[11px] leading-relaxed">
                 {REC_SOURCE_METHODS.map((k) => (
                   <div key={k} className="flex gap-1.5">
                     <dt className="w-24 shrink-0 font-semibold text-violet-700">{k} <span className="font-normal text-violet-400">· {REC_SOURCE_INFO[k].tag}</span></dt>
@@ -1979,7 +1979,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 {cvmChosen && <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-600">CVM이 자동 결정 · 선택 불가</span>}
               </div>
               {cvmChosen && (
-                <p className="rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-1.5 text-[10px] leading-relaxed text-violet-600/90">
+                <p className="rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-1.5 text-[11px] leading-relaxed text-violet-600/90">
                   <b>CVM 수급</b>이라 정렬·노출 구성을 <b>CVM이 고객마다 자동 결정</b>합니다. 노출 구성은 <b>운영자 편성</b>일 때만 설정할 수 있어요.
                 </p>
               )}
@@ -2080,7 +2080,7 @@ function TRow({
     <div className={cn('grid grid-cols-[120px_1fr] items-stretch overflow-hidden', !flat && 'border-b border-[#E8ECEF]')}>
       <label className="flex h-full flex-col justify-center bg-[#F8F9FB] px-3 py-2.5 text-xs font-medium text-slate-600">
         <span>{label} {required && <span className="text-rose-500">*</span>}</span>
-        {hint && <span className="mt-0.5 block text-[10px] font-normal text-slate-500/80">{hint}</span>}
+        {hint && <span className="mt-0.5 block text-[11px] font-normal text-slate-500/80">{hint}</span>}
       </label>
       <div className="min-w-0 px-3 py-2">{children}</div>
     </div>
