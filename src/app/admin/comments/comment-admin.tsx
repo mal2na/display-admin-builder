@@ -32,19 +32,11 @@ export function CommentAdmin({ promoHref = '/admin/events' }: { promoHref?: stri
   const [tab, setTab] = useState<TabKey>('comment');
   const [detailOpen, setDetailOpen] = useState(false); // 상세 진입 시 상단 탭 숨김
   return (
-    <div className="p-6">
+    <div className="px-8 py-6">
       {detailOpen ? (
-        <PageHeader
-          trail={['운영 관리', '댓글·리뷰 관리', '댓글 상세']}
-          title="댓글 상세"
-          subtitle="목록에서 선택한 댓글의 상세 페이지로 댓글의 노출여부 수정 및 답글을 등록/수정 할 수 있는 화면입니다."
-        />
+        <PageHeader trail={['운영 관리', '댓글·리뷰 관리', '댓글 상세']} title="댓글 상세" />
       ) : (
-        <PageHeader
-          trail={['운영 관리', '댓글·리뷰 관리']}
-          title="댓글·리뷰 관리"
-          subtitle="상품 상세·프로모션에 달린 댓글/리뷰를 조회·통제·답글하고, 신고 접수와 사용자 차단을 관리합니다."
-        />
+        <PageHeader trail={['운영 관리', '댓글·리뷰 관리']} title="댓글·리뷰 관리" />
       )}
 
       {/* 탭 — 목록에서만 표시(상세 진입 시 숨김) */}

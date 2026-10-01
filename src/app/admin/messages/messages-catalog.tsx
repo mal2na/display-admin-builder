@@ -107,7 +107,7 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
   };
 
   return (
-    <div className="flex h-full flex-col p-6">
+    <div className="flex h-full flex-col px-8 py-6">
       <PageHeader
         trail={['전시 관리', '문구 관리']}
         title="문구 관리"

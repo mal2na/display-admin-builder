@@ -21,9 +21,10 @@ export function AdminMain({ children }: { children: React.ReactNode }) {
     return <main className="min-h-0 flex-1 overflow-hidden bg-[#ebeef6] p-3">{children}</main>;
   }
   // 흰 패널을 LNB 바로 옆·헤더 바로 밑에 붙인다(좌/상 여백 제거). 우/하 라벤더 여백만 유지.
+  //  단, 좌상단 모서리는 라운드 유지(2026-10-01 사용자 요청) — LNB 접힘 영역 옆이 둥글게.
   return (
     <main className="min-h-0 flex-1 overflow-hidden bg-[#ebeef6] pb-3 pr-3">
-      <div className="h-full overflow-y-auto rounded-2xl rounded-tl-none border border-l-0 border-t-0 bg-card shadow-sm">{children}</div>
+      <div className="h-full overflow-y-auto rounded-2xl border border-l-0 border-t-0 bg-card shadow-sm">{children}</div>
     </main>
   );
 }
