@@ -967,3 +967,36 @@ model BannerCampaignHistory {
 
   @@index([campaignId])
 }
+
+// ─────────────────────────────────────────────────────────────
+// 전시 관리 — 전체페이지 관리 (SB BO-AIM-DSP-PG003/027/459/173/174 등) · 정책 AIM
+//   앱/웹 전체 페이지의 URL·사용여부·운영채널·승인상태를 조회(상세검색/IA구조 탭), 등록/상세/수정.
+// ─────────────────────────────────────────────────────────────
+model FullPage {
+  id        String  @id @default(cuid())
+  pageCode  String  // 페이지ID "PG000201"
+  menuName  String  // 메뉴명
+  path      String? // 경로(상위 메뉴 경로 텍스트)
+  url       String? // URL
+  // 상태: urlpending(URL확정대기) | review(승인요청) | approved(승인완료) | rejected(반려) | urlnone(URL미등록)
+  status    String  @default("urlpending")
+  useYn     Boolean @default(true)  // 사용여부
+  frontExposeYn Boolean @default(true) // Front 노출여부(IA구조)
+  channels  String  @default("")    // 운영채널 CSV: PC웹,모바일웹,Android앱,iOS앱
+  category  String? // 1depth 분류: MY | 상품서비스 | T다이렉트샵 | 혜택 | 고객지원
+
+  // IA 구조(메뉴 트리) — 셀프 릴레이션
+  parentId  String?
+  parent    FullPage?  @relation("FullPageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  FullPage[] @relation("FullPageTree")
+  depth     Int     @default(1)
+  sortOrder Int     @default(0)
+
+  createdBy String?
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([parentId])
+}
