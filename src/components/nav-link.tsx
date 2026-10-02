@@ -10,12 +10,14 @@ export function NavLink({
   label,
   collapsed,
   alsoActiveFor,
+  badge,
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
   collapsed?: boolean;
   alsoActiveFor?: string[]; // 통합 메뉴: 다른 경로에서도 활성 표시
+  badge?: string; // 라벨 옆 작은 태그(예: 테스트)
 }) {
   const pathname = usePathname();
   const active =
@@ -36,6 +38,9 @@ export function NavLink({
     >
       <span className="shrink-0">{icon}</span>
       {!collapsed && <span className="truncate">{label}</span>}
+      {!collapsed && badge && (
+        <span className="ml-auto shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{badge}</span>
+      )}
     </Link>
   );
 }

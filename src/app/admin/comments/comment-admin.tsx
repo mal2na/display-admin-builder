@@ -41,7 +41,7 @@ export function CommentAdmin({ promoHref = '/admin/events' }: { promoHref?: stri
 
       {/* 탭 — 목록에서만 표시(상세 진입 시 숨김) */}
       {!detailOpen && (
-        <div className="mt-4 flex gap-1 border-b">
+        <div className="mb-5 flex gap-1 border-b border-[#e8ebef]">
           {TABS.map((t) => (
             <button key={t.key} onClick={() => { setTab(t.key); setDetailOpen(false); }}
               className={cn('-mb-px border-b-2 px-4 py-2.5 text-[14px] font-semibold', tab === t.key ? 'border-[#3616cd] text-[#3616cd]' : 'border-transparent text-slate-500 hover:text-slate-700')}>{t.label}</button>
@@ -49,7 +49,7 @@ export function CommentAdmin({ promoHref = '/admin/events' }: { promoHref?: stri
         </div>
       )}
 
-      <div className="mt-5">
+      <div>
         {tab === 'comment' && <CommentsTab onDetail={setDetailOpen} promoHref={promoHref} />}
         {tab === 'review' && <ReviewsTab />}
         {tab === 'block' && <BlockTab />}
