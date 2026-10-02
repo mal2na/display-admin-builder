@@ -23,6 +23,7 @@ import {
   PRODUCT_SORT_OPTIONS,
   REC_SOURCE_METHODS,
   REC_SOURCE_INFO,
+  CVM_TARGET_HINTS,
   normalizeRecSource,
   parseComposition,
   defaultComposition,
@@ -37,7 +38,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles } from 'lucide-react';
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -2029,6 +2030,64 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   </div>
                 ))}
               </div>
+
+              {/* CVM 추천 연동 (가안) — 스크럼 2026-10-01 + POL-REC '슬롯 관리 기준' 기반. 하이브리드:
+                  코너 유형 관리에서 수급·풀·노출개수·폴백·세그참조를 '정의'로 확정 → 승인 동반, 빌더는 세그 미세조정만.
+                  화요일(2026-10-07) CVM 미팅 확정 전 가안이라 '가안' 뱃지로 명시. */}
+              {cvmChosen && (
+                <div className="space-y-2 rounded-lg border border-[#d9d0ff] bg-[#f6f4ff] p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-[#3616cd] px-1.5 py-0.5 text-[9px] font-bold text-white">가안</span>
+                    <span className="text-[11.5px] font-semibold text-[#3616cd]">CVM 추천 연동 · 코너 확정 시 함께 승인</span>
+                    <span className="text-[10px] font-normal text-slate-400">POL-REC 슬롯 관리 기준 · 화요일 미팅 확정 전</span>
+                  </div>
+
+                  {/* 후보 풀 → 노출 (N중 M) */}
+                  <div className="grid grid-cols-[132px_minmax(0,1fr)] overflow-hidden rounded-md border border-[#e8ebef] bg-white">
+                    <div className="flex items-center bg-[#f0f2f4] px-3 py-2 text-[11px] font-medium text-slate-600">후보 풀 → 노출</div>
+                    <div className="px-3 py-2 text-[11px] leading-relaxed text-slate-700">
+                      어드민은 <b>후보 풀</b>만 넉넉히 등록 · 고객별 <b>택M</b>은 CVM이 선별
+                      <span className="mt-1 block">
+                        <span className="inline-flex items-center rounded-md bg-[#eef0ff] px-2 py-0.5 text-[11px] font-semibold text-[#3616cd]">
+                          CVM 기반 · 풀 {productItems.length || '—'}개 중 고객별 {minItems || '?'}{maxItems ? `~${maxItems}` : ''}개
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* CVM이 채우는 것 (눈금 표시) */}
+                  <div className="grid grid-cols-[132px_minmax(0,1fr)] overflow-hidden rounded-md border border-[#e8ebef] bg-white">
+                    <div className="flex items-center bg-[#f0f2f4] px-3 py-2 text-[11px] font-medium text-slate-600">CVM이 채우는 것</div>
+                    <div className="flex flex-wrap gap-1 px-3 py-2">
+                      {['콘텐츠 묶음 (풀 중 택M)', '문구 베리에이션 (택1)', '노출 타입 베리에이션'].map((t) => (
+                        <span key={t} className="inline-flex items-center gap-1 rounded-md border border-[#d9d0ff] bg-white px-2 py-0.5 text-[10.5px] text-[#3616cd]">
+                          <Sparkles className="h-3 w-3" />{t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 세그 참조 (읽기전용) */}
+                  <div className="grid grid-cols-[132px_minmax(0,1fr)] overflow-hidden rounded-md border border-[#e8ebef] bg-white">
+                    <div className="flex items-center bg-[#f0f2f4] px-3 py-2 text-[11px] font-medium text-slate-600">세그 참조 <span className="ml-1 font-normal text-slate-400">읽기전용</span></div>
+                    <div className="px-3 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {CVM_TARGET_HINTS.map((h) => (
+                          <span key={h.key} className="inline-flex items-center rounded-full border border-[#e8ebef] bg-white px-2 py-0.5 text-[10.5px] text-slate-500" title={`${h.axis} · ${h.note}`}>{h.key}</span>
+                        ))}
+                      </div>
+                      <p className="mt-1.5 text-[10.5px] leading-relaxed text-slate-400">세그·룰값은 <b className="text-slate-500">CVM/세일즈포스 소유</b> — 어드민은 입력하지 않고 표시만. 타겟별 레이아웃 차별화는 노출 타입 베리에이션으로.</p>
+                    </div>
+                  </div>
+
+                  {/* 폴백 · 승인 동반 · 미해결 쟁점 */}
+                  <p className="text-[10.5px] leading-relaxed text-slate-500">
+                    · <b>폴백</b>: CVM 미매칭·신뢰도 낮을 때 <b>운영자 편성</b>으로 대체(최하단, PI-DSP-PER-002).<br />
+                    · <b>승인 동반</b>: 코너 확정(승인 요청) 시 “이 유형으로 CVM 추천 매핑 요청”을 함께 전송.<br />
+                    · <span className="font-semibold text-amber-600">조율 필요</span>: 코너 <b>순서</b> 개인화(세일즈포스 ‘불가’ vs 우리 ‘원함’) · 에셋 등록 위치(우리 안 = 어드민 등록 + CVM 데이터 수신).
+                  </p>
+                </div>
+              )}
             </div>
           )}
           {/* ② 노출 구성 (정렬·CTA) — CVM 수급이면 CVM이 결정하므로 비활성(선택 불가) */}
