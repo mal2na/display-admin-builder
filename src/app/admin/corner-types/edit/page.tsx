@@ -18,7 +18,7 @@ export default async function CornerTypeEditPage({ searchParams }: { searchParam
   const variations = rows.map((r) => toCornerTypeRow(r, null));
 
   return (
-    <div className="p-6">
+    <div className="px-8 py-6">
       <TypeVariationsEditor base={base} variations={variations} builtOptions={builtOptions} registered={registered} />
     </div>
   );

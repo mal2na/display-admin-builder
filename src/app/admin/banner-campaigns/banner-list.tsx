@@ -1,314 +1,133 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+// SB BO-AIM-ETC-PG061 배너 캠페인 관리 목록 — 검색 영역 + 목록 + 등록.
+//  디자인 시스템: accent #3616cd · 헤더/필터 #f0f2f4 · 보더 #e8ebef · 13px 레귤러.
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { StatusPill } from '@/components/ops-ui';
-import { BANNER_APPROVAL, BANNER_EXPOSE, fmtDateTime, fmtPeriod } from '@/lib/widget-taxonomy';
-import { RotateCcw, Search, List, LayoutGrid, Trash2, X, MapPin } from 'lucide-react';
-import { ComposedBanner, type ComposeFields } from './composed-banner';
-import { deleteBannerCampaign } from './actions';
-import type { BannerUsage } from './banner-usage';
-
-// 썸네일 프리뷰 — 완성 이미지형은 URL, 직접 만들기형은 조립 결과를 라이브 렌더.
-export type BannerPreview =
-  | { kind: 'image'; url: string }
-  | { kind: 'compose'; f: ComposeFields }
-  | null;
+import { cn } from '@/lib/utils';
 
 export type BannerRow = {
   id: string; campaignCode: string; title: string; exposeYn: boolean;
-  publishStart: string | null; publishEnd: string | null; approvalStatus: string; approvalManager: string | null; preview: BannerPreview;
-  usage: BannerUsage[];
-  createdBy: string | null; createdAt: string; updatedBy: string | null; updatedAt: string;
+  publishStart: string | null; publishEnd: string | null; approvalLabel: string;
+  createdBy: string; createdAt: string | null; updatedBy: string; updatedAt: string | null;
 };
 
-// 컨테이너에 맞춰 조립형 배너를 렌더(썸네일용).
-// 넉넉한 natural 크기(360px 폭)로 그린 뒤 컨테이너 크기에 맞게 통째로 scale — 작은 카드에서도 문구·CTA가 잘리지 않음.
-const NAT_W = 360;
-function FitComposed({ f }: { f: ComposeFields }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [d, setD] = useState({ w: 0, h: 0 });
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setD({ w: el.clientWidth, h: el.clientHeight }));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const scale = d.w > 0 ? d.w / NAT_W : 0;
-  const natH = d.w > 0 ? Math.round((NAT_W * d.h) / d.w) : 202;
-  return (
-    <div ref={ref} className="relative h-full w-full overflow-hidden">
-      {d.w > 0 && (
-        <div className="absolute left-0 top-0 origin-top-left" style={{ transform: `scale(${scale})`, width: NAT_W, height: natH }}>
-          <ComposedBanner f={f} width={NAT_W} height={natH} />
-        </div>
-      )}
-    </div>
-  );
+const APPROVAL_TONE: Record<string, string> = {
+  승인완료: 'bg-[#e3f6ea] text-[#1f8a4c]', 승인요청: 'bg-[#eceef3] text-[#5d6275]',
+  반려: 'bg-[#ffe9e9] text-[#d93b3b]', 요청취소: 'bg-[#fff0de] text-[#c46a0b]', 임시저장: 'bg-[#eceef3] text-[#5d6275]',
+};
+function fmtDT(iso: string | null) {
+  if (!iso) return '-';
+  const d = new Date(iso); const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
-
-function BannerThumb({ preview }: { preview: BannerPreview }) {
-  if (preview?.kind === 'image') {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={preview.url} alt="" className="h-full w-full object-cover transition group-hover:scale-[1.03]" />;
-  }
-  if (preview?.kind === 'compose') return <FitComposed f={preview.f} />;
-  return <LayoutGrid className="h-8 w-8 text-slate-300" />;
-}
-
+const selectCls = 'h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-2.5 text-[12.5px] text-slate-700';
+const inputCls = 'h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-3 text-[12.5px] text-slate-700 placeholder:text-slate-400';
 const PER_PAGE = 10;
+
+type F = { field: string; q: string; expose: string; from: string; to: string; approval: string };
+const DEF: F = { field: '배너캠페인 ID', q: '', expose: '전체', from: '', to: '', approval: '전체' };
 
 export function BannerList({ rows }: { rows: BannerRow[] }) {
   const router = useRouter();
-  // 검색 항목(선택) + 단일 검색어 — 목업 통일(2026-09-30).
-  const [field, setField] = useState<'code' | 'title'>('code');
-  const [q, setQ] = useState('');
-  const [expose, setExpose] = useState('');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [status, setStatus] = useState('');
-  const [applied, setApplied] = useState({ code: '', title: '', expose: '', from: '', to: '', status: '' });
+  const [draft, setDraft] = useState<F>(DEF);
+  const [applied, setApplied] = useState<F>(DEF);
   const [page, setPage] = useState(1);
-  const [view, setView] = useState<'list' | 'card'>('list');
-  const [confirmDel, setConfirmDel] = useState<BannerRow | null>(null);
-  const [deleting, startDelete] = useTransition();
-  const doDelete = () => { if (!confirmDel) return; const id = confirmDel.id; startDelete(async () => { await deleteBannerCampaign(id); setConfirmDel(null); router.refresh(); }); };
+  const set = (p: Partial<F>) => setDraft((d) => ({ ...d, ...p }));
 
-  const reset = () => { setField('code'); setQ(''); setExpose(''); setFrom(''); setTo(''); setStatus(''); setApplied({ code: '', title: '', expose: '', from: '', to: '', status: '' }); setPage(1); };
-  const search = () => { setApplied({ code: field === 'code' ? q : '', title: field === 'title' ? q : '', expose, from, to, status }); setPage(1); };
-
-  const filtered = useMemo(() => rows
-    .filter((r) => (applied.code ? r.campaignCode.toLowerCase().includes(applied.code.toLowerCase()) : true))
-    .filter((r) => (applied.title ? r.title.toLowerCase().includes(applied.title.toLowerCase()) : true))
-    .filter((r) => (applied.expose ? String(r.exposeYn) === applied.expose : true))
-    .filter((r) => (applied.status ? r.approvalStatus === applied.status : true))
-    .filter((r) => (applied.from ? (r.publishEnd ?? r.publishStart ?? '') >= applied.from : true))
-    .filter((r) => (applied.to ? (r.publishStart ?? r.publishEnd ?? '') <= applied.to + 'T23:59' : true)),
-    [rows, applied]);
+  const filtered = useMemo(() => {
+    const f = applied;
+    return rows.filter((r) => {
+      if (f.expose !== '전체' && (f.expose === '전시' ? !r.exposeYn : r.exposeYn)) return false;
+      if (f.approval !== '전체' && r.approvalLabel !== f.approval) return false;
+      // 전시기간 겹침 필터
+      if (f.from && r.publishEnd && r.publishEnd.slice(0, 10) < f.from) return false;
+      if (f.to && r.publishStart && r.publishStart.slice(0, 10) > f.to) return false;
+      if (f.q.trim()) {
+        const q = f.q.trim().toLowerCase();
+        const hay = f.field === '배너캠페인명' ? r.title : r.campaignCode;
+        if (!(hay ?? '').toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [rows, applied]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const pageSafe = Math.min(page, totalPages);
-  const paged = filtered.slice((pageSafe - 1) * PER_PAGE, pageSafe * PER_PAGE);
+  const curPage = Math.min(page, totalPages);
+  const paged = filtered.slice((curPage - 1) * PER_PAGE, curPage * PER_PAGE);
+  const period = (r: BannerRow) => (r.publishStart || r.publishEnd) ? `${fmtDT(r.publishStart)} ~ ${fmtDT(r.publishEnd)}` : '-';
 
   return (
-    <div className="space-y-4">
-      {/* 검색 조건 — 검색 항목(선택) + 단일 검색어. 목업 통일(2026-09-30) */}
-      <div className="rounded-xl border border-[#e3e6ef] bg-[#f6f7fb] px-4 py-3.5">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] font-medium text-slate-500">검색 항목</span>
-            <Select value={field} onChange={(e) => setField(e.target.value as 'code' | 'title')} className="h-9 w-40 text-sm">
-              <option value="code">배너캠페인 ID</option>
-              <option value="title">배너캠페인명</option>
-            </Select>
-            <span className="text-slate-300">|</span>
-            <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') search(); }} placeholder="검색 항목을 선택 후 검색하세요" className="h-9 w-64 text-sm" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] font-medium text-slate-500">전시여부</span>
-            <Select value={expose} onChange={(e) => setExpose(e.target.value)} className="h-9 w-28 text-sm">
-              <option value="">전체</option>
-              <option value="true">전시</option>
-              <option value="false">미전시</option>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] font-medium text-slate-500">전시기간</span>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-36 text-sm" />
-            <span className="text-muted-foreground">-</span>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-36 text-sm" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] font-medium text-slate-500">승인상태</span>
-            <Select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-32 text-sm">
-              <option value="">전체</option>
-              {Object.entries(BANNER_APPROVAL).map(([v, s]) => <option key={v} value={v}>{s.label}</option>)}
-            </Select>
-          </div>
-          <div className="ml-auto flex gap-2">
-            <Button type="button" variant="outline" onClick={reset}><RotateCcw className="mr-1 h-3.5 w-3.5" />초기화</Button>
-            <Button type="button" onClick={search}><Search className="mr-1 h-3.5 w-3.5" />조회</Button>
-          </div>
+    <div className="px-8 py-6">
+      <nav className="mb-1 text-[12px] text-slate-400">홈 › 운영관리 › 배너 캠페인 관리</nav>
+      <h1 className="mb-4 text-[22px] font-bold text-slate-900">배너 캠페인 관리</h1>
+
+      {/* 검색 영역 */}
+      <div className="mb-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-5">
+        <div className="flex items-center gap-2">
+          <span className="text-[12.5px] font-medium text-slate-600">검색 항목</span>
+          <select value={draft.field} onChange={(e) => set({ field: e.target.value, q: '' })} className={cn(selectCls, 'w-36')}>{['배너캠페인 ID', '배너캠페인명'].map((o) => <option key={o}>{o}</option>)}</select>
+          <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && (setApplied(draft), setPage(1))} placeholder="검색 항목을 선택 후 검색하세요" className={cn(inputCls, 'w-[220px]')} />
+        </div>
+        <div className="flex items-center gap-2"><span className="text-[12.5px] font-medium text-slate-600">전시여부</span>
+          <select value={draft.expose} onChange={(e) => set({ expose: e.target.value })} className={cn(selectCls, 'w-28')}>{['전체', '전시', '미전시'].map((o) => <option key={o}>{o}</option>)}</select>
+        </div>
+        <div className="flex items-center gap-2"><span className="text-[12.5px] font-medium text-slate-600">전시기간</span>
+          <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} className={cn(inputCls, 'w-[150px]')} />
+          <span className="text-slate-400">~</span>
+          <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={cn(inputCls, 'w-[150px]')} />
+        </div>
+        <div className="flex items-center gap-2"><span className="text-[12.5px] font-medium text-slate-600">승인상태</span>
+          <select value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={cn(selectCls, 'w-32')}>{['전체', '승인요청', '승인완료', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <button type="button" onClick={() => { setDraft(DEF); setApplied(DEF); setPage(1); }} className="h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-4 text-[12.5px] font-medium text-slate-600 hover:bg-[#f0f2f4]">초기화</button>
+          <button type="button" onClick={() => { setApplied(draft); setPage(1); }} className="h-[34px] rounded-lg bg-[#3616cd] px-5 text-[12.5px] font-medium text-white hover:brightness-110">조회</button>
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">검색결과 <span className="text-[#3a2ee6]">{filtered.length}건</span></p>
-        <div className="inline-flex overflow-hidden rounded-lg border border-slate-200 text-[12px]">
-          <button type="button" onClick={() => setView('list')} className={'flex items-center gap-1 px-3 py-1.5 font-medium ' + (view === 'list' ? 'bg-[#3a2ee6] text-white' : 'bg-white text-slate-600 hover:bg-slate-50')}><List className="h-3.5 w-3.5" />리스트형</button>
-          <button type="button" onClick={() => setView('card')} className={'flex items-center gap-1 px-3 py-1.5 font-medium ' + (view === 'card' ? 'bg-[#3a2ee6] text-white' : 'bg-white text-slate-600 hover:bg-slate-50')}><LayoutGrid className="h-3.5 w-3.5" />카드형</button>
-        </div>
-      </div>
-
-      {/* 카드형 뷰 */}
-      {view === 'card' && (
-        paged.length === 0 ? (
-          <div className="border-y border-slate-200 bg-white px-4 py-16 text-center text-sm text-muted-foreground">조회된 배너 캠페인이 없습니다.</div>
-        ) : (
-          <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
-            {paged.map((r) => {
-              const ex = r.exposeYn ? BANNER_EXPOSE.true : BANNER_EXPOSE.false;
-              const ap = BANNER_APPROVAL[r.approvalStatus as keyof typeof BANNER_APPROVAL] ?? BANNER_APPROVAL.requested;
-              return (
-                <div key={r.id} role="button" tabIndex={0} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') router.push(`/admin/banner-campaigns/${r.id}`); }}
-                  className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-white text-left ring-1 ring-black/[0.04] shadow-[0_1px_3px_rgba(20,22,40,0.05),0_10px_28px_rgba(20,22,40,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_6px_rgba(20,22,40,0.08),0_18px_42px_rgba(20,22,40,0.14)]">
-                  <button type="button" title="삭제"
-                    onClick={(e) => { e.stopPropagation(); setConfirmDel(r); }}
-                    className="absolute right-2 top-2 z-10 hidden h-7 w-7 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow ring-1 ring-slate-200 backdrop-blur transition hover:text-rose-600 group-hover:flex">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                  <div className="flex aspect-[16/9] w-full items-center justify-center overflow-hidden bg-slate-100">
-                    <BannerThumb preview={r.preview} />
-                  </div>
-                  <div className="flex flex-1 flex-col gap-1.5 p-4">
-                    <p className="line-clamp-1 text-[15px] font-bold text-slate-900 group-hover:text-[#3a2ee6]">{r.title}</p>
-                    <p className="font-mono text-[11px] text-slate-400">{r.campaignCode}</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      <StatusPill label={ex.label} tone={ex.tone} />
-                      <StatusPill label={ap.label} tone={ap.tone} />
-                    </div>
-                    {(() => {
-                      const uniq = Array.from(new Map(r.usage.map((u) => [`${u.containerName}·${u.cornerName}`, u])).values());
-                      if (uniq.length === 0) return null;
-                      return (
-                        <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
-                          <MapPin className="h-3 w-3 shrink-0 text-indigo-400" /><span className="font-medium text-slate-600">노출 {uniq.length}곳</span>
-                          <span className="truncate text-slate-400">· {uniq[0].containerName}</span>
-                        </div>
-                      );
-                    })()}
-                    <p className="mt-1 text-[11px] text-muted-foreground">{fmtPeriod(r.publishStart, r.publishEnd)}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )
-      )}
-
-      {/* 리스트형 뷰 */}
-      {view === 'list' && (
-      <div className="overflow-x-auto border-y border-slate-200 bg-white">
-        {/* 테이블 폰트 통일: 모든 셀 13px · 레귤러 */}
-        <table className="w-full min-w-[1140px] text-[13px] font-normal">
+      <p className="mb-2 text-[13px] text-slate-500">검색결과 <b className="text-[#3616cd] tabular-nums">{filtered.length}</b>건</p>
+      <div className="overflow-x-auto border-t border-[#e8ebef]">
+        <table className="w-full min-w-[1200px] text-[13px] font-normal whitespace-nowrap">
           <thead>
-            <tr className="border-b border-[#e3e6ef] bg-[#f6f7fb] text-[#6b7086]">
-              <th className="w-14 px-4 py-2.5 text-center font-normal">NO.</th>
-              <th className="px-4 py-2.5 text-left font-normal">배너캠페인 ID</th>
-              <th className="w-24 px-4 py-2.5 text-left font-normal">썸네일</th>
-              <th className="px-4 py-2.5 text-left font-normal">배너캠페인(타이틀)</th>
-              <th className="w-24 px-4 py-2.5 text-left font-normal">전시여부</th>
-              <th className="px-4 py-2.5 text-left font-normal">전시기간</th>
-              <th className="px-4 py-2.5 text-left font-normal">노출 위치</th>
-              <th className="w-24 px-4 py-2.5 text-left font-normal">승인상태</th>
-              <th className="px-4 py-2.5 text-left font-normal">등록자</th>
-              <th className="px-4 py-2.5 text-left font-normal">등록일시</th>
-              <th className="px-4 py-2.5 text-left font-normal">수정자</th>
-              <th className="px-4 py-2.5 text-left font-normal">수정일시</th>
-              <th className="w-16 px-4 py-2.5 text-center font-normal">관리</th>
+            <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086]">
+              {['NO.', '배너캠페인 ID', '배너캠페인명', '전시여부', '전시기간', '승인상태', '등록자', '등록일시', '최종 수정자', '최종 수정일시'].map((h) => (
+                <th key={h} className={cn('h-11 px-3 font-normal', h === '배너캠페인명' || h === '전시기간' ? 'text-left' : 'text-center')}>{h}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {paged.length === 0 ? (
-              <tr><td colSpan={13} className="px-4 py-16 text-center text-muted-foreground">
-                <div>조회된 배너 캠페인이 없습니다.</div>
-                <div className="mt-1 text-[12px]">검색 조건을 설정하여 조회해주세요.</div>
-              </td></tr>
-            ) : paged.map((r, i) => {
-              const ex = r.exposeYn ? BANNER_EXPOSE.true : BANNER_EXPOSE.false;
-              const ap = BANNER_APPROVAL[r.approvalStatus as keyof typeof BANNER_APPROVAL] ?? BANNER_APPROVAL.requested;
-              const no = filtered.length - ((pageSafe - 1) * PER_PAGE + i); // NO 내림차순(최신=큰 번호)
-              return (
-                <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b border-[#e3e6ef] last:border-b-0 hover:bg-[#f6f7fb]">
-                  <td className="px-4 py-3 text-center text-slate-500">{no}</td>
-                  <td className="px-4 py-3 text-slate-800">{r.campaignCode}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex h-11 w-20 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
-                      <BannerThumb preview={r.preview} />
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">{r.title}</td>
-                  <td className="px-4 py-3"><StatusPill label={ex.label} tone={ex.tone} /></td>
-                  <td className="px-4 py-3 text-slate-500">{fmtPeriod(r.publishStart, r.publishEnd)}</td>
-                  <td className="px-4 py-3">
-                    {(() => {
-                      // 목록 요약 — 같은 전시화면·코너는 한 번만(템플릿 로그인/비로그인 중복 제거)
-                      const uniq = Array.from(new Map(r.usage.map((u) => [`${u.containerName}·${u.cornerName}`, u])).values());
-                      if (uniq.length === 0) return <span className="text-[12px] text-slate-400">미사용</span>;
-                      return (
-                        <div className="space-y-0.5">
-                          {uniq.slice(0, 2).map((u, i) => (
-                            <div key={i} className="flex items-center gap-1 text-[11.5px] text-slate-600">
-                              <MapPin className="h-3 w-3 shrink-0 text-indigo-400" />
-                              <span className="max-w-[150px] truncate" title={`${u.containerName} › ${u.cornerName}${u.sizeDetail ? ` › ${u.sizeDetail}` : ''}`}>
-                                {u.containerName} <span className="text-slate-300">·</span> {u.cornerName}
-                              </span>
-                              {u.sizeDetail && <span className="shrink-0 rounded bg-indigo-50 px-1 py-0.5 text-[9.5px] font-medium text-[#3a2ee6]">{u.sizeDetail.split(' ')[0]}</span>}
-                            </div>
-                          ))}
-                          {uniq.length > 2 && <span className="pl-4 text-[11px] text-slate-400">외 {uniq.length - 2}곳</span>}
-                        </div>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-4 py-3"><StatusPill label={ap.label} tone={ap.tone} /></td>
-                  <td className="px-4 py-3 text-slate-600">{r.createdBy ?? '-'}</td>
-                  <td className="px-4 py-3 text-slate-500">{fmtDateTime(r.createdAt)}</td>
-                  <td className="px-4 py-3 text-slate-600">{r.updatedBy ?? '-'}</td>
-                  <td className="px-4 py-3 text-slate-500">{fmtDateTime(r.updatedAt)}</td>
-                  <td className="px-4 py-3 text-center">
-                    <button type="button" title="삭제" onClick={(e) => { e.stopPropagation(); setConfirmDel(r); }}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-rose-50 hover:text-rose-600">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+              <tr><td colSpan={10} className="px-3 py-16 text-center text-slate-400">조회된 배너 캠페인이 없습니다.</td></tr>
+            ) : paged.map((r, i) => (
+              <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b border-[#e8ebef] text-center text-slate-700 hover:bg-[#f0f2f4]">
+                <td className="h-11 px-3 tabular-nums text-slate-500">{filtered.length - ((curPage - 1) * PER_PAGE + i)}</td>
+                <td className="h-11 px-3 tabular-nums">{r.campaignCode}</td>
+                <td className="h-11 px-3 text-left">{r.title}</td>
+                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.exposeYn ? 'bg-[#e3f6ea] text-[#1f8a4c]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.exposeYn ? '전시' : '미전시'}</span></td>
+                <td className="h-11 px-3 text-left text-slate-500">{period(r)}</td>
+                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.approvalLabel}</span></td>
+                <td className="h-11 px-3 text-slate-600">{r.createdBy}</td>
+                <td className="h-11 px-3 text-slate-500">{fmtDT(r.createdAt)}</td>
+                <td className="h-11 px-3 text-slate-600">{r.updatedBy}</td>
+                <td className="h-11 px-3 text-slate-500">{fmtDT(r.updatedAt)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
-      )}
 
-      {/* 페이지네이션 + 등록 */}
-      <div className="flex items-center">
+      <div className="relative mt-4 flex items-center justify-center">
         {totalPages > 1 && (
-          <div className="mx-auto flex items-center gap-1 text-sm">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={'h-8 w-8 rounded-md ' + (p === pageSafe ? 'bg-[#3a2ee6] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
+              <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-[13px]', p === curPage ? 'bg-[#3616cd] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
             ))}
           </div>
         )}
-        <div className="ml-auto">
-          <Button type="button" onClick={() => router.push('/admin/banner-campaigns/new')}>등록</Button>
-        </div>
+        <Link href="/admin/banner-campaigns/new" className="absolute right-0 inline-flex h-9 items-center rounded-lg bg-[#3616cd] px-5 text-[13px] font-semibold text-white hover:brightness-110">등록</Link>
       </div>
-
-      {/* 삭제 확인 모달 */}
-      {confirmDel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !deleting && setConfirmDel(null)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-50 text-rose-600"><Trash2 className="h-4 w-4" /></span>
-              <h3 className="text-[15px] font-bold text-slate-900">배너 캠페인 삭제</h3>
-              <button type="button" onClick={() => !deleting && setConfirmDel(null)} className="ml-auto text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
-            </div>
-            <p className="text-[13px] leading-relaxed text-slate-600">
-              <b className="text-slate-900">{confirmDel.title}</b> <span className="font-mono text-[11px] text-slate-400">({confirmDel.campaignCode})</span> 캠페인을 삭제할까요?<br />
-              승인 이력도 함께 삭제되며 <b className="text-rose-600">되돌릴 수 없습니다.</b>
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button type="button" disabled={deleting} onClick={() => setConfirmDel(null)} className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">취소</button>
-              <button type="button" disabled={deleting} onClick={doDelete} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-rose-600 px-4 text-[13px] font-semibold text-white hover:bg-rose-700 disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" />{deleting ? '삭제 중…' : '삭제'}</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

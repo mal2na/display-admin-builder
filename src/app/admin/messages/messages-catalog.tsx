@@ -13,6 +13,7 @@ export type LibEntry = { text: string; use: string; target?: string; sources: st
 export type MsgItem = {
   id: string; kind: 'title' | 'atom'; use: string; label: string;
   base: string; variants: MsgVariant[]; usages: string[]; editHref: string; cornerId: string;
+  subtitle?: string; readOnly?: boolean; // 배너 문구: 배너 캠페인 소유 → 읽기전용
 };
 
 // 용도별 표기 규칙(권장) — 표기 검증 PG-DSP-ACC-001
@@ -24,10 +25,8 @@ const USE_RULE: Record<string, { max: number; hint: string }> = {
 };
 const useIcon = (kind: string) => (kind === 'title' ? Type : AlignLeft);
 
-// 유형 정렬·표기 — 정책 PI-DSP-CMP-001의 Atom 유형(텍스트·버튼(CTA)·배지·정보값(설명))을 앞에,
-//  '타이틀'은 아톰이 아니라 코너 속성이므로 맨 뒤에 '코너 타이틀'로 구분 표기.
-const USE_ORDER = ['텍스트', 'CTA', '배지', '설명'];
-const useRank = (u: string) => (u === '타이틀' ? 99 : USE_ORDER.indexOf(u) < 0 ? 50 : USE_ORDER.indexOf(u));
+// 문구 관리 2축(2026-10-01 재편): ① 코너 타이틀(여기서 편집) ② 배너 문구(배너 캠페인 소유 · 읽기전용).
+const useRank = (u: string) => (u === '타이틀' ? 0 : u === '배너 문구' ? 1 : 50);
 const useLabel = (u: string) => (u === '타이틀' ? '코너 타이틀' : u);
 
 export function MessagesCatalog({ items, library }: { items: MsgItem[]; library: LibEntry[] }) {
@@ -55,7 +54,7 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
   const list = useMemo(() => {
     const kw = q.trim().toLowerCase();
     return items.filter((it) => {
-      if (onlyVar && it.variants.length === 0) return false;
+      if (onlyVar && !it.readOnly && it.variants.length === 0) return false;
       if (useF !== '전체' && it.use !== useF) return false;
       if (!kw) return true;
       return [it.label, it.base, ...it.variants.map((v) => `${v.target ?? ''} ${v.text}`), ...it.usages].join(' ').toLowerCase().includes(kw);
@@ -108,11 +107,11 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
   };
 
   return (
-    <div className="flex h-full flex-col p-6">
+    <div className="flex h-full flex-col px-8 py-6">
       <PageHeader
         trail={['전시 관리', '문구 관리']}
         title="문구 관리"
-        subtitle={<>문구를 <b>Atom(표준 단위)</b>로 관리합니다 — 유형별로 모으고, 재사용·사용처로 추적. 하나를 고치면 쓰이는 모든 코너에 반영. 매칭·성과는 CVM.</>}
+        subtitle={<><b>코너 타이틀</b>과 <b>배너 문구</b> 2축으로 관리합니다 — 코너 타이틀은 여기서 편집(후보·사용처 추적, 매칭·성과는 CVM), 배너 문구는 <b>배너 캠페인 관리</b> 소유라 현황만 보고 편집은 배너 캠페인·빌더에서.</>}
       />
 
       {/* 유형 필터 + 요약 */}
@@ -120,8 +119,8 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
         <div className="flex flex-wrap items-center gap-1">
           {uses.map((u) => (
             <Fragment key={u}>
-              {u === '타이틀' && <span className="mx-0.5 h-4 w-px self-center bg-slate-200" title="아래는 아톰 유형이 아니라 코너 속성" />}
-              <button onClick={() => setUseF(u)} className={cn('rounded-md px-2.5 py-1 font-medium', useF === u ? 'bg-[#3a2ee6] text-white' : 'text-slate-500 hover:bg-slate-100')}>{useLabel(u)}</button>
+              {u === '배너 문구' && <span className="mx-0.5 h-4 w-px self-center bg-slate-200" title="여기부터는 읽기전용(배너 캠페인 관리 소유)" />}
+              <button onClick={() => setUseF(u)} className={cn('rounded-md px-2.5 py-1 font-medium', useF === u ? 'bg-[#3616cd] text-white' : 'text-slate-500 hover:bg-slate-100')}>{useLabel(u)}</button>
             </Fragment>
           ))}
         </div>
@@ -135,11 +134,11 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
           <button onClick={exportCsv} className="inline-flex h-8 items-center gap-1 rounded-lg border bg-white px-2.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"><Download className="h-3.5 w-3.5" /> 엑셀 다운로드</button>
           {/* 뷰 토글 — 매트릭스(타겟 커버리지) ↔ 편집 */}
           <div className="flex rounded-lg border bg-white p-0.5">
-            <button onClick={() => setMode('matrix')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'matrix' ? 'bg-[#3a2ee6] text-white' : 'text-slate-500')} title="매트릭스"><Grid3x3 className="h-3.5 w-3.5" /> 매트릭스</button>
-            <button onClick={() => setMode('edit')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'edit' ? 'bg-[#3a2ee6] text-white' : 'text-slate-500')} title="편집"><List className="h-3.5 w-3.5" /> 편집</button>
+            <button onClick={() => setMode('matrix')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'matrix' ? 'bg-[#3616cd] text-white' : 'text-slate-500')} title="매트릭스"><Grid3x3 className="h-3.5 w-3.5" /> 매트릭스</button>
+            <button onClick={() => setMode('edit')} className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium', mode === 'edit' ? 'bg-[#3616cd] text-white' : 'text-slate-500')} title="편집"><List className="h-3.5 w-3.5" /> 편집</button>
           </div>
           <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
-            <input type="checkbox" checked={onlyVar} onChange={(e) => setOnlyVar(e.target.checked)} className="accent-[#3a2ee6]" />
+            <input type="checkbox" checked={onlyVar} onChange={(e) => setOnlyVar(e.target.checked)} className="accent-[#3616cd]" />
             배리에이션 있는 것만 <span className="text-slate-400">(끄면 전체 {items.length})</span>
           </label>
           <div className="relative">
@@ -166,11 +165,11 @@ export function MessagesCatalog({ items, library }: { items: MsgItem[]; library:
                     return (
                       <button key={it.id} onClick={() => setSelId(it.id)}
                         className={cn('flex w-full items-start gap-2 rounded-xl border p-2.5 text-left transition-colors', sel ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-200' : 'bg-card hover:border-slate-300')}>
-                        <span className={cn('mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md', it.kind === 'title' ? 'bg-indigo-100 text-[#3a2ee6]' : 'bg-sky-100 text-sky-600')}><Icon className="h-3.5 w-3.5" /></span>
+                        <span className={cn('mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md', it.kind === 'title' ? 'bg-indigo-100 text-[#3616cd]' : 'bg-sky-100 text-sky-600')}><Icon className="h-3.5 w-3.5" /></span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[13px] font-semibold text-foreground">{it.base || it.label}</span>
                           <span className="mt-0.5 flex items-center gap-2 text-[10px]">
-                            {it.variants.length > 0 && <span className="text-[#3a2ee6]">후보 {it.variants.length}</span>}
+                            {it.variants.length > 0 && <span className="text-[#3616cd]">후보 {it.variants.length}</span>}
                             {off > 0 && <span className="text-slate-400">제외 {off}</span>}
                             <span className="flex items-center gap-0.5 text-muted-foreground"><MapPin className="h-2.5 w-2.5" />{it.usages.length}곳</span>
                           </span>
@@ -200,12 +199,12 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
   return (
     <div className="mt-4 flex min-h-0 flex-1 flex-col">
       <p className="mb-1.5 px-1 text-[11px] text-muted-foreground">
-        <span className="font-semibold text-slate-500">열 = 후보 속성(성격·맥락 힌트, 소수)</span> · CVM이 고객 세그(수천~수만)를 이 속성에 매핑해 후보를 택1. <b className="text-[#3a2ee6]">세그를 문구마다 매핑하지 않음</b> — 채널은 후보 풀만 관리.
+        <span className="font-semibold text-slate-500">열 = 후보 속성(성격·맥락 힌트, 소수)</span> · CVM이 고객 세그(수천~수만)를 이 속성에 매핑해 후보를 택1. <b className="text-[#3616cd]">세그를 문구마다 매핑하지 않음</b> — 채널은 후보 풀만 관리.
       </p>
       <div className="min-h-0 flex-1 overflow-auto rounded-xl border bg-card">
         <table className="w-full border-separate border-spacing-0 text-[13px] font-normal" style={{ minWidth: 400 + targetCols.length * 150 }}>
           <thead className="sticky top-0 z-10">
-            <tr className="[&>th]:border-b-2 [&>th]:border-[#e3e6ef] [&>th]:bg-[#f6f7fb] [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-normal [&>th]:text-[#6b7086]">
+            <tr className="[&>th]:border-b-2 [&>th]:border-[#e8ebef] [&>th]:bg-[#f0f2f4] [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-normal [&>th]:text-[#6b7086]">
               <th className="sticky left-0 z-20 min-w-[240px]">문구</th>
               <th className="min-w-[160px]">기본 <span className="font-normal text-slate-400">· 폴백</span></th>
               {targetCols.map((c) => <th key={c} className="min-w-[150px]">{c}</th>)}
@@ -221,15 +220,15 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
                   const byT = new Map(it.variants.map((v) => [v.target, v]));
                   return (
                     <tr key={it.id} className="group cursor-pointer" onClick={() => onOpen(it.id)}>
-                      <td className="sticky left-0 z-10 max-w-[240px] border-b border-slate-100 bg-white px-3 py-2 align-top group-hover:bg-[#f6f7fb]">
+                      <td className="sticky left-0 z-10 max-w-[240px] border-b border-slate-100 bg-white px-3 py-2 align-top group-hover:bg-[#f0f2f4]">
                         <span className="block truncate text-slate-800">{it.label}</span>
                         <span className="block truncate text-slate-400">{it.base || '—'}</span>
                       </td>
-                      <td className="max-w-[160px] truncate border-b border-slate-100 px-3 py-2 align-top text-slate-500 group-hover:bg-[#f6f7fb]">{it.base || '—'}</td>
+                      <td className="max-w-[160px] truncate border-b border-slate-100 px-3 py-2 align-top text-slate-500 group-hover:bg-[#f0f2f4]">{it.base || '—'}</td>
                       {targetCols.map((c) => {
                         const v = byT.get(c);
                         return (
-                          <td key={c} className={cn('max-w-[150px] border-b border-l border-slate-100 px-3 py-2 align-top group-hover:bg-[#f6f7fb]', v ? (v.enabled ? 'text-slate-700' : 'text-slate-400') : 'text-slate-300')}>
+                          <td key={c} className={cn('max-w-[150px] border-b border-l border-slate-100 px-3 py-2 align-top group-hover:bg-[#f0f2f4]', v ? (v.enabled ? 'text-slate-700' : 'text-slate-400') : 'text-slate-300')}>
                             {v ? <span className={cn('line-clamp-2 whitespace-pre-line', !v.enabled && 'line-through')}>{v.text}</span> : '—'}
                           </td>
                         );
@@ -249,6 +248,7 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
 
 function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: MsgItem, i: number) => void; library: LibEntry[] }) {
   const rule = USE_RULE[item.use];
+  const ro = !!item.readOnly; // 배너 문구 = 배너 캠페인 소유 → 읽기전용
   const [, startBase] = useTransition();
   const saveBase = (text: string) => {
     if (text.trim() === (item.base ?? '').trim()) return;
@@ -257,24 +257,34 @@ function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: Msg
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-start gap-3 border-b p-5">
-        <span className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-lg', item.kind === 'title' ? 'bg-indigo-100 text-[#3a2ee6]' : 'bg-sky-100 text-sky-600')}>{item.kind === 'title' ? <Type className="h-4 w-4" /> : <AlignLeft className="h-4 w-4" />}</span>
+        <span className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-lg', ro ? 'bg-amber-100 text-amber-600' : item.kind === 'title' ? 'bg-indigo-100 text-[#3616cd]' : 'bg-sky-100 text-sky-600')}>{ro ? <Library className="h-4 w-4" /> : item.kind === 'title' ? <Type className="h-4 w-4" /> : <AlignLeft className="h-4 w-4" />}</span>
         <div className="min-w-0 flex-1">
           <p className="text-[15px] font-bold text-foreground">{item.label} <span className="text-[12px] font-normal text-muted-foreground">· {useLabel(item.use)}</span></p>
-          {rule && <p className="mt-0.5 text-[11px] text-muted-foreground">표기 제한: {rule.hint} · 최대 {rule.max}자</p>}
+          {ro ? <p className="mt-0.5 text-[11px] text-amber-600">배너 캠페인 관리 소유 · 여기선 읽기전용</p> : rule && <p className="mt-0.5 text-[11px] text-muted-foreground">표기 제한: {rule.hint} · 최대 {rule.max}자</p>}
         </div>
-        <Link href={item.editHref} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border px-3 text-[12px] font-medium text-muted-foreground hover:bg-secondary"><PenLine className="h-3.5 w-3.5" /> 빌더에서 보기</Link>
+        <Link href={item.editHref} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border px-3 text-[12px] font-medium text-muted-foreground hover:bg-secondary"><PenLine className="h-3.5 w-3.5" /> {ro ? '배너 캠페인에서 편집' : '빌더에서 보기'}</Link>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-5">
-        {/* 기본(폴백) — 여기(문구 관리)가 편집 장소. 빌더는 가져오기만. */}
+        {ro ? (
+          /* 배너 문구 — 현황만. 텍스트·세그 베리에이션 편집은 배너 캠페인/빌더. */
+          <div className="mb-4 space-y-2 rounded-lg border border-[#e8ebef] bg-white p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">배너 문구 <span className="font-normal normal-case text-slate-400">· 배너 캠페인 소유 · 읽기전용</span></p>
+            <p className="whitespace-pre-line text-[14px] font-semibold text-slate-800">{item.base || <span className="text-slate-400">(제목 없음)</span>}</p>
+            {item.subtitle && <p className="whitespace-pre-line text-[12.5px] text-slate-500">{item.subtitle}</p>}
+          </div>
+        ) : (
+        /* 기본(폴백) — 여기(문구 관리)가 편집 장소. 빌더는 가져오기만. */
         <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3">
           <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">기본 <span className="font-normal normal-case text-slate-400">· CVM 미매칭·실패 시 폴백 · 여기서 편집</span></p>
           <textarea key={item.id} defaultValue={item.base} onBlur={(e) => saveBase(e.target.value)} placeholder="기본 문구를 입력하세요"
             className="min-h-[52px] w-full resize-y whitespace-pre-line rounded-md border border-slate-200 bg-slate-50 p-2.5 text-[13px] text-slate-800 outline-none focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-200" />
         </div>
+        )}
 
+        {!ro && (<>
         {/* 타겟별 배리에이션 */}
-        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-[#3326c9]"><Sparkles className="h-3.5 w-3.5" /> 문구 후보 <span className="font-normal text-indigo-400">· 속성(힌트)만 태그 · CVM이 세그(수만) 매핑해 택1 · 세그 열거 아님</span></p>
+        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-[#2c13b0]"><Sparkles className="h-3.5 w-3.5" /> 문구 후보 <span className="font-normal text-indigo-400">· 속성(힌트)만 태그 · CVM이 세그(수만) 매핑해 택1 · 세그 열거 아님</span></p>
         {item.variants.length > 0 && (
           <div className="overflow-hidden rounded-lg border">
             <table className="w-full text-[12px]">
@@ -295,16 +305,21 @@ function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: Msg
           </div>
         )}
         <AddVariant item={item} library={library} />
+        </>)}
 
-        {/* 사용처 (운영 영향 범위 — FN-DSP-CMP-001) */}
+        {/* 사용처 / 현황 (운영 영향 범위 — FN-DSP-CMP-001) */}
         <div className="mt-5 rounded-lg border bg-slate-50/60 p-3">
-          <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-600"><MapPin className="h-3.5 w-3.5 text-slate-400" /> 사용처 <span className="font-normal text-slate-400">· 이 문구를 고치면 아래 전부에 반영</span></p>
+          <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-600"><MapPin className="h-3.5 w-3.5 text-slate-400" /> {ro ? '전시 현황' : '사용처'} <span className="font-normal text-slate-400">· {ro ? '배너 캠페인 상태' : '이 문구를 고치면 아래 전부에 반영'}</span></p>
           <div className="flex flex-wrap gap-1.5">
             {item.usages.map((u, i) => <span key={i} className="rounded bg-white px-2 py-1 text-[11px] text-slate-600 ring-1 ring-slate-200">{u}</span>)}
           </div>
         </div>
 
-        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">채널은 <b>후보 몇 개(배리에이션 수)와 속성·표기·노출/제외</b>만 관리하고, 수만 세그 각각에 어느 후보를 붙일지는 <b>CVM이 매핑</b>한다 — <b>세그를 문구마다 매핑하지 않는다.</b> 문구는 직접입력·라이브러리·AI 제안으로 author. (정책 PI-DSP-CMP-001 · PI-DSP-PER-001 · PI-DSP-AI-001)</p>
+        {ro ? (
+          <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">배너 문구는 <b>배너 캠페인 관리</b>가 소유합니다(공통 1벌 · 변경 시 승인 재요청). 세그먼트별 <b>문구 베리에이션</b>은 <b>빌더</b>에서 배너별로 설정합니다. 여기(문구 관리)에서는 현황만 조회합니다. (banner-copy-ssot)</p>
+        ) : (
+          <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">채널은 <b>후보 몇 개(배리에이션 수)와 속성·표기·노출/제외</b>만 관리하고, 수만 세그 각각에 어느 후보를 붙일지는 <b>CVM이 매핑</b>한다 — <b>세그를 문구마다 매핑하지 않는다.</b> 문구는 직접입력·라이브러리·AI 제안으로 author. (정책 PI-DSP-CMP-001 · PI-DSP-PER-001 · PI-DSP-AI-001)</p>
+        )}
       </div>
     </div>
   );
@@ -339,21 +354,21 @@ function AddVariant({ item, library }: { item: MsgItem; library: LibEntry[] }) {
   const libHits = library.filter((e) => e.use === item.use && !own.has(e.text) && e.text.toLowerCase().includes(libQ.trim().toLowerCase())).slice(0, 40);
   const aiHits = aiSuggest(item.base, target || undefined);
 
-  if (!open) return <button type="button" onClick={() => setOpen(true)} className="mt-2 inline-flex items-center gap-1 rounded-md border border-indigo-300 bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-[#3326c9] hover:bg-indigo-100"><Plus className="h-3 w-3" /> 후보 추가</button>;
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="mt-2 inline-flex items-center gap-1 rounded-md border border-indigo-300 bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-[#2c13b0] hover:bg-indigo-100"><Plus className="h-3 w-3" /> 후보 추가</button>;
   return (
     <div className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50/40 p-2.5">
       <div className="flex items-center gap-1.5">
         <select value={target} onChange={(e) => setTarget(e.target.value)} className="h-8 w-28 shrink-0 rounded-md border bg-white px-1.5 text-[11px]"><option value="">속성 없음</option>{CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}</select>
         <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !over) add(); }} placeholder="문구 직접 입력 / 아래에서 불러오기" className={cn('h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-[12px] outline-none focus:ring-2', over ? 'border-rose-300 focus:ring-rose-200' : 'focus:ring-indigo-200')} />
-        <button type="button" onClick={() => setMode(mode === 'lib' ? null : 'lib')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'lib' ? 'border-indigo-400 bg-white text-[#3326c9]' : 'bg-white text-slate-600 hover:bg-slate-50')}><Library className="h-3.5 w-3.5" /> 라이브러리</button>
-        <button type="button" onClick={() => setMode(mode === 'ai' ? null : 'ai')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'ai' ? 'border-indigo-400 bg-white text-[#3326c9]' : 'bg-white text-slate-600 hover:bg-slate-50')}><Wand2 className="h-3.5 w-3.5" /> AI 제안</button>
-        <button type="button" onClick={() => add()} disabled={!text.trim() || over} className="h-8 shrink-0 rounded-md bg-[#3a2ee6] px-3 text-[11px] font-semibold text-white disabled:opacity-40">추가</button>
+        <button type="button" onClick={() => setMode(mode === 'lib' ? null : 'lib')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'lib' ? 'border-indigo-400 bg-white text-[#2c13b0]' : 'bg-white text-slate-600 hover:bg-slate-50')}><Library className="h-3.5 w-3.5" /> 라이브러리</button>
+        <button type="button" onClick={() => setMode(mode === 'ai' ? null : 'ai')} className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-[11px] font-medium', mode === 'ai' ? 'border-indigo-400 bg-white text-[#2c13b0]' : 'bg-white text-slate-600 hover:bg-slate-50')}><Wand2 className="h-3.5 w-3.5" /> AI 제안</button>
+        <button type="button" onClick={() => add()} disabled={!text.trim() || over} className="h-8 shrink-0 rounded-md bg-[#3616cd] px-3 text-[11px] font-semibold text-white disabled:opacity-40">추가</button>
         <button type="button" onClick={() => { setOpen(false); setMode(null); }} className="grid h-8 w-7 shrink-0 place-items-center rounded-md border bg-white text-slate-400 hover:text-slate-600"><X className="h-3.5 w-3.5" /></button>
       </div>
       {rule && <p className={cn('mt-1.5 pl-1 text-[10px]', over ? 'text-rose-500' : 'text-muted-foreground')}>용도 <b>{item.use}</b> · {rule.hint} · {text.trim().length}/{rule.max}자{over ? ' — 초과' : ''}</p>}
       {mode === 'lib' && (
         <div className="mt-2 rounded-md border bg-white p-2">
-          <div className="mb-1.5 flex items-center gap-1.5"><Library className="h-3.5 w-3.5 text-indigo-500" /><span className="text-[10px] font-semibold text-slate-500">라이브러리 <span className="font-normal text-slate-400">· 같은 용도(<b className="text-[#3a2ee6]">{item.use}</b>)만</span></span><input value={libQ} onChange={(e) => setLibQ(e.target.value)} placeholder="검색" className="ml-auto h-6 w-32 rounded border px-2 text-[11px] outline-none" /></div>
+          <div className="mb-1.5 flex items-center gap-1.5"><Library className="h-3.5 w-3.5 text-indigo-500" /><span className="text-[10px] font-semibold text-slate-500">라이브러리 <span className="font-normal text-slate-400">· 같은 용도(<b className="text-[#3616cd]">{item.use}</b>)만</span></span><input value={libQ} onChange={(e) => setLibQ(e.target.value)} placeholder="검색" className="ml-auto h-6 w-32 rounded border px-2 text-[11px] outline-none" /></div>
           <div className="max-h-40 space-y-0.5 overflow-y-auto">
             {libHits.length === 0 && <p className="py-2 text-center text-[11px] text-slate-400">이 용도의 재사용 문구 없음</p>}
             {libHits.map((e, i) => <button key={i} type="button" onClick={() => setText(e.text)} className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-indigo-50"><span className="min-w-0 flex-1 truncate text-[12px] text-slate-700">{e.text}</span>{e.target && <span className="shrink-0 rounded bg-rose-50 px-1 text-[9px] font-bold text-rose-500">{e.target}</span>}<span className="shrink-0 text-[9px] text-slate-400">{e.sources[0]}{e.sources.length > 1 ? ` 외 ${e.sources.length - 1}` : ''}</span></button>)}

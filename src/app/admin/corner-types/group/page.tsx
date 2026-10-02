@@ -32,7 +32,7 @@ export default async function CornerTypeGroupPage({ searchParams }: { searchPara
   const variations = rows.map((r) => ({ ...toCornerTypeRow(r, lastActor.get(r.id) ?? null), previewCorner: previewByType.get(r.id) ?? null }));
 
   return (
-    <div className="p-6">
+    <div className="px-8 py-6">
       {detail
         ? <LayoutCasesDetail base={base} detail={detail} cases={variations} />
         : <GroupDetail base={base} variations={variations} />}
