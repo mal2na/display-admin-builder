@@ -3200,15 +3200,24 @@ function CornerLoadModal({
                   {sel.rest && <span className="text-xs text-muted-foreground">{sel.rest}</span>}
                   {sel.bigBanner && <BigBannerBadge />}
                 </div>
-                {isImgSrc(sel.sampleImageUrl?.split('\n')[0]) && (
-                  <div className="flex flex-wrap gap-2">
-                    {sel.sampleImageUrl!.split('\n').filter(Boolean).slice(0, 3).map((src, i) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img key={i} src={src} alt="유형 샘플" className="h-24 w-auto max-w-[140px] rounded-lg border object-cover object-top [filter:contrast(1.05)_saturate(1.1)]" />
-                    ))}
-                  </div>
-                )}
-                <TypeDetailPreview base={sel.base} component={sel.component} detail={sel.detail} bigBanner={sel.bigBanner} />
+                {(() => {
+                  const imgs = (sel.sampleImageUrl ?? '').split('\n').map((s) => s.trim()).filter(Boolean).filter((s) => isImgSrc(s));
+                  // 비-배너형: 실제 등록된 코너 렌더(sampleImageUrl)를 크게 보여준다(2026-10-06 사용자 요청).
+                  //  배너형: sampleImageUrl이 코너별 실사가 아니라 공용 더미(모든 배너 동일)라 신뢰 불가 → 스키매틱으로(더미 3장 노출 제거).
+                  const useReal = sel.base !== '배너형' && imgs.length > 0;
+                  if (useReal) {
+                    return (
+                      <div>
+                        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">미리보기 · {sel.base} › {layoutLabel(sel.detail) || '기본'} <span className="text-slate-400">· 실제 등록된 코너</span></p>
+                        <div className="rounded-xl border border-[#E6E8EF] bg-[#F0F2F9] p-3">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={imgs[0]} alt="실제 등록된 코너" className="w-full rounded-lg border bg-white object-contain [filter:contrast(1.03)_saturate(1.05)]" />
+                        </div>
+                      </div>
+                    );
+                  }
+                  return <TypeDetailPreview base={sel.base} component={sel.component} detail={sel.detail} bigBanner={sel.bigBanner} />;
+                })()}
                 {/* 베리에이션 사용 여부 + 기본 베리에이션 선택 (추가 모드에서만) */}
                 {!isSwap && (() => {
                   const siblings = types.filter((t) => t.base === sel.base);
