@@ -187,23 +187,25 @@ function domainGovernances(domain: Domain, present: string[]): string[] {
   return present;
 }
 
-// CornerTypeRow → 미리보기 PreviewCorner (저장 조합 우선, 없으면 유형 기본 조합). 카드·상세 공용.
+// CornerTypeRow → 미리보기 PreviewCorner = '껍데기 가이드'(placeholder 슬롯: 타이틀·디스크립션·상품명·가격·설명·이미지·더보기).
+//  코너 = 껍데기(규격)라 실데이터가 아니라 '가이드'로 그린다(2026-10-06 코너 유형 관리 대공사 방향). 목록·상세·수정 공용.
 export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
+  const noTitle = row.baseCategory === '배너형' || row.baseCategory === '고정·필수 노출형';
   const c = compositionToPreviewCorner({
     base: row.baseCategory,
     detail: row.typeDetail,
-    mainTitle: row.useMainTitle ? '코너 타이틀' : null,
-    subTitle: row.useSubTitle ? '서브타이틀' : null,
-    composition: parseComposition(row.composition) ?? defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: row.useBadge, desc: row.useDesc }),
+    mainTitle: noTitle || !row.useMainTitle ? null : '타이틀',
+    subTitle: noTitle || !row.useSubTitle ? null : '디스크립션',
+    // 가이드는 저장된 조합(실데이터 포함)이 아니라 유형 기본 조합(generic)으로 — 상품명·가격·설명 '슬롯 라벨'만 보이게.
+    composition: defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: row.useBadge, desc: row.useDesc }),
+    placeholder: true, // 슬롯 라벨(상품명·가격·설명 등)로 구조만
+    emptyImages: true, // 이미지·배너 영역은 빈 자리로
   });
-  // '배너' 배열(예: 가로형+배너) → 상단 히어로 배너를 코너에 붙여서 렌더.
-  //  배너 이미지는 상품 카드 이미지와 별개(bannerImageUrl)라, 상품 이미지 토글을 꺼도 배너는 유지된다.
-  const isBannerArr = row.typeDetail?.includes('배너') ?? false;
-  // 상품형 세로형+배너 = 요금제(약정 만료) 히어로, 가로형+배너 등 = 단말 히어로.
-  const heroImg = row.baseCategory === '상품형'
-    ? (row.typeDetail?.includes('세로형') ? '/assets/ds/plan-hero-expire.png' : '/assets/ds/hero-device.png')
-    : '/assets/ds/hero-plan.png';
-  return { ...c, bigBanner: row.bigBanner || isBannerArr, bannerImageUrl: isBannerArr ? heroImg : c.bannerImageUrl };
+  return {
+    ...c,
+    showImage: row.useImage, showPrice: row.usePrice, showBadge: row.useBadge, showDesc: row.useDesc,
+    moreButtonUse: row.useMoreButton, moreButtonLabel: row.defaultMoreButtonLabel ?? undefined,
+  };
 }
 
 // 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
@@ -765,7 +767,7 @@ export function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: 
   const compMeta = comp ? `컴포넌트 ${comp.reduce((s, b) => s + b.count, 0)}개` : (componentLabel(t.componentType) || layoutLabel(t.typeDetail) || '유형');
   const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
   // 미리보기 = 실제 배치된 대표 코너(있으면) → 상세와 일치. 없으면 조합(유형 기본) 샘플.
-  const previewCorner = t.previewCorner ?? cornerRowPreview(t);
+  const previewCorner = cornerRowPreview(t);
   return (
     <div className={cn('group flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.04] shadow-[0_1px_3px_rgba(20,22,40,0.05),0_10px_28px_rgba(20,22,40,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_6px_rgba(20,22,40,0.08),0_18px_42px_rgba(20,22,40,0.14)]', busy && 'pointer-events-none opacity-60')}>
       {/* 미리보기(클릭 → 상세) — 은은한 라벤더 배경 위 라운드 프레임에 코너 전체를 축소해 통째로 보여준다. */}
@@ -853,7 +855,7 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
       >
         <div className="bg-[#f0f2f4] p-2.5">
           {/* 썸네일 = 실제 배치된 대표 코너(있으면). 상세 첫 타일과 동일 코너라 이미지가 일치한다. 미배치면 조합 샘플. */}
-          <div className="pointer-events-none h-40"><DevicePreview corner={v.previewCorner ?? cornerRowPreview(v)} fit="contain" /></div>
+          <div className="pointer-events-none h-40"><DevicePreview corner={cornerRowPreview(v)} fit="contain" /></div>
         </div>
         <div className="flex flex-1 flex-col gap-1.5 px-3 py-2.5">
           {/* 코너명(실제 케이스) = 주 식별자. 같은 배열이 여러 케이스로 분리돼도 코너명으로 구분된다. */}
@@ -917,7 +919,7 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
 function LayoutGroupCard({ cases, onOpen }: { cases: CornerTypeRow[]; onOpen: () => void }) {
   const rep = cases[0];
   const multi = cases.length > 1;
-  const preview = rep.previewCorner ?? cornerRowPreview(rep);
+  const preview = cornerRowPreview(rep);
   const liveCount = cases.filter((c) => c.liveVersion != null && c.active).length;
   const needAttention = cases.filter((c) => c.status === 'REVIEW' || c.status === 'REJECTED' || c.status === 'DRAFT').length;
   const caseNames = cases.map((c) => c.previewCorner?.name ?? c.name).filter(Boolean);
@@ -1266,7 +1268,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   <td className="px-3 py-2.5">
                     {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함 */}
                     <div className="pointer-events-none mx-auto h-24 w-40 overflow-hidden rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-1.5">
-                      <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" align="center-middle" />
+                      <DevicePreview corner={cornerRowPreview(t)} fit="contain" align="center-middle" />
                     </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 align-middle"><span className={cn('inline-flex items-center whitespace-nowrap rounded-md border px-2 py-0.5 text-[12px]', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
