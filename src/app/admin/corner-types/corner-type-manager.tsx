@@ -209,8 +209,8 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
     placeholder: true, // 슬롯 라벨(상품명·가격·설명 등)로 구조만
     emptyImages: true, // 이미지·배너 영역은 빈 자리로
   });
-  // 완결형 카드(상태 안내형·고정필수형)는 '더보기(CTA)'도 없다.
-  const noMore = row.baseCategory === '상태 안내형' || row.baseCategory === '고정·필수 노출형';
+  // 코너 헤더(타이틀)가 없는 완결형·탭/칩·배너 유형은 '더보기(CTA)'도 없다(탭형 등).
+  const noMore = noTitle;
   return {
     ...c,
     showImage: row.useImage, showPrice: row.usePrice, showBadge: row.useBadge, showDesc: row.useDesc,
