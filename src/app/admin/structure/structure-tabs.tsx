@@ -283,7 +283,6 @@ const ADMIN_IA: IaGroup[] = [
     { name: '코너 유형 관리', path: '/admin/corner-types', role: '디자인 시스템에 등록된 컴포넌트와 Composite 컴포넌트로 코너를 구성하고 검수(승인)를 요청. 디자인 시스템에 등록되어 있으면 새로 조합할 수 있고, 없는 컴포넌트·속성은 디자인 시스템에 추가를 요청. 표시 항목·노출 개수·카드 모양 등 쓸 수 있는 속성만 제어하며, 배너형은 배너 캠페인·상품/혜택형은 상품원장에서 소재를 담는다.', fields: '유형·배열·표시 항목·수급(CVM)' },
     { name: '배너 캠페인 관리', path: '/admin/banner-campaigns', role: '어드민이 소유하는 배너 원장(SSOT). 규격별 배너 소재·문구(공통 1벌)·랜딩·전시 기간을 등록하고 승인한다. 코너 배너형은 여기 등록된 배너만 불러와 사용.', fields: '소재·문구·랜딩·기간·승인' },
     { name: '문구 관리', path: '/admin/messages', role: '코너 타이틀을 편집하고, 배너 문구는 현황만 조회(소유는 배너 캠페인). 세그먼트별 문구 베리에이션은 빌더에서 설정.', fields: '코너 타이틀 · 배너 문구(읽기전용)', tag: '테스트' },
-    { name: '메뉴 관리', path: '/admin/menus', role: '고객이 보는 전체 메뉴(네비게이션) 트리를 등록·순서·아이콘·랜딩으로 관리. Front 노출·운영 채널을 설정하고 pageCode로 전체페이지와 연결하며, 화면은 Container 단위로 연결한다.', fields: 'Front 노출·채널·pageCode·Container 연결', tag: '그룹 검토중' },
   ]},
   { group: '프로모션 관리', items: [
     { name: '프로모션 관리', path: '/admin/events', role: '이벤트 전용 빌더(전시/관리와 별개). 참여 조건·지급 조건을 조합해 이벤트를 구성하고 자체적으로 전시·승인한다.', fields: '참여·지급 조건' },
@@ -293,7 +292,8 @@ const ADMIN_IA: IaGroup[] = [
     { name: 'App 스플래시 관리', path: '/admin/app-splash', role: '앱 실행 시 노출되는 스플래시(런칭) 화면을 OS·기간별로 등록하고 승인·배포한다.', fields: 'OS·적용상태·승인' },
     { name: 'App 버전 관리', path: '/admin/app-versions', role: '앱 버전과 업데이트 정책(권장/강제 업데이트)·안내 팝업을 관리한다.', fields: '권장/강제 업데이트·팝업' },
     { name: 'App 위젯 관리', path: '/admin/app-widgets', role: '홈/잠금 등 앱 위젯의 노출·순서·게시 기간을 관리. 위젯의 틀은 위젯 유형 관리에서 정의.', fields: '게시상태·배포·노출순서', sub: ['위젯 유형 관리'] },
-    { name: '전체페이지 관리', path: '/admin/full-pages', role: '채널의 모든 페이지 원장과 서비스 IA 구조. 페이지 등록·URL/상태·사용여부·Front 노출·운영 채널과 상위-하위 트리를 관리한다.', fields: 'status·사용여부·Front 노출·IA 트리' },
+    { name: '전체 페이지·메뉴 관리', path: '/admin/page-menu-b', role: '채널의 전체 페이지(=Container) 원장·IA 트리와 고객 메뉴(네비게이션) 트리를 한 곳에서 관리(메뉴 관리 + 전체페이지 관리 통합). 페이지는 템플릿이 아니라 Container 단위로 등록·상태·사용여부·Front 노출·운영 채널·상위-하위 트리를 관리하고, 메뉴는 pageCode로 페이지(Container)와 연결한다.', fields: 'Container 단위 · status·사용여부·Front·채널·pageCode·IA 트리', tag: 'B안' },
+    { name: '페이지 개발 설정', path: '/admin/page-dev', role: '페이지(Container)별 개발·배포 설정 — 페이지 코드·렌더링·연동 등 개발 반영에 필요한 설정을 관리한다.', fields: '페이지 코드·개발 설정' },
   ]},
 ];
 
@@ -357,20 +357,105 @@ function IaView() {
   );
 }
 
+// ───────────────────────── 거버넌스 탭 ─────────────────────────
+//  "누가 무엇을 정하나"를 한 판 정리. 근거: CLAUDE.md(5단 계층·Container) · 거버넌스(코너 유형=정의, 빌더=쌓기+CVM) ·
+//   순서 베리에이션 1안(기본 1벌 + CVM 런타임 재정렬).
+function GovCard({ no, title, lead, children }: { no: string; title: string; lead: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border border-[#e8ebef] bg-white">
+      <div className="flex items-center gap-2 border-b border-[#e8ebef] bg-[#f0f2f4] px-4 py-3">
+        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#3616cd] text-[12px] font-bold text-white">{no}</span>
+        <h3 className="text-[14.5px] font-extrabold text-slate-900">{title}</h3>
+      </div>
+      <div className="px-4 py-3.5">
+        <p className="mb-3 rounded-lg bg-[#f6f4ff] px-3 py-2 text-[13px] font-semibold leading-relaxed text-[#3616cd]">결론 · {lead}</p>
+        {children}
+      </div>
+    </section>
+  );
+}
+function GovRole({ who, what, tone = 'slate' }: { who: string; what: React.ReactNode; tone?: 'slate' | 'violet' | 'amber' }) {
+  const tones = { slate: 'border-slate-200 bg-slate-50 text-slate-600', violet: 'border-violet-200 bg-violet-50 text-violet-700', amber: 'border-amber-200 bg-amber-50 text-amber-700' } as const;
+  return (
+    <li className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-3">
+      <span className={cn('inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11.5px] font-bold sm:w-36', tones[tone])}>{who}</span>
+      <span className="min-w-0 flex-1 text-[13px] leading-relaxed text-slate-700">{what}</span>
+    </li>
+  );
+}
+function GovernanceView() {
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-[13px] font-medium leading-relaxed text-slate-600">
+        전시/관리 운영에서 <b className="text-slate-800">“누가 무엇을 정하나”</b>를 한 판으로 정리했어요. 공통 원칙은
+        <b className="text-[#3616cd]"> 코너 유형 = 정의 · 전시화면 관리(빌더) = 쌓기 + CVM · CVM = 런타임 개인화</b> 입니다.
+      </p>
+
+      {/* ① 노출 순서 */}
+      <GovCard no="①" title="노출 순서는 누가 정하나 — 코너 유형 vs 빌더 vs CVM" lead="‘기본(폴백) 순서’는 운영자가, ‘실제 노출 순서’는 CVM이 정한다. 운영자 몫은 코너 유형(정렬 기준 기본값)과 빌더(배치·수급 선택·운영자 편성 순서)로 나뉜다.">
+        <ul className="space-y-2.5">
+          <GovRole who="코너 유형" tone="slate" what={<><b>정렬 기준의 기본값</b>(인기순·최신순 등)과 수급 방식 기본값을 <b>정의</b>해요. “무엇을 어떤 기준으로 보여줄지”의 틀.</>} />
+          <GovRole who="전시화면 관리(빌더)" tone="violet" what={<>코너를 <b>쌓고(배치 순서·위치 고정)</b>, 코너별로 <b>수급 방식을 최종 선택</b>(CVM 기반 / 운영자 편성)해요. <b>운영자 편성</b>일 때만 순서를 직접 편성(= 폴백).</>} />
+          <GovRole who="CVM (런타임)" tone="amber" what={<>수급이 <b>CVM 기반</b>이면 고객 세그먼트·인텐트로 <b>실제 노출 순서를 고객마다 결정</b>해요. 어드민은 직접 관리하지 않고, 미리보기는 <b>폴백(첫 후보)</b>만 보여줘요.</>} />
+        </ul>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[520px] border-collapse text-[12.5px]">
+            <thead>
+              <tr className="bg-[#f0f2f4] text-slate-600">
+                <th className="border border-[#e8ebef] px-2.5 py-2 text-left font-bold">순서의 종류</th>
+                <th className="border border-[#e8ebef] px-2.5 py-2 text-left font-bold">기본(폴백) — 운영자</th>
+                <th className="border border-[#e8ebef] px-2.5 py-2 text-left font-bold">실제 — CVM(런타임)</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-700">
+              <tr>
+                <td className="border border-[#e8ebef] px-2.5 py-2 font-semibold">코너 안 아이템 순서<br /><span className="font-normal text-slate-400">(상품·혜택 정렬)</span></td>
+                <td className="border border-[#e8ebef] px-2.5 py-2">정렬 기준 기본값 = <b>코너 유형</b> · 운영자 편성 시 코너별 순서 = <b>빌더</b></td>
+                <td className="border border-[#e8ebef] px-2.5 py-2">CVM 기반이면 CVM이 순위 산정 (빌더에선 선택 불가)</td>
+              </tr>
+              <tr>
+                <td className="border border-[#e8ebef] px-2.5 py-2 font-semibold">템플릿 안 코너 순서<br /><span className="font-normal text-slate-400">(코너 배치)</span></td>
+                <td className="border border-[#e8ebef] px-2.5 py-2">운영자 기본 배치 = <b>빌더</b> (위치 고정 코너는 상단 잠금)</td>
+                <td className="border border-[#e8ebef] px-2.5 py-2">비고정 코너를 세그먼트별로 자동 재정렬 (고정 코너는 불변)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-[11.5px] leading-relaxed text-slate-400">근거: 코너 유형=정의 / 빌더=쌓기+CVM · 순서 베리에이션 1안(기본 1벌 + CVM 런타임 재정렬). 즉 <b className="text-slate-500">“CVM이 순서를 정한다”는 어드민의 어느 메뉴가 아니라 런타임</b>이고, 운영자는 그 <b className="text-slate-500">폴백</b>만 짭니다.</p>
+      </GovCard>
+
+      {/* ② 컨테이너 단위 관리 */}
+      <GovCard no="②" title="페이지(화면)는 템플릿이 아니라 ‘컨테이너’ 단위로 관리" lead="전체 페이지·메뉴 관리는 Container(화면/페이지) 단위로 관리한다. 템플릿은 그 화면의 분기·기간 버전이라 빌더가 다룬다.">
+        <ul className="space-y-2.5">
+          <GovRole who="전체 페이지·메뉴 관리" tone="violet" what={<><b>Container(페이지) 단위</b>로 등록·URL/상태·사용여부·Front 노출·운영 채널·상위-하위 IA 트리를 관리하고, 메뉴는 <span className="font-mono text-[11.5px]">pageCode</span>로 페이지(Container)와 연결해요. (메뉴 관리 + 전체페이지 관리 통합)</>} />
+          <GovRole who="전시화면 관리(빌더)" tone="slate" what={<>Container <b>안의 Template·Corner 구성</b>(분기·기간·배치)을 다뤄요. 페이지·메뉴 관리는 템플릿을 직접 나열하지 않아요.</>} />
+          <GovRole who="런타임" tone="amber" what={<>로그인/세그먼트/기간 <b>분기 조건</b>으로 Container 안의 <b>어느 Template을 보일지</b> 결정해요.</>} />
+        </ul>
+        <div className="mt-3 rounded-lg border border-[#e8ebef] bg-[#f9fafc] px-3.5 py-3 text-[12.5px] leading-relaxed text-slate-600">
+          <p className="mb-1.5 font-bold text-slate-700">왜 컨테이너 단위인가?</p>
+          <p>Container는 <b>채널이 호출하는 화면 ID</b>(화면과 <b>1:1</b>)예요. Template은 그 화면의 <b>분기·기간 버전</b>이라 하나의 Container에 <b>여러 개(1:N)</b>가 달려요. 페이지·메뉴는 “어떤 화면을 부를지”만 알면 되니 <b className="text-[#3616cd]">Container 단위</b>로 관리하고, 그 안에서 어떤 Template을 보일지는 <b>빌더·런타임</b>이 조건으로 결정해요.</p>
+          <p className="mt-1.5 text-slate-500">Container는 삭제하지 않고 <b>상태값(active/inactive)</b>으로 soft-delete, <b>기본 Template 1개</b>를 반드시 가져요.</p>
+        </div>
+        <p className="mt-2 text-[11.5px] text-slate-400">근거: CLAUDE.md §2.5 Container — 채널에 실제 나가는 화면/영역 단위 · 화면과 1:1 · Template과 1:N · 상태값 관리 · 기본 Template 1개.</p>
+      </GovCard>
+    </div>
+  );
+}
+
 // ───────────────────────── 탭 셸 ─────────────────────────
 export function StructureTabs() {
-  const [tab, setTab] = useState<'map' | 'ia'>('map');
+  const [tab, setTab] = useState<'map' | 'ia' | 'gov'>('map');
   return (
     <div>
       <div className="mb-5 flex gap-1 border-b border-[#e8ebef]">
-        {([['map', '구조도'], ['ia', 'IA']] as const).map(([k, label]) => (
+        {([['map', '구조도'], ['ia', 'IA'], ['gov', '거버넌스']] as const).map(([k, label]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className={cn('-mb-px border-b-2 px-4 py-2.5 text-[14px] font-semibold', tab === k ? 'border-[#3616cd] text-[#3616cd]' : 'border-transparent text-slate-500 hover:text-slate-700')}>
             {label}
           </button>
         ))}
       </div>
-      {tab === 'map' ? <StructureView /> : <IaView />}
+      {tab === 'map' ? <StructureView /> : tab === 'ia' ? <IaView /> : <GovernanceView />}
     </div>
   );
 }
