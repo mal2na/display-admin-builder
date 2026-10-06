@@ -1423,11 +1423,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   // 수정 중 '지금 편집하는 바로 그 case'(원본 유형·배열)일 때만 저장된 실제 콘텐츠(blocks)를 쓴다.
   // 다른 유형·배열을 고르면 그 조합엔 콘텐츠가 없으므로 신규 등록처럼 가이드(빈 슬롯)로 보여준다(2026-10-06).
   const isOriginalCase = !isNew && base === row.baseCategory && detailValid === (row.typeDetail ?? '');
-  const guidePreview = isNew || !isOriginalCase; // 미리보기를 가이드(플레이스홀더)로 — 콘텐츠 비움
+  // 저장된 조합(blocks)을 미리보기에 쓸지: 신규 등록은 '담은 즉시' 반영, 수정은 '지금 편집하는 그 case'일 때만.
+  // (수정 중 다른 유형/배열을 고르면 그 조합엔 콘텐츠가 없으니 가이드) 2026-10-06 보강 — 신규 등록 상품·혜택 담기 미반영 버그 수정.
+  const useSavedBlocks = blocks.length > 0 && (isNew || isOriginalCase);
+  const guidePreview = !useSavedBlocks; // 보여줄 실제 콘텐츠가 없을 때만 가이드(플레이스홀더)
   // 대표 컴포넌트 유형: 사용자가 컴포넌트 조합을 직접 편집했으면 그 첫 블록 유형을 대표로 쓴다(저장·미리보기 정합).
   //  편집 전(blocks 비어있음)에는 배열·레이아웃에서 도출(compForShape) — 기존 동작 유지.
   const compFromShape = compForShape(base, detailValid);
-  const compValid = (isOriginalCase && blocks.length) ? ((blocks[0]?.componentType as ComponentType) || compFromShape) : compFromShape;
+  const compValid = useSavedBlocks ? ((blocks[0]?.componentType as ComponentType) || compFromShape) : compFromShape;
 
   // ── 세부 항목 적용 가능 여부 (유형별) ──
   // 카테고리 탭/고정형 탭/배너/아이콘형 등은 코너 타이틀·서브타이틀이 없다(미리보기 noHeader와 동일 기준).
@@ -1472,7 +1475,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const isBannerLoader = compValid === '배너형' || base === '배너형';
   const isSwipeBannerType = isBannerLoader && detailValid === '스와이프형';
   const isSingleBannerType = isBannerLoader && !isSwipeBannerType; // 배너 단일형(기본) — 1개만 불러옴
-  const swipeBanners = (isOriginalCase && isBannerLoader) ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
+  const swipeBanners = (useSavedBlocks && isBannerLoader) ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
   // 상품형·혜택형 — 상품·혜택 아이템 묶음(BSS 카탈로그에서 담기 · 순서 드래그 · URL 수동). 2026-09-29 사용자 요청.
   const isProductItemsType = !isBannerLoader && (compValid === '상품형' || compValid === '혜택형');
   const productItems = isProductItemsType ? (blocks.find((b) => b.componentType === compValid)?.items ?? blocks.find((b) => b.items)?.items ?? []) : [];
@@ -1489,7 +1492,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const liveFeatFlags = { image: imageOn, price: priceOn, desc: descOn, badge: eff('useBadge') };
   const shownBlocks: Composition = isBannerLoader
     ? [{ componentType: '배너형', count: isSingleBannerType ? 1 : Math.max(1, swipeBanners.length || 2), image: true, price: true, desc: true, ...(swipeBanners.length ? { banners: isSingleBannerType ? swipeBanners.slice(0, 1) : swipeBanners } : {}) }]
-    : ((isOriginalCase && blocks.length)
+    : (useSavedBlocks
         ? blocks
         : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc })
       ).map((b) => {
