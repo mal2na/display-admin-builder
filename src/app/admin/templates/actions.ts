@@ -10,7 +10,6 @@ import {
   CORNER_TYPES,
   CORNER_COMPONENT_MAP,
   isComponentAllowedInCorner,
-  parseComposition,
   type AtomType,
   type ComponentType,
   type CornerType,
@@ -536,64 +535,6 @@ function scaffoldSpecFor(componentType: string | null, typeDetail: string | null
   return comps;
 }
 
-// 코너 유형에 저장된 '컴포넌트 조합'(CompositionBlock[]) → 실제 생성할 ScaffoldComp[]. 블록마다 count개씩 펼친다.
-function specFromComposition(composition: Composition): ScaffoldComp[] {
-  const comps: ScaffoldComp[] = [];
-  for (const b of composition) {
-    // 배너형 스와이프형 — 코너 유형에서 묶은 배너(배너 캠페인 스냅샷)를 그대로 생성. 랜딩 URL은 캠페인 값 그대로. 빌더는 순서만.
-    if (b.componentType === '배너형' && b.banners && b.banners.length) {
-      for (const bn of b.banners) {
-        comps.push({
-          name: bn.title || '배너', componentType: '배너형',
-          atoms: [
-            { name: '배너 타이틀', atomType: 'TEXT', content: bn.title },
-            ...(bn.linkUrl ? [{ name: '배너 CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: bn.linkUrl }] : []),
-            ...(bn.imageUrl ? [{ name: '배너 이미지', atomType: 'IMAGE', imageUrl: bn.imageUrl, altText: bn.title }] : []),
-          ],
-        });
-      }
-      continue;
-    }
-    // 상품형·혜택형 — 코너 유형에서 묶은 상품·혜택 아이템(카탈로그 스냅샷)을 그대로 생성. 랜딩 URL은 담은 값 그대로. 빌더는 순서만. 2026-09-29
-    //  가격이 있으면 상품/디바이스 카드(ProductCard: 브랜드·상품명 TEXT + 가격), 없으면 혜택 리스트(BenefitRow: 로고 + 혜택문구 BENEFIT_TEXT + 브랜드 INFO).
-    if ((b.componentType === '상품형' || b.componentType === '혜택형') && b.items && b.items.length) {
-      for (const it of b.items) {
-        const isProductCard = !!it.price;
-        comps.push({
-          name: it.title || it.brand || '상품', componentType: b.componentType,
-          atoms: isProductCard
-            ? [
-                ...(it.imageUrl ? [{ name: '상품 이미지', atomType: 'IMAGE', imageUrl: it.imageUrl, altText: it.title || it.brand }] : []),
-                ...(it.brand && it.brand !== it.title ? [{ name: '브랜드', atomType: 'TEXT', content: it.brand }] : []),
-                { name: '상품명', atomType: 'TEXT', content: it.title },
-                ...(it.badge && b.badge ? [{ name: '배지', atomType: 'BADGE', content: it.badge }] : []),
-                ...(it.price && b.price !== false ? [{ name: '가격', atomType: 'PRICE', content: it.price }] : []),
-                ...(it.linkUrl ? [{ name: 'CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: it.linkUrl }] : []),
-              ]
-            : [
-                ...(it.imageUrl ? [{ name: '로고', atomType: it.imageUrl.startsWith('icon:') ? 'ICON' : 'IMAGE', imageUrl: it.imageUrl, altText: it.brand || it.title }] : []),
-                ...(it.badge && b.badge ? [{ name: '배지', atomType: 'BADGE', content: it.badge }] : []),
-                { name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: it.title },
-                ...(it.brand ? [{ name: '브랜드', atomType: 'INFO', content: it.brand }] : []),
-                ...(it.linkUrl ? [{ name: 'CTA', atomType: 'CTA', content: '자세히 보기', linkUrl: it.linkUrl }] : []),
-              ],
-        });
-      }
-      continue;
-    }
-    // 선택형(탭·메뉴) — 칩 정의(라벨·링크·줄수)를 코너 유형에서 정의(2026-09-29). 그대로 생성, 빌더는 순서만 변경.
-    if (b.componentType === '선택형' && b.chips && b.chips.length) {
-      comps.push({
-        name: '탭', componentType: '선택형', selectedIndex: 0, chipRows: b.chipRows === 2 ? 2 : 1,
-        atoms: b.chips.map((c) => ({ name: c.label ? `칩:${c.label}` : '칩', atomType: 'TEXT', content: c.label ?? '', linkUrl: c.linkUrl ?? undefined, imageUrl: c.icon ?? undefined })),
-      });
-      continue;
-    }
-    const feats: CompFeats = { image: b.image, price: b.price, badge: b.badge, desc: b.desc };
-    for (let i = 1; i <= b.count; i++) comps.push(buildComp(b.componentType, i, feats));
-  }
-  return comps;
-}
 
 // 스캐폴드 스펙대로 Component/Atom/CornerComponent 생성. 코너 유형이 허용하지 않는 컴포넌트는 건너뛴다.
 async function createScaffoldComponents(cornerId: string, cornerType: string, specs: ScaffoldComp[]) {
@@ -679,65 +620,11 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
       userMaxItems: ct.userMaxItems ?? null,
     },
   });
-  // 유형의 컴포넌트 유형·배열에 맞춰 '코너 구성'을 채운다. 우선순위(2026-10-06 사용자 요청 — 등록된 데이터까지 그대로):
-  //  ① composition(JSON)이 있으면 그대로 생성(상품·혜택·칩·배너 등 콘텐츠 포함)
-  //  ② 없으면(상태 안내형·고정필수형 등) '등록된 대표 코너'의 실제 구성을 통째로 복제 → 가이드가 아니라 실제 문구·이미지·배지까지
-  //  ③ 대표도 없으면 절차적 scaffold(플레이스홀더)로 폴백
-  const composition = parseComposition(def.composition);
-  if (composition) {
-    await createScaffoldComponents(corner.id, def.baseCategory, specFromComposition(composition));
-  } else {
-    const rep = await prisma.corner.findFirst({
-      where: { sourceCornerTypeId: ct.id, id: { not: corner.id }, cornerComponents: { some: {} } },
-      orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], // 상세 '대표 코너'와 동일 기준(PLACED_CORNER_ORDER)
-      include: { cornerComponents: { orderBy: { order: 'asc' }, include: { component: { include: { componentAtoms: { orderBy: { order: 'asc' }, include: { atom: true } } } } } } },
-    });
-    if (rep && rep.cornerComponents.length) {
-      await copyComponentsFromCorner(corner.id, rep);
-    } else {
-      await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail, { badge: def.useBadge, image: def.useImage, price: def.usePrice, desc: def.useDesc }));
-    }
-  }
+  // 코너 = 껍데기(규격/레이아웃)만. 콘텐츠는 빌더에서 매핑 → 불러오면 '데이터 없는 가이드(스캐폴드 플레이스홀더)'로 생성.
+  //  (2026-10-xx 회의: T우주 방식 — 코너에 콘텐츠를 미리 말아두지 않고, 전시화면 관리(빌더)에서 콘텐츠를 설정.)
+  //  composition(JSON)이 있어도 콘텐츠는 채우지 않고 '배열·레이아웃 구조'만 가이드로 생성한다.
+  await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail, { badge: def.useBadge, image: def.useImage, price: def.usePrice, desc: def.useDesc }));
   return corner;
-}
-
-// 등록된 대표 코너의 구성(Component/Atom)을 새 코너로 그대로 복제 — 코너별 복제 모델(공유 아님)이므로 Component·Atom을 새로 만든다.
-//  문구(content·contentVariants)·이미지·배지·링크·칩 역할(menuRole)·표시여부(visible)까지 보존(2026-10-06).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function copyComponentsFromCorner(targetCornerId: string, source: { cornerComponents: any[] }) {
-  for (const cc of source.cornerComponents) {
-    const sc = cc.component;
-    const comp = await prisma.component.create({
-      data: {
-        name: sc.name,
-        componentType: sc.componentType,
-        description: sc.description ?? null,
-        status: 'active',
-        selectedIndex: sc.selectedIndex ?? 0,
-        chipRows: sc.chipRows ?? 1,
-        allowedCornerTypes: sc.allowedCornerTypes ?? null,
-        sourceCampaignId: sc.sourceCampaignId ?? null,
-        sourceSyncedAt: sc.sourceSyncedAt ?? null,
-      },
-    });
-    for (const ca of sc.componentAtoms) {
-      const a = ca.atom;
-      const atom = await prisma.atom.create({
-        data: {
-          name: a.name,
-          atomType: a.atomType,
-          content: a.content ?? null,
-          contentVariants: a.contentVariants ?? null,
-          imageUrl: a.imageUrl ?? null,
-          altText: a.altText ?? null,
-          linkUrl: a.linkUrl ?? null,
-          status: 'active',
-        },
-      });
-      await prisma.componentAtom.create({ data: { componentId: comp.id, atomId: atom.id, order: ca.order, isRequired: ca.isRequired ?? true, visible: ca.visible ?? true, menuRole: ca.menuRole ?? 'EDITABLE' } });
-    }
-    await prisma.cornerComponent.create({ data: { cornerId: targetCornerId, componentId: comp.id, order: cc.order } });
-  }
 }
 
 // 등록된 코너 유형(코너 유형 관리 카탈로그)을 그대로 상속해 코너 추가.
