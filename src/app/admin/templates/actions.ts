@@ -717,7 +717,9 @@ export async function createCornerFromType(templateId: string, formData: FormDat
   }
 
   const order = await nextOrder('templateCorner', { templateId });
-  const tc = await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order } });
+  // 위치 고정 기본값 — 상단 퀵메뉴(업무 진입형)·고정필수형은 자리 잠금이 자연스러움(운영자가 체크박스로 해제 가능). 2026-10-06.
+  const pinned = corner.cornerType === '업무 진입형' || corner.cornerType === '고정·필수 노출형';
+  const tc = await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order, pinned } });
   rp(templateId);
   return tc.id; // 생성된 templateCorner id → 빌더에서 새 코너로 포커싱
 }
@@ -1019,6 +1021,14 @@ export async function toggleCornerVisible(templateId: string, templateCornerId: 
   const tc = await prisma.templateCorner.findUnique({ where: { id: templateCornerId }, select: { visible: true } });
   if (!tc) return;
   await prisma.templateCorner.update({ where: { id: templateCornerId }, data: { visible: !tc.visible } });
+  rp(templateId);
+}
+
+// 위치 고정 토글 — 이 배치 코너를 고정(상단 잠금)/해제. 고정 코너는 드래그 재정렬·CVM 자동 재정렬에서 제외(2026-10-06).
+export async function toggleCornerPinned(templateId: string, templateCornerId: string) {
+  const tc = await prisma.templateCorner.findUnique({ where: { id: templateCornerId }, select: { pinned: true } });
+  if (!tc) return;
+  await prisma.templateCorner.update({ where: { id: templateCornerId }, data: { pinned: !tc.pinned } });
   rp(templateId);
 }
 

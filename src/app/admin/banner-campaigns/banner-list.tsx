@@ -6,12 +6,33 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { composeBg, type ComposeFields } from './composed-banner';
 
 export type BannerRow = {
   id: string; campaignCode: string; title: string; exposeYn: boolean;
   publishStart: string | null; publishEnd: string | null; approvalLabel: string;
   createdBy: string; createdAt: string | null; updatedBy: string; updatedAt: string | null;
+  // 목록 썸네일 — 대표 유형상세(이미지형=imageUrl / 텍스트형=조립 필드 f)(2026-10-06)
+  preview: { imageUrl: string | null; f: ComposeFields | null; detail: string | null } | null;
 };
+
+// 목록 미리보기 썸네일 — 띠배너 비율(64×28)로 통일. 이미지형=실사, 텍스트형=조립 배경+타이틀.
+function BannerThumb({ preview }: { preview: BannerRow['preview'] }) {
+  if (preview?.imageUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={preview.imageUrl} alt="" className="h-7 w-16 rounded border border-[#e8ebef] object-cover" />;
+  }
+  if (preview?.f) {
+    const f = preview.f;
+    return (
+      <div className="flex h-7 w-16 items-center gap-1 overflow-hidden rounded border border-[#e8ebef] px-1.5" style={{ background: composeBg(f) }}>
+        {f.badgeText && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: f.badgeColor || '#4F46E5' }} />}
+        <span className="truncate text-left text-[8px] font-bold leading-tight" style={{ color: f.titleColor || '#0F172A' }}>{f.title || '텍스트 배너'}</span>
+      </div>
+    );
+  }
+  return <div className="flex h-7 w-16 items-center justify-center rounded border border-dashed border-[#d9dce6] bg-[#f6f7fb] text-[8px] text-slate-300">미등록</div>;
+}
 
 const APPROVAL_TONE: Record<string, string> = {
   승인완료: 'bg-[#e3f6ea] text-[#1f8a4c]', 승인요청: 'bg-[#eceef3] text-[#5d6275]',
@@ -92,17 +113,18 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
         <table className="w-full min-w-[1200px] text-[13px] font-normal whitespace-nowrap">
           <thead>
             <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086]">
-              {['NO.', '배너캠페인 ID', '배너캠페인명', '전시여부', '전시기간', '승인상태', '등록자', '등록일시', '최종 수정자', '최종 수정일시'].map((h) => (
+              {['NO.', '미리보기', '배너캠페인 ID', '배너캠페인명', '전시여부', '전시기간', '승인상태', '등록자', '등록일시', '최종 수정자', '최종 수정일시'].map((h) => (
                 <th key={h} className={cn('h-11 px-3 font-normal', h === '배너캠페인명' || h === '전시기간' ? 'text-left' : 'text-center')}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {paged.length === 0 ? (
-              <tr><td colSpan={10} className="px-3 py-16 text-center text-slate-400">조회된 배너 캠페인이 없습니다.</td></tr>
+              <tr><td colSpan={11} className="px-3 py-16 text-center text-slate-400">조회된 배너 캠페인이 없습니다.</td></tr>
             ) : paged.map((r, i) => (
               <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b border-[#e8ebef] text-center text-slate-700 hover:bg-[#f0f2f4]">
                 <td className="h-11 px-3 tabular-nums text-slate-500">{filtered.length - ((curPage - 1) * PER_PAGE + i)}</td>
+                <td className="h-11 px-3"><div className="flex justify-center"><BannerThumb preview={r.preview} /></div></td>
                 <td className="h-11 px-3 tabular-nums">{r.campaignCode}</td>
                 <td className="h-11 px-3 text-left">{r.title}</td>
                 <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.exposeYn ? 'bg-[#e3f6ea] text-[#1f8a4c]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.exposeYn ? '전시' : '미전시'}</span></td>

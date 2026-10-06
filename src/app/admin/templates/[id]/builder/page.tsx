@@ -7,6 +7,8 @@ import { TemplateReviewBar } from '../template-review-bar';
 import { collectReviewIssues } from '../workflow-actions';
 import { TemplateHeaderBar } from '../template-header-bar';
 import { ChevronLeft } from 'lucide-react';
+import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE, PLACED_CORNER_ORDER } from '../../../corner-types/preview-corner';
+import type { PreviewCorner } from '@/components/preview/blocks';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,6 +80,23 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     orderBy: { createdAt: 'desc' },
     select: { id: true, campaignCode: true, title: true, exposeYn: true, approvalStatus: true, publishStart: true, publishEnd: true, typeDetails: true, bannerAlt: true },
   });
+
+  // 배너형 코너 유형 미리보기(B안, 2026-10-06) — sampleImageUrl이 공용 더미라 신뢰 불가.
+  //  '코너 불러오기'에서 실제 등록된 배너를 보여주려면 배치된 코너 구성(배너 카드)이 필요 → 대표 코너를 PreviewCorner로 실어 보낸다.
+  //  상세(usagePreviews)와 동일한 매칭(sourceCornerTypeId)·정렬을 써서 모달과 상세가 같은 실제 코너를 렌더.
+  const bannerTypeIds = libCornerTypes.filter((t) => t.baseCategory === '배너형').map((t) => t.id);
+  const bannerTypeCorners = bannerTypeIds.length
+    ? await prisma.corner.findMany({
+        where: { sourceCornerTypeId: { in: bannerTypeIds }, templateCorners: { some: {} } },
+        include: PLACED_CORNER_INCLUDE,
+        orderBy: PLACED_CORNER_ORDER,
+      })
+    : [];
+  const previewByCornerType = new Map<string, PreviewCorner>();
+  for (const c of bannerTypeCorners) {
+    const key = c.sourceCornerTypeId;
+    if (key && !previewByCornerType.has(key)) previewByCornerType.set(key, cornerToPreviewCorner(c));
+  }
 
   // 이미지 라이브러리 (Atom 이미지 + 배너 이미지, url 기준 중복 제거)
   const imageMap = new Map<string, { url: string; alt: string | null; name: string }>();
@@ -189,6 +208,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     reviewedBy: tc.corner.reviewedBy ?? null,
     reviewedAt: tc.corner.reviewedAt ? tc.corner.reviewedAt.toISOString() : null,
     visible: tc.visible,
+    pinned: tc.pinned, // 위치 고정 — 상단 퀵메뉴처럼 자리를 잠근 배치(2026-10-06)
     components: tc.corner.cornerComponents.map((cc) => ({
       cornerComponentId: cc.id,
       id: cc.component.id,
@@ -243,7 +263,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     })),
     atoms: libAtoms,
     banners: libBanners,
-    cornerTypes: libCornerTypes,
+    cornerTypes: libCornerTypes.map((t) => ({ ...t, previewCorner: previewByCornerType.get(t.id) ?? null })),
     bannerCampaigns: libBannerCampaigns.filter((b) => isComposedBanner(b.typeDetails)).map((b) => {
       // 미리보기용 이미지들 — 유형상세(사이즈별) 중 이미지가 있는 것들. 첫 번째가 대표 썸네일.
       let sizes: { detail: string; imageUrl: string | null; bgColor: string | null }[] = [];

@@ -45,6 +45,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
+import { TargetCopySet } from './target-copy-set';
 
 // 등록된 코너 유형(코너 유형 관리 = 마스터)의 (코너유형·컴포넌트·배열) 조합. 등록 폼 ②③을 이걸로 좁힌다.
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
@@ -1346,6 +1347,39 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
   // 정의(거버넌스) 기본값 — 코너 유형이 문구·개수·형태까지 정의(2026-09-29 거버넌스 분리). 빌더는 쌓기+CVM만.
   const [mainTitleText, setMainTitleText] = useState(row.defaultMainTitle ?? '');
+  // 타겟별 문구 세트(2026-10-06) — 타이틀 + 상품·혜택 문구를 '타겟' 하나로 묶어 한 세트로 관리.
+  //  슬롯 = 타이틀 + 각 아이템 대표 문구. 시드 = 기존 베리에이션(Corner.mainTitleVariants + Atom.contentVariants)에서 타겟별로 모음.
+  const { copySlots, copySeed } = (() => {
+    const pc = row.previewCorner;
+    const slots: { key: string; label: string; base: string }[] = [];
+    const seedCopy: Record<string, Record<string, string>> = {};
+    const seedTargets: string[] = [];
+    const addVariant = (key: string, vs?: { text: string; target?: string; enabled?: boolean }[] | null) => {
+      (vs ?? []).forEach((v) => {
+        const t = v.target;
+        if (!t || v.enabled === false) return;
+        if (!seedTargets.includes(t)) seedTargets.push(t);
+        (seedCopy[t] ??= {})[key] = (v.text ?? '').replace(/\s*\n\s*/g, ' ');
+      });
+    };
+    if (pc) {
+      if (pc.mainTitle) { slots.push({ key: 'title', label: '타이틀', base: (pc.mainTitle ?? '').replace(/\s*\n\s*/g, ' ') }); addVariant('title', pc.mainTitleVariants); }
+      // 상품·혜택 아이템 컴포넌트만(상품형·혜택형). 선택형(카테고리 탭)·행동형(CTA)·배너형 등 네비·버튼은 문구 세트에서 제외.
+      let itemNo = 0;
+      (pc.components ?? []).forEach((cp) => {
+        if (!['상품형', '혜택형'].includes(cp.componentType)) return;
+        // 대표 문구 = 혜택 문구(BENEFIT_TEXT) 우선, 없으면 첫 텍스트.
+        const atoms = cp.atoms ?? [];
+        const a = atoms.find((x) => (x.content ?? '').trim() && x.atomType === 'BENEFIT_TEXT')
+          ?? atoms.find((x) => (x.content ?? '').trim() && ['TEXT', 'INFO'].includes(x.atomType));
+        if (!a) return;
+        itemNo += 1;
+        slots.push({ key: a.id, label: `상품 ${itemNo}`, base: (a.content ?? '').replace(/\s*\n\s*/g, ' ') });
+        addVariant(a.id, a.contentVariants);
+      });
+    }
+    return { copySlots: slots, copySeed: { targets: seedTargets, copy: seedCopy } };
+  })();
   const [subTitleText, setSubTitleText] = useState(row.defaultSubTitle ?? '');
   const [subTitleIcon, setSubTitleIcon] = useState(row.defaultSubTitleIcon ?? '화살표');
   const [cardShape, setCardShape] = useState(row.defaultCardShape ?? '');
@@ -1892,6 +1926,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
+            {/* 타겟별 문구 세트 — 타이틀+상품·혜택 문구를 '타겟' 하나로 묶어 한 세트로 편집(2026-10-06). 수정(편집)·콘텐츠 유형에서만. */}
+            {!isNew && base !== '배너형' && copySlots.length > 0 && (
+              <div>
+                <div className="mb-1.5 mt-1 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />타겟별 문구 세트</div>
+                <TargetCopySet cornerTypeId={row.typeId} slots={copySlots} seed={copySeed} />
+              </div>
+            )}
             </div>
             {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 업무 진입형(탭·메뉴)은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
             {!bulk && base !== '업무 진입형' && base !== '배너형' && (
@@ -1941,7 +1982,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
               {/* 정의 기본값 — 문구·개수·형태 (거버넌스: 코너 유형이 확정 · 빌더는 쌓기+CVM만) */}
               {useTitle && (
-                <TRow label="타이틀"><Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" /></TRow>
+                <TRow label="타이틀">
+                  <Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" />
+                  {/* 타겟별 문구는 아래 '타겟별 문구 세트'에서 타이틀+상품·혜택을 한 세트로 편집(2026-10-06). */}
+                  {!isNew && copySlots.length > 0 && (
+                    <p className="mt-1.5 text-[10.5px] text-slate-400">타겟별 문구(시니어·2030…)는 아래 <b className="font-semibold text-[#3616cd]">‘타겟별 문구 세트’</b>에서 타이틀·상품·혜택을 한번에 편집해요 ↓</p>
+                  )}
+                </TRow>
               )}
               {useSub && (
                 <TRow label="서브타이틀">
@@ -1999,7 +2046,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           CVM 수급이면 정렬·구성을 CVM이 고객마다 결정하므로 노출 구성은 '선택 불가'(비활성)로 잠근다. */}
       {/* 추천 수급 섹션은 미리보기(좌측) 가로 영역을 침범하지 않도록 우측 컨트롤 열에 정렬(2026-09-30 사용자 요청). */}
       {showStep(2) && (isRecEligible || isListType) && (
-      <section className="min-w-0">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
+        <div aria-hidden className="hidden lg:block" />
+        <section className="min-w-0">
         <div className="mb-2.5">
           <div className="flex items-center gap-2 text-[14.5px] font-bold text-slate-900">
             <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
@@ -2118,6 +2167,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           )}
         </div>
       </section>
+      </div>
       )}
 
       {/* (제거됨) 고객정보 연동 필드 — 코너 유형 단계에선 실제 바인딩을 하지 않아 삭제.
