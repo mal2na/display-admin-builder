@@ -136,7 +136,7 @@ const DIAGRAM_HTML = `
 
 <rect class="bx-build" x="56" y="498" width="1148" height="146" rx="10"/>
 <text class="tx t2" x="74" y="524">신규 화면 빌더</text>
-<text class="tm t4" x="350" y="523">화면 구성 위계 (왼쪽이 상위)</text>
+<text class="tm t4" x="196" y="523">화면 구성 위계 (왼쪽이 상위)</text>
 <rect class="bx-main" x="566" y="508" width="628" height="26" rx="13"/>
 <text class="ta t4" x="880" y="524" text-anchor="middle" style="font-weight:700">여기가 합류 지점 — 껍데기(코너 유형) ＋ 콘텐츠(상품·배너·문구)를 합쳐 화면 완성</text>
 
@@ -190,9 +190,9 @@ const DIAGRAM_HTML = `
 <path class="ar-a" d="M296 308V538" marker-end="url(#ma)"/>
 <circle class="num" cx="296" cy="326" r="10"/><text class="numt" x="296" y="330" text-anchor="middle">2</text>
 <text class="ta t4 flbl" x="312" y="330">승인 코너 유형(껍데기) → Template에 쌓기</text>
-<path class="ar" d="M470 140V170H160V520H436" marker-end="url(#m)"/>
-<circle class="num" cx="160" cy="185" r="10"/><text class="numt" x="160" y="189" text-anchor="middle">3</text>
-<text class="tm t4 flbl" x="176" y="189">상품 매핑</text>
+<path class="ar" d="M470 140V158H158V460H480V540" marker-end="url(#m)"/>
+<circle class="num" cx="158" cy="360" r="10"/><text class="numt" x="158" y="364" text-anchor="middle">3</text>
+<text class="tm t4 flbl" x="172" y="364">상품 매핑</text>
 <path class="ar" d="M849 252V300H905V538" marker-end="url(#m)"/>
 <circle class="num" cx="905" cy="430" r="10"/><text class="numt" x="905" y="434" text-anchor="middle">3</text>
 <text class="tm t4 flbl" x="921" y="434">문구 매핑</text>
