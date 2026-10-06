@@ -30,6 +30,8 @@ export function TargetCopySet({ cornerTypeId, slots, seed }: { cornerTypeId: str
   const [store, setStore] = useState<Store>({ targets: [], copy: {} });
   const [sel, setSel] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [adding, setAdding] = useState(false); // '직접 추가' 입력 열림
+  const [custom, setCustom] = useState('');
   useEffect(() => {
     let s: Store | null = null;
     try { const r = localStorage.getItem(storeKey); if (r) s = JSON.parse(r) as Store; } catch { /* noop */ }
@@ -109,17 +111,30 @@ export function TargetCopySet({ cornerTypeId, slots, seed }: { cornerTypeId: str
             </span>
           ))}
         </div>
-        {addable.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-slate-500">추가 등록 가능</span>
-            {addable.map((h) => (
-              <button key={h.key} type="button" onClick={() => addTarget(h.key)} title={`${h.axis} · ${h.note}`}
-                className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2 py-0.5 text-[12px] font-medium text-slate-500 hover:border-[#3616cd] hover:text-[#3616cd]">
-                <Plus className="h-3 w-3" />{h.key}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* 추가 등록 — 남은 추천 타겟 칩 + 항상 쓸 수 있는 '직접 추가'(커스텀 타겟). 모든 추천 타겟이 등록돼도 직접 추가 가능(2026-10-06). */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-slate-500">타겟 추가</span>
+          {addable.map((h) => (
+            <button key={h.key} type="button" onClick={() => addTarget(h.key)} title={`${h.axis} · ${h.note}`}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2 py-0.5 text-[12px] font-medium text-slate-500 hover:border-[#3616cd] hover:text-[#3616cd]">
+              <Plus className="h-3 w-3" />{h.key}
+            </button>
+          ))}
+          {!adding ? (
+            <button type="button" onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#c9c3f5] bg-[#f6f4ff] px-2 py-0.5 text-[12px] font-semibold text-[#3616cd] hover:bg-[#efeaff]">
+              <Plus className="h-3 w-3" />직접 추가
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#c9c3f5] bg-white px-1.5 py-0.5">
+              <input autoFocus value={custom} onChange={(e) => setCustom(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); const t = custom.trim(); if (t && !store.targets.includes(t)) addTarget(t); setCustom(''); setAdding(false); } if (e.key === 'Escape') { setCustom(''); setAdding(false); } }}
+                placeholder="타겟 이름 (예: VIP·신혼)" className="h-5 w-32 min-w-0 border-0 p-0 text-[12px] outline-none placeholder:text-slate-300" />
+              <button type="button" onClick={() => { const t = custom.trim(); if (t && !store.targets.includes(t)) addTarget(t); setCustom(''); setAdding(false); }} className="rounded bg-[#3616cd] px-1.5 py-0.5 text-[10px] font-semibold text-white">추가</button>
+              <button type="button" onClick={() => { setCustom(''); setAdding(false); }} className="text-slate-300 hover:text-slate-500"><X className="h-3 w-3" /></button>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* 선택된 타겟 세트 편집 — 전체 문구(타이틀+아이템)를 한 화면에서 한번에 */}

@@ -679,14 +679,65 @@ async function createCornerInstanceFromTypeId(cornerTypeId: string) {
       userMaxItems: ct.userMaxItems ?? null,
     },
   });
-  // 유형의 컴포넌트 유형·배열에 맞춰 '코너 구성'을 스캐폴딩(불러오면 코너 정보 + 코너 구성이 실제로 채워짐)
-  // 코너 유형에 저장된 '컴포넌트 조합'이 있으면 그대로 생성, 없으면 절차적 scaffold로 폴백.
+  // 유형의 컴포넌트 유형·배열에 맞춰 '코너 구성'을 채운다. 우선순위(2026-10-06 사용자 요청 — 등록된 데이터까지 그대로):
+  //  ① composition(JSON)이 있으면 그대로 생성(상품·혜택·칩·배너 등 콘텐츠 포함)
+  //  ② 없으면(상태 안내형·고정필수형 등) '등록된 대표 코너'의 실제 구성을 통째로 복제 → 가이드가 아니라 실제 문구·이미지·배지까지
+  //  ③ 대표도 없으면 절차적 scaffold(플레이스홀더)로 폴백
   const composition = parseComposition(def.composition);
-  const specs = composition
-    ? specFromComposition(composition)
-    : scaffoldSpecFor(def.componentType, def.typeDetail, { badge: def.useBadge, image: def.useImage, price: def.usePrice, desc: def.useDesc });
-  await createScaffoldComponents(corner.id, def.baseCategory, specs);
+  if (composition) {
+    await createScaffoldComponents(corner.id, def.baseCategory, specFromComposition(composition));
+  } else {
+    const rep = await prisma.corner.findFirst({
+      where: { sourceCornerTypeId: ct.id, id: { not: corner.id }, cornerComponents: { some: {} } },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], // 상세 '대표 코너'와 동일 기준(PLACED_CORNER_ORDER)
+      include: { cornerComponents: { orderBy: { order: 'asc' }, include: { component: { include: { componentAtoms: { orderBy: { order: 'asc' }, include: { atom: true } } } } } } },
+    });
+    if (rep && rep.cornerComponents.length) {
+      await copyComponentsFromCorner(corner.id, rep);
+    } else {
+      await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail, { badge: def.useBadge, image: def.useImage, price: def.usePrice, desc: def.useDesc }));
+    }
+  }
   return corner;
+}
+
+// 등록된 대표 코너의 구성(Component/Atom)을 새 코너로 그대로 복제 — 코너별 복제 모델(공유 아님)이므로 Component·Atom을 새로 만든다.
+//  문구(content·contentVariants)·이미지·배지·링크·칩 역할(menuRole)·표시여부(visible)까지 보존(2026-10-06).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function copyComponentsFromCorner(targetCornerId: string, source: { cornerComponents: any[] }) {
+  for (const cc of source.cornerComponents) {
+    const sc = cc.component;
+    const comp = await prisma.component.create({
+      data: {
+        name: sc.name,
+        componentType: sc.componentType,
+        description: sc.description ?? null,
+        status: 'active',
+        selectedIndex: sc.selectedIndex ?? 0,
+        chipRows: sc.chipRows ?? 1,
+        allowedCornerTypes: sc.allowedCornerTypes ?? null,
+        sourceCampaignId: sc.sourceCampaignId ?? null,
+        sourceSyncedAt: sc.sourceSyncedAt ?? null,
+      },
+    });
+    for (const ca of sc.componentAtoms) {
+      const a = ca.atom;
+      const atom = await prisma.atom.create({
+        data: {
+          name: a.name,
+          atomType: a.atomType,
+          content: a.content ?? null,
+          contentVariants: a.contentVariants ?? null,
+          imageUrl: a.imageUrl ?? null,
+          altText: a.altText ?? null,
+          linkUrl: a.linkUrl ?? null,
+          status: 'active',
+        },
+      });
+      await prisma.componentAtom.create({ data: { componentId: comp.id, atomId: atom.id, order: ca.order, isRequired: ca.isRequired ?? true, visible: ca.visible ?? true, menuRole: ca.menuRole ?? 'EDITABLE' } });
+    }
+    await prisma.cornerComponent.create({ data: { cornerId: targetCornerId, componentId: comp.id, order: cc.order } });
+  }
 }
 
 // 등록된 코너 유형(코너 유형 관리 카탈로그)을 그대로 상속해 코너 추가.

@@ -1522,6 +1522,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     if (!replaced) updated.push({ componentType: target, count: Math.max(1, next.length || 1), image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc, items: next });
     setBlocks(updated);
   };
+  // 타겟별 문구 세트 슬롯 — 수정 시엔 실제 배치 코너(copySlots), 신규 등록 등 미배치 시엔 현재 폼 상태(제목 + 상품·혜택 묶기)에서 라이브로.
+  //  → 등록할 때도 문구(타이틀·상품·혜택)를 그대로 가져와 타겟별로 세팅할 수 있다(2026-10-06 사용자 요청).
+  const liveCopySlots = [
+    ...((mainTitleText || '').trim() ? [{ key: 'title', label: '타이틀', base: mainTitleText.trim() }] : []),
+    ...productItems.map((it, i) => ({ key: it.productKey || `item-${i}`, label: `상품 ${i + 1}`, base: (it.title || '').trim() })).filter((s) => s.base),
+  ];
+  const effectiveCopySlots = copySlots.length ? copySlots : liveCopySlots;
+  const effectiveCopySeed = copySlots.length ? copySeed : { targets: [], copy: {} };
   // 세부 항목(표시 항목) 토글을 미리보기·저장 조합에 실시간 반영 — 이미지·가격·설명·배지 on/off가 아이템 카드에 바로 적용(2026-09-29 사용자 요청).
   const liveFeatFlags = { image: imageOn, price: priceOn, desc: descOn, badge: eff('useBadge') };
   const shownBlocks: Composition = isBannerLoader
@@ -1926,11 +1934,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
-            {/* 타겟별 문구 세트 — 타이틀+상품·혜택 문구를 '타겟' 하나로 묶어 한 세트로 편집(2026-10-06). 수정(편집)·콘텐츠 유형에서만. */}
-            {!isNew && base !== '배너형' && copySlots.length > 0 && (
+            {/* 타겟별 문구 세트 — 타이틀+상품·혜택 문구를 '타겟' 하나로 묶어 한 세트로 편집(2026-10-06). 등록·수정 모두(신규는 폼 상태에서 라이브). */}
+            {!bulk && base !== '배너형' && effectiveCopySlots.length > 0 && (
               <div>
                 <div className="mb-1.5 mt-1 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />타겟별 문구 세트</div>
-                <TargetCopySet cornerTypeId={row.typeId} slots={copySlots} seed={copySeed} />
+                <TargetCopySet cornerTypeId={row.typeId || 'new'} slots={effectiveCopySlots} seed={effectiveCopySeed} />
               </div>
             )}
             </div>
@@ -1985,7 +1993,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 <TRow label="타이틀">
                   <Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" />
                   {/* 타겟별 문구는 아래 '타겟별 문구 세트'에서 타이틀+상품·혜택을 한 세트로 편집(2026-10-06). */}
-                  {!isNew && copySlots.length > 0 && (
+                  {effectiveCopySlots.length > 0 && (
                     <p className="mt-1.5 text-[10.5px] text-slate-400">타겟별 문구(시니어·2030…)는 아래 <b className="font-semibold text-[#3616cd]">‘타겟별 문구 세트’</b>에서 타이틀·상품·혜택을 한번에 편집해요 ↓</p>
                   )}
                 </TRow>
