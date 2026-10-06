@@ -3098,7 +3098,7 @@ function CornerLoadModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[80vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <Copy className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold">{isSwap ? '코너 유형 교체' : '코너 불러오기'}</h2>
@@ -3109,7 +3109,7 @@ function CornerLoadModal({
         </div>
         <div className="grid min-h-0 flex-1 grid-cols-[1fr_1.1fr]">
           {/* 목록 (코너 유형) */}
-          <div className="flex min-h-0 flex-col border-r">
+          <div className="flex min-h-0 min-w-0 flex-col border-r">
             <div className="space-y-2 p-3">
               <div className="flex items-center gap-2 rounded-md border bg-background px-3">
                 <Search className="h-4 w-4 text-muted-foreground" />
@@ -3190,7 +3190,7 @@ function CornerLoadModal({
             </div>
           </div>
           {/* 미리보기 */}
-          <div className="flex min-h-0 flex-col overflow-y-auto p-4">
+          <div className="flex min-h-0 min-w-0 flex-col overflow-y-auto p-4">
             {sel ? (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-1.5">
