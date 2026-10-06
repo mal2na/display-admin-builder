@@ -44,7 +44,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
-import { TargetCopySet } from './target-copy-set';
 
 // 등록된 코너 유형(코너 유형 관리 = 마스터)의 (코너유형·컴포넌트·배열) 조합. 등록 폼 ②③을 이걸로 좁힌다.
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
@@ -1346,43 +1345,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
   // 정의(거버넌스) 기본값 — 코너 유형이 문구·개수·형태까지 정의(2026-09-29 거버넌스 분리). 빌더는 쌓기+CVM만.
   const [mainTitleText, setMainTitleText] = useState(row.defaultMainTitle ?? '');
-  // 타겟별 문구 세트(2026-10-06) — 타이틀 + 상품·혜택 문구를 '타겟' 하나로 묶어 한 세트로 관리.
-  //  슬롯 = 타이틀 + 각 아이템 대표 문구. 시드 = 기존 베리에이션(Corner.mainTitleVariants + Atom.contentVariants)에서 타겟별로 모음.
-  const { copySlots, copySeed } = (() => {
-    const pc = row.previewCorner;
-    const slots: { key: string; label: string; base: string }[] = [];
-    const seedCopy: Record<string, Record<string, string>> = {};
-    const seedTargets: string[] = [];
-    const addVariant = (key: string, vs?: { text: string; target?: string; enabled?: boolean }[] | null) => {
-      (vs ?? []).forEach((v) => {
-        const t = v.target;
-        if (!t || v.enabled === false) return;
-        if (!seedTargets.includes(t)) seedTargets.push(t);
-        (seedCopy[t] ??= {})[key] = (v.text ?? '').replace(/\s*\n\s*/g, ' ');
-      });
-    };
-    // 콘텐츠 안내형은 타이틀만(상품 문구 불필요 — 2026-10-06 사용자 요청).
-    const titleOnly = base === '콘텐츠 안내형';
-    if (pc) {
-      // 타이틀 슬롯 base = 상단 '타이틀' 입력(live)을 우선 반영 → 상단에서 바꾸면 문구 세트도 즉시 반영(2026-10-06).
-      const titleBase = ((mainTitleText || '').trim() || (pc.mainTitle ?? '')).replace(/\s*\n\s*/g, ' ');
-      if (titleBase) { slots.push({ key: 'title', label: '타이틀', base: titleBase }); addVariant('title', pc.mainTitleVariants); }
-      // 상품·혜택 아이템 컴포넌트만(상품형·혜택형). 선택형(카테고리 탭)·행동형(CTA)·배너형 등 네비·버튼은 문구 세트에서 제외.
-      let itemNo = 0;
-      (titleOnly ? [] : (pc.components ?? [])).forEach((cp) => {
-        if (!['상품형', '혜택형'].includes(cp.componentType)) return;
-        // 대표 문구 = 혜택 문구(BENEFIT_TEXT) 우선, 없으면 첫 텍스트.
-        const atoms = cp.atoms ?? [];
-        const a = atoms.find((x) => (x.content ?? '').trim() && x.atomType === 'BENEFIT_TEXT')
-          ?? atoms.find((x) => (x.content ?? '').trim() && ['TEXT', 'INFO'].includes(x.atomType));
-        if (!a) return;
-        itemNo += 1;
-        slots.push({ key: a.id, label: `상품 ${itemNo}`, base: (a.content ?? '').replace(/\s*\n\s*/g, ' ') });
-        addVariant(a.id, a.contentVariants);
-      });
-    }
-    return { copySlots: slots, copySeed: { targets: seedTargets, copy: seedCopy } };
-  })();
+  // 타겟별 문구 세트 제거(2026-10-06 회의) — 실제 문구(콘텐츠)·타겟 베리에이션은 빌더(전시화면 관리)에서 등록. 코너 유형은 기본 타이틀만.
   const [subTitleText, setSubTitleText] = useState(row.defaultSubTitle ?? '');
   const [subTitleIcon, setSubTitleIcon] = useState(row.defaultSubTitleIcon ?? '화살표');
   const [cardShape, setCardShape] = useState(row.defaultCardShape ?? '');
@@ -1525,15 +1488,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     if (!replaced) updated.push({ componentType: target, count: Math.max(1, next.length || 1), image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc, items: next });
     setBlocks(updated);
   };
-  // 타겟별 문구 세트 슬롯 — 수정 시엔 실제 배치 코너(copySlots), 신규 등록 등 미배치 시엔 현재 폼 상태(제목 + 상품·혜택 묶기)에서 라이브로.
-  //  → 등록할 때도 문구(타이틀·상품·혜택)를 그대로 가져와 타겟별로 세팅할 수 있다(2026-10-06 사용자 요청).
-  const liveCopySlots = [
-    ...((mainTitleText || '').trim() ? [{ key: 'title', label: '타이틀', base: mainTitleText.trim() }] : []),
-    // 콘텐츠 안내형은 타이틀만(상품 문구 불필요 — 2026-10-06).
-    ...(base === '콘텐츠 안내형' ? [] : productItems.map((it, i) => ({ key: it.productKey || `item-${i}`, label: `상품 ${i + 1}`, base: (it.title || '').trim() })).filter((s) => s.base)),
-  ];
-  const effectiveCopySlots = copySlots.length ? copySlots : liveCopySlots;
-  const effectiveCopySeed = copySlots.length ? copySeed : { targets: [], copy: {} };
   // 세부 항목(표시 항목) 토글을 미리보기·저장 조합에 실시간 반영 — 이미지·가격·설명·배지 on/off가 아이템 카드에 바로 적용(2026-09-29 사용자 요청).
   const liveFeatFlags = { image: imageOn, price: priceOn, desc: descOn, badge: eff('useBadge') };
   const shownBlocks: Composition = isBannerLoader
@@ -1939,13 +1893,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
-            {/* 타겟별 문구 세트 — 타이틀+상품·혜택 문구를 '타겟' 하나로 묶어 한 세트로 편집(2026-10-06). 등록·수정 모두(신규는 폼 상태에서 라이브). */}
-            {!bulk && base !== '배너형' && effectiveCopySlots.length > 0 && (
-              <div>
-                <div className="mb-1.5 mt-1 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />타겟별 문구 세트</div>
-                <TargetCopySet cornerTypeId={row.typeId || 'new'} slots={effectiveCopySlots} seed={effectiveCopySeed} />
-              </div>
-            )}
+            {/* 타겟별 문구 세트 제거 — 회의 결론상 '문구(콘텐츠)'는 빌더(전시화면 관리)에서 등록. 코너 유형은 껍데기(규격)만. */}
             </div>
             {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 업무 진입형(탭·메뉴)은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
             {!bulk && base !== '업무 진입형' && base !== '배너형' && (
@@ -1997,10 +1945,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               {useTitle && (
                 <TRow label="타이틀">
                   <Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" />
-                  {/* 타겟별 문구는 아래 '타겟별 문구 세트'에서 타이틀+상품·혜택을 한 세트로 편집(2026-10-06). */}
-                  {effectiveCopySlots.length > 0 && (
-                    <p className="mt-1.5 text-[10.5px] text-slate-400">타겟별 문구(시니어·2030…)는 아래 <b className="font-semibold text-[#3616cd]">‘타겟별 문구 세트’</b>에서 타이틀·상품·혜택을 한번에 편집해요 ↓</p>
-                  )}
+                  <p className="mt-1.5 text-[10.5px] text-slate-400">실제 문구·타겟별 베리에이션은 <b className="font-semibold text-[#3616cd]">빌더(전시화면 관리)</b>에서 등록해요. 여기선 기본 타이틀만.</p>
                 </TRow>
               )}
               {useSub && (

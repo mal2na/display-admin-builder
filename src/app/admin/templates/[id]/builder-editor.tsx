@@ -1309,7 +1309,7 @@ function ComponentCard({
               defaultValue={cc.name}
               onBlur={(e) => e.currentTarget.form?.requestSubmit()}
               className="w-full rounded-md border bg-white px-2 py-1 text-sm outline-none focus:border-primary"
-              aria-label="컴포넌트 이름"
+              aria-label="데이터셋 정보 이름"
             />
           </form>
         ) : (
@@ -1317,7 +1317,7 @@ function ComponentCard({
         )}
         <DeleteConfirmForm
           action={removeComponent.bind(null, templateId, cc.cornerComponentId)}
-          itemLabel="컴포넌트"
+          itemLabel="데이터셋 정보"
           childSummary={cc.atoms.length ? `Atom ${cc.atoms.length}개` : undefined}
           ariaLabel="Component 제거"
         />
@@ -1563,11 +1563,11 @@ function ComponentList({
               onClick={() => setBssOpen(true)}
               className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-sky-300 bg-white/70 py-2 text-xs font-medium text-sky-700 hover:border-sky-500 hover:bg-sky-50"
             >
-              <Search className="h-3.5 w-3.5" /> 상품 불러오기 (코드화된 컴포넌트 편성)
+              <Search className="h-3.5 w-3.5" /> 상품 불러오기 (코드화된 데이터셋 편성)
             </button>
             <p className="flex items-start gap-1 rounded-md bg-slate-50 px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
               <Lock className="mt-0.5 h-3 w-3 shrink-0" />
-              <span>새 컴포넌트 자유 추가는 여기서 하지 않아요. 컴포넌트 구성은 <b className="text-slate-600">코너 유형 관리 → 컴포넌트 조합</b>에서 정의합니다 (DS Portal 코드화 기준).</span>
+              <span>새 데이터셋 자유 추가는 여기서 하지 않아요. 담을 수 있는 데이터셋 정보는 <b className="text-slate-600">코너 유형 관리</b>(DS Portal 코드화 기준)에서 정의합니다.</span>
             </p>
           </div>
         </div>
@@ -1738,7 +1738,7 @@ function CopyOverview({ templateId, corner }: { templateId: string; corner: Corn
     <details className="mb-3 rounded-xl border bg-card">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-slate-700">
         <List className="h-3.5 w-3.5 text-violet-500" /> 문구 한눈에 보기 <span className="font-normal text-slate-400">· 문구 {atomRows.length + (hasTitle ? 1 : 0)}종 · 타겟별 대체 {totalVars}개</span>
-        <span className="ml-auto rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">편집은 컴포넌트 ‘수정’에서</span>
+        <span className="ml-auto rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">편집은 데이터셋 정보 ‘수정’에서</span>
       </summary>
       <div className="space-y-2.5 border-t p-3">
         {/* 타이틀 — 읽기 전용(편집은 문구 관리에서). 타겟별 대체 = 타이틀 베리에이션 */}
@@ -1781,7 +1781,7 @@ function CopyOverview({ templateId, corner }: { templateId: string; corner: Corn
             })}
           </div>
         ))}
-        <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">여기는 <b>모아 보기</b>입니다. 아톰 문구·타겟별 대체는 각 컴포넌트 <b>‘수정’</b>의 ‘문구 베리에이션’에서 추가·편집합니다. 최종 매칭·택1은 CVM이 고객마다 수행.</p>
+        <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">여기는 <b>모아 보기</b>입니다. 아톰 문구·타겟별 대체는 각 데이터셋 정보 <b>‘수정’</b>의 ‘문구 베리에이션’에서 추가·편집합니다. 최종 매칭·택1은 CVM이 고객마다 수행.</p>
       </div>
     </details>
   );
@@ -2431,7 +2431,7 @@ function CornerInfoForm({
             {/* 타이틀·서브타이틀 문구 = CVM 타겟별 택1(베리에이션). 빌더에선 base를 직접 안 바꾸고, 후보는 문구 베리에이션에서. 미리보기=폴백(첫 후보). 2026-10-06 사용자 결정(C). */}
             <div className="col-span-2 flex flex-wrap items-center justify-between gap-1 rounded-md bg-violet-50 px-2 py-1">
               <span className="text-[10px] font-medium text-violet-700">타이틀·서브타이틀 문구는 <b>CVM이 타겟별로 택1</b> · 미리보기는 폴백(첫 후보)</span>
-              <span className="text-[10px] font-medium text-violet-500">후보 편집: 컴포넌트 ‘수정 → 문구 베리에이션’</span>
+              <span className="text-[10px] font-medium text-violet-500">후보 편집: 데이터셋 정보 ‘수정 → 문구 베리에이션’</span>
             </div>
             <div className="col-span-2 space-y-1">
               <label className="text-[11px] font-medium text-muted-foreground">타이틀 <span className="font-normal text-muted-foreground/70">· 폴백(첫 후보) · CVM 택1</span></label>
@@ -2889,7 +2889,7 @@ function CornerListRow({
             corner.cornerType === '배너형'
               ? undefined
               : corner.components.length
-                ? `컴포넌트 ${corner.components.length}개 · Atom ${corner.components.reduce((s, c) => s + c.atoms.length, 0)}개`
+                ? `데이터셋 ${corner.components.length}개 · Atom ${corner.components.reduce((s, c) => s + c.atoms.length, 0)}개`
                 : undefined
           }
           ariaLabel={corner.cornerType === '배너형' ? '배너 삭제' : 'Corner 삭제'}
@@ -3785,7 +3785,7 @@ export function BuilderEditor({
             <div className="rounded-lg border bg-card p-4">
               <p className="mb-0.5 text-sm font-semibold">코너 구성</p>
               <p className="mb-2 text-[11px] text-muted-foreground">
-                {selectedCorner.cornerType === '배너형' ? '이 코너에 담긴 배너 · 규격 · 노출 방식' : '이 코너를 이루는 컴포넌트 · 표시 옵션'}
+                {selectedCorner.cornerType === '배너형' ? '이 코너에 담긴 배너 · 규격 · 노출 방식' : '이 코너에 매핑된 데이터셋 정보 · 표시 옵션'}
               </p>
               {selectedCorner.cornerType === '배너형' ? (
                 // 배너형 = 배너 레일(여러 배너 + 규격 + 스와이프/자동). 상품 카드 옵션·컴포넌트 목록은 무관하므로 대체.

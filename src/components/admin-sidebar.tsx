@@ -30,7 +30,8 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         <NavLink href="/admin/app-splash" icon={<ImagePlay className="h-4 w-4" />} label="App 스플래시 관리" collapsed={collapsed} />
         <NavLink href="/admin/app-versions" icon={<SmartphoneNfc className="h-4 w-4" />} label="App 버전 관리" collapsed={collapsed} />
         <NavLink href="/admin/app-widgets" icon={<AppWindow className="h-4 w-4" />} label="App 위젯 관리" collapsed={collapsed} alsoActiveFor={['/admin/widget-types']} />
-        <NavLink href="/admin/page-menu-b" icon={<FolderTree className="h-4 w-4" />} label="전체 페이지·메뉴 관리" collapsed={collapsed} badge="B안" />
+        {/* 메뉴 관리는 빌더로 이관 예정 → 사이드바에선 '메뉴' 숨김, '전체 페이지 관리'로 표기(회의 반영). */}
+        <NavLink href="/admin/page-menu-b" icon={<FolderTree className="h-4 w-4" />} label="전체 페이지 관리" collapsed={collapsed} />
         <NavLink href="/admin/page-dev" icon={<SlidersHorizontal className="h-4 w-4" />} label="페이지 개발 설정" collapsed={collapsed} />
       </nav>
 
