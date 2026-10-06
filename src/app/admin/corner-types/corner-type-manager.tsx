@@ -1663,8 +1663,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   );
 
   // 통합 미리보기(라이브) — 좌측 sticky. 정의 기본값(문구·아이콘·카드 모양) 반영.
+  //  flex-wrap 레이아웃의 고정폭 아이템 — 폭이 좁으면 오른쪽 설정이 아래로 내려가 per-char로 터지지 않는다.
   const livePreview = (
-    <div className="self-start lg:sticky lg:top-3">
+    <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
       {/* '코너 정의' 헤더는 미리보기 열 상단에 — 오른쪽 '기본 정보' 헤더와 같은 로우로 정렬(2026-10-01 사용자 요청) */}
       <div className="mb-2 flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
         <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
@@ -1810,11 +1811,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       /* 좌우 보더 없는 섹션(목업 105) — 굵은 제목 + 가로줄 테이블만. */
       <section className="space-y-2">
         <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
+        {/* 미리보기(고정폭) + 설정 — 뷰포트 breakpoint가 아니라 실제 컨테이너 폭에 반응(flex-wrap). 좁으면 설정이 미리보기 아래로. */}
+        <div className="flex flex-wrap gap-4">
           {/* 왼쪽: 라이브 미리보기(sticky) — 기본 정보+컴포넌트 구성 통합, 미리보기 하나(2026-09-29 사용자 요청) */}
           {livePreview}
           {/* 오른쪽: 모든 설정 — (등록은 스텝별) 유형·배열 → 컴포넌트 구성 → 표시 항목 */}
-          <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex min-w-[320px] flex-1 flex-col gap-3">
             {/* 순서(order): 기본정보 → 세부 항목 → 상품·혜택 묶기(편집기). 세부 항목 아래에 묶기가 오도록(2026-09-30 사용자 요청). */}
             <div className={cn('order-1', !showStep(0) && 'hidden')}>
               <div className="mb-2.5 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />기본 정보</div>
