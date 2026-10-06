@@ -1468,6 +1468,7 @@ function ComponentList({
   const overLimit = corner.maxItems != null && corner.components.length > corner.maxItems;
   const [bssOpen, setBssOpen] = useState(false); // BSS 상품 불러오기 모달
   const [bssPending, startBss] = useTransition();
+  const [bodyEdit, setBodyEdit] = useState(false); // 콘텐츠 묶음 편집 토글 — '수정'을 눌러야 상품 불러오기가 열린다(2026-10-06 회의)
 
   // 좌측 코너 리스트와 동일한 드래그앤드롭 재정렬
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -1537,7 +1538,7 @@ function ComponentList({
         )}
         {/* 콘텐츠 묶음 — 본문(상품·혜택 등) 컴포넌트 + 추가 버튼. 비어도 항상 노출(추가 진입점). */}
         <div className="rounded-lg border bg-muted/30 p-2">
-          <p className="mb-1.5 flex flex-wrap items-center gap-1 px-0.5 text-[11px] font-semibold text-slate-600">
+          <div className="mb-1.5 flex flex-wrap items-center gap-1 px-0.5 text-[11px] font-semibold text-slate-600">
             {bodyLabel} <span className="rounded-full bg-white px-1.5 text-[10px] text-slate-500">{bodyOrdered.length}</span>
             {cvmFill > 0 && (
               <span className="ml-0.5 inline-flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700" title="노출 개수(최대)보다 운영자가 적게 등록해, 나머지는 CVM이 고객마다 자동으로 채웁니다(가안 — 에셋 등록 위치 확정 전).">
@@ -1545,7 +1546,15 @@ function ComponentList({
                 <span className="rounded bg-violet-600 px-1 text-[8px] font-bold text-white">가안</span>
               </span>
             )}
-          </p>
+            {/* 상품 불러오기는 '수정'을 눌러야 열린다(칩 묶음과 동일한 편집 게이트). */}
+            <button
+              type="button"
+              onClick={() => setBodyEdit((v) => !v)}
+              className={cn('ml-auto inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10.5px] font-medium', bodyEdit ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50')}
+            >
+              {bodyEdit ? <><Check className="h-3 w-3" /> 완료</> : <><Pencil className="h-3 w-3" /> 수정</>}
+            </button>
+          </div>
           {bodyOrdered.length > 0 ? (
             <SortableContext items={bodyIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-1.5">
@@ -1557,7 +1566,8 @@ function ComponentList({
           ) : (
             <p className="px-0.5 pb-1 text-[11px] text-muted-foreground">아직 콘텐츠가 없습니다. 아래에서 추가하세요.</p>
           )}
-          {/* 추가 — 자유 컴포넌트 생성은 정책상 불가(⛔ 새 구조 생성). 코드화된 상품(BSS)만 불러와 편성(🔶). */}
+          {/* 추가 — '수정'을 눌렀을 때만 노출. 자유 컴포넌트 생성은 정책상 불가(⛔ 새 구조 생성). 코드화된 상품(BSS)만 불러와 편성(🔶). */}
+          {bodyEdit && (
           <div className="mt-2 space-y-1.5">
             <button
               type="button"
@@ -1571,6 +1581,7 @@ function ComponentList({
               <span>새 데이터셋 자유 추가는 여기서 하지 않아요. 담을 수 있는 데이터셋 정보는 <b className="text-slate-600">코너 유형 관리</b>(DS Portal 코드화 기준)에서 정의합니다.</span>
             </p>
           </div>
+          )}
         </div>
       </DndContext>
       <BssProductPickerModal
@@ -2269,9 +2280,9 @@ function CornerInfoForm({
       <form key={resetKey} action={updateCornerMeta.bind(null, templateId, corner.id)} className="grid grid-cols-2 gap-3">
         {/* 수정 가능/불가 구분 범례 — 빌더에서 바꾸는 값 vs 코너 유형에서 정의(읽기 전용). 2026-10-01 사용자 요청 */}
         <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-[#E8ECEF] bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
-          <span className="inline-flex items-center gap-1"><Pencil className="h-3 w-3 text-indigo-500" /><b className="text-slate-600">빌더에서 수정</b> · 추천 수급(CVM) · 노출 타입·문구 베리에이션 · 순서·위치 고정</span>
+          <span className="inline-flex items-center gap-1"><Pencil className="h-3 w-3 text-indigo-500" /><b className="text-slate-600">빌더에서 수정</b> · 코너명 · 타이틀·서브 · 표시 항목 · 카테고리 탭 · 미 노출 조건 · 코너 설명 · 추천 수급(CVM) · 베리에이션 · 순서·위치 고정</span>
           <span className="text-slate-300">|</span>
-          <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3 text-slate-400" /><b className="text-slate-600">코너 유형에서 정의(읽기 전용)</b> · 유형·배열 · 타이틀·서브 · 표시 항목 · 카테고리 탭 · 미 노출 조건 · 코너 설명 — ‘코너 유형에서 수정’</span>
+          <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3 text-slate-400" /><b className="text-slate-600">코너 유형에서 정의(읽기 전용)</b> · 유형·배열 — ‘코너 불러오기’로 교체</span>
         </div>
         {/* 공통 */}
         <div className="col-span-2 space-y-1">
@@ -2429,22 +2440,23 @@ function CornerInfoForm({
           </>
         ) : (
           <>
-            {/* 타이틀·서브타이틀 문구 = CVM 타겟별 택1(베리에이션). 빌더에선 base를 직접 안 바꾸고, 후보는 문구 베리에이션에서. 미리보기=폴백(첫 후보). 2026-10-06 사용자 결정(C). */}
+            {/* 타이틀·서브타이틀은 빌더에서 직접 편집(회의 2026-10-06 재결정 — 코너 정보는 빌더에서 수정).
+                타겟별 대체 문구(CVM 택1)는 문구 베리에이션에서 추가하고, 여기 값은 기본(폴백·첫 후보)이 된다. */}
             <div className="col-span-2 flex flex-wrap items-center justify-between gap-1 rounded-md bg-violet-50 px-2 py-1">
-              <span className="text-[10px] font-medium text-violet-700">타이틀·서브타이틀 문구는 <b>CVM이 타겟별로 택1</b> · 미리보기는 폴백(첫 후보)</span>
-              <span className="text-[10px] font-medium text-violet-500">후보 편집: 데이터셋 정보 ‘수정 → 문구 베리에이션’</span>
+              <span className="text-[10px] font-medium text-violet-700">타이틀·서브타이틀은 <b>여기서 직접 편집</b> · 이 값이 기본(폴백)</span>
+              <span className="text-[10px] font-medium text-violet-500">타겟별 대체(CVM 택1): 문구 베리에이션</span>
             </div>
             <div className="col-span-2 space-y-1">
-              <label className="text-[11px] font-medium text-muted-foreground">타이틀 <span className="font-normal text-muted-foreground/70">· 폴백(첫 후보) · CVM 택1</span></label>
-              <Textarea name="mainTitle" value={mainTitle} disabled readOnly placeholder="(문구 베리에이션의 첫 후보)" className="min-h-[44px] cursor-not-allowed bg-slate-50 text-xs text-slate-500" />
+              <label className="text-[11px] font-medium text-muted-foreground">타이틀</label>
+              <Textarea name="mainTitle" value={mainTitle} onChange={(e) => setMainTitle(e.target.value)} placeholder="코너 타이틀" className="min-h-[44px] text-xs" />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-medium text-muted-foreground">서브타이틀 <span className="font-normal text-muted-foreground/70">· 폴백</span></label>
-              <Input name="subTitle" value={subTitle} disabled readOnly placeholder="(문구 베리에이션의 첫 후보)" className="h-8 cursor-not-allowed bg-slate-50 text-xs text-slate-500" />
+              <label className="text-[11px] font-medium text-muted-foreground">서브타이틀</label>
+              <Input name="subTitle" value={subTitle} onChange={(e) => setSubTitle(e.target.value)} placeholder="서브타이틀" className="h-8 text-xs" />
             </div>
             <div className="space-y-1">
               <label className="text-[11px] font-medium text-muted-foreground">서브타이틀 화살표</label>
-              <Select name="subTitleIcon" value={subTitleIcon} disabled className="h-8 cursor-not-allowed bg-slate-50 text-xs text-slate-500">
+              <Select name="subTitleIcon" value={subTitleIcon} onChange={(e) => setSubTitleIcon(e.target.value)} className="h-8 text-xs">
                 {SUBTITLE_ICONS.map((t) => (
                   <option key={t} value={t}>
                     {t === '화살표' ? '화살표(›) 표시' : '표시 안 함'}
