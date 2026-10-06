@@ -1999,9 +1999,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           CVM 수급이면 정렬·구성을 CVM이 고객마다 결정하므로 노출 구성은 '선택 불가'(비활성)로 잠근다. */}
       {/* 추천 수급 섹션은 미리보기(좌측) 가로 영역을 침범하지 않도록 우측 컨트롤 열에 정렬(2026-09-30 사용자 요청). */}
       {showStep(2) && (isRecEligible || isListType) && (
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
-        <div aria-hidden className="hidden lg:block" />
-        <section className="min-w-0">
+      <section className="min-w-0">
         <div className="mb-2.5">
           <div className="flex items-center gap-2 text-[14.5px] font-bold text-slate-900">
             <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
@@ -2120,7 +2118,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           )}
         </div>
       </section>
-      </div>
       )}
 
       {/* (제거됨) 고객정보 연동 필드 — 코너 유형 단계에선 실제 바인딩을 하지 않아 삭제.
