@@ -24,6 +24,7 @@ import {
 } from '../src/lib/display-taxonomy';
 import { EVENT_CORNER_TYPES } from '../src/lib/event-taxonomy';
 import { seedEvents } from './seed-events';
+import { seedAppSections } from './seed-app-sections';
 
 const prisma = new PrismaClient();
 
@@ -1359,6 +1360,9 @@ async function main() {
 
   // 이벤트·미션 빌더 시드 (룰렛)
   await seedEvents(prisma);
+
+  // App 버전·App 위젯·위젯 유형·전체페이지 시드 (프로덕션 재시드 시 비어 있던 문제 보완 — 2026-10-06)
+  await seedAppSections(prisma);
 }
 
 // ── 노출 타입/타이틀/문구 베리에이션 데모 (회의 2026-08-31) ──

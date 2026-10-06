@@ -1342,7 +1342,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const renameArr = (i: number, val: string) => setSelectedArrays((xs) => { const n = xs.map((x, j) => (j === i ? val : x)); setDetail(n[0] ?? ''); return n; });
   const removeArrAt = (i: number) => setSelectedArrays((xs) => { const n = xs.filter((_, j) => j !== i); setDetail(n[0] ?? ''); return n; });
   const [bigBanner, setBigBanner] = useState(row.bigBanner ?? false); // ④ 빅배너 구분자
-  const [layoutMode, setLayoutMode] = useState(row.componentLayoutMode || '고정형'); // 컴포넌트 레이아웃: 지정형(여러 노출유형 택1) | 고정형
   const [active, setActive] = useState(row.active);
   const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
   // 정의(거버넌스) 기본값 — 코너 유형이 문구·개수·형태까지 정의(2026-09-29 거버넌스 분리). 빌더는 쌓기+CVM만.
@@ -1421,10 +1420,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     return reg?.typeDetail ?? cornerTypeDetails(b)[0] ?? '';
   };
   const detailValid = typeShapes.includes(detail) ? detail : (allowEmptyDetail ? '' : (typeShapes[0] ?? ''));
+  // 수정 중 '지금 편집하는 바로 그 case'(원본 유형·배열)일 때만 저장된 실제 콘텐츠(blocks)를 쓴다.
+  // 다른 유형·배열을 고르면 그 조합엔 콘텐츠가 없으므로 신규 등록처럼 가이드(빈 슬롯)로 보여준다(2026-10-06).
+  const isOriginalCase = !isNew && base === row.baseCategory && detailValid === (row.typeDetail ?? '');
+  const guidePreview = isNew || !isOriginalCase; // 미리보기를 가이드(플레이스홀더)로 — 콘텐츠 비움
   // 대표 컴포넌트 유형: 사용자가 컴포넌트 조합을 직접 편집했으면 그 첫 블록 유형을 대표로 쓴다(저장·미리보기 정합).
   //  편집 전(blocks 비어있음)에는 배열·레이아웃에서 도출(compForShape) — 기존 동작 유지.
   const compFromShape = compForShape(base, detailValid);
-  const compValid = blocks.length ? ((blocks[0]?.componentType as ComponentType) || compFromShape) : compFromShape;
+  const compValid = (isOriginalCase && blocks.length) ? ((blocks[0]?.componentType as ComponentType) || compFromShape) : compFromShape;
 
   // ── 세부 항목 적용 가능 여부 (유형별) ──
   // 카테고리 탭/고정형 탭/배너/아이콘형 등은 코너 타이틀·서브타이틀이 없다(미리보기 noHeader와 동일 기준).
@@ -1452,7 +1455,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const useTitle = eff('useMainTitle');
   const useSub = eff('useSubTitle');
   // 이미지·가격은 상품형이 아닐 땐 기본 노출(true)로 둔다 — 유형에 해당 항목이 없으면 미리보기에선 원래대로 보여야 함.
-  const imageOn = featureApplies('useImage') ? features.useImage : true;
+  const imageOn = true; // 상품 이미지는 카드 필수 요소라 항상 고정 노출(해제 불가) — 2026-10-06 사용자 요청
   const priceOn = featureApplies('usePrice') ? features.usePrice : true;
   const descOn = featureApplies('useDesc') ? features.useDesc : true; // 설명(부가/흐린 글씨) — 상품형 외엔 기본 노출
   // 추천 수급 방식 + 노출 구성 = 한 섹션. CVM 수급이면 노출 구성(정렬·CTA)은 CVM이 결정 → 선택 불가.
@@ -1469,7 +1472,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const isBannerLoader = compValid === '배너형' || base === '배너형';
   const isSwipeBannerType = isBannerLoader && detailValid === '스와이프형';
   const isSingleBannerType = isBannerLoader && !isSwipeBannerType; // 배너 단일형(기본) — 1개만 불러옴
-  const swipeBanners = isBannerLoader ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
+  const swipeBanners = (isOriginalCase && isBannerLoader) ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
   // 상품형·혜택형 — 상품·혜택 아이템 묶음(BSS 카탈로그에서 담기 · 순서 드래그 · URL 수동). 2026-09-29 사용자 요청.
   const isProductItemsType = !isBannerLoader && (compValid === '상품형' || compValid === '혜택형');
   const productItems = isProductItemsType ? (blocks.find((b) => b.componentType === compValid)?.items ?? blocks.find((b) => b.items)?.items ?? []) : [];
@@ -1486,7 +1489,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const liveFeatFlags = { image: imageOn, price: priceOn, desc: descOn, badge: eff('useBadge') };
   const shownBlocks: Composition = isBannerLoader
     ? [{ componentType: '배너형', count: isSingleBannerType ? 1 : Math.max(1, swipeBanners.length || 2), image: true, price: true, desc: true, ...(swipeBanners.length ? { banners: isSingleBannerType ? swipeBanners.slice(0, 1) : swipeBanners } : {}) }]
-    : (blocks.length
+    : ((isOriginalCase && blocks.length)
         ? blocks
         : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc })
       ).map((b) => {
@@ -1649,22 +1652,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           <p className="text-[11px] leading-relaxed text-muted-foreground">배열은 <b>형태(레이아웃)</b>만 정합니다. <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span>은 이미 등록된 배열(다시 등록 가능) · 노출 개수는 빌더에서.</p>
         </div>
       </TRow>
-      {/* 컴포넌트 레이아웃 — 노출유형을 빌더에서 택1(지정형)할지, 하나로 고정(고정형)할지. 2026-10-01 목업 참고(추정 기능). */}
-      <TRow label="컴포넌트 레이아웃" required>
-        <div className="flex flex-wrap items-center gap-4">
-          <input type="hidden" name="componentLayoutMode" value={layoutMode} />
-          <label className="flex items-center gap-1.5 text-sm"><input type="radio" checked={layoutMode === '지정형'} onChange={() => setLayoutMode('지정형')} className="accent-[#3616cd]" />지정형</label>
-          <label className="flex items-center gap-1.5 text-sm"><input type="radio" checked={layoutMode === '고정형'} onChange={() => setLayoutMode('고정형')} className="accent-[#3616cd]" />고정형</label>
-          <span className="group relative inline-flex">
-            <Info className="h-3.5 w-3.5 cursor-help text-slate-400" />
-            <span className="pointer-events-none absolute right-0 top-6 z-30 hidden w-[min(20rem,80vw)] rounded-md bg-slate-800 px-3 py-2.5 text-[11px] leading-relaxed text-white shadow-lg group-hover:block">
-              <b className="text-indigo-200">지정형</b> · 여러 노출유형(배열·레이아웃)을 등록해두고, 전시화면 관리(빌더)에서 코너를 등록할 때 그중 <b>하나를 선택</b>해 적용합니다.<br />
-              <b className="text-indigo-200">고정형</b> · 등록한 노출유형 <b>하나로 고정</b> — 빌더에서 코너 등록 시 그 유형이 그대로 적용됩니다.
-            </span>
-          </span>
-          <span className="text-[11px] text-slate-400">{layoutMode === '지정형' ? '빌더에서 노출유형 택1' : '빌더에서 이 노출유형 고정 적용'}</span>
-        </div>
-      </TRow>
+      {/* 컴포넌트 레이아웃(지정형/고정형)은 정의에서 제거 — 고정/택1은 빌더의 '노출 타입 베리에이션(CVM 택1)'이 placement 단위로 결정한다(2026-10-06). 저장값만 보존. */}
+      <input type="hidden" name="componentLayoutMode" value={row.componentLayoutMode || '고정형'} />
       <TRow label="등록 결과"><span className="text-[12px]">이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span></span></TRow>
     </>
   );
@@ -1683,10 +1672,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           const previewC = {
             ...compositionToPreviewCorner({
               base, detail: detailValid, composition: shownBlocks,
-              mainTitle: useTitle ? (mainTitleText || (isNew ? '타이틀' : '코너 타이틀')) : null,
-              subTitle: useSub ? (subTitleText || (isNew ? '디스크립션' : '서브타이틀')) : null,
-              placeholder: isNew && !mainTitleText && !subTitleText,
-              emptyImages: isNew, // 신규 등록은 이미지/배너를 빈 영역(가이드 폼)으로. 수정은 실제 이미지 유지.
+              mainTitle: useTitle ? (mainTitleText || (guidePreview ? '타이틀' : '코너 타이틀')) : null,
+              subTitle: useSub ? (subTitleText || (guidePreview ? '디스크립션' : '서브타이틀')) : null,
+              placeholder: guidePreview && !mainTitleText && !subTitleText,
+              emptyImages: guidePreview, // 신규 등록·수정 중 다른 case는 이미지/배너를 빈 가이드 슬롯으로. 편집 중인 그 case만 실제 이미지 유지.
             }),
             cardShape: cardShape || undefined,
             subTitleIcon,
@@ -1695,6 +1684,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             showPrice: priceOn,
             showBadge: eff('useBadge'),
             showDesc: descOn,
+            // CTA(더보기) 표시 항목 ON → 미리보기 버튼으로 반영(2026-10-06). 그동안 전달 누락으로 버튼이 안 보였음.
+            moreButtonUse: eff('useMoreButton'),
+            moreButtonLabel: moreLabel || undefined,
+            // 수급 방식(CVM/운영자 편성)을 미리보기에도 반영 — 빌더와 동일하게 'CVM 개인화 · 미리보기는 폴백' 배지 노출(2026-10-06).
+            recSource: recSource || undefined,
           };
           return <CornerBlock corner={previewC} />;
         })()}
@@ -1906,9 +1900,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   {CORNER_TYPE_FEATURES.map((f) => {
                     const applies = featureApplies(f.key);
                     const badgeLocked = f.key === 'useBadge' && !features.usePrice; // 배지는 가격에 종속
-                    const disabled = !applies || badgeLocked;
-                    const checked = applies && features[f.key as keyof typeof features] && !badgeLocked;
+                    const imageLocked = f.key === 'useImage' && applies; // 상품 이미지는 카드 필수 — 항상 ON(해제 불가)
+                    const disabled = (!applies || badgeLocked) && !imageLocked; // imageLocked는 제출 위해 비활성화하지 않음(체크 유지)
+                    const checked = imageLocked ? true : (applies && features[f.key as keyof typeof features] && !badgeLocked);
                     const toggle = (on: boolean) => {
+                      if (imageLocked) return; // 상품 이미지는 토글 불가
                       setFeatures((prev) => {
                         const next = { ...prev, [f.key]: on };
                         if (f.key === 'useMainTitle' && !on) next.useSubTitle = false;
@@ -1919,9 +1915,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                       });
                     };
                     return (
-                      <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', disabled && 'cursor-not-allowed text-muted-foreground/40')} title={!applies ? '이 코너 유형에는 해당 항목이 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
+                      <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', disabled && 'cursor-not-allowed text-muted-foreground/40', imageLocked && 'cursor-default')} title={imageLocked ? '상품 이미지는 카드 필수 요소라 항상 표시돼요' : !applies ? '이 코너 유형에는 해당 항목이 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
                         <input type="checkbox" name={f.key} checked={checked} disabled={disabled} onChange={(e) => toggle(e.target.checked)} className="accent-[#3616cd] disabled:opacity-40" />
                         {f.label}
+                        {imageLocked && <span className="text-[10px] font-medium text-slate-400">(고정)</span>}
                       </label>
                     );
                   })}
@@ -2002,31 +1999,33 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
         <div aria-hidden className="hidden lg:block" />
         <section className="min-w-0">
-        <div className="mb-2.5 flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
-          <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
-          콘텐츠 채우는 방식 · 노출 기본값
-          <span className="text-[11px] font-normal text-slate-400">콘텐츠를 <b className="font-semibold text-slate-600">무엇으로 채울지</b> 먼저 정하고, 정렬·CTA를 설정 · 빌더에서 코너별로 조정 가능</span>
+        <div className="mb-2.5">
+          <div className="flex items-center gap-2 text-[14.5px] font-bold text-slate-900">
+            <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
+            콘텐츠 채우는 방식 · 노출 기본값
+          </div>
+          <p className="mt-1 text-[12px] leading-relaxed text-slate-500">출처와 정렬·CTA 기본값만 정해요. 실제 소재 선택·조정은 빌더에서 코너별로.</p>
         </div>
         <div className="space-y-3 border-t border-[#cfd3e0] pt-3">
           {/* ① 추천 수급 방식 (출처) — 상품형·혜택·오퍼형·콘텐츠 안내형에만 */}
           {isRecEligible && (
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-slate-700">① 콘텐츠를 무엇으로 채울까 <span className="font-normal text-slate-400">· 출처</span></label>
-              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-8 w-full max-w-xs rounded-md border border-[#e8ebef] bg-background px-2 text-xs">
-                <option value="">기본값 미지정 — 빌더에서 코너별로 선택</option>
+              <label className="text-[13px] font-semibold text-slate-800">① 콘텐츠 출처 <span className="font-normal text-slate-500">· 수급 방식</span></label>
+              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-9 w-full max-w-sm rounded-md border border-[#e8ebef] bg-background px-2.5 text-[13px]">
+                <option value="">기본값 미지정 (빌더에서 선택)</option>
                 {REC_SOURCE_METHODS.map((s) => (
                   <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
                 ))}
               </select>
-              {/* 설명 — .frow 규격 미니 테이블(라벨 #f0f2f4·150px). 고정폭 클램프로 폰트 잘리던 문제 해결(2026-10-01). */}
+              {/* 설명 — .frow 규격 미니 테이블(라벨 #f0f2f4). 폰트 키우고 패딩 넉넉하게 — 읽기 쉽게(2026-10-06). */}
               <div className="overflow-hidden rounded-md border border-[#e8ebef]">
                 {REC_SOURCE_METHODS.map((k) => (
-                  <div key={k} className="grid grid-cols-[150px_minmax(0,1fr)] border-b border-[#e8ebef] last:border-b-0">
-                    <div className="bg-[#f0f2f4] px-3 py-2 text-[11px] leading-relaxed">
-                      <b className="font-semibold text-slate-700">{k}</b>
-                      <span className="block font-normal text-slate-400">· {REC_SOURCE_INFO[k].tag}</span>
+                  <div key={k} className="grid grid-cols-[176px_minmax(0,1fr)] border-b border-[#e8ebef] last:border-b-0">
+                    <div className="bg-[#f0f2f4] px-3.5 py-3 text-[13px] leading-relaxed">
+                      <b className="font-semibold text-slate-800">{k}</b>
+                      <span className="block text-[11.5px] font-normal text-slate-500">· {REC_SOURCE_INFO[k].tag}</span>
                     </div>
-                    <div className="min-w-0 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">{REC_SOURCE_INFO[k].how}</div>
+                    <div className="min-w-0 px-3.5 py-3 text-[13px] leading-relaxed text-slate-600">{REC_SOURCE_INFO[k].how}</div>
                   </div>
                 ))}
               </div>
@@ -2094,18 +2093,18 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           {isListType && (
             <div className={cn('space-y-2', isRecEligible && 'border-t border-[#e8ebef] pt-3')}>
               <div className="flex flex-wrap items-center gap-2">
-                <label className="text-[11px] font-semibold text-slate-700">② 노출 구성 <span className="font-normal text-slate-400">· 정렬·CTA 기본값</span></label>
-                {cvmChosen && <span className="rounded bg-[#e8ebef] px-1.5 py-0.5 text-[9px] font-semibold text-slate-600">CVM이 자동 결정 · 선택 불가</span>}
+                <label className="text-[13px] font-semibold text-slate-800">② 노출 구성 <span className="font-normal text-slate-500">· 정렬·CTA 기본값</span></label>
+                {cvmChosen && <span className="rounded bg-[#e8ebef] px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">CVM이 자동 결정 · 선택 불가</span>}
               </div>
               {cvmChosen && (
-                <p className="rounded-md border border-[#e8ebef] bg-[#f0f2f4] px-2.5 py-1.5 text-[11px] leading-relaxed text-slate-600">
+                <p className="rounded-md border border-[#e8ebef] bg-[#f0f2f4] px-2.5 py-2 text-[12.5px] leading-relaxed text-slate-600">
                 <b>CVM이 고객마다 순서를 자동으로 정하므로</b>, 정렬·노출 구성은 <b>운영자 편성</b>일 때만 직접 설정할 수 있어요.
                 </p>
               )}
               <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2', cvmChosen && 'opacity-50')} aria-disabled={cvmChosen}>
                 <div className="space-y-1">
-                  <label className="text-[11px] text-muted-foreground">정렬 기준 기본값</label>
-                  <select name="defaultSortStrategy" defaultValue={row.defaultSortStrategy ?? ''} disabled={cvmChosen} className="h-8 w-full rounded-md border bg-background px-2 text-xs disabled:cursor-not-allowed disabled:opacity-60">
+                  <label className="text-[12.5px] text-slate-600">정렬 기준 기본값</label>
+                  <select name="defaultSortStrategy" defaultValue={row.defaultSortStrategy ?? ''} disabled={cvmChosen} className="h-9 w-full rounded-md border bg-background px-2.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-60">
                     <option value="">미지정(수동)</option>
                     {PRODUCT_SORT_OPTIONS.map((s) => (
                       <option key={s} value={s}>{s}</option>

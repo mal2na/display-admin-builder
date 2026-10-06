@@ -42,6 +42,7 @@ export type PreviewCorner = {
   subTitleIcon?: string | null;
   moreButtonUse?: boolean | null;
   moreButtonLabel?: string | null;
+  cvmFillCount?: number | null; // CVM 보충 — 노출 개수(max)보다 운영자 등록이 적을 때 CVM이 채우는 칸 수(가안)
   bigBanner?: boolean | null; // 배치(인스턴스) 옵션 — 상단 빅배너로 강조
   cardShape?: string | null; // 상품형 2.5배열 카드 모양 (정사각형 | 직사각형)
   titleLines?: number | null; // 상품 카드 제목 줄 수 (2=두 줄)
@@ -139,10 +140,9 @@ function ChipsView({ component }: { component: PreviewComponent }) {
     );
   }
 
-  // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩. chipRows=2면 두 줄(그리드)로.
-  const contentsTwoRows = component.chipRows === 2;
+  // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩. 카테고리 필터는 항상 한 줄(가로 스크롤). 2026-10-06 사용자 요청(세로형+칩은 칩 한 줄).
   return (
-    <div className={contentsTwoRows ? 'flex flex-wrap items-center gap-2 pb-1' : 'flex flex-nowrap items-center gap-2 overflow-x-auto pb-1'}>
+    <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
       {component.atoms.map((a, i) => (
         <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium ' + (i === sel ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500')}>
           {a.content ?? a.name}
@@ -616,7 +616,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // '칩' 배열(예: 세로형+칩) → 카테고리 칩 탭을 본문 상단에 붙여 렌더(코너와 한 덩어리)
   const hasChipTab = /칩/.test(corner.layoutDetail ?? '') && !isBanner && chipComps.length === 0;
   const chipTabEl = hasChipTab ? (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1">
       {['카페', '베이커리', '외식', '쇼핑', '문화생활'].map((c, i) => (
         <span key={c} className={cn('rounded-full px-2.5 py-1 text-[11px] font-medium', i === 0 ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500')}>{c}</span>
       ))}
@@ -718,6 +718,11 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           )}
           {chipTabEl}
           {body}
+          {(corner.cvmFillCount ?? 0) > 0 && (
+            <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="노출 개수보다 운영자 등록이 적어, 나머지는 CVM이 고객마다 자동으로 채웁니다(가안).">
+              <Sparkles className="h-3 w-3" /> CVM 자동 보충 {corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
+            </div>
+          )}
           {corner.moreButtonUse && (
             <div className="pt-1 text-center">
               <span className="inline-flex items-center gap-0.5 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-[12px] font-medium text-slate-600">{corner.moreButtonLabel || '더보기'} <ChevronRight className="h-3 w-3" /></span>
@@ -765,6 +770,11 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       )}
       {chipTabEl}
       {body}
+      {(corner.cvmFillCount ?? 0) > 0 && (
+        <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="노출 개수보다 운영자 등록이 적어, 나머지는 CVM이 고객마다 자동으로 채웁니다(가안).">
+          <Sparkles className="h-3 w-3" /> CVM 자동 보충 {corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
+        </div>
+      )}
       {corner.moreButtonUse && (
         <div className="pt-1 text-center">
           <span className="inline-flex items-center gap-0.5 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-[12px] font-medium text-slate-600">

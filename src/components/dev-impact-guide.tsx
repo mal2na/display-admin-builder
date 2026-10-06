@@ -17,8 +17,8 @@ export function DevImpactGuide({ defaultOpen = false }: { defaultOpen?: boolean 
         className="flex w-full items-center gap-2 px-3 py-2 text-left"
       >
         <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
-        <span className="text-[12.5px] font-semibold text-emerald-800">개발 영향 없이 바꿀 수 있는 것</span>
-        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">무중단 배포</span>
+        <span className="text-[12.5px] font-semibold text-emerald-800">개발 작업 없이 바꿀 수 있는 것</span>
+        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">승인 후 반영</span>
         <ChevronDown className={cn('ml-auto h-4 w-4 shrink-0 text-emerald-500 transition-transform', open && 'rotate-180')} />
       </button>
       {open && (
@@ -27,7 +27,7 @@ export function DevImpactGuide({ defaultOpen = false }: { defaultOpen?: boolean 
             {/* 어드민 편집(무중단) */}
             <div className="rounded-lg border border-emerald-200 bg-white p-2.5">
               <p className="mb-1.5 flex items-center gap-1.5 text-[11.5px] font-bold text-emerald-700">
-                <ShieldCheck className="h-3.5 w-3.5" /> 어드민 편집 · 무중단
+                <ShieldCheck className="h-3.5 w-3.5" /> 어드민 편집 · 승인 후 반영
               </p>
               <ul className="space-y-1">
                 {ADMIN_EDITABLE.map((it) => (

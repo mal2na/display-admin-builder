@@ -9,13 +9,13 @@ import { cn } from '@/lib/utils';
 
 // ───────────────────────── 구조도 탭 ─────────────────────────
 const DIAGRAM_CSS = `
-.sdg{--surface:#ffffff;--ink:#1b2230;--muted:#5d6778;--line:#cfd5df;--accent:#3b3fd8;--accent-soft:#eceefe;--accent-2:#dfe1fd;--ext:#eceef2;--bg:#f5f6f8;--f-body:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;--f-mono:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-family:var(--f-body);color:var(--ink);display:grid;gap:28px;font-size:15px;line-height:1.6}
+.sdg{--surface:#ffffff;--ink:#1b2230;--muted:#44505f;--line:#cfd5df;--accent:#3b3fd8;--accent-soft:#eceefe;--accent-2:#dfe1fd;--ext:#eceef2;--bg:#f5f6f8;--f-body:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;--f-mono:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-family:var(--f-body);color:var(--ink);display:grid;gap:28px;font-size:15px;line-height:1.6}
 .sdg .eyebrow{font-size:12px;letter-spacing:.04em;color:var(--muted);font-weight:600;margin:0 0 6px}
 .sdg .thesis{font-size:15.5px;line-height:1.7;margin:0;max-width:none;text-wrap:pretty}
 .sdg h2{font-size:18px;margin:0 0 12px;text-wrap:balance}
 .sdg .card{background:var(--surface);border:1px solid var(--line);border-radius:10px}
 .sdg .diagram{overflow-x:auto;padding:12px}
-.sdg .diagram svg{display:block;min-width:1080px;width:100%;height:auto}
+.sdg .diagram svg{display:block;min-width:1080px;width:100%;max-width:1180px;height:auto;margin:0 auto}
 .sdg .steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
 .sdg .steps li{padding:16px;display:grid;gap:6px;align-content:start;min-width:0}
 .sdg .steps .n{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font:600 13px/26px var(--f-mono);text-align:center}
@@ -28,8 +28,8 @@ const DIAGRAM_CSS = `
 .sdg .checks b{display:block}
 .sdg .checks span{color:var(--muted);font-size:13.5px}
 .sdg .tx{fill:var(--ink);font-family:var(--f-body)}.sdg .tm{fill:var(--muted);font-family:var(--f-body)}.sdg .ta{fill:var(--accent);font-family:var(--f-body)}
-.sdg .t1{font-size:17px;font-weight:700}.sdg .t2{font-size:15px;font-weight:700}.sdg .t3{font-size:12.5px}.sdg .t4{font-size:11.5px}
-.sdg .tier{font-size:14px;font-weight:700}
+.sdg .t1{font-size:17px;font-weight:700}.sdg .t2{font-size:15px;font-weight:700}.sdg .t3{font-size:12.5px}.sdg .t4{font-size:12px}
+.sdg .tier{font-size:15px;font-weight:800}
 .sdg .flbl{paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;stroke-linejoin:round}
 .sdg .z-ext{fill:var(--ext);stroke:var(--line);stroke-dasharray:6 5}
 .sdg .z-adm{fill:none;stroke:var(--accent);stroke-width:1.5}
@@ -39,20 +39,31 @@ const DIAGRAM_CSS = `
 .sdg .bx-build{fill:var(--surface);stroke:var(--accent)}
 .sdg .bx-lv{fill:var(--accent-2);stroke:var(--accent)}
 .sdg .bx-sub{fill:var(--ext);stroke:var(--line);stroke-dasharray:5 4}
-.sdg .ar{fill:none;stroke:var(--muted);stroke-width:1.6}
-.sdg .ar-a{fill:none;stroke:var(--accent);stroke-width:1.6}
-.sdg .ar-opt{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:6 5}
+.sdg .ar{fill:none;stroke:var(--muted);stroke-width:2}
+.sdg .ar-a{fill:none;stroke:var(--accent);stroke-width:2}
+.sdg .ar-opt{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:6 5}
 .sdg .chip-opt{fill:var(--surface);stroke:var(--muted);stroke-dasharray:3 3}
 .sdg .opt-tag{fill:var(--ext);stroke:var(--muted);stroke-dasharray:3 3}
 .sdg .num{fill:var(--accent)}.sdg .numt{fill:#fff;font-family:var(--f-mono);font-size:11px;font-weight:600}
 .sdg .sep{fill:var(--accent);font-family:var(--f-body);font-size:22px;font-weight:700}
 .sdg .lbl-bg{fill:var(--surface)}
+.sdg .tlead{font-size:13.5px;line-height:1.65;color:var(--ink);margin:0 0 14px;max-width:none}
+.sdg .trow{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.sdg .tcard{flex:1 1 180px;min-width:168px;border:1px solid var(--line);border-radius:10px;padding:13px 15px;background:var(--surface)}
+.sdg .tcard.ds{border-style:dashed;background:var(--ext)}
+.sdg .tcard.adm{border-color:var(--accent);background:var(--accent-soft)}
+.sdg .tcard .own{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;margin-bottom:9px}
+.sdg .tcard.ds .own{background:var(--surface);border:1px dashed var(--muted);color:var(--muted)}
+.sdg .tcard.adm .own{background:var(--surface);border:1px solid var(--accent);color:var(--accent)}
+.sdg .tcard h4{margin:0 0 5px;font-size:15px;font-weight:800;color:var(--ink)}
+.sdg .tcard p{margin:0;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.sdg .tarrow{align-self:center;color:var(--accent);font-weight:800;font-size:18px}
 `;
 
 const DIAGRAM_HTML = `
 <div>
   <p class="eyebrow">NEXT채널 어드민 전시/관리 영역 구조도 v0.9</p>
-  <p class="thesis">코너 유형 관리에서 상품, 배너, 문구 같은 원천 소스를 코너 유형에 맵핑하고 승인해요. Container에는 승인된 코너 유형만 등록해 Container › Template › Corner 순으로 화면을 만들고, 고객은 메뉴 관리(전체 메뉴)로 진입해요. CVM(점선)은 선택 적용이고, 승인된 화면은 개발이 반영해 고객 앱/웹(F/O)에 전시돼요.</p>
+  <p class="thesis"><b>코너 유형 관리</b>에서 상품, 배너, 문구를 코너 유형에 맵핑하고 승인해요.<br/>승인된 코너 유형은 빌더에서 <b>Container › Template › Corner</b>로 쌓아 화면을 만들어요.<br/>고객은 <b>메뉴 관리(전체 메뉴)</b>로 진입하고, <b>CVM</b>(점선)은 Template의 코너에 선택 적용돼요.<br/>승인된 화면은 개발이 반영해 <b>고객 앱/웹(F/O)</b>에 전시돼요.</p>
 </div>
 
 <section class="card diagram" aria-label="전시관리 구조도">
@@ -70,9 +81,11 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="44" y="116">재료와 데이터를 제공</text>
 
 <rect class="bx-ext" x="240" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="258" y="76">디자인 시스템</text>
-<text class="tm t3" x="258" y="100">코너 원천 템플릿</text>
-<text class="tm t3" x="258" y="118">Atom</text>
+<text class="tx t2" x="258" y="70">디자인 시스템</text>
+<rect class="opt-tag" x="356" y="56" width="52" height="18" rx="9"/><text class="tm t4" x="382" y="69" text-anchor="middle">관리 밖</text>
+<text class="tm t3" x="258" y="94">Atom → Component</text>
+<text class="tm t3" x="258" y="111">→ Composite(코너 패턴)</text>
+<text class="ta t4" x="258" y="130">어드민에서 관리하지 않음</text>
 
 <rect class="bx-ext" x="450" y="44" width="180" height="96" rx="8"/>
 <text class="tx t2" x="468" y="76">상품원장</text>
@@ -135,14 +148,14 @@ const DIAGRAM_HTML = `
 
 <rect class="bx-lv" x="72" y="540" width="160" height="88" rx="8"/>
 <text class="tx t2" x="88" y="568">Container</text>
-<text class="tm t3" x="88" y="590">화면, 승인 유형 등록</text>
+<text class="tm t3" x="88" y="590">채널 화면, Template 보유</text>
 <text class="tm t4" x="88" y="610">혜택 홈, 쇼핑 홈</text>
 <text class="sep" x="244" y="592" text-anchor="middle">›</text>
 
 <rect class="bx-lv" x="256" y="540" width="160" height="88" rx="8"/>
 <text class="tx t2" x="272" y="568">Template</text>
-<text class="tm t3" x="272" y="590">코너 쌓기, 배치 순서</text>
-<text class="tm t4" x="272" y="610">로그인, 비로그인</text>
+<text class="tm t3" x="272" y="590">코너 유형 쌓기, 배치</text>
+<text class="tm t4" x="272" y="610">로그인, 세그먼트 분기</text>
 <text class="sep" x="428" y="592" text-anchor="middle">›</text>
 
 <rect class="bx-lv" x="440" y="540" width="748" height="88" rx="8"/>
@@ -189,24 +202,44 @@ const DIAGRAM_HTML = `
 <path class="ar" d="M849 252V264H784" marker-end="url(#m)"/>
 <circle class="num" cx="812" cy="264" r="10"/><text class="numt" x="812" y="268" text-anchor="middle">2</text>
 <text class="tm t4 flbl" x="792" y="282">문구 맵핑</text>
-<path class="ar-a" d="M215 308V538" marker-end="url(#ma)"/>
-<circle class="num" cx="215" cy="326" r="10"/><text class="numt" x="215" y="330" text-anchor="middle">3</text>
-<text class="ta t4 flbl" x="199" y="330" text-anchor="end">승인된 코너 유형만 등록</text>
+<path class="ar-a" d="M296 308V538" marker-end="url(#ma)"/>
+<circle class="num" cx="296" cy="326" r="10"/><text class="numt" x="296" y="330" text-anchor="middle">3</text>
+<text class="ta t4 flbl" x="312" y="330">승인 코너 유형 → Template에 쌓기</text>
 <path class="ar-opt" d="M1040 92H745V208" marker-end="url(#m)"/>
 <circle class="num" cx="745" cy="173" r="10"/><text class="numt" x="745" y="177" text-anchor="middle">4</text>
-<text class="tm t4 flbl" x="761" y="177">(선택) 코너 내 개인화</text>
+<text class="tm t4 flbl" x="761" y="177">(선택) 코너 개인화 정의</text>
+<path class="ar-opt" d="M1130 140V440H344V538" marker-end="url(#m)"/>
+<circle class="num" cx="1130" cy="300" r="10"/><text class="numt" x="1130" y="304" text-anchor="middle">4</text>
+<text class="tm t4 flbl" x="1146" y="296">(선택) 런타임</text>
+<text class="tm t4 flbl" x="1146" y="312">개인화 반영</text>
 <path class="ar" d="M590 428V450" marker-end="url(#m)"/>
 <text class="tm t4 flbl" x="604" y="444">고객 진입 (네비게이션)</text>
 </svg>
 </section>
 
 <section>
+  <h2>구성 단위 — Atom부터 Container까지</h2>
+  <p class="tlead"><b>Atom과 Component는 디자인 시스템이 정의하고 소유해요(어드민에서 관리하지 않음).</b> 어드민은 디자인 시스템에 등록된 Component를 불러와 Corner를 구성하고, Template과 Container로 화면을 만들어요. 작은 단위가 큰 단위에 감싸여요.</p>
+  <div class="trow">
+    <div class="tcard ds"><span class="own">디자인 시스템 소유</span><h4>Atom</h4><p>가장 작은 표시 요소. 문구, 이미지, CTA, 가격, 배지. 단독으로는 화면을 이루지 않아요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard ds"><span class="own">디자인 시스템 소유</span><h4>Component</h4><p>Atom을 조합한 기능 모듈. 배너, 상품 카드, 탭. 묶으면 Composite(코너 패턴)가 돼요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard adm"><span class="own">어드민 구성</span><h4>Corner</h4><p>Component를 올린 화면의 한 영역. 코너 유형 관리에서 등록된 것으로 구성해요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard adm"><span class="own">어드민 구성</span><h4>Template</h4><p>여러 Corner를 순서와 배치로 구성한 레이아웃. 로그인과 세그먼트로 분기해요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard adm"><span class="own">어드민 구성</span><h4>Container</h4><p>채널에 실제 나가는 화면 단위. Template을 담아요(Template과 1:N).</p></div>
+  </div>
+</section>
+
+<section>
   <h2>순서</h2>
   <ol class="steps">
-    <li class="card"><span class="n">1</span><b>등록</b><span>디자인 시스템의 코너 원천 템플릿을 코너 유형 관리에 등록</span></li>
+    <li class="card"><span class="n">1</span><b>등록</b><span>디자인 시스템이 소유한 Component를 코너 유형 관리로 불러와 코너 유형으로 등록 (Atom과 Component는 디자인 시스템이 관리)</span></li>
     <li class="card"><span class="n">2</span><b>맵핑, 승인</b><span>상품원장의 상품, 배너 캠페인의 배너, 문구 관리의 코너 타이틀 같은 원천 소스를 코너 유형에 맵핑하고 승인</span></li>
-    <li class="card"><span class="n">3</span><b>Container 등록</b><span>Container에는 맵핑되어 승인된 코너 유형만 등록하고, Template에 쌓아 Corner를 구성</span></li>
-    <li class="card"><span class="n">4</span><b>CVM 설정 (선택)</b><span>코너 안의 개인화(콘텐츠)는 코너 유형 관리에서 설정하고, 코너 배치 순서는 빌더의 Template에서 운영자가 설정해요.</span></li>
+    <li class="card"><span class="n">3</span><b>Template에 쌓기</b><span>승인된 코너 유형을 빌더에서 Template에 Corner로 쌓아 화면을 구성하고, Template은 Container에 담겨요(Container › Template › Corner).</span></li>
+    <li class="card"><span class="n">4</span><b>CVM 설정 (선택)</b><span>코너 안 개인화(콘텐츠)는 코너 유형 관리에서 정의하고, 런타임에 CVM이 Template의 코너에 반영해요. 코너 배치 순서는 운영자가 Template에서 설정해요.</span></li>
     <li class="card"><span class="n">5</span><b>관리</b><span>저장한 화면은 기존 화면 관리에서 운영하고, 수정할 땐 빌더로 진입</span></li>
     <li class="card"><span class="n">6</span><b>배포, 전시</b><span>승인된 화면을 개발이 반영해 고객 앱/웹(F/O)에 전시해요. 어드민 변경은 즉시 배포되지 않아요.</span></li>
   </ol>

@@ -75,7 +75,6 @@ import {
   setCornerDisplayVariants,
   setCornerMainTitleVariants,
   setCornerBigBanner,
-  setCornerBannerSize,
   refreshBannerComponent,
   addBssProduct,
 } from '../actions';
@@ -377,8 +376,13 @@ function DeleteConfirmForm({
 }
 
 function toPreviewCorner(c: CornerNode): PreviewCorner {
+  // CVM 보충 — 노출 개수(max)보다 운영자 등록(본문 컴포넌트)이 적은 콘텐츠 수급 코너는 나머지를 CVM이 채움(가안). 미리보기에 점선 보충 슬롯 표시.
+  const bodyCount = (c.components ?? []).filter((x) => x.componentType !== '선택형').length;
+  const cvmFillCount = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(c.cornerType) && c.recSource === 'CVM 기반' && c.maxItems != null && c.maxItems > bodyCount
+    ? c.maxItems - bodyCount : 0;
   return {
     id: c.templateCornerId,
+    cvmFillCount,
     name: c.name,
     cornerType: c.cornerType,
     title: c.title,
@@ -1478,6 +1482,14 @@ function ComponentList({
   const isMenuList = /메뉴\s*리스트/.test(corner.layoutDetail ?? '');
   const chipLabel = isMenuList ? '메뉴 묶음' : '칩 묶음';
 
+  // CVM 보충 — 노출 개수(max)보다 운영자 등록(M)이 적으면 나머지(max−M)를 CVM이 채운다(가안).
+  //  콘텐츠 수급 코너 + 1순위 CVM + max > 등록 개수일 때만. (에셋 등록 위치는 미해결 쟁점 10/07 — '가안' 표기)
+  const isRecType = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(corner.cornerType);
+  const isCvmSource = corner.recSource === 'CVM 기반';
+  const bodyM = bodyOrdered.length;
+  const maxN = corner.maxItems;
+  const cvmFill = isRecType && isCvmSource && maxN != null && maxN > bodyM ? maxN - bodyM : 0;
+
   // 같은 묶음 안에서만 재정렬. 저장 순서는 항상 [칩 묶음 → 본문 묶음].
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -1520,8 +1532,14 @@ function ComponentList({
         )}
         {/* 콘텐츠 묶음 — 본문(상품·혜택 등) 컴포넌트 + 추가 버튼. 비어도 항상 노출(추가 진입점). */}
         <div className="rounded-lg border bg-muted/30 p-2">
-          <p className="mb-1.5 flex items-center gap-1 px-0.5 text-[11px] font-semibold text-slate-600">
+          <p className="mb-1.5 flex flex-wrap items-center gap-1 px-0.5 text-[11px] font-semibold text-slate-600">
             {bodyLabel} <span className="rounded-full bg-white px-1.5 text-[10px] text-slate-500">{bodyOrdered.length}</span>
+            {cvmFill > 0 && (
+              <span className="ml-0.5 inline-flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700" title="노출 개수(최대)보다 운영자가 적게 등록해, 나머지는 CVM이 고객마다 자동으로 채웁니다(가안 — 에셋 등록 위치 확정 전).">
+                <Sparkles className="h-2.5 w-2.5" /> 노출 {maxN} = 운영자 {bodyM} + CVM 보충 {cvmFill}
+                <span className="rounded bg-violet-600 px-1 text-[8px] font-bold text-white">가안</span>
+              </span>
+            )}
           </p>
           {bodyOrdered.length > 0 ? (
             <SortableContext items={bodyIds} strategy={verticalListSortingStrategy}>
@@ -1847,9 +1865,9 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
   );
 }
 
-// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치+배너 선택). 상품형/혜택·오퍼형/콘텐츠 안내형에서만. 즉시 저장.
+// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치+배너 선택). 상품형/혜택·오퍼형에서만(콘텐츠 안내형은 빅배너 없음 — 2026-10-06). 즉시 저장.
 function BigBannerControl({ templateId, corner, banners }: { templateId: string; corner: CornerNode; banners: LibraryData['banners'] }) {
-  const canBigBanner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(corner.cornerType);
+  const canBigBanner = ['상품형', '혜택·오퍼형'].includes(corner.cornerType);
   const [on, setOn] = useState(!!corner.bigBanner);
   const [pending, start] = useTransition();
   useEffect(() => { setOn(!!corner.bigBanner); }, [corner.bigBanner, corner.templateCornerId]);
@@ -1881,8 +1899,7 @@ function BigBannerControl({ templateId, corner, banners }: { templateId: string;
   );
 }
 
-// 배너형 코너의 규격(사이즈) — 배너 캠페인 관리의 유형상세와 동일한 4종. layoutDetail에 저장.
-const BANNER_SIZES = ['빅배너 (672×460)', '스몰배너 (672×324)', '띠배너 (672×214)', '팝업배너 (720×600)'] as const;
+// 배너형 코너의 규격(사이즈) 표기 — 코너 유형/배너 캠페인이 소유. 빌더에선 읽기 전용 표시만.
 const bannerSizeShort = (detail: string) => detail.replace(/\s*\(.*\)\s*/, '').trim() || detail;
 
 // 배너 레일의 한 줄 — 드래그앤드롭(그립 핸들)로 순서 변경. 썸네일·이름·삭제·원본 변경 안내.
@@ -2004,7 +2021,6 @@ function BannerRailControl({
   const banners = corner.components; // 배너형 코너의 각 컴포넌트 = 배너 1장
   const size = corner.layoutDetail ?? '';
   const opts = parseBannerOptions(corner.bannerOptions);
-  const pickSize = (s: string) => start(() => setCornerBannerSize(templateId, corner.id, s));
   const remove = (ccId: string) => start(() => removeComponent(templateId, ccId));
   const refresh = (componentId: string) => start(() => refreshBannerComponent(templateId, componentId));
 
@@ -2057,21 +2073,19 @@ function BannerRailControl({
         </DndContext>
       )}
 
-      {/* 배너 규격 — 코너 전체 공통 */}
+      {/* 배너 규격 — 코너 유형/배너 캠페인(소재)이 정하는 값이라 빌더에선 선택하지 않고 읽기 전용으로 표시. 2026-10-06 사용자 요청(단일형 등 규격 선택 불필요). */}
+      {size && bannerSizeShort(size) && (
       <div className="space-y-1.5 border-t border-slate-100 pt-2.5">
-        <p className="text-[11px] font-medium text-slate-500">배너 규격 <span className="font-normal text-slate-400">· 코너 전체 공통</span></p>
-        <div className="flex flex-wrap gap-1.5">
-          {BANNER_SIZES.map((s) => {
-            const on = size === s || bannerSizeShort(size) === bannerSizeShort(s);
-            return (
-              <button key={s} type="button" onClick={() => pickSize(s)}
-                className={cn('rounded-full border px-2.5 py-1 text-[11px] font-medium transition', on ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300')}>
-                {bannerSizeShort(s)} <span className={cn('text-[10px]', on ? 'text-indigo-100' : 'text-slate-400')}>{s.replace(/^[^(]*/, '')}</span>
-              </button>
-            );
-          })}
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-medium text-slate-500">배너 규격 <span className="font-normal text-slate-400">· 코너 유형에서 정의</span></p>
+          <a href="/admin/corner-types" className="text-[10px] font-medium text-indigo-600 hover:underline">코너 유형에서 수정 ↗</a>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
+          <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">{bannerSizeShort(size)}</span>
+          <span className="text-slate-400">{size.replace(/^[^(]*/, '')}</span>
         </div>
       </div>
+      )}
 
       {/* 노출 방식 — 코너 유형(정의)에서 관리 → 빌더에선 읽기 전용(상속값 표시). 2026-09-29 거버넌스 분리 */}
       <div className="space-y-1.5 border-t border-slate-100 pt-2.5">
@@ -2170,6 +2184,8 @@ function CornerInfoForm({
   const [userMin, setUserMin] = useState(corner.userMinItems != null ? String(corner.userMinItems) : '');
   const [userMax, setUserMax] = useState(corner.userMaxItems != null ? String(corner.userMaxItems) : '');
   const isMenuListCorner = /메뉴\s*리스트/.test(layoutDetail);
+  // 업무 진입형 '탭형' — 탭(선택형) 자체가 코너 콘텐츠라 카테고리 탭 토글·타이틀·서브타이틀·코너 설명 UI를 빌더에 두지 않는다. (값은 hidden으로 보존)
+  const isQuickEntryTab = ct === '업무 진입형' && /탭/.test(layoutDetail);
   // 빅배너·카드비율·상품명 줄수·하단CTA 등 표시 옵션은 '코너 구성'의 컨트롤로 분리 — 코너 정보 폼에서 제외.
 
   // 편집 중일 때만 현재 값을 미리보기로 반영(뷰 모드에선 서버 데이터 사용). pushCorner는 매 렌더 새 참조라 deps 제외.
@@ -2283,8 +2299,9 @@ function CornerInfoForm({
 
         {/* 배너 규격(사이즈)은 '코너 구성'의 배너 레일로 이동 — 배너 추가·순서·노출 방식과 한 곳에서 관리. */}
 
-        {/* 상단 카테고리 탭 토글 — 탭은 별도 배열이 아니라 선택형 컴포넌트. 이 유형이 선택형을 허용할 때만. */}
-        {isComponentAllowedInCorner(ct as CornerType, '선택형') && (() => {
+        {/* 상단 카테고리 탭 토글 — 탭은 별도 배열이 아니라 선택형 컴포넌트. 이 유형이 선택형을 허용할 때만.
+            업무 진입형 탭형은 탭 자체가 콘텐츠라 토글을 두지 않는다(항상 탭). */}
+        {!isQuickEntryTab && isComponentAllowedInCorner(ct as CornerType, '선택형') && (() => {
           const hasTab = corner.components.some((c) => c.componentType === '선택형');
           return (
             <div className="col-span-2 flex items-center justify-between gap-2 rounded-md border bg-white px-2.5 py-2">
@@ -2406,20 +2423,27 @@ function CornerInfoForm({
             <input type="hidden" name="subTitle" value="" />
             <input type="hidden" name="subTitleIcon" value="사용안함" />
           </>
+        ) : isQuickEntryTab ? (
+          <>
+            {/* 업무 진입형 탭형: 탭 자체가 콘텐츠라 타이틀·서브타이틀 UI를 두지 않음. 값은 보존(hidden). */}
+            <input type="hidden" name="mainTitle" value={mainTitle} />
+            <input type="hidden" name="subTitle" value={subTitle} />
+            <input type="hidden" name="subTitleIcon" value={subTitleIcon} />
+          </>
         ) : (
           <>
-            {/* 타이틀·서브타이틀은 코너 유형(정의)에서 확정 → 빌더에서는 읽기 전용(상속값 표시). 2026-09-29 거버넌스 분리 */}
-            <div className="col-span-2 flex items-center justify-between rounded-md bg-slate-50 px-2 py-1">
-              <span className="text-[10px] font-medium text-slate-500">타이틀·서브타이틀은 <b className="text-slate-600">코너 유형</b>에서 정의해요</span>
-              <a href="/admin/corner-types" className="text-[10px] font-medium text-indigo-600 hover:underline">코너 유형에서 수정 ↗</a>
+            {/* 타이틀·서브타이틀 문구 = CVM 타겟별 택1(베리에이션). 빌더에선 base를 직접 안 바꾸고, 후보는 문구 베리에이션에서. 미리보기=폴백(첫 후보). 2026-10-06 사용자 결정(C). */}
+            <div className="col-span-2 flex flex-wrap items-center justify-between gap-1 rounded-md bg-violet-50 px-2 py-1">
+              <span className="text-[10px] font-medium text-violet-700">타이틀·서브타이틀 문구는 <b>CVM이 타겟별로 택1</b> · 미리보기는 폴백(첫 후보)</span>
+              <span className="text-[10px] font-medium text-violet-500">후보 편집: 컴포넌트 ‘수정 → 문구 베리에이션’</span>
             </div>
             <div className="col-span-2 space-y-1">
-              <label className="text-[11px] font-medium text-muted-foreground">타이틀 <span className="font-normal text-muted-foreground/70">· 코너 유형에서 관리</span></label>
-              <Textarea name="mainTitle" value={mainTitle} disabled readOnly placeholder="(코너 유형에서 정의)" className="min-h-[44px] cursor-not-allowed bg-slate-50 text-xs text-slate-500" />
+              <label className="text-[11px] font-medium text-muted-foreground">타이틀 <span className="font-normal text-muted-foreground/70">· 폴백(첫 후보) · CVM 택1</span></label>
+              <Textarea name="mainTitle" value={mainTitle} disabled readOnly placeholder="(문구 베리에이션의 첫 후보)" className="min-h-[44px] cursor-not-allowed bg-slate-50 text-xs text-slate-500" />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-medium text-muted-foreground">서브타이틀</label>
-              <Input name="subTitle" value={subTitle} disabled readOnly placeholder="(코너 유형에서 정의)" className="h-8 cursor-not-allowed bg-slate-50 text-xs text-slate-500" />
+              <label className="text-[11px] font-medium text-muted-foreground">서브타이틀 <span className="font-normal text-muted-foreground/70">· 폴백</span></label>
+              <Input name="subTitle" value={subTitle} disabled readOnly placeholder="(문구 베리에이션의 첫 후보)" className="h-8 cursor-not-allowed bg-slate-50 text-xs text-slate-500" />
             </div>
             <div className="space-y-1">
               <label className="text-[11px] font-medium text-muted-foreground">서브타이틀 화살표</label>
@@ -2500,11 +2524,15 @@ function CornerInfoForm({
         )}
         {/* 하단 CTA(더보기/전체보기) 버튼은 '코너 구성'의 MoreButtonControl로 이동 — 코너 정보에서는 관리하지 않음. */}
 
-        {/* 코너 설명 (공통) */}
-        <div className="col-span-2 space-y-1">
-          <label className="text-[11px] text-muted-foreground">코너 설명</label>
-          <Textarea name="description" defaultValue={corner.description ?? ''} className="min-h-[38px] text-xs" />
-        </div>
+        {/* 코너 설명 — 업무 진입형 탭형은 숨김(값은 보존). 그 외 공통 */}
+        {isQuickEntryTab ? (
+          <input type="hidden" name="description" value={corner.description ?? ''} />
+        ) : (
+          <div className="col-span-2 space-y-1">
+            <label className="text-[11px] text-muted-foreground">코너 설명</label>
+            <Textarea name="description" defaultValue={corner.description ?? ''} className="min-h-[38px] text-xs" />
+          </div>
+        )}
 
         {/* 저장 / 취소 — 우측 하단 */}
         <div className="col-span-2 flex justify-end gap-2 pt-1">
