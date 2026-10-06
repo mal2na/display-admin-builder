@@ -199,6 +199,9 @@ const DIAGRAM_HTML = `
 <text class="tm t4 flbl" x="1026" y="434">배너 매핑</text>
 <path class="ar" d="M590 428V450" marker-end="url(#m)"/>
 <text class="tm t4 flbl" x="604" y="444">고객 진입 (네비게이션)</text>
+<!-- 전체페이지 관리가 화면(Container)을 먼저 생성 → 빌더는 그 Container만 구성(어제 회의) -->
+<path class="ar-a" d="M520 428V438H48V584H70" marker-end="url(#ma)"/>
+<text class="ta t4 flbl" x="120" y="452">전체페이지 관리에서 화면(Container) 생성</text>
 </g>
 <!-- 외부 시스템 → 전시 어드민 : 왼쪽에서 가로로 유입(루트 프레임) -->
 <path class="ar" d="M220 167H360V260H441" marker-end="url(#m)"/>
