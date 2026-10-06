@@ -3109,7 +3109,7 @@ function CornerLoadModal({
   // 정책상 '사용(active) + 승인·반영된(liveVersion)' 코너 유형만 불러올 수 있다.
   //  TM-DSP-021(미사용 제외) + PI-DSP-WFL-002/004(승인 완료 전 노출 후보 제외).
   //  + 칩 사용 제어: 홈(MAIN) 컨테이너에서는 칩 코너로 ChipHome만 허용(그 외 칩 코너 제외). (2026-09-28)
-  const types = cornerTypes
+  const typesAll = cornerTypes
     .filter((t) => t.active && t.liveVersion != null)
     .filter((t) => isChipAllowed(t.typeDetail, containerType))
     .map((t) => {
@@ -3126,10 +3126,20 @@ function CornerLoadModal({
         sampleImageUrl: t.sampleImageUrl ?? null,
         previewCorner: t.previewCorner ?? null,
         rest,
-        // 검색은 이름 + 배열 + 유형 모두 매칭(코너 유형 관리와 동일 기준).
-        label: `${t.name} ${rest} ${nameMap[t.baseCategory] ?? t.baseCategory}`,
+        // 검색은 배열(레이아웃) + 유형으로 매칭. 코너 = 껍데기라 콘텐츠 이름은 검색 기준에서 뺀다(2026-10-06).
+        label: `${rest} ${nameMap[t.baseCategory] ?? t.baseCategory}`,
       };
     });
+  // 코너 = 껍데기(규격)만 → 같은 (유형·배열·빅배너) 껍데기는 하나로 합친다. 콘텐츠로만 다르던 유형들(배너 단일형 5개 등)은 1개로.
+  const types = (() => {
+    const seen = new Set<string>();
+    return typesAll.filter((t) => {
+      const key = `${t.base}|${t.detail}|${t.bigBanner ? 'B' : ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
   const query = q.trim().toLowerCase();
   // 상단 유형 칩 = 불러올 수 있는 코너 유형(거버넌스 순서). 선택 시 그 유형만 목록에 노출(기본 서치).
   const availBases = (() => {
@@ -3233,13 +3243,13 @@ function CornerLoadModal({
                               selId === t.id ? 'border-primary bg-accent' : isCurrent ? 'border-slate-300 bg-slate-50' : 'hover:bg-muted/50',
                             )}
                           >
-                            {isImgSrc(t.sampleImageUrl?.split('\n')[0]) && (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={t.sampleImageUrl!.split('\n')[0]} alt="" className="h-8 w-12 shrink-0 rounded border object-cover object-top" />
-                            )}
+                            {/* 코너 = 껍데기 → 썸네일도 실데이터가 아니라 '가이드(껍데기)' 플레이스홀더로 통일(2026-10-06). */}
+                            <span className="flex h-8 w-12 shrink-0 items-center justify-center rounded border border-dashed border-slate-200 bg-slate-50" aria-hidden>
+                              <ImageIcon className="h-3.5 w-3.5 text-slate-300" />
+                            </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate text-[13px] font-medium text-foreground">{t.name}</span>
-                              <span className="block truncate text-[11px] text-muted-foreground">{layoutLabel(t.detail) || componentLabel(t.component) || '기본'}</span>
+                              <span className="block truncate text-[13px] font-medium text-foreground">{layoutLabel(t.detail) || componentLabel(t.component) || '기본'}</span>
+                              <span className="block truncate text-[11px] text-muted-foreground">껍데기 가이드 · 콘텐츠는 빌더에서</span>
                             </span>
                             {isCurrent && <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600">현재</span>}
                             {t.bigBanner && <BigBannerBadge className="shrink-0" />}

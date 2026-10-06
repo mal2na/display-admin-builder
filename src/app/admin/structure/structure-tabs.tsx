@@ -269,7 +269,7 @@ function StructureView() {
 }
 
 // ───────────────────────── IA 탭 ─────────────────────────
-type IaItem = { name: string; path?: string; role: string; fields?: string; sub?: string[]; tag?: string; review?: boolean };
+type IaItem = { name: string; path?: string; role: string; fields?: string; sub?: string[]; tag?: string; review?: boolean; partial?: boolean };
 type IaGroup = { group: string; items: IaItem[] };
 const ADMIN_IA: IaGroup[] = [
   { group: '전시 관리', items: [
@@ -282,7 +282,7 @@ const ADMIN_IA: IaGroup[] = [
     { name: '프로모션 관리', path: '/admin/events', role: '이벤트 전용 빌더(전시/관리와 별개). 참여 조건·지급 조건을 조합해 이벤트를 구성하고 자체적으로 전시·승인한다.', fields: '참여·지급 조건' },
   ]},
   { group: '운영 관리', items: [
-    { name: '댓글·리뷰 관리', path: '/admin/comments', role: '댓글 관리(이벤트 쪽)와 리뷰 관리(상품 쪽)에 흩어져 있던 기능을 운영 관리로 통합해 관리할 예정. 댓글/리뷰 조회·노출 통제·답글, 신고 접수와 사용자 차단을 한 곳에서.', fields: '노출여부·답변·신고·차단', tag: '통합 예정', review: true },
+    { name: '댓글·리뷰 관리', path: '/admin/comments', role: '댓글 관리(이벤트 쪽)와 리뷰 관리(상품 쪽)에 흩어져 있던 기능을 운영 관리로 통합해 관리할 예정. 댓글/리뷰 조회·노출 통제·답글, 신고 접수와 사용자 차단을 한 곳에서.', fields: '노출여부·답변·신고·차단', tag: '통합 예정', review: true, partial: true },
     { name: 'App 스플래시 관리', path: '/admin/app-splash', role: '앱 실행 시 노출되는 스플래시(런칭) 화면을 OS·기간별로 등록하고 승인·배포한다.', fields: 'OS·적용상태·승인', review: true },
     { name: 'App 버전 관리', path: '/admin/app-versions', role: '앱 버전과 업데이트 정책(권장/강제 업데이트)·안내 팝업을 관리한다.', fields: '권장/강제 업데이트·팝업', review: true },
     { name: 'App 위젯 관리', path: '/admin/app-widgets', role: '홈/잠금 등 앱 위젯의 노출·순서·게시 기간을 관리. 위젯의 틀은 위젯 유형 관리에서 정의.', fields: '게시상태·배포·노출순서', sub: ['위젯 유형 관리'] },
@@ -291,7 +291,7 @@ const ADMIN_IA: IaGroup[] = [
 ];
 
 function IaView() {
-  // 내일 리뷰 체크 — 각 메뉴 라벨 위에 체크 컬럼. 리뷰 대상(review:true)은 기본 체크.
+  // 오늘 리뷰 체크 — 각 메뉴 라벨 위에 체크 컬럼. 리뷰 대상(review:true)은 기본 체크. partial:true는 '일부 리뷰'.
   const [reviewChecked, setReviewChecked] = useState<Set<string>>(() => {
     const s = new Set<string>();
     ADMIN_IA.forEach((g) => g.items.forEach((it) => { if (it.review) s.add(it.name); }));
@@ -309,7 +309,7 @@ function IaView() {
         <h2 className="mb-1 flex items-center gap-2 text-[15px] font-extrabold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-sm bg-[#3616cd]" />관리 메뉴 IA</h2>
         <p className="mb-3 flex flex-wrap items-center gap-2 text-[13px] font-medium text-slate-600">
           어드민(BO) 메뉴 구조 — 그룹별 메뉴와 역할·주요 항목. 메뉴명을 누르면 이동합니다.
-          <span className="rounded-md bg-[#eceefe] px-2 py-0.5 text-[12px] font-bold text-[#3616cd]">내일 리뷰 {reviewChecked.size}개 체크</span>
+          <span className="rounded-md bg-[#eceefe] px-2 py-0.5 text-[12px] font-bold text-[#3616cd]">오늘 리뷰 {reviewChecked.size}개 체크</span>
         </p>
         <div className="flex flex-col gap-4">
           {ADMIN_IA.map((g) => (
@@ -321,10 +321,13 @@ function IaView() {
                   return (
                   <li key={it.name} className={cn('flex flex-col gap-1 px-4 py-3.5 sm:flex-row sm:items-start sm:gap-4', checked && 'bg-[#f6f7ff]')}>
                     <div className="sm:w-52 sm:shrink-0">
-                      <label className={cn('mb-1.5 inline-flex cursor-pointer select-none items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold', checked ? 'border-[#3616cd] bg-[#eceefe] text-[#3616cd]' : 'border-[#e0e3ea] bg-white text-slate-400')}>
-                        <input type="checkbox" checked={checked} onChange={() => toggleReview(it.name)} className="h-3 w-3 accent-[#3616cd]" />
-                        내일 리뷰
-                      </label>
+                      <div className="mb-1.5 flex flex-wrap items-center gap-1">
+                        <label className={cn('inline-flex cursor-pointer select-none items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold', checked ? (it.partial ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-[#3616cd] bg-[#eceefe] text-[#3616cd]') : 'border-[#e0e3ea] bg-white text-slate-400')}>
+                          <input type="checkbox" checked={checked} onChange={() => toggleReview(it.name)} className={cn('h-3 w-3', it.partial ? 'accent-amber-500' : 'accent-[#3616cd]')} />
+                          오늘 리뷰
+                        </label>
+                        {checked && it.partial && <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">일부만</span>}
+                      </div>
                       <div className="flex flex-wrap items-center gap-1.5">
                         {it.path ? (
                           <Link href={it.path} className="text-[14px] font-bold text-[#3616cd] hover:underline">{it.name}</Link>
