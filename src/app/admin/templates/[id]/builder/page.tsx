@@ -164,6 +164,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
   const corners = template.templateCorners.map((tc) => ({
     templateCornerId: tc.id,
     id: tc.corner.id,
+    sourceCornerTypeId: tc.corner.sourceCornerTypeId ?? null, // '코너 유형에서 수정' 링크용
     name: tc.corner.name,
     cornerType: tc.corner.cornerType,
     typeLabel: tc.corner.typeLabel,
@@ -217,6 +218,8 @@ export default async function BuilderPage({ params }: { params: { id: string } }
       selectedIndex: cc.component.selectedIndex,
       chipRows: cc.component.chipRows,
       sourceChanged: sourceChangedOf(cc.component.sourceCampaignId, cc.component.sourceSyncedAt),
+      sourceCampaignId: cc.component.sourceCampaignId ?? null, // '배너 캠페인 관리에서 수정' 링크용
+
       atoms: cc.component.componentAtoms.map((ca) => ({
         componentAtomId: ca.id,
         id: ca.atom.id,
