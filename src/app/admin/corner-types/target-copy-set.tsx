@@ -18,6 +18,11 @@ const AI_GEN_PREFIX: Record<string, string> = {
   '위치 인근': '지금 근처에서 ',
   '혜택 보유': '보유 혜택으로 ',
   '신규': '첫 방문 선물, ',
+  // 세그먼트 추천(추천 정책서 TM-REC-012)
+  '장기': '오래 함께한 분께, ',
+  '고가치': 'VIP 전용, ',
+  '이탈위험': '다시 만나서 반가워요, ',
+  '결합·가족': '가족과 함께, ',
 };
 
 export type CopySlot = { key: string; label: string; base: string };
