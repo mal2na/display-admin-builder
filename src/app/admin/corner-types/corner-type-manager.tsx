@@ -190,7 +190,15 @@ function domainGovernances(domain: Domain, present: string[]): string[] {
 // CornerTypeRow → 미리보기 PreviewCorner = '껍데기 가이드'(placeholder 슬롯: 타이틀·디스크립션·상품명·가격·설명·이미지·더보기).
 //  코너 = 껍데기(규격)라 실데이터가 아니라 '가이드'로 그린다(2026-10-06 코너 유형 관리 대공사 방향). 목록·상세·수정 공용.
 export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
-  const noTitle = row.baseCategory === '배너형' || row.baseCategory === '고정·필수 노출형';
+  // 카드 자체가 완결형인 유형은 코너 타이틀·디스크립션이 없다 → 미리보기에서 완전 제외.
+  //  배너형·고정필수형·상태 안내형, 탭형(업무 진입형 탭 등), 아이콘/이미지/팝업/띠/텍스트배너/프로필/바코드 레이아웃.
+  const dStr = row.typeDetail ?? '';
+  const noTitle =
+    row.baseCategory === '배너형' ||
+    row.baseCategory === '고정·필수 노출형' ||
+    row.baseCategory === '상태 안내형' ||
+    /탭/.test(dStr) ||
+    ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
   const c = compositionToPreviewCorner({
     base: row.baseCategory,
     detail: row.typeDetail,
@@ -985,7 +993,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   };
 
   const ql = q.trim().toLowerCase();
-  const filtered = domainTypes.filter((t) => {
+  const filteredAll = domainTypes.filter((t) => {
     if (base !== '전체' && t.baseCategory !== base) return false;
     if (detail !== '전체' && (t.typeDetail ?? '') !== detail) return false;
     if (!(t.active ? useOn : useOff)) return false;
@@ -996,6 +1004,16 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
     }
     return true;
   });
+  // 코너 = 껍데기 → 같은 (코너 유형 · 배열·레이아웃 · 빅배너) 껍데기는 하나만 노출(중복 케이스 숨김, 2026-10-06 대공사).
+  const filtered = (() => {
+    const seen = new Set<string>();
+    return filteredAll.filter((t) => {
+      const key = `${t.baseCategory}|${t.typeDetail ?? ''}|${t.bigBanner ? 'B' : ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const curPage = Math.min(page, totalPages);
   const pageRows = filtered.slice((curPage - 1) * perPage, curPage * perPage);
@@ -1443,7 +1461,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   //  '세로형(카테고리탭)'처럼 상품형 리스트의 탭 변형은 헤더가 있으므로 제외(선택형일 때만 탭=무헤더).
   const isStandaloneTab = compValid === '선택형' && (/카테고리\s*탭/.test(dStr) || dStr.includes('고정형(탭)'));
   //  고정·필수 노출형(프로필형·바코드형 등)은 카드 자체가 완결형이라 코너 타이틀·디스크립션이 없다(2026-09-29 사용자 요청).
-  const noHeaderType = isBannerType || isStandaloneTab || base === '고정·필수 노출형' || ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
+  const noHeaderType = isBannerType || isStandaloneTab || base === '고정·필수 노출형' || base === '상태 안내형' || ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
   // 여러 아이템을 나열하는 리스트형 코너 — 노출 개수·더보기가 의미 있는 유형(상품형/혜택형/정보형 리스트)
   const isListType = compValid === '상품형' || compValid === '혜택형' || (compValid === '정보형' && /리스트/.test(dStr));
   const featureApplies = (key: string) => {
