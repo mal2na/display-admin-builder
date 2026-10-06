@@ -45,7 +45,7 @@ export function cornerToPreviewCorner(c: any): PreviewCorner {
 export const PLACED_CORNER_INCLUDE = {
   banner: { select: { imageUrl: true } },
   templateCorners: {
-    select: { template: { select: { id: true, name: true, container: { select: { id: true, name: true } } } } },
+    select: { template: { select: { name: true, container: { select: { name: true } } } } },
   },
   cornerComponents: {
     orderBy: { order: 'asc' as const },

@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { composeBg, type ComposeFields } from './composed-banner';
+import { ComposedBanner, type ComposeFields } from './composed-banner';
 
 export type BannerRow = {
   id: string; campaignCode: string; title: string; exposeYn: boolean;
@@ -16,22 +16,23 @@ export type BannerRow = {
   preview: { imageUrl: string | null; f: ComposeFields | null; detail: string | null } | null;
 };
 
-// 목록 미리보기 썸네일 — 띠배너 비율(64×28)로 통일. 이미지형=실사, 텍스트형=조립 배경+타이틀.
+// 목록 미리보기 — 실제 배너를 그대로 렌더(상세와 동일 ComposedBanner). 텍스트형도 배지·타이틀·서브·이미지까지
+//  보이도록 크게(240×76, 띠 비율). 2026-10-06 사용자 요청(지금은 뭔지 못 알아봄 → 실제 배너로 크게).
+const THUMB_W = 240;
+const THUMB_H = 76;
 function BannerThumb({ preview }: { preview: BannerRow['preview'] }) {
   if (preview?.imageUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={preview.imageUrl} alt="" className="h-7 w-16 rounded border border-[#e8ebef] object-cover" />;
+    return <img src={preview.imageUrl} alt="" style={{ width: THUMB_W, height: THUMB_H }} className="rounded-md border border-[#e8ebef] object-cover" />;
   }
   if (preview?.f) {
-    const f = preview.f;
     return (
-      <div className="flex h-7 w-16 items-center gap-1 overflow-hidden rounded border border-[#e8ebef] px-1.5" style={{ background: composeBg(f) }}>
-        {f.badgeText && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: f.badgeColor || '#4F46E5' }} />}
-        <span className="truncate text-left text-[8px] font-bold leading-tight" style={{ color: f.titleColor || '#0F172A' }}>{f.title || '텍스트 배너'}</span>
+      <div className="overflow-hidden rounded-md border border-[#e8ebef]">
+        <ComposedBanner f={preview.f} width={THUMB_W} height={THUMB_H} preview />
       </div>
     );
   }
-  return <div className="flex h-7 w-16 items-center justify-center rounded border border-dashed border-[#d9dce6] bg-[#f6f7fb] text-[8px] text-slate-300">미등록</div>;
+  return <div style={{ width: THUMB_W, height: THUMB_H }} className="flex items-center justify-center rounded-md border border-dashed border-[#d9dce6] bg-[#f6f7fb] text-[11px] text-slate-300">미등록</div>;
 }
 
 const APPROVAL_TONE: Record<string, string> = {
@@ -124,7 +125,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
             ) : paged.map((r, i) => (
               <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b border-[#e8ebef] text-center text-slate-700 hover:bg-[#f0f2f4]">
                 <td className="h-11 px-3 tabular-nums text-slate-500">{filtered.length - ((curPage - 1) * PER_PAGE + i)}</td>
-                <td className="h-11 px-3"><div className="flex justify-center"><BannerThumb preview={r.preview} /></div></td>
+                <td className="h-11 px-3 py-1.5"><div className="flex justify-center"><BannerThumb preview={r.preview} /></div></td>
                 <td className="h-11 px-3 tabular-nums">{r.campaignCode}</td>
                 <td className="h-11 px-3 text-left">{r.title}</td>
                 <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.exposeYn ? 'bg-[#e3f6ea] text-[#1f8a4c]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.exposeYn ? '전시' : '미전시'}</span></td>

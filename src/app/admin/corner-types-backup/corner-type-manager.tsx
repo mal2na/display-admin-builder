@@ -187,35 +187,23 @@ function domainGovernances(domain: Domain, present: string[]): string[] {
   return present;
 }
 
-// CornerTypeRow → 미리보기 PreviewCorner = '껍데기 가이드'(placeholder 슬롯: 타이틀·디스크립션·상품명·가격·설명·이미지·더보기).
-//  코너 = 껍데기(규격)라 실데이터가 아니라 '가이드'로 그린다(2026-10-06 코너 유형 관리 대공사 방향). 목록·상세·수정 공용.
+// CornerTypeRow → 미리보기 PreviewCorner (저장 조합 우선, 없으면 유형 기본 조합). 카드·상세 공용.
 export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
-  // 카드 자체가 완결형인 유형은 코너 타이틀·디스크립션이 없다 → 미리보기에서 완전 제외.
-  //  배너형·고정필수형·상태 안내형, 탭형(업무 진입형 탭 등), 아이콘/이미지/팝업/띠/텍스트배너/프로필/바코드 레이아웃.
-  const dStr = row.typeDetail ?? '';
-  const noTitle =
-    row.baseCategory === '배너형' ||
-    row.baseCategory === '고정·필수 노출형' ||
-    row.baseCategory === '상태 안내형' ||
-    /탭/.test(dStr) ||
-    ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
   const c = compositionToPreviewCorner({
     base: row.baseCategory,
     detail: row.typeDetail,
-    mainTitle: noTitle || !row.useMainTitle ? null : '타이틀',
-    subTitle: noTitle || !row.useSubTitle ? null : '디스크립션',
-    // 가이드는 저장된 조합(실데이터 포함)이 아니라 유형 기본 조합(generic)으로 — 상품명·가격·설명 '슬롯 라벨'만 보이게.
-    composition: defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: row.useBadge, desc: row.useDesc }),
-    placeholder: true, // 슬롯 라벨(상품명·가격·설명 등)로 구조만
-    emptyImages: true, // 이미지·배너 영역은 빈 자리로
+    mainTitle: row.useMainTitle ? '코너 타이틀' : null,
+    subTitle: row.useSubTitle ? '서브타이틀' : null,
+    composition: parseComposition(row.composition) ?? defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: row.useBadge, desc: row.useDesc }),
   });
-  // 코너 헤더(타이틀)가 없는 완결형·탭/칩·배너 유형은 '더보기(CTA)'도 없다(탭형 등).
-  const noMore = noTitle;
-  return {
-    ...c,
-    showImage: row.useImage, showPrice: row.usePrice, showBadge: row.useBadge, showDesc: row.useDesc,
-    moreButtonUse: noMore ? false : row.useMoreButton, moreButtonLabel: row.defaultMoreButtonLabel ?? undefined,
-  };
+  // '배너' 배열(예: 가로형+배너) → 상단 히어로 배너를 코너에 붙여서 렌더.
+  //  배너 이미지는 상품 카드 이미지와 별개(bannerImageUrl)라, 상품 이미지 토글을 꺼도 배너는 유지된다.
+  const isBannerArr = row.typeDetail?.includes('배너') ?? false;
+  // 상품형 세로형+배너 = 요금제(약정 만료) 히어로, 가로형+배너 등 = 단말 히어로.
+  const heroImg = row.baseCategory === '상품형'
+    ? (row.typeDetail?.includes('세로형') ? '/assets/ds/plan-hero-expire.png' : '/assets/ds/hero-device.png')
+    : '/assets/ds/hero-plan.png';
+  return { ...c, bigBanner: row.bigBanner || isBannerArr, bannerImageUrl: isBannerArr ? heroImg : c.bannerImageUrl };
 }
 
 // 코너 전체가 다 보이도록 실제 렌더(CornerBlock)를 측정해 카드 박스 안에 '통째로 축소'해 넣는다(DS 포털처럼 잘림 없이).
@@ -777,7 +765,7 @@ export function CornerTypeCard({ t, onOpen, onDuplicate, onDelete, busy }: { t: 
   const compMeta = comp ? `컴포넌트 ${comp.reduce((s, b) => s + b.count, 0)}개` : (componentLabel(t.componentType) || layoutLabel(t.typeDetail) || '유형');
   const g = deriveCornerTypeUsage({ status: t.status, active: t.active, liveVersion: t.liveVersion ?? null, workingVersion: t.workingVersion ?? 1 });
   // 미리보기 = 실제 배치된 대표 코너(있으면) → 상세와 일치. 없으면 조합(유형 기본) 샘플.
-  const previewCorner = cornerRowPreview(t);
+  const previewCorner = t.previewCorner ?? cornerRowPreview(t);
   return (
     <div className={cn('group flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.04] shadow-[0_1px_3px_rgba(20,22,40,0.05),0_10px_28px_rgba(20,22,40,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_6px_rgba(20,22,40,0.08),0_18px_42px_rgba(20,22,40,0.14)]', busy && 'pointer-events-none opacity-60')}>
       {/* 미리보기(클릭 → 상세) — 은은한 라벤더 배경 위 라운드 프레임에 코너 전체를 축소해 통째로 보여준다. */}
@@ -865,7 +853,7 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
       >
         <div className="bg-[#f0f2f4] p-2.5">
           {/* 썸네일 = 실제 배치된 대표 코너(있으면). 상세 첫 타일과 동일 코너라 이미지가 일치한다. 미배치면 조합 샘플. */}
-          <div className="pointer-events-none h-40"><DevicePreview corner={cornerRowPreview(v)} fit="contain" /></div>
+          <div className="pointer-events-none h-40"><DevicePreview corner={v.previewCorner ?? cornerRowPreview(v)} fit="contain" /></div>
         </div>
         <div className="flex flex-1 flex-col gap-1.5 px-3 py-2.5">
           {/* 코너명(실제 케이스) = 주 식별자. 같은 배열이 여러 케이스로 분리돼도 코너명으로 구분된다. */}
@@ -929,7 +917,7 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
 function LayoutGroupCard({ cases, onOpen }: { cases: CornerTypeRow[]; onOpen: () => void }) {
   const rep = cases[0];
   const multi = cases.length > 1;
-  const preview = cornerRowPreview(rep);
+  const preview = rep.previewCorner ?? cornerRowPreview(rep);
   const liveCount = cases.filter((c) => c.liveVersion != null && c.active).length;
   const needAttention = cases.filter((c) => c.status === 'REVIEW' || c.status === 'REJECTED' || c.status === 'DRAFT').length;
   const caseNames = cases.map((c) => c.previewCorner?.name ?? c.name).filter(Boolean);
@@ -995,7 +983,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   };
 
   const ql = q.trim().toLowerCase();
-  const filteredAll = domainTypes.filter((t) => {
+  const filtered = domainTypes.filter((t) => {
     if (base !== '전체' && t.baseCategory !== base) return false;
     if (detail !== '전체' && (t.typeDetail ?? '') !== detail) return false;
     if (!(t.active ? useOn : useOff)) return false;
@@ -1006,16 +994,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
     }
     return true;
   });
-  // 코너 = 껍데기 → 같은 (코너 유형 · 배열·레이아웃 · 빅배너) 껍데기는 하나만 노출(중복 케이스 숨김, 2026-10-06 대공사).
-  const filtered = (() => {
-    const seen = new Set<string>();
-    return filteredAll.filter((t) => {
-      const key = `${t.baseCategory}|${t.typeDetail ?? ''}|${t.bigBanner ? 'B' : ''}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  })();
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const curPage = Math.min(page, totalPages);
   const pageRows = filtered.slice((curPage - 1) * perPage, curPage * perPage);
@@ -1049,7 +1027,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         trail={['전시 관리', '코너 유형 관리']}
         title="코너 유형 관리"
         action={
-          <Link href="/admin/corner-types/new">
+          <Link href="/admin/corner-types-backup/new">
             <Button size="sm">
               <Plus className="mr-1 h-4 w-4" /> 등록
             </Button>
@@ -1235,7 +1213,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                           </div>
                           <button
                             type="button"
-                            onClick={() => router.push(`/admin/corner-types/group?base=${encodeURIComponent(bc)}`)}
+                            onClick={() => router.push(`/admin/corner-types-backup/group?base=${encodeURIComponent(bc)}`)}
                             className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#C7D2FE] bg-[#EEF2FF] px-3 py-1.5 text-[12.5px] font-semibold text-[#4A5CF0] transition hover:bg-[#E0E7FF]"
                           >
                             전체 관리 <ChevronRight className="h-3.5 w-3.5" />
@@ -1247,7 +1225,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                               key={detail || '기본'}
                               cases={cases}
                               // 항상 대표(첫) 케이스 상세로 직행 — 상세 상단의 '형제 케이스 탭'으로 나머지 케이스를 전환(중간 고르기 페이지 없음).
-                              onOpen={() => router.push(`/admin/corner-types/${cases[0].id}`)}
+                              onOpen={() => router.push(`/admin/corner-types-backup/${cases[0].id}`)}
                             />
                           ))}
                         </div>
@@ -1283,12 +1261,12 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               {pageRows.length === 0 ? (
                 <tr><td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">검색 결과가 없습니다.</td></tr>
               ) : pageRows.map((t, i) => (
-                <tr key={t.id} className="cursor-pointer border-b border-[#e8ebef] last:border-0 hover:bg-[#f0f2f4]" onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
+                <tr key={t.id} className="cursor-pointer border-b border-[#e8ebef] last:border-0 hover:bg-[#f0f2f4]" onClick={() => router.push(`/admin/corner-types-backup/${t.id}`)}>
                   <td className="px-3 py-2.5 align-middle tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
                   <td className="px-3 py-2.5">
                     {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함 */}
                     <div className="pointer-events-none mx-auto h-24 w-40 overflow-hidden rounded-lg border border-[#e8ebef] bg-[#f0f2f4] p-1.5">
-                      <DevicePreview corner={cornerRowPreview(t)} fit="contain" align="center-middle" />
+                      <DevicePreview corner={t.previewCorner ?? cornerRowPreview(t)} fit="contain" align="center-middle" />
                     </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 align-middle"><span className={cn('inline-flex items-center whitespace-nowrap rounded-md border px-2 py-0.5 text-[12px]', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
@@ -1463,7 +1441,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   //  '세로형(카테고리탭)'처럼 상품형 리스트의 탭 변형은 헤더가 있으므로 제외(선택형일 때만 탭=무헤더).
   const isStandaloneTab = compValid === '선택형' && (/카테고리\s*탭/.test(dStr) || dStr.includes('고정형(탭)'));
   //  고정·필수 노출형(프로필형·바코드형 등)은 카드 자체가 완결형이라 코너 타이틀·디스크립션이 없다(2026-09-29 사용자 요청).
-  const noHeaderType = isBannerType || isStandaloneTab || base === '고정·필수 노출형' || base === '상태 안내형' || ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
+  const noHeaderType = isBannerType || isStandaloneTab || base === '고정·필수 노출형' || ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
   // 여러 아이템을 나열하는 리스트형 코너 — 노출 개수·더보기가 의미 있는 유형(상품형/혜택형/정보형 리스트)
   const isListType = compValid === '상품형' || compValid === '혜택형' || (compValid === '정보형' && /리스트/.test(dStr));
   const featureApplies = (key: string) => {

@@ -28,42 +28,23 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
   ]);
   if (!ct) notFound();
 
-  // 형제 케이스 — 같은 껍데기(base+typeDetail)의 다른 코너 유형들. 목록이 껍데기 하나로 합쳐지므로,
-  //  상세의 '쓰는 전시화면'은 이 껍데기를 쓰는 '모든 형제 유형'의 코너를 빠짐없이 맵핑한다(2026-10-06 사용자 요청).
+  // 형제 케이스 — 같은 배열(base+typeDetail)의 다른 코너 유형들. 상세 상단 탭으로 좌우 전환(중간 '고르기' 페이지 제거).
   const siblings = await prisma.cornerType.findMany({
     where: { baseCategory: ct.baseCategory, typeDetail: ct.typeDetail },
     orderBy: { typeId: 'asc' },
     select: { id: true, name: true },
   });
-  const siblingIds = siblings.map((s) => s.id);
-  // 껍데기 전체(형제 유형 모두)로 만든 실제 코너 — 상세 '상세 정보' 맵핑용.
-  const shellUsageCorners = await prisma.corner.findMany({
-    where: { sourceCornerTypeId: { in: siblingIds.length ? siblingIds : [params.id] } },
-    include: PLACED_CORNER_INCLUDE,
-    orderBy: PLACED_CORNER_ORDER,
-  });
 
-  // 사용처 rows: 배치된 곳마다 (컨테이너 · 템플릿 · 코너명 + 템플릿 id). 미배치 코너는 템플릿/컨테이너 null.
-  //  templateId로 상세에서 '전시화면 관리(빌더)' 바로가기 링크를 건다(2026-10-06 사용자 요청).
-  const usage: { container: string | null; template: string | null; corner: string; templateId: string | null }[] = [];
+  // 사용처 rows: 배치된 곳마다 (컨테이너 · 템플릿 · 코너명). 미배치 코너는 템플릿/컨테이너 null.
+  const usage: { container: string | null; template: string | null; corner: string }[] = [];
   for (const c of usageCorners) {
-    if (c.templateCorners.length === 0) usage.push({ container: null, template: null, corner: c.name, templateId: null });
-    for (const tc of c.templateCorners) usage.push({ container: tc.template.container.name, template: tc.template.name, corner: c.name, templateId: tc.template.id });
+    if (c.templateCorners.length === 0) usage.push({ container: null, template: null, corner: c.name });
+    for (const tc of c.templateCorners) usage.push({ container: tc.template.container.name, template: tc.template.name, corner: c.name });
   }
 
   // 실제 사용 코너의 구성을 미리보기로 매핑 — 배너형 외 유형(예: 혜택·오퍼형)은 상세에서 실제 코너들을 보여준다(한 유형 = 여러 케이스).
   //  전시화면(템플릿)에 배치된 코너만 — 미배치(orphan) 코너는 제외.
   const usagePreviews: PreviewCorner[] = usageCorners.filter((c) => c.templateCorners.length > 0).map(cornerToPreviewCorner);
-
-  // 상세 '상세 정보' — 이 껍데기(형제 유형 전부)로 '실제 만든 코너' + 그 코너가 올라간 전시화면(클릭 시 빌더).
-  //  배치된(화면에 올라간) 코너만 — 미배치 코너는 제외(전시화면 맵핑이 목적). 2026-10-06 사용자 요청(빠짐없이).
-  const usageByCorner = shellUsageCorners
-    .filter((c) => c.templateCorners.length > 0)
-    .map((c) => ({
-      cornerName: c.name,
-      preview: cornerToPreviewCorner(c),
-      screens: c.templateCorners.map((tc) => ({ templateId: tc.template.id, container: tc.template.container.name, template: tc.template.name })),
-    }));
 
   const row: CornerTypeRow = {
     id: ct.id,
@@ -133,7 +114,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
 
   return (
     <div className="px-8 py-6">
-      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} usage={usage} usageByCorner={usageByCorner} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} siblings={siblings} />
+      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} usage={usage} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} siblings={siblings} />
     </div>
   );
 }
