@@ -28,11 +28,19 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
   ]);
   if (!ct) notFound();
 
-  // 형제 케이스 — 같은 배열(base+typeDetail)의 다른 코너 유형들. 상세 상단 탭으로 좌우 전환(중간 '고르기' 페이지 제거).
+  // 형제 케이스 — 같은 껍데기(base+typeDetail)의 다른 코너 유형들. 목록이 껍데기 하나로 합쳐지므로,
+  //  상세의 '쓰는 전시화면'은 이 껍데기를 쓰는 '모든 형제 유형'의 코너를 빠짐없이 맵핑한다(2026-10-06 사용자 요청).
   const siblings = await prisma.cornerType.findMany({
     where: { baseCategory: ct.baseCategory, typeDetail: ct.typeDetail },
     orderBy: { typeId: 'asc' },
     select: { id: true, name: true },
+  });
+  const siblingIds = siblings.map((s) => s.id);
+  // 껍데기 전체(형제 유형 모두)로 만든 실제 코너 — 상세 '상세 정보' 맵핑용.
+  const shellUsageCorners = await prisma.corner.findMany({
+    where: { sourceCornerTypeId: { in: siblingIds.length ? siblingIds : [params.id] } },
+    include: PLACED_CORNER_INCLUDE,
+    orderBy: PLACED_CORNER_ORDER,
   });
 
   // 사용처 rows: 배치된 곳마다 (컨테이너 · 템플릿 · 코너명 + 템플릿 id). 미배치 코너는 템플릿/컨테이너 null.
@@ -47,12 +55,15 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
   //  전시화면(템플릿)에 배치된 코너만 — 미배치(orphan) 코너는 제외.
   const usagePreviews: PreviewCorner[] = usageCorners.filter((c) => c.templateCorners.length > 0).map(cornerToPreviewCorner);
 
-  // 상세 '상세 정보' — 이 코너 유형으로 '실제 만든 코너' + 그 코너가 올라간 전시화면(클릭 시 빌더). 2026-10-06 사용자 요청.
-  const usageByCorner = usageCorners.map((c) => ({
-    cornerName: c.name,
-    preview: cornerToPreviewCorner(c),
-    screens: c.templateCorners.map((tc) => ({ templateId: tc.template.id, container: tc.template.container.name, template: tc.template.name })),
-  }));
+  // 상세 '상세 정보' — 이 껍데기(형제 유형 전부)로 '실제 만든 코너' + 그 코너가 올라간 전시화면(클릭 시 빌더).
+  //  배치된(화면에 올라간) 코너만 — 미배치 코너는 제외(전시화면 맵핑이 목적). 2026-10-06 사용자 요청(빠짐없이).
+  const usageByCorner = shellUsageCorners
+    .filter((c) => c.templateCorners.length > 0)
+    .map((c) => ({
+      cornerName: c.name,
+      preview: cornerToPreviewCorner(c),
+      screens: c.templateCorners.map((tc) => ({ templateId: tc.template.id, container: tc.template.container.name, template: tc.template.name })),
+    }));
 
   const row: CornerTypeRow = {
     id: ct.id,
