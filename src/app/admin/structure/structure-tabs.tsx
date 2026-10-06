@@ -383,25 +383,33 @@ function GovernanceView() {
     <div className="flex flex-col gap-5">
       <p className="text-[13px] leading-relaxed text-slate-500">
         운영에서 <b className="text-slate-800">“누가 무엇을 정하나”</b>를 한눈에. 원칙은 딱 하나 —
-        <b className="text-[#3616cd]"> 운영자는 ‘기본값·틀’, CVM은 ‘고객마다 실제’.</b>
+        <b className="text-[#3616cd]"> 코너는 껍데기(규격), 콘텐츠는 빌더에서, 고객마다 실제는 CVM.</b>
       </p>
 
-      {/* Q1 — 노출 순서 */}
-      <GovQ no={1} q="노출 순서는 코너 유형에서? 빌더에서?"
-        answer={<>둘 다 아니에요. <u>운영자는 “기본 순서”만</u> 짜고, <u>실제 순서는 CVM이 고객마다</u> 정해요.</>}>
+      {/* Q1 — 코너는 껍데기 */}
+      <GovQ no={1} q="코너에 콘텐츠를 미리 넣나요? 빌더에서 넣나요?"
+        answer={<>코너 유형은 <u>껍데기(규격)만</u>. 콘텐츠(상품·배너·문구·개수·이름)는 <u>빌더(전시화면 관리)에서</u> 매핑해요.</>}>
         <div className="rounded-lg border border-[#e8ebef]">
-          <GovRow who="코너 유형" what={<>정렬 <b>기준의 기본값</b>을 정해요. (예: 인기순·최신순)</>} />
-          <GovRow who="빌더(전시화면)" what={<>코너를 <b>배치</b>하고, <b>수급 방식</b>(CVM / 운영자 편성)을 골라요. 운영자 편성일 때만 순서를 직접.</>} />
-          <GovRow who="CVM (자동)" what={<><b>실제 노출 순서를 고객마다</b> 정해요. 미리보기는 기본 순서만 보여줘요.</>} strong />
+          <GovRow who="코너 유형" what={<>DS 포털 <b>껍데기</b>를 등록(배열·레이아웃·어떤 API를 쓰는지). <b>콘텐츠는 없음</b>.</>} />
+          <GovRow who="빌더(전시화면)" what={<>코너를 쌓고 <b>이름·텍스트·노출 개수·상품/배너·수급 방식</b>(직접 지정 / 조건 / CVM)을 설정. 미리보기 즉시.</>} strong />
+          <GovRow who="DS 포털" what={<><b>Atom·Component</b>를 소유. 코너·템플릿·컨테이너는 어드민이 구성.</>} />
         </div>
         <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500">
-          순서는 <b className="text-slate-700">두 군데</b>예요 — ① 코너 <b>안</b> 상품·혜택 순서, ② 템플릿 <b>안</b> 코너 순서.
-          둘 다 <b className="text-slate-700">운영자는 기본만, 실제는 CVM</b>. (위치 고정한 코너는 CVM도 안 건드려요)
+          왜냐면 — 같은 배너 코너라도 <b className="text-slate-700">A페이지=S18, B페이지=iPhone</b>이면, 콘텐츠를 코너에 박아두면 코너를 매번 새로 만들어야 해요. <b className="text-slate-700">껍데기 1개 + 페이지별 콘텐츠</b>가 효율적(T우주 방식). 그래서 <b className="text-[#3616cd]">코너 불러오기는 데이터 없는 가이드</b>로 와요.
         </p>
       </GovQ>
 
-      {/* Q2 — 컨테이너 단위 */}
-      <GovQ no={2} q="전체 페이지 관리는 왜 ‘컨테이너’ 단위예요? 템플릿 단위로 하면 안 돼요?"
+      {/* Q1b — 노출 순서 */}
+      <GovQ no={2} q="노출 순서는 누가 정해요?"
+        answer={<><u>기본 순서는 빌더(운영자)</u>가, <u>실제 순서는 CVM이 고객마다</u> 정해요.</>}>
+        <div className="rounded-lg border border-[#e8ebef]">
+          <GovRow who="빌더(전시화면)" what={<>코너 <b>배치 순서·위치 고정</b> + 운영자 편성이면 상품·혜택 <b>순서를 직접</b>.</>} />
+          <GovRow who="CVM (자동)" what={<>수급이 CVM이면 <b>실제 순서를 고객마다</b> 정해요(비고정 코너를 세그먼트별 재정렬). 미리보기는 기본만.</>} strong />
+        </div>
+      </GovQ>
+
+      {/* Q3 — 컨테이너 단위 */}
+      <GovQ no={3} q="전체 페이지 관리는 왜 ‘컨테이너’ 단위예요? 템플릿 단위로 하면 안 돼요?"
         answer={<>페이지는 <u>‘컨테이너(화면 1개)’ 단위로만</u> 관리해요. 템플릿 단위로는 <u>관리하면 안 돼요.</u></>}>
         <div className="rounded-lg border border-[#e8ebef] bg-[#f9fafc] p-4">
           <p className="mb-2 text-[13px] font-bold text-slate-800">쉽게 — 집 주소와 인테리어처럼</p>
@@ -422,16 +430,15 @@ function GovernanceView() {
         </div>
       </GovQ>
 
-      {/* Q3 — 베리에이션 */}
-      <GovQ no={3} q="문구·노출 타입 ‘베리에이션’은 코너 유형에서? 빌더에서?"
-        answer={<><u>후보(재료)는 코너 유형에서 등록</u>하고, <u>그중 하나를 CVM이 고객마다</u> 골라요. 빌더에선 <u>안 고쳐요(읽기 전용).</u></>}>
+      {/* Q4 — 베리에이션 */}
+      <GovQ no={4} q="문구·노출 타입 ‘베리에이션’은 누가 등록해요?"
+        answer={<><u>빌더에서 후보를 등록</u>하고(콘텐츠니까), <u>그중 하나를 CVM이 고객마다</u> 골라요.</>}>
         <div className="rounded-lg border border-[#e8ebef]">
-          <GovRow who="코너 유형" what={<><b>타겟별 문구 세트</b>(문구 후보)와 <b>노출 타입 후보</b>를 등록해요. “무엇을 보여줄 수 있나”의 풀.</>} />
+          <GovRow who="빌더(전시화면)" what={<>각 컴포넌트의 <b>문구 베리에이션</b>(타겟별 대체 문구)과 <b>노출 타입 베리에이션</b>(코너 유형 카탈로그에서 골라 2~3개 조합)을 등록.</>} />
           <GovRow who="CVM (자동)" what={<>고객 세그먼트로 <b>후보 중 하나를 택1</b>(런타임). 미리보기는 기본(첫 후보)만.</>} strong />
-          <GovRow who="빌더(전시화면)" what={<>코너 유형에 등록된 베리에이션을 <b>상속해 읽기 전용으로 모아보기</b>만. 코너 정보와 같은 원칙으로 <b>편집 안 해요</b>.</>} />
         </div>
         <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500">
-          원리는 <b className="text-slate-700">“재료는 우리가(코너 유형), 조합은 CVM”</b> — 운영자는 후보만 넉넉히 등록하고, 실제 조합·택1은 CVM이 고객마다. 그래서 빌더엔 베리에이션 <b>편집 버튼이 없고</b>, 바꾸려면 <b className="text-[#3616cd]">코너 유형에서 수정</b>해요.
+          원리는 <b className="text-slate-700">“재료는 우리가(빌더에서 등록), 조합은 CVM”</b> — 베리에이션도 콘텐츠라 빌더에서. 노출 타입의 <b>후보 목록</b>은 코너 유형(껍데기)에 등록된 배열·레이아웃에서 골라요.
         </p>
       </GovQ>
     </div>
