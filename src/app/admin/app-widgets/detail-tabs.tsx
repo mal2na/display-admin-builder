@@ -9,12 +9,12 @@ export function WidgetDetailTabs({ id }: { id: string }) {
   const path = usePathname();
   const onHistory = path.endsWith('/history');
   const tab = (href: string, label: string, active: boolean) => (
-    <Link href={href} className={cn('-mb-px border-b-2 pb-2 text-sm', active ? 'border-indigo-600 font-semibold text-indigo-700' : 'border-transparent text-muted-foreground hover:text-slate-700')}>
+    <Link href={href} className={cn('-mb-px border-b-2 pb-2 text-sm', active ? 'border-[#3b2bd9] font-semibold text-[#3b2bd9]' : 'border-transparent text-[#8a8fa3] hover:text-[#4b5060]')}>
       {label}
     </Link>
   );
   return (
-    <div className="mb-5 flex gap-5 border-b">
+    <div className="mb-5 flex gap-5 border-b border-[#e3e5ee]">
       {tab(`/admin/app-widgets/${id}`, '상세정보', !onHistory)}
       {tab(`/admin/app-widgets/${id}/history`, '변경/승인이력', onHistory)}
     </div>

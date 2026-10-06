@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>B안 통합 v3 · 전체 페이지·메뉴 관리</title>
+<style>
+  /* Layout: 기존 A·B안 어드민 셸(LNB + 카드) 그대로 · 한 메뉴 안에서 목록 보기 / 메뉴 트리 보기 전환 */
+  :root {
+    --bg: #eef0f6; --surface: #fff; --surface-2: #f6f7fb; --head: #f3f4f8; --hover: #fafbff; --sel: #fffbe8; --new: #f1fff5;
+    --line: #e3e5ee; --line-2: #d3d6e2;
+    --ink: #1f2330; --ink-2: #4b5060; --ink-3: #8a8fa3; --on-acc: #fff;
+    --accent: #3b2bd9; --accent-2: #3224bd; --accent-soft: #eceafc; --accent-line: #c9c3f5;
+    --ok: #2f7f4f; --ok-soft: #e6f5ea; --warn: #d9534f; --warn-soft: #fdeaea; --amber: #c77700; --amber-soft: #fff3e0; --amber-line: #f3d9a8;
+    --blue: #2f5fd0; --blue-soft: #e8effc; --d2: #3a6fd8; --d3: #2f9c6a; --toast: #1f2330;
+    --shadow: 0 1px 2px rgba(20,24,40,.06), 0 8px 24px rgba(20,24,40,.06); --shadow-lg: 0 12px 40px rgba(20,24,40,.18);
+    --f-body: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    --f-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #14161d; --surface: #1c1f28; --surface-2: #232733; --head: #262a37; --hover: #232838; --sel: #3a3420; --new: #1c2f24;
+    --line: #2f3443; --line-2: #3d4356; --ink: #e8eaf1; --ink-2: #b6bbca; --ink-3: #828899; --on-acc: #fff;
+    --accent: #8f84ff; --accent-2: #a49bff; --accent-soft: #29264a; --accent-line: #4a4380;
+    --ok: #6fcf97; --ok-soft: #1c2f24; --warn: #f08a85; --warn-soft: #3a2222; --amber: #f2b35c; --amber-soft: #33291a; --amber-line: #5a4426;
+    --blue: #8fb0ff; --blue-soft: #1f2a44; --d2: #8fb0ff; --d3: #6fcf97; --toast: #000;
+    --shadow: 0 1px 2px rgba(0,0,0,.3); --shadow-lg: 0 12px 40px rgba(0,0,0,.5); color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg: #14161d; --surface: #1c1f28; --surface-2: #232733; --head: #262a37; --hover: #232838; --sel: #3a3420; --new: #1c2f24;
+    --line: #2f3443; --line-2: #3d4356; --ink: #e8eaf1; --ink-2: #b6bbca; --ink-3: #828899; --on-acc: #fff;
+    --accent: #8f84ff; --accent-2: #a49bff; --accent-soft: #29264a; --accent-line: #4a4380;
+    --ok: #6fcf97; --ok-soft: #1c2f24; --warn: #f08a85; --warn-soft: #3a2222; --amber: #f2b35c; --amber-soft: #33291a; --amber-line: #5a4426;
+    --blue: #8fb0ff; --blue-soft: #1f2a44; --d2: #8fb0ff; --d3: #6fcf97; --toast: #000;
+    --shadow: 0 1px 2px rgba(0,0,0,.3); --shadow-lg: 0 12px 40px rgba(0,0,0,.5); color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.5 var(--f-body); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  a { color: var(--accent); }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .app { display: flex; min-height: 100vh; }
+  .lnb { width: 220px; flex: none; background: var(--surface); border-right: 1px solid var(--line); padding: 22px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .lnb .logo { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, #9d8cff, #4d3ee6 60%, #2a1fb0); box-shadow: 0 0 0 4px var(--accent-soft); margin: 4px 0 26px 8px; }
+  .lnb .grp { font-size: 11.5px; font-weight: 700; color: var(--ink-3); padding: 8px 10px 4px; letter-spacing: .02em; }
+  .lnb a { display: block; padding: 9px 12px; border-radius: 8px; font-size: 13px; color: var(--ink-2); text-decoration: none; cursor: pointer; }
+  .lnb a:hover { background: var(--surface-2); }
+  .lnb a.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .lnb a.off { color: var(--ink-3); cursor: default; } .lnb a.off:hover { background: none; }
+  .lnb .gone { margin-top: 2px; padding: 6px 12px; font-size: 11.5px; color: var(--ink-3); text-decoration: line-through; }
+  .main { flex: 1; padding: 18px 18px 18px 6px; min-width: 0; }
+  .card { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); padding: 40px 36px 36px; min-height: calc(100vh - 36px); min-width: 0; }
+  @media (max-width: 900px) { .lnb { display: none; } .main { padding: 10px 16px; } .card { padding: 24px 16px; } }
+  .crumb { font-size: 11.5px; color: var(--ink-3); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .crumb .cur { color: var(--ink-2); }
+  .hrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 20px; font-weight: 700; margin: 8px 0 18px; text-wrap: balance; }
+  .rule { height: 1px; background: var(--line); margin-bottom: 22px; }
+  .spacer { flex: 1; }
+
+  .views { display: inline-flex; border: 1px solid var(--line-2); border-radius: 10px; padding: 3px; background: var(--surface-2); gap: 2px; }
+  .views button { border: 0; background: none; padding: 7px 16px; border-radius: 7px; font-weight: 600; color: var(--ink-2); cursor: pointer; font-size: 12.5px; }
+  .views button.on { background: var(--surface); color: var(--accent); box-shadow: var(--shadow); }
+  .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--line); margin-bottom: 18px; overflow-x: auto; }
+  .tab { padding: 10px 16px; border: 0; background: none; color: var(--ink-3); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .note { background: var(--accent-soft); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--ink-2); margin-bottom: 18px; line-height: 1.65; }
+  .note b { color: var(--ink); }
+  .banner { display: flex; align-items: center; gap: 12px; background: var(--amber-soft); border: 1px solid var(--amber-line); border-radius: 10px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 14px; flex-wrap: wrap; }
+
+  .searchbar { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; margin-bottom: 18px; }
+  .searchbar label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  select, input[type="text"] { border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); padding: 6px 10px; font-size: 12.5px; min-height: 32px; max-width: 100%; }
+  input:disabled { background: var(--surface-2); color: var(--ink-3); }
+  .chip-f { border: 1px solid var(--line-2); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+  .chip-f.on { background: var(--accent); color: var(--on-acc); border-color: var(--accent); }
+  .btn { border: 1px solid var(--line-2); background: var(--surface); border-radius: 6px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn:hover { background: var(--surface-2); }
+  .btn.pill { border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 500; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-acc); }
+  .btn.primary:hover { background: var(--accent-2); }
+  .btn.dark { border-color: var(--ink); }
+  .btn.sm { padding: 4px 10px; font-size: 11.5px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.warnb { color: var(--warn); }
+
+  .rmeta { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 10px; flex-wrap: wrap; }
+  .rmeta .n { color: var(--accent); font-weight: 600; }
+  .tblwrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: var(--head); font-size: 12px; font-weight: 700; padding: 11px 10px; text-align: left; white-space: nowrap; color: var(--ink-2); }
+  tbody td { padding: 11px 10px; border-bottom: 1px solid var(--line); font-size: 12.5px; vertical-align: middle; }
+  .nw { white-space: nowrap; } .ct { text-align: center; }
+  tbody tr.rowlink { cursor: pointer; }
+  tbody tr.rowlink:hover td { background: var(--hover); }
+  tbody tr.dim td { color: var(--ink-3); }
+  .mono { font-family: var(--f-mono); font-size: 12px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; border: 1px solid var(--line-2); color: var(--ink-2); background: var(--surface); white-space: nowrap; }
+  .tag.ch { color: var(--accent); border-color: var(--accent-line); border-radius: 999px; }
+  .tag.gray { background: var(--surface-2); border-color: transparent; }
+  .tag.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+  .tag.amber { background: var(--amber-soft); color: var(--amber); border-color: transparent; }
+  .tag.acc { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .tag.blue { background: var(--blue-soft); color: var(--blue); border-color: transparent; }
+  .tag.none { background: var(--surface); border: 1px dashed var(--line-2); color: var(--ink-3); }
+  .tag.src { font-size: 10.5px; padding: 1px 6px; }
+  .tag.src.b { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .hint { font-size: 11.5px; color: var(--ink-3); }
+  .hint.warn { color: var(--warn); } .hint.acc { color: var(--accent); } .hint.amb { color: var(--amber); }
+  .lnk { color: var(--accent); text-decoration: underline; cursor: pointer; font-size: 12.5px; }
+  .pager { display: flex; justify-content: center; gap: 4px; margin: 18px 0; font-size: 12px; }
+  .pager button { border: 0; background: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; color: var(--ink-2); }
+  .pager button.on { background: var(--accent); color: var(--on-acc); }
+  .actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+
+  /* 스위치 */
+  .sw { position: relative; display: inline-block; width: 34px; height: 19px; flex: none; cursor: pointer; vertical-align: middle; }
+  .sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .sw span { position: absolute; inset: 0; background: var(--line-2); border-radius: 999px; transition: background .15s; }
+  .sw span::after { content: ""; position: absolute; left: 2px; top: 2px; width: 15px; height: 15px; background: var(--surface); border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+  .sw input:checked + span { background: var(--accent); }
+  .sw input:checked + span::after { transform: translateX(15px); }
+  .sw input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sw.dis { cursor: not-allowed; } .sw.dis span { background: var(--surface-2); border: 1px dashed var(--line-2); }
+  .mcell { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .swr { font-size: 10.5px; color: var(--ink-3); white-space: nowrap; } .swr.warn { color: var(--warn); } .swr.amb { color: var(--amber); }
+
+  /* 트리 보기 */
+  .twocol { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+  @media (max-width: 1180px) { .twocol { grid-template-columns: minmax(0, 1fr); } }
+  .tree { min-width: 0; overflow-x: auto; }
+  .trow, .thead { display: grid; grid-template-columns: minmax(240px, 1fr) 70px 150px 104px; align-items: center; min-width: 600px; }
+  .thead { background: var(--head); font-size: 12px; font-weight: 700; color: var(--ink-2); padding: 11px 10px; }
+  .thead .c, .trow .c { text-align: center; }
+  .trow { border-bottom: 1px solid var(--line); padding: 9px 10px; font-size: 12.5px; cursor: pointer; }
+  .trow:hover { background: var(--hover); }
+  .trow.sel { background: var(--sel); }
+  .trow.beyond { color: var(--ink-3); }
+  .trow.dimrow { color: var(--ink-3); }
+  .trow.newpl { background: var(--new); } .trow.newpl.sel { background: var(--sel); }
+  .trow.focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .trow.dragging { opacity: .4; } .trow.over-top { box-shadow: inset 0 3px 0 var(--accent); } .trow.over-bot { box-shadow: inset 0 -3px 0 var(--accent); }
+  .trow.over-in { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); } .trow.over-no { background: var(--warn-soft); cursor: not-allowed; }
+  .nmcell { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .nmcell .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .guides { display: inline-flex; flex: none; align-self: stretch; margin: -9px 0; }
+  .guides i { width: 16px; border-left: 1px solid var(--line); margin-left: 7px; margin-right: -8px; }
+  .guides i:first-child { margin-left: 0; }
+  .guides i.edge { border-left: 2px solid var(--accent-line); }
+  .chev { width: 14px; text-align: center; flex: none; font-size: 10px; color: var(--ink-3); cursor: pointer; }
+  .chev.ph { cursor: default; }
+  .grip { color: var(--line-2); letter-spacing: -2px; font-size: 14px; cursor: grab; margin-right: 2px; }
+  .dp { display: inline-block; flex: none; min-width: 24px; text-align: center; font-size: 10px; font-weight: 700; border-radius: 4px; padding: 1px 4px; background: var(--accent-soft); color: var(--accent); margin-right: 4px; }
+  .dp.out { background: var(--surface-2); color: var(--ink-3); }
+  .dropzone { border: 2px dashed var(--line-2); border-radius: 8px; padding: 10px; text-align: center; color: var(--ink-3); font-size: 12px; margin-bottom: 8px; }
+  .dropzone.over-in { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .legend { display: flex; gap: 16px; align-items: center; font-size: 11.5px; color: var(--ink-2); padding: 0 2px 8px; flex-wrap: wrap; }
+  .legend .lg { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .legend .lg.in { background: var(--accent-soft); border: 1px solid var(--accent-line); } .legend .lg.out { background: var(--surface-2); border: 1px solid var(--line-2); }
+  .ttool { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .lv { width: 26px; height: 26px; border: 1px solid var(--line-2); background: var(--surface); border-radius: 5px; font-size: 11.5px; font-weight: 600; cursor: pointer; color: var(--ink-2); padding: 0; }
+  .lv.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .pane { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; box-shadow: var(--shadow); min-width: 0; }
+  .ph { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .ph h3 { margin: 0; font-size: 14px; }
+  .pane .x { border: 0; background: none; font-size: 18px; cursor: pointer; color: var(--ink-3); }
+  .pane h4 { font-size: 12.5px; margin: 14px 0 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; padding: 5px 0; }
+  .kv .k { color: var(--ink-2); flex: none; } .kv .v { color: var(--ink-3); text-align: right; min-width: 0; word-break: keep-all; }
+  .prow { display: grid; grid-template-columns: 74px 1fr; gap: 8px; align-items: start; padding: 7px 0; font-size: 12.5px; }
+  .prow .k { color: var(--ink-2); font-weight: 600; padding-top: 4px; }
+  .prow input[type=text] { width: 100%; }
+  label.opt { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; margin-right: 10px; }
+  label.opt.off { color: var(--ink-3); cursor: not-allowed; }
+  .foot2 { display: flex; gap: 8px; margin-top: 14px; } .foot2 .btn { flex: 1; }
+  .unp { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12.5px; background: var(--surface); }
+  .unp[draggable="true"] { cursor: grab; }
+  .unp.focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .unp .nm { flex: 1; min-width: 0; }
+  .unp .nm small { display: block; color: var(--ink-3); font-size: 11px; }
+  .iconbox { width: 64px; height: 64px; border: 1px solid var(--line-2); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; background: var(--surface-2); position: relative; flex: none; }
+  .iconbox .x { position: absolute; top: -8px; right: -8px; width: 18px; height: 18px; border-radius: 50%; border: 0; background: var(--ink-2); color: var(--surface); font-size: 11px; cursor: pointer; }
+  .segs { display: inline-flex; gap: 4px; }
+  .seg { border: 1px solid var(--line-2); background: var(--surface); padding: 4px 10px; font-size: 11.5px; font-weight: 600; border-radius: 999px; cursor: pointer; color: var(--ink-2); }
+  .seg.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .fo { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface-2); font-size: 12.5px; }
+  .fo .d1 { font-weight: 800; margin: 12px 0 4px; font-size: 13px; } .fo .d1:first-child { margin-top: 0; }
+  .fo .d1 .ico { color: var(--accent); margin-right: 6px; }
+  .fo .g { font-weight: 700; margin: 6px 0 2px; }
+  .fo .i { padding: 3px 0; }
+  .fo .i .u { color: var(--ink-3); font-size: 11px; margin-left: 8px; font-family: var(--f-mono); }
+  .fo .gone { margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--line-2); color: var(--warn); font-size: 12px; }
+  .tag.sm { padding: 0 6px; font-size: 10.5px; }
+  .mbar { position: sticky; bottom: env(safe-area-inset-bottom, 0px); display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; background: var(--surface); border-top: 1px solid var(--line); padding: 14px 18px; margin: 20px -36px -36px; box-shadow: 0 -8px 24px rgba(20,24,40,.06); font-weight: 700; border-radius: 0 0 16px 16px; }
+  .mbar .btn { min-width: 84px; padding: 9px 16px; font-size: 13px; }
+  .mfoot { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-2); flex-wrap: wrap; }
+  .mfoot b { color: var(--ink); margin-left: 4px; }
+
+  /* 상세 · 폼 (A·B안 동일 구성) */
+  .sect { margin-bottom: 26px; }
+  .sect h2 { font-size: 14px; font-weight: 700; margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .sect.menu { background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 12px; padding: 14px 16px 6px; }
+  .sect.menu .ftable { background: var(--surface); }
+  .ftable { border-top: 1px solid var(--line); overflow-x: auto; }
+  .frow { display: grid; grid-template-columns: 130px minmax(0, 1fr); border-bottom: 1px solid var(--line); min-height: 46px; }
+  .frow.two { grid-template-columns: 130px minmax(0, 1fr) 130px minmax(0, 1fr); }
+  @media (max-width: 760px) { .frow.two { grid-template-columns: 110px minmax(0, 1fr); } .frow { grid-template-columns: 110px minmax(0, 1fr); } }
+  .frow .k { background: var(--surface-2); padding: 12px 14px; font-size: 12px; font-weight: 600; color: var(--ink-2); display: flex; align-items: center; }
+  .frow .v { padding: 8px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 12.5px; min-width: 0; }
+  .frow .v .block { flex-basis: 100%; }
+  input.w-sm { width: 160px; } input.w-md { width: 280px; } input.w-lg { width: 420px; }
+  .formactions { display: flex; justify-content: center; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+  .formactions.split { justify-content: space-between; }
+  .mtable { width: 100%; border-collapse: collapse; font-size: 12px; margin: 4px 0; }
+  .mtable th, .mtable td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+  .mtable th { background: var(--surface-2); font-weight: 600; color: var(--ink-2); }
+  .ro-in { background: var(--surface-2); color: var(--ink-3); }
+  .tagbox { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tagbox .tg { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 10px; font-size: 12px; background: var(--surface); }
+  .tagbox .tg b { cursor: pointer; color: var(--ink-3); font-weight: 400; }
+  .kvs { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; font-size: 12px; }
+  .kvs .k { color: var(--ink-3); }
+  .diff { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface-2); font-size: 12px; margin-top: 8px; }
+  .diff b { color: var(--ink); }
+  .diff ul { margin: 4px 0 0; padding-left: 18px; }
+
+  /* modal */
+  .ovl { position: fixed; inset: 0; background: rgba(20,24,40,.4); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal { background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-lg); width: 460px; max-width: 100%; max-height: calc(100vh - 32px); overflow: auto; padding: 22px 22px 18px; }
+  .modal.wide { width: 560px; } .modal.xl { width: 860px; }
+  .modal .mh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .modal h3 { font-size: 15px; margin: 0; }
+  .modal .x { border: 0; background: none; font-size: 18px; color: var(--ink-3); cursor: pointer; }
+  .modal p { margin: 0 0 8px; font-size: 12.5px; color: var(--ink-2); }
+  .modal .mactions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .modal .mactions .btn { min-width: 96px; }
+  .alert { width: 360px; }
+  .picker .srch { display: flex; gap: 8px; align-items: center; margin: 12px 0 14px; flex-wrap: wrap; }
+  .picker .srch input { flex: 1; }
+  .picker h4 { font-size: 12.5px; margin: 0 0 8px; }
+  .picker table td, .picker table th { padding: 9px 10px; }
+  .picker tr.off td { color: var(--line-2); }
+  .picker tr.off td .why { color: var(--ink-3); font-size: 11px; margin-left: 6px; }
+  .cmp { display: grid; grid-template-columns: 1fr 28px 1fr; gap: 10px; margin: 14px 0 6px; }
+  .cmp .col { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface-2); font-size: 12.5px; min-width: 0; }
+  .cmp .col.after { background: var(--accent-soft); border-color: var(--accent-line); }
+  .cmp .h { font-size: 11px; font-weight: 700; color: var(--ink-3); margin-bottom: 4px; }
+  .cmp .arrow { display: flex; align-items: center; justify-content: center; color: var(--ink-3); }
+  .cmp-impact { font-size: 12px; color: var(--ink-2); margin: 4px 0 2px; } .cmp-impact .bad { color: var(--warn); }
+  .toast { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--toast); color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 12.5px; z-index: 60; box-shadow: var(--shadow-lg); max-width: calc(100vw - 32px); }
+  .simbtn { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 40; box-shadow: var(--shadow-lg); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  /* v2 · 변경/승인 이력 · 트리 드롭 영역 · 유형 */
+  .trow.over-before { box-shadow: inset 0 3px 0 var(--accent); } .trow.over-after { box-shadow: inset 0 -3px 0 var(--accent); }
+  .trow.chg .nm { font-weight: 700; }
+  .lockbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 14px; }
+  .hist td { vertical-align: top; }
+  .hist tr.main td { cursor: pointer; }
+  .hist tr.main:hover td { background: var(--hover); }
+  .hist tr.open td { background: var(--sel); }
+  .hist tr.sub td { background: var(--surface-2); padding: 12px 16px 14px; }
+  .hist .items { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--surface); }
+  .hist .items th, .hist .items td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: middle; }
+  .hist .items th { background: var(--head); font-weight: 600; color: var(--ink-2); }
+  .hist .why { margin-top: 8px; font-size: 12px; color: var(--warn); }
+  .arrow-t { color: var(--ink-3); margin: 0 6px; }
+  .tag.type { font-size: 10.5px; padding: 1px 6px; }
+  .tag.type.builder { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .tag.type.dev { background: var(--surface-2); color: var(--ink-2); border-color: transparent; }
+  .tag.type.ext { background: var(--blue-soft); color: var(--blue); border-color: transparent; }
+  .ctline { display: block; font-size: 11px; color: var(--ink-3); margin-top: 3px; white-space: nowrap; }
+  .ctline.warn { color: var(--warn); } .ctline.amb { color: var(--amber); } .ctline.ok { color: var(--ok); }
+  .fixv { color: var(--ink-3); }
+  .simsec { border-top: 1px solid var(--line); padding: 12px 0; }
+  .simsec:first-of-type { border-top: 0; }
+  .simsec h4 { margin: 0 0 6px; font-size: 13px; }
+  .simsec .r { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  @media (max-width: 900px) { .mbar { margin: 20px -16px -24px; } }
+  /* v3 · 트리 패널 탭 · 시나리오 */
+  .ptabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 6px 0 10px; }
+  .ptabs button { border: 0; background: none; padding: 7px 12px; font-size: 12.5px; font-weight: 600; color: var(--ink-3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .ptabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+  .prow .v2 { min-width: 0; display: flex; flex-wrap: wrap; gap: 4px 0; align-items: center; }
+  .prow .v2 .hint { flex-basis: 100%; }
+  .prow input[type=text]:disabled { background: var(--surface-2); }
+  .trow.del .nm { text-decoration: line-through; color: var(--ink-3); }
+  .trow.isnew { background: var(--new); } .trow.isnew.sel { background: var(--sel); }
+  .diffhint { font-size: 10.5px; font-weight: 700; color: var(--amber); background: var(--amber-soft); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+  .steps { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+  .steps li { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: start; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface-2); }
+  .steps li.done { background: var(--ok-soft); border-color: transparent; }
+  .steps .n { width: 22px; height: 22px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line-2); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .steps li.done .n { background: var(--ok); color: var(--surface); border-color: var(--ok); }
+  .steps b { display: block; font-size: 12.5px; }
+  .steps small { display: block; color: var(--ink-2); font-size: 11.5px; margin-top: 2px; line-height: 1.55; }
+  .fo .resv { margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--line-2); color: var(--amber); font-size: 12px; }
+  .chg-list { margin: 0; padding: 0; list-style: none; }
+  .chg-list li { padding: 2px 0; }
+  .chg-list .f { display: inline-block; min-width: 76px; color: var(--ink-2); font-weight: 600; }
+  /* v4 · B안 레이아웃 (1 Depth | 2 Depth ~ | 상세) */
+  .steps3 { display: flex; align-items: stretch; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .steps3 > i { font-style: normal; color: var(--ink-3); display: flex; align-items: center; }
+  .st3 { flex: 1; min-width: 180px; display: flex; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; background: var(--surface-2); color: var(--ink-3); }
+  .st3 b { flex: none; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11.5px; background: var(--line-2); color: var(--surface); }
+  .st3 strong { display: block; font-size: 12.5px; color: var(--ink-2); }
+  .st3 small { font-size: 11px; }
+  .st3.on { background: var(--accent-soft); border-color: var(--accent-line); }
+  .st3.on b { background: var(--accent); color: var(--on-acc); } .st3.on strong { color: var(--ink); }
+  .mcols { display: grid; grid-template-columns: 260px 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 1180px) { .mcols { grid-template-columns: 1fr 1fr; } .mcols .detail { grid-column: 1 / -1; } }
+  @media (max-width: 720px) { .mcols { grid-template-columns: minmax(0, 1fr); } }
+  .mcol { min-width: 0; }
+  .mcol .mtop { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 10px; min-height: 30px; flex-wrap: wrap; }
+  .mcol .mh { background: var(--head); text-align: center; font-weight: 700; font-size: 12.5px; padding: 11px; }
+  .mitem { display: flex; align-items: center; gap: 6px; padding: 11px 10px; border-bottom: 1px solid var(--line); font-size: 12.5px; cursor: pointer; }
+  .mitem:hover { background: var(--hover); }
+  .mitem.sel { color: var(--accent); font-weight: 700; background: var(--accent-soft); }
+  .mitem.root-on:not(.sel) { color: var(--accent); font-weight: 700; }
+  .mitem.out { color: var(--ink-3); }
+  .mitem.new { background: var(--new); } .mitem.new.sel { background: var(--accent-soft); }
+  .mitem.del .nm { text-decoration: line-through; color: var(--ink-3); }
+  .mitem.focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .mitem .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mitem .bd { display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; max-width: 140px; }
+  .mitem .chev { color: var(--ink-3); font-size: 11px; cursor: pointer; width: auto; }
+  .mitem .grip { color: var(--line-2); letter-spacing: -2px; cursor: grab; }
+  .mitem.dragging { opacity: .4; } .mitem.over-top { box-shadow: inset 0 3px 0 var(--accent); } .mitem.over-bot { box-shadow: inset 0 -3px 0 var(--accent); } .mitem.over-no { background: var(--warn-soft); cursor: not-allowed; }
+  .mdetail h2 { font-size: 18px; font-weight: 700; margin: 0 0 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .mdetail .frow { grid-template-columns: 120px minmax(0, 1fr); }
+  .mdetail .frow.sub .k { background: var(--head); }
+  .frow .v.ro { color: var(--ink-2); }
+  .mdetail .foot2 .btn { flex: 0 1 auto; }
+  .tag.type.sm { font-size: 10px; padding: 0 5px; }
+  /* v5 · 한 줄 트리 (이미지 기준) */
+  .tcols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 480px); gap: 20px; align-items: start; }
+  @media (max-width: 1180px) { .tcols { grid-template-columns: minmax(0, 1fr); } }
+  .tpanel { background: var(--surface-2); border-radius: 16px; padding: 16px 18px 14px; min-width: 0; overflow-x: auto; }
+  .ttop { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .ttop .btn { border-radius: 8px; padding: 8px 16px; }
+  .tn { position: relative; }
+  .tk { position: relative; margin-left: 14px; padding-left: 20px; border-left: 1px solid var(--line-2); }
+  .tk > .tn::before { content: ""; position: absolute; left: -20px; top: 23px; width: 16px; border-top: 1px solid var(--line-2); }
+  .tk > .tn:last-child::after { content: ""; position: absolute; left: -21px; top: 24px; bottom: 0; border-left: 3px solid var(--surface-2); }
+  .trc { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid transparent; border-radius: 12px; padding: 0 16px; min-height: 46px; margin-bottom: 8px; cursor: pointer; font-size: 14px; color: var(--ink); min-width: 220px; }
+  .trc:hover { border-color: var(--line-2); }
+  .trc.sel { background: var(--accent-soft); border-color: var(--accent-line); font-weight: 700; }
+  .trc.out { color: var(--ink-2); }
+  .trc.new { background: var(--new); } .trc.new.sel { background: var(--accent-soft); }
+  .trc.del .nm { text-decoration: line-through; color: var(--ink-3); }
+  .trc.focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .trc .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trc .grip { color: var(--line-2); letter-spacing: -2px; cursor: grab; }
+  .trc .bd { margin-left: auto; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .chv { flex: none; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink-3); cursor: pointer; border-radius: 6px; }
+  .chv:hover { background: var(--surface-2); }
+  .chv::before { content: ""; width: 8px; height: 8px; border-right: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(-45deg); margin-left: -3px; }
+  .chv.open::before { transform: rotate(45deg); margin: -5px 0 0; }
+  .dtag { font-size: 10px; font-weight: 700; color: var(--accent); background: var(--surface); border: 1px solid var(--accent-line); border-radius: 4px; padding: 0 5px; }
+  .dtag.out { color: var(--ink-3); border-color: var(--line-2); }
+  .trc.dragging { opacity: .4; } .trc.over-top { box-shadow: inset 0 3px 0 var(--accent); } .trc.over-bot { box-shadow: inset 0 -3px 0 var(--accent); } .trc.over-no { background: var(--warn-soft); cursor: not-allowed; }
+  .tcols > .detail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+  @media (max-width: 1180px) { .tcols > .detail { position: static; max-height: none; } }
+  .frow .v .mono { word-break: break-all; }
+  .bfft { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .bfft th { background: var(--head); font-weight: 700; color: var(--ink-2); padding: 11px 8px; white-space: nowrap; text-align: left; }
+  .bfft td { padding: 10px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .bfft .ct { text-align: center; } .bfft tr.bnew td { background: var(--new); }
+  .bfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; font-weight: 600; color: var(--ink-2); margin-top: 6px; }
+  .bfoot .pager { margin: 10px 0; }
+  input[type="date"] { border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); padding: 5px 8px; font-size: 12.5px; min-height: 32px; }
+  .tlegend { margin-top: 6px; font-size: 11.5px; color: var(--ink-3); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <!-- 내부 LNB 제거: 어드민 LNB가 뷰를 제어(location.hash #ops/#dev). 2026-10-06 사용자 요청 -->
+  <main class="main"><div class="card" id="card"></div></main>
+</div>
+<div id="modal-root"></div><div id="toast-root"></div>
+
+<script>
+(function () {
+  "use strict";
+  var MENU_MAX = 3, PAGE_MAX = 9;
+  var CH = [["pcweb","PC웹"],["mweb","모바일웹"],["aos","Android앱"],["ios","iOS앱"]];
+  var BIZ = [["join","가입/신청"],["change","변경(UKEY처리)"],["cancel","해지(UKEY처리)"],["view","조회(UKEY/CDRS)"],["guide","안내"],["special","채널특화"],["none","해당사항없음(메인/서브메인)"],["etc","기타"]];
+  var NAV = [["show","노출"],["eng","Eng.ver"]];
+  var LINES = [["all","전체"],["A","통화내역(A)"],["B","모바일(B)"],["C","T월드 법인실사용자(C)"],["D","SKT법인(D)"],["E","법인실사용자_비회선(E)"],["P","PPS(P)"],["S","유선서비스 인터넷/IPTV/집전화(S)"],["N","준회원(회선없음N)"]];
+  var AUTHS = ["비로그인","로그인","간편로그인"];
+  var ATTR = { html: "HTML", node: "NODE_HTML", native: "Native", bp: "BP/외부" };
+  var FORMS = ["Action Sheet","Page","Popup","Tab","Iframe"];
+  var PTYPE = { builder: "빌더 화면", dev: "개발 화면", ext: "외부 화면" };
+  var CVM_REASON = { "CVM-2026-0412": "RS0412 · 데이터 한도 안내", "CVM-2026-0090": "RS0090 · 멤버십 혜택 안내", "CVM-2026-0311": "RS0311 · 요금제 변경 유도" };
+  /* 운영 정보 = [운영 정보 관리] 탭에서 편집 · 임시저장 → 일괄 승인 (승인 시점 = URL 확정) */
+  var TF = ["name", "ptype", "group", "url", "parent", "morder", "use", "menuOn", "icon", "alt", "channels", "auths", "lines", "del"];
+  var TFL = { name: "페이지명", ptype: "페이지 유형", group: "URL 등록", url: "URL", parent: "경로", morder: "순서", use: "사용 여부", menuOn: "메뉴 노출", icon: "아이콘", alt: "아이콘", channels: "운영 채널", search: "검색 노출", share: "공유하기", remark: "비고", auths: "로그인 권한", lines: "회선그룹" };
+  /* 개발 설정 = [개발 설정] 탭 목록 → 상세 · 페이지별 승인 (관리성 정보는 엑셀 대체 관리용 · 메뉴 노출과 무관) */
+  var DF = ["proc", "dualAuth", "blockFrom", "blockTo", "mwebJob", "appJob", "guideUrl", "blockUrl", "bff", "search", "share", "remark", "attr", "form", "biz", "popCh", "nav", "cvm", "reason", "tooltips", "cs", "shortUrls", "maskOn", "maskWay", "maskAuth", "tagUse", "tags", "keywords", "ogTitle", "ogDesc"];
+  var DFL = { proc: "상품 프로세스 구분", dualAuth: "마스킹/업무인증 동시적용", blockFrom: "접근중단일시", blockTo: "접근중단일시", mwebJob: "모바일 Web JOB 코드", appJob: "App JOB 코드", guideUrl: "가이드 URL", blockUrl: "차단화면 URL", bff: "BFF 매핑", search: "검색 노출", share: "공유하기", remark: "비고", attr: "페이지 속성", form: "화면 제공형태", biz: "업무처리 형태", popCh: "과금 팝업 호출", nav: "네비게이션 노출", cvm: "CVM 접촉이벤트", reason: "CVM 접촉이벤트", tooltips: "연결 정보", cs: "연결 정보", shortUrls: "연결 정보", maskOn: "마스킹", maskWay: "마스킹", maskAuth: "마스킹", tagUse: "검색태그", tags: "검색태그", keywords: "메타태그", ogTitle: "메타태그", ogDesc: "메타태그" };
+  var CASCADE = { channels: "운영 채널", auths: "로그인 권한", lines: "회선그룹" };
+  var seq = 700, ctSeq = 110, reqSeq = 3;
+  function P(o) {
+    return Object.assign({ ptype: "dev", ct: "", ctState: "", proc: "", dualAuth: false, blockFrom: "", blockTo: "", mwebJob: "", appJob: "", guideUrl: "", blockUrl: "", bff: [], group: false, url: "", use: true, channels: ["pcweb","mweb","aos","ios"], search: false, share: false, remark: "", auths: AUTHS.slice(), lines: ["all"],
+      attr: "html", form: "Page", biz: ["none"], popCh: [], nav: [], cvm: "", reason: "", tooltips: [], cs: [], shortUrls: [], maskOn: false, maskWay: "", maskAuth: "", tagUse: false, tags: [], keywords: "", ogTitle: "", ogDesc: "",
+      menuOn: false, morder: 0, icon: null, alt: "", del: false, parent: null, tlive: null, dlive: null, dstate: "live", drej: false, created: "2026.01.04", updated: "2026.04.01 09:00" }, o);
+  }
+  var pages = [
+    P({ id:"PG000200", group:true, menuOn:true, name:"상품서비스", morder:0, created:"2026.01.13" }),
+    P({ id:"PG000210", group:true, menuOn:true, name:"요금제 추천", parent:"PG000200", morder:0 }),
+    P({ id:"PG000211", name:"상세", parent:"PG000210", url:"/product/list/detail", morder:0, menuOn:true }),
+    P({ id:"PG000220", name:"로밍", parent:"PG000200", url:"/product/roaming", morder:1 }),
+    P({ id:"PG000230", ptype:"builder", ct:"CT-00105", ctState:"pending", name:"쇼핑 홈", parent:"PG000200", url:"/shop/home", morder:2, menuOn:true, created:"2026.10.02", updated:"2026.10.05 14:10" }),
+    P({ id:"PG000250", group:true, menuOn:true, name:"T다이렉트샵", morder:1, created:"2026.02.01" }),
+    P({ id:"PG000251", ptype:"builder", ct:"CT-00041", ctState:"approved", name:"휴대폰", parent:"PG000250", url:"/shop/phone", morder:0, menuOn:true }),
+    P({ id:"PG000252", name:"액세서리", parent:"PG000250", url:"/shop/accessory", morder:1, menuOn:true }),
+    P({ id:"PG000300", group:true, menuOn:true, name:"혜택", morder:2, created:"2026.01.10" }),
+    P({ id:"PG000305", ptype:"builder", name:"혜택 홈", parent:"PG000300", url:"/benefit/home", morder:0, menuOn:true, created:"2026.10.05", updated:"2026.10.05 18:32" }),
+    P({ id:"PG000310", ptype:"builder", ct:"CT-00031", ctState:"approved", name:"T 멤버십", parent:"PG000300", url:"/benefit/membership", morder:1, menuOn:true, share:true, biz:["guide"], nav:["show","eng"], cvm:"CVM-2026-0090", reason:"RS0090 · 멤버십 혜택 안내", tagUse:true, tags:["멤버십","T멤버십","혜택"], keywords:"T 멤버십, 멤버십 혜택", ogTitle:"T 멤버십 | T world" }),
+    P({ id:"PG000320", group:true, menuOn:true, name:"혜택", parent:"PG000300", morder:2, created:"2026.01.08" }),
+    P({ id:"PG000321", name:"나의 혜택/할인", parent:"PG000320", url:"/my/benefits", morder:0, menuOn:true }),
+    P({ id:"PG000322", name:"레인보우 포인트", parent:"PG000321", url:"/my/benefits/rainbow", morder:0 }),
+    P({ id:"PG000323", ptype:"builder", ct:"CT-00027", ctState:"approved", name:"전체 혜택", parent:"PG000320", url:"/benefit/all", morder:1, menuOn:true }),
+    P({ id:"PG000324", name:"T 장기고객 프로그램", parent:"PG000320", url:"/my/benefits/loyal", morder:2, channels:["mweb"] }),
+    P({ id:"PG000400", group:true, menuOn:true, name:"고객지원", morder:3 }),
+    P({ id:"PG000410", group:true, menuOn:true, name:"자주 묻는 질문", parent:"PG000400", morder:0 }),
+    P({ id:"PG000411", name:"요금 FAQ", parent:"PG000410", url:"/support/faq/fee", morder:0, menuOn:true }),
+    P({ id:"PG000412", name:"청구서 보는 법", parent:"PG000411", url:"/support/faq/fee/bill", morder:0 }),
+    P({ id:"PG000414", name:"청구서 항목 안내", parent:"PG000412", url:"/support/faq/fee/bill/items", morder:0 }),
+    P({ id:"PG000415", group:true, name:"할인 항목", parent:"PG000414", morder:0 }),
+    P({ id:"PG000416", name:"결합 할인", parent:"PG000415", url:"/support/faq/fee/bill/items/discount/combine", morder:0 }),
+    P({ id:"PG000417", name:"가족결합 할인 상세", parent:"PG000416", url:"/support/faq/fee/bill/items/discount/combine/family", morder:0 }),
+    P({ id:"PG000418", name:"가족결합 해지 시 안내", parent:"PG000417", url:"/support/faq/fee/bill/items/discount/combine/family/cancel", morder:0 }),
+    P({ id:"PG000419", name:"요금 할인 항목", parent:"PG000415", url:"/support/faq/fee/bill/items/discount/fee", morder:1 }),
+    P({ id:"PG000413", name:"결합 FAQ", parent:"PG000410", url:"/support/faq/combine", morder:1 }),
+    P({ id:"PG000420", ptype:"ext", name:"1:1 문의", parent:"PG000400", url:"/support/inquiry", morder:1, menuOn:true, attr:"bp", auths:["로그인","간편로그인"] }),
+    P({ id:"PG000430", name:"환경설정", parent:"PG000400", url:"/setting", morder:2, auths:["로그인"] }),
+    P({ id:"PG000100", group:true, menuOn:true, name:"MY", morder:4, created:"2026.01.14", auths:["로그인","간편로그인"] }),
+    P({ id:"PG000110", group:true, menuOn:true, name:"나의 데이터/통화", parent:"PG000100", morder:0, created:"2026.01.13", auths:["로그인","간편로그인"] }),
+    P({ id:"PG000111", name:"T 가족모아 데이터", parent:"PG000110", url:"/myt-data/familydata/limit", morder:0, menuOn:true, updated:"2026.04.15 17:45", auths:["로그인","간편로그인"] }),
+    P({ id:"PG000113", name:"가족 구성원 관리", parent:"PG000111", url:"/myt-data/familydata/member", morder:0, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000112", name:"이용한도 설정", parent:"PG000110", url:"/myt-data/limit", morder:1, updated:"2026.04.14 15:20", share:true, biz:["change","view"], popCh:["aos","ios"], nav:["show"], lines:["A","B"], auths:["로그인","간편로그인"], cvm:"CVM-2026-0412", reason:"RS0412 · 데이터 한도 안내", tooltips:["TT-00213","TT-00214"], cs:["CS-4410"], shortUrls:["SU-00871"], maskOn:true, maskWay:"휴대폰 인증", maskAuth:"PASS", tagUse:true, tags:["데이터","이용한도","한도설정","가족모아"], keywords:"이용한도, 데이터 한도, 가족모아", ogTitle:"이용한도 설정 | T world", ogDesc:"T 가족모아 데이터 이용한도를 설정합니다." }),
+    P({ id:"PG000140", name:"나의 요금", parent:"PG000100", url:"/my/fee", morder:1, menuOn:true, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000150", group:true, menuOn:true, name:"나의 가입정보", parent:"PG000100", morder:2, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000151", name:"나의 요금제/부가서비스", parent:"PG000150", url:"/my/join/plan", morder:0, menuOn:true, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000152", name:"요금제 변경", parent:"PG000150", url:"/my/join/plan/change", morder:1, menuOn:true, auths:["로그인","간편로그인"], maskOn:true, maskWay:"휴대폰 인증", maskAuth:"PASS" }),
+    P({ id:"PG000153", name:"나의 결합 상품", parent:"PG000150", url:"/my/join/combine", morder:2, menuOn:true, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000154", name:"약정할인/기기 할부 정보", parent:"PG000150", url:"/my/join/contract", morder:3, menuOn:true, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000155", name:"휴대폰 일시정지", parent:"PG000150", url:"/my/join/pause", morder:4, menuOn:true, auths:["로그인"] }),
+    P({ id:"PG000156", name:"휴대폰 해지 신청/현황", parent:"PG000150", url:"/my/join/cancel", morder:5, menuOn:true, auths:["로그인"], maskOn:true, maskWay:"휴대폰 인증", maskAuth:"PASS" }),
+    P({ id:"PG000157", name:"인터넷/전화/B tv 가입 내역", parent:"PG000150", url:"/my/join/wire", morder:6, menuOn:true, auths:["로그인","간편로그인"], lines:["S"] }),
+    P({ id:"PG000158", name:"인터넷/전화/B tv 일시정지/해제", parent:"PG000150", url:"/my/join/wire/pause", morder:7, menuOn:true, auths:["로그인","간편로그인"], lines:["S"] }),
+    P({ id:"PG000159", name:"인터넷/전화/B tv 신청/현황", parent:"PG000150", url:"/my/join/wire/apply", morder:8, menuOn:true, auths:["로그인","간편로그인"], lines:["S"] }),
+    P({ id:"PG000160", name:"통화 내역", parent:"PG000100", url:"/my/call", morder:3, menuOn:true, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000170", name:"변경/해지", parent:"PG000100", url:"/my/change", morder:4, menuOn:true, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000180", name:"분실/정지/해제", parent:"PG000100", url:"/my/lost", morder:5, menuOn:true, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000185", name:"나의 쇼핑", parent:"PG000100", url:"/my/shopping", morder:6, menuOn:true, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000190", name:"나의 활동", parent:"PG000100", url:"/my/activity", morder:7, menuOn:true, auths:["로그인","간편로그인"] }),
+    P({ id:"PG000500", name:"이벤트", url:"/event/list", morder:5, use:false })
+  ];
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function snapT(p) { var o = {}; TF.forEach(function (k) { o[k] = p[k]; }); return clone(o); }
+  function snapD(p) { var o = {}; DF.forEach(function (k) { o[k] = p[k]; }); return clone(o); }
+  pages.forEach(function (p) { if (!p.parent) { p.icon = "icon_" + p.id.slice(-3) + ".png"; p.alt = p.name + " 아이콘"; } });
+  /* BFF 인증 카탈로그 (예시) */
+  var PROC = [["","선택"],["join","가입"],["change","변경"],["cancel","해지"],["view","조회"],["etc","기타"]];
+  var BFF = (function () {
+    var nm = [["인증 토큰 조회","token","고객"],["사용자 인증 확인","user","사용자"],["서비스 접근 인증","access","서비스"],["고객 인증 조회","customer","고객"],["인증 상태 확인","status","서비스"],["접근 권한 확인","permission","사용자"],["회원 인증 처리","member","회원"],["인증 이력 조회","history","관리자"],["채널 인증 확인","channel","채널"],["통합 인증 조회","integration","통합"],["본인 확인","identity","고객"],["휴대폰 인증 요청","phone","고객"],["PASS 인증 결과","pass","고객"],["간편인증 검증","simple","사용자"],["세션 연장","session","사용자"],["회선 권한 조회","line","회선"],["법인 사용자 확인","corp","법인"],["업무 인증 확인","biz","업무"],["마스킹 해제 인증","unmask","고객"],["단말 인증 확인","device","단말"],["가족 대표 인증","family","고객"],["결합 권한 확인","combine","회원"],["요금 조회 권한","fee","고객"],["데이터 한도 권한","limit","고객"],["해지 인증 확인","cancel","고객"]];
+    return nm.map(function (x, i) { var n = i + 1, b = function (k) { return ((n * 7 + k * 3) % 5) < 3; }; return { id: "BFF-" + String(n).padStart(3, "0"), api: x[0], url: "/api/v1/auth/" + x[1], scope: x[2], mg: b(1), md: b(2), mo: b(3), ag: b(4), ad: b(5), ao: b(6) }; });
+  })();
+  function bffById(id) { return BFF.filter(function (b) { return b.id === id; })[0]; }
+  (function seedDev() {
+    var p = byId("PG000112"); p.proc = "change"; p.dualAuth = true; p.mwebJob = "MW-DATA-LIMIT-01"; p.appJob = "AP-DATA-LIMIT-01"; p.guideUrl = "/guide/data/limit"; p.blockUrl = "/common/util/service-block"; p.bff = BFF.slice(0, 20).map(function (b) { return b.id; });
+    var q = byId("PG000152"); q.proc = "change"; q.mwebJob = "MW-PLAN-CHG-01"; q.appJob = "AP-PLAN-CHG-01"; q.bff = ["BFF-001", "BFF-002", "BFF-013"];
+    var r = byId("PG000156"); r.proc = "cancel"; r.dualAuth = true; r.blockFrom = "2026-10-20"; r.blockTo = "2026-10-21"; r.bff = ["BFF-001", "BFF-025"];
+  })();
+  pages.forEach(function (p) { p.tlive = snapT(p); p.dlive = snapD(p); });
+
+  /* 변경/승인 이력 */
+  var REQS = [
+    { no: "MR-260925-02", kind: "tree", title: "운영 정보 변경 1건", by: "김혜윤(P217326)", at: "2026.09.25 10:12", status: "rejected", dby: "정지솔(SSP12344)", dat: "2026.09.25 15:40", why: "3뎁스 밖으로 빠지는 메뉴(T 가족모아 데이터) 영향 확인 후 다시 요청해 주세요.",
+      items: [{ id: "PG000110", name: "나의 데이터/통화", ch: [{ l: "경로", from: "MY", to: "혜택 > 혜택" }] }] },
+    { no: "MR-260930-01", kind: "tree", title: "운영 정보 변경 3건", by: "김혜윤(P217326)", at: "2026.09.30 17:20", status: "approved", dby: "정지솔(SSP12344)", dat: "2026.10.01 20:01",
+      items: [{ id: "PG000420", name: "1:1 문의", ch: [{ l: "메뉴 노출", from: "미노출", to: "노출" }, { l: "로그인 권한", from: "전체", to: "로그인, 간편로그인" }] }, { id: "PG000305", name: "혜택 홈", ch: [{ l: "신규 추가", from: "—", to: "혜택 > 혜택 홈" }, { l: "URL", from: "—", to: "/benefit/home (확정)" }, { l: "메뉴 노출", from: "—", to: "노출 (빌더 승인 후 · 예약)" }] }, { id: "PG000230", name: "쇼핑 홈", ch: [{ l: "신규 추가", from: "—", to: "상품서비스 > 쇼핑 홈" }] }] },
+    { no: "DR-261002-03", kind: "dev", pid: "PG000310", title: "T 멤버십 · 개발 설정", by: "김혜윤(P217326)", at: "2026.10.02 11:05", status: "approved", dby: "정지솔(SSP12344)", dat: "2026.10.02 16:30",
+      items: [{ id: "PG000310", name: "T 멤버십", ch: [{ l: "CVM 접촉이벤트", from: "—", to: "CVM-2026-0090" }, { l: "메타태그", from: "—", to: "keywords · og:title" }] }] }
+  ];
+  function pendingTree() { return REQS.filter(function (r) { return r.kind === "tree" && r.status === "pending"; })[0] || null; }
+  function pendingDev(p) { return REQS.filter(function (r) { return r.kind === "dev" && r.pid === p.id && r.status === "pending"; })[0] || null; }
+
+  /* ============================================================ 모델 */
+  function byId(id) { return pages.filter(function (p) { return p.id === id; })[0]; }
+  function kids(pid) { return pages.filter(function (p) { return p.parent === pid; }).sort(function (a, b) { return a.morder - b.morder; }); }
+  function descendants(pid) { var out = []; kids(pid).forEach(function (c) { out.push(c); out = out.concat(descendants(c.id)); }); return out; }
+  function tree(pid) { return descendants(pid); }
+  function height(p) { var h = 0; kids(p.id).forEach(function (c) { h = Math.max(h, 1 + height(c)); }); return h; }
+  function depth(p) { var d = 1, n = p; while (n.parent) { n = byId(n.parent); d++; } return d; }
+  function crumb(p) { var a = [], n = p; while (n) { a.unshift(n.name); n = n.parent ? byId(n.parent) : null; } return a.join(" > "); }
+  function liveCrumbOf(pid) { var a = [], n = pid ? byId(pid) : null; while (n && n.tlive) { a.unshift(n.tlive.name); n = n.tlive.parent ? byId(n.tlive.parent) : null; } return a.join(" > ") || "최상위"; }
+  function parentCrumb(p) { return p.parent ? crumb(byId(p.parent)) : "없음 (최상위)"; }
+  function revCrumb(p) { var a = [], n = p; while (n) { a.push(n.name); n = n.parent ? byId(n.parent) : null; } return a.join(" < "); }
+  function effUse(p) { var n = p; while (n) { if (!n.use || n.del) return false; n = n.parent ? byId(n.parent) : null; } return true; }
+  function chips(list, cls) { return list && list.length ? list.map(function (t) { return '<span class="tag ' + (cls || "gray") + '">' + esc(t) + "</span>"; }).join(" ") : '<span class="hint">—</span>'; }
+  function labelsOf(defs, keys) { return defs.filter(function (d) { return keys.indexOf(d[0]) !== -1; }).map(function (d) { return d[1]; }); }
+  function now() { var d = new Date(); function z(n) { return (n < 10 ? "0" : "") + n; } return d.getFullYear() + "." + z(d.getMonth() + 1) + "." + z(d.getDate()) + " " + z(d.getHours()) + ":" + z(d.getMinutes()); }
+  function stamp() { return now().slice(2, 10).replace(/\./g, ""); }
+  function urlLocked(p) { return !!(p.tlive && p.tlive.url); }
+  function builderOk(p) { return p.ptype !== "builder" || (!!p.ct && p.ctState === "approved"); }
+  function builderWhy(p) { return p.ptype !== "builder" ? "" : !p.ct ? "빌더 미연결" : p.ctState !== "approved" ? "빌더 화면 승인 전" : ""; }
+  function running(p) { return !!(p.tlive && p.tlive.use); }
+  function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+  function fmt(k, v) {
+    if (k === "channels") return labelsOf(CH, v || []).join(", ") || "—";
+    if (k === "lines") return (v || []).indexOf("all") !== -1 ? "전체" : labelsOf(LINES, v || []).join(", ") || "—";
+    if (k === "auths") return (v || []).length === AUTHS.length ? "전체" : (v || []).join(", ") || "—";
+    if (k === "use") return v ? "사용" : "사용안함";
+    if (k === "menuOn") return v ? "노출" : "미노출";
+    if (k === "search" || k === "share") return v ? "사용" : "사용안함";
+    if (k === "ptype") return PTYPE[v];
+    if (k === "group") return v ? "등록안함 (URL 미등록)" : "등록";
+    if (k === "icon") return v || "—";
+    return v === "" || v == null ? "—" : String(v);
+  }
+
+  /* ---- 트리 변경 (작성본 vs 반영본) */
+  function relIdx(p, ver) {
+    var L = p.tlive, sib = pages.filter(function (x) { return x.tlive && !x.del && x.tlive.parent === L.parent && x.parent === p.parent; });
+    sib.sort(function (a, b) { return ver === "live" ? a.tlive.morder - b.tlive.morder : a.morder - b.morder; });
+    return sib.indexOf(p);
+  }
+  function tChanges(p) {
+    var L = p.tlive;
+    if (!L) { var a = [{ l: "신규 추가", from: "—", to: crumb(p) }]; if (p.url) a.push({ l: "URL", from: "—", to: p.url }); if (p.menuOn) a.push({ l: "메뉴 노출", from: "—", to: "노출" + (builderWhy(p) ? " (예약)" : "") }); return a; }
+    if (p.del) return [{ l: "삭제", from: crumb(p), to: "—" }];
+    var out = [];
+    TF.forEach(function (k) {
+      if (k === "del" || k === "alt" || k === "morder") return;
+      if (k === "parent") { if (L.parent !== p.parent) out.push({ l: "경로", from: liveCrumbOf(L.parent), to: parentCrumb(p) }); return; }
+      if (k === "icon") { if (L.icon !== p.icon || (L.alt || "") !== (p.alt || "")) out.push({ l: "아이콘", from: L.icon || "—", to: p.icon || "—" }); return; }
+      if (!same(L[k], p[k])) out.push({ l: TFL[k], from: fmt(k, L[k]), to: fmt(k, p[k]) });
+    });
+    if (L.parent === p.parent && relIdx(p, "live") !== relIdx(p, "draft")) out.push({ l: "순서", from: (relIdx(p, "live") + 1) + "번째", to: (relIdx(p, "draft") + 1) + "번째" });
+    return out;
+  }
+  function tDiff(p) { return tChanges(p).map(function (c) { return c.l; }); }
+  function changed() { return pages.filter(function (p) { return tChanges(p).length; }); }
+  function treeState(p) {
+    var pr = pendingTree(); if (pr && pr.items.some(function (i) { return i.id === p.id; })) return '<span class="tag amber">승인 대기</span>';
+    if (!p.tlive) return '<span class="tag ok" style="background:var(--new)">신규</span>';
+    if (p.del) return '<span class="tag warn">삭제 예정</span>';
+    if (tDiff(p).length) return '<span class="tag acc">작성본</span>';
+    return '<span class="tag gray">반영</span>';
+  }
+  function devKey(p) { if (pendingDev(p)) return "pending"; if (p.drej) return "rejected"; if (!same(snapD(p), p.dlive)) return "draft"; return "live"; }
+  function devChip(p) { return { pending: '<span class="tag amber">승인 대기</span>', rejected: '<span class="tag warn">반려</span>', draft: '<span class="tag gray">작성 중</span>', live: '<span class="tag ok">승인 완료</span>' }[devKey(p)]; }
+  function devChanges(p) { var out = []; DF.forEach(function (k) { if (!same(p[k], p.dlive[k])) { var l = DFL[k]; if (!out.some(function (c) { return c.l === l; })) out.push({ l: l, from: "", to: "" }); } }); return out; }
+
+  /* ---- 메뉴 노출 상태 */
+  function menuBlock(p) { if (!effUse(p)) return "사용안함"; if (depth(p) > MENU_MAX) return "3뎁스 밖"; return ""; }
+  function offAncestor(p) { var n = p.parent ? byId(p.parent) : null; while (n) { if (!n.menuOn || menuBlock(n)) return n; n = n.parent ? byId(n.parent) : null; } return null; }
+  function hasOnKid(p) { return kids(p.id).some(function (c) { return depth(c) <= MENU_MAX && c.menuOn && !menuBlock(c) && !c.del && (c.group ? hasOnKid(c) : builderOk(c)); }); }
+  function menuKey(p) {
+    if (depth(p) > MENU_MAX) return "out";
+    if (!p.menuOn || menuBlock(p) || p.del || offAncestor(p)) return "off";
+    if (p.group) return hasOnKid(p) ? "on" : "off";
+    return builderOk(p) ? "on" : "resv";
+  }
+  function menuChip(p) {
+    if (depth(p) > MENU_MAX) return '<span class="tag gray">대상 아님</span>';
+    if (!p.menuOn) return '<span class="tag gray">미노출</span>';
+    var b = menuBlock(p); if (b) return '<span class="tag warn">노출 불가 · ' + esc(b) + "</span>";
+    if (offAncestor(p)) return '<span class="tag gray">노출 · 상위 미노출</span>';
+    if (p.group && !hasOnKid(p)) return '<span class="tag amber">노출 · 하위 없음</span>';
+    var bw = builderWhy(p); if (bw) return '<span class="tag amber" title="빌더 화면이 승인되면 FO에 자동으로 나타납니다">노출 예약 · ' + esc(bw) + "</span>";
+    return '<span class="tag ok">노출</span>';
+  }
+  function menuBadge(p) { return { on: '<span class="tag ok">노출</span>', resv: '<span class="tag amber" title="빌더 화면 승인 시 자동 노출">노출 예약</span>', off: '<span class="tag gray">미노출</span>', out: '<span class="tag gray" style="opacity:.7">대상 아님</span>' }[menuKey(p)]; }
+  function toggleMenu(p, on) {
+    p.menuOn = on; var up = [];
+    if (on) { var n = p.parent ? byId(p.parent) : null; while (n) { if (!n.menuOn && !menuBlock(n)) { n.menuOn = true; up.push(n.name); } n = n.parent ? byId(n.parent) : null; } }
+    return up;
+  }
+
+  /* ---- 이동 */
+  function moveImpact(p, np) {
+    var kin = descendants(p.id), all = [p].concat(kin), base = np ? depth(byId(np)) + 1 : 1;
+    var rel = {}; rel[p.id] = 0; kin.forEach(function (c) { rel[c.id] = rel[c.parent] + 1; });
+    var out3 = all.filter(function (x) { return base + rel[x.id] > MENU_MAX; });
+    var on = all.filter(function (x) { return x.menuOn && effUse(x); });
+    return { all: all, kin: kin, out3: out3, keep: on.filter(function (x) { return out3.indexOf(x) === -1; }), lost: on.filter(function (x) { return out3.indexOf(x) !== -1; }), deepest: base + height(p) };
+  }
+  function dropWhy(d, np) {
+    if (np === d.id || descendants(d.id).some(function (c) { return c.id === np; })) return "자기 자신이나 하위 아래로는 옮길 수 없습니다";
+    if (np && (!byId(np).use || byId(np).del)) return "사용안함·삭제 예정 페이지 아래에는 둘 수 없습니다";
+    var nd = (np ? depth(byId(np)) + 1 : 1) + height(d);
+    if (nd > PAGE_MAX) return "옮기면 최하위가 " + nd + "뎁스가 되어 최대 " + PAGE_MAX + "뎁스를 넘습니다";
+    return "";
+  }
+  function putAt(d, np, idx) {
+    var im = d.parent !== np ? moveImpact(d, np) : null;
+    d.parent = np;
+    var sib = kids(np).filter(function (x) { return x !== d; }); if (idx == null || idx > sib.length) idx = sib.length;
+    sib.splice(idx, 0, d); sib.forEach(function (x, k) { x.morder = k; });
+    if (im) im.out3.forEach(function (x) { x.menuOn = false; });
+    return im;
+  }
+
+  /* ---- 승인 */
+  function decide(r, ok, why) {
+    r.status = ok ? "approved" : "rejected"; r.dby = "정지솔(SSP12344)"; r.dat = now(); if (why) r.why = why;
+    if (r.kind === "dev") { var p = byId(r.pid); if (p) { if (ok) { p.dlive = snapD(p); p.drej = false; } else p.drej = true; } }
+    else if (ok) {
+      pages = pages.filter(function (p) { return !p.del; });
+      pages.forEach(function (p) { p.tlive = snapT(p); });
+      lastLive = r.dat; O.saved = null;
+    }
+    return r.no + (ok ? " 승인 · FO 반영" + (r.kind === "tree" ? " · URL 확정" : "") : " 반려 · 작성본은 그대로 남아 있습니다");
+  }
+  var lastLive = "2026.10.01 20:01", lastSave = null;
+
+  /* ---- FO 미리보기 */
+  function V(p, ver) { if (ver === "live") return p.tlive; return p.del ? null : p; }
+  function vKids(pid, ver) { return pages.filter(function (p) { var v = V(p, ver); return v && v.parent === pid; }).sort(function (a, b) { return V(a, ver).morder - V(b, ver).morder; }); }
+  function vShown(p, ver, d) {
+    var v = V(p, ver); if (!v || !v.menuOn || !v.use || d > MENU_MAX) return false;
+    if (v.group) return vKids(p.id, ver).some(function (c) { return vShown(c, ver, d + 1); });
+    return !!v.url && builderOk(p);
+  }
+  function reserved(ver) {
+    return pages.filter(function (p) {
+      var v = V(p, ver); if (!v || v.group || !v.menuOn || !v.use || !v.url || builderOk(p) || p.ptype !== "builder") return false;
+      var d = 1, n = p; while (V(n, ver) && V(n, ver).parent) { n = byId(V(n, ver).parent); d++; var nv = V(n, ver); if (!nv || !nv.menuOn || !nv.use) return false; }
+      return d <= MENU_MAX;
+    });
+  }
+  function shownIds(ver) { var o = {}; (function walk(pid, d) { vKids(pid, ver).forEach(function (p) { if (vShown(p, ver, d)) { o[p.id] = 1; walk(p.id, d + 1); } }); })(null, 1); return o; }
+  function foHtml(ver) {
+    var h = "", liveSet = ver === "draft" ? shownIds("live") : null;
+    (function walk(pid, d) {
+      vKids(pid, ver).forEach(function (p) {
+        if (!vShown(p, ver, d)) return; var v = V(p, ver), mark = "";
+        if (liveSet) { var df = tDiff(p); if (!liveSet[p.id]) mark = ' <span class="tag ok sm">추가</span>'; else if (df.indexOf("경로") !== -1) mark = ' <span class="tag acc sm">이동</span>'; else if (df.indexOf("순서") !== -1) mark = ' <span class="tag acc sm">순서</span>'; else if (df.indexOf("페이지명") !== -1) mark = ' <span class="tag acc sm">이름</span>'; }
+        var pad = ' style="padding-left:' + ((d - 1) * 14) + 'px"';
+        if (d === 1) h += '<div class="d1"' + pad + '><span class="ico">' + (v.icon ? "◆" : "◇") + "</span>" + esc(v.name) + mark + "</div>";
+        else if (v.group) h += '<div class="g"' + pad + ">" + esc(v.name) + mark + "</div>";
+        else h += '<div class="i"' + pad + ">" + esc(v.name) + mark + '<span class="u">' + esc(v.url) + "</span></div>";
+        walk(p.id, d + 1);
+      });
+    })(null, 1);
+    if (liveSet) { var ds = shownIds("draft"), gone = Object.keys(liveSet).filter(function (id) { return !ds[id]; }).map(byId).filter(Boolean); if (gone.length) h += '<div class="gone">승인되면 빠지는 메뉴 · ' + gone.map(function (x) { return esc(x.tlive.name); }).join(", ") + "</div>"; }
+    var rv = reserved(ver); if (rv.length) h += '<div class="resv">노출 예약 · 빌더 화면 승인 시 자동 노출 — ' + rv.map(function (x) { return esc(V(x, ver).name) + " (" + builderWhy(x) + ")"; }).join(", ") + "</div>";
+    return h || '<div class="hint">전시 중인 메뉴가 없습니다.</div>';
+  }
+
+  /* ============================================================ 공통 UI */
+  var card = document.getElementById("card");
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function toast(m) { var r = document.getElementById("toast-root"); r.innerHTML = '<div class="toast" role="status">' + esc(m) + "</div>"; clearTimeout(toast.t); toast.t = setTimeout(function () { r.innerHTML = ""; }, 3800); }
+  function closeModal() { document.getElementById("modal-root").innerHTML = ""; }
+  function showModal(o) {
+    var root = document.getElementById("modal-root");
+    root.innerHTML = '<div class="ovl"><div class="modal ' + (o.cls || "") + '" role="dialog" aria-modal="true"><div class="mh"><h3>' + esc(o.title) + '</h3><button class="x" data-act="close" aria-label="닫기">×</button></div>' + (o.html || "") +
+      '<div class="mactions">' + (o.noCancel ? "" : '<button class="btn" data-act="cancel">' + esc(o.cancelText || "취소") + "</button>") + '<button class="btn primary" data-act="ok">' + esc(o.okText || "확인") + "</button></div></div></div>";
+    root.querySelectorAll("[data-act]").forEach(function (b) { b.onclick = function () { var a = b.getAttribute("data-act"); if (a === "ok" && o.validate && !o.validate(root)) return; closeModal(); if (a === "ok" && o.onOk) o.onOk(root); if (a === "cancel" && o.onCancel) o.onCancel(); if (a === "close" && o.onClose) o.onClose(); }; });
+    if (o.bind) o.bind(root);
+  }
+  function alertBox(title, sub, onOk, opts) { opts = opts || {}; showModal({ cls: "alert", title: title, html: sub ? "<p>" + sub + "</p>" : "", okText: opts.okText, noCancel: opts.noCancel, onOk: onOk }); }
+  function rejectBox(r, after) {
+    showModal({ title: "반려하시겠습니까?", okText: "반려", html: "<p>" + esc(r.no) + " · " + esc(r.title) + '</p><p>반려 사유</p><textarea id="rj-why" style="width:100%;height:70px;border:1px solid var(--line-2);border-radius:6px;padding:8px;background:var(--surface)" placeholder="요청자에게 보여줄 사유를 입력하세요"></textarea>',
+      validate: function (root) { r._why = root.querySelector("#rj-why").value.trim(); if (!r._why) { toast("반려 사유를 입력해 주세요"); return false; } return true; },
+      onOk: function () { toast(decide(r, false, r._why)); after(); } });
+  }
+  function confirmMove(p, np, onOk) {
+    var im = moveImpact(p, np), dest = np ? crumb(byId(np)) : "최상위";
+    showModal({ title: "경로를 이동하시겠습니까?", okText: "이동", html: "<p>「<b>" + esc(p.name) + "</b>」" + (im.kin.length ? "과 하위 " + im.kin.length + "개를" : "을") + " 「<b>" + esc(dest) + "</b>」 아래로 옮깁니다. 페이지 ID와 URL은 그대로입니다.</p>" +
+      '<div class="diff"><b>메뉴 노출이 새 자리로 따라갑니다.</b><ul><li>메뉴 유지 ' + im.keep.length + "건</li>" + (im.lost.length ? '<li style="color:var(--warn)">3뎁스를 벗어나 메뉴에서 빠짐 ' + im.lost.length + "건 — " + im.lost.map(function (x) { return esc(x.name); }).join(", ") + "</li>" : "<li>3뎁스를 벗어나는 페이지 없음</li>") + "<li>최하위 뎁스 D" + im.deepest + " / " + PAGE_MAX + "</li></ul></div>", onOk: onOk });
+  }
+  function openPathPicker(p, onPick) {
+    var q = "", pick = p.parent, pg = 1, PER = 8;
+    function rows() { return [{ id: null, name: "없음 (최상위 · 1뎁스)", d: 0 }].concat(tree(null).filter(function (x) { return !x.del; }).map(function (x) { return { id: x.id, name: crumb(x), d: depth(x) }; })).filter(function (r) { return !q || r.name.indexOf(q) !== -1; }); }
+    function why(r) { var w = dropWhy(p, r.id); if (w.indexOf("자기") === 0) return "자기 자신·하위"; if (w.indexOf("사용안함") === 0) return "사용안함"; if (w) return "9뎁스 초과"; return ""; }
+    function cmpHtml() {
+      if (pick === p.parent) return '<div class="hint" style="margin-top:8px">현재 경로입니다 — 목록에서 새 상위를 고르세요</div>';
+      var im = moveImpact(p, pick), nd = pick ? depth(byId(pick)) + 1 : 1;
+      return '<div class="cmp"><div class="col"><div class="h">이전 (현재 경로)</div>' + esc(crumb(p)) + '<div class="hint">D' + depth(p) + '</div></div><div class="arrow">→</div><div class="col after"><div class="h">이후 (선택한 경로)</div>' + esc((pick ? crumb(byId(pick)) + " > " : "") + p.name) + '<div class="hint">D' + nd + (nd > MENU_MAX ? ' · <span style="color:var(--warn)">3뎁스 밖 — 메뉴 대상 아님</span>' : "") + "</div></div></div>" +
+        '<div class="cmp-impact">' + (im.kin.length ? "하위 " + im.kin.length + "개 함께 이동 · " : "") + "메뉴 유지 " + im.keep.length + "건" + (im.lost.length ? ' · <span class="bad">3뎁스 밖으로 빠짐 ' + im.lost.length + "건</span>" : "") + " · 최하위 D" + im.deepest + "</div>";
+    }
+    function html() {
+      var rs = rows(), max = Math.max(1, Math.ceil(rs.length / PER)), s = rs.slice((pg - 1) * PER, pg * PER);
+      return '<div class="picker"><div class="srch"><label class="opt"><b>검색어</b></label><input type="text" id="pk-q" placeholder="경로 명을 검색하세요" value="' + esc(q) + '"><button class="btn" id="pk-reset">초기화</button><button class="btn primary" id="pk-go">조회</button></div>' +
+        "<div class='tblwrap'><table><thead><tr><th style='width:40px'></th><th>경로</th><th style='width:90px'>Depth</th></tr></thead><tbody>" +
+        s.map(function (r) { var w = why(r); return '<tr class="' + (w ? "off" : "") + '"><td><input type="radio" name="pk" value="' + (r.id || "") + '"' + (w ? " disabled" : "") + (pick === r.id ? " checked" : "") + "></td><td>" + esc(r.name) + (w ? '<span class="why">' + esc(w) + "</span>" : "") + "</td><td>" + (r.d ? r.d + " Depth" : "—") + "</td></tr>"; }).join("") +
+        '</tbody></table></div><div class="pager">' + Array.apply(null, { length: max }).map(function (_, i) { return '<button data-pg="' + (i + 1) + '"' + (pg === i + 1 ? ' class="on"' : "") + ">" + (i + 1) + "</button>"; }).join("") + '</div><div id="pk-cmp">' + cmpHtml() + "</div></div>";
+    }
+    function paint() {
+      showModal({ cls: "wide xl", title: "경로 이동", html: html(), okText: "이동", onOk: function () { if (pick !== p.parent) onPick(pick); }, bind: function (root) {
+        root.querySelectorAll('input[name="pk"]').forEach(function (r) { r.onchange = function () { pick = r.value || null; root.querySelector("#pk-cmp").innerHTML = cmpHtml(); }; });
+        root.querySelectorAll("[data-pg]").forEach(function (b) { b.onclick = function () { pg = +b.getAttribute("data-pg"); paint(); }; });
+        root.querySelector("#pk-go").onclick = function () { q = root.querySelector("#pk-q").value.trim(); pg = 1; paint(); };
+        root.querySelector("#pk-q").onkeydown = function (e) { if (e.key === "Enter") root.querySelector("#pk-go").click(); };
+        root.querySelector("#pk-reset").onclick = function () { q = ""; pg = 1; paint(); };
+      } });
+    }
+    paint();
+  }
+
+  /* ============================================================ 화면 상태 */
+  // 뷰 초기값을 URL 해시에서 — 어드민 LNB가 #ops/#dev로 화면 전환(내부 LNB 대체). 2026-10-06
+  var view = (location.hash === "#dev" ? "dev" : "ops"), current = null, editing = null;
+  var O = { q: "", ch: "", foOnly: false, sel: "PG000150", exp: {}, edit: false, saved: null, focus: null };
+  var DL0 = { field: "name", q: "", ptype: "", st: "", mask: "", page: 1 }, DL = Object.assign({}, DL0), PER = 10;
+  var D = { tab: "info", open: {} };
+  var H = { kind: "", status: "", q: "", open: {} };
+  O.exp.PG000100 = true; O.exp.PG000150 = true;
+
+  function header(bc, title) { return '<div class="crumb"><span>홈</span><span>›</span><span>전시관리</span><span>›</span>' + bc.map(function (b, i) { return (i ? "<span>›</span>" : "") + '<span class="' + (i === bc.length - 1 ? "cur" : "") + '">' + esc(b) + "</span>"; }).join("") + '</div><div class="hrow"><h1>' + esc(title) + '</h1></div>'; }
+  function topTabs(on) {
+    var pend = REQS.filter(function (r) { return r.status === "pending" && r.kind !== "dev"; }).length;
+    return '<div class="tabs" role="tablist">' + [["ops", "운영 정보 관리"], ["hist", "변경/승인 이력"]].map(function (t) { return '<button class="tab" role="tab" data-view="' + t[0] + '" aria-selected="' + (on === t[0]) + '">' + t[1] + (t[0] === "hist" && pend ? ' <span class="tag amber sm">대기 ' + pend + "</span>" : "") + "</button>"; }).join("") + "</div>";
+  }
+  function opsBanner() {
+    var pr = pendingTree(), n = changed().length;
+    if (pr) return '<div class="banner"><span class="tag amber">운영 정보 승인 대기</span><span>' + esc(pr.no) + " · " + pr.items.length + "개 페이지 · " + esc(pr.at) + ' 요청 — 승인/반려 전까지 수정이 잠깁니다. FO는 반영본 그대로입니다.</span><span class="spacer"></span><button class="btn sm" data-goh="' + pr.no + '">이력에서 보기</button></div>';
+    if (n && !O.edit) return '<div class="banner"><span class="tag amber">임시저장 ' + n + "건</span><span>승인 요청 전인 변경이 있습니다" + (lastSave ? " · 최종 임시저장 " + esc(lastSave) + " 김혜윤" : "") + '.</span><span class="spacer"></span><button class="btn sm" data-resume>이어서 수정</button></div>';
+    return "";
+  }
+  function bindCommon() {
+    card.querySelectorAll("[data-view]").forEach(function (b) { b.onclick = function () { var v = b.getAttribute("data-view"); guardLeave(function () { view = v; render(); }); }; });
+    card.querySelectorAll("[data-resume]").forEach(function (b) { b.onclick = function () { view = "ops"; startEdit(); render(); }; });
+    card.querySelectorAll("[data-goh]").forEach(function (b) { b.onclick = function () { guardLeave(function () { H.open = {}; H.open[b.getAttribute("data-goh")] = true; H.q = ""; view = "hist"; render(); }); }; });
+  }
+  function typeChip(p) { return '<span class="tag type ' + p.ptype + '">' + PTYPE[p.ptype] + "</span>"; }
+  function ctLine(p) { if (p.ptype !== "builder") return ""; if (!p.ct) return '<span class="ctline warn">빌더 미연결</span>'; return '<span class="ctline ' + (p.ctState === "approved" ? "ok" : "amb") + '">' + esc(p.ct) + " · " + (p.ctState === "approved" ? "화면 승인" : "화면 승인 전") + "</span>"; }
+  function chChips(list) {
+    var out = []; if (list.indexOf("pcweb") !== -1) out.push("PC웹"); if (list.indexOf("mweb") !== -1) out.push("모바일웹");
+    var a = list.indexOf("aos") !== -1, i = list.indexOf("ios") !== -1; if (a && i) out.push("Android / iOS 앱"); else if (a) out.push("Android 앱"); else if (i) out.push("iOS 앱");
+    return out.map(function (c) { return '<span class="tag ch">' + c + "</span>"; }).join(" ") || '<span class="hint">—</span>';
+  }
+  function sel(id, opts, val, w) { return '<select id="' + id + '" style="width:' + w + 'px">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(val) === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select>"; }
+
+  /* ============================================================ [운영 정보 관리] — 1 Depth | 2 Depth ~ | 상세 */
+  function snapAll() { return { ids: pages.map(function (p) { return p.id; }), objs: clone(pages.filter(function (p) { return !p.tlive; })), v: pages.reduce(function (o, p) { o[p.id] = snapT(p); return o; }, {}) }; }
+  function restoreAll(s) {
+    pages = pages.filter(function (p) { return s.ids.indexOf(p.id) !== -1; });
+    s.objs.forEach(function (o) { if (!byId(o.id)) pages.push(clone(o)); });
+    pages.forEach(function (p) { var v = s.v[p.id]; if (v) TF.forEach(function (k) { p[k] = clone(v[k]); }); });
+    if (O.sel && !byId(O.sel)) O.sel = null;
+  }
+  function unsavedN() { if (!O.saved) return 0; var n = 0; pages.forEach(function (p) { var v = O.saved.v[p.id]; if (!v) { n++; return; } if (!same(v, snapT(p))) n++; }); O.saved.ids.forEach(function (id) { if (!byId(id)) n++; }); return n; }
+  function startEdit() { if (O.edit || pendingTree()) return; O.edit = true; O.saved = snapAll(); }
+  function guardLeave(next) {
+    if (view === "ops" && O.edit) { var n = unsavedN(); if (n) { alertBox("수정을 취소하시겠습니까?", "임시저장하지 않은 변경 " + n + "건이 사라집니다.", function () { restoreAll(O.saved); O.edit = false; O.saved = null; next(); }); return; } O.edit = false; O.saved = null; }
+    if (view === "devedit" && editing) { alertBox("작성 중인 내용이 있습니다", "이동하면 입력한 정보는 저장되지 않습니다.", function () { editing = null; next(); }); return; }
+    next();
+  }
+  function rootOf(p) { var r = p; while (r.parent) r = byId(r.parent); return r; }
+  function openTo(p) { var n = p.parent ? byId(p.parent) : null; while (n) { O.exp[n.id] = true; n = n.parent ? byId(n.parent) : null; } }
+  function goOps(id, edit) { guardLeave(function () { view = "ops"; if (edit) startEdit(); var p = id ? byId(id) : null; if (p) { O.sel = id; O.focus = id; openTo(p); O.q = ""; O.ch = ""; O.foOnly = false; } render(); }); }
+  function keepSet() {
+    if (!O.q && !O.ch && !O.foOnly) return null; var keep = {};
+    pages.filter(function (p) { return (!O.q || p.name.indexOf(O.q) !== -1) && (!O.ch || p.channels.indexOf(O.ch) !== -1) && (!O.foOnly || menuKey(p) === "on" || menuKey(p) === "resv"); })
+      .forEach(function (p) { var n = p; while (n) { keep[n.id] = 1; n = n.parent ? byId(n.parent) : null; } });
+    return keep;
+  }
+  function validateReq(list) {
+    var bad = [];
+    list.forEach(function (p) { if (p.del) return; if (!p.name) bad.push(p.id + " 메뉴명 없음"); if (!p.group && !p.url) bad.push("「" + p.name + "」 URL 필요"); if (!p.channels.length) bad.push("「" + p.name + "」 운영 채널 없음"); });
+    return bad;
+  }
+  function diffMark(p, k) { if (!p.tlive || p.del) return ""; var L = p.tlive; var dif = k === "icon" ? (L.icon !== p.icon || (L.alt || "") !== (p.alt || "")) : k === "parent" ? (L.parent !== p.parent || relIdx(p, "live") !== relIdx(p, "draft")) : !same(L[k], p[k]); return dif ? '<span class="diffhint" title="반영본: ' + esc(k === "parent" ? liveCrumbOf(L.parent) : fmt(k, L[k])) + '">변경</span>' : ""; }
+  function parentDiff(p, k) { var par = p.parent ? byId(p.parent) : null; if (!par || same(par[k], p[k])) return ""; return '<span class="block hint amb">상위 「' + esc(par.name) + "」와 다름 (" + esc(fmt(k, par[k])) + ")</span>"; }
+  function renderOps() {
+    var ed = O.edit, ch = changed(), un = ed ? unsavedN() : 0, pr = pendingTree(), keep = ed ? null : keepSet();
+    function vis(p) { return !keep || keep[p.id]; }
+    var roots = kids(null).filter(vis);
+    var sel0 = O.sel ? byId(O.sel) : null; if (sel0 && !vis(sel0)) sel0 = null;
+    if (!sel0 && roots[0]) { sel0 = roots[0]; O.sel = sel0.id; }
+    function rowHtml(p, kc, open) {
+      var d = depth(p), df = tDiff(p), bd = [], inPr = pr && pr.items.some(function (i) { return i.id === p.id; });
+      if (!p.tlive) bd.push('<span class="tag ok sm">신규</span>'); else if (p.del) bd.push('<span class="tag warn sm">삭제 예정</span>'); else if (df.length) bd.push('<span class="tag ' + (inPr ? "amber" : "acc") + ' sm" title="' + esc(df.join(" · ")) + '">' + (inPr ? "승인 대기" : "변경") + "</span>");
+      if (!p.group && !p.url) bd.push('<span class="tag warn sm">URL 필요</span>');
+      if (!p.use) bd.push('<span class="tag gray sm">사용안함</span>'); else { var mk = menuKey(p); if (mk === "resv") bd.push('<span class="tag amber sm">노출 예약</span>'); else if (mk === "off" && d <= MENU_MAX) bd.push('<span class="tag gray sm">미노출</span>'); }
+      return '<div class="trc' + (O.sel === p.id ? " sel" : "") + (p.del ? " del" : "") + (!p.tlive ? " new" : "") + (O.focus === p.id ? " focus" : "") + (d > MENU_MAX ? " out" : "") + '" data-m="' + p.id + '" data-par="' + (p.parent || "") + '"' + (ed && !p.del ? ' draggable="true"' : "") + ">" +
+        (ed && !p.del ? '<span class="grip" title="드래그해 같은 상위 안에서 순서 변경">⋮⋮</span>' : "") + '<span class="nm">' + esc(p.name || "(이름 없음)") + "</span>" +
+        (kc ? '<span class="chv' + (open ? " open" : "") + '" data-mx="' + p.id + '" role="button" aria-label="' + (open ? "접기" : "펼치기") + '"></span>' : "") +
+        (p.ptype === "builder" ? '<span class="tag type builder sm">빌더</span>' : "") +
+        '<span class="bd">' + bd.join(" ") + '<span class="dtag' + (d > MENU_MAX ? " out" : "") + '" title="' + (d > MENU_MAX ? "메뉴 대상 아님 · 페이지만 관리" : "전체메뉴 노출 대상") + '">D' + d + "</span></span></div>";
+    }
+    function node(p) { var kc = kids(p.id).filter(vis), open = !!O.exp[p.id] || !!keep; return '<div class="tn">' + rowHtml(p, kc.length, open) + (kc.length && open ? '<div class="tk">' + kc.map(node).join("") + "</div>" : "") + "</div>"; }
+    var stChip = pr ? '<span class="tag amber">승인 대기</span>' : ch.length ? '<span class="tag gray">임시저장 · ' + ch.length + "건</span>" : '<span class="tag ok">승인완료</span>';
+    card.innerHTML = header(["전체 페이지·메뉴 관리"].concat(ed ? ["운영 정보 수정"] : []), ed ? "운영 정보 수정" : "전체 페이지·메뉴 관리") + (ed ? "" : topTabs("ops")) +
+      opsBanner() +
+      (ed ? "" : '<div class="searchbar"><label>메뉴명 <input type="text" id="o-q" placeholder="메뉴명을 입력해주세요" style="width:180px" value="' + esc(O.q) + '"></label><label>운영채널 ' + sel("o-ch", [["","전체"]].concat(CH), O.ch, 150) + '</label><label class="opt" style="font-weight:400"><input type="checkbox" id="o-fo"' + (O.foOnly ? " checked" : "") + '> Front 노출메뉴만 보기 (예약 포함)</label><span class="spacer"></span><button class="btn dark" id="o-reset">초기화</button><button class="btn primary" id="o-go">조회</button></div>') +
+      '<div class="tcols"><div class="tpanel"><div class="ttop">' + (ed ? '<button class="btn primary" id="o-addroot">+ 1 Depth 추가</button>' : "") + '<span class="spacer"></span><button class="btn" id="o-all">전체 펼치기</button><button class="btn" id="o-none">전체 접기</button></div>' +
+        (roots.length ? roots.map(node).join("") : '<div class="hint" style="padding:14px 10px">조회 결과가 없습니다</div>') +
+        '<div class="tlegend"><span class="dtag">D1~D3</span> 전체메뉴 노출 대상 <span class="dtag out">D4~D9</span> 페이지만 관리 (최대 ' + PAGE_MAX + '뎁스)</div></div>' +
+        '<div class="mcol detail">' + mDetail(sel0, ed) + "</div>" +
+      "</div>" +
+      (ed ? '<div class="mbar"><span class="hint" style="margin-right:auto">변경 ' + ch.length + "건" + (un ? " · 임시저장 안 됨 " + un + "건" : "") + (lastSave ? " · 최종 임시저장 " + esc(lastSave) : "") + ' · 승인 요청하면 변경/승인 이력에 기록됩니다</span><button class="btn" id="s-cancel">취소</button><button class="btn" id="s-save"' + (un ? "" : " disabled") + '>임시저장</button><button class="btn primary" id="s-req"' + (ch.length ? "" : " disabled") + ">승인 요청 (" + ch.length + "건)</button></div>"
+          : '<div class="mfoot"><span>최종 반영일 <b>' + esc(lastLive) + '</b></span><span>최종 수정자 <b>김혜윤 (P217326)</b></span><span>승인상태 ' + stChip + '</span><button class="btn" id="o-fo-pv">FO 미리보기</button><button class="btn" id="m-redis">Redis Reload</button><button class="btn primary" id="o-edit"' + (pr ? ' disabled title="승인 대기 중에는 수정할 수 없습니다 — 변경/승인 이력에서 확인"' : "") + ">수정</button></div>");
+    bindOps(sel0);
+    if (O.focus) { var el = card.querySelector('[data-m="' + O.focus + '"]'); if (el && el.scrollIntoView) el.scrollIntoView({ block: "center" }); O.focus = null; }
+  }
+  function mDetail(p, ed) {
+    if (!p) return '<div class="mdetail"><h2>상세</h2><div class="hint">왼쪽에서 페이지를 선택하세요.</div></div>';
+    var d = depth(p), e = ed && !p.del, dis = e ? "" : " disabled", b = menuBlock(p), bw = builderWhy(p), kc = descendants(p.id).length;
+    function row(label, k, inner) { return '<div class="frow"><div class="k">' + label + (k ? diffMark(p, k) : "") + '</div><div class="v' + (e ? "" : " ro") + '">' + inner + "</div></div>"; }
+    function yn(k, v) { return '<label class="opt"><input type="radio" name="pf-' + k + '" value="1"' + (v ? " checked" : "") + dis + '> 사용</label><label class="opt"><input type="radio" name="pf-' + k + '" value="0"' + (v ? "" : " checked") + dis + "> 사용안함</label>"; }
+    function cks(k, defs, s) { var all = defs.every(function (x) { return s.indexOf(x[0]) !== -1; }); return '<label class="opt"><input type="checkbox" data-all="' + k + '"' + (all ? " checked" : "") + dis + "> 전체</label>" + defs.map(function (x) { return '<label class="opt"><input type="checkbox" data-ck="' + k + '" value="' + x[0] + '"' + (s.indexOf(x[0]) !== -1 ? " checked" : "") + dis + "> " + x[1] + "</label>"; }).join(""); }
+    var h = '<div class="mdetail"><h2>' + esc(p.name || "(이름 없음)") + " " + treeState(p) + "</h2>" + (p.del ? '<div class="hint warn" style="margin-bottom:8px">삭제 예정 — 승인되면 레코드가 삭제됩니다.</div>' : "") + '<div class="ftable">';
+    h += row("페이지 ID", "", '<span class="mono">' + p.id + "</span>");
+    h += row("메뉴명", "name", e ? '<input type="text" class="w-md" id="pf-name" value="' + esc(p.name) + '">' : esc(p.name));
+    h += row("페이지 유형", "ptype", (e ? Object.keys(PTYPE).map(function (k) { return '<label class="opt"><input type="radio" name="pf-ptype" value="' + k + '"' + (p.ptype === k ? " checked" : "") + (p.ct ? " disabled" : "") + "> " + PTYPE[k] + "</label>"; }).join("") : typeChip(p)) +
+      (p.ptype === "builder" ? '<div class="block">' + ctLine(p) + "</div>" + (p.ct ? "" : '<div class="block hint">화면 빌더에서 이 페이지를 불러와 연결합니다 · URL·메타태그는 빌더가 아닌 여기서만 입력</div>') : "") + (e && p.ct ? '<div class="block hint">빌더 화면이 연결되어 있어 유형을 바꿀 수 없습니다</div>' : ""));
+    h += row("경로", "parent", esc(crumb(p)) + ' <span class="hint">D' + d + " / " + PAGE_MAX + "</span>" + (e ? '<div class="block"><button class="btn sm" id="sp-move">경로 이동' + (kc ? " (하위 " + kc + "개 함께)" : "") + '</button> <button class="btn sm" id="sp-up">↑ 위로</button> <button class="btn sm" id="sp-down">↓ 아래로</button></div>' : "") + (p.tlive && p.tlive.parent !== p.parent ? '<div class="block hint">FO 반영본: ' + esc(liveCrumbOf(p.tlive.parent)) + "</div>" : ""));
+    h += row("사용 여부", "use", e ? yn("use", p.use) + (kc ? '<div class="block hint">사용안함이면 하위 ' + kc + "개도 FO에서 빠집니다</div>" : "") : p.use ? "사용" : "사용안함");
+    if (d <= MENU_MAX) {
+      var on = '<label class="opt"><input type="radio" name="pf-menuOn" value="1"' + (p.menuOn ? " checked" : "") + (b ? " disabled" : dis) + '> 노출</label><label class="opt"><input type="radio" name="pf-menuOn" value="0"' + (p.menuOn ? "" : " checked") + dis + "> 미노출</label>";
+      h += row("Front 노출 여부", "menuOn", (e ? on : menuChip(p)) +
+        (b ? '<div class="block hint warn">' + esc(b) + " — 켤 수 없습니다</div>" : "") +
+        (!b && p.menuOn && bw ? '<div class="block hint amb">노출 예약 — ' + esc(bw) + ". 운영 정보 승인은 지금 받아 두고, 빌더 화면이 승인되는 순간 추가 승인 없이 FO에 나타납니다</div>" : "") +
+        (!b && p.menuOn && offAncestor(p) ? '<div class="block hint">상위 「' + esc(offAncestor(p).name) + "」가 미노출이라 FO에는 보이지 않습니다</div>" : "") +
+        (!b && p.menuOn && p.group && !hasOnKid(p) ? '<div class="block hint warn">노출 중인 하위가 없어 FO에는 보이지 않습니다</div>' : ""));
+    } else h += row("Front 노출 여부", "", '<span class="hint">D' + d + " — 전체메뉴는 3뎁스까지 노출됩니다</span>");
+    if (urlLocked(p) && !e) h += row("URL", "", '<span class="mono">' + esc(p.url) + '</span> <span class="tag ok sm">확정</span>');
+    else if (p.tlive && p.tlive.group && p.group) h += row("URL", "", '<span class="tag gray">URL 미등록 (그룹)</span>');
+    else h += row("URL", "url", e ? ((p.ptype !== "builder" ? '<label class="opt"><input type="radio" name="pf-group" value="0"' + (p.group ? "" : " checked") + '> 등록</label><label class="opt"><input type="radio" name="pf-group" value="1"' + (p.group ? " checked" : "") + "> 등록안함 (그룹)</label>" : "") +
+        (p.group ? '<div class="block hint">하위 페이지를 묶는 상위 항목 · URL 없이 승인</div>' : '<input type="text" class="w-lg" id="pf-url" value="' + esc(p.url) + '" placeholder="/path"><div class="block hint' + (p.url ? "" : " warn") + '">' + (urlLocked(p) ? "확정된 URL입니다 · 수정하면 승인 시 다시 확정됩니다" : p.url ? "승인되면 확정됩니다" : "URL 필수 — 노출 여부와 관계없이 승인 요청 전에 입력해야 합니다") + (p.ptype === "builder" ? " · 빌더 화면은 등록안함 불가" : "") + "</div>"))
+      : p.group ? '<span class="tag gray">URL 미등록 (그룹)</span>' : p.url ? '<span class="mono">' + esc(p.url) + '</span> <span class="hint">승인 시 확정</span>' : '<span class="tag warn">URL 필요</span>');
+    h += row("운영 채널", "channels", (e ? cks("channels", CH, p.channels) : chChips(p.channels)) + parentDiff(p, "channels") + (e && kc ? '<div class="block hint">바꾸면 하위 ' + kc + "개에도 적용할지 묻습니다</div>" : ""));
+    if (d === 1) h += row("아이콘", "icon", e ? '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap"><div class="iconbox">' + (p.icon ? "🖼" : '<span class="hint">없음</span>') + (p.icon ? '<button class="x" id="sp-icondel" aria-label="아이콘 삭제">×</button>' : "") + '</div><div><input type="text" class="w-md" id="pf-alt" value="' + esc(p.alt || "") + '" placeholder="접근성을 위해 이미지의 주요 내용을 입력해주세요"> <button class="btn sm" id="sp-iconadd">파일 선택</button><div class="hint" style="margin-top:4px">' + esc(p.icon || "—") + " · 권장 1440 × 2560 px · JPG, PNG, GIF</div></div></div>" : (p.icon ? esc(p.alt || p.name + " 아이콘") + ' <span class="hint">' + esc(p.icon) + "</span>" : "—"));
+    h += '<div class="frow sub"><div class="k">권한 정보</div><div class="v ro"><span class="hint">그룹에 정한 권한은 하위의 기본값이 됩니다</span></div></div>';
+    h += row("로그인 권한", "auths", (e ? cks("auths", AUTHS.map(function (a) { return [a, a]; }), p.auths) : esc(fmt("auths", p.auths))) + parentDiff(p, "auths"));
+    h += row("회선그룹", "lines", (e ? cks("lines", LINES.slice(1), p.lines.indexOf("all") !== -1 ? LINES.slice(1).map(function (l) { return l[0]; }) : p.lines) : esc(fmt("lines", p.lines))) + parentDiff(p, "lines"));
+    h += "</div>";
+    h += '<div class="foot2" style="flex-wrap:wrap">' + (e ? '<button class="btn" id="sp-add"' + (d >= PAGE_MAX ? " disabled" : "") + ">+ 하위 페이지 추가</button>" : "") + '<button class="btn" id="sp-dev">페이지 개발 설정 보기 →</button>' +
+      (ed && tDiff(p).length ? '<button class="btn" id="sp-revert">' + (!p.tlive ? "추가 취소" : p.del ? "삭제 취소" : "변경 되돌리기") + "</button>" : "") + (e && p.tlive ? '<button class="btn warnb" id="sp-del">삭제</button>' : "") + "</div></div>";
+    return h;
+  }
+  function dropTo(d, np, idx) {
+    var w = dropWhy(d, np); if (w) { toast(w); renderOps(); return; }
+    function go() { var moved = d.parent !== np, im = putAt(d, np, idx); if (np) O.exp[np] = true; openTo(d); O.sel = d.id; O.focus = d.id; toast(moved ? "「" + d.name + "」 경로 이동" + (im && im.lost.length ? " · 3뎁스 밖 " + im.lost.length + "건 메뉴에서 빠짐" : "") : "순서 변경"); renderOps(); }
+    if (d.parent !== np && d.tlive) confirmMove(d, np, go); else go();
+  }
+  function openAdd(pid) {
+    var par = pid ? byId(pid) : null, nd = par ? depth(par) + 1 : 1;
+    showModal({ cls: "wide", title: nd === 1 ? "1 Depth 추가" : "하위 페이지 추가", okText: "추가", html:
+      '<div class="ftable"><div class="frow"><div class="k">상위 경로</div><div class="v">' + (par ? esc(crumb(par)) : "없음 (최상위)") + ' <span class="hint">D' + nd + (nd > MENU_MAX ? " · 메뉴 대상 아님" : "") + '</span></div></div>' +
+      '<div class="frow"><div class="k">메뉴명</div><div class="v"><input type="text" class="w-md" id="an-name" placeholder="메뉴명을 입력하세요"></div></div>' +
+      '<div class="frow"><div class="k">페이지 유형</div><div class="v">' + Object.keys(PTYPE).map(function (k, i) { return '<label class="opt"><input type="radio" name="an-type" value="' + k + '"' + (i === 1 ? " checked" : "") + "> " + PTYPE[k] + "</label>"; }).join("") + '</div></div>' +
+      '</div>' +
+      '<div class="diff">URL(또는 그룹 여부)은 추가한 뒤 오른쪽 상세에서 입력합니다 · 승인 요청 전 필수. 운영 채널 · 로그인 권한 · 회선그룹은 상위 값을 기본으로 이어받습니다. 빌더 화면은 저장 후 화면 빌더에서 이 페이지를 불러와 연결합니다.</div>',
+      validate: function (root) {
+        var nm = root.querySelector("#an-name").value.trim(), ty = root.querySelector('input[name="an-type"]:checked').value;
+        if (!nm) { toast("메뉴명을 입력해 주세요"); return false; }
+        root._v = { name: nm, ptype: ty, group: false, url: "" }; return true;
+      },
+      onOk: function (root) {
+        var v = root._v; seq += 1;
+        var p = P({ id: "PG000" + seq, name: v.name, ptype: v.ptype, group: v.group, url: v.url, parent: pid, created: now().slice(0, 10), updated: now() });
+        if (par) { p.channels = par.channels.slice(); p.auths = par.auths.slice(); p.lines = par.lines.slice(); }
+        p.morder = kids(pid).length; p.dlive = snapD(p); pages.push(p);
+        if (pid) O.exp[pid] = true; O.sel = p.id; O.focus = p.id;
+        toast(p.id + " 추가 · 상세에서 URL을 입력하세요 · " + (v.ptype === "builder" ? "빌더에서 이 페이지를 불러와 연결하세요 · " : "") + "임시저장 후 승인 요청"); renderOps();
+      } });
+  }
+  function setField(p, k, v) {
+    var kc = descendants(p.id); p[k] = v;
+    if (CASCADE[k] && kc.length) {
+      var diffN = kc.filter(function (c) { return !same(c[k], v); }).length;
+      if (diffN) { showModal({ title: "하위에도 적용할까요?", okText: "하위 " + kc.length + "개에도 적용", cancelText: "이 페이지만", html: "<p>「" + esc(p.name) + "」의 " + CASCADE[k] + "을(를) <b>" + esc(fmt(k, v)) + "</b>(으)로 바꿨습니다.</p><p>하위 " + kc.length + "개 중 " + diffN + "개가 다른 값을 쓰고 있습니다. 같은 값으로 맞출까요?</p>", onOk: function () { kc.forEach(function (c) { c[k] = clone(v); }); toast(CASCADE[k] + " · 하위 " + kc.length + "개에도 적용"); renderOps(); }, onCancel: renderOps, onClose: renderOps }); return true; }
+    }
+    return false;
+  }
+  function bindOps(p) {
+    bindCommon();
+    function q(s) { return card.querySelector(s); }
+    var go = q("#o-go"); if (go) { go.onclick = function () { O.q = q("#o-q").value.trim(); O.ch = q("#o-ch").value; O.foOnly = q("#o-fo").checked; renderOps(); }; q("#o-q").onkeydown = function (e) { if (e.key === "Enter") go.click(); }; q("#o-reset").onclick = function () { O.q = ""; O.ch = ""; O.foOnly = false; renderOps(); }; }
+    card.querySelectorAll("[data-m]").forEach(function (r) { r.onclick = function (e) { if (e.target.closest("[data-mx]")) return; O.sel = r.getAttribute("data-m"); renderOps(); }; });
+    card.querySelectorAll("[data-mx]").forEach(function (t) { t.onclick = function (e) { e.stopPropagation(); var id = t.getAttribute("data-mx"); O.exp[id] = !O.exp[id]; renderOps(); }; });
+    q("#o-all").onclick = function () { pages.forEach(function (x) { O.exp[x.id] = true; }); renderOps(); };
+    q("#o-none").onclick = function () { pages.forEach(function (x) { O.exp[x.id] = false; }); renderOps(); };
+    var ie = q("#o-edit"); if (ie) ie.onclick = function () { startEdit(); renderOps(); };
+    var ar = q("#o-addroot"); if (ar) ar.onclick = function () { openAdd(null); };
+    var fp = q("#o-fo-pv"); if (fp) fp.onclick = openFo;
+    var rd = q("#m-redis"); if (rd) rd.onclick = function () { toast("Redis Reload 요청 — 반영본 기준으로 캐시를 갱신합니다"); };
+    var sc = q("#s-cancel"); if (sc) sc.onclick = function () { guardLeave(renderOps); };
+    var ss = q("#s-save"); if (ss) ss.onclick = function () { O.saved = snapAll(); lastSave = now(); toast("임시저장 · 변경 " + changed().length + "건 — FO는 승인 후 반영"); renderOps(); };
+    var sr = q("#s-req"); if (sr) sr.onclick = requestOps;
+    if (O.edit) bindDrag();
+    if (!p) return;
+    q("#sp-dev").onclick = function () { var id = p.id; guardLeave(function () { current = id; D.tab = "info"; view = "devd"; render(); }); };
+    var rvb = q("#sp-revert"); if (rvb) rvb.onclick = function () {
+      if (!p.tlive) { if (kids(p.id).length) { toast("하위 페이지가 있어 추가를 취소할 수 없습니다"); return; } pages = pages.filter(function (x) { return x !== p; }); O.sel = p.parent; toast("추가 취소"); renderOps(); return; }
+      if (p.tlive.parent !== p.parent && p.tlive.parent && !byId(p.tlive.parent)) { toast("원래 상위가 없어 되돌릴 수 없습니다"); return; }
+      TF.forEach(function (k) { p[k] = clone(p.tlive[k]); }); renderOps();
+    };
+    if (!O.edit || p.del) return;
+    var nm = q("#pf-name"); if (nm) nm.onchange = function () { var v = nm.value.trim(); if (!v) { toast("메뉴명을 입력해 주세요"); renderOps(); return; } p.name = v; renderOps(); };
+    card.querySelectorAll('input[name="pf-ptype"]').forEach(function (r) { r.onchange = function () { p.ptype = r.value; if (p.ptype === "builder" && p.group) p.group = false; renderOps(); }; });
+    card.querySelectorAll('input[name="pf-group"]').forEach(function (r) { r.onchange = function () { p.group = r.value === "1"; if (p.group) p.url = ""; renderOps(); }; });
+    var ur = q("#pf-url"); if (ur) ur.onchange = function () { p.url = ur.value.trim(); renderOps(); };
+    card.querySelectorAll('input[name="pf-use"]').forEach(function (r) { r.onchange = function () { p.use = r.value === "1"; renderOps(); }; });
+    card.querySelectorAll('input[name="pf-menuOn"]').forEach(function (r) { r.onchange = function () { var up = toggleMenu(p, r.value === "1"); if (up.length) toast("상위 「" + up.join(", ") + "」도 함께 노출"); renderOps(); }; });
+    var al = q("#pf-alt"); if (al) al.onchange = function () { p.alt = al.value; renderOps(); };
+    var ia = q("#sp-iconadd"); if (ia) ia.onclick = function () { p.icon = "BG_" + stamp() + ".png"; renderOps(); };
+    var idl = q("#sp-icondel"); if (idl) idl.onclick = function () { p.icon = null; renderOps(); };
+    function ckVals(k) { return Array.prototype.map.call(card.querySelectorAll('[data-ck="' + k + '"]:checked'), function (c) { return c.value; }); }
+    function onCk(k) { var v = ckVals(k); if (k === "lines" && v.length === LINES.length - 1) v = ["all"]; if (!setField(p, k, v)) renderOps(); }
+    card.querySelectorAll("[data-all]").forEach(function (a) { a.onchange = function () { var k = a.getAttribute("data-all"); card.querySelectorAll('[data-ck="' + k + '"]').forEach(function (c) { c.checked = a.checked; }); onCk(k); }; });
+    card.querySelectorAll("[data-ck]").forEach(function (c) { c.onchange = function () { onCk(c.getAttribute("data-ck")); }; });
+    var mv = q("#sp-move"); if (mv) mv.onclick = function () { openPathPicker(p, function (np) { dropTo(p, np, null); }); };
+    var su = q("#sp-up"); if (su) su.onclick = function () { var sib = kids(p.parent), i = sib.indexOf(p); if (i <= 0) { toast("맨 위입니다"); return; } putAt(p, p.parent, i - 1); renderOps(); };
+    var sd = q("#sp-down"); if (sd) sd.onclick = function () { var sib = kids(p.parent), i = sib.indexOf(p); if (i >= sib.length - 1) { toast("맨 아래입니다"); return; } putAt(p, p.parent, i + 1); renderOps(); };
+    var ad = q("#sp-add"); if (ad) ad.onclick = function () { openAdd(p.id); };
+    var dl = q("#sp-del"); if (dl) dl.onclick = function () {
+      if (p.ct) { alertBox("빌더 화면이 연결된 페이지입니다", "화면 빌더에서 <b>" + esc(p.ct) + "</b> 연결을 먼저 해제해야 삭제할 수 있습니다.", null, { noCancel: true }); return; }
+      if (running(p)) { alertBox("운영 중인 페이지입니다", "사용 여부를 <b>사용안함(비노출)</b>으로 바꿔 승인받은 뒤 삭제할 수 있습니다.", null, { noCancel: true }); return; }
+      if (kids(p.id).length) { alertBox("하위 페이지가 있습니다", "하위 페이지를 먼저 옮기거나 삭제해야 합니다.", null, { noCancel: true }); return; }
+      p.del = true; toast("「" + p.name + "」 삭제 예정 — 승인되면 삭제됩니다"); renderOps();
+    };
+  }
+  function requestOps() {
+    var list = changed(), bad = validateReq(list);
+    if (bad.length) { showModal({ title: "승인 요청할 수 없습니다", noCancel: true, okText: "확인", html: '<p>아래 항목을 채운 뒤 다시 요청하세요. URL은 노출 여부와 관계없이 필수입니다.</p><div class="diff"><ul>' + bad.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>" }); return; }
+    var ls = shownIds("live"), ds = shownIds("draft"), gone = Object.keys(ls).filter(function (id) { return !ds[id]; }).map(function (id) { return byId(id).tlive.name; }), rv = reserved("draft").filter(function (x) { return list.indexOf(x) !== -1; });
+    showModal({ cls: "wide xl", title: "운영 정보 변경을 승인 요청하시겠습니까?", okText: "승인 요청", html: '<div class="kvs"><span class="k">승인 담당자</span><span>정지솔(SSP12344)</span><span class="k">담당 사업부</span><span>MT 사업부</span></div>' +
+      '<div class="diff"><b>' + list.length + '개 페이지의 변경을 한 건으로 요청합니다</b> · 승인 시 URL 확정<div class="tblwrap" style="margin-top:6px"><table class="mtable"><tr><th style="width:170px">페이지</th><th>변경 (이전 → 이후)</th></tr>' + list.map(function (x) { return "<tr><td>" + esc(x.name) + ' <span class="hint mono">' + x.id + '</span></td><td><ul class="chg-list">' + tChanges(x).map(function (c) { return '<li><span class="f">' + esc(c.l) + "</span>" + esc(c.from) + ' <span class="arrow-t">→</span> ' + esc(c.to) + "</li>"; }).join("") + "</ul></td></tr>"; }).join("") + "</table></div>" +
+      (gone.length ? '<div style="color:var(--warn);margin-top:6px">승인 시 FO 메뉴에서 빠짐: ' + esc(gone.join(", ")) + "</div>" : "") + (rv.length ? '<div style="color:var(--amber);margin-top:6px">노출 예약 (빌더 화면 승인 시 자동 노출): ' + esc(rv.map(function (x) { return x.name; }).join(", ")) + "</div>" : "") +
+      '<div style="margin-top:6px">승인/반려 전까지 수정이 잠기고, FO는 현재 구성을 그대로 서빙합니다.</div></div>',
+      onOk: function () {
+        var no = "MR-" + stamp() + "-" + String(++reqSeq).padStart(2, "0");
+        REQS.push({ no: no, kind: "tree", title: "운영 정보 변경 " + list.length + "건", by: "김혜윤(P217326)", at: now(), status: "pending", items: list.map(function (x) { return { id: x.id, name: x.name, ch: tChanges(x) }; }) });
+        O.edit = false; O.saved = null; lastSave = now(); toast(no + " 승인 요청 · " + list.length + "건 — 변경/승인 이력에서 확인"); renderOps();
+      } });
+  }
+  function openFo() {
+    var pv = changed().length ? "draft" : "live";
+    function paint() {
+      showModal({ cls: "wide", title: "FO 전체메뉴 미리보기", noCancel: true, okText: "닫기", html: '<div class="segs" style="margin-bottom:8px"><button class="seg' + (pv === "live" ? " on" : "") + '" data-pv="live">현재 FO</button><button class="seg' + (pv === "draft" ? " on" : "") + '" data-pv="draft">승인 후' + (changed().length ? " · " + changed().length : "") + '</button></div><div class="hint" style="margin-bottom:8px">' + (pv === "live" ? "반영본 기준 · 지금 사용자에게 보이는 메뉴" : "임시저장 작성본 기준 · 승인되면 이렇게 바뀝니다") + '</div><div class="fo">' + foHtml(pv) + "</div>",
+        bind: function (root) { root.querySelectorAll("[data-pv]").forEach(function (b) { b.onclick = function () { pv = b.getAttribute("data-pv"); paint(); }; }); } });
+    }
+    paint();
+  }
+  function bindDrag() {
+    var drag = null;
+    card.querySelectorAll('.trc[draggable="true"]').forEach(function (el) {
+      el.addEventListener("dragstart", function (e) { drag = byId(el.getAttribute("data-m")); el.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", drag.id); } catch (x) {} });
+      el.addEventListener("dragend", function () { drag = null; card.querySelectorAll(".trc").forEach(function (x) { x.classList.remove("dragging", "over-top", "over-bot", "over-no"); }); });
+      el.addEventListener("dragover", function (e) { if (!drag || drag.id === el.getAttribute("data-m")) return; e.preventDefault(); var same2 = drag.parent === (el.getAttribute("data-par") || null); el.classList.remove("over-top", "over-bot", "over-no"); if (!same2) { el.classList.add("over-no"); e.dataTransfer.dropEffect = "none"; return; } var r = el.getBoundingClientRect(); el.classList.add(e.clientY < r.top + r.height / 2 ? "over-top" : "over-bot"); e.dataTransfer.dropEffect = "move"; });
+      el.addEventListener("dragleave", function () { el.classList.remove("over-top", "over-bot", "over-no"); });
+      el.addEventListener("drop", function (e) { e.preventDefault(); if (!drag) return; var t = byId(el.getAttribute("data-m")); if (t === drag) return; if (drag.parent !== t.parent) { toast("순서는 같은 상위 안에서만 바꿀 수 있습니다. 다른 상위로는 [경로 이동]"); return; } var sib = kids(t.parent).filter(function (x) { return x !== drag; }), idx = sib.indexOf(t) + (el.classList.contains("over-top") ? 0 : 1); var d = drag; drag = null; putAt(d, d.parent, idx); O.sel = d.id; renderOps(); });
+    });
+  }
+
+  /* ============================================================ [변경/승인 이력] */
+  function statusChip(s) { return { pending: '<span class="tag amber">승인 대기</span>', approved: '<span class="tag ok">승인</span>', rejected: '<span class="tag warn">반려</span>', auto: '<span class="tag blue">자동 반영</span>' }[s]; }
+  function kindChip(k) { return { tree: '<span class="tag acc">운영 정보 · 일괄</span>', dev: '<span class="tag gray">개발 설정 · 건별</span>', builder: '<span class="tag type builder">빌더 연동 · 자동</span>' }[k]; }
+  function histTable(rs, onlyId, st) {
+    return '<div class="tblwrap"><table class="hist"><thead><tr><th>요청번호</th><th>구분</th><th>요청 내용</th><th class="ct">페이지</th><th>요청자</th><th class="nw">요청일시</th><th class="ct">상태</th><th>처리자</th><th class="nw">처리일시</th></tr></thead><tbody>' +
+      (rs.length ? rs.map(function (r) {
+        var open = !!st.open[r.no], its = onlyId ? r.items.filter(function (i) { return i.id === onlyId; }) : r.items;
+        var main = '<tr class="main' + (open ? " open" : "") + '" data-h="' + r.no + '"><td class="mono nw">' + (open ? "▾ " : "▸ ") + esc(r.no) + '</td><td class="nw">' + kindChip(r.kind) + "</td><td>" + esc(r.title) + (onlyId && r.items.length > 1 ? ' <span class="hint">(이 페이지 포함 ' + r.items.length + "개)</span>" : "") + '</td><td class="ct">' + r.items.length + '</td><td class="nw">' + esc(r.by) + '</td><td class="nw">' + esc(r.at) + '</td><td class="ct">' + statusChip(r.status) + '</td><td class="nw">' + esc(r.dby || "—") + '</td><td class="nw">' + esc(r.dat || "—") + "</td></tr>";
+        if (!open) return main;
+        var items = '<table class="items"><tr><th style="width:220px">페이지</th><th>변경 (이전 → 이후)</th></tr>' + its.map(function (i) { return '<tr><td><a href="#" data-gop="' + i.id + '" class="mono">' + i.id + "</a> " + esc(i.name) + '</td><td><ul class="chg-list">' + i.ch.map(function (c) { return '<li><span class="f">' + esc(c.l) + "</span>" + (c.from || c.to ? esc(c.from) + ' <span class="arrow-t">→</span> ' + esc(c.to) : "") + "</li>"; }).join("") + "</ul></td></tr>"; }).join("") + "</table>";
+        return main + '<tr class="sub"><td colspan="9">' + items + (r.why ? '<div class="why">반려 사유 · ' + esc(r.why) + "</div>" : "") + (r.note ? '<div class="hint" style="margin-top:8px">' + esc(r.note) + "</div>" : "") +
+          (r.status === "pending" ? '<div class="actions" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-hrej="' + r.no + '">반려</button><button class="btn primary" data-hok="' + r.no + '">승인 (승인자)</button></div>' : "") + "</td></tr>";
+      }).join("") : '<tr><td colspan="9" style="text-align:center;padding:50px;color:var(--ink-3)">이력이 없습니다.</td></tr>') + "</tbody></table></div>";
+  }
+  function bindHist(st, again) {
+    function find(no) { return REQS.filter(function (r) { return r.no === no; })[0]; }
+    card.querySelectorAll("[data-h]").forEach(function (tr) { tr.onclick = function () { var n = tr.getAttribute("data-h"); st.open[n] = !st.open[n]; again(); }; });
+    card.querySelectorAll("[data-gop]").forEach(function (a) { a.onclick = function (e) { e.preventDefault(); if (byId(a.getAttribute("data-gop"))) goOps(a.getAttribute("data-gop")); else toast("삭제된 페이지입니다"); }; });
+    card.querySelectorAll("[data-hok]").forEach(function (b) { b.onclick = function () { toast(decide(find(b.getAttribute("data-hok")), true)); again(); }; });
+    card.querySelectorAll("[data-hrej]").forEach(function (b) { b.onclick = function () { rejectBox(find(b.getAttribute("data-hrej")), again); }; });
+  }
+  function renderHist() {
+    var rs = REQS.filter(function (r) { return r.kind !== "dev" && (!H.kind || r.kind === H.kind) && (!H.status || r.status === H.status) && (!H.q || r.no.indexOf(H.q) !== -1 || r.title.indexOf(H.q) !== -1 || r.items.some(function (i) { return i.id === H.q || i.name.indexOf(H.q) !== -1; })); }).slice().reverse();
+    card.innerHTML = header(["전체 페이지·메뉴 관리"], "전체 페이지·메뉴 관리") + topTabs("hist") +
+      '<div class="searchbar"><label>검색어 <input type="text" id="h-q" placeholder="요청번호 · 페이지 ID · 메뉴명" style="width:220px" value="' + esc(H.q) + '"></label>' +
+      '<label>구분 ' + sel("h-kind", [["","전체"],["tree","운영 정보 · 일괄"],["builder","빌더 연동 · 자동"]], H.kind, 150) + '</label>' +
+      '<label>상태 ' + sel("h-status", [["","전체"],["pending","승인 대기"],["approved","승인"],["rejected","반려"],["auto","자동 반영"]], H.status, 110) + '</label>' +
+      '<span class="spacer"></span><button class="btn dark" id="h-reset">초기화</button><button class="btn primary" id="h-go">조회</button></div>' +
+      '<div class="rmeta">요청 <span class="n">' + rs.length + '건</span><span class="hint" style="font-weight:400">· 운영 정보 일괄 요청과 빌더 연동 기록 · 개발 설정 이력은 페이지 개발 설정 상세에서 확인 · 행을 누르면 변경 항목을 펼칩니다</span></div>' + histTable(rs, null, H);
+    bindCommon();
+    function q(s) { return card.querySelector(s); }
+    q("#h-go").onclick = function () { H.q = q("#h-q").value.trim(); H.kind = q("#h-kind").value; H.status = q("#h-status").value; renderHist(); };
+    q("#h-q").onkeydown = function (e) { if (e.key === "Enter") q("#h-go").click(); };
+    q("#h-reset").onclick = function () { H.q = ""; H.kind = ""; H.status = ""; renderHist(); };
+    bindHist(H, renderHist);
+  }
+
+  /* ============================================================ [개발 설정] — 목록 → 상세 (페이지별 승인) */
+  function devRows() { return pages.filter(function (p) {
+      if (DL.ptype && p.ptype !== DL.ptype) return false; if (DL.st && devKey(p) !== DL.st) return false; if (DL.mask && String(p.maskOn) !== DL.mask) return false;
+      if (DL.q) { var hay = DL.field === "id" ? p.id : DL.field === "url" ? p.url : p.name + " " + crumb(p); if (hay.indexOf(DL.q) === -1) return false; } return true; }).sort(function (a, b) { return a.updated < b.updated ? 1 : -1; }); }
+  function renderDevList() {
+    var rs = devRows(), max = Math.max(1, Math.ceil(rs.length / PER)); if (DL.page > max) DL.page = max; var s = rs.slice((DL.page - 1) * PER, DL.page * PER);
+    card.innerHTML = header(["페이지 개발 설정"], "페이지 개발 설정") +
+      '<div class="searchbar"><label>검색 항목 ' + sel("d-field", [["name","메뉴명"],["id","페이지 ID"],["url","URL"]], DL.field, 110) + '</label><input type="text" id="d-q" placeholder="검색어를 입력해주세요" style="width:200px" value="' + esc(DL.q) + '">' +
+      '<label>페이지 유형 ' + sel("d-ptype", [["","전체"],["builder","빌더 화면"],["dev","개발 화면"],["ext","외부 화면"]], DL.ptype, 110) + '</label>' +
+      '<label>개발 설정 상태 ' + sel("d-st", [["","전체"],["draft","작성 중"],["pending","승인 대기"],["live","승인 완료"],["rejected","반려"]], DL.st, 110) + '</label>' +
+      '<label>마스킹 ' + sel("d-mask", [["","전체"],["true","적용"],["false","미적용"]], DL.mask, 90) + '</label>' +
+      '<span class="spacer"></span><button class="btn dark" id="d-reset">초기화</button><button class="btn primary" id="d-go">조회</button></div>' +
+      '<div class="rmeta">검색결과 <span class="n">' + rs.length + '건</span><span class="hint" style="font-weight:400">· 개발 설정 · 인증 정보 매핑용 · 행을 누르면 상세로 이동 · 페이지 추가는 전체 페이지·메뉴 관리에서</span></div>' +
+      '<div class="tblwrap"><table><thead><tr><th>NO</th><th>페이지 ID</th><th class="nw">메뉴명</th><th class="ct">뎁스</th><th>경로</th><th class="nw">페이지 유형</th><th>URL</th><th class="nw">화면 제공형태</th><th class="ct nw">마스킹</th><th class="ct nw">CVM 연결</th><th class="ct nw">개발 설정 상태</th><th class="nw">최종 수정일자</th></tr></thead><tbody>' +
+      (s.length ? s.map(function (p, i) { var no = rs.length - ((DL.page - 1) * PER + i);
+        return '<tr class="rowlink' + (p.del ? " dim" : "") + '" data-id="' + p.id + '"><td>' + no + '</td><td class="mono">' + p.id + "</td><td class='nw'>" + esc(p.name) + "</td><td class='ct'><span class=\"dp" + (depth(p) > MENU_MAX ? " out" : "") + '">D' + depth(p) + "</span></td><td>" + esc(crumb(p)) + "</td><td class='nw'>" + typeChip(p) + ctLine(p) + "</td><td class='mono'>" + (p.group ? '<span class="tag gray">URL 미등록</span>' : p.url ? esc(p.url) : '<span class="tag warn">URL 필요</span>') + "</td><td class='nw'>" + (p.group ? "—" : esc(p.form)) + "</td><td class='ct'>" + (p.maskOn ? '<span class="tag acc">적용</span>' : '<span class="hint">—</span>') + "</td><td class='ct'>" + (p.cvm ? '<span class="mono hint">' + esc(p.cvm) + "</span>" : '<span class="hint">—</span>') + "</td><td class='ct nw'>" + devChip(p) + '</td><td class="nw">' + esc(p.updated) + "</td></tr>"; }).join("")
+        : '<tr><td colspan="12" style="text-align:center;padding:60px;color:var(--ink-3)">검색 결과가 없습니다.</td></tr>') + "</tbody></table></div>" +
+      '<div class="pager">' + Array.apply(null, { length: max }).map(function (_, i) { return '<button data-pg="' + (i + 1) + '"' + (DL.page === i + 1 ? ' class="on"' : "") + ">" + (i + 1) + "</button>"; }).join("") + "</div>" +
+      '<div class="actions"><div class="hint">운영 정보(경로·URL·노출·채널·권한)는 여기서 바꿀 수 없습니다 — 전체 페이지·메뉴 관리</div><button class="btn"' + (rs.length ? "" : " disabled") + ">엑셀다운로드</button></div>";
+    bindCommon();
+    function q(s) { return card.querySelector(s); }
+    card.querySelectorAll("tr.rowlink").forEach(function (tr) { tr.onclick = function () { current = tr.getAttribute("data-id"); D.tab = "info"; view = "devd"; render(); }; });
+    q("#d-go").onclick = function () { DL.q = q("#d-q").value.trim(); ["field","ptype","st","mask"].forEach(function (k) { DL[k] = q("#d-" + k).value; }); DL.page = 1; renderDevList(); };
+    q("#d-q").onkeydown = function (e) { if (e.key === "Enter") q("#d-go").click(); };
+    q("#d-reset").onclick = function () { DL = Object.assign({}, DL0); renderDevList(); };
+    card.querySelectorAll("[data-pg]").forEach(function (b) { b.onclick = function () { DL.page = +b.getAttribute("data-pg"); renderDevList(); }; });
+  }
+  function renderDevDetail() {
+    var p = byId(current); if (!p) { view = "dev"; render(); return; }
+    var pr = pendingDev(p), isG = p.group;
+    function row(k, v) { return '<div class="frow"><div class="k">' + k + '</div><div class="v">' + v + "</div></div>"; }
+    function row2(k1, v1, k2, v2) { return '<div class="frow two"><div class="k">' + k1 + '</div><div class="v">' + v1 + '</div><div class="k">' + k2 + '</div><div class="v">' + v2 + "</div></div>"; }
+    function links(a) { return a && a.length ? a.map(function (x) { return '<span class="lnk">' + esc(x) + "</span>"; }).join(" ") : "—"; }
+    var opsRo = '<div class="sect menu"><h2>운영 정보 <span class="hint" style="font-weight:400">읽기 전용 · 전체 페이지·메뉴 관리에서 편집 · 일괄 승인</span><span class="spacer"></span><button class="btn sm" id="dv-ops">전체 페이지·메뉴 관리에서 편집 →</button></h2><div class="ftable">' +
+      row2("페이지 ID", '<span class="mono">' + p.id + "</span> " + treeState(p), "메뉴명", esc(p.name)) +
+      row2("경로", esc(crumb(p)) + ' <span class="hint">D' + depth(p) + "</span>", "페이지 유형", typeChip(p) + ctLine(p)) +
+      row2("사용 여부", p.use ? "사용" : "사용안함", "Front 노출 여부", menuChip(p)) +
+      row2("URL", isG ? '<span class="tag gray">URL 미등록</span>' : '<span class="mono">' + esc(p.url || "—") + "</span> " + (urlLocked(p) ? '<span class="tag ok sm">확정</span>' : '<span class="hint">승인 시 확정</span>'), "운영 채널", chChips(p.channels)) +
+      row2("로그인 권한", esc(fmt("auths", p.auths)), "회선그룹", esc(fmt("lines", p.lines))) + "</div></div>";
+    var body;
+    var procL = (PROC.filter(function (x) { return x[0] === p.proc; })[0] || ["", "—"])[1];
+    if (D.tab === "info") body = opsRo +
+      '<div class="sect"><h2>개발 설정</h2><div class="ftable">' +
+      row("상품 프로세스 구분 관리", p.proc ? esc(procL) : '<span class="hint">선택 안 함</span>') +
+      row2("마스킹/업무인증<br>동시적용 여부", p.dualAuth ? "예" : "아니오", "접근중단일시", p.blockFrom || p.blockTo ? esc((p.blockFrom || "—") + " ~ " + (p.blockTo || "—")) : '<span class="hint">—</span>') +
+      row2("모바일 Web JOB 코드", p.mwebJob ? '<span class="mono">' + esc(p.mwebJob) + "</span>" : '<span class="hint">—</span>', "App JOB 코드", p.appJob ? '<span class="mono">' + esc(p.appJob) + "</span>" : '<span class="hint">—</span>') +
+      row2("가이드 URL", p.guideUrl ? '<span class="mono">' + esc(p.guideUrl) + "</span>" : '<span class="hint">—</span>', "차단화면 URL", '<span class="mono">' + esc(p.blockUrl || "/common/util/service-block") + "</span>" + (p.blockUrl ? "" : ' <span class="hint">기본페이지</span>')) +
+      row2("최종 수정자", "김혜윤(P217326)", "최종 수정일시", esc(p.updated)) + "</div></div>" +
+      '<div class="sect"><h2>관리성 정보 <span class="hint" style="font-weight:400">엑셀로 관리하던 관리용 정보 · 메뉴 노출과 연계되지 않음</span></h2><div class="ftable">' +
+      row2("페이지 속성", esc(ATTR[p.attr]), "화면 제공형태", esc(p.form)) + row("업무처리 형태", chips(labelsOf(BIZ, p.biz))) +
+      row2("과금 팝업 호출", chips(labelsOf(CH, p.popCh)), "네비게이션 노출", chips(labelsOf(NAV, p.nav))) + "</div></div>" +
+      '<div class="sect"><h2>운영 부가 정보</h2><div class="ftable">' + (isG ? "" : row2("검색 노출 여부", p.search ? "사용" : "사용안함", "공유하기 여부", p.share ? "사용" : "사용안함")) + row("비고", esc(p.remark || "—")) + "</div></div>" +
+      (isG ? "" : '<div class="sect"><h2>연결 정보</h2><div class="ftable">' + row("CVM 접촉이벤트 ID", p.cvm ? '<span class="lnk">' + esc(p.cvm) + '</span> <span class="hint">사유코드 ' + esc(p.reason) + "</span>" : "—") +
+        row("연결 툴팁 ID", links(p.tooltips)) + row("연결 CS코드", links(p.cs)) + row("단축 URL ID", links(p.shortUrls)) + "</div></div>" +
+        '<div class="sect"><h2>마스킹 정보</h2><div class="ftable">' + row2("적용 여부", p.maskOn ? '<span class="tag acc">적용</span>' : "미적용", "해제 방식", esc(p.maskWay || "—")) + row("해제 인증", esc(p.maskAuth || "—")) +
+        row("마스킹 항목", p.maskOn ? '<div class="tblwrap block"><table class="mtable"><tr><th>번호</th><th>마스킹 코드</th><th>마스킹명</th><th>적용등급</th><th>인증 전</th><th>인증 후</th></tr><tr><td>1</td><td class="mono">MK-PHONE</td><td>휴대폰번호</td><td>2등급</td><td>010-****-1234</td><td>010-2345-1234</td></tr><tr><td>2</td><td class="mono">MK-NAME</td><td>고객명</td><td>1등급</td><td>김*윤</td><td>김혜윤</td></tr></table></div><span class="hint">마스킹 항목·등급 체계는 TBD</span>' : '<span class="hint">—</span>') + "</div></div>" +
+        '<div class="sect"><h2>검색 및 태그 정보 ' + (p.ptype === "builder" ? '<span class="hint" style="font-weight:400">빌더에서는 입력하지 않고 여기서만 관리</span>' : "") + '</h2><div class="ftable">' + row("태그 사용여부", p.tagUse ? "사용" : "사용안함") + (p.tagUse ? row("검색태그", chips(p.tags)) : "") +
+        row("메타태그 설정", '<div class="block tblwrap"><table class="mtable"><tr><th style="width:140px">keywords</th><td>' + esc(p.keywords || "—") + '</td></tr><tr><th>description</th><td>' + esc(revCrumb(p)) + ' <span class="hint">경로 역순 자동</span></td></tr><tr><th>og:title</th><td>' + esc(p.ogTitle || p.name) + '</td></tr><tr><th>og:description</th><td>' + esc(p.ogDesc || "—") + '</td></tr><tr><th>og:site_name</th><td>TOO <span class="hint">고정</span></td></tr></table></div>') + "</div></div>") +
+      '<div class="sect"><h2>담당자 정보</h2><div class="ftable"><div class="frow two"><div class="k">등록자</div><div class="v">김혜윤(P217326)</div><div class="k">등록일시</div><div class="v">' + esc(p.created) + '</div></div><div class="frow two"><div class="k">최근 수정자</div><div class="v">김혜윤(P217326)</div><div class="k">최근 수정일시</div><div class="v">' + esc(p.updated) + "</div></div></div></div>";
+    else if (D.tab === "auth") {
+      var BP = 10, bl = p.bff.slice().reverse(), bmax = Math.max(1, Math.ceil(bl.length / BP)); if (!D.bpg || D.bpg > bmax) D.bpg = 1; var bs = bl.slice((D.bpg - 1) * BP, D.bpg * BP), live = p.dlive.bff || [];
+      function u(v) { return v ? "사용" : '<span class="hint">미사용</span>'; }
+      body = '<div class="rmeta" style="justify-content:space-between"><span>BFF 인증 현황 목록 <span class="n">' + bl.length + '건</span>' + (!same(p.bff, live) ? ' <span class="tag acc sm">변경 · 승인 전</span>' : "") + '</span><button class="btn" id="bff-add">BFF 매핑 추가</button></div>' +
+        '<div class="tblwrap"><table class="bfft"><thead><tr><th class="ct">No.</th><th class="ct">구분</th><th>BFF ID</th><th>업무 API명</th><th>API URL</th><th class="ct">인증범위</th><th class="ct">모바일 Web 그룹</th><th class="ct">모바일 Web 상세</th><th class="ct">모바일 Web 옵션</th><th class="ct">APP 그룹</th><th class="ct">APP 상세</th><th class="ct">APP 옵션</th><th class="ct">삭제</th></tr></thead><tbody>' +
+        (bs.length ? bs.map(function (id, k) { var b = bffById(id), no = bl.length - ((D.bpg - 1) * BP + k), isNew = live.indexOf(id) === -1; return '<tr' + (isNew ? ' class="bnew"' : "") + '><td class="ct">' + no + '</td><td class="ct">BFF</td><td class="mono">' + b.id + (isNew ? ' <span class="tag ok sm">추가</span>' : "") + "</td><td>" + esc(b.api) + '</td><td class="mono">' + esc(b.url) + '</td><td class="ct">' + esc(b.scope) + '</td><td class="ct">' + u(b.mg) + '</td><td class="ct">' + u(b.md) + '</td><td class="ct">' + u(b.mo) + '</td><td class="ct">' + u(b.ag) + '</td><td class="ct">' + u(b.ad) + '</td><td class="ct">' + u(b.ao) + '</td><td class="ct"><button class="btn sm" data-bdel="' + b.id + '">BFF 매핑 취소</button></td></tr>'; }).join("") : '<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--ink-3)">매핑된 BFF가 없습니다. [BFF 매핑 추가]로 연결하세요.</td></tr>') + "</tbody></table></div>" +
+        (live.filter(function (id) { return p.bff.indexOf(id) === -1; }).length ? '<div class="hint warn" style="margin-top:6px">매핑 취소 예정 (승인 전): ' + esc(live.filter(function (id) { return p.bff.indexOf(id) === -1; }).join(", ")) + "</div>" : "") +
+        '<div class="bfoot"><span>- 고객 상태값에 따라 정지/SMS수신불가 단말기인 경우 우선순위에 따른 적용 : 1순위) S, 2순위) R</span><div class="pager">' + Array.apply(null, { length: bmax }).map(function (_, k) { return '<button data-bpg="' + (k + 1) + '"' + (D.bpg === k + 1 ? ' class="on"' : "") + ">" + (k + 1) + "</button>"; }).join("") + "</div></div>" +
+        '<div class="hint">BFF 매핑 추가·취소는 개발 설정 변경으로 쌓이고, 하단 [승인 요청] 후 승인되면 반영됩니다.</div>';
+    }
+    else { var rs = REQS.filter(function (r) { return r.kind === "dev" && r.pid === p.id; }).slice().reverse(); body = '<div class="rmeta">개발 설정 요청 <span class="n">' + rs.length + '건</span><span class="hint" style="font-weight:400">· 이 페이지의 개발 설정 · 인증 정보 변경만 기록 · 운영 정보 이력은 전체 페이지·메뉴 관리의 변경/승인 이력에서</span></div>' + histTable(rs, p.id, D); }
+    var canReq = devKey(p) === "draft" || (devKey(p) === "rejected" && !same(snapD(p), p.dlive));
+    card.innerHTML = header(["페이지 개발 설정", "상세"], "페이지 개발 설정 · " + p.name) +
+      '<div class="tabs"><button class="tab" data-dt="info" aria-selected="' + (D.tab === "info") + '">개발 설정</button><button class="tab" data-dt="auth" aria-selected="' + (D.tab === "auth") + '">인증 정보</button><button class="tab" data-dt="hist" aria-selected="' + (D.tab === "hist") + '">변경/승인 이력</button></div>' + body +
+      '<div class="formactions split"><button class="btn" id="dv-list">목록</button><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="hint">개발 설정 상태 ' + devChip(p) + "</span>" +
+      (pr ? '<button class="btn" id="dv-reject">반려</button><button class="btn primary" id="dv-approve">승인 (승인자)</button>' : '<button class="btn" id="dv-edit">수정</button><button class="btn primary" id="dv-req"' + (canReq ? "" : " disabled") + ">승인 요청</button>") + "</div></div>";
+    function q(s) { return card.querySelector(s); }
+    card.querySelectorAll("[data-dt]").forEach(function (b) { b.onclick = function () { D.tab = b.getAttribute("data-dt"); renderDevDetail(); }; });
+    q("#dv-list").onclick = function () { view = "dev"; render(); };
+    var op = q("#dv-ops"); if (op) op.onclick = function () { goOps(p.id); };
+    if (D.tab === "hist") bindHist(D, renderDevDetail);
+    function devTouched() { p.updated = now(); p.drej = false; var pr0 = pendingDev(p); if (pr0) { pr0.status = "rejected"; pr0.why = "요청 후 수정되어 자동 취소"; pr0.dby = "시스템"; pr0.dat = now(); toast("승인 대기 중 수정 — " + pr0.no + " 요청이 취소되었습니다"); } }
+    card.querySelectorAll("[data-bpg]").forEach(function (b) { b.onclick = function () { D.bpg = +b.getAttribute("data-bpg"); renderDevDetail(); }; });
+    card.querySelectorAll("[data-bdel]").forEach(function (b) { b.onclick = function () { var id = b.getAttribute("data-bdel"); alertBox("BFF 매핑을 취소하시겠습니까?", esc(id + " · " + bffById(id).api) + " 매핑이 승인 후 해제됩니다.", function () { p.bff = p.bff.filter(function (x) { return x !== id; }); devTouched(); toast(id + " 매핑 취소 · 승인 요청하세요"); renderDevDetail(); }); }; });
+    var ba = q("#bff-add"); if (ba) ba.onclick = function () {
+      var avail = BFF.filter(function (b) { return p.bff.indexOf(b.id) === -1; });
+      showModal({ cls: "wide xl", title: "BFF 매핑 추가", okText: "추가", html: '<p>이 페이지에 연결할 BFF 인증 API를 고르세요. 이미 매핑된 BFF는 목록에 없습니다.</p><div class="tblwrap" style="max-height:380px;overflow:auto"><table class="bfft"><thead><tr><th style="width:36px"></th><th>BFF ID</th><th>업무 API명</th><th>API URL</th><th class="ct">인증범위</th></tr></thead><tbody>' +
+        (avail.length ? avail.map(function (b) { return '<tr><td><input type="checkbox" data-bpick="' + b.id + '"></td><td class="mono">' + b.id + "</td><td>" + esc(b.api) + '</td><td class="mono">' + esc(b.url) + '</td><td class="ct">' + esc(b.scope) + "</td></tr>"; }).join("") : '<tr><td colspan="5" class="hint" style="text-align:center;padding:30px">추가할 BFF가 없습니다</td></tr>') + "</tbody></table></div>",
+        validate: function (root) { root._ids = Array.prototype.map.call(root.querySelectorAll("[data-bpick]:checked"), function (c) { return c.getAttribute("data-bpick"); }); if (!root._ids.length) { toast("추가할 BFF를 선택하세요"); return false; } return true; },
+        onOk: function (root) { p.bff = p.bff.concat(root._ids); D.bpg = 1; devTouched(); toast("BFF " + root._ids.length + "건 매핑 추가 · 승인 요청하세요"); renderDevDetail(); } });
+    };
+    card.querySelectorAll("[data-gop]").forEach(function (a) { a.onclick = function (e) { e.preventDefault(); }; });
+    var e = q("#dv-edit"); if (e) e.onclick = function () { editing = snapD(p); view = "devedit"; render(); };
+    var rq = q("#dv-req"); if (rq) rq.onclick = function () {
+      var chg = devChanges(p);
+      showModal({ title: "개발 설정 승인요청", okText: "승인요청", html: '<div class="kvs"><span class="k">승인 담당자</span><span>정지솔(SSP12344)</span><span class="k">담당 사업부</span><span>MT 사업부</span></div><div class="diff"><b>변경 항목</b> · ' + esc(chg.map(function (c) { return c.l; }).join(", ")) + "<br>이 페이지의 개발 설정·인증 정보만 승인 대상입니다. 운영 정보는 전체 페이지·메뉴 관리에서 일괄 승인합니다.</div>",
+        onOk: function () { var no = "DR-" + stamp() + "-" + String(++reqSeq).padStart(2, "0"); REQS.push({ no: no, kind: "dev", pid: p.id, title: p.name + " · 개발 설정", by: "김혜윤(P217326)", at: now(), status: "pending", items: [{ id: p.id, name: p.name, ch: chg }] }); toast(no + " 승인 요청"); render(); } });
+    };
+    var ap = q("#dv-approve"); if (ap) ap.onclick = function () { toast(decide(pr, true)); render(); };
+    var rj = q("#dv-reject"); if (rj) rj.onclick = function () { rejectBox(pr, render); };
+  }
+  function renderDevEdit() {
+    var p = byId(current), e = editing, isG = p.group;
+    function row(k, v) { return '<div class="frow"><div class="k">' + k + '</div><div class="v">' + v + "</div></div>"; }
+    function row2(k1, v1, k2, v2) { return '<div class="frow two"><div class="k">' + k1 + '</div><div class="v">' + v1 + '</div><div class="k">' + k2 + '</div><div class="v">' + v2 + "</div></div>"; }
+    function yn(name, val) { return '<label class="opt"><input type="radio" name="' + name + '" value="1"' + (val ? " checked" : "") + '> 사용</label><label class="opt"><input type="radio" name="' + name + '" value="0"' + (val ? "" : " checked") + "> 사용안함</label>"; }
+    function cks(attr, defs, s) { return defs.map(function (d) { return '<label class="opt"><input type="checkbox" data-' + attr + '="' + d[0] + '"' + (s.indexOf(d[0]) !== -1 ? " checked" : "") + "> " + d[1] + "</label>"; }).join(""); }
+    function txt(id, v, ph) { return '<input type="text" class="w-md" id="' + id + '" value="' + esc(v) + '" placeholder="' + esc(ph) + '">'; }
+    card.innerHTML = header(["페이지 개발 설정", "수정"], "페이지 개발 설정 수정 · " + p.name) +
+      '<div class="sect"><h2>개발 설정</h2><div class="ftable">' +
+      row("상품 프로세스 구분 관리", sel("f-proc", PROC, e.proc, 200)) +
+      row2("마스킹/업무인증<br>동시적용 여부", '<label class="opt"><input type="radio" name="f-dual" value="0"' + (e.dualAuth ? "" : " checked") + '> 아니오</label><label class="opt"><input type="radio" name="f-dual" value="1"' + (e.dualAuth ? " checked" : "") + "> 예</label>", "접근중단일시", '<input type="date" id="f-bfrom" value="' + esc(e.blockFrom) + '"> - <input type="date" id="f-bto" value="' + esc(e.blockTo) + '">') +
+      row2("모바일 Web JOB 코드", txt("f-mjob", e.mwebJob, "모바일 Web JOB 코드를 입력해주세요."), "App JOB 코드", txt("f-ajob", e.appJob, "App JOB 코드를 입력해주세요.")) +
+      row2("가이드 URL", txt("f-gurl", e.guideUrl, "가이드 URL을 입력해주세요."), "차단화면 URL", txt("f-burl", e.blockUrl, "기본페이지: /common/util/service-block")) +
+      row2("최종 수정자", '<input type="text" class="w-md ro-in" value="김혜윤(P217326)" readonly>', "최종 수정일시", '<input type="text" class="w-md ro-in" value="' + esc(p.updated) + '" readonly>') + "</div></div>" +
+      '<div class="sect"><h2>관리성 정보 <span class="hint" style="font-weight:400">엑셀 대체 관리용 · 메뉴 노출 검증 없음</span></h2><div class="ftable">' +
+      row2("페이지 속성", Object.keys(ATTR).map(function (a) { return '<label class="opt"><input type="radio" name="f-attr" value="' + a + '"' + (e.attr === a ? " checked" : "") + "> " + ATTR[a] + "</label>"; }).join(""), "화면 제공형태", FORMS.map(function (a) { return '<label class="opt"><input type="radio" name="f-form" value="' + a + '"' + (e.form === a ? " checked" : "") + "> " + a + "</label>"; }).join("")) +
+      row("업무처리 형태", cks("biz", BIZ, e.biz)) + row2("과금 팝업 호출", cks("pop", CH, e.popCh), "네비게이션 노출", cks("nav", NAV, e.nav)) + "</div></div>" +
+      '<div class="sect"><h2>운영 부가 정보</h2><div class="ftable">' + (isG ? "" : row2("검색 노출 여부", yn("f-s", e.search), "공유하기 여부", yn("f-share", e.share))) + row("비고", '<input type="text" class="w-lg" id="f-remark" value="' + esc(e.remark) + '" placeholder="페이지에 대한 비고사항을 입력해주세요.">') + "</div></div>" +
+      (isG ? "" : '<div class="sect"><h2>연결 정보</h2><div class="ftable">' + row("CVM 접촉이벤트 ID", '<input type="text" class="w-md" id="f-cvm" value="' + esc(e.cvm) + '" placeholder="접촉이벤트 ID"><button class="btn sm" id="f-cvm-find">조회</button><span class="hint">사유코드: <span id="f-reason">' + esc(e.reason || "—") + "</span></span>") + "</div></div>" +
+        '<div class="sect"><h2>마스킹 정보</h2><div class="ftable">' + row("마스킹 적용", yn("f-mask", e.maskOn)) + row2("해제 방식", sel("f-mway", [["","선택"],["휴대폰 인증","휴대폰 인증"],["비밀번호 재확인","비밀번호 재확인"]], e.maskWay, 180), "해제 인증", sel("f-mauth", [["","선택"],["PASS","PASS"],["SMS","SMS"],["간편인증","간편인증"]], e.maskAuth, 140)) + "</div></div>" +
+        '<div class="sect"><h2>검색 및 태그정보</h2><div class="ftable">' + row("태그 사용여부", yn("f-tag", e.tagUse)) +
+        (e.tagUse ? row("메타 태그", '<div class="tagbox" id="f-tags">' + e.tags.map(function (t, i) { return '<span class="tg">' + esc(t) + ' <b data-rm="' + i + '">×</b></span>'; }).join("") + '<button class="btn sm" id="f-tag-add">+</button><input type="text" class="w-sm" id="f-tag-in" placeholder="태그 입력 후 Enter" style="display:none"></div>') : "") +
+        row("메타 태그 설정", '<div class="block tblwrap"><table class="mtable"><tr><th style="width:140px">keywords</th><td><input type="text" class="w-lg" id="f-kw" value="' + esc(e.keywords) + '" placeholder="쉼표로 구분"></td></tr><tr><th>og:title</th><td><input type="text" class="w-lg" id="f-ogt" value="' + esc(e.ogTitle) + '" placeholder="' + esc(p.name) + '"></td></tr><tr><th>og:description</th><td><input type="text" class="w-lg" id="f-ogd" value="' + esc(e.ogDesc) + '"></td></tr></table></div>') + "</div></div>") +
+      '<div class="formactions"><button class="btn" id="b-cancel">취소</button><button class="btn primary" id="b-save">저장</button></div>';
+    function vals(a) { return Array.prototype.map.call(card.querySelectorAll("[data-" + a + "]:checked"), function (c) { return c.getAttribute("data-" + a); }); }
+    function collect() {
+      e.proc = card.querySelector("#f-proc").value; e.dualAuth = card.querySelector('input[name="f-dual"]:checked').value === "1";
+      e.blockFrom = card.querySelector("#f-bfrom").value; e.blockTo = card.querySelector("#f-bto").value;
+      e.mwebJob = card.querySelector("#f-mjob").value.trim(); e.appJob = card.querySelector("#f-ajob").value.trim(); e.guideUrl = card.querySelector("#f-gurl").value.trim(); e.blockUrl = card.querySelector("#f-burl").value.trim();
+      var at = card.querySelector('input[name="f-attr"]:checked'); if (at) e.attr = at.value; var fm = card.querySelector('input[name="f-form"]:checked'); if (fm) e.form = fm.value;
+      e.biz = vals("biz"); e.popCh = vals("pop"); e.nav = vals("nav");
+      var sx = card.querySelector('input[name="f-s"]:checked'); if (sx) e.search = sx.value === "1"; var sh = card.querySelector('input[name="f-share"]:checked'); if (sh) e.share = sh.value === "1";
+      e.remark = card.querySelector("#f-remark").value;
+      var cv = card.querySelector("#f-cvm"); if (cv) { e.cvm = cv.value.trim(); e.reason = card.querySelector("#f-reason").textContent.replace(/^—$/, ""); }
+      var mk = card.querySelector('input[name="f-mask"]:checked'); if (mk) { e.maskOn = mk.value === "1"; e.maskWay = card.querySelector("#f-mway").value; e.maskAuth = card.querySelector("#f-mauth").value; }
+      var tg = card.querySelector('input[name="f-tag"]:checked'); if (tg) e.tagUse = tg.value === "1";
+      var kw = card.querySelector("#f-kw"); if (kw) { e.keywords = kw.value.trim(); e.ogTitle = card.querySelector("#f-ogt").value.trim(); e.ogDesc = card.querySelector("#f-ogd").value.trim(); }
+    }
+    card.querySelectorAll('input[name="f-tag"]').forEach(function (r) { r.onchange = function () { collect(); renderDevEdit(); }; });
+    var cf = card.querySelector("#f-cvm-find"); if (cf) cf.onclick = function () { var id = card.querySelector("#f-cvm").value.trim(); if (!id) { toast("접촉이벤트 ID를 입력해 주세요"); return; } card.querySelector("#f-reason").textContent = CVM_REASON[id] || "RS" + id.replace(/\D/g, "").slice(-4) + " · (조회 결과)"; };
+    var tb = card.querySelector("#f-tags"); if (tb) {
+      tb.querySelectorAll("[data-rm]").forEach(function (b) { b.onclick = function () { collect(); e.tags.splice(+b.getAttribute("data-rm"), 1); renderDevEdit(); }; });
+      var ti = card.querySelector("#f-tag-in"); card.querySelector("#f-tag-add").onclick = function () { ti.style.display = ""; ti.focus(); };
+      ti.onkeydown = function (ev) { if (ev.key === "Enter") { var v = ti.value.trim(); if (v) { collect(); if (e.tags.indexOf(v) === -1) e.tags.push(v); renderDevEdit(); } } };
+    }
+    card.querySelector("#b-cancel").onclick = function () { editing = null; view = "devd"; render(); };
+    card.querySelector("#b-save").onclick = function () {
+      collect(); if (e.blockFrom && e.blockTo && e.blockFrom > e.blockTo) { toast("접근중단일시 시작이 종료보다 늦습니다"); return; } DF.forEach(function (k) { p[k] = clone(e[k]); }); p.updated = now(); p.drej = false;
+      var pr = pendingDev(p); if (pr) { pr.status = "rejected"; pr.why = "요청 후 수정되어 자동 취소"; pr.dby = "시스템"; pr.dat = now(); }
+      editing = null; view = "devd"; render(); toast(pr ? "승인 대기 중 수정 — " + pr.no + " 요청이 취소되었습니다" : "저장되었습니다 (작성본) — 승인 요청하세요");
+    };
+  }
+
+  /* ============================================================ 빌더 연동 시뮬레이션 · 노출 예약 */
+  function builderApproved(p) {
+    p.ctState = "approved";
+    var live = p.tlive && p.tlive.menuOn && p.tlive.url;
+    if (live) REQS.push({ no: "BL-" + stamp() + "-" + String(++reqSeq).padStart(2, "0"), kind: "builder", title: p.name + " · 빌더 화면 승인 → 노출 예약 해제", by: "화면 빌더", at: now(), status: "auto", dby: "시스템", dat: now(), note: "운영 정보 승인으로 노출 예약된 페이지라 추가 승인 없이 FO에 반영됐습니다.",
+      items: [{ id: p.id, name: p.name, ch: [{ l: "FO 노출", from: "노출 예약", to: "노출" }, { l: "빌더 화면", from: p.ct + " 승인 전", to: p.ct + " 승인" }] }] });
+    return live;
+  }
+  function openSim() {
+    var bs = pages.filter(function (p) { return p.ptype === "builder" && !p.del; });
+    var cand = bs.filter(function (p) { return !p.ct; }), conn = bs.filter(function (p) { return p.ct; }), wait = conn.filter(function (p) { return p.ctState !== "approved"; });
+    function opts(list, fn) { return list.length ? list.map(function (p) { return '<option value="' + p.id + '">' + esc(fn(p)) + "</option>"; }).join("") : '<option value="">해당 없음</option>'; }
+    showModal({ cls: "wide", title: "빌더 연동 시뮬레이션", okText: "닫기", noCancel: true, html:
+      '<p>화면 빌더에서 일어나는 동작을 흉내 냅니다. 빌더는 URL·메타태그를 입력하지 않고, 전체 페이지에 등록된 「빌더 화면」 유형 페이지를 불러와 1:1로 연결합니다.</p>' +
+      '<div class="simsec"><h4>① 빌더에서 페이지 불러오기</h4><div class="r"><select id="sim-pick" style="width:300px">' + opts(cand, function (p) { return p.id + " · " + p.name + (p.tlive ? "" : " (운영 정보 승인 전)"); }) + '</select><button class="btn sm primary" id="sim-link"' + (cand.length ? "" : " disabled") + ">불러와 연결</button></div></div>" +
+      '<div class="simsec"><h4>② 빌더 화면 승인</h4><div class="r"><select id="sim-ap" style="width:300px">' + opts(wait, function (p) { return p.ct + " · " + p.name + (p.tlive && p.tlive.menuOn ? " (노출 예약 중)" : ""); }) + '</select><button class="btn sm" id="sim-apgo"' + (wait.length ? "" : " disabled") + '>화면 승인</button></div><div class="hint">노출 예약 중이면 승인 즉시 FO에 나타나고 이력에 「빌더 연동 · 자동」으로 남습니다</div></div>' +
+      '<div class="simsec"><h4>③ 빌더 화면 삭제 (연결 해제)</h4><div class="r"><select id="sim-del" style="width:300px">' + opts(conn, function (p) { return p.ct + " · " + p.name + (shownIds("live")[p.id] ? " (FO 노출 중)" : ""); }) + '</select><button class="btn sm warnb" id="sim-delgo"' + (conn.length ? "" : " disabled") + '>빌더에서 삭제</button></div><div class="hint">페이지는 남고 연결만 해제 · FO에 노출 중인 화면은 삭제 불가</div></div>',
+      bind: function (root) {
+        root.querySelector("#sim-link").onclick = function () { var p = byId(root.querySelector("#sim-pick").value); if (!p) return; ctSeq += 1; p.ct = "CT-00" + ctSeq; p.ctState = "pending"; closeModal(); toast(p.ct + " ↔ " + p.id + " 연결 · 화면 승인 전"); render(); };
+        root.querySelector("#sim-apgo").onclick = function () { var p = byId(root.querySelector("#sim-ap").value); if (!p) return; var live = builderApproved(p); closeModal(); toast(p.ct + " 화면 승인" + (live ? " — 노출 예약 해제 · FO에 자동 노출" : "")); render(); };
+        root.querySelector("#sim-delgo").onclick = function () { var p = byId(root.querySelector("#sim-del").value); if (!p) return; if (shownIds("live")[p.id]) { toast("「" + p.name + "」은 FO에 노출 중이라 화면을 삭제할 수 없습니다 — 운영 정보에서 미노출 승인 후 삭제"); return; } var ct = p.ct; p.ct = ""; p.ctState = ""; closeModal(); toast(ct + " 삭제 → " + p.id + " 연결 해제 (페이지 유지)"); render(); };
+      } });
+  }
+  /* 시나리오 가이드 — 빌더 노출 예약 예외 케이스 */
+  /* 시나리오 가이드 — 빌더 노출 예약 */
+  function openScn() {
+    var hb = byId("PG000305"), sh = byId("PG000230"), shown = shownIds("live");
+    var st = [
+      { t: "「혜택 홈」 확인 — 운영 정보 승인은 끝났지만 빌더 미연결", s: "Front 노출이 켜진 채 승인돼 「노출 예약 · 빌더 미연결」입니다. [FO 미리보기]의 현재 FO에는 없고 「노출 예약」 줄에만 보입니다.", done: false, btn: "운영 정보에서 보기", run: function () { goOps("PG000305"); } },
+      { t: "빌더에서 「혜택 홈」을 불러와 연결", s: "빌더 화면 CT가 연결되고 「노출 예약 · 빌더 화면 승인 전」으로 바뀝니다. 아직 FO에는 없습니다.", done: !!(hb && hb.ct), btn: "실행", run: function () { if (hb && !hb.ct) { ctSeq += 1; hb.ct = "CT-00" + ctSeq; hb.ctState = "pending"; } goOps("PG000305"); toast("빌더 연결 · " + hb.ct); } },
+      { t: "빌더 화면 승인 → FO 자동 노출", s: "추가 승인 없이 현재 FO에 「혜택 홈」이 나타나고, 변경/승인 이력에 「빌더 연동 · 자동」이 남습니다.", done: !!(hb && shown[hb.id]), btn: "실행", run: function () { if (hb && !hb.ct) { toast("2단계를 먼저 실행하세요"); return; } if (hb.ctState !== "approved") builderApproved(hb); goOps("PG000305"); toast("빌더 화면 승인 — 혜택 홈 FO 노출"); } },
+      { t: "같은 경우 · 「쇼핑 홈」은 연결됐지만 화면 승인 전", s: "상품서비스 아래 노출 예약 상태입니다. 왼쪽 [빌더 연동 시뮬레이션] ②로 승인하면 같은 방식으로 자동 노출됩니다.", done: !!(sh && shown[sh.id]), btn: "운영 정보에서 보기", run: function () { goOps("PG000230"); } },
+      { t: "새 빌더 페이지를 노출 켠 채 추가해 보기", s: "[수정] → 「혜택 > 혜택」 선택 → [+ 하위 페이지 추가] (유형: 빌더 화면, URL 입력) → Front 노출 켬 → 임시저장 → 승인 요청 → 이력에서 승인. 승인 후 「노출 예약」으로 반영되고, 빌더 연결·승인 시 자동 노출됩니다.", done: false, btn: "수정 열기", run: function () { goOps("PG000320", true); } }
+    ];
+    showModal({ cls: "wide", title: "시나리오 · 빌더 노출 예약", okText: "닫기", noCancel: true, html:
+      '<p><b>규칙</b> — 빌더 화면 유형은 Front 노출을 켠 채로 운영 정보 승인을 받을 수 있습니다. 빌더 화면이 연결·승인되기 전까지는 「노출 예약」으로 남고, 빌더 화면이 승인되는 순간 추가 승인 없이 FO에 나타납니다. 다른 유형은 운영 정보 승인 즉시 노출됩니다.</p>' +
+      '<ol class="steps">' + st.map(function (x, i) { return '<li class="' + (x.done ? "done" : "") + '"><span class="n">' + (x.done ? "✓" : i + 1) + "</span><div><b>" + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn sm" data-st="' + i + '">' + esc(x.btn) + "</button></li>"; }).join("") + "</ol>",
+      bind: function (root) { root.querySelectorAll("[data-st]").forEach(function (b) { b.onclick = function () { var x = st[+b.getAttribute("data-st")]; closeModal(); x.run(); }; }); } });
+  }
+  document.addEventListener("click", function (e) { if (e.target.closest("[data-sim]")) guardLeave(openSim); else if (e.target.closest("[data-scn]")) guardLeave(openScn); });
+
+  /* ============================================================ 라우팅 */
+  function render() {
+    if (!O.focus) window.scrollTo(0, 0);
+    var grp = (view === "dev" || view === "devd" || view === "devedit") ? "dev" : "ops";
+    document.querySelectorAll(".lnb [data-nav]").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-nav") === grp); });
+    if (view === "dev") renderDevList(); else if (view === "devd") renderDevDetail(); else if (view === "devedit") renderDevEdit(); else if (view === "hist") renderHist(); else renderOps();
+  }
+  document.querySelectorAll(".lnb [data-nav]").forEach(function (a) { a.onclick = function () { var v = a.getAttribute("data-nav"); guardLeave(function () { view = v; render(); }); }; });
+  window.__dbg = { byId: byId, shownIds: shownIds, REQS: REQS };
+  // 어드민 LNB가 해시를 바꾸면(또는 새 iframe src) 상위 뷰 전환. 상세(devd/devedit)·이력은 내부 전환 유지.
+  window.addEventListener("hashchange", function () { var v = location.hash === "#dev" ? "dev" : "ops"; guardLeave(function () { view = v; render(); }); });
+  render();
+})();
+</script>
+</body>
+</html>

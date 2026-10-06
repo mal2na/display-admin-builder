@@ -1,7 +1,7 @@
 'use client';
 
 import { NavLink } from '@/components/nav-link';
-import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Files, ListTree, Workflow } from 'lucide-react';
+import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 좌측 사이드바 — GNB와 같은 라벤더(#ebeef6) 배경. 브랜드/접기 토글은 GNB로 이동했다.
@@ -19,7 +19,6 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         <NavLink href="/admin/corner-types" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리" collapsed={collapsed} />
         <NavLink href="/admin/banner-campaigns" icon={<GalleryHorizontalEnd className="h-4 w-4" />} label="배너 캠페인 관리" collapsed={collapsed} />
         <NavLink href="/admin/messages" icon={<MessageSquareText className="h-4 w-4" />} label="문구 관리" collapsed={collapsed} badge="테스트" />
-        <NavLink href="/admin/menus" icon={<ListTree className="h-4 w-4" />} label="메뉴 관리" collapsed={collapsed} />
 
         {/* 프로모션 관리 */}
         {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">프로모션 관리</p>}
@@ -31,7 +30,8 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         <NavLink href="/admin/app-splash" icon={<ImagePlay className="h-4 w-4" />} label="App 스플래시 관리" collapsed={collapsed} />
         <NavLink href="/admin/app-versions" icon={<SmartphoneNfc className="h-4 w-4" />} label="App 버전 관리" collapsed={collapsed} />
         <NavLink href="/admin/app-widgets" icon={<AppWindow className="h-4 w-4" />} label="App 위젯 관리" collapsed={collapsed} alsoActiveFor={['/admin/widget-types']} />
-        <NavLink href="/admin/full-pages" icon={<Files className="h-4 w-4" />} label="전체페이지 관리" collapsed={collapsed} />
+        <NavLink href="/admin/page-menu-b" icon={<FolderTree className="h-4 w-4" />} label="전체 페이지·메뉴 관리" collapsed={collapsed} badge="B안" />
+        <NavLink href="/admin/page-dev" icon={<SlidersHorizontal className="h-4 w-4" />} label="페이지 개발 설정" collapsed={collapsed} />
       </nav>
 
       <div className="border-t p-3 text-center text-xs text-muted-foreground">{collapsed ? 'v0.31' : 'POL-DSP v0.31'}</div>

@@ -45,6 +45,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
+import { TargetCopySet } from './target-copy-set';
 
 // 등록된 코너 유형(코너 유형 관리 = 마스터)의 (코너유형·컴포넌트·배열) 조합. 등록 폼 ②③을 이걸로 좁힌다.
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
@@ -1346,6 +1347,39 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
   // 정의(거버넌스) 기본값 — 코너 유형이 문구·개수·형태까지 정의(2026-09-29 거버넌스 분리). 빌더는 쌓기+CVM만.
   const [mainTitleText, setMainTitleText] = useState(row.defaultMainTitle ?? '');
+  // 타겟별 문구 세트(2026-10-06) — 타이틀 + 상품·혜택 문구를 '타겟' 하나로 묶어 한 세트로 관리.
+  //  슬롯 = 타이틀 + 각 아이템 대표 문구. 시드 = 기존 베리에이션(Corner.mainTitleVariants + Atom.contentVariants)에서 타겟별로 모음.
+  const { copySlots, copySeed } = (() => {
+    const pc = row.previewCorner;
+    const slots: { key: string; label: string; base: string }[] = [];
+    const seedCopy: Record<string, Record<string, string>> = {};
+    const seedTargets: string[] = [];
+    const addVariant = (key: string, vs?: { text: string; target?: string; enabled?: boolean }[] | null) => {
+      (vs ?? []).forEach((v) => {
+        const t = v.target;
+        if (!t || v.enabled === false) return;
+        if (!seedTargets.includes(t)) seedTargets.push(t);
+        (seedCopy[t] ??= {})[key] = (v.text ?? '').replace(/\s*\n\s*/g, ' ');
+      });
+    };
+    if (pc) {
+      if (pc.mainTitle) { slots.push({ key: 'title', label: '타이틀', base: (pc.mainTitle ?? '').replace(/\s*\n\s*/g, ' ') }); addVariant('title', pc.mainTitleVariants); }
+      // 상품·혜택 아이템 컴포넌트만(상품형·혜택형). 선택형(카테고리 탭)·행동형(CTA)·배너형 등 네비·버튼은 문구 세트에서 제외.
+      let itemNo = 0;
+      (pc.components ?? []).forEach((cp) => {
+        if (!['상품형', '혜택형'].includes(cp.componentType)) return;
+        // 대표 문구 = 혜택 문구(BENEFIT_TEXT) 우선, 없으면 첫 텍스트.
+        const atoms = cp.atoms ?? [];
+        const a = atoms.find((x) => (x.content ?? '').trim() && x.atomType === 'BENEFIT_TEXT')
+          ?? atoms.find((x) => (x.content ?? '').trim() && ['TEXT', 'INFO'].includes(x.atomType));
+        if (!a) return;
+        itemNo += 1;
+        slots.push({ key: a.id, label: `상품 ${itemNo}`, base: (a.content ?? '').replace(/\s*\n\s*/g, ' ') });
+        addVariant(a.id, a.contentVariants);
+      });
+    }
+    return { copySlots: slots, copySeed: { targets: seedTargets, copy: seedCopy } };
+  })();
   const [subTitleText, setSubTitleText] = useState(row.defaultSubTitle ?? '');
   const [subTitleIcon, setSubTitleIcon] = useState(row.defaultSubTitleIcon ?? '화살표');
   const [cardShape, setCardShape] = useState(row.defaultCardShape ?? '');
@@ -1420,10 +1454,17 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     return reg?.typeDetail ?? cornerTypeDetails(b)[0] ?? '';
   };
   const detailValid = typeShapes.includes(detail) ? detail : (allowEmptyDetail ? '' : (typeShapes[0] ?? ''));
+  // 수정 중 '지금 편집하는 바로 그 case'(원본 유형·배열)일 때만 저장된 실제 콘텐츠(blocks)를 쓴다.
+  // 다른 유형·배열을 고르면 그 조합엔 콘텐츠가 없으므로 신규 등록처럼 가이드(빈 슬롯)로 보여준다(2026-10-06).
+  const isOriginalCase = !isNew && base === row.baseCategory && detailValid === (row.typeDetail ?? '');
+  // 저장된 조합(blocks)을 미리보기에 쓸지: 신규 등록은 '담은 즉시' 반영, 수정은 '지금 편집하는 그 case'일 때만.
+  // (수정 중 다른 유형/배열을 고르면 그 조합엔 콘텐츠가 없으니 가이드) 2026-10-06 보강 — 신규 등록 상품·혜택 담기 미반영 버그 수정.
+  const useSavedBlocks = blocks.length > 0 && (isNew || isOriginalCase);
+  const guidePreview = !useSavedBlocks; // 보여줄 실제 콘텐츠가 없을 때만 가이드(플레이스홀더)
   // 대표 컴포넌트 유형: 사용자가 컴포넌트 조합을 직접 편집했으면 그 첫 블록 유형을 대표로 쓴다(저장·미리보기 정합).
   //  편집 전(blocks 비어있음)에는 배열·레이아웃에서 도출(compForShape) — 기존 동작 유지.
   const compFromShape = compForShape(base, detailValid);
-  const compValid = blocks.length ? ((blocks[0]?.componentType as ComponentType) || compFromShape) : compFromShape;
+  const compValid = useSavedBlocks ? ((blocks[0]?.componentType as ComponentType) || compFromShape) : compFromShape;
 
   // ── 세부 항목 적용 가능 여부 (유형별) ──
   // 카테고리 탭/고정형 탭/배너/아이콘형 등은 코너 타이틀·서브타이틀이 없다(미리보기 noHeader와 동일 기준).
@@ -1468,7 +1509,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const isBannerLoader = compValid === '배너형' || base === '배너형';
   const isSwipeBannerType = isBannerLoader && detailValid === '스와이프형';
   const isSingleBannerType = isBannerLoader && !isSwipeBannerType; // 배너 단일형(기본) — 1개만 불러옴
-  const swipeBanners = isBannerLoader ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
+  const swipeBanners = (useSavedBlocks && isBannerLoader) ? (blocks.find((b) => b.componentType === '배너형')?.banners ?? []) : [];
   // 상품형·혜택형 — 상품·혜택 아이템 묶음(BSS 카탈로그에서 담기 · 순서 드래그 · URL 수동). 2026-09-29 사용자 요청.
   const isProductItemsType = !isBannerLoader && (compValid === '상품형' || compValid === '혜택형');
   const productItems = isProductItemsType ? (blocks.find((b) => b.componentType === compValid)?.items ?? blocks.find((b) => b.items)?.items ?? []) : [];
@@ -1485,7 +1526,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const liveFeatFlags = { image: imageOn, price: priceOn, desc: descOn, badge: eff('useBadge') };
   const shownBlocks: Composition = isBannerLoader
     ? [{ componentType: '배너형', count: isSingleBannerType ? 1 : Math.max(1, swipeBanners.length || 2), image: true, price: true, desc: true, ...(swipeBanners.length ? { banners: isSingleBannerType ? swipeBanners.slice(0, 1) : swipeBanners } : {}) }]
-    : (blocks.length
+    : (useSavedBlocks
         ? blocks
         : defaultComposition(compValid, detailValid, { image: features.useImage, price: features.usePrice, badge: features.useBadge, desc: features.useDesc })
       ).map((b) => {
@@ -1668,10 +1709,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           const previewC = {
             ...compositionToPreviewCorner({
               base, detail: detailValid, composition: shownBlocks,
-              mainTitle: useTitle ? (mainTitleText || (isNew ? '타이틀' : '코너 타이틀')) : null,
-              subTitle: useSub ? (subTitleText || (isNew ? '디스크립션' : '서브타이틀')) : null,
-              placeholder: isNew && !mainTitleText && !subTitleText,
-              emptyImages: isNew, // 신규 등록은 이미지/배너를 빈 영역(가이드 폼)으로. 수정은 실제 이미지 유지.
+              mainTitle: useTitle ? (mainTitleText || (guidePreview ? '타이틀' : '코너 타이틀')) : null,
+              subTitle: useSub ? (subTitleText || (guidePreview ? '디스크립션' : '서브타이틀')) : null,
+              placeholder: guidePreview && !mainTitleText && !subTitleText,
+              emptyImages: guidePreview, // 신규 등록·수정 중 다른 case는 이미지/배너를 빈 가이드 슬롯으로. 편집 중인 그 case만 실제 이미지 유지.
             }),
             cardShape: cardShape || undefined,
             subTitleIcon,
@@ -1683,6 +1724,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             // CTA(더보기) 표시 항목 ON → 미리보기 버튼으로 반영(2026-10-06). 그동안 전달 누락으로 버튼이 안 보였음.
             moreButtonUse: eff('useMoreButton'),
             moreButtonLabel: moreLabel || undefined,
+            // 수급 방식(CVM/운영자 편성)을 미리보기에도 반영 — 빌더와 동일하게 'CVM 개인화 · 미리보기는 폴백' 배지 노출(2026-10-06).
+            recSource: recSource || undefined,
           };
           return <CornerBlock corner={previewC} />;
         })()}
@@ -1883,6 +1926,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
             </p>
+            {/* 타겟별 문구 세트 — 타이틀+상품·혜택 문구를 '타겟' 하나로 묶어 한 세트로 편집(2026-10-06). 수정(편집)·콘텐츠 유형에서만. */}
+            {!isNew && base !== '배너형' && copySlots.length > 0 && (
+              <div>
+                <div className="mb-1.5 mt-1 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />타겟별 문구 세트</div>
+                <TargetCopySet cornerTypeId={row.typeId} slots={copySlots} seed={copySeed} />
+              </div>
+            )}
             </div>
             {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 업무 진입형(탭·메뉴)은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
             {!bulk && base !== '업무 진입형' && base !== '배너형' && (
@@ -1932,7 +1982,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
               {/* 정의 기본값 — 문구·개수·형태 (거버넌스: 코너 유형이 확정 · 빌더는 쌓기+CVM만) */}
               {useTitle && (
-                <TRow label="타이틀"><Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" /></TRow>
+                <TRow label="타이틀">
+                  <Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" />
+                  {/* 타겟별 문구는 아래 '타겟별 문구 세트'에서 타이틀+상품·혜택을 한 세트로 편집(2026-10-06). */}
+                  {!isNew && copySlots.length > 0 && (
+                    <p className="mt-1.5 text-[10.5px] text-slate-400">타겟별 문구(시니어·2030…)는 아래 <b className="font-semibold text-[#3616cd]">‘타겟별 문구 세트’</b>에서 타이틀·상품·혜택을 한번에 편집해요 ↓</p>
+                  )}
+                </TRow>
               )}
               {useSub && (
                 <TRow label="서브타이틀">
@@ -1993,18 +2049,20 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
         <div aria-hidden className="hidden lg:block" />
         <section className="min-w-0">
-        <div className="mb-2.5 flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
-          <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
-          콘텐츠 채우는 방식 · 노출 기본값
-          <span className="text-[12px] font-normal text-slate-500">콘텐츠를 <b className="font-semibold text-slate-600">무엇으로 채울지</b> 먼저 정하고, 정렬·CTA를 설정 · 빌더에서 코너별로 조정 가능</span>
+        <div className="mb-2.5">
+          <div className="flex items-center gap-2 text-[14.5px] font-bold text-slate-900">
+            <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3616cd]" />
+            콘텐츠 채우는 방식 · 노출 기본값
+          </div>
+          <p className="mt-1 text-[12px] leading-relaxed text-slate-500">출처와 정렬·CTA 기본값만 정해요. 실제 소재 선택·조정은 빌더에서 코너별로.</p>
         </div>
         <div className="space-y-3 border-t border-[#cfd3e0] pt-3">
           {/* ① 추천 수급 방식 (출처) — 상품형·혜택·오퍼형·콘텐츠 안내형에만 */}
           {isRecEligible && (
             <div className="space-y-2">
-              <label className="text-[13px] font-semibold text-slate-800">① 콘텐츠를 무엇으로 채울까 <span className="font-normal text-slate-500">· 출처</span></label>
-              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-9 w-full max-w-xs rounded-md border border-[#e8ebef] bg-background px-2.5 text-[13px]">
-                <option value="">기본값 미지정 — 빌더에서 코너별로 선택</option>
+              <label className="text-[13px] font-semibold text-slate-800">① 콘텐츠 출처 <span className="font-normal text-slate-500">· 수급 방식</span></label>
+              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-9 w-full max-w-sm rounded-md border border-[#e8ebef] bg-background px-2.5 text-[13px]">
+                <option value="">기본값 미지정 (빌더에서 선택)</option>
                 {REC_SOURCE_METHODS.map((s) => (
                   <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
                 ))}

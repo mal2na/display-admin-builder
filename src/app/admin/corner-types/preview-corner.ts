@@ -11,6 +11,8 @@ export function cornerToPreviewCorner(c: any): PreviewCorner {
   return {
     id: c.id, name: c.name, cornerType: c.cornerType, title: c.title, maxItems: c.maxItems,
     mainTitle: c.mainTitle, subTitle: c.subTitle, cornerLayout: c.cornerLayout,
+    // 코너 타이틀 문구 베리에이션(Corner.mainTitleVariants JSON) — 상세 미리보기에서 함께 노출(2026-10-06).
+    mainTitleVariants: (() => { try { const v = JSON.parse(c.mainTitleVariants ?? ''); return Array.isArray(v) && v.length ? v : undefined; } catch { return undefined; } })(),
     // 코너 유형 관리 미리보기에서 배너형 이미지는 672×214(띠배너) 비율로 통일 노출(2026-09-29 사용자 요청). 실제 코너 규격은 그대로.
     layoutDetail: c.cornerType === '배너형' ? '띠배너 (672×214)' : c.layoutDetail,
     subTitleIcon: c.subTitleIcon, moreButtonUse: c.moreButtonUse, moreButtonLabel: c.moreButtonLabel,
@@ -31,6 +33,8 @@ export function cornerToPreviewCorner(c: any): PreviewCorner {
           // 퀵메뉴 칩: 아이콘 미저장 시 라벨에서 자동 유추(레퍼런스 퀵칩 아이콘 뱃지).
           imageUrl: isChip && ca.atom.atomType === 'TEXT' ? (ca.atom.imageUrl ?? chipIconForLabel(ca.atom.content ?? ca.atom.name)) : ca.atom.imageUrl,
           altText: ca.atom.altText, linkUrl: ca.atom.linkUrl, menuRole: ca.menuRole,
+          // 문구 베리에이션(타겟별 CVM 택1) — JSON 파싱. 코너 유형 상세 미리보기에서 함께 보여주기 위해 포함(2026-10-06).
+          contentVariants: (() => { try { const v = JSON.parse(ca.atom.contentVariants ?? ''); return Array.isArray(v) && v.length ? v : undefined; } catch { return undefined; } })(),
         })),
       };
     }),

@@ -47,15 +47,15 @@ export default async function AppWidgetDetailPage({ params }: { params: { id: st
           <FieldRow label="배너명" required><ReadValue value={w.bannerName} /></FieldRow>
           <FieldRow label="BG용 RGB 색상코드"><ReadValue value={w.bgColorCode ?? '-'} /></FieldRow>
         </div>
-        {/* 배너 이미지 — 미리보기 + ALT/파일명 */}
-        <div className="grid grid-cols-[140px_1fr] border-b border-slate-100">
-          <div className="flex items-center bg-slate-50/60 px-4 py-3 text-[13px] font-medium text-slate-600">배너 이미지<span className="ml-0.5 text-rose-500">*</span></div>
+        {/* 배너 이미지 — 미리보기 + ALT/파일명 (색상·보더는 전체 페이지·메뉴 관리 기준) */}
+        <div className="grid grid-cols-[140px_1fr] border-b border-[#e3e5ee]">
+          <div className="flex items-center bg-[#f3f4f8] px-4 py-3 text-[13px] font-medium text-[#4b5060]">배너 이미지<span className="ml-0.5 text-[#d9534f]">*</span></div>
           <div className="px-4 py-3">
             {w.bannerImageUrl
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={w.bannerImageUrl} alt={w.bannerImageAlt ?? ''} className="max-h-40 rounded-lg border border-slate-200 object-contain" />
-              : <div className="flex h-24 w-40 items-center justify-center rounded-lg border border-dashed border-slate-200 text-[12px] text-slate-400">이미지 없음</div>}
-            {w.bannerImageAlt && <p className="mt-1.5 text-[12px] text-slate-500">ALT: {w.bannerImageAlt}</p>}
+              ? <img src={w.bannerImageUrl} alt={w.bannerImageAlt ?? ''} className="max-h-40 rounded-lg border border-[#d3d6e2] object-contain" />
+              : <div className="flex h-24 w-40 items-center justify-center rounded-lg border border-dashed border-[#d3d6e2] text-[12px] text-[#8a8fa3]">이미지 없음</div>}
+            {w.bannerImageAlt && <p className="mt-1.5 text-[12px] text-[#8a8fa3]">ALT: {w.bannerImageAlt}</p>}
           </div>
         </div>
         <div className="grid grid-cols-2">
@@ -63,7 +63,7 @@ export default async function AppWidgetDetailPage({ params }: { params: { id: st
           <div />
         </div>
         {/* T월드 영역 */}
-        <div className="border-t border-slate-100 bg-slate-50/40 px-4 py-2 text-[11px] font-semibold text-slate-500">T월드 영역</div>
+        <div className="border-t border-[#e3e5ee] bg-[#f6f7fb] px-4 py-2 text-[11px] font-semibold text-[#8a8fa3]">T월드 영역</div>
         <div className="grid grid-cols-2">
           <FieldRow label="통계코드"><ReadValue value={w.statCode ?? '-'} /></FieldRow>
           <FieldRow label="랜딩위치"><ReadValue value={w.landingPosition ?? '-'} /></FieldRow>

@@ -63,7 +63,7 @@ const DIAGRAM_CSS = `
 const DIAGRAM_HTML = `
 <div>
   <p class="eyebrow">NEXT채널 어드민 전시/관리 영역 구조도 v0.9</p>
-  <p class="thesis">코너 유형 관리에서 상품, 배너, 문구 같은 원천 소스를 코너 유형에 맵핑하고 승인해요. 승인된 코너 유형은 빌더에서 Template에 Corner로 쌓아 화면을 만들고, Template은 Container에 담겨요(Container › Template › Corner). 고객은 메뉴 관리(전체 메뉴)로 진입하고, CVM(점선)은 코너 유형 관리에서 정의해 Template의 코너에 선택 적용돼요. 승인된 화면은 개발이 반영해 고객 앱/웹(F/O)에 전시돼요.</p>
+  <p class="thesis"><b>코너 유형 관리</b>에서 상품, 배너, 문구를 코너 유형에 맵핑하고 승인해요.<br/>승인된 코너 유형은 빌더에서 <b>Container › Template › Corner</b>로 쌓아 화면을 만들어요.<br/>고객은 <b>메뉴 관리(전체 메뉴)</b>로 진입하고, <b>CVM</b>(점선)은 Template의 코너에 선택 적용돼요.<br/>승인된 화면은 개발이 반영해 <b>고객 앱/웹(F/O)</b>에 전시돼요.</p>
 </div>
 
 <section class="card diagram" aria-label="전시관리 구조도">

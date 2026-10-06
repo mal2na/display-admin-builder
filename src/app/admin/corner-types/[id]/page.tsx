@@ -96,6 +96,8 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     liveVersion: ct.liveVersion ?? null,
     liveAt: ct.liveAt ? ct.liveAt.toISOString() : null,
     createdBy: ct.createdBy,
+    // 수정 폼에서 '문구 베리에이션'(타이틀 하단)을 보여주려면 실제 배치 코너 미리보기가 필요(2026-10-06 #2).
+    previewCorner: usagePreviews[0] ?? null,
   };
 
   const history: HistoryRow[] = logs.map((l) => ({
