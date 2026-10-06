@@ -16,10 +16,13 @@ export type BannerRow = {
   preview: { imageUrl: string | null; f: ComposeFields | null; detail: string | null } | null;
 };
 
-// 목록 미리보기 — 실제 배너를 그대로 렌더(상세와 동일 ComposedBanner). 텍스트형도 배지·타이틀·서브·이미지까지
-//  보이도록 크게(240×76, 띠 비율). 2026-10-06 사용자 요청(지금은 뭔지 못 알아봄 → 실제 배너로 크게).
-const THUMB_W = 240;
-const THUMB_H = 76;
+// 목록 미리보기 — 실제 배너를 자연 크기(NAT)로 렌더한 뒤 통째로 축소(transform scale).
+//  이렇게 하면 '프리뷰 안의 텍스트'도 함께 작아져 안 터지고, 프리뷰 자체도 작게 보인다(2026-10-07 사용자 요청).
+const NAT_W = 330; // 텍스트가 안 터지는 자연 폭(상세 배너 비율)
+const NAT_H = 104;
+const THUMB_SCALE = 0.6; // → 표시 크기 ~198×62
+const THUMB_W = Math.round(NAT_W * THUMB_SCALE);
+const THUMB_H = Math.round(NAT_H * THUMB_SCALE);
 function BannerThumb({ preview }: { preview: BannerRow['preview'] }) {
   if (preview?.imageUrl) {
     // eslint-disable-next-line @next/next/no-img-element
@@ -27,8 +30,10 @@ function BannerThumb({ preview }: { preview: BannerRow['preview'] }) {
   }
   if (preview?.f) {
     return (
-      <div className="overflow-hidden rounded-md border border-[#e8ebef]">
-        <ComposedBanner f={preview.f} width={THUMB_W} height={THUMB_H} preview />
+      <div style={{ width: THUMB_W, height: THUMB_H }} className="overflow-hidden rounded-md border border-[#e8ebef]">
+        <div style={{ width: NAT_W, height: NAT_H, transform: `scale(${THUMB_SCALE})`, transformOrigin: 'top left' }}>
+          <ComposedBanner f={preview.f} width={NAT_W} height={NAT_H} preview />
+        </div>
       </div>
     );
   }
