@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sparkles, Plus, X, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CVM_TARGET_HINTS } from '@/lib/display-taxonomy';
@@ -18,6 +18,11 @@ const AI_GEN_PREFIX: Record<string, string> = {
   '위치 인근': '지금 근처에서 ',
   '혜택 보유': '보유 혜택으로 ',
   '신규': '첫 방문 선물, ',
+  // 세그먼트 추천(추천 정책서 TM-REC-012)
+  '장기': '오래 함께한 분께, ',
+  '고가치': 'VIP 전용, ',
+  '이탈위험': '다시 만나서 반가워요, ',
+  '결합·가족': '가족과 함께, ',
 };
 
 export type CopySlot = { key: string; label: string; base: string };
@@ -30,6 +35,9 @@ export function TargetCopySet({ cornerTypeId, slots, seed }: { cornerTypeId: str
   const [store, setStore] = useState<Store>({ targets: [], copy: {} });
   const [sel, setSel] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [picking, setPicking] = useState(false); // '타겟 불러오기' 피커 열림
+  const [picked, setPicked] = useState<string[]>([]); // 피커에서 선택(다중)
+  const [custom, setCustom] = useState('');
   useEffect(() => {
     let s: Store | null = null;
     try { const r = localStorage.getItem(storeKey); if (r) s = JSON.parse(r) as Store; } catch { /* noop */ }
@@ -41,15 +49,8 @@ export function TargetCopySet({ cornerTypeId, slots, seed }: { cornerTypeId: str
   const persist = (s: Store) => { setStore(s); try { localStorage.setItem(storeKey, JSON.stringify(s)); } catch { /* noop */ } };
 
   const gen = (target: string, base: string) => (AI_GEN_PREFIX[target] ?? '') + base;
-  const addable = useMemo(() => CVM_TARGET_HINTS.filter((h) => !store.targets.includes(h.key)), [store.targets]);
 
-  // 타겟 등록 = 모든 슬롯(타이틀+아이템)에 그 타겟 문구를 한꺼번에 생성(AI 기본 생성). "한번에 적용".
-  const addTarget = (t: string) => {
-    if (store.targets.includes(t)) return;
-    const copy = { ...store.copy, [t]: Object.fromEntries(slots.map((s) => [s.key, gen(t, s.base)])) };
-    persist({ ...store, targets: [...store.targets, t], copy });
-    setSel(t);
-  };
+  // 타겟 등록은 '타겟 불러오기'에서 여러 개를 한 번의 업데이트로 추가(아래 참조). 개별 추가는 더 이상 쓰지 않음.
   const removeTarget = (t: string) => {
     const copy = { ...store.copy }; delete copy[t];
     const targets = store.targets.filter((x) => x !== t);
@@ -109,17 +110,66 @@ export function TargetCopySet({ cornerTypeId, slots, seed }: { cornerTypeId: str
             </span>
           ))}
         </div>
-        {addable.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-slate-500">추가 등록 가능</span>
-            {addable.map((h) => (
-              <button key={h.key} type="button" onClick={() => addTarget(h.key)} title={`${h.axis} · ${h.note}`}
-                className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2 py-0.5 text-[12px] font-medium text-slate-500 hover:border-[#3616cd] hover:text-[#3616cd]">
-                <Plus className="h-3 w-3" />{h.key}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* 타겟 추가 = '불러오기' 형식 — 등록된 세그먼트에서 여러 개를 골라 한번에 가져온다(+ 직접 입력). 2026-10-06 사용자 요청. */}
+        <div className="relative flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-slate-500">타겟 추가</span>
+          <button type="button" onClick={() => { setPicking((v) => !v); setPicked([]); setCustom(''); }}
+            className="inline-flex items-center gap-1 rounded-full border border-[#c9c3f5] bg-[#f6f4ff] px-2.5 py-0.5 text-[12px] font-semibold text-[#3616cd] hover:bg-[#efeaff]">
+            <Plus className="h-3 w-3" /> 타겟 불러오기
+          </button>
+          {picking && (
+            <div className="absolute left-14 top-6 z-20 w-72 rounded-xl border border-[#d9d0ff] bg-white p-2.5 shadow-lg">
+              <p className="mb-1.5 text-[11px] font-semibold text-slate-600">등록된 세그먼트에서 선택 <span className="font-normal text-slate-400">· 여러 개 선택</span></p>
+              <ul className="max-h-44 space-y-0.5 overflow-y-auto">
+                {CVM_TARGET_HINTS.map((h) => {
+                  const already = store.targets.includes(h.key);
+                  const checked = already || picked.includes(h.key);
+                  return (
+                    <li key={h.key}>
+                      <label className={cn('flex items-start gap-2 rounded-md px-1.5 py-1 text-[12px]', already ? 'opacity-50' : 'cursor-pointer hover:bg-slate-50')}>
+                        <input type="checkbox" disabled={already} checked={checked} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, h.key] : p.filter((x) => x !== h.key)))} className="mt-0.5 accent-[#3616cd]" />
+                        <span className="min-w-0 flex-1">
+                          <span className="font-medium text-slate-700">{h.key}</span>{already && <span className="ml-1 text-[10px] font-semibold text-emerald-600">· 등록됨</span>}
+                          <span className="block text-[10px] text-slate-400">{h.axis} · {h.note}</span>
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+              {/* 직접 입력(커스텀 세그먼트) — Enter로 선택 목록에 추가 */}
+              <div className="mt-1.5 border-t border-slate-100 pt-1.5">
+                <input value={custom} onChange={(e) => setCustom(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); const t = custom.trim(); if (t && !store.targets.includes(t) && !picked.includes(t)) setPicked((p) => [...p, t]); setCustom(''); } }}
+                  placeholder="목록에 없으면 직접 입력 후 Enter (예: VIP·신혼)" className="h-7 w-full rounded-md border border-[#e8ebef] px-2 text-[12px]" />
+                {picked.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {picked.map((t) => (
+                      <span key={t} className="inline-flex items-center gap-0.5 rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600">{t}
+                        <button type="button" onClick={() => setPicked((p) => p.filter((x) => x !== t))} className="text-violet-400 hover:text-violet-600"><X className="h-2.5 w-2.5" /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 flex justify-end gap-1.5">
+                <button type="button" onClick={() => { setPicking(false); setPicked([]); setCustom(''); }} className="rounded-md border px-2 py-1 text-[11px] text-slate-500 hover:bg-slate-50">취소</button>
+                <button type="button" disabled={picked.length === 0} onClick={() => {
+                  // 여러 타겟을 한 번의 업데이트로 추가(개별 addTarget 반복은 stale store로 마지막 것만 남는 버그).
+                  const toAdd = picked.filter((t) => !store.targets.includes(t));
+                  if (toAdd.length) {
+                    const copy = { ...store.copy };
+                    toAdd.forEach((t) => { copy[t] = Object.fromEntries(slots.map((s) => [s.key, gen(t, s.base)])); });
+                    persist({ ...store, targets: [...store.targets, ...toAdd], copy });
+                    setSel(toAdd[0]);
+                  }
+                  setPicking(false); setPicked([]); setCustom('');
+                }}
+                  className="rounded-md bg-[#3616cd] px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-40">불러오기{picked.length > 0 ? ` (${picked.length})` : ''}</button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 선택된 타겟 세트 편집 — 전체 문구(타이틀+아이템)를 한 화면에서 한번에 */}

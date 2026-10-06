@@ -283,7 +283,6 @@ const ADMIN_IA: IaGroup[] = [
     { name: '코너 유형 관리', path: '/admin/corner-types', role: '디자인 시스템에 등록된 컴포넌트와 Composite 컴포넌트로 코너를 구성하고 검수(승인)를 요청. 디자인 시스템에 등록되어 있으면 새로 조합할 수 있고, 없는 컴포넌트·속성은 디자인 시스템에 추가를 요청. 표시 항목·노출 개수·카드 모양 등 쓸 수 있는 속성만 제어하며, 배너형은 배너 캠페인·상품/혜택형은 상품원장에서 소재를 담는다.', fields: '유형·배열·표시 항목·수급(CVM)' },
     { name: '배너 캠페인 관리', path: '/admin/banner-campaigns', role: '어드민이 소유하는 배너 원장(SSOT). 규격별 배너 소재·문구(공통 1벌)·랜딩·전시 기간을 등록하고 승인한다. 코너 배너형은 여기 등록된 배너만 불러와 사용.', fields: '소재·문구·랜딩·기간·승인' },
     { name: '문구 관리', path: '/admin/messages', role: '코너 타이틀을 편집하고, 배너 문구는 현황만 조회(소유는 배너 캠페인). 세그먼트별 문구 베리에이션은 빌더에서 설정.', fields: '코너 타이틀 · 배너 문구(읽기전용)', tag: '테스트' },
-    { name: '메뉴 관리', path: '/admin/menus', role: '고객이 보는 전체 메뉴(네비게이션) 트리를 등록·순서·아이콘·랜딩으로 관리. Front 노출·운영 채널을 설정하고 pageCode로 전체페이지와 연결하며, 화면은 Container 단위로 연결한다.', fields: 'Front 노출·채널·pageCode·Container 연결', tag: '그룹 검토중' },
   ]},
   { group: '프로모션 관리', items: [
     { name: '프로모션 관리', path: '/admin/events', role: '이벤트 전용 빌더(전시/관리와 별개). 참여 조건·지급 조건을 조합해 이벤트를 구성하고 자체적으로 전시·승인한다.', fields: '참여·지급 조건' },
@@ -293,7 +292,8 @@ const ADMIN_IA: IaGroup[] = [
     { name: 'App 스플래시 관리', path: '/admin/app-splash', role: '앱 실행 시 노출되는 스플래시(런칭) 화면을 OS·기간별로 등록하고 승인·배포한다.', fields: 'OS·적용상태·승인' },
     { name: 'App 버전 관리', path: '/admin/app-versions', role: '앱 버전과 업데이트 정책(권장/강제 업데이트)·안내 팝업을 관리한다.', fields: '권장/강제 업데이트·팝업' },
     { name: 'App 위젯 관리', path: '/admin/app-widgets', role: '홈/잠금 등 앱 위젯의 노출·순서·게시 기간을 관리. 위젯의 틀은 위젯 유형 관리에서 정의.', fields: '게시상태·배포·노출순서', sub: ['위젯 유형 관리'] },
-    { name: '전체페이지 관리', path: '/admin/full-pages', role: '채널의 모든 페이지 원장과 서비스 IA 구조. 페이지 등록·URL/상태·사용여부·Front 노출·운영 채널과 상위-하위 트리를 관리한다.', fields: 'status·사용여부·Front 노출·IA 트리' },
+    { name: '전체 페이지·메뉴 관리', path: '/admin/page-menu-b', role: '채널의 전체 페이지(=Container) 원장·IA 트리와 고객 메뉴(네비게이션) 트리를 한 곳에서 관리(메뉴 관리 + 전체페이지 관리 통합). 페이지는 템플릿이 아니라 Container 단위로 등록·상태·사용여부·Front 노출·운영 채널·상위-하위 트리를 관리하고, 메뉴는 pageCode로 페이지(Container)와 연결한다.', fields: 'Container 단위 · status·사용여부·Front·채널·pageCode·IA 트리', tag: 'B안' },
+    { name: '페이지 개발 설정', path: '/admin/page-dev', role: '페이지(Container)별 개발·배포 설정 — 페이지 코드·렌더링·연동 등 개발 반영에 필요한 설정을 관리한다.', fields: '페이지 코드·개발 설정' },
   ]},
 ];
 
@@ -357,20 +357,101 @@ function IaView() {
   );
 }
 
+// ───────────────────────── 거버넌스 탭 ─────────────────────────
+//  "누가 무엇을 정하나"를 한눈에. 색은 회색 + 포인트 1색(#3616cd)만. 근거: CLAUDE.md(Container) · 순서 1안.
+function GovQ({ no, q, answer, children }: { no: number; q: string; answer: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border border-[#e8ebef] bg-white p-5">
+      <p className="mb-1 text-[12px] font-bold text-[#3616cd]">Q{no}</p>
+      <h3 className="mb-3 text-[16px] font-extrabold leading-snug text-slate-900">{q}</h3>
+      <p className="mb-4 border-l-[3px] border-[#3616cd] pl-3 text-[14px] font-bold leading-relaxed text-slate-800">{answer}</p>
+      {children}
+    </section>
+  );
+}
+// 담당 → 역할 한 줄 (단색).
+function GovRow({ who, what, strong }: { who: string; what: React.ReactNode; strong?: boolean }) {
+  return (
+    <div className={cn('grid grid-cols-[112px_1fr] gap-3 border-t border-[#eef0f3] py-2.5 first:border-t-0', strong && 'bg-[#f6f4ff]/60')}>
+      <span className="text-[13px] font-bold text-slate-900">{who}</span>
+      <span className="text-[13px] leading-relaxed text-slate-600">{what}</span>
+    </div>
+  );
+}
+function GovernanceView() {
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-[13px] leading-relaxed text-slate-500">
+        운영에서 <b className="text-slate-800">“누가 무엇을 정하나”</b>를 한눈에. 원칙은 딱 하나 —
+        <b className="text-[#3616cd]"> 운영자는 ‘기본값·틀’, CVM은 ‘고객마다 실제’.</b>
+      </p>
+
+      {/* Q1 — 노출 순서 */}
+      <GovQ no={1} q="노출 순서는 코너 유형에서? 빌더에서?"
+        answer={<>둘 다 아니에요. <u>운영자는 “기본 순서”만</u> 짜고, <u>실제 순서는 CVM이 고객마다</u> 정해요.</>}>
+        <div className="rounded-lg border border-[#e8ebef]">
+          <GovRow who="코너 유형" what={<>정렬 <b>기준의 기본값</b>을 정해요. (예: 인기순·최신순)</>} />
+          <GovRow who="빌더(전시화면)" what={<>코너를 <b>배치</b>하고, <b>수급 방식</b>(CVM / 운영자 편성)을 골라요. 운영자 편성일 때만 순서를 직접.</>} />
+          <GovRow who="CVM (자동)" what={<><b>실제 노출 순서를 고객마다</b> 정해요. 미리보기는 기본 순서만 보여줘요.</>} strong />
+        </div>
+        <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500">
+          순서는 <b className="text-slate-700">두 군데</b>예요 — ① 코너 <b>안</b> 상품·혜택 순서, ② 템플릿 <b>안</b> 코너 순서.
+          둘 다 <b className="text-slate-700">운영자는 기본만, 실제는 CVM</b>. (위치 고정한 코너는 CVM도 안 건드려요)
+        </p>
+      </GovQ>
+
+      {/* Q2 — 컨테이너 단위 */}
+      <GovQ no={2} q="전체 페이지 관리는 왜 ‘컨테이너’ 단위예요? 템플릿 단위로 하면 안 돼요?"
+        answer={<>페이지는 <u>‘컨테이너(화면 1개)’ 단위로만</u> 관리해요. 템플릿 단위로는 <u>관리하면 안 돼요.</u></>}>
+        <div className="rounded-lg border border-[#e8ebef] bg-[#f9fafc] p-4">
+          <p className="mb-2 text-[13px] font-bold text-slate-800">쉽게 — 집 주소와 인테리어처럼</p>
+          <p className="text-[13px] leading-relaxed text-slate-600">
+            <b>컨테이너 = 집 주소</b>(화면 1개, 하나뿐). <b>템플릿 = 그 집의 상황별 인테리어</b>(로그인/세그먼트/기간마다 다른 버전, 여러 개).<br />
+            메뉴·URL은 <b>주소(컨테이너)로만</b> 보내요. 그날 어떤 인테리어(템플릿)를 보여줄지는 <b>들어온 뒤 상황 보고(런타임)</b> 정해요.
+          </p>
+        </div>
+        <p className="mb-2 mt-4 text-[13px] font-bold text-slate-800">템플릿 단위로 관리하면 생기는 문제</p>
+        <ul className="space-y-1.5 text-[13px] leading-relaxed text-slate-600">
+          <li className="flex gap-2"><span className="text-slate-400">·</span><span>한 페이지가 <b>여러 줄</b>로 쪼개져요(로그인용·비로그인용·기간용…). 목록이 금세 지저분해져요.</span></li>
+          <li className="flex gap-2"><span className="text-slate-400">·</span><span>메뉴·URL이 <b>어느 템플릿을 가리켜야 할지</b> 애매해져요. 메뉴는 ‘화면’을 부르지 ‘그날의 버전’을 부르지 않아요.</span></li>
+          <li className="flex gap-2"><span className="text-slate-400">·</span><span>“어떤 페이지가 있나(목록·IA)”와 “어떻게 달라지나(분기 로직)”가 <b>뒤섞여요</b>.</span></li>
+        </ul>
+        <div className="mt-4 rounded-lg border border-[#e8ebef]">
+          <GovRow who="전체 페이지·메뉴 관리" what={<><b>컨테이너(페이지)</b>를 등록·상태·IA 트리·메뉴 연결. (메뉴 + 전체페이지 통합)</>} />
+          <GovRow who="빌더(전시화면)" what={<>그 컨테이너 <b>안의 템플릿·코너</b>(분기·기간·배치)를 다뤄요.</>} />
+        </div>
+      </GovQ>
+
+      {/* Q3 — 베리에이션 */}
+      <GovQ no={3} q="문구·노출 타입 ‘베리에이션’은 코너 유형에서? 빌더에서?"
+        answer={<><u>후보(재료)는 코너 유형에서 등록</u>하고, <u>그중 하나를 CVM이 고객마다</u> 골라요. 빌더에선 <u>안 고쳐요(읽기 전용).</u></>}>
+        <div className="rounded-lg border border-[#e8ebef]">
+          <GovRow who="코너 유형" what={<><b>타겟별 문구 세트</b>(문구 후보)와 <b>노출 타입 후보</b>를 등록해요. “무엇을 보여줄 수 있나”의 풀.</>} />
+          <GovRow who="CVM (자동)" what={<>고객 세그먼트로 <b>후보 중 하나를 택1</b>(런타임). 미리보기는 기본(첫 후보)만.</>} strong />
+          <GovRow who="빌더(전시화면)" what={<>코너 유형에 등록된 베리에이션을 <b>상속해 읽기 전용으로 모아보기</b>만. 코너 정보와 같은 원칙으로 <b>편집 안 해요</b>.</>} />
+        </div>
+        <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500">
+          원리는 <b className="text-slate-700">“재료는 우리가(코너 유형), 조합은 CVM”</b> — 운영자는 후보만 넉넉히 등록하고, 실제 조합·택1은 CVM이 고객마다. 그래서 빌더엔 베리에이션 <b>편집 버튼이 없고</b>, 바꾸려면 <b className="text-[#3616cd]">코너 유형에서 수정</b>해요.
+        </p>
+      </GovQ>
+    </div>
+  );
+}
+
 // ───────────────────────── 탭 셸 ─────────────────────────
 export function StructureTabs() {
-  const [tab, setTab] = useState<'map' | 'ia'>('map');
+  const [tab, setTab] = useState<'map' | 'ia' | 'gov'>('map');
   return (
     <div>
       <div className="mb-5 flex gap-1 border-b border-[#e8ebef]">
-        {([['map', '구조도'], ['ia', 'IA']] as const).map(([k, label]) => (
+        {([['map', '구조도'], ['ia', 'IA'], ['gov', '거버넌스']] as const).map(([k, label]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className={cn('-mb-px border-b-2 px-4 py-2.5 text-[14px] font-semibold', tab === k ? 'border-[#3616cd] text-[#3616cd]' : 'border-transparent text-slate-500 hover:text-slate-700')}>
             {label}
           </button>
         ))}
       </div>
-      {tab === 'map' ? <StructureView /> : <IaView />}
+      {tab === 'map' ? <StructureView /> : tab === 'ia' ? <IaView /> : <GovernanceView />}
     </div>
   );
 }
