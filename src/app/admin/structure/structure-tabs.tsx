@@ -63,7 +63,7 @@ const DIAGRAM_CSS = `
 const DIAGRAM_HTML = `
 <div>
   <p class="eyebrow">NEXT채널 어드민 전시/관리 영역 구조도 v0.9</p>
-  <p class="thesis"><b>코너 유형 관리</b>에서는 코너 유형을 <b>껍데기(규격·레이아웃·API)</b>로만 정의하고 승인해요. 콘텐츠는 담지 않아요.<br/>빌더(전시화면 관리)에서 승인된 코너 유형을 <b>Container › Template › Corner</b>로 쌓고, <b>상품·배너·문구·노출 개수(콘텐츠)</b>를 코너에 매핑해요.<br/>고객은 <b>메뉴 관리(전체 메뉴)</b>로 진입하고, <b>CVM</b>(점선)은 런타임에 고객마다 콘텐츠를 택1해요.<br/>승인된 화면은 개발이 반영해 <b>고객 앱/웹(F/O)</b>에 전시돼요.</p>
+  <p class="thesis"><b>코너 유형 관리</b>에서는 코너 유형을 <b>껍데기(규격·레이아웃·API)</b>로만 정의하고 승인해요. 콘텐츠는 담지 않아요.<br/>빌더(전시화면 관리)에서 승인된 코너 유형을 <b>Container › Template › Corner</b>로 쌓고, <b>상품·배너·문구·노출 개수(콘텐츠)</b>를 코너에 매핑해요.<br/>고객은 <b>전체페이지 관리</b>의 전체 메뉴(네비게이션)로 진입하고, <b>CVM</b>(점선)은 런타임에 고객마다 콘텐츠를 택1해요.<br/>승인된 화면은 개발이 반영해 <b>고객 앱/웹(F/O)</b>에 전시돼요.</p>
 </div>
 
 <section class="card diagram" aria-label="전시관리 구조도">
@@ -125,18 +125,10 @@ const DIAGRAM_HTML = `
 <text class="tx tier" x="44" y="372">운영 IA</text>
 <text class="tm t3" x="44" y="394">화면 진입, 페이지 구조</text>
 
-<rect class="bx" x="500" y="342" width="180" height="86" rx="8"/>
-<text class="tx t2" x="518" y="370">메뉴 관리</text>
-<text class="tm t3" x="518" y="392">전체 메뉴, 네비게이션</text>
-<text class="tm t4" x="518" y="412">노출, 채널, Container 연결</text>
-
-<rect class="bx" x="710" y="342" width="180" height="86" rx="8"/>
-<text class="tx t2" x="728" y="370">전체페이지 관리</text>
-<text class="tm t3" x="728" y="392">페이지 원장, IA</text>
-<text class="tm t4" x="728" y="412">상태, 사용여부, 노출</text>
-
-<path class="ar" d="M706 383H686" marker-end="url(#m)" marker-start="url(#ms)"/>
-<text class="tm t4 flbl" x="696" y="372" text-anchor="middle">pageCode</text>
+<rect class="bx" x="500" y="342" width="390" height="86" rx="8"/>
+<text class="tx t2" x="518" y="370">전체페이지 관리</text>
+<text class="tm t3" x="518" y="392">페이지(Container) 원장 · IA 트리 · 전체 메뉴(네비게이션)</text>
+<text class="tm t4" x="518" y="412">상태 · 사용여부 · Front 노출 · 채널 · 개발설정(상세 탭)</text>
 
 <rect class="bx-main" x="40" y="452" width="1180" height="306" rx="12"/>
 <text class="ta t1" x="60" y="482">전시/관리</text>
@@ -248,8 +240,8 @@ const DIAGRAM_HTML = `
 <section>
   <h2>진입, IA</h2>
   <ol class="steps">
-    <li class="card"><span class="n">A</span><b>메뉴 관리</b><span>고객이 보는 전체 메뉴(네비게이션)를 관리하고, 노출과 채널 설정과 함께 화면을 Container 단위로 연결</span></li>
-    <li class="card"><span class="n">B</span><b>전체페이지 관리</b><span>서비스의 모든 페이지 원장과 IA 구조(상태, 사용여부, 노출). 메뉴와는 pageCode로 연결</span></li>
+    <li class="card"><span class="n">A</span><b>전체페이지 관리</b><span>서비스의 모든 페이지(Container) 원장과 IA 트리(상태·사용여부·Front 노출·채널)를 관리하고, 고객이 보는 전체 메뉴(네비게이션)도 여기서 함께 연결해요. 별도 '메뉴 관리' 메뉴는 없어요.</span></li>
+    <li class="card"><span class="n">B</span><b>페이지 유형 · 빌더 연동</b><span>페이지 유형은 빌더 화면/개발 화면/외부 화면. 「빌더 화면」은 화면 빌더가 이 페이지를 불러와 1:1로 연결하고, URL·메타태그는 전체페이지에서만 입력해요. 페이지별 개발설정은 상세의 '개발설정' 탭이에요.</span></li>
   </ol>
 </section>
 
@@ -260,7 +252,7 @@ const DIAGRAM_HTML = `
     <li><span class="mk">2</span><div><b>CVM 켜기가 유형 단위예요</b><span>코너 유형에서 CVM을 켜면 같은 유형을 쓰는 모든 코너에 옵션이 켜져요. 콘텐츠·베리에이션은 빌더에서 코너별로 등록하니, 화면·코너별로 CVM을 끄고 켜야 하는 경우가 있는지 확인이 필요해요.</span></div></li>
     <li><span class="mk">3</span><div><b>'템플릿'이라는 이름이 두 곳에 있어요</b><span>디자인 시스템의 원천 템플릿과 빌더의 Template(코너를 쌓는 판)을 다른 이름으로 구분하면 헷갈리지 않아요.</span></div></li>
     <li><span class="mk">4</span><div><b>프로모션 빌더와 코너 유형의 관계</b><span>코너 유형 관리에 프로모션 탭(14종)이 있어요. 프로모션 빌더도 같은 코너 유형을 불러온다면 연결선이 하나 더 생겨요.</span></div></li>
-    <li><span class="mk">5</span><div><b>메뉴 관리를 어느 그룹에 둘지</b><span>전체 메뉴(네비게이션)를 전시 관리에 둘지 운영 관리에 둘지, 전체페이지 관리와 이름이 헷갈리지 않게 어떻게 구분할지 검토 중이에요.</span></div></li>
+    <li><span class="mk">5</span><div><b>메뉴 관리는 전체페이지 관리로 통합됐어요</b><span>별도 '메뉴 관리'·'페이지 개발 설정' 메뉴는 없애고, 메뉴(네비게이션)·IA·개발설정을 모두 전체페이지 관리(와 페이지 상세 탭)로 흡수했어요. 남은 확인점은 「빌더 화면」 유형의 메뉴 노출을 전체페이지와 빌더 중 어디서 켜는지예요.</span></div></li>
   </ol>
 </section>
 `;
@@ -292,8 +284,7 @@ const ADMIN_IA: IaGroup[] = [
     { name: 'App 스플래시 관리', path: '/admin/app-splash', role: '앱 실행 시 노출되는 스플래시(런칭) 화면을 OS·기간별로 등록하고 승인·배포한다.', fields: 'OS·적용상태·승인' },
     { name: 'App 버전 관리', path: '/admin/app-versions', role: '앱 버전과 업데이트 정책(권장/강제 업데이트)·안내 팝업을 관리한다.', fields: '권장/강제 업데이트·팝업' },
     { name: 'App 위젯 관리', path: '/admin/app-widgets', role: '홈/잠금 등 앱 위젯의 노출·순서·게시 기간을 관리. 위젯의 틀은 위젯 유형 관리에서 정의.', fields: '게시상태·배포·노출순서', sub: ['위젯 유형 관리'] },
-    { name: '전체 페이지 관리', path: '/admin/page-menu-b', role: '채널의 전체 페이지(=Container) 원장·IA 트리를 관리. 페이지는 템플릿이 아니라 Container 단위로 등록·상태·사용여부·Front 노출·운영 채널·상위-하위 트리를 관리한다. (메뉴 관리는 빌더로 이관 예정 → 여기선 숨김)', fields: 'Container 단위 · status·사용여부·Front·채널·IA 트리' },
-    { name: '페이지 개발 설정', path: '/admin/page-dev', role: '페이지(Container)별 개발·배포 설정 — 페이지 코드·렌더링·연동 등 개발 반영에 필요한 설정을 관리한다.', fields: '페이지 코드·개발 설정' },
+    { name: '전체페이지 관리', path: '/admin/page-menu-b', role: '채널의 전체 페이지(=Container) 원장·IA 트리를 관리. 페이지는 템플릿이 아니라 Container 단위로 등록·상태·사용여부·Front 노출·운영 채널·상위-하위 트리를 관리한다. 「빌더 화면」 유형 페이지는 화면 빌더가 이 페이지를 불러와 1:1로 연결하고, URL·메타태그는 여기서만 입력한다. 페이지별 개발 설정은 상세의 「개발설정」 탭으로 흡수(별도 메뉴 없음).', fields: 'Container 단위 · 페이지 유형(빌더/개발/외부) · 상태·사용여부·Front·채널·IA 트리' },
   ]},
 ];
 
@@ -425,7 +416,7 @@ function GovernanceView() {
           <li className="flex gap-2"><span className="text-slate-400">·</span><span>“어떤 페이지가 있나(목록·IA)”와 “어떻게 달라지나(분기 로직)”가 <b>뒤섞여요</b>.</span></li>
         </ul>
         <div className="mt-4 rounded-lg border border-[#e8ebef]">
-          <GovRow who="전체 페이지·메뉴 관리" what={<><b>컨테이너(페이지)</b>를 등록·상태·IA 트리·메뉴 연결. (메뉴 + 전체페이지 통합)</>} />
+          <GovRow who="전체페이지 관리" what={<><b>컨테이너(페이지)</b>를 등록·상태·IA 트리·전체 메뉴(네비게이션) 연결. 메뉴 관리·페이지 개발 설정을 모두 흡수.</>} />
           <GovRow who="빌더(전시화면)" what={<>그 컨테이너 <b>안의 템플릿·코너</b>(분기·기간·배치)를 다뤄요.</>} />
         </div>
       </GovQ>
