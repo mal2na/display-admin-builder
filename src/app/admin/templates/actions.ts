@@ -972,6 +972,19 @@ export async function setCornerDisplayVariants(templateId: string, cornerId: str
   rp(templateId);
 }
 
+// 수급 방식(CVM/운영자 편성) + 상품 정렬 즉시 저장 — '코너 구성' 카드의 RecSourceControl용(2026-10-06: 코너 정보 수정 폼에서 분리).
+export async function setCornerRecSource(templateId: string, cornerId: string, recSource: string, recSourcePlan: string, sortStrategy?: string) {
+  await prisma.corner.update({
+    where: { id: cornerId },
+    data: {
+      recSource: recSource && recSource.trim() ? recSource : null,
+      recSourcePlan: recSourcePlan && recSourcePlan.trim() ? recSourcePlan : null,
+      ...(sortStrategy !== undefined ? { sortStrategy: sortStrategy || null } : {}),
+    },
+  });
+  rp(templateId);
+}
+
 // 타이틀 베리에이션 — 타겟별 대체 타이틀 JSON [{text,target}] 즉시 저장. 실서비스 CVM 택1(기본=mainTitle).
 export async function setCornerMainTitleVariants(templateId: string, cornerId: string, variantsJson: string) {
   await prisma.corner.update({ where: { id: cornerId }, data: { mainTitleVariants: variantsJson && variantsJson.trim() ? variantsJson : null } });
