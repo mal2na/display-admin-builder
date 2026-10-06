@@ -67,7 +67,7 @@ const DIAGRAM_HTML = `
 </div>
 
 <section class="card diagram" aria-label="전시관리 구조도">
-<svg viewBox="0 0 1260 950" role="img" aria-labelledby="dg-t">
+<svg viewBox="0 0 1515 950" role="img" aria-labelledby="dg-t">
 <title id="dg-t">외부 시스템, 기준 정보, 운영 IA, 전시/관리, F/O 다섯 영역으로 나뉜 전시 어드민 구조. 원천 소스를 코너 유형에 맵핑하고 승인한 뒤 Container에 등록하고 고객 화면에 전시.</title>
 <defs>
   <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5d6778"/></marker>
@@ -75,29 +75,32 @@ const DIAGRAM_HTML = `
   <marker id="ms" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5d6778"/></marker>
 </defs>
 
-<rect class="z-ext" x="20" y="20" width="1220" height="140" rx="12"/>
-<text class="tx tier" x="44" y="76">외부 시스템</text>
-<text class="tm t3" x="44" y="98">전시 어드민 밖에서</text>
-<text class="tm t3" x="44" y="116">재료와 데이터를 제공</text>
+<!-- ===== 외부 시스템 : 전시 어드민 왼쪽 세로 컬럼(화살표가 가로로 흐르도록) ===== -->
+<rect class="z-ext" x="20" y="24" width="214" height="620" rx="12"/>
+<text class="tx tier" x="40" y="54">외부 시스템</text>
+<text class="tm t3" x="40" y="74">전시 어드민 밖에서</text>
+<text class="tm t3" x="40" y="90">재료·데이터 제공</text>
 
-<rect class="bx-ext" x="240" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="258" y="70">디자인 시스템</text>
-<rect class="opt-tag" x="356" y="56" width="52" height="18" rx="9"/><text class="tm t4" x="382" y="69" text-anchor="middle">관리 밖</text>
-<text class="tm t3" x="258" y="94">Atom → Component</text>
-<text class="tm t3" x="258" y="111">→ Composite(코너 패턴)</text>
-<text class="ta t4" x="258" y="130">어드민에서 관리하지 않음</text>
+<rect class="bx-ext" x="34" y="118" width="186" height="98" rx="8"/>
+<text class="tx t2" x="50" y="144">디자인 시스템</text>
+<rect class="opt-tag" x="150" y="130" width="52" height="18" rx="9"/><text class="tm t4" x="176" y="143" text-anchor="middle">관리 밖</text>
+<text class="tm t3" x="50" y="168">Atom → Component</text>
+<text class="tm t3" x="50" y="185">→ Composite(코너 패턴)</text>
+<text class="ta t4" x="50" y="204">어드민에서 관리 안 함</text>
 
-<rect class="bx-ext" x="450" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="468" y="76">상품원장</text>
-<text class="tm t3" x="468" y="100">상품 정보</text>
-<text class="tm t3" x="468" y="118">원천 소스</text>
+<rect class="bx-ext" x="34" y="300" width="186" height="82" rx="8"/>
+<text class="tx t2" x="50" y="328">상품원장</text>
+<text class="tm t3" x="50" y="352">상품 정보</text>
+<text class="tm t3" x="50" y="370">원천 소스</text>
 
-<rect class="bx-ext" x="1040" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="1058" y="76">CVM</text>
-<rect class="opt-tag" x="1100" y="62" width="44" height="20" rx="10"/><text class="tm t4" x="1122" y="76" text-anchor="middle">선택</text>
-<text class="tm t3" x="1058" y="100">추천 엔진</text>
-<text class="tm t3" x="1058" y="118">코너 내 콘텐츠 개인화</text>
+<rect class="bx-ext" x="34" y="470" width="186" height="96" rx="8"/>
+<text class="tx t2" x="50" y="496">CVM</text>
+<rect class="opt-tag" x="150" y="482" width="44" height="18" rx="9"/><text class="tm t4" x="172" y="495" text-anchor="middle">선택</text>
+<text class="tm t3" x="50" y="520">추천 엔진</text>
+<text class="tm t3" x="50" y="538">코너 내 콘텐츠 개인화</text>
 
+<!-- ===== 전시 어드민 이하 전체를 오른쪽으로 이동(내부 화살표 좌표 보존) ===== -->
+<g transform="translate(255,0)">
 <rect class="z-adm" x="20" y="186" width="1220" height="666" rx="12"/>
 <rect class="lbl-bg" x="36" y="176" width="96" height="20"/>
 <text class="ta tier" x="42" y="191">전시 어드민</text>
@@ -184,30 +187,32 @@ const DIAGRAM_HTML = `
 <text class="ta t2" x="60" y="894">F/O 고객 화면 (앱/웹)</text>
 <text class="tm t3" x="60" y="914">완성 화면이 고객 앱/웹 채널에 전시. 어드민 변경은 승인 후 개발이 반영 (즉시 배포 아님)</text>
 
-<path class="ar" d="M330 140V208" marker-end="url(#m)"/>
-<circle class="num" cx="330" cy="173" r="10"/><text class="numt" x="330" y="177" text-anchor="middle">1</text>
-<text class="tm t4 flbl" x="346" y="177">등록</text>
+<!-- 내부(전시 어드민) 화살표 — 그룹 안(translate 적용) -->
 <path class="ar-a" d="M296 308V538" marker-end="url(#ma)"/>
 <circle class="num" cx="296" cy="326" r="10"/><text class="numt" x="296" y="330" text-anchor="middle">2</text>
 <text class="ta t4 flbl" x="312" y="330">승인 코너 유형(껍데기) → Template에 쌓기</text>
-<path class="ar" d="M470 140V158H158V460H480V540" marker-end="url(#m)"/>
-<circle class="num" cx="158" cy="360" r="10"/><text class="numt" x="158" y="364" text-anchor="middle">3</text>
-<text class="tm t4 flbl" x="172" y="364">상품 매핑</text>
 <path class="ar" d="M849 252V300H905V538" marker-end="url(#m)"/>
 <circle class="num" cx="905" cy="430" r="10"/><text class="numt" x="905" y="434" text-anchor="middle">3</text>
 <text class="tm t4 flbl" x="921" y="434">문구 매핑</text>
 <path class="ar" d="M1010 308V538" marker-end="url(#m)"/>
 <circle class="num" cx="1010" cy="430" r="10"/><text class="numt" x="1010" y="434" text-anchor="middle">3</text>
 <text class="tm t4 flbl" x="1026" y="434">배너 매핑</text>
-<path class="ar-opt" d="M1040 92H745V208" marker-end="url(#m)"/>
-<circle class="num" cx="745" cy="173" r="10"/><text class="numt" x="745" y="177" text-anchor="middle">4</text>
-<text class="tm t4 flbl" x="761" y="177">(선택) CVM 옵션 켜기</text>
-<path class="ar-opt" d="M1130 140V440H344V538" marker-end="url(#m)"/>
-<circle class="num" cx="1130" cy="300" r="10"/><text class="numt" x="1130" y="304" text-anchor="middle">4</text>
-<text class="tm t4 flbl" x="1146" y="296">(선택) 런타임</text>
-<text class="tm t4 flbl" x="1146" y="312">CVM 택1</text>
 <path class="ar" d="M590 428V450" marker-end="url(#m)"/>
 <text class="tm t4 flbl" x="604" y="444">고객 진입 (네비게이션)</text>
+</g>
+<!-- 외부 시스템 → 전시 어드민 : 왼쪽에서 가로로 유입(루트 프레임) -->
+<path class="ar" d="M220 167H360V260H441" marker-end="url(#m)"/>
+<circle class="num" cx="360" cy="214" r="10"/><text class="numt" x="360" y="218" text-anchor="middle">1</text>
+<text class="tm t4 flbl" x="376" y="218">등록</text>
+<path class="ar" d="M220 335H730V540" marker-end="url(#m)"/>
+<circle class="num" cx="476" cy="335" r="10"/><text class="numt" x="476" y="339" text-anchor="middle">3</text>
+<text class="tm t4 flbl" x="492" y="339">상품 매핑</text>
+<path class="ar-opt" d="M220 490H370V290H441" marker-end="url(#m)"/>
+<circle class="num" cx="370" cy="440" r="10"/><text class="numt" x="370" y="444" text-anchor="middle">4</text>
+<text class="tm t4 flbl" x="386" y="444">(선택) CVM 옵션 켜기</text>
+<path class="ar-opt" d="M126 566V652H735V630" marker-end="url(#m)"/>
+<circle class="num" cx="126" cy="610" r="10"/><text class="numt" x="126" y="614" text-anchor="middle">4</text>
+<text class="tm t4 flbl" x="142" y="614">(선택) 런타임 CVM 택1</text>
 </svg>
 </section>
 
