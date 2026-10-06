@@ -1847,9 +1847,9 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
   );
 }
 
-// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치+배너 선택). 상품형/혜택·오퍼형/콘텐츠 안내형에서만. 즉시 저장.
+// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치+배너 선택). 상품형/혜택·오퍼형에서만(콘텐츠 안내형은 빅배너 없음 — 2026-10-06). 즉시 저장.
 function BigBannerControl({ templateId, corner, banners }: { templateId: string; corner: CornerNode; banners: LibraryData['banners'] }) {
-  const canBigBanner = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(corner.cornerType);
+  const canBigBanner = ['상품형', '혜택·오퍼형'].includes(corner.cornerType);
   const [on, setOn] = useState(!!corner.bigBanner);
   const [pending, start] = useTransition();
   useEffect(() => { setOn(!!corner.bigBanner); }, [corner.bigBanner, corner.templateCornerId]);
@@ -2170,6 +2170,8 @@ function CornerInfoForm({
   const [userMin, setUserMin] = useState(corner.userMinItems != null ? String(corner.userMinItems) : '');
   const [userMax, setUserMax] = useState(corner.userMaxItems != null ? String(corner.userMaxItems) : '');
   const isMenuListCorner = /메뉴\s*리스트/.test(layoutDetail);
+  // 업무 진입형 '탭형' — 탭(선택형) 자체가 코너 콘텐츠라 카테고리 탭 토글·타이틀·서브타이틀·코너 설명 UI를 빌더에 두지 않는다. (값은 hidden으로 보존)
+  const isQuickEntryTab = ct === '업무 진입형' && /탭/.test(layoutDetail);
   // 빅배너·카드비율·상품명 줄수·하단CTA 등 표시 옵션은 '코너 구성'의 컨트롤로 분리 — 코너 정보 폼에서 제외.
 
   // 편집 중일 때만 현재 값을 미리보기로 반영(뷰 모드에선 서버 데이터 사용). pushCorner는 매 렌더 새 참조라 deps 제외.
@@ -2283,8 +2285,9 @@ function CornerInfoForm({
 
         {/* 배너 규격(사이즈)은 '코너 구성'의 배너 레일로 이동 — 배너 추가·순서·노출 방식과 한 곳에서 관리. */}
 
-        {/* 상단 카테고리 탭 토글 — 탭은 별도 배열이 아니라 선택형 컴포넌트. 이 유형이 선택형을 허용할 때만. */}
-        {isComponentAllowedInCorner(ct as CornerType, '선택형') && (() => {
+        {/* 상단 카테고리 탭 토글 — 탭은 별도 배열이 아니라 선택형 컴포넌트. 이 유형이 선택형을 허용할 때만.
+            업무 진입형 탭형은 탭 자체가 콘텐츠라 토글을 두지 않는다(항상 탭). */}
+        {!isQuickEntryTab && isComponentAllowedInCorner(ct as CornerType, '선택형') && (() => {
           const hasTab = corner.components.some((c) => c.componentType === '선택형');
           return (
             <div className="col-span-2 flex items-center justify-between gap-2 rounded-md border bg-white px-2.5 py-2">
@@ -2406,6 +2409,13 @@ function CornerInfoForm({
             <input type="hidden" name="subTitle" value="" />
             <input type="hidden" name="subTitleIcon" value="사용안함" />
           </>
+        ) : isQuickEntryTab ? (
+          <>
+            {/* 업무 진입형 탭형: 탭 자체가 콘텐츠라 타이틀·서브타이틀 UI를 두지 않음. 값은 보존(hidden). */}
+            <input type="hidden" name="mainTitle" value={mainTitle} />
+            <input type="hidden" name="subTitle" value={subTitle} />
+            <input type="hidden" name="subTitleIcon" value={subTitleIcon} />
+          </>
         ) : (
           <>
             {/* 타이틀·서브타이틀은 코너 유형(정의)에서 확정 → 빌더에서는 읽기 전용(상속값 표시). 2026-09-29 거버넌스 분리 */}
@@ -2500,11 +2510,15 @@ function CornerInfoForm({
         )}
         {/* 하단 CTA(더보기/전체보기) 버튼은 '코너 구성'의 MoreButtonControl로 이동 — 코너 정보에서는 관리하지 않음. */}
 
-        {/* 코너 설명 (공통) */}
-        <div className="col-span-2 space-y-1">
-          <label className="text-[11px] text-muted-foreground">코너 설명</label>
-          <Textarea name="description" defaultValue={corner.description ?? ''} className="min-h-[38px] text-xs" />
-        </div>
+        {/* 코너 설명 — 업무 진입형 탭형은 숨김(값은 보존). 그 외 공통 */}
+        {isQuickEntryTab ? (
+          <input type="hidden" name="description" value={corner.description ?? ''} />
+        ) : (
+          <div className="col-span-2 space-y-1">
+            <label className="text-[11px] text-muted-foreground">코너 설명</label>
+            <Textarea name="description" defaultValue={corner.description ?? ''} className="min-h-[38px] text-xs" />
+          </div>
+        )}
 
         {/* 저장 / 취소 — 우측 하단 */}
         <div className="col-span-2 flex justify-end gap-2 pt-1">
