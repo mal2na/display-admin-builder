@@ -34,12 +34,13 @@ import {
   REC_SOURCE_INFO,
   normalizeRecSource,
   CVM_TARGET_HINTS,
+  defaultComposition,
   type AtomType,
   type CornerType,
 } from '@/lib/display-taxonomy';
 import { cn } from '@/lib/utils';
 import { DeviceFrame, CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
-import { chipIconForLabel } from '@/components/preview/composition-preview';
+import { chipIconForLabel, compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 import { IconPickerModal } from './icon-picker-modal';
 import { AssetPickerModal } from '@/components/asset-picker-modal';
@@ -49,7 +50,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download, GalleryHorizontalEnd, RotateCcw } from 'lucide-react';
-import { TypeDetailPreview } from '../../corner-types/corner-type-manager';
 import {
   updateTemplateMeta,
   createCorner,
@@ -3265,34 +3265,26 @@ function CornerLoadModal({
                   {sel.bigBanner && <BigBannerBadge />}
                 </div>
                 {(() => {
-                  const imgs = (sel.sampleImageUrl ?? '').split('\n').map((s) => s.trim()).filter(Boolean).filter((s) => isImgSrc(s));
-                  // 배너형(B안, 2026-10-06): sampleImageUrl이 공용 더미라 신뢰 불가 → 실제 배치된 코너 구성(previewCorner)을 그대로 렌더.
-                  //  실제 등록된 배너만 노출(스와이프면 등록된 장수만큼). previewCorner가 없으면 스키매틱으로 폴백.
-                  if (sel.base === '배너형' && sel.previewCorner) {
-                    const bn = (sel.previewCorner.components ?? []).length;
-                    return (
-                      <div>
-                        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">미리보기 · {sel.base} › {layoutLabel(sel.detail) || '기본'} <span className="text-slate-400">· 실제 등록된 배너{bn > 1 ? ` ${bn}장` : ''}</span></p>
-                        <div className="rounded-xl border border-[#E6E8EF] bg-[#F0F2F9] p-3">
-                          <CornerBlock corner={sel.previewCorner} />
-                        </div>
+                  // 회의 반영: 코너 = 껍데기(규격)만, 콘텐츠는 빌더에서 매핑. 불러오기 미리보기도 '데이터 없는 가이드(껍데기)'로 통일
+                  //  → 코너 유형 관리의 '코너 정의' 가이드와 동일하게 compositionToPreviewCorner(placeholder+emptyImages)로 렌더.
+                  const noTitle = sel.base === '배너형' || sel.base === '고정·필수 노출형';
+                  const guide = compositionToPreviewCorner({
+                    base: sel.base,
+                    detail: sel.detail,
+                    composition: defaultComposition(sel.component, sel.detail),
+                    mainTitle: noTitle ? null : '타이틀',
+                    subTitle: noTitle ? null : '디스크립션',
+                    placeholder: true,
+                    emptyImages: true,
+                  });
+                  return (
+                    <div>
+                      <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">미리보기 · {sel.base} › {layoutLabel(sel.detail) || '기본'} <span className="text-slate-400">· 껍데기 가이드(콘텐츠는 불러온 뒤 빌더에서 매핑)</span></p>
+                      <div className="rounded-xl border border-[#E6E8EF] bg-[#F0F2F9] p-3">
+                        <CornerBlock corner={guide} />
                       </div>
-                    );
-                  }
-                  // 비-배너형: 실제 등록된 코너 렌더(sampleImageUrl)를 크게 보여준다(2026-10-06 사용자 요청).
-                  const useReal = sel.base !== '배너형' && imgs.length > 0;
-                  if (useReal) {
-                    return (
-                      <div>
-                        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">미리보기 · {sel.base} › {layoutLabel(sel.detail) || '기본'} <span className="text-slate-400">· 실제 등록된 코너</span></p>
-                        <div className="rounded-xl border border-[#E6E8EF] bg-[#F0F2F9] p-3">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={imgs[0]} alt="실제 등록된 코너" className="w-full rounded-lg border bg-white object-contain [filter:contrast(1.03)_saturate(1.05)]" />
-                        </div>
-                      </div>
-                    );
-                  }
-                  return <TypeDetailPreview base={sel.base} component={sel.component} detail={sel.detail} bigBanner={sel.bigBanner} />;
+                    </div>
+                  );
                 })()}
                 {/* 베리에이션 사용 여부 + 기본 베리에이션 선택 (추가 모드에서만) */}
                 {!isSwap && (() => {
