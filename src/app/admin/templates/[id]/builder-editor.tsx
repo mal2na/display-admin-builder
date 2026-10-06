@@ -41,6 +41,7 @@ import {
 import { cn } from '@/lib/utils';
 import { DeviceFrame, CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
 import { chipIconForLabel, compositionToPreviewCorner } from '@/components/preview/composition-preview';
+import { DevicePreview } from '../../corner-types/corner-type-manager';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 import { IconPickerModal } from './icon-picker-modal';
 import { AssetPickerModal } from '@/components/asset-picker-modal';
@@ -3075,6 +3076,21 @@ function BannerLoadModal({
   );
 }
 
+// 코너 불러오기 '껍데기 가이드' 코너 — 리스트 썸네일(미니 미리보기)·우측 미리보기 공용.
+//  코너 = 껍데기(규격)라 콘텐츠 없이 placeholder 슬롯으로만. 코너 유형 관리 '코너 정의' 가이드와 동일 규칙.
+function guideCornerFor(base: string, detail: string, component: string): PreviewCorner {
+  const noTitle = base === '배너형' || base === '고정·필수 노출형';
+  return compositionToPreviewCorner({
+    base,
+    detail,
+    composition: defaultComposition(component, detail),
+    mainTitle: noTitle ? null : '타이틀',
+    subTitle: noTitle ? null : '디스크립션',
+    placeholder: true,
+    emptyImages: true,
+  });
+}
+
 // ── 코너 불러오기 모달 — 코너 유형(상품형·단일강조 등)에서 선택 + 유형 미리보기 ───
 //  두 용도 공용: (1) 새 코너 추가(createCornerFromType), (2) 기존 슬롯 유형 교체(swapCornerId 지정 → swapCornerToType).
 function CornerLoadModal({
@@ -3243,9 +3259,9 @@ function CornerLoadModal({
                               selId === t.id ? 'border-primary bg-accent' : isCurrent ? 'border-slate-300 bg-slate-50' : 'hover:bg-muted/50',
                             )}
                           >
-                            {/* 코너 = 껍데기 → 썸네일도 실데이터가 아니라 '가이드(껍데기)' 플레이스홀더로 통일(2026-10-06). */}
-                            <span className="flex h-8 w-12 shrink-0 items-center justify-center rounded border border-dashed border-slate-200 bg-slate-50" aria-hidden>
-                              <ImageIcon className="h-3.5 w-3.5 text-slate-300" />
+                            {/* 코너 = 껍데기 → 썸네일도 실데이터가 아니라 '가이드(껍데기)' 미니 미리보기(DevicePreview contain)로(2026-10-06). */}
+                            <span className="h-11 w-16 shrink-0 overflow-hidden rounded border bg-[#F0F2F9]">
+                              <DevicePreview corner={guideCornerFor(t.base, t.detail, t.component)} fit="contain" align="center-middle" />
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-[13px] font-medium text-foreground">{layoutLabel(t.detail) || componentLabel(t.component) || '기본'}</span>
@@ -3275,23 +3291,14 @@ function CornerLoadModal({
                   {sel.bigBanner && <BigBannerBadge />}
                 </div>
                 {(() => {
-                  // 회의 반영: 코너 = 껍데기(규격)만, 콘텐츠는 빌더에서 매핑. 불러오기 미리보기도 '데이터 없는 가이드(껍데기)'로 통일
-                  //  → 코너 유형 관리의 '코너 정의' 가이드와 동일하게 compositionToPreviewCorner(placeholder+emptyImages)로 렌더.
-                  const noTitle = sel.base === '배너형' || sel.base === '고정·필수 노출형';
-                  const guide = compositionToPreviewCorner({
-                    base: sel.base,
-                    detail: sel.detail,
-                    composition: defaultComposition(sel.component, sel.detail),
-                    mainTitle: noTitle ? null : '타이틀',
-                    subTitle: noTitle ? null : '디스크립션',
-                    placeholder: true,
-                    emptyImages: true,
-                  });
+                  // 회의 반영: 코너 = 껍데기(규격)만, 콘텐츠는 빌더에서 매핑. 불러오기 미리보기도 '데이터 없는 가이드(껍데기)'로 통일.
+                  //  배경 박스는 유형이 바뀌어도 '동일한 고정 크기'를 유지하고, 그 안에서 DevicePreview가 전체를 축소(contain)해 담는다(2026-10-06 사용자 요청).
+                  const guide = guideCornerFor(sel.base, sel.detail, sel.component);
                   return (
                     <div>
                       <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">미리보기 · {sel.base} › {layoutLabel(sel.detail) || '기본'} <span className="text-slate-400">· 껍데기 가이드(콘텐츠는 불러온 뒤 빌더에서 매핑)</span></p>
-                      <div className="rounded-xl border border-[#E6E8EF] bg-[#F0F2F9] p-3">
-                        <CornerBlock corner={guide} />
+                      <div className="h-[440px] rounded-xl border border-[#E6E8EF] bg-[#F0F2F9] p-3">
+                        <DevicePreview corner={guide} fit="contain" align="center-middle" />
                       </div>
                     </div>
                   );
