@@ -36,6 +36,7 @@ export type PreviewCorner = {
   maxItems: number | null;
   components: PreviewComponent[];
   mainTitle?: string | null;
+  mainTitleVariants?: { text: string; target?: string; enabled?: boolean }[] | null; // 코너 타이틀 문구 베리에이션(타겟별 CVM 택1)
   subTitle?: string | null;
   cornerLayout?: string | null;
   layoutDetail?: string | null;
