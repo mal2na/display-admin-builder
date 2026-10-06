@@ -421,6 +421,19 @@ function GovernanceView() {
           <GovRow who="빌더(전시화면)" what={<>그 컨테이너 <b>안의 템플릿·코너</b>(분기·기간·배치)를 다뤄요.</>} />
         </div>
       </GovQ>
+
+      {/* Q3 — 베리에이션 */}
+      <GovQ no={3} q="문구·노출 타입 ‘베리에이션’은 코너 유형에서? 빌더에서?"
+        answer={<><u>후보(재료)는 코너 유형에서 등록</u>하고, <u>그중 하나를 CVM이 고객마다</u> 골라요. 빌더에선 <u>안 고쳐요(읽기 전용).</u></>}>
+        <div className="rounded-lg border border-[#e8ebef]">
+          <GovRow who="코너 유형" what={<><b>타겟별 문구 세트</b>(문구 후보)와 <b>노출 타입 후보</b>를 등록해요. “무엇을 보여줄 수 있나”의 풀.</>} />
+          <GovRow who="CVM (자동)" what={<>고객 세그먼트로 <b>후보 중 하나를 택1</b>(런타임). 미리보기는 기본(첫 후보)만.</>} strong />
+          <GovRow who="빌더(전시화면)" what={<>코너 유형에 등록된 베리에이션을 <b>상속해 읽기 전용으로 모아보기</b>만. 코너 정보와 같은 원칙으로 <b>편집 안 해요</b>.</>} />
+        </div>
+        <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500">
+          원리는 <b className="text-slate-700">“재료는 우리가(코너 유형), 조합은 CVM”</b> — 운영자는 후보만 넉넉히 등록하고, 실제 조합·택1은 CVM이 고객마다. 그래서 빌더엔 베리에이션 <b>편집 버튼이 없고</b>, 바꾸려면 <b className="text-[#3616cd]">코너 유형에서 수정</b>해요.
+        </p>
+      </GovQ>
     </div>
   );
 }
