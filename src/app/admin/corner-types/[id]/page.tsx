@@ -35,11 +35,12 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     select: { id: true, name: true },
   });
 
-  // 사용처 rows: 배치된 곳마다 (컨테이너 · 템플릿 · 코너명). 미배치 코너는 템플릿/컨테이너 null.
-  const usage: { container: string | null; template: string | null; corner: string }[] = [];
+  // 사용처 rows: 배치된 곳마다 (컨테이너 · 템플릿 · 코너명 + 템플릿 id). 미배치 코너는 템플릿/컨테이너 null.
+  //  templateId로 상세에서 '전시화면 관리(빌더)' 바로가기 링크를 건다(2026-10-06 사용자 요청).
+  const usage: { container: string | null; template: string | null; corner: string; templateId: string | null }[] = [];
   for (const c of usageCorners) {
-    if (c.templateCorners.length === 0) usage.push({ container: null, template: null, corner: c.name });
-    for (const tc of c.templateCorners) usage.push({ container: tc.template.container.name, template: tc.template.name, corner: c.name });
+    if (c.templateCorners.length === 0) usage.push({ container: null, template: null, corner: c.name, templateId: null });
+    for (const tc of c.templateCorners) usage.push({ container: tc.template.container.name, template: tc.template.name, corner: c.name, templateId: tc.template.id });
   }
 
   // 실제 사용 코너의 구성을 미리보기로 매핑 — 배너형 외 유형(예: 혜택·오퍼형)은 상세에서 실제 코너들을 보여준다(한 유형 = 여러 케이스).
