@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
-  OPERATION_CHANNELS,
   OPERATION_PLATFORMS,
   CORNER_TYPE_FEATURES,
   CORNER_TYPE_STATUS_LABEL,
@@ -1362,11 +1361,15 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         (seedCopy[t] ??= {})[key] = (v.text ?? '').replace(/\s*\n\s*/g, ' ');
       });
     };
+    // 콘텐츠 안내형은 타이틀만(상품 문구 불필요 — 2026-10-06 사용자 요청).
+    const titleOnly = base === '콘텐츠 안내형';
     if (pc) {
-      if (pc.mainTitle) { slots.push({ key: 'title', label: '타이틀', base: (pc.mainTitle ?? '').replace(/\s*\n\s*/g, ' ') }); addVariant('title', pc.mainTitleVariants); }
+      // 타이틀 슬롯 base = 상단 '타이틀' 입력(live)을 우선 반영 → 상단에서 바꾸면 문구 세트도 즉시 반영(2026-10-06).
+      const titleBase = ((mainTitleText || '').trim() || (pc.mainTitle ?? '')).replace(/\s*\n\s*/g, ' ');
+      if (titleBase) { slots.push({ key: 'title', label: '타이틀', base: titleBase }); addVariant('title', pc.mainTitleVariants); }
       // 상품·혜택 아이템 컴포넌트만(상품형·혜택형). 선택형(카테고리 탭)·행동형(CTA)·배너형 등 네비·버튼은 문구 세트에서 제외.
       let itemNo = 0;
-      (pc.components ?? []).forEach((cp) => {
+      (titleOnly ? [] : (pc.components ?? [])).forEach((cp) => {
         if (!['상품형', '혜택형'].includes(cp.componentType)) return;
         // 대표 문구 = 혜택 문구(BENEFIT_TEXT) 우선, 없으면 첫 텍스트.
         const atoms = cp.atoms ?? [];
@@ -1526,7 +1529,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   //  → 등록할 때도 문구(타이틀·상품·혜택)를 그대로 가져와 타겟별로 세팅할 수 있다(2026-10-06 사용자 요청).
   const liveCopySlots = [
     ...((mainTitleText || '').trim() ? [{ key: 'title', label: '타이틀', base: mainTitleText.trim() }] : []),
-    ...productItems.map((it, i) => ({ key: it.productKey || `item-${i}`, label: `상품 ${i + 1}`, base: (it.title || '').trim() })).filter((s) => s.base),
+    // 콘텐츠 안내형은 타이틀만(상품 문구 불필요 — 2026-10-06).
+    ...(base === '콘텐츠 안내형' ? [] : productItems.map((it, i) => ({ key: it.productKey || `item-${i}`, label: `상품 ${i + 1}`, base: (it.title || '').trim() })).filter((s) => s.base)),
   ];
   const effectiveCopySlots = copySlots.length ? copySlots : liveCopySlots;
   const effectiveCopySeed = copySlots.length ? copySeed : { targets: [], copy: {} };
@@ -1546,7 +1550,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   // 코너 유형 명 = [코너 유형 · 컴포넌트 · 배열 (· 빅배너)] 자동 구성
   // 코너 유형 명 = 유형 · 배열·레이아웃 (컴포넌트는 표기에서 제외 — UI에서 컴포넌트 노출 안 함).
   const derivedName = [base, layoutLabel(detailValid), bigBannerOn ? '빅배너' : ''].filter(Boolean).join(' · ');
-  const channels = row.channels.split(',').filter(Boolean);
   const platforms = row.platforms.split(',').filter(Boolean);
   const action = isNew ? createCornerType : updateCornerType.bind(null, row.id);
   const formAction = submitAction ?? action; // bulk 모드에선 상위에서 넘긴 일괄 저장 액션 사용
@@ -1626,10 +1629,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const metaFields = (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2">
-        <TRow label="운영 채널"><OpsCheckGroup name="channels" options={OPERATION_CHANNELS} initial={channels} /></TRow>
         <TRow label="운영 플랫폼"><OpsCheckGroup name="platforms" options={OPERATION_PLATFORMS} initial={platforms} /></TRow>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2">
         <TRow label="사용 여부" required>
           <div className="flex gap-4 text-xs">
             <label className="flex items-center gap-1.5"><input type="radio" checked={active} onChange={() => setActive(true)} className="accent-[#3616cd]" /> 사용</label>
@@ -1637,6 +1637,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           </div>
           {active && <input type="hidden" name="active" value="on" />}
         </TRow>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2">
         <TRow label="승인상태">
           <div className="flex items-center gap-1.5">
             <span className="rounded-full bg-[#e8ebef] px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
@@ -1644,8 +1646,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           </div>
           <input type="hidden" name="status" value={row.status} />
         </TRow>
+        <div className="border-b border-[#e8ebef] max-md:hidden" />
       </div>
       <TRow label="코너 유형 설명"><Input name="description" defaultValue={row.description ?? ''} placeholder="100자 이내" className="h-8 text-xs" /></TRow>
+      {/* 운영 채널 UI 제거(2026-10-06 사용자 요청 — 채널 선택이 의미 없음). 값은 기존/기본값 유지해 제출. */}
+      <input type="hidden" name="channels" value={row.channels || 'FO'} />
     </>
   );
 
