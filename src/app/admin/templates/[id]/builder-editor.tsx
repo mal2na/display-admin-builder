@@ -2184,6 +2184,9 @@ function CornerInfoForm({
   const isMenuListCorner = /메뉴\s*리스트/.test(layoutDetail);
   // 업무 진입형 '탭형' — 탭(선택형) 자체가 코너 콘텐츠라 카테고리 탭 토글·타이틀·서브타이틀·코너 설명 UI를 빌더에 두지 않는다. (값은 hidden으로 보존)
   const isQuickEntryTab = ct === '업무 진입형' && /탭/.test(layoutDetail);
+  // 코너 정보 '수정' 노출 기준 — 빌더에서 실제로 바꿀 게 있을 때만(추천 수급 CVM·상품 순서). 2026-10-06 사용자 요청:
+  //  업무 진입형 등 정의뿐인 코너는 코너 정보를 아예 수정 불가(읽기 전용)로 두고 '코너 유형에서 수정'으로 유도.
+  const hasBuilderEdits = isRecCorner || family === 'product';
   // 빅배너·카드비율·상품명 줄수·하단CTA 등 표시 옵션은 '코너 구성'의 컨트롤로 분리 — 코너 정보 폼에서 제외.
 
   // 편집 중일 때만 현재 값을 미리보기로 반영(뷰 모드에선 서버 데이터 사용). pushCorner는 매 렌더 새 참조라 deps 제외.
@@ -2240,7 +2243,7 @@ function CornerInfoForm({
             >
               <Copy className="h-3 w-3" /> 코너 불러오기
             </button>
-          ) : (
+          ) : hasBuilderEdits ? (
             <button
               type="button"
               onClick={() => setEdit(true)}
@@ -2248,11 +2251,17 @@ function CornerInfoForm({
             >
               <Pencil className="h-3 w-3" /> 수정
             </button>
+          ) : (
+            // 빌더에서 바꿀 게 없는 코너(업무 진입형 등) — 코너 정보는 읽기 전용, 수정은 코너 유형에서(2026-10-06).
+            <span className="ml-auto inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
+              <span className="inline-flex items-center gap-0.5 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-400"><Lock className="h-2.5 w-2.5" />읽기 전용</span>
+              {typeEditLink}
+            </span>
           )}
         </div>
       </div>
 
-      {!edit ? (
+      {!edit || !hasBuilderEdits ? (
         <CornerInfoView corner={corner} nameMap={nameMap} />
       ) : (
       <>
