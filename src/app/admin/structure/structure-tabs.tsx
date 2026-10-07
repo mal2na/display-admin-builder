@@ -80,16 +80,16 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="44" y="98">전시 어드민 밖에서</text>
 <text class="tm t3" x="44" y="116">재료와 데이터를 제공</text>
 
-<rect class="bx-ext" x="450" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="468" y="74">상품원장</text>
-<text class="tm t3" x="468" y="96">SSOT = 외부(BSS)</text>
-<text class="tm t3" x="468" y="114">BSS에서 끌어와 노출</text>
+<rect class="bx-ext" x="480" y="44" width="180" height="96" rx="8"/>
+<text class="tx t2" x="498" y="74">상품원장</text>
+<text class="tm t3" x="498" y="96">SSOT = 외부(BSS)</text>
+<text class="tm t3" x="498" y="114">BSS에서 끌어와 노출</text>
 
-<!-- 디자인 시스템 — 상품원장보다 왼쪽(2026-10-07). 코너 유형 관리와 Corner 양쪽으로 화살표가 나감. -->
-<rect class="bx-ext" x="240" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="258" y="76">디자인 시스템</text>
-<text class="tm t3" x="258" y="100">코너 껍데기</text>
-<text class="tm t3" x="258" y="118">원천 템플릿 · 규격</text>
+<!-- 디자인 시스템 — 상품원장보다 왼쪽. 박스를 크게 해서 ①(코너 유형 관리)·③(Corner) 두 화살표 출발점을 벌림(2026-10-07). -->
+<rect class="bx-ext" x="210" y="40" width="240" height="104" rx="8"/>
+<text class="tx t2" x="230" y="72">디자인 시스템</text>
+<text class="tm t3" x="230" y="96">코너 껍데기(틀) 소유</text>
+<text class="tm t3" x="230" y="116">원천 템플릿 · 규격 · 조합</text>
 
 <rect class="bx-ext" x="1040" y="44" width="180" height="96" rx="8"/>
 <text class="tx t2" x="1058" y="76">CVM</text>
@@ -174,21 +174,21 @@ const DIAGRAM_HTML = `
 
 <!-- ───── 화살표 ───── -->
 <!-- ① 디자인 시스템 → 코너 유형 관리 (원천 템플릿 등록) -->
-<path class="ar-a" d="M330 140V208" marker-end="url(#ma)"/>
-<circle class="num" cx="330" cy="174" r="10"/><text class="numt" x="330" y="178" text-anchor="middle">1</text>
-<text class="ta t4" x="314" y="178" text-anchor="end">원천 템플릿 등록</text>
+<path class="ar-a" d="M320 144V208" marker-end="url(#ma)"/>
+<circle class="num" cx="320" cy="176" r="10"/><text class="numt" x="320" y="180" text-anchor="middle">1</text>
+<text class="ta t4" x="304" y="180" text-anchor="end">원천 템플릿 등록</text>
 <!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음) — 라벨은 왼쪽, 번호는 위로 올려 ③ 묶음과 겹치지 않게(2026-10-07). -->
 <path class="ar-a" d="M300 308V426" marker-end="url(#ma)"/>
 <circle class="num" cx="300" cy="322" r="10"/><text class="numt" x="300" y="326" text-anchor="middle">2</text>
 <text class="ta t4" x="284" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
 <!-- ③ 디자인 시스템 → Corner (껍데기 빌더 직접 수정) — DS는 코너 유형 관리와 Corner 양쪽으로. -->
-<path class="ar-a" d="M400 140V170H500V426" marker-end="url(#ma)"/>
-<circle class="num" cx="500" cy="336" r="10"/><text class="numt" x="500" y="340" text-anchor="middle">3</text>
-<text class="ta t4" x="500" y="320" text-anchor="middle">껍데기 직접 수정</text>
-<!-- ③ 상품원장 → Corner (상품 불러오기) — 코너가 아니라 Corner를 향함(2026-10-07). -->
-<path class="ar-a" d="M600 140V426" marker-end="url(#ma)"/>
-<circle class="num" cx="600" cy="336" r="10"/><text class="numt" x="600" y="340" text-anchor="middle">3</text>
-<text class="ta t4" x="600" y="320" text-anchor="middle">상품 불러오기</text>
+<path class="ar-a" d="M420 144V172H520V426" marker-end="url(#ma)"/>
+<circle class="num" cx="520" cy="336" r="10"/><text class="numt" x="520" y="340" text-anchor="middle">3</text>
+<text class="ta t4" x="520" y="320" text-anchor="middle">껍데기 직접 수정</text>
+<!-- ③ 상품원장 → Corner (상품 불러오기) — 코너 유형 관리가 아니라 Corner를 향함(2026-10-07). -->
+<path class="ar-a" d="M620 140V426" marker-end="url(#ma)"/>
+<circle class="num" cx="620" cy="336" r="10"/><text class="numt" x="620" y="340" text-anchor="middle">3</text>
+<text class="ta t4" x="620" y="320" text-anchor="middle">상품 불러오기</text>
 <!-- ③ 배너 캠페인 → Corner (배너 불러오기) -->
 <path class="ar-a" d="M1010 308V426" marker-end="url(#ma)"/>
 <circle class="num" cx="1010" cy="336" r="10"/><text class="numt" x="1010" y="340" text-anchor="middle">3</text>
