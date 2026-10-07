@@ -80,7 +80,7 @@ import {
   refreshBannerComponent,
   addBssProduct,
 } from '../actions';
-import { BSS_PRODUCTS, BSS_CATEGORY_LABELS, BSS_SUBCATEGORIES, type BssCategory } from '@/lib/bss-products';
+import { BSS_PRODUCTS, BSS_CATEGORY_LABELS, BSS_SUBCATEGORIES, BSS_DEVICES, DEVICE_MAKERS, DEVICE_TYPES, type BssCategory, type PickerItem } from '@/lib/bss-products';
 import { parseBannerOptions, type BannerOptions } from '@/lib/banner-options';
 import { isChipAllowed } from '@/lib/chip-types';
 import { DevImpactGuide, DevLockBadge } from '@/components/dev-impact-guide';
@@ -1389,23 +1389,29 @@ const BSS_BADGE_TONE: Record<string, string> = {
   사용: 'bg-blue-100 text-blue-700',
   'VIP PICK': 'bg-violet-600 text-white',
 };
-function BssProductPickerModal({ open, onClose, onPickMany, pending }: { open: boolean; onClose: () => void; onPickMany: (keys: string[]) => void; pending: boolean }) {
-  const [cat, setCat] = useState<'ALL' | BssCategory>('ALL');
+function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'benefit' }: { open: boolean; onClose: () => void; onPickMany: (keys: string[]) => void; pending: boolean; mode?: 'benefit' | 'device' }) {
+  const [cat, setCat] = useState<string>('ALL');
   const [sub, setSub] = useState<string>('전체');
   const [selected, setSelected] = useState<Set<string>>(new Set()); // 멀티 선택(2026-10-07)
   if (!open) return null;
+  const device = mode === 'device'; // 상품형 코너 = T 디바이스 카탈로그(2026-10-07)
   const toggle = (key: string) => setSelected((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
   const close = () => { setSelected(new Set()); onClose(); };
-  const cats: ('ALL' | BssCategory)[] = ['ALL', 'EAT', 'BUY', 'PLAY'];
-  const subs = cat === 'ALL' ? [] : ['전체', ...BSS_SUBCATEGORIES[cat]];
-  const list = BSS_PRODUCTS.filter((p) => (cat === 'ALL' || p.category === cat) && (cat === 'ALL' || sub === '전체' || p.sub === sub));
+  // 카테고리/세부 — 디바이스는 제조사(DEVICE_MAKERS)×유형(DEVICE_TYPES), 혜택은 EAT/BUY/PLAY×BSS_SUBCATEGORIES.
+  const cats: string[] = device ? ['ALL', ...DEVICE_MAKERS] : ['ALL', 'EAT', 'BUY', 'PLAY'];
+  const catLabel = (c: string) => c === 'ALL' ? '전체' : (device ? c : BSS_CATEGORY_LABELS[c as BssCategory]);
+  const subs = cat === 'ALL' ? [] : device
+    ? ['전체', ...DEVICE_TYPES.filter((t) => BSS_DEVICES.some((d) => d.category === cat && d.sub === t))]
+    : ['전체', ...BSS_SUBCATEGORIES[cat as BssCategory]];
+  const source: PickerItem[] = device ? BSS_DEVICES : BSS_PRODUCTS;
+  const list = source.filter((p) => (cat === 'ALL' || p.category === cat) && (cat === 'ALL' || sub === '전체' || p.sub === sub));
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
       {/* 고정 높이(h-[80vh]) — 카테고리 전환 시에도 모달 크기 불변, 리스트만 내부 스크롤 */}
       <div className="flex h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
-          <h2 className="text-sm font-semibold">상품 불러오기</h2>
-          <span className="text-xs text-muted-foreground">여러 개 선택해 한 번에 코너에 추가</span>
+          <h2 className="text-sm font-semibold">{device ? '디바이스 불러오기' : '상품 불러오기'}</h2>
+          <span className="text-xs text-muted-foreground">{device ? 'T에서 판매하는 디바이스를 선택해 코너에 추가' : '여러 개 선택해 한 번에 코너에 추가'}</span>
           <button type="button" onClick={close} className="ml-auto text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
         {/* 카테고리 탭 */}
@@ -1413,7 +1419,7 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending }: { open: b
           {cats.map((c) => (
             <button key={c} type="button" onClick={() => { setCat(c); setSub('전체'); }}
               className={cn('rounded-full px-3 py-1 text-xs font-semibold transition', cat === c ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary')}>
-              {c === 'ALL' ? '전체' : BSS_CATEGORY_LABELS[c]}
+              {catLabel(c)}
             </button>
           ))}
         </div>
@@ -1457,7 +1463,7 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending }: { open: b
             </button>
             );
           })}
-          {list.length === 0 && <p className="col-span-full py-10 text-center text-xs text-muted-foreground">해당 카테고리에 브랜드가 없습니다.</p>}
+          {list.length === 0 && <p className="col-span-full py-10 text-center text-xs text-muted-foreground">해당 카테고리에 {device ? '디바이스' : '브랜드'}가 없습니다.</p>}
         </div>
         {/* 하단 — 선택 개수 + 한 번에 추가 */}
         <div className="flex items-center gap-3 border-t px-5 py-3">
@@ -1604,6 +1610,7 @@ function ComponentList({
       <BssProductPickerModal
         open={bssOpen}
         pending={bssPending}
+        mode={corner.cornerType === '상품형' ? 'device' : 'benefit'}
         onClose={() => setBssOpen(false)}
         onPickMany={(keys) => startBss(async () => { for (const k of keys) await addBssProduct(templateId, corner.id, k); setBssOpen(false); })}
       />

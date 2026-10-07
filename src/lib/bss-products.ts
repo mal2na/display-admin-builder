@@ -107,3 +107,77 @@ export const BSS_PRODUCTS: BssProduct[] = RAW.flatMap((r) =>
 );
 
 export const bssProductByKey = (key: string): BssProduct | undefined => BSS_PRODUCTS.find((p) => p.key === key);
+
+// ─────────────────────────────────────────────────────────────
+// T 디바이스 카탈로그 — '상품형' 코너(단말기 추천 등)에서 상품 불러오기 시 사용(2026-10-07 사용자 요청).
+//  T(SKT)에서 판매하는 디바이스: 제조사(category) · 유형(sub). 혜택 브랜드와 동일한 카드 구조(PickerItem)로 노출.
+export type PickerItem = { key: string; name: string; category: string; sub: string; logo: string; benefit: string; badges: string[] };
+
+export const DEVICE_MAKERS = ['Apple', 'Samsung', '기타'] as const;
+export const DEVICE_TYPES = ['스마트폰', '태블릿', '워치', '버즈'] as const;
+
+const DEV_RAW: { maker: string; type: string; items: { name: string; spec?: string; neo?: boolean }[] }[] = [
+  { maker: 'Apple', type: '스마트폰', items: [
+    { name: 'iPhone 15 Pro Max', spec: '256GB | 512GB | 1TB', neo: true },
+    { name: 'iPhone 15 Pro', spec: '128GB | 256GB | 512GB | 1TB', neo: true },
+    { name: 'iPhone 15 Plus', spec: '128GB | 256GB | 512GB' },
+    { name: 'iPhone 15', spec: '128GB | 256GB | 512GB' },
+    { name: 'iPhone 14', spec: '128GB | 256GB' },
+  ] },
+  { maker: 'Apple', type: '태블릿', items: [
+    { name: 'iPad Pro 13 (M4)', spec: '256GB~' },
+    { name: 'iPad Air 11 (M2)', spec: '128GB~' },
+    { name: 'iPad (10세대)', spec: '64GB | 256GB' },
+  ] },
+  { maker: 'Apple', type: '워치', items: [
+    { name: 'Apple Watch Series 9', spec: 'GPS | Cellular', neo: true },
+    { name: 'Apple Watch SE', spec: 'GPS | Cellular' },
+  ] },
+  { maker: 'Apple', type: '버즈', items: [
+    { name: 'AirPods Pro 2 (USB-C)', spec: '' },
+    { name: 'AirPods Max', spec: '' },
+  ] },
+  { maker: 'Samsung', type: '스마트폰', items: [
+    { name: 'Galaxy S24 Ultra', spec: '256GB | 512GB | 1TB', neo: true },
+    { name: 'Galaxy S24+', spec: '256GB | 512GB', neo: true },
+    { name: 'Galaxy S24', spec: '256GB | 512GB', neo: true },
+    { name: 'Galaxy Z Fold5', spec: '256GB | 512GB | 1TB' },
+    { name: 'Galaxy Z Flip5', spec: '256GB | 512GB' },
+    { name: 'Galaxy A35', spec: '128GB | 256GB' },
+  ] },
+  { maker: 'Samsung', type: '태블릿', items: [
+    { name: 'Galaxy Tab S9', spec: '128GB~' },
+    { name: 'Galaxy Tab S9 FE', spec: '128GB~' },
+  ] },
+  { maker: 'Samsung', type: '워치', items: [
+    { name: 'Galaxy Watch6', spec: 'BT | LTE' },
+    { name: 'Galaxy Watch6 Classic', spec: 'BT | LTE' },
+  ] },
+  { maker: 'Samsung', type: '버즈', items: [
+    { name: 'Galaxy Buds2 Pro', spec: '' },
+    { name: 'Galaxy Buds FE', spec: '' },
+  ] },
+];
+
+export const BSS_DEVICES: PickerItem[] = DEV_RAW.flatMap((r) =>
+  r.items.map((it) => ({
+    key: `dev:${it.name}`,
+    name: it.name,
+    category: r.maker,
+    sub: r.type,
+    logo: 'icon:general/Device',
+    benefit: ['선택 약정 12개월 기준', it.spec].filter(Boolean).join(' · '),
+    badges: it.neo ? ['NEW'] : [],
+  })),
+);
+
+export const deviceByKey = (key: string): PickerItem | undefined => BSS_DEVICES.find((d) => d.key === key);
+
+// 코드화 아이템(혜택 브랜드 + 디바이스) 공용 조회 — 빌더 상품 불러오기 삽입(addBssProduct)용.
+export function pickerItemByKey(key: string): { name: string; logo: string; benefit: string } | undefined {
+  const p = bssProductByKey(key);
+  if (p) return { name: p.name, logo: p.logo, benefit: p.benefit };
+  const d = deviceByKey(key);
+  if (d) return { name: d.name, logo: d.logo, benefit: d.benefit };
+  return undefined;
+}
