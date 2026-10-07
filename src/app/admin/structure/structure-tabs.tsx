@@ -85,17 +85,24 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="468" y="96">SSOT = 외부(BSS)</text>
 <text class="tm t3" x="468" y="114">BSS에서 끌어와 노출</text>
 
-<!-- 디자인 시스템 — 상품원장 옆(우측). Corner 바로 위라 DS→Corner 화살표가 수직으로 꼬이지 않음(2026-10-07). -->
-<rect class="bx-ext" x="680" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="698" y="76">디자인 시스템</text>
-<text class="tm t3" x="698" y="100">코너 껍데기</text>
-<text class="tm t3" x="698" y="118">원천 템플릿 · 규격</text>
+<!-- 디자인 시스템 — 상품원장보다 왼쪽(2026-10-07). 코너 유형 관리와 Corner 양쪽으로 화살표가 나감. -->
+<rect class="bx-ext" x="240" y="44" width="180" height="96" rx="8"/>
+<text class="tx t2" x="258" y="76">디자인 시스템</text>
+<text class="tm t3" x="258" y="100">코너 껍데기</text>
+<text class="tm t3" x="258" y="118">원천 템플릿 · 규격</text>
 
 <rect class="bx-ext" x="1040" y="44" width="180" height="96" rx="8"/>
 <text class="tx t2" x="1058" y="76">CVM</text>
 <rect class="opt-tag" x="1100" y="62" width="44" height="20" rx="10"/><text class="tm t4" x="1122" y="76" text-anchor="middle">선택</text>
 <text class="tm t3" x="1058" y="100">추천 엔진</text>
 <text class="tm t3" x="1058" y="118">코너 개인화 · 배치 순서</text>
+
+<!-- 범례: 실선(기본·필수) vs 점선(CVM 선택) -->
+<text class="tm t4" x="690" y="58" font-weight="700">범례</text>
+<line x1="690" y1="76" x2="724" y2="76" stroke="var(--accent)" stroke-width="2.5"/>
+<text class="tm t4" x="732" y="80">실선 = 기본·필수 흐름</text>
+<line x1="690" y1="100" x2="724" y2="100" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 3"/>
+<text class="tm t4" x="732" y="104">점선 = CVM(선택) 적용</text>
 
 <!-- ───── 전시 어드민 경계 ───── -->
 <rect class="z-adm" x="20" y="186" width="1220" height="556" rx="12"/>
@@ -107,10 +114,10 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="44" y="272">화면에 쓸 재료를</text>
 <text class="tm t3" x="44" y="290">어드민에 등록</text>
 
-<rect class="bx" x="190" y="212" width="460" height="96" rx="8"/>
+<rect class="bx" x="190" y="212" width="300" height="96" rx="8"/>
 <text class="tx t2" x="208" y="244">코너 유형 관리</text>
-<text class="tm t3" x="208" y="270">상품 맵핑 · 승인</text>
-<text class="tm t3" x="208" y="288">코너 내 개인화(CVM) 설정</text>
+<text class="tm t3" x="208" y="270">코너 유형 승인</text>
+<text class="tm t3" x="208" y="288">개인화(CVM) 설정</text>
 
 <rect class="bx" x="920" y="212" width="180" height="96" rx="8"/>
 <text class="tx t2" x="938" y="244">배너 캠페인 관리</text>
@@ -166,29 +173,32 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="170" y="703">프로모션 빌더를 전시/관리와 별개로 제공</text>
 
 <!-- ───── 화살표 ───── -->
-<!-- ① 상품원장 → 코너 유형 관리 (맵핑) -->
-<path class="ar" d="M540 140V208" marker-end="url(#m)"/>
-<circle class="num" cx="540" cy="174" r="10"/><text class="numt" x="540" y="178" text-anchor="middle">1</text>
-<text class="tm t4" x="556" y="178">상품 맵핑</text>
-<!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음, 2026-10-07) -->
+<!-- ① 디자인 시스템 → 코너 유형 관리 (원천 템플릿 등록) -->
+<path class="ar-a" d="M330 140V208" marker-end="url(#ma)"/>
+<circle class="num" cx="330" cy="174" r="10"/><text class="numt" x="330" y="178" text-anchor="middle">1</text>
+<text class="ta t4" x="314" y="178" text-anchor="end">원천 템플릿 등록</text>
+<!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음) -->
 <path class="ar-a" d="M300 308V426" marker-end="url(#ma)"/>
 <circle class="num" cx="300" cy="340" r="10"/><text class="numt" x="300" y="344" text-anchor="middle">2</text>
 <text class="ta t4" x="316" y="344">승인된 코너 유형을 Template에 쌓음</text>
-<!-- ③ 디자인 시스템 → Corner (빌더에서 직접 수정) — DS가 Corner 바로 위라 수직. -->
-<path class="ar-a" d="M770 140V426" marker-end="url(#ma)"/>
-<circle class="num" cx="770" cy="286" r="10"/><text class="numt" x="770" y="290" text-anchor="middle">3</text>
-<text class="ta t4" x="786" y="366">껍데기 · 원천 템플릿</text>
-<text class="ta t4" x="786" y="382">빌더에서 직접 수정</text>
-<!-- ③ 배너 캠페인 → Corner (빌더에서 배너 불러오기) — 코너 유형 관리가 아니라 Corner를 바라봄(2026-10-07). -->
+<!-- ③ 디자인 시스템 → Corner (껍데기 빌더 직접 수정) — DS는 코너 유형 관리와 Corner 양쪽으로. -->
+<path class="ar-a" d="M400 140V170H500V426" marker-end="url(#ma)"/>
+<circle class="num" cx="500" cy="336" r="10"/><text class="numt" x="500" y="340" text-anchor="middle">3</text>
+<text class="ta t4" x="500" y="320" text-anchor="middle">껍데기 직접 수정</text>
+<!-- ③ 상품원장 → Corner (상품 불러오기) — 코너가 아니라 Corner를 향함(2026-10-07). -->
+<path class="ar-a" d="M600 140V426" marker-end="url(#ma)"/>
+<circle class="num" cx="600" cy="336" r="10"/><text class="numt" x="600" y="340" text-anchor="middle">3</text>
+<text class="ta t4" x="600" y="320" text-anchor="middle">상품 불러오기</text>
+<!-- ③ 배너 캠페인 → Corner (배너 불러오기) -->
 <path class="ar-a" d="M1010 308V426" marker-end="url(#ma)"/>
-<circle class="num" cx="1010" cy="368" r="10"/><text class="numt" x="1010" y="372" text-anchor="middle">3</text>
-<text class="ta t4" x="1026" y="360">배너 불러오기</text>
-<!-- ④ CVM → Template (코너 배치 순서, 선택) -->
+<circle class="num" cx="1010" cy="336" r="10"/><text class="numt" x="1010" y="340" text-anchor="middle">3</text>
+<text class="ta t4" x="1010" y="320" text-anchor="middle">배너 불러오기</text>
+<!-- ④ CVM → Template (코너 배치 순서, 선택 · 점선) -->
 <path class="ar-opt" d="M1130 140V325H336V426" marker-end="url(#m)"/>
-<circle class="num" cx="1130" cy="260" r="10"/><text class="numt" x="1130" y="264" text-anchor="middle">4</text>
-<text class="tm t4" x="1146" y="248">(선택)</text>
-<text class="tm t4" x="1146" y="264">코너 배치</text>
-<text class="tm t4" x="1146" y="280">순서</text>
+<circle class="num" cx="1130" cy="250" r="10"/><text class="numt" x="1130" y="254" text-anchor="middle">4</text>
+<text class="tm t4" x="1146" y="238">(선택)</text>
+<text class="tm t4" x="1146" y="254">코너 배치</text>
+<text class="tm t4" x="1146" y="270">순서</text>
 </svg>
 </section>
 
