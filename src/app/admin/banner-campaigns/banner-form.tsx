@@ -453,7 +453,9 @@ function TemplateEditRows({ row, onPatch, onShared, onFile, images }: { row: Typ
       {/* 4-6 AI 배너 생성 */}
       <FieldRow label="AI 배너 생성">
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" onClick={() => setAiOpen(true)}><Sparkles className="mr-1 h-3.5 w-3.5" />AI 추천</Button>
+          <button type="button" onClick={() => setAiOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-indigo-300 bg-indigo-50 px-3 text-[13px] font-semibold text-indigo-700 transition hover:bg-indigo-100">
+            <Sparkles className="h-3.5 w-3.5" /> AI 추천
+          </button>
           <span className="text-[12px] text-muted-foreground">AI 추천을 통해 배너를 생성하세요.</span>
         </div>
       </FieldRow>

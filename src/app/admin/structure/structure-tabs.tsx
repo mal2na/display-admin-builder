@@ -68,7 +68,7 @@ const DIAGRAM_HTML = `
 <b>상품</b>(상품원장·외부 BSS가 SSOT)과 <b>배너</b>(배너 캠페인 관리)는 빌더의 Corner로 바로 불러와요.<br>
 <b>화면</b>은 전체페이지 관리에서 Container를 등록한 뒤, Container › Template › Corner 순서로 만들어요.<br>
 어드민이 관리하는 건 <b>코너·템플릿·컨테이너</b>뿐이에요. 아톰·컴포넌트는 관리하지 않아요.<br>
-<b>CVM</b>(점선)은 선택이에요. 개인화는 코너 유형 관리에서, 배치 순서는 빌더에서 설정해요.</p>
+<b>CVM</b>(점선)은 선택이에요. 개인화 요소(상품·혜택·업무·문구·레이아웃·배치 순서)는 빌더의 Corner에서 적용해요.</p>
 </div>
 
 <section class="card diagram" aria-label="전시관리 구조도">
@@ -86,9 +86,9 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="44" y="116">재료와 데이터를 제공</text>
 
 <rect class="bx-ext" x="600" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="618" y="74">상품원장</text>
-<text class="tm t3" x="618" y="96">SSOT = 외부(BSS)</text>
-<text class="tm t3" x="618" y="114">BSS에서 끌어와 노출</text>
+<text class="tx t2" x="618" y="74">EPC+전시상품 정보</text>
+<text class="tm t3" x="618" y="96">BSS·상품전시 어드민에서</text>
+<text class="tm t3" x="618" y="114">정보 끌어와서 노출</text>
 
 <!-- 디자인 시스템 — 코너 유형 관리로만 연결(① 원천 템플릿 등록). 코너 껍데기(틀)를 소유. -->
 <rect class="bx-ext" x="250" y="44" width="200" height="96" rx="8"/>
@@ -121,8 +121,8 @@ const DIAGRAM_HTML = `
 
 <rect class="bx" x="190" y="212" width="250" height="96" rx="8"/>
 <text class="tx t2" x="208" y="244">코너 유형 관리</text>
-<text class="tm t3" x="208" y="270">코너 유형 승인</text>
-<text class="tm t3" x="208" y="288">개인화(CVM) 설정</text>
+<text class="tm t3" x="208" y="270">코너 유형 등록 · 승인</text>
+<text class="tm t3" x="208" y="288">원천 소스 맵핑</text>
 
 <rect class="bx" x="920" y="212" width="180" height="96" rx="8"/>
 <text class="tx t2" x="938" y="244">배너 캠페인 관리</text>
@@ -142,18 +142,20 @@ const DIAGRAM_HTML = `
 <text class="tx t2" x="88" y="458">Container</text>
 <text class="tm t3" x="88" y="480">전체페이지 관리에서 등록</text>
 <text class="tm t4" x="88" y="500">혜택 홈 · 쇼핑 홈</text>
-<text class="sep" x="244" y="482" text-anchor="middle">›</text>
+<!-- Template → Container (담김) 화살표 -->
+<path class="ar-a" d="M254 474H236" marker-end="url(#ma)"/>
 
 <rect class="bx-lv" x="256" y="430" width="160" height="88" rx="8"/>
 <text class="tx t2" x="272" y="458">Template</text>
 <text class="tm t3" x="272" y="480">코너 쌓기 · 배치 순서</text>
 <text class="tm t4" x="272" y="500">로그인 · 비로그인</text>
-<text class="sep" x="428" y="482" text-anchor="middle">›</text>
+<!-- Corner → Template (쌓임) 화살표 -->
+<path class="ar-a" d="M438 474H420" marker-end="url(#ma)"/>
 
 <rect class="bx-lv" x="440" y="430" width="748" height="88" rx="8"/>
 <text class="tx t2" x="456" y="458">Corner</text>
 <text class="tm t3" x="530" y="458">등록된 코너 유형을 Template에 쌓음</text>
-<text class="tm t4" x="456" y="482">코너 내 개인화는 코너 유형 관리에서 설정</text>
+<text class="tm t4" x="456" y="482">등록된 코너 유형을 불러와 빌더에서 컨텐츠 맵핑·개인화 설정 적용</text>
 <rect class="bx" x="456" y="492" width="100" height="20" rx="10"/><text class="tx t4" x="506" y="506" text-anchor="middle">기본 · 어드민 설정</text>
 <rect class="chip-opt" x="562" y="492" width="80" height="20" rx="10"/><text class="tm t4" x="602" y="506" text-anchor="middle">A · 가로형</text>
 <rect class="chip-opt" x="648" y="492" width="72" height="20" rx="10"/><text class="tm t4" x="684" y="506" text-anchor="middle">B · 탭형</text>
@@ -198,12 +200,14 @@ const DIAGRAM_HTML = `
 <path class="ar-a" d="M1010 308V426" marker-end="url(#ma)"/>
 <circle class="num" cx="1010" cy="375" r="10"/><text class="numt" x="1010" y="379" text-anchor="middle">3</text>
 <text class="ta t4" x="1026" y="379" text-anchor="start">배너 불러오기</text>
-<!-- ④ CVM → Template (코너 배치 순서, 선택 · 점선) -->
-<path class="ar-opt" d="M1130 140V325H336V426" marker-end="url(#m)"/>
-<circle class="num" cx="1130" cy="250" r="10"/><text class="numt" x="1130" y="254" text-anchor="middle">4</text>
-<text class="tm t4" x="1146" y="238">(선택)</text>
-<text class="tm t4" x="1146" y="254">코너 배치</text>
-<text class="tm t4" x="1146" y="270">순서</text>
+<!-- ④ CVM → Corner (개인화 요소 적용, 선택 · 점선) -->
+<path class="ar-opt" d="M1130 140V426" marker-end="url(#m)"/>
+<circle class="num" cx="1130" cy="360" r="10"/><text class="numt" x="1130" y="364" text-anchor="middle">4</text>
+<text class="tm t4" x="1146" y="250" font-weight="700">개인화 요소(선택)</text>
+<text class="tm t4" x="1146" y="268">· 코너 내 상품·혜택·업무</text>
+<text class="tm t4" x="1146" y="284">· 문구</text>
+<text class="tm t4" x="1146" y="300">· 코너 레이아웃</text>
+<text class="tm t4" x="1146" y="316">· 코너 배치 순서</text>
 </svg>
 </section>
 
@@ -213,7 +217,7 @@ const DIAGRAM_HTML = `
     <li class="card"><span class="n">1</span><b>등록 · 승인</b><span>디자인 시스템이 소유한 코너 껍데기(원천 템플릿·규격)를 코너 유형 관리에 등록하고 승인해요.</span></li>
     <li class="card"><span class="n">2</span><b>Container 등록 · 쌓기</b><span>Container는 전체페이지 관리에서 등록하고, 승인된 코너 유형을 Template에 쌓아 Corner를 구성해요.</span></li>
     <li class="card"><span class="n">3</span><b>빌더에서 가져와 수정</b><span>코너 유형 관리의 승인된 유형을 빌더로 가져와 Corner에서 내용(문구·노출 등)을 수정해요. 상품과 배너는 Corner로 바로 불러와요. 아톰·컴포넌트는 어드민 관리 대상이 아니에요.</span></li>
-    <li class="card"><span class="n">4</span><b>CVM 설정 (선택)</b><span>코너 안의 개인화(레이아웃·상품·메시지)는 코너 유형 관리에서 설정하고, 코너 배치 순서는 빌더의 Template에서 설정해요.</span></li>
+    <li class="card"><span class="n">4</span><b>CVM 설정 (선택)</b><span>개인화 요소(코너 내 상품·혜택·업무·문구·레이아웃·배치 순서)를 빌더의 Corner에서 적용해요.</span></li>
     <li class="card"><span class="n">5</span><b>관리</b><span>저장한 화면은 기존 화면 관리에서 운영하고, 수정할 땐 빌더로 진입</span></li>
   </ol>
 </section>
