@@ -343,6 +343,21 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
   );
   const L = ({ children }: { children: React.ReactNode }) => <span className="w-16 shrink-0 text-[12px] text-muted-foreground">{children}</span>;
 
+  // AI 배너 생성(스펙 4-6)이 반영하는 '이미지' — 라이브러리에서 프롬프트 키워드와 가장 많이 겹치는 소재를 고른다.
+  //  매칭이 없으면 건드리지 않는다(무작위 이미지 강제 X). 첫 생성 때만, 아직 이미지가 없을 때만.
+  const pickAiImage = (text: string): string | undefined => {
+    if (!images.length) return undefined;
+    const toks = text.toLowerCase().split(/[^0-9a-z가-힣]+/).filter((t) => t.length >= 2);
+    if (!toks.length) return undefined;
+    let best: { url: string; score: number } | null = null;
+    for (const im of images) {
+      const hay = `${im.name} ${im.alt ?? ''}`.toLowerCase();
+      const score = toks.reduce((n, t) => n + (hay.includes(t) ? 1 : 0), 0);
+      if (score > 0 && (!best || score > best.score)) best = { url: im.url, score };
+    }
+    return best?.url;
+  };
+
   // AI 어시스턴트 — 서버(/api/ai-banner)에 요청. 키가 있으면 실제 Claude, 없으면 규칙기반 폴백.
   // 첫 요청 = 생성(generate), 이후 = 현재 초안 기준 수정(refine). 히스토리 누적.
   const aiSend = async (text: string) => {
@@ -350,6 +365,14 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
     const first = aiMsgs.length === 0;
     setAiMsgs((m) => [...m, { role: 'user', text }]);
     setAiBusy(true);
+    // 스펙 4-6: AI는 문구·BG 컬러뿐 아니라 '이미지'도 반영 → 첫 생성 때 이미지가 비어있으면 라이브러리에서 제안.
+    const addImage = (patch: Partial<TypeDetailRow>): Partial<TypeDetailRow> => {
+      if (first && !row.rightImageUrl && !patch.rightImageUrl) {
+        const url = pickAiImage(text);
+        if (url) return { ...patch, rightImageUrl: url };
+      }
+      return patch;
+    };
     const current = {
       title: row.title, subtitle: row.subtitle, bgColor: row.bgColor, bgColor2: row.bgColor2, bgType: row.bgType,
       titleColor: row.titleColor, subColor: row.subColor, titleSize: row.titleSize, align: row.align,
@@ -362,13 +385,13 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
       });
       if (!res.ok) throw new Error('api');
       const data = await res.json();
-      if (data?.patch && typeof data.patch === 'object') onPatch(data.patch as Partial<TypeDetailRow>);
+      if (data?.patch && typeof data.patch === 'object') onPatch(addImage(data.patch as Partial<TypeDetailRow>));
       setAiEngine(data?.engine === 'ai' ? 'ai' : 'rules');
       setAiMsgs((m) => [...m, { role: 'ai', text: data?.summary || '반영했어요.' }]);
     } catch {
       // 네트워크 실패 → 클라이언트 규칙기반으로라도 동작
       const fb = first ? { patch: generateComposeDraft(text), summary: `“${text}” 컨셉으로 초안을 만들었어요.` } : refineComposeDraft(text, row);
-      onPatch(fb.patch);
+      onPatch(addImage(fb.patch));
       setAiEngine('rules');
       setAiMsgs((m) => [...m, { role: 'ai', text: fb.summary }]);
     } finally {
@@ -436,10 +459,10 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
                   </button>
                 ))}
               </div>
-              {/* AI 문구 생성 — 작은 버튼으로 텍스트 편집 옆에(2026-09-30 사용자 요청: 미리보기에 크게 넣지 말 것). 정책 TBD */}
-              <button type="button" onClick={() => setAiOpen(true)} title="정책 미정(TBD) — 생성 범위·저작권·검수·CVM 베리에이션 등"
+              {/* AI 배너 생성(스펙 4-6) — AI 추천 → 우측 AI 커뮤니케이터에서 메인/서브 타이틀·이미지·BG 컬러를 생성·반영. */}
+              <button type="button" onClick={() => setAiOpen(true)} title="AI 추천 — 메인/서브 타이틀·이미지·BG 컬러를 생성해 미리보기에 반영"
                 className="ml-auto inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-600 transition hover:bg-indigo-100">
-                <Sparkles className="h-3.5 w-3.5" /> AI 문구 생성 <span className="rounded bg-amber-200/80 px-1 text-[9px] font-bold text-amber-800">TBD</span>
+                <Sparkles className="h-3.5 w-3.5" /> AI 배너 생성
               </button>
             </div>
 
