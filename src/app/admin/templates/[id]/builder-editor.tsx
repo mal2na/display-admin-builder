@@ -1389,21 +1389,24 @@ const BSS_BADGE_TONE: Record<string, string> = {
   사용: 'bg-blue-100 text-blue-700',
   'VIP PICK': 'bg-violet-600 text-white',
 };
-function BssProductPickerModal({ open, onClose, onPick, pending }: { open: boolean; onClose: () => void; onPick: (key: string) => void; pending: boolean }) {
+function BssProductPickerModal({ open, onClose, onPickMany, pending }: { open: boolean; onClose: () => void; onPickMany: (keys: string[]) => void; pending: boolean }) {
   const [cat, setCat] = useState<'ALL' | BssCategory>('ALL');
   const [sub, setSub] = useState<string>('전체');
+  const [selected, setSelected] = useState<Set<string>>(new Set()); // 멀티 선택(2026-10-07)
   if (!open) return null;
+  const toggle = (key: string) => setSelected((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+  const close = () => { setSelected(new Set()); onClose(); };
   const cats: ('ALL' | BssCategory)[] = ['ALL', 'EAT', 'BUY', 'PLAY'];
   const subs = cat === 'ALL' ? [] : ['전체', ...BSS_SUBCATEGORIES[cat]];
   const list = BSS_PRODUCTS.filter((p) => (cat === 'ALL' || p.category === cat) && (cat === 'ALL' || sub === '전체' || p.sub === sub));
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
       {/* 고정 높이(h-[80vh]) — 카테고리 전환 시에도 모달 크기 불변, 리스트만 내부 스크롤 */}
       <div className="flex h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <h2 className="text-sm font-semibold">상품 불러오기</h2>
-          <span className="text-xs text-muted-foreground">혜택 브랜드에서 로고·이름·대표 혜택을 코너에 추가</span>
-          <button type="button" onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+          <span className="text-xs text-muted-foreground">여러 개 선택해 한 번에 코너에 추가</span>
+          <button type="button" onClick={close} className="ml-auto text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
         {/* 카테고리 탭 */}
         <div className="flex items-center gap-1 border-b px-4 py-2">
@@ -1429,9 +1432,14 @@ function BssProductPickerModal({ open, onClose, onPick, pending }: { open: boole
         </div>
         {/* 브랜드 리스트 — 남은 공간을 채우고 내부 스크롤(min-h-0), 항목이 적어도 위 정렬(content-start) */}
         <div className="grid min-h-0 flex-1 content-start grid-cols-1 gap-2 overflow-y-auto p-4 sm:grid-cols-2">
-          {list.map((p) => (
-            <button key={p.key} type="button" disabled={pending} onClick={() => onPick(p.key)}
-              className="flex items-center gap-3 rounded-xl border bg-white p-3 text-left transition hover:border-primary hover:bg-primary/5 disabled:opacity-50">
+          {list.map((p) => {
+            const on = selected.has(p.key);
+            return (
+            <button key={p.key} type="button" disabled={pending} onClick={() => toggle(p.key)}
+              className={cn('relative flex items-center gap-3 rounded-xl border bg-white p-3 text-left transition disabled:opacity-50', on ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-primary/50 hover:bg-primary/5')}>
+              <span className={cn('absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full border', on ? 'border-primary bg-primary text-white' : 'border-slate-300 bg-white')}>
+                {on && <Check className="h-3 w-3" />}
+              </span>
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-50 ring-1 ring-slate-200">
                 {isIconRef(p.logo) ? <IconGlyph name={p.logo} className="h-5 w-5 text-slate-700" /> : isRenderableIconUrl(p.logo) ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -1447,8 +1455,17 @@ function BssProductPickerModal({ open, onClose, onPick, pending }: { open: boole
                 <span className="mt-1 block truncate text-[11px] text-slate-500">{p.benefit}</span>
               </span>
             </button>
-          ))}
+            );
+          })}
           {list.length === 0 && <p className="col-span-full py-10 text-center text-xs text-muted-foreground">해당 카테고리에 브랜드가 없습니다.</p>}
+        </div>
+        {/* 하단 — 선택 개수 + 한 번에 추가 */}
+        <div className="flex items-center gap-3 border-t px-5 py-3">
+          <span className="text-xs text-muted-foreground"><b className="text-foreground">{selected.size}</b>개 선택됨</span>
+          {selected.size > 0 && <button type="button" onClick={() => setSelected(new Set())} className="text-[11px] text-muted-foreground underline-offset-2 hover:underline">선택 해제</button>}
+          <Button type="button" onClick={() => onPickMany([...selected])} disabled={pending || selected.size === 0} className="ml-auto">
+            {pending ? '추가 중…' : `${selected.size}개 코너에 추가`}
+          </Button>
         </div>
       </div>
     </div>
@@ -1588,7 +1605,7 @@ function ComponentList({
         open={bssOpen}
         pending={bssPending}
         onClose={() => setBssOpen(false)}
-        onPick={(key) => startBss(async () => { await addBssProduct(templateId, corner.id, key); setBssOpen(false); })}
+        onPickMany={(keys) => startBss(async () => { for (const k of keys) await addBssProduct(templateId, corner.id, k); setBssOpen(false); })}
       />
     </div>
   );
