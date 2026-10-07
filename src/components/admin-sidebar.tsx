@@ -27,11 +27,12 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         {/* 운영 관리 */}
         {collapsed ? <div className="my-1 h-px bg-border" /> : <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">운영 관리</p>}
         <NavLink href="/admin/comments" icon={<MessagesSquare className="h-4 w-4" />} label="댓글·리뷰 관리" collapsed={collapsed} />
-        <NavLink href="/admin/app-splash" icon={<ImagePlay className="h-4 w-4" />} label="App 스플래시 관리" collapsed={collapsed} />
-        <NavLink href="/admin/app-versions" icon={<SmartphoneNfc className="h-4 w-4" />} label="App 버전 관리" collapsed={collapsed} />
-        <NavLink href="/admin/app-widgets" icon={<AppWindow className="h-4 w-4" />} label="App 위젯 관리" collapsed={collapsed} alsoActiveFor={['/admin/widget-types']} />
         {/* 메뉴 관리는 빌더로 이관 → '전체페이지 관리'로 통합. 페이지 개발 설정은 페이지 상세의 '개발설정' 탭으로 흡수(2026-10-06). */}
+        {/* 순서: 전체페이지 → App 버전 → App 스플래시 → App 위젯 (2026-10-07 사용자 요청) */}
         <NavLink href="/admin/page-menu-b" icon={<FolderTree className="h-4 w-4" />} label="전체페이지 관리" collapsed={collapsed} />
+        <NavLink href="/admin/app-versions" icon={<SmartphoneNfc className="h-4 w-4" />} label="App 버전 관리" collapsed={collapsed} />
+        <NavLink href="/admin/app-splash" icon={<ImagePlay className="h-4 w-4" />} label="App 스플래시 관리" collapsed={collapsed} />
+        <NavLink href="/admin/app-widgets" icon={<AppWindow className="h-4 w-4" />} label="App 위젯 관리" collapsed={collapsed} alsoActiveFor={['/admin/widget-types']} />
 
         {/* 백업 — 코너 유형 관리 개편 직전 스냅샷(2026-10-06). 제일 하단에 분리 배치. */}
         <div className="mt-auto" />
