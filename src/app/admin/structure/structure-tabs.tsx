@@ -63,7 +63,7 @@ const DIAGRAM_CSS = `
 const DIAGRAM_HTML = `
 <div>
   <p class="eyebrow">NEXT채널 어드민 · 전시/관리 영역 · 구조도 v0.9</p>
-  <p class="thesis">상품원장의 상품은 코너 유형에 맵핑·승인하고, 배너 캠페인의 배너와 디자인 시스템의 코너 껍데기(원천 템플릿·규격)는 빌더의 Corner로 바로 불러와 직접 수정해요. Container는 전체페이지 관리에서 등록하고, Container › Template › Corner 순으로 화면을 만들어요. 아톰·컴포넌트는 어드민에서 관리하지 않고, 코너·템플릿·컨테이너만 어드민에서 관리해요. CVM(점선)은 선택 — 개인화는 코너 유형 관리에서, 배치 순서는 빌더에서 설정해요.</p>
+  <p class="thesis"><b>상품</b>은 상품원장(외부 BSS가 SSOT)에서 끌어와 코너 유형에 맵핑·승인하고, 승인된 코너 유형은 Template에 쌓아요. <b>배너</b>와 디자인 시스템의 <b>코너 껍데기</b>는 빌더의 Corner로 바로 불러와 직접 수정하고요. 화면은 <b>전체페이지 관리</b>에서 Container를 등록한 뒤 Container › Template › Corner 순서로 만들어요. 어드민이 관리하는 건 <b>코너·템플릿·컨테이너</b>뿐 — 아톰·컴포넌트는 관리하지 않아요. CVM(점선)은 선택: 개인화는 코너 유형 관리에서, 배치 순서는 빌더에서.</p>
 </div>
 
 <section class="card diagram" aria-label="전시관리 구조도">
@@ -81,9 +81,9 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="44" y="116">재료와 데이터를 제공</text>
 
 <rect class="bx-ext" x="450" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="468" y="76">상품원장</text>
-<text class="tm t3" x="468" y="100">상품 정보</text>
-<text class="tm t3" x="468" y="118">원천 소스</text>
+<text class="tx t2" x="468" y="74">상품원장</text>
+<text class="tm t3" x="468" y="96">SSOT = 외부(BSS)</text>
+<text class="tm t3" x="468" y="114">BSS에서 끌어와 노출</text>
 
 <!-- 디자인 시스템 — 상품원장 옆(우측). Corner 바로 위라 DS→Corner 화살표가 수직으로 꼬이지 않음(2026-10-07). -->
 <rect class="bx-ext" x="680" y="44" width="180" height="96" rx="8"/>
@@ -170,10 +170,10 @@ const DIAGRAM_HTML = `
 <path class="ar" d="M540 140V208" marker-end="url(#m)"/>
 <circle class="num" cx="540" cy="174" r="10"/><text class="numt" x="540" y="178" text-anchor="middle">1</text>
 <text class="tm t4" x="556" y="178">상품 맵핑</text>
-<!-- ② 코너 유형 관리 → Container (승인된 유형만) -->
-<path class="ar-a" d="M215 308V426" marker-end="url(#ma)"/>
-<circle class="num" cx="215" cy="326" r="10"/><text class="numt" x="215" y="330" text-anchor="middle">2</text>
-<text class="ta t4" x="199" y="330" text-anchor="end">승인된 코너 유형 등록</text>
+<!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음, 2026-10-07) -->
+<path class="ar-a" d="M300 308V426" marker-end="url(#ma)"/>
+<circle class="num" cx="300" cy="340" r="10"/><text class="numt" x="300" y="344" text-anchor="middle">2</text>
+<text class="ta t4" x="316" y="344">승인된 코너 유형을 Template에 쌓음</text>
 <!-- ③ 디자인 시스템 → Corner (빌더에서 직접 수정) — DS가 Corner 바로 위라 수직. -->
 <path class="ar-a" d="M770 140V426" marker-end="url(#ma)"/>
 <circle class="num" cx="770" cy="286" r="10"/><text class="numt" x="770" y="290" text-anchor="middle">3</text>
@@ -195,7 +195,7 @@ const DIAGRAM_HTML = `
 <section>
   <h2>순서</h2>
   <ol class="steps">
-    <li class="card"><span class="n">1</span><b>맵핑 · 승인</b><span>상품원장의 상품을 코너 유형에 맵핑하고 승인(배너는 코너 유형이 아니라 빌더의 Corner로 바로 불러와요)</span></li>
+    <li class="card"><span class="n">1</span><b>맵핑 · 승인</b><span>상품원장(외부 BSS가 SSOT)의 상품을 코너 유형에 맵핑하고 승인해요. 배너는 코너 유형이 아니라 빌더의 Corner로 바로 불러와요.</span></li>
     <li class="card"><span class="n">2</span><b>Container 등록</b><span>Container는 전체페이지 관리에서 등록하고, 승인된 코너 유형을 Template에 쌓아 Corner를 구성</span></li>
     <li class="card"><span class="n">3</span><b>빌더에서 직접 편성·수정</b><span>디자인 시스템의 코너 껍데기와 배너 캠페인의 배너를 빌더의 Corner로 불러와 문구·노출 등을 직접 수정해요. 아톰·컴포넌트는 어드민 관리 대상이 아니고, 코너·템플릿·컨테이너만 관리해요.</span></li>
     <li class="card"><span class="n">4</span><b>CVM 설정 (선택)</b><span>코너 안의 개인화(레이아웃·상품·메시지)는 코너 유형 관리에서 설정하고, 코너 배치 순서는 빌더의 Template에서 설정해요.</span></li>
