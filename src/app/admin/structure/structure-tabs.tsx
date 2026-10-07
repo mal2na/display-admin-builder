@@ -177,10 +177,10 @@ const DIAGRAM_HTML = `
 <path class="ar-a" d="M330 140V208" marker-end="url(#ma)"/>
 <circle class="num" cx="330" cy="174" r="10"/><text class="numt" x="330" y="178" text-anchor="middle">1</text>
 <text class="ta t4" x="314" y="178" text-anchor="end">원천 템플릿 등록</text>
-<!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음) -->
+<!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음) — 라벨은 왼쪽, 번호는 위로 올려 ③ 묶음과 겹치지 않게(2026-10-07). -->
 <path class="ar-a" d="M300 308V426" marker-end="url(#ma)"/>
-<circle class="num" cx="300" cy="340" r="10"/><text class="numt" x="300" y="344" text-anchor="middle">2</text>
-<text class="ta t4" x="316" y="344">승인된 코너 유형을 Template에 쌓음</text>
+<circle class="num" cx="300" cy="322" r="10"/><text class="numt" x="300" y="326" text-anchor="middle">2</text>
+<text class="ta t4" x="284" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
 <!-- ③ 디자인 시스템 → Corner (껍데기 빌더 직접 수정) — DS는 코너 유형 관리와 Corner 양쪽으로. -->
 <path class="ar-a" d="M400 140V170H500V426" marker-end="url(#ma)"/>
 <circle class="num" cx="500" cy="336" r="10"/><text class="numt" x="500" y="340" text-anchor="middle">3</text>
