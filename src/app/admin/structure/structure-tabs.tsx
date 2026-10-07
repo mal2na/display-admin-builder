@@ -183,9 +183,9 @@ const DIAGRAM_HTML = `
 <circle class="num" cx="300" cy="322" r="10"/><text class="numt" x="300" y="326" text-anchor="middle">2</text>
 <text class="ta t4" x="284" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
 <!-- ③ 코너 유형 관리 → Corner (유형 가져와 내용 수정) — 코너 유형 관리 오른쪽으로 뺀 뒤 하단으로 내림(2026-10-07). -->
-<path class="ar-a" d="M440 260H558V422" marker-end="url(#ma)"/>
-<circle class="num" cx="558" cy="366" r="10"/><text class="numt" x="558" y="370" text-anchor="middle">3</text>
-<text class="ta t4" x="574" y="370" text-anchor="start">유형 가져와 내용 수정</text>
+<path class="ar-a" d="M440 260H540V422" marker-end="url(#ma)"/>
+<circle class="num" cx="540" cy="378" r="10"/><text class="numt" x="540" y="382" text-anchor="middle">3</text>
+<text class="ta t4" x="556" y="382" text-anchor="start">유형 가져와 내용 수정</text>
 <!-- ③ 상품원장 → Corner (상품 불러오기) — 라벨은 번호 옆 -->
 <path class="ar-a" d="M690 140V422" marker-end="url(#ma)"/>
 <circle class="num" cx="690" cy="378" r="10"/><text class="numt" x="690" y="382" text-anchor="middle">3</text>
