@@ -186,18 +186,18 @@ const DIAGRAM_HTML = `
 <path class="ar-a" d="M300 308V426" marker-end="url(#ma)"/>
 <circle class="num" cx="300" cy="322" r="10"/><text class="numt" x="300" y="326" text-anchor="middle">2</text>
 <text class="ta t4" x="284" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
-<!-- ③ 코너 유형 관리 → Corner (유형 가져와 내용 수정) — DS가 아니라 코너 유형 관리에서 나감(2026-10-07 정정). -->
-<path class="ar-a" d="M420 308V348H560V426" marker-end="url(#ma)"/>
-<circle class="num" cx="560" cy="375" r="10"/><text class="numt" x="560" y="379" text-anchor="middle">3</text>
-<text class="ta t4" x="560" y="340" text-anchor="middle">유형 가져와 내용 수정</text>
-<!-- ③ 상품원장 → Corner (상품 불러오기) -->
+<!-- ③ 코너 유형 관리 → Corner (유형 가져와 내용 수정) — 코너 유형 관리 오른쪽으로 뺀 뒤 하단으로 내림(2026-10-07). -->
+<path class="ar-a" d="M440 260H580V426" marker-end="url(#ma)"/>
+<circle class="num" cx="580" cy="300" r="10"/><text class="numt" x="580" y="304" text-anchor="middle">3</text>
+<text class="ta t4" x="564" y="304" text-anchor="end">유형 가져와 내용 수정</text>
+<!-- ③ 상품원장 → Corner (상품 불러오기) — 라벨은 번호 옆 -->
 <path class="ar-a" d="M690 140V426" marker-end="url(#ma)"/>
 <circle class="num" cx="690" cy="375" r="10"/><text class="numt" x="690" y="379" text-anchor="middle">3</text>
-<text class="ta t4" x="706" y="340" text-anchor="start">상품 불러오기</text>
-<!-- ③ 배너 캠페인 → Corner (배너 불러오기) -->
+<text class="ta t4" x="706" y="379" text-anchor="start">상품 불러오기</text>
+<!-- ③ 배너 캠페인 → Corner (배너 불러오기) — 라벨은 번호 옆 -->
 <path class="ar-a" d="M1010 308V426" marker-end="url(#ma)"/>
 <circle class="num" cx="1010" cy="375" r="10"/><text class="numt" x="1010" y="379" text-anchor="middle">3</text>
-<text class="ta t4" x="994" y="340" text-anchor="end">배너 불러오기</text>
+<text class="ta t4" x="1026" y="379" text-anchor="start">배너 불러오기</text>
 <!-- ④ CVM → Template (코너 배치 순서, 선택 · 점선) -->
 <path class="ar-opt" d="M1130 140V325H336V426" marker-end="url(#m)"/>
 <circle class="num" cx="1130" cy="250" r="10"/><text class="numt" x="1130" y="254" text-anchor="middle">4</text>
