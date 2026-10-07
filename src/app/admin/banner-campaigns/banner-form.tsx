@@ -726,7 +726,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
                   <div className="flex flex-wrap items-center gap-3 text-sm">
                     <label className="flex items-center gap-1"><input type="radio" name={`ps-${i}`} checked={(row.productScope ?? 'all') === 'all'} onChange={() => setRow(i, { productScope: 'all' })} className="accent-indigo-600" />전체 상품(또는 선택 안함)</label>
                     <label className="flex items-center gap-1"><input type="radio" name={`ps-${i}`} checked={row.productScope === 'partial'} onChange={() => setRow(i, { productScope: 'partial' })} className="accent-indigo-600" />일부 상품</label>
-                    {row.productScope === 'partial' && <Button type="button" variant="outline" onClick={() => setProdPicker(i)}>상품 추가</Button>}
+                    {row.productScope === 'partial' && <Button type="button" variant="outline" onClick={() => setProdPicker(i)}>상품 조회</Button>}
                     {row.productScope === 'partial' && row.productRef && (
                       <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-700">{row.productRef}<button type="button" onClick={() => setRow(i, { productRef: '' })} className="text-slate-400 hover:text-slate-700"><X className="h-3 w-3" /></button></span>
                     )}
