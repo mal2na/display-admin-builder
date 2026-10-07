@@ -72,7 +72,6 @@ function craftText(promptRaw: string): { title: string; subtitle: string } {
 export function generateComposeDraft(promptRaw: string): ComposeDraft {
   const prompt = promptRaw.trim();
   const s = prompt.toLowerCase();
-  const has = (...ws: string[]) => ws.some((w) => s.includes(w.toLowerCase()));
 
   const pal = PALETTES.find((p) => p.keys.some((k) => s.includes(k.toLowerCase())))?.pal ?? DEFAULT_PAL;
   const titleColor = pal.dark ? '#FFFFFF' : '#0F172A';
@@ -84,8 +83,6 @@ export function generateComposeDraft(promptRaw: string): ComposeDraft {
 
   // 짧은 카피는 크게, 길면 보통
   const titleSize = title.length <= 16 ? 'xl' : title.length <= 26 ? 'lg' : 'md';
-  // 세로형 느낌(가운데/상단 이미지) 힌트
-  const centered = has('가운데', '센터', '심플', '미니멀');
 
   return {
     title,
@@ -96,8 +93,9 @@ export function generateComposeDraft(promptRaw: string): ComposeDraft {
     titleColor,
     subColor,
     titleSize,
-    align: centered ? 'center' : 'left',
-    imagePos: centered ? 'top' : 'right',
+    // 직접 만들기 배너 표준 = 폰트 좌정렬 · 이미지 우측 고정(2026-10-07 사용자 규칙). AI 자동초안도 센터로 틀지 않는다.
+    align: 'left',
+    imagePos: 'right',
     imgSize: 'lg',
     badgeText,
     badgeColor: pal.accent,

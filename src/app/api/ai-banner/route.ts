@@ -26,6 +26,7 @@ Compose fields (all optional; include only what applies):
 - badgeText (short Korean or ""), badgeColor (hex)
 - ctaText (short Korean or ""), ctaColor (hex)
 Rules: colors must stay readable (light background → dark title like #0F172A; dark background → white title #FFFFFF). Keep badge/CTA colors as an accent that matches the palette.
+Banner standard: 직접 만들기(template-edit) banners are ALWAYS left-aligned text with the image on the right — set align "left" and imagePos "right". Do NOT center the text or move the image to top/bottom unless the user explicitly asks for a centered/stacked layout.
 For a first request, fill title/subtitle/background/CTA/badge coherently for the described promotion.
 For a refine request, return ONLY the fields that should change, based on the user's instruction and the given current draft.
 Output strictly the JSON object — no prose, no markdown code fences.`;
