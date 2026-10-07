@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { BannerForm } from '../../banner-form';
 import { updateBannerCampaign } from '../../actions';
 import { getImageLibrary } from '@/lib/image-library';
+import { getEventOptions } from '../../event-options';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ export default async function BannerCampaignEditPage({ params }: { params: { id:
   if (!b) notFound();
   let typeDetails: { type: string; detail: string }[] = [];
   try { if (b.typeDetails) typeDetails = JSON.parse(b.typeDetails); } catch { typeDetails = []; }
-  const libImages = await getImageLibrary();
+  const [libImages, events] = await Promise.all([getImageLibrary(), getEventOptions()]);
 
   return (
     <div className="px-8 py-6">
@@ -23,7 +24,7 @@ export default async function BannerCampaignEditPage({ params }: { params: { id:
         applyChannels: b.applyChannels, landingChannels: b.landingChannels,
         exposeYn: b.exposeYn, publishStart: b.publishStart?.toISOString() ?? null, publishEnd: b.publishEnd?.toISOString() ?? null,
         landingType: b.landingType, landingUrl: b.landingUrl, pageType: b.pageType, bannerAlt: b.bannerAlt, typeDetails,
-      }} libImages={libImages} />
+      }} libImages={libImages} events={events} />
     </div>
   );
 }

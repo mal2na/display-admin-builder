@@ -206,9 +206,7 @@ const PALETTES = [
 //  '텍스트 띠 배너'는 별도 유형이 아니라 직접 만들기의 '텍스트띠배너' 규격으로 통합.
 const METHODS = [
   { value: '리스트형', label: '직접 만들기 (템플릿 편집형)', desc: '템플릿에 배경색·문구·(선택)이미지를 조립 · 개인화(세그·CVM) 기본 방식 · 텍스트 띠 배너 포함' },
-  { value: '이미지형', label: '이미지 업로드', desc: '완성 배너 이미지를 업로드 (띠배너는 상품 지정 가능)' },
-  { value: '상품배너형', label: '상품배너형', desc: '상품 지정 + 배너 이미지' },
-  { value: '팝업배너형', label: '팝업배너형', desc: '팝업 이미지 업로드' },
+  { value: '이미지형', label: '이미지형', desc: '완성 배너 이미지를 업로드 (띠배너는 상품 지정 가능)' },
 ] as const;
 const SZ = {
   big: '빅배너 (672×460)', small: '스몰배너 (672×324)', strip: '띠배너 (672×214)',
@@ -551,7 +549,9 @@ function PickerModal({ title, idLabel, items, onPick, onClose }: { title: string
   );
 }
 
-export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode: 'new' | 'edit'; action: (fd: FormData) => void | Promise<void>; value?: BannerFormValue; libImages?: ImageAsset[] }) {
+export function BannerForm({ mode, action, value = {}, libImages = [], events }: { mode: 'new' | 'edit'; action: (fd: FormData) => void | Promise<void>; value?: BannerFormValue; libImages?: ImageAsset[]; events?: { id: string; name: string; kind: string }[] }) {
+  // 랜딩 '이벤트 조회' — 프로모션 관리의 실제 이벤트(없으면 샘플)
+  const eventItems = events && events.length ? events : SAMPLE_EVENTS;
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const v = value;
@@ -778,7 +778,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
       </div>
 
       {picker === 'product' && <PickerModal title="상품 조회" idLabel="상품 ID" items={SAMPLE_PRODUCTS} onPick={(vv) => { setLandingUrl(vv); setPicker(null); }} onClose={() => setPicker(null)} />}
-      {picker === 'event' && <PickerModal title="이벤트 조회" idLabel="이벤트 ID" items={SAMPLE_EVENTS} onPick={(vv) => { setLandingUrl(vv); setPicker(null); }} onClose={() => setPicker(null)} />}
+      {picker === 'event' && <PickerModal title="이벤트 조회" idLabel="이벤트 ID" items={eventItems} onPick={(vv) => { setLandingUrl(vv); setPicker(null); }} onClose={() => setPicker(null)} />}
       {prodPicker !== null && <PickerModal title="상품 조회" idLabel="상품 ID" items={SAMPLE_PRODUCTS} onPick={(vv) => { setRow(prodPicker, { productRef: vv }); setProdPicker(null); }} onClose={() => setProdPicker(null)} />}
     </form>
   );
