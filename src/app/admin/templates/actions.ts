@@ -15,7 +15,7 @@ import {
   type CornerType,
   type Composition,
 } from '@/lib/display-taxonomy';
-import { bssProductByKey } from '@/lib/bss-products';
+import { pickerItemByKey } from '@/lib/bss-products';
 
 function rp(templateId: string) {
   revalidatePath(`/admin/templates/${templateId}`);
@@ -1080,7 +1080,7 @@ export async function addBlankComponent(templateId: string, cornerId: string) {
 // BSS 상품(혜택 브랜드) 불러오기 — 카탈로그에서 고른 브랜드를 로고·이름·대표 혜택이 채워진 컴포넌트로 코너에 추가.
 //  아톰 구성은 코너의 첫 컴포넌트 구조를 따르되(없으면 로고+이름+혜택 기본), 값은 브랜드 정보로 채운다.
 export async function addBssProduct(templateId: string, cornerId: string, productKey: string) {
-  const product = bssProductByKey(productKey);
+  const product = pickerItemByKey(productKey);
   if (!product) throw new Error('상품을 찾을 수 없습니다.');
   const corner = await prisma.corner.findUnique({
     where: { id: cornerId },

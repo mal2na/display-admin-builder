@@ -62,204 +62,186 @@ const DIAGRAM_CSS = `
 
 const DIAGRAM_HTML = `
 <div>
-  <p class="eyebrow">NEXT채널 어드민 전시/관리 영역 구조도 v0.9</p>
-  <p class="thesis"><b>코너 유형 관리</b>에서는 코너 유형을 <b>껍데기(규격·레이아웃·API)</b>로만 정의하고 승인해요. 콘텐츠는 담지 않아요.<br/>빌더(전시화면 관리)에서 승인된 코너 유형을 <b>Container › Template › Corner</b>로 쌓고, <b>상품·배너·문구·노출 개수(콘텐츠)</b>를 코너에 매핑해요.<br/>고객은 <b>전체페이지 관리</b>의 전체 메뉴(네비게이션)로 진입하고, <b>CVM</b>(점선)은 런타임에 고객마다 콘텐츠를 택1해요.<br/>승인된 화면은 개발이 반영해 <b>고객 앱/웹(F/O)</b>에 전시돼요.</p>
+  <p class="eyebrow">NEXT채널 어드민 · 전시/관리 영역 · 구조도 v0.9</p>
+  <p class="thesis"><b>디자인 시스템</b>이 코너 껍데기(원천 템플릿·규격)를 소유하고, 이를 코너 유형으로 등록·승인해요.<br>
+빌더에서는 승인된 <b>코너 유형을 가져와</b> Template에 쌓고, Corner에서 내용을 수정해요.<br>
+<b>상품</b>(상품원장·외부 BSS가 SSOT)과 <b>배너</b>(배너 캠페인 관리)는 빌더의 Corner로 바로 불러와요.<br>
+<b>화면</b>은 전체페이지 관리에서 Container를 등록한 뒤, Container › Template › Corner 순서로 만들어요.<br>
+어드민이 관리하는 건 <b>코너·템플릿·컨테이너</b>뿐이에요. 아톰·컴포넌트는 관리하지 않아요.<br>
+<b>CVM</b>(점선)은 선택이에요. 개인화는 코너 유형 관리에서, 배치 순서는 빌더에서 설정해요.</p>
 </div>
 
 <section class="card diagram" aria-label="전시관리 구조도">
-<svg viewBox="0 0 1515 950" role="img" aria-labelledby="dg-t">
-<title id="dg-t">외부 시스템, 기준 정보, 운영 IA, 전시/관리, F/O 다섯 영역으로 나뉜 전시 어드민 구조. 원천 소스를 코너 유형에 맵핑하고 승인한 뒤 Container에 등록하고 고객 화면에 전시.</title>
+<svg viewBox="0 0 1260 760" role="img" aria-labelledby="dg-t">
+<title id="dg-t">외부 시스템, 기준 정보, 전시/관리 세 단으로 나뉜 전시 어드민 구조. 원천 소스를 코너 유형에 맵핑·승인한 뒤 Container에 등록.</title>
 <defs>
-  <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5d6778"/></marker>
-  <marker id="ma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3b3fd8"/></marker>
-  <marker id="ms" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5d6778"/></marker>
+  <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
+  <marker id="ma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker>
 </defs>
 
-<!-- ===== 외부 시스템 : 전시 어드민 왼쪽 세로 컬럼(화살표가 가로로 흐르도록) ===== -->
-<rect class="z-ext" x="20" y="24" width="214" height="620" rx="12"/>
-<text class="tx tier" x="40" y="54">외부 시스템</text>
-<text class="tm t3" x="40" y="74">전시 어드민 밖에서</text>
-<text class="tm t3" x="40" y="90">재료·데이터 제공</text>
+<!-- ───── 1단: 외부 시스템 ───── -->
+<rect class="z-ext" x="20" y="20" width="1220" height="140" rx="12"/>
+<text class="tx tier" x="44" y="76">외부 시스템</text>
+<text class="tm t3" x="44" y="98">전시 어드민 밖에서</text>
+<text class="tm t3" x="44" y="116">재료와 데이터를 제공</text>
 
-<rect class="bx-ext" x="34" y="118" width="186" height="98" rx="8"/>
-<text class="tx t2" x="50" y="144">디자인 시스템</text>
-<rect class="opt-tag" x="150" y="130" width="52" height="18" rx="9"/><text class="tm t4" x="176" y="143" text-anchor="middle">관리 밖</text>
-<text class="tm t3" x="50" y="168">Atom → Component</text>
-<text class="tm t3" x="50" y="185">→ Composite(코너 패턴)</text>
-<text class="ta t4" x="50" y="204">어드민에서 관리 안 함</text>
+<rect class="bx-ext" x="600" y="44" width="180" height="96" rx="8"/>
+<text class="tx t2" x="618" y="74">상품원장</text>
+<text class="tm t3" x="618" y="96">SSOT = 외부(BSS)</text>
+<text class="tm t3" x="618" y="114">BSS에서 끌어와 노출</text>
 
-<rect class="bx-ext" x="34" y="300" width="186" height="82" rx="8"/>
-<text class="tx t2" x="50" y="328">상품원장</text>
-<text class="tm t3" x="50" y="352">상품 정보</text>
-<text class="tm t3" x="50" y="370">원천 소스</text>
+<!-- 디자인 시스템 — 코너 유형 관리로만 연결(① 원천 템플릿 등록). 코너 껍데기(틀)를 소유. -->
+<rect class="bx-ext" x="250" y="44" width="200" height="96" rx="8"/>
+<text class="tx t2" x="270" y="76">디자인 시스템</text>
+<text class="tm t3" x="270" y="100">코너 껍데기(틀) 소유</text>
+<text class="tm t3" x="270" y="118">원천 템플릿 · 규격 · 조합</text>
 
-<rect class="bx-ext" x="34" y="470" width="186" height="96" rx="8"/>
-<text class="tx t2" x="50" y="496">CVM</text>
-<rect class="opt-tag" x="150" y="482" width="44" height="18" rx="9"/><text class="tm t4" x="172" y="495" text-anchor="middle">선택</text>
-<text class="tm t3" x="50" y="520">추천 엔진</text>
-<text class="tm t3" x="50" y="538">코너 내 콘텐츠 개인화</text>
+<rect class="bx-ext" x="1040" y="44" width="180" height="96" rx="8"/>
+<text class="tx t2" x="1058" y="76">CVM</text>
+<rect class="opt-tag" x="1100" y="62" width="44" height="20" rx="10"/><text class="tm t4" x="1122" y="76" text-anchor="middle">선택</text>
+<text class="tm t3" x="1058" y="100">추천 엔진</text>
+<text class="tm t3" x="1058" y="118">코너 개인화 · 배치 순서</text>
 
-<!-- ===== 전시 어드민 이하 전체를 오른쪽으로 이동(내부 화살표 좌표 보존) ===== -->
-<g transform="translate(255,0)">
-<rect class="z-adm" x="20" y="186" width="1220" height="666" rx="12"/>
+<!-- 범례: 실선(기본·필수) vs 점선(CVM 선택) -->
+<text class="tm t4" x="810" y="58" font-weight="700">범례</text>
+<line x1="810" y1="76" x2="844" y2="76" stroke="var(--accent)" stroke-width="2.5"/>
+<text class="tm t4" x="852" y="80">실선 = 기본·필수 흐름</text>
+<line x1="810" y1="100" x2="844" y2="100" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 3"/>
+<text class="tm t4" x="852" y="104">점선 = CVM(선택) 적용</text>
+
+<!-- ───── 전시 어드민 경계 ───── -->
+<rect class="z-adm" x="20" y="186" width="1220" height="556" rx="12"/>
 <rect class="lbl-bg" x="36" y="176" width="96" height="20"/>
 <text class="ta tier" x="42" y="191">전시 어드민</text>
 
+<!-- 2단: 기준 정보 -->
 <text class="tx tier" x="44" y="250">기준 정보</text>
 <text class="tm t3" x="44" y="272">화면에 쓸 재료를</text>
 <text class="tm t3" x="44" y="290">어드민에 등록</text>
 
-<rect class="bx" x="190" y="212" width="590" height="96" rx="8"/>
+<rect class="bx" x="190" y="212" width="250" height="96" rx="8"/>
 <text class="tx t2" x="208" y="244">코너 유형 관리</text>
-<text class="tm t3" x="208" y="268">코너 유형(껍데기·규격·레이아웃) 정의, 승인</text>
-<text class="tm t3" x="208" y="286">업무진입, 상품, 배너 …  (콘텐츠는 담지 않음)</text>
-<rect class="opt-tag" x="500" y="254" width="44" height="20" rx="10"/><text class="tm t4" x="522" y="268" text-anchor="middle">선택</text>
-<text class="tm t3" x="554" y="268">CVM 켜기 옵션 (택1은 런타임)</text>
-
-<rect class="bx" x="790" y="200" width="118" height="52" rx="8"/>
-<text class="tx t2" x="806" y="224">문구 관리</text>
-<text class="tm t4" x="806" y="243">코너 타이틀 원천</text>
+<text class="tm t3" x="208" y="270">코너 유형 승인</text>
+<text class="tm t3" x="208" y="288">개인화(CVM) 설정</text>
 
 <rect class="bx" x="920" y="212" width="180" height="96" rx="8"/>
 <text class="tx t2" x="938" y="244">배너 캠페인 관리</text>
 <text class="tm t3" x="938" y="268">규격별 배너 소재 Asset</text>
-<text class="tm t3" x="938" y="286">기간, 랜딩, 승인</text>
+<text class="tm t3" x="938" y="286">기간 · 랜딩 · 승인</text>
 
-<text class="tx tier" x="44" y="372">운영 IA</text>
-<text class="tm t3" x="44" y="394">화면 진입, 페이지 구조</text>
+<!-- 3단: 전시/관리 -->
+<rect class="bx-main" x="40" y="342" width="1180" height="306" rx="12"/>
+<text class="ta t1" x="60" y="372">전시/관리</text>
+<text class="tm t3" x="350" y="371">화면을 만들고, 만든 화면을 관리</text>
 
-<rect class="bx" x="500" y="342" width="390" height="86" rx="8"/>
-<text class="tx t2" x="518" y="370">전체페이지 관리</text>
-<text class="tm t3" x="518" y="392">페이지(Container) 원장 · IA 트리 · 전체 메뉴(네비게이션)</text>
-<text class="tm t4" x="518" y="412">상태 · 사용여부 · Front 노출 · 채널 · 개발설정(상세 탭)</text>
+<rect class="bx-build" x="56" y="388" width="1148" height="146" rx="10"/>
+<text class="tx t2" x="74" y="414">신규 화면 빌더</text>
+<text class="tm t4" x="350" y="413">화면 구성 위계 (왼쪽이 상위)</text>
 
-<rect class="bx-main" x="40" y="452" width="1180" height="306" rx="12"/>
-<text class="ta t1" x="60" y="482">전시/관리</text>
-<text class="tm t3" x="350" y="481">화면을 만들고, 만든 화면을 관리</text>
+<rect class="bx-lv" x="72" y="430" width="160" height="88" rx="8"/>
+<text class="tx t2" x="88" y="458">Container</text>
+<text class="tm t3" x="88" y="480">전체페이지 관리에서 등록</text>
+<text class="tm t4" x="88" y="500">혜택 홈 · 쇼핑 홈</text>
+<text class="sep" x="244" y="482" text-anchor="middle">›</text>
 
-<rect class="bx-build" x="56" y="498" width="1148" height="146" rx="10"/>
-<text class="tx t2" x="74" y="524">신규 화면 빌더</text>
-<text class="tm t4" x="196" y="523">화면 구성 위계 (왼쪽이 상위)</text>
-<rect class="bx-main" x="566" y="508" width="628" height="26" rx="13"/>
-<text class="ta t4" x="880" y="524" text-anchor="middle" style="font-weight:700">여기가 합류 지점 — 껍데기(코너 유형) ＋ 콘텐츠(상품·배너·문구)를 합쳐 화면 완성</text>
+<rect class="bx-lv" x="256" y="430" width="160" height="88" rx="8"/>
+<text class="tx t2" x="272" y="458">Template</text>
+<text class="tm t3" x="272" y="480">코너 쌓기 · 배치 순서</text>
+<text class="tm t4" x="272" y="500">로그인 · 비로그인</text>
+<text class="sep" x="428" y="482" text-anchor="middle">›</text>
 
-<rect class="bx-lv" x="72" y="540" width="160" height="88" rx="8"/>
-<text class="tx t2" x="88" y="568">Container</text>
-<text class="tm t3" x="88" y="590">채널 화면, Template 보유</text>
-<text class="tm t4" x="88" y="610">혜택 홈, 쇼핑 홈</text>
-<text class="sep" x="244" y="592" text-anchor="middle">›</text>
+<rect class="bx-lv" x="440" y="430" width="748" height="88" rx="8"/>
+<text class="tx t2" x="456" y="458">Corner</text>
+<text class="tm t3" x="530" y="458">등록된 코너 유형을 Template에 쌓음</text>
+<text class="tm t4" x="456" y="482">코너 내 개인화는 코너 유형 관리에서 설정</text>
+<rect class="bx" x="456" y="492" width="100" height="20" rx="10"/><text class="tx t4" x="506" y="506" text-anchor="middle">기본 · 어드민 설정</text>
+<rect class="chip-opt" x="562" y="492" width="80" height="20" rx="10"/><text class="tm t4" x="602" y="506" text-anchor="middle">A · 가로형</text>
+<rect class="chip-opt" x="648" y="492" width="72" height="20" rx="10"/><text class="tm t4" x="684" y="506" text-anchor="middle">B · 탭형</text>
+<text class="tm t4" x="728" y="506">선택 · CVM</text>
+<text class="tm t3" x="840" y="458">아톰·컴포넌트는 어드민 관리 대상 아님</text>
+<text class="tm t4" x="840" y="482">코너·템플릿·컨테이너만 어드민에서 관리</text>
 
-<rect class="bx-lv" x="256" y="540" width="160" height="88" rx="8"/>
-<text class="tx t2" x="272" y="568">Template</text>
-<text class="tm t3" x="272" y="590">코너 유형 쌓기, 배치</text>
-<text class="tm t4" x="272" y="610">로그인, 세그먼트 분기</text>
-<text class="sep" x="428" y="592" text-anchor="middle">›</text>
+<!-- 빌더 ↔ 관리 -->
+<path class="ar-a" d="M300 534V566" marker-end="url(#ma)"/>
+<text class="ta t4" x="310" y="556">저장</text>
+<path class="ar-a" d="M420 566V536" marker-end="url(#ma)"/>
+<text class="ta t4" x="430" y="556">빌더로 수정</text>
+<circle class="num" cx="274" cy="550" r="10"/><text class="numt" x="274" y="554" text-anchor="middle">5</text>
 
-<rect class="bx-lv" x="440" y="540" width="748" height="88" rx="8"/>
-<text class="tx t2" x="456" y="568">Corner</text>
-<text class="ta t3" x="530" y="566" style="font-weight:700">껍데기 ＋ 콘텐츠 = 여기서 합쳐짐</text>
-<text class="tm t4" x="530" y="586">껍데기=코너 유형 · 콘텐츠=상품·배너·문구</text>
-<rect class="bx" x="456" y="602" width="90" height="20" rx="10"/><text class="tx t4" x="501" y="616" text-anchor="middle">콘텐츠 매핑</text>
-<rect class="chip-opt" x="552" y="602" width="72" height="20" rx="10"/><text class="tm t4" x="588" y="616" text-anchor="middle">A 가로형</text>
-<rect class="chip-opt" x="630" y="602" width="60" height="20" rx="10"/><text class="tm t4" x="660" y="616" text-anchor="middle">B 탭형</text>
-<text class="tm t4" x="700" y="616">택1 CVM</text>
-<text class="tm t3" x="840" y="568">문구·노출 타입 베리에이션도 빌더에서 등록</text>
-<text class="tm t4" x="840" y="592">실제 택1은 CVM이 고객마다 런타임 수행</text>
+<rect class="bx-build" x="56" y="570" width="1148" height="62" rx="10"/>
+<text class="tx t2" x="74" y="606">기존 화면 관리</text>
+<text class="tm t3" x="190" y="606">화면 목록 · 전시 상태 · 승인 · 미전시 전환 · 폐기 · 버전</text>
 
-<path class="ar-a" d="M300 644V676" marker-end="url(#ma)"/>
-<text class="ta t4 flbl" x="310" y="666">저장</text>
-<path class="ar-a" d="M420 676V646" marker-end="url(#ma)"/>
-<text class="ta t4 flbl" x="430" y="666">빌더로 수정</text>
-<circle class="num" cx="274" cy="660" r="10"/><text class="numt" x="274" y="664" text-anchor="middle">5</text>
+<!-- 별도: 프로모션 -->
+<rect class="bx-sub" x="40" y="668" width="1180" height="58" rx="10"/>
+<text class="tx t2" x="60" y="703">프로모션 관리</text>
+<text class="tm t3" x="170" y="703">프로모션 빌더를 전시/관리와 별개로 제공</text>
 
-<rect class="bx-build" x="56" y="680" width="1148" height="62" rx="10"/>
-<text class="tx t2" x="74" y="716">기존 화면 관리</text>
-<text class="tm t3" x="190" y="716">화면 목록, 전시 상태, 승인, 미전시 전환, 폐기, 버전</text>
-
-<rect class="bx-sub" x="40" y="778" width="860" height="58" rx="10"/>
-<text class="tx t2" x="60" y="813">프로모션 관리</text>
-<text class="tm t3" x="170" y="813">프로모션 빌더를 전시/관리와 별개로 제공</text>
-
-<path class="ar-a" d="M1060 742V866" marker-end="url(#ma)"/>
-<circle class="num" cx="1060" cy="804" r="10"/><text class="numt" x="1060" y="808" text-anchor="middle">6</text>
-<text class="ta t4 flbl" x="1076" y="808">배포 전시</text>
-<rect class="bx-build" x="40" y="868" width="1180" height="60" rx="10"/>
-<text class="ta t2" x="60" y="894">F/O 고객 화면 (앱/웹)</text>
-<text class="tm t3" x="60" y="914">완성 화면이 고객 앱/웹 채널에 전시. 어드민 변경은 승인 후 개발이 반영 (즉시 배포 아님)</text>
-
-<!-- 내부(전시 어드민) 화살표 — 그룹 안(translate 적용) -->
-<path class="ar-a" d="M296 308V538" marker-end="url(#ma)"/>
-<circle class="num" cx="296" cy="326" r="10"/><text class="numt" x="296" y="330" text-anchor="middle">2</text>
-<text class="ta t4 flbl" x="312" y="330">승인 코너 유형(껍데기) → Template에 쌓기</text>
-<path class="ar" d="M849 252V300H905V538" marker-end="url(#m)"/>
-<circle class="num" cx="905" cy="430" r="10"/><text class="numt" x="905" y="434" text-anchor="middle">3</text>
-<text class="tm t4 flbl" x="921" y="434">문구 매핑</text>
-<path class="ar" d="M1010 308V538" marker-end="url(#m)"/>
-<circle class="num" cx="1010" cy="430" r="10"/><text class="numt" x="1010" y="434" text-anchor="middle">3</text>
-<text class="tm t4 flbl" x="1026" y="434">배너 매핑</text>
-<path class="ar" d="M590 428V450" marker-end="url(#m)"/>
-<text class="tm t4 flbl" x="604" y="444">고객 진입 (네비게이션)</text>
-</g>
-<!-- 외부 시스템 → 전시 어드민 : 왼쪽에서 가로로 유입(루트 프레임) -->
-<path class="ar" d="M220 167H360V260H441" marker-end="url(#m)"/>
-<circle class="num" cx="360" cy="214" r="10"/><text class="numt" x="360" y="218" text-anchor="middle">1</text>
-<text class="tm t4 flbl" x="376" y="218">등록</text>
-<path class="ar" d="M220 335H730V540" marker-end="url(#m)"/>
-<circle class="num" cx="476" cy="335" r="10"/><text class="numt" x="476" y="339" text-anchor="middle">3</text>
-<text class="tm t4 flbl" x="492" y="339">상품 매핑</text>
-<path class="ar-opt" d="M220 490H370V290H441" marker-end="url(#m)"/>
-<circle class="num" cx="370" cy="440" r="10"/><text class="numt" x="370" y="444" text-anchor="middle">4</text>
-<text class="tm t4 flbl" x="386" y="444">(선택) CVM 옵션 켜기</text>
-<path class="ar-opt" d="M126 566V652H735V630" marker-end="url(#m)"/>
-<circle class="num" cx="126" cy="610" r="10"/><text class="numt" x="126" y="614" text-anchor="middle">4</text>
-<text class="tm t4 flbl" x="142" y="614">(선택) 런타임 CVM 택1</text>
+<!-- ───── 화살표 ───── -->
+<!-- ① 디자인 시스템 → 코너 유형 관리 (원천 템플릿 등록) — 직선 -->
+<path class="ar-a" d="M350 140V208" marker-end="url(#ma)"/>
+<circle class="num" cx="350" cy="174" r="10"/><text class="numt" x="350" y="178" text-anchor="middle">1</text>
+<text class="ta t4" x="334" y="178" text-anchor="end">원천 템플릿 등록</text>
+<!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음) -->
+<path class="ar-a" d="M300 308V426" marker-end="url(#ma)"/>
+<circle class="num" cx="300" cy="322" r="10"/><text class="numt" x="300" y="326" text-anchor="middle">2</text>
+<text class="ta t4" x="284" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
+<!-- ③ 코너 유형 관리 → Corner (유형 가져와 내용 수정) — 코너 유형 관리 오른쪽으로 뺀 뒤 하단으로 내림(2026-10-07). -->
+<path class="ar-a" d="M440 260H580V426" marker-end="url(#ma)"/>
+<circle class="num" cx="580" cy="300" r="10"/><text class="numt" x="580" y="304" text-anchor="middle">3</text>
+<text class="ta t4" x="564" y="304" text-anchor="end">유형 가져와 내용 수정</text>
+<!-- ③ 상품원장 → Corner (상품 불러오기) — 라벨은 번호 옆 -->
+<path class="ar-a" d="M690 140V426" marker-end="url(#ma)"/>
+<circle class="num" cx="690" cy="375" r="10"/><text class="numt" x="690" y="379" text-anchor="middle">3</text>
+<text class="ta t4" x="706" y="379" text-anchor="start">상품 불러오기</text>
+<!-- ③ 배너 캠페인 → Corner (배너 불러오기) — 라벨은 번호 옆 -->
+<path class="ar-a" d="M1010 308V426" marker-end="url(#ma)"/>
+<circle class="num" cx="1010" cy="375" r="10"/><text class="numt" x="1010" y="379" text-anchor="middle">3</text>
+<text class="ta t4" x="1026" y="379" text-anchor="start">배너 불러오기</text>
+<!-- ④ CVM → Template (코너 배치 순서, 선택 · 점선) -->
+<path class="ar-opt" d="M1130 140V325H336V426" marker-end="url(#m)"/>
+<circle class="num" cx="1130" cy="250" r="10"/><text class="numt" x="1130" y="254" text-anchor="middle">4</text>
+<text class="tm t4" x="1146" y="238">(선택)</text>
+<text class="tm t4" x="1146" y="254">코너 배치</text>
+<text class="tm t4" x="1146" y="270">순서</text>
 </svg>
-</section>
-
-<section>
-  <h2>구성 단위 — Atom부터 Container까지</h2>
-  <p class="tlead"><b>Atom과 Component는 디자인 시스템이 정의하고 소유해요(어드민에서 관리하지 않음).</b> 어드민은 디자인 시스템에 등록된 Component를 불러와 Corner를 구성하고, Template과 Container로 화면을 만들어요. 작은 단위가 큰 단위에 감싸여요.</p>
-  <div class="trow">
-    <div class="tcard ds"><span class="own">디자인 시스템 소유</span><h4>Atom</h4><p>가장 작은 표시 요소. 문구, 이미지, CTA, 가격, 배지. 단독으로는 화면을 이루지 않아요.</p></div>
-    <span class="tarrow">›</span>
-    <div class="tcard ds"><span class="own">디자인 시스템 소유</span><h4>Component</h4><p>Atom을 조합한 기능 모듈. 배너, 상품 카드, 탭. 묶으면 Composite(코너 패턴)가 돼요.</p></div>
-    <span class="tarrow">›</span>
-    <div class="tcard adm"><span class="own">어드민 구성</span><h4>Corner</h4><p>코너 유형(껍데기)을 올린 화면의 한 영역. 상품·배너·문구 같은 콘텐츠는 빌더에서 코너에 매핑해요.</p></div>
-    <span class="tarrow">›</span>
-    <div class="tcard adm"><span class="own">어드민 구성</span><h4>Template</h4><p>여러 Corner를 순서와 배치로 구성한 레이아웃. 로그인과 세그먼트로 분기해요.</p></div>
-    <span class="tarrow">›</span>
-    <div class="tcard adm"><span class="own">어드민 구성</span><h4>Container</h4><p>채널에 실제 나가는 화면 단위. Template을 담아요(Template과 1:N).</p></div>
-  </div>
 </section>
 
 <section>
   <h2>순서</h2>
   <ol class="steps">
-    <li class="card"><span class="n">1</span><b>등록</b><span>디자인 시스템이 소유한 Component를 코너 유형 관리로 불러와 코너 유형으로 등록 (Atom과 Component는 디자인 시스템이 관리)</span></li>
-    <li class="card"><span class="n">2</span><b>껍데기 정의, 승인</b><span>코너 유형을 껍데기(규격·레이아웃·API)로만 정의하고 승인해요. 상품·배너·문구 같은 콘텐츠는 여기서 담지 않아요.</span></li>
-    <li class="card"><span class="n">3</span><b>쌓기, 콘텐츠 매핑</b><span>승인된 코너 유형(껍데기)을 빌더에서 Template에 Corner로 쌓고(Container › Template › Corner), 상품·배너·문구·노출 개수(콘텐츠)를 코너에 매핑해요.</span></li>
-    <li class="card"><span class="n">4</span><b>CVM (선택)</b><span>코너 유형에서 CVM을 켜면, 런타임에 CVM이 고객마다 콘텐츠(와 베리에이션)를 택1해요. 코너 배치 순서는 운영자가 빌더에서 설정해요.</span></li>
+    <li class="card"><span class="n">1</span><b>등록 · 승인</b><span>디자인 시스템이 소유한 코너 껍데기(원천 템플릿·규격)를 코너 유형 관리에 등록하고 승인해요.</span></li>
+    <li class="card"><span class="n">2</span><b>Container 등록 · 쌓기</b><span>Container는 전체페이지 관리에서 등록하고, 승인된 코너 유형을 Template에 쌓아 Corner를 구성해요.</span></li>
+    <li class="card"><span class="n">3</span><b>빌더에서 가져와 수정</b><span>코너 유형 관리의 승인된 유형을 빌더로 가져와 Corner에서 내용(문구·노출 등)을 수정해요. 상품과 배너는 Corner로 바로 불러와요. 아톰·컴포넌트는 어드민 관리 대상이 아니에요.</span></li>
+    <li class="card"><span class="n">4</span><b>CVM 설정 (선택)</b><span>코너 안의 개인화(레이아웃·상품·메시지)는 코너 유형 관리에서 설정하고, 코너 배치 순서는 빌더의 Template에서 설정해요.</span></li>
     <li class="card"><span class="n">5</span><b>관리</b><span>저장한 화면은 기존 화면 관리에서 운영하고, 수정할 땐 빌더로 진입</span></li>
-    <li class="card"><span class="n">6</span><b>배포, 전시</b><span>승인된 화면을 개발이 반영해 고객 앱/웹(F/O)에 전시해요. 어드민 변경은 즉시 배포되지 않아요.</span></li>
   </ol>
 </section>
 
 <section>
-  <h2>진입, IA</h2>
-  <ol class="steps">
-    <li class="card"><span class="n">A</span><b>전체페이지 관리</b><span>서비스의 모든 페이지(Container) 원장과 IA 트리(상태·사용여부·Front 노출·채널)를 관리하고, 고객이 보는 전체 메뉴(네비게이션)도 여기서 함께 연결해요. 별도 '메뉴 관리' 메뉴는 없어요.</span></li>
-    <li class="card"><span class="n">B</span><b>페이지 유형 · 빌더 연동</b><span>페이지 유형은 빌더 화면/개발 화면/외부 화면. 「빌더 화면」은 화면 빌더가 이 페이지를 불러와 1:1로 연결하고, URL·메타태그는 전체페이지에서만 입력해요. 페이지별 개발설정은 상세의 '개발설정' 탭이에요.</span></li>
-  </ol>
+  <h2>구성 단위 — 누가 관리하나</h2>
+  <p class="tlead"><b>Atom·Component는 디자인 시스템이 정의하고 소유해요(어드민에서 관리하지 않음).</b> 어드민은 디자인 시스템에 등록된 것을 불러와 Corner를 구성하고, Template·Container로 화면을 만들어요. 작은 단위가 큰 단위에 감싸여요.</p>
+  <div class="trow">
+    <div class="tcard ds"><span class="own">디자인 시스템 관리</span><h4>Atom</h4><p>가장 작은 표시 요소. 문구·이미지·CTA·가격·배지. 단독으로는 화면을 이루지 않아요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard ds"><span class="own">디자인 시스템 관리</span><h4>Component</h4><p>Atom을 조합한 기능 모듈. 배너·상품 카드·탭. 묶으면 코너 패턴이 돼요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Corner</h4><p>Component를 올린 화면의 한 영역. 코너 유형 관리에 등록된 것으로 구성해요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Template</h4><p>여러 Corner를 순서·배치로 구성한 레이아웃. 로그인·세그먼트로 분기해요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Container</h4><p>채널에 실제 나가는 화면 단위. 전체페이지 관리에서 등록하고 Template을 담아요(1:N).</p></div>
+  </div>
 </section>
 
 <section class="card">
   <h2 style="padding:16px 18px 0;margin:0">확인할 점</h2>
   <ol class="checks">
-    <li><span class="mk">1</span><div><b>CVM이 코너 순서까지 개인화하는지 미확정</b><span>지금 구조는 코너 배치 순서를 운영자가 빌더에서 설정하고, CVM은 코너 안 콘텐츠만 개인화해요. 코너 순서 개인화는 스크럼 쟁점으로 남아 있어요(10월 7일 CVM 미팅).</span></div></li>
-    <li><span class="mk">2</span><div><b>CVM 켜기가 유형 단위예요</b><span>코너 유형에서 CVM을 켜면 같은 유형을 쓰는 모든 코너에 옵션이 켜져요. 콘텐츠·베리에이션은 빌더에서 코너별로 등록하니, 화면·코너별로 CVM을 끄고 켜야 하는 경우가 있는지 확인이 필요해요.</span></div></li>
-    <li><span class="mk">3</span><div><b>'템플릿'이라는 이름이 두 곳에 있어요</b><span>디자인 시스템의 원천 템플릿과 빌더의 Template(코너를 쌓는 판)을 다른 이름으로 구분하면 헷갈리지 않아요.</span></div></li>
-    <li><span class="mk">4</span><div><b>프로모션 빌더와 코너 유형의 관계</b><span>코너 유형 관리에 프로모션 탭(14종)이 있어요. 프로모션 빌더도 같은 코너 유형을 불러온다면 연결선이 하나 더 생겨요.</span></div></li>
-    <li><span class="mk">5</span><div><b>메뉴 관리는 전체페이지 관리로 통합됐어요</b><span>별도 '메뉴 관리'·'페이지 개발 설정' 메뉴는 없애고, 메뉴(네비게이션)·IA·개발설정을 모두 전체페이지 관리(와 페이지 상세 탭)로 흡수했어요. 남은 확인점은 「빌더 화면」 유형의 메뉴 노출을 전체페이지와 빌더 중 어디서 켜는지예요.</span></div></li>
+    <li><span class="mk">1</span><div><b>코너 내 개인화가 유형 단위로 적용돼요</b><span>개인화 설정을 코너 유형 관리에서 하면 같은 유형을 쓰는 모든 화면의 코너에 같이 적용돼요. 화면·코너별로 개인화를 끄거나 켜야 하는 경우가 있는지 확인이 필요해요.</span></div></li>
+    <li><span class="mk">2</span><div><b>'템플릿'이라는 이름이 두 곳에 있어요</b><span>디자인 시스템의 원천 템플릿과 빌더의 Template(코너를 쌓는 판)을 다른 이름으로 구분하면 헷갈리지 않아요.</span></div></li>
+    <li><span class="mk">3</span><div><b>프로모션 빌더와 코너 유형의 관계</b><span>코너 유형 관리에 프로모션 탭(14종)이 있어요. 프로모션 빌더도 같은 코너 유형을 불러온다면 연결선이 하나 더 생겨요.</span></div></li>
+    <li><span class="mk">4</span><div><b>텍스트·버튼 같은 단일 코너의 내용 원천</b><span>빌더에서 직접 입력하는지, 문구 관리에서 가져오는지</span></div></li>
+    <li><span class="mk">5</span><div><b>맵핑 단위와 재승인 기준</b><span>코너 유형 하나에 원천 소스를 몇 개까지 맵핑하는지, 맵핑 후 소스 스펙(상품·배너 규격)이 바뀌면 재승인하는지</span></div></li>
   </ol>
 </section>
 `;
@@ -284,14 +266,15 @@ const ADMIN_IA: IaGroup[] = [
     { name: '문구 관리', path: '/admin/messages', role: '코너 타이틀을 편집하고, 배너 문구는 현황만 조회(소유는 배너 캠페인). 세그먼트별 문구 베리에이션은 빌더에서 설정.', fields: '코너 타이틀 · 배너 문구(읽기전용)', tag: '테스트' },
   ]},
   { group: '프로모션 관리', items: [
-    { name: '프로모션 관리', path: '/admin/events', role: '이벤트 전용 빌더(전시/관리와 별개). 참여 조건·지급 조건을 조합해 이벤트를 구성하고 자체적으로 전시·승인한다.', fields: '참여·지급 조건' },
+    { name: '프로모션 관리', path: '/admin/events', role: '이벤트 전용 빌더(전시/관리와 별개). 참여 조건·지급 조건을 조합해 이벤트를 구성하고 자체적으로 전시·승인한다.', fields: '참여·지급 조건', review: true },
   ]},
   { group: '운영 관리', items: [
     { name: '댓글·리뷰 관리', path: '/admin/comments', role: '댓글 관리(이벤트 쪽)와 리뷰 관리(상품 쪽)에 흩어져 있던 기능을 운영 관리로 통합해 관리할 예정. 댓글/리뷰 조회·노출 통제·답글, 신고 접수와 사용자 차단을 한 곳에서.', fields: '노출여부·답변·신고·차단', tag: '통합 예정', review: true, partial: true },
-    { name: 'App 스플래시 관리', path: '/admin/app-splash', role: '앱 실행 시 노출되는 스플래시(런칭) 화면을 OS·기간별로 등록하고 승인·배포한다.', fields: 'OS·적용상태·승인', review: true },
-    { name: 'App 버전 관리', path: '/admin/app-versions', role: '앱 버전과 업데이트 정책(권장/강제 업데이트)·안내 팝업을 관리한다.', fields: '권장/강제 업데이트·팝업', review: true },
-    { name: 'App 위젯 관리', path: '/admin/app-widgets', role: '홈/잠금 등 앱 위젯의 노출·순서·게시 기간을 관리. 위젯의 틀은 위젯 유형 관리에서 정의.', fields: '게시상태·배포·노출순서', sub: ['위젯 유형 관리'] },
+    // 순서: 전체페이지 → App 버전 → App 스플래시 → App 위젯 (2026-10-07 사용자 요청)
     { name: '전체페이지 관리', path: '/admin/page-menu-b', role: '채널의 전체 페이지(=Container) 원장·IA 트리를 관리. 페이지는 템플릿이 아니라 Container 단위로 등록·상태·사용여부·Front 노출·운영 채널·상위-하위 트리를 관리한다. 「빌더 화면」 유형 페이지는 화면 빌더가 이 페이지를 불러와 1:1로 연결하고, URL·메타태그는 여기서만 입력한다. 페이지별 개발 설정은 상세의 「개발설정」 탭으로 흡수(별도 메뉴 없음).', fields: 'Container 단위 · 페이지 유형(빌더/개발/외부) · 상태·사용여부·Front·채널·IA 트리', review: true },
+    { name: 'App 버전 관리', path: '/admin/app-versions', role: '앱 버전과 업데이트 정책(권장/강제 업데이트)·안내 팝업을 관리한다.', fields: '권장/강제 업데이트·팝업', review: true },
+    { name: 'App 스플래시 관리', path: '/admin/app-splash', role: '앱 실행 시 노출되는 스플래시(런칭) 화면을 OS·기간별로 등록하고 승인·배포한다.', fields: 'OS·적용상태·승인', review: true },
+    { name: 'App 위젯 관리', path: '/admin/app-widgets', role: '홈/잠금 등 앱 위젯의 노출·순서·게시 기간을 관리. 위젯의 틀은 위젯 유형 관리에서 정의.', fields: '게시상태·배포·노출순서', sub: ['위젯 유형 관리'], review: true },
   ]},
 ];
 
