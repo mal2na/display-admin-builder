@@ -31,6 +31,93 @@ function sizeOf(detail: string): { w: number; h: number } | null {
   return m ? { w: Number(m[1]), h: Number(m[2]) } : null;
 }
 
+// changeNote를 '수정항목 / 수정전 / 수정후' 행으로 파싱(스펙 PG463 변경사항 보기).
+//  지원 형식(줄 단위): "항목::전::후"  또는  "항목: 전 → 후"(→/->/~ 허용). 구조가 없으면 null.
+type ChangeDiff = { item: string; before: string; after: string };
+function parseChanges(note: string | null): ChangeDiff[] {
+  if (!note) return [];
+  const out: ChangeDiff[] = [];
+  for (const raw of note.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const triple = line.match(/^(.+?)\s*::\s*(.+?)\s*::\s*(.+)$/);
+    if (triple) { out.push({ item: triple[1].trim(), before: triple[2].trim(), after: triple[3].trim() }); continue; }
+    const arrow = line.match(/^(.+?)\s*[:：]\s*(.+?)\s*(?:→|->|~)\s*(.+)$/);
+    if (arrow) { out.push({ item: arrow[1].trim(), before: arrow[2].trim(), after: arrow[3].trim() }); continue; }
+  }
+  return out;
+}
+
+// 변경사항 보기 팝업(PG463 #4) — 수정 전/후 표 + 변경 화면 보기(이전/변경 비교).
+//  스냅샷을 버전별로 저장하지 않으므로 '변경 노출 화면'은 현재 배너를, '이전 화면'은 미보관 안내로 표기.
+function ChangeViewModal({ row, banner, onClose }: { row: BannerHistoryRow; banner: BannerTypeDetail | null; onClose: () => void }) {
+  const diffs = parseChanges(row.changeNote);
+  const sz = banner ? sizeOf(banner.detail) : null;
+  const boxW = 320;
+  const boxH = sz ? Math.round((boxW * sz.h) / sz.w) : 120;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b px-5 py-3">
+          <h2 className="text-sm font-semibold">변경사항 보기</h2>
+          {diffs.length > 0 && <span className="text-xs text-muted-foreground">변경사항 <b className="text-indigo-600">{diffs.length}</b>건</span>}
+          <button type="button" onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground"><XIcon className="h-4 w-4" /></button>
+        </div>
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          {diffs.length > 0 ? (
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b bg-slate-50 text-[12px] text-slate-500">
+                  <th className="px-3 py-2 text-left font-medium">수정항목</th>
+                  <th className="px-3 py-2 text-left font-medium">수정 전</th>
+                  <th className="px-3 py-2 text-left font-medium">수정 후</th>
+                </tr>
+              </thead>
+              <tbody>
+                {diffs.map((c, i) => (
+                  <tr key={i} className="border-b last:border-b-0">
+                    <td className="px-3 py-2 font-medium text-slate-700">{c.item}</td>
+                    <td className="px-3 py-2 text-slate-400 line-through">{c.before}</td>
+                    <td className="px-3 py-2 font-semibold text-slate-800">{c.after}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="space-y-2 rounded-lg bg-slate-50 px-3 py-3 text-[13px]">
+              <p><span className="text-slate-400">변경내용</span> · <span className="font-medium text-slate-700">{row.changeNote || '-'}</span></p>
+              {row.processReason && <p><span className="text-slate-400">처리사유</span> · <span className="font-medium text-slate-700">{row.processReason}</span></p>}
+            </div>
+          )}
+
+          <div>
+            <p className="mb-2 text-[12px] font-semibold text-slate-600">변경 화면 보기</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-slate-200 p-2">
+                <div className="flex items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 text-[11px] text-slate-400" style={{ height: boxH }}>
+                  이전 화면 스냅샷 미보관
+                </div>
+                <p className="mt-1.5 text-center text-[11px] text-slate-400">이전 노출 화면</p>
+              </div>
+              <div className="rounded-lg border border-indigo-200 p-2 ring-1 ring-indigo-100">
+                {banner ? (
+                  <div className="flex justify-center overflow-hidden"><ComposedBanner f={banner} width={boxW} height={boxH} /></div>
+                ) : (
+                  <div className="flex items-center justify-center rounded-md bg-slate-50 text-[11px] text-slate-400" style={{ height: boxH }}>미리보기 없음</div>
+                )}
+                <p className="mt-1.5 text-center text-[11px] font-medium text-indigo-600">변경 노출 화면</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end border-t px-5 py-3">
+          <button type="button" onClick={onClose} className="inline-flex h-9 items-center rounded-md bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 승인 처리 바 — 등록(작성중) 후 승인요청 전송 → 취소 / 승인 담당자의 승인·반려까지의 프로세스.
 function ApprovalBar({ d, history }: { d: BannerDetailData; history: BannerHistoryRow[] }) {
   const [showReject, setShowReject] = useState(false);
@@ -94,6 +181,7 @@ function ApprovalBar({ d, history }: { d: BannerDetailData; history: BannerHisto
 
 export function BannerDetail({ d, history, usage }: { d: BannerDetailData; history: BannerHistoryRow[]; usage: BannerUsage[] }) {
   const [tab, setTab] = useState<'basic' | 'history'>('basic');
+  const [changeRow, setChangeRow] = useState<BannerHistoryRow | null>(null); // 변경사항 보기 팝업(PG463)
   const ex = d.exposeYn ? BANNER_EXPOSE.true : BANNER_EXPOSE.false;
   const ap = BANNER_APPROVAL[d.approvalStatus as keyof typeof BANNER_APPROVAL] ?? BANNER_APPROVAL.requested;
   const tabBtn = (k: typeof tab, label: string) => (
@@ -258,11 +346,12 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
                 <th className="w-24 px-3 py-2.5 text-left font-medium">승인상태</th>
                 <th className="px-3 py-2.5 text-left font-medium">승인 담당자</th>
                 <th className="px-3 py-2.5 text-left font-medium">처리 일시</th>
+                <th className="w-24 px-3 py-2.5 text-left font-medium">변경내용</th>
               </tr>
             </thead>
             <tbody>
               {history.length === 0 ? (
-                <tr><td colSpan={7} className="px-3 py-10 text-center text-muted-foreground">이력이 없습니다.</td></tr>
+                <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">이력이 없습니다.</td></tr>
               ) : history.map((h, i) => {
                 const s = BANNER_APPROVAL[h.status as keyof typeof BANNER_APPROVAL] ?? { label: h.status, tone: 'muted' };
                 return (
@@ -274,6 +363,11 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
                     <td className="px-3 py-2.5"><StatusPill label={s.label} tone={s.tone} /></td>
                     <td className="px-3 py-2.5 text-slate-600">{h.manager ?? '-'}</td>
                     <td className="px-3 py-2.5 text-[12px] text-slate-500">{fmtDateTime(h.processedAt)}</td>
+                    <td className="px-3 py-2.5">
+                      {h.changeNote ? (
+                        <button type="button" onClick={() => setChangeRow(h)} className="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1 text-[12px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600">상세보기</button>
+                      ) : <span className="text-slate-300">-</span>}
+                    </td>
                   </tr>
                 );
               })}
@@ -287,6 +381,8 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
         <Link href="/admin/banner-campaigns" className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">목록</Link>
         <Link href={`/admin/banner-campaigns/${d.id}/edit`} className="inline-flex h-9 items-center rounded-md bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">수정</Link>
       </div>
+
+      {changeRow && <ChangeViewModal row={changeRow} banner={d.typeDetails[0] ?? null} onClose={() => setChangeRow(null)} />}
     </div>
   );
 }

@@ -1625,7 +1625,14 @@ async function seedBannerCampaigns() {
   ];
 
   let apId = 1;
-  for (const c of campaigns) {
+  for (const [idx, c] of campaigns.entries()) {
+    // 첫 캠페인은 '수정 후 재승인' 이력(구조화된 변경사항)과 반려 이력을 추가 → 변경사항 보기 팝업(PG463) 시연용.
+    //  changeNote 형식 "항목::수정전::수정후"(줄 단위)을 상세에서 수정항목/수정전/수정후 표로 파싱한다.
+    const extraHistory = idx === 0 ? [
+      { version: 4, approvalId: String(apId++).padStart(10, '0'), status: 'rejected', requester: OP, manager: MGR, requestedAt: now, processedAt: now, processReason: '이미지가 깨집니다', changeNote: '반려 · 이미지가 깨집니다' },
+      { version: 5, approvalId: String(apId++).padStart(10, '0'), status: 'requested', requester: OP, manager: MGR, requestedAt: now, changeNote: '종료일자::2026.07.28::2026.08.15\n노출여부::N::Y\n메인 타이틀::봄맞이 혜택::봄맞이 T 우주 혜택' },
+      { version: 6, approvalId: String(apId++).padStart(10, '0'), status: 'approved', requester: OP, manager: MGR, requestedAt: now, processedAt: now, changeNote: '종료일자::2026.07.28::2026.08.15\n노출여부::N::Y\n메인 타이틀::봄맞이 혜택::봄맞이 T 우주 혜택' },
+    ] : [];
     await prisma.bannerCampaign.create({
       data: {
         campaignCode: c.campaignCode, title: c.title, subtitle: c.subtitle, purpose: c.purpose, platform: 'APP',
@@ -1638,6 +1645,7 @@ async function seedBannerCampaigns() {
             { version: 1, status: 'draft', requester: OP, changeNote: '신규 등록 · 작성중' },
             { version: 2, approvalId: String(apId++).padStart(10, '0'), status: 'requested', requester: OP, manager: MGR, requestedAt: now, changeNote: '승인요청' },
             { version: 3, approvalId: String(apId++).padStart(10, '0'), status: 'approved', requester: OP, manager: MGR, requestedAt: now, processedAt: now, changeNote: '승인완료' },
+            ...extraHistory,
           ],
         },
       },
