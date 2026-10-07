@@ -792,7 +792,13 @@ function atomSourceLock(
   if (componentType === '선택형') return null;
   const f = ATOM_TYPE_FIELDS[atomType as AtomType] ?? {};
   if (!f.content && !f.image) return null; // 링크/버튼 등 순수 편집 항목은 대상 아님
-  if (componentType === '상품형') return { tag: 'API', label: '상품 정보 · 자동' };
+  // 상품형 = '재료는 API, 문구는 운영자/CVM'(크리테오·껍데기 모델). 상품 원장에서 오는
+  //  이미지·아이콘·가격만 잠그고(위변조 방지), 마케팅 문구(텍스트)는 운영자가 편집+베리에이션 가능(2026-10-07 사용자 결정: 문구/노출만 편집).
+  if (componentType === '상품형') {
+    return (atomType === 'IMAGE' || atomType === 'ICON' || atomType === 'PRICE')
+      ? { tag: 'API', label: '상품 정보 · 자동' }
+      : null;
+  }
   if (recSource != null && normalizeRecSource(recSource) === 'CVM 기반') return { tag: 'CVM', label: '개인화 · 고객별 자동' };
   return null;
 }
@@ -1130,8 +1136,8 @@ function AtomManager({
           <p className="flex items-center gap-1.5 font-semibold text-sky-800">
             <Lock className="h-3 w-3" /> 상품 자동 연동 <span className="rounded bg-sky-600 px-1 text-[9px] font-bold text-white">API</span>
           </p>
-          <p className="mt-0.5 text-slate-500">이미지·문구·가격은 <b className="text-slate-600">상품 원장(API)</b>에서 자동 채워집니다. 바꾸려면 <b className="text-slate-600">‘상품 불러오기’</b>로 다른 상품을 선택하세요.</p>
-          <p className="mt-1 text-emerald-700">편집 가능(무중단): <b>이동 링크 · 노출 on/off · 순서</b></p>
+          <p className="mt-0.5 text-slate-500"><b className="text-slate-600">이미지·가격</b>은 <b className="text-slate-600">상품 원장(API)</b>에서 자동 채워집니다. 바꾸려면 <b className="text-slate-600">‘상품 불러오기’</b>로 다른 상품을 선택하세요.</p>
+          <p className="mt-1 text-emerald-700">편집 가능: <b>마케팅 문구(＋베리에이션) · 노출 on/off · 이동 링크 · 순서</b></p>
         </div>
       )}
       {atoms.length === 0 && <p className="text-[11px] text-muted-foreground">Atom 없음 — 아래에서 추가하세요</p>}
@@ -1341,12 +1347,8 @@ function ComponentCard({
               <Check className="h-3 w-3" /> {saving ? '저장 중…' : '완료'}
             </button>
           </div>
-        ) : cc.componentType === '상품형' ? (
-          // API 자동 연동 콘텐츠 — 아이콘·텍스트·설명은 개별 수정 대상 아님. 내용 변경은 '상품 불러오기'로 한 번에.
-          <span className="ml-0.5 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400" title="아이콘·텍스트·설명은 상품 정보 API에서 자동 — 내용 변경은 아래 '상품 불러오기'로 교체하세요.">
-            <Lock className="h-3 w-3" /> API 자동
-          </span>
         ) : (
+          // 상품형 포함 모두 '수정' 가능. 상품형은 이미지·가격만 API 자동(읽기전용)이고 문구·노출은 편집(2026-10-07).
           <button
             type="button"
             onClick={openEdit}
