@@ -195,7 +195,7 @@ const DIAGRAM_HTML = `
 <circle class="num" cx="1010" cy="366" r="10"/><text class="numt" x="1010" y="370" text-anchor="middle">3</text>
 <text class="ta t4" x="1026" y="370" text-anchor="start">배너 불러오기</text>
 <!-- ④ CVM → Template (개인화 요소 적용, 선택 · 점선) -->
-<path class="ar-opt" d="M1130 140V325H336V436" marker-end="url(#m)"/>
+<path class="ar-opt" d="M1130 140V325H400V436" marker-end="url(#m)"/>
 <circle class="num" cx="1130" cy="230" r="10"/><text class="numt" x="1130" y="234" text-anchor="middle">4</text>
 <text class="tm t4" x="1146" y="250" font-weight="700">개인화 요소(선택)</text>
 <text class="tm t4" x="1146" y="268">· 코너 내 상품·혜택·업무</text>
