@@ -179,21 +179,21 @@ const DIAGRAM_HTML = `
 <circle class="num" cx="350" cy="174" r="10"/><text class="numt" x="350" y="178" text-anchor="middle">1</text>
 <text class="ta t4" x="334" y="178" text-anchor="end">원천 템플릿 등록</text>
 <!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음) -->
-<path class="ar-a" d="M300 308V436" marker-end="url(#ma)"/>
-<circle class="num" cx="300" cy="322" r="10"/><text class="numt" x="300" y="326" text-anchor="middle">2</text>
-<text class="ta t4" x="284" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
+<path class="ar-a" d="M322 308V436" marker-end="url(#ma)"/>
+<circle class="num" cx="322" cy="322" r="10"/><text class="numt" x="322" y="326" text-anchor="middle">2</text>
+<text class="ta t4" x="306" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
 <!-- ③ 코너 유형 관리 → Corner (유형 가져와 내용 수정) — 코너 유형 관리 오른쪽으로 뺀 뒤 하단으로 내림(2026-10-07). -->
 <path class="ar-a" d="M440 260H540V422" marker-end="url(#ma)"/>
-<circle class="num" cx="540" cy="378" r="10"/><text class="numt" x="540" y="382" text-anchor="middle">3</text>
-<text class="ta t4" x="556" y="382" text-anchor="start">유형 가져와 내용 수정</text>
+<circle class="num" cx="540" cy="366" r="10"/><text class="numt" x="540" y="370" text-anchor="middle">3</text>
+<text class="ta t4" x="556" y="370" text-anchor="start">유형 가져와 내용 수정</text>
 <!-- ③ 상품원장 → Corner (상품 불러오기) — 라벨은 번호 옆 -->
 <path class="ar-a" d="M690 140V422" marker-end="url(#ma)"/>
-<circle class="num" cx="690" cy="378" r="10"/><text class="numt" x="690" y="382" text-anchor="middle">3</text>
-<text class="ta t4" x="706" y="382" text-anchor="start">상품 불러오기</text>
+<circle class="num" cx="690" cy="366" r="10"/><text class="numt" x="690" y="370" text-anchor="middle">3</text>
+<text class="ta t4" x="706" y="370" text-anchor="start">상품 불러오기</text>
 <!-- ③ 배너 캠페인 → Corner (배너 불러오기) — 라벨은 번호 옆 -->
 <path class="ar-a" d="M1010 308V422" marker-end="url(#ma)"/>
-<circle class="num" cx="1010" cy="378" r="10"/><text class="numt" x="1010" y="382" text-anchor="middle">3</text>
-<text class="ta t4" x="1026" y="382" text-anchor="start">배너 불러오기</text>
+<circle class="num" cx="1010" cy="366" r="10"/><text class="numt" x="1010" y="370" text-anchor="middle">3</text>
+<text class="ta t4" x="1026" y="370" text-anchor="start">배너 불러오기</text>
 <!-- ④ CVM → Template (개인화 요소 적용, 선택 · 점선) -->
 <path class="ar-opt" d="M1130 140V325H336V436" marker-end="url(#m)"/>
 <circle class="num" cx="1130" cy="230" r="10"/><text class="numt" x="1130" y="234" text-anchor="middle">4</text>
