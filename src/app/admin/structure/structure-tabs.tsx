@@ -131,33 +131,34 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="350" y="371">화면을 만들고, 만든 화면을 관리</text>
 
 <rect class="bx-build" x="56" y="388" width="1148" height="146" rx="10"/>
-<text class="tx t2" x="74" y="414">신규 화면 빌더</text>
-<text class="tm t4" x="350" y="413">화면 구성 위계 (왼쪽이 상위)</text>
+<text class="tx t2" x="74" y="412">신규 화면 빌더</text>
+<text class="tm t4" x="600" y="412">화면 구성 위계 — 큰 단위가 작은 단위를 담아요 (왼쪽이 상위)</text>
 
-<rect class="bx-lv" x="72" y="430" width="160" height="88" rx="8"/>
-<text class="tx t2" x="88" y="458">Container</text>
-<text class="tm t3" x="88" y="480">전체페이지 관리에서 등록</text>
-<text class="tm t4" x="88" y="500">혜택 홈 · 쇼핑 홈</text>
-<!-- Template → Container (담김) 화살표 -->
-<path class="ar-a" d="M254 474H236" marker-end="url(#ma)"/>
+<!-- Container(가장 큼) ← Template(중간) ← Corner(두 개로 쪼개짐) -->
+<rect class="bx-lv" x="72" y="424" width="172" height="96" rx="8"/>
+<text class="tx t2" x="90" y="456">Container</text>
+<text class="tm t3" x="90" y="480">전체페이지 관리에서 등록</text>
+<text class="tm t4" x="90" y="500">혜택 홈 · 쇼핑 홈</text>
+<!-- Template → Container (담김) -->
+<path class="ar-a" d="M262 474H246" marker-end="url(#ma)"/>
 
-<rect class="bx-lv" x="256" y="430" width="160" height="88" rx="8"/>
-<text class="tx t2" x="272" y="458">Template</text>
-<text class="tm t3" x="272" y="480">코너 쌓기 · 배치 순서</text>
-<text class="tm t4" x="272" y="500">로그인 · 비로그인</text>
-<!-- Corner → Template (쌓임) 화살표 -->
-<path class="ar-a" d="M438 474H420" marker-end="url(#ma)"/>
+<rect class="bx-lv" x="262" y="440" width="128" height="64" rx="8"/>
+<text class="tx t2" x="278" y="466">Template</text>
+<text class="tm t3" x="278" y="486">코너 쌓기 · 배치 순서</text>
+<text class="tm t4" x="278" y="500">로그인 · 비로그인</text>
+<!-- Corner → Template (쌓임) -->
+<path class="ar-a" d="M408 474H392" marker-end="url(#ma)"/>
 
-<rect class="bx-lv" x="440" y="430" width="748" height="88" rx="8"/>
-<text class="tx t2" x="456" y="458">Corner</text>
-<text class="tm t3" x="530" y="458">등록된 코너 유형을 Template에 쌓음</text>
-<text class="tm t4" x="456" y="482">등록된 코너 유형을 불러와 빌더에서 컨텐츠 맵핑·개인화 설정 적용</text>
-<rect class="bx" x="456" y="492" width="100" height="20" rx="10"/><text class="tx t4" x="506" y="506" text-anchor="middle">기본 · 어드민 설정</text>
-<rect class="chip-opt" x="562" y="492" width="80" height="20" rx="10"/><text class="tm t4" x="602" y="506" text-anchor="middle">A · 가로형</text>
-<rect class="chip-opt" x="648" y="492" width="72" height="20" rx="10"/><text class="tm t4" x="684" y="506" text-anchor="middle">B · 탭형</text>
-<text class="tm t4" x="728" y="506">선택 · CVM</text>
-<text class="tm t3" x="840" y="458">아톰·컴포넌트는 어드민 관리 대상 아님</text>
-<text class="tm t4" x="840" y="482">코너·템플릿·컨테이너만 어드민에서 관리</text>
+<rect class="bx-lv" x="410" y="424" width="778" height="96" rx="8"/>
+<rect class="bx" x="426" y="432" width="116" height="36" rx="8"/><text class="tx t2" x="484" y="454" text-anchor="middle">Corner</text>
+<rect class="bx" x="426" y="474" width="116" height="36" rx="8"/><text class="tx t2" x="484" y="496" text-anchor="middle">Corner</text>
+<text class="tm t3" x="560" y="444">등록된 코너 유형을 Template에 쌓음</text>
+<text class="tm t4" x="560" y="462">불러와 빌더에서 컨텐츠 맵핑·개인화 설정 적용</text>
+<rect class="bx" x="560" y="474" width="100" height="20" rx="10"/><text class="tx t4" x="610" y="488" text-anchor="middle">기본 · 어드민 설정</text>
+<rect class="chip-opt" x="666" y="474" width="80" height="20" rx="10"/><text class="tm t4" x="706" y="488" text-anchor="middle">A · 가로형</text>
+<rect class="chip-opt" x="752" y="474" width="72" height="20" rx="10"/><text class="tm t4" x="788" y="488" text-anchor="middle">B · 탭형</text>
+<text class="tm t4" x="832" y="488">선택 · CVM</text>
+<text class="tm t4" x="560" y="508">아톰·컴포넌트는 어드민 관리 대상 아님 · 코너·템플릿·컨테이너만 어드민에서 관리</text>
 
 <!-- 빌더 ↔ 관리 -->
 <path class="ar-a" d="M300 534V566" marker-end="url(#ma)"/>
@@ -181,23 +182,23 @@ const DIAGRAM_HTML = `
 <circle class="num" cx="350" cy="174" r="10"/><text class="numt" x="350" y="178" text-anchor="middle">1</text>
 <text class="ta t4" x="334" y="178" text-anchor="end">원천 템플릿 등록</text>
 <!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음) -->
-<path class="ar-a" d="M300 308V426" marker-end="url(#ma)"/>
+<path class="ar-a" d="M300 308V440" marker-end="url(#ma)"/>
 <circle class="num" cx="300" cy="322" r="10"/><text class="numt" x="300" y="326" text-anchor="middle">2</text>
 <text class="ta t4" x="284" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
 <!-- ③ 코너 유형 관리 → Corner (유형 가져와 내용 수정) — 코너 유형 관리 오른쪽으로 뺀 뒤 하단으로 내림(2026-10-07). -->
-<path class="ar-a" d="M440 260H580V426" marker-end="url(#ma)"/>
-<circle class="num" cx="580" cy="300" r="10"/><text class="numt" x="580" y="304" text-anchor="middle">3</text>
-<text class="ta t4" x="564" y="304" text-anchor="end">유형 가져와 내용 수정</text>
+<path class="ar-a" d="M440 260H480V424" marker-end="url(#ma)"/>
+<circle class="num" cx="480" cy="344" r="10"/><text class="numt" x="480" y="348" text-anchor="middle">3</text>
+<text class="ta t4" x="496" y="348" text-anchor="start">유형 가져와 내용 수정</text>
 <!-- ③ 상품원장 → Corner (상품 불러오기) — 라벨은 번호 옆 -->
-<path class="ar-a" d="M690 140V426" marker-end="url(#ma)"/>
-<circle class="num" cx="690" cy="375" r="10"/><text class="numt" x="690" y="379" text-anchor="middle">3</text>
-<text class="ta t4" x="706" y="379" text-anchor="start">상품 불러오기</text>
+<path class="ar-a" d="M690 140V424" marker-end="url(#ma)"/>
+<circle class="num" cx="690" cy="378" r="10"/><text class="numt" x="690" y="382" text-anchor="middle">3</text>
+<text class="ta t4" x="706" y="382" text-anchor="start">상품 불러오기</text>
 <!-- ③ 배너 캠페인 → Corner (배너 불러오기) — 라벨은 번호 옆 -->
-<path class="ar-a" d="M1010 308V426" marker-end="url(#ma)"/>
-<circle class="num" cx="1010" cy="375" r="10"/><text class="numt" x="1010" y="379" text-anchor="middle">3</text>
-<text class="ta t4" x="1026" y="379" text-anchor="start">배너 불러오기</text>
+<path class="ar-a" d="M1010 308V424" marker-end="url(#ma)"/>
+<circle class="num" cx="1010" cy="378" r="10"/><text class="numt" x="1010" y="382" text-anchor="middle">3</text>
+<text class="ta t4" x="1026" y="382" text-anchor="start">배너 불러오기</text>
 <!-- ④ CVM → Template (개인화 요소 적용, 선택 · 점선) -->
-<path class="ar-opt" d="M1130 140V325H336V426" marker-end="url(#m)"/>
+<path class="ar-opt" d="M1130 140V325H336V440" marker-end="url(#m)"/>
 <circle class="num" cx="1130" cy="230" r="10"/><text class="numt" x="1130" y="234" text-anchor="middle">4</text>
 <text class="tm t4" x="1146" y="250" font-weight="700">개인화 요소(선택)</text>
 <text class="tm t4" x="1146" y="268">· 코너 내 상품·혜택·업무</text>
@@ -234,6 +235,7 @@ const DIAGRAM_HTML = `
   </div>
 </section>
 
+<div aria-hidden="true" style="height:56px"></div>
 `;
 
 function StructureView() {
