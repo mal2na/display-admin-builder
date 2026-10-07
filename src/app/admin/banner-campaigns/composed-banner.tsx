@@ -37,7 +37,9 @@ const TITLE_CLS: Record<string, string> = { sm: 'text-[11px]', md: 'text-[14px]'
 export function ComposedBanner({ f, width, height, preview = false }: { f: ComposeFields; width: number; height: number; preview?: boolean }) {
   const pos = f.imagePos || 'right';
   const vertical = pos === 'top' || pos === 'bottom';
-  const center = f.align === 'center' || vertical;
+  // 좌정렬이 표준 — 가운데는 align='center'일 때만(세로 배치도 자동 센터 금지). 미리보기가 text-center 컨테이너
+  //  안에 있어도 상속으로 가운데 밀리지 않게, 아래 textBlock에 text-left를 '명시'한다(2026-10-07 사용자 요청).
+  const center = f.align === 'center';
   const basePx = IMG_PX[f.imgSize ?? 'md'] ?? 52;
   const imgPx = Math.min(basePx, Math.max(20, (vertical ? height / 2 : height) - 16));
   const titleCls = TITLE_CLS[f.titleSize ?? 'md'] ?? 'text-[13px]';
@@ -52,7 +54,7 @@ export function ComposedBanner({ f, width, height, preview = false }: { f: Compo
     : <div className={'flex shrink-0 items-center justify-center bg-white/50 text-slate-300 ' + (circle ? 'rounded-full' : 'rounded-lg')} style={{ width: imgPx, height: imgPx }}><ImageIcon className="h-1/2 w-1/2" /></div>;
 
   const textBlock = (
-    <div className={'min-w-0 ' + (vertical ? 'w-full text-center' : 'flex-1 ' + (center ? 'text-center' : ''))}>
+    <div className={'min-w-0 ' + (vertical ? 'w-full ' : 'flex-1 ') + (center ? 'text-center' : 'text-left')}>
       {f.badgeText && <span className="mb-1 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: f.badgeColor || '#4F46E5' }}>{f.badgeText}</span>}
       {titleText && <p className={'line-clamp-2 whitespace-pre-line font-bold leading-snug ' + titleCls} style={{ color: f.titleColor || '#0F172A' }}>{titleText}</p>}
       {f.subtitle && <p className="mt-1 line-clamp-1 text-[11px]" style={{ color: f.subColor || '#64748B' }}>{f.subtitle}</p>}

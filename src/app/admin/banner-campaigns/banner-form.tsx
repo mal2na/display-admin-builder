@@ -329,19 +329,34 @@ function FitBanner({ f, ratio = 0.37 }: { f: ComposeFields; ratio?: number }) {
 }
 
 // 직접 만들기 인라인 편집기 — 같은 페이지에서 미리보기 + 탭 컨트롤(모달 아님)
-function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: TypeDetailRow; onPatch: (patch: Partial<TypeDetailRow>) => void; onShared: (patch: Partial<TypeDetailRow>) => void; onFile: (key: 'rightImageUrl', file: File | undefined) => void; images: ImageAsset[] }) {
-  const [tab, setTab] = useState<'text' | 'image'>('text');
+// 텍스트/배경 컬러 입력 — hex + 스와치 + '기본 컬러 : black' 체크(SB 스펙 4-9~4-11).
+function ColorField({ label, color, onColor }: { label?: string; color?: string; onColor: (c: string) => void }) {
+  const val = (color || '#000000').toUpperCase();
+  const isBlack = val === '#000000';
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {label && <span className="w-16 shrink-0 text-[12px] text-muted-foreground">{label}</span>}
+      <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(color || '') ? (color as string) : '#000000'} onChange={(e) => onColor(e.target.value.toUpperCase())} className="h-8 w-9 shrink-0 cursor-pointer rounded border border-slate-300 bg-white p-0.5" aria-label={label || '컬러'} />
+      <Input value={val} onChange={(e) => onColor(e.target.value.toUpperCase())} className="h-8 w-28 text-sm" />
+      <label className="flex items-center gap-1 text-[12px] text-muted-foreground">
+        <input type="checkbox" checked={isBlack} onChange={(e) => onColor(e.target.checked ? '#000000' : '#1E293B')} className="accent-indigo-600" /> 기본 컬러 : black
+      </label>
+    </div>
+  );
+}
+
+// 템플릿편집형(직접 만들기) 유형상세 — SB 스펙 CASE_1 행 레이아웃.
+//  DS 배너 유형 / AI 배너 생성(4-6) / 미리보기(4-7) / 이미지 불러오기(4-8) / 메인 타이틀(4-9) / 서브 타이틀(4-10) / BG 컬러(4-11)
+//  문구·유형·컬러는 모든 규격 공통(onShared), 이미지·대체텍스트는 규격별(onPatch).
+function TemplateEditRows({ row, onPatch, onShared, onFile, images }: { row: TypeDetailRow; onPatch: (patch: Partial<TypeDetailRow>) => void; onShared: (patch: Partial<TypeDetailRow>) => void; onFile: (key: 'rightImageUrl', file: File | undefined) => void; images: ImageAsset[] }) {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiMsgs, setAiMsgs] = useState<AiMsg[]>([]);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiEngine, setAiEngine] = useState<'ai' | 'rules' | null>(null);
   const dim = pvDims(row.detail, 300);
+  const ds = dsBannerType(row.bannerType);
   const rail = useAiRail();
   const railId = useId();
-  const tabBtn = (k: typeof tab, label: string) => (
-    <button type="button" onClick={() => setTab(k)} className={'-mb-px border-b-2 px-1 pb-2 text-sm ' + (tab === k ? 'border-indigo-600 font-semibold text-indigo-700' : 'border-transparent text-muted-foreground hover:text-slate-700')}>{label}</button>
-  );
-  const L = ({ children }: { children: React.ReactNode }) => <span className="w-16 shrink-0 text-[12px] text-muted-foreground">{children}</span>;
 
   // AI 배너 생성(스펙 4-6)이 반영하는 '이미지' — 라이브러리에서 프롬프트 키워드와 가장 많이 겹치는 소재를 고른다.
   //  매칭이 없으면 건드리지 않는다(무작위 이미지 강제 X). 첫 생성 때만, 아직 이미지가 없을 때만.
@@ -412,94 +427,85 @@ function ComposeEditorInline({ row, onPatch, onShared, onFile, images }: { row: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiOpen, row, aiMsgs, aiBusy, aiEngine]);
 
+  // DS 유형 미선택 → 가져오기 행만(스펙: DS 배너 유형 가져오기)
+  if (!row.bannerType) {
+    return (
+      <FieldRow label="DS 배너 유형" required>
+        <div className="flex flex-wrap items-center gap-2">
+          <DsTypePickButton onPick={(t) => onShared({ bannerType: t.id, ...(t.locked as Partial<TypeDetailRow>) })} />
+          <span className="text-[11px] text-muted-foreground">DS 포털에 등록된 배너 유형(현재 <b className="text-indigo-500">기본형</b>)을 가져오면 배경·레이아웃이 고정되고 문구·이미지·컬러만 편집합니다.</span>
+        </div>
+      </FieldRow>
+    );
+  }
+
   return (
-    <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-      {!row.bannerType ? (
-        /* DS 배너 유형 가져오기 — 이미지 등록과 동일한 UI(박스 + 가져오기 버튼). 등록된 유형(기본형)을 끌어오면 배경·레이아웃·색이 고정되고 텍스트·이미지만 편집 */
-        <div className="flex items-start gap-3">
-          <div className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-slate-300 bg-slate-50" style={{ width: dim.w, height: dim.h }}>
-            <div className="flex flex-col items-center gap-1 text-slate-300"><Plus className="h-5 w-5" /><LayoutTemplate className="h-4 w-4" /><span className="text-[10px]">DS 배너 유형</span></div>
-          </div>
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <DsTypePickButton onPick={(t) => onShared({ bannerType: t.id, ...(t.locked as Partial<TypeDetailRow>) })} />
-            </div>
-            <p className="text-[11px] text-muted-foreground">DS 포털에 <b>등록된 배너 유형</b>을 가져와 사용합니다. 현재 <b className="text-indigo-500">기본형</b> 하나만 등록되어 있어요 · 유형을 가져오면 배경·레이아웃·색은 고정되고 <b>텍스트·이미지만</b> 편집합니다.</p>
+    <>
+      {/* DS 배너 유형 */}
+      <FieldRow label="DS 배너 유형" required>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[12px] font-semibold text-indigo-700"><LayoutTemplate className="h-3.5 w-3.5" />{dsBannerTypeName(row.bannerType)}</span>
+          <span className="text-[12px] text-slate-500">({ds.desc})</span>
+          <Button type="button" variant="outline" onClick={() => onShared({ bannerType: '' })}>DS 배너 유형 변경</Button>
+        </div>
+      </FieldRow>
+
+      {/* 4-6 AI 배너 생성 */}
+      <FieldRow label="AI 배너 생성">
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => setAiOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-indigo-300 bg-indigo-50 px-3 text-[13px] font-semibold text-indigo-700 transition hover:bg-indigo-100">
+            <Sparkles className="h-3.5 w-3.5" /> AI 추천
+          </button>
+          <span className="text-[12px] text-muted-foreground">AI 추천을 통해 배너를 생성하세요.</span>
+        </div>
+      </FieldRow>
+
+      {/* 4-7 미리보기 */}
+      <FieldRow label="미리보기" required>
+        <div className="space-y-2">
+          <div className="inline-block rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100"><ComposedBanner f={row} width={dim.w} height={dim.h} preview /></div>
+          <Input value={row.altText ?? ''} onChange={(e) => onPatch({ altText: e.target.value })} placeholder="접근성을 위해 이미지의 주요 내용을 입력해주세요." className="h-9 w-full max-w-md text-sm" />
+          <div className="text-[11px] leading-relaxed text-muted-foreground">
+            <p>배너 규격 : {row.detail}</p>
+            <p>폰트 : {ds.font}</p>
+            <p>권장 이미지 : {ds.image}</p>
           </div>
         </div>
-      ) : (
-      <div className="flex flex-col gap-4 md:flex-row">
-        {/* 미리보기 (같은 페이지 · 인라인) */}
-        <div className="shrink-0">
-          <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
-            <ComposedBanner f={row} width={dim.w} height={dim.h} preview />
-          </div>
-          <p className="mt-1.5 text-center text-[11px] text-slate-400">미리보기 · {dim.label}</p>
+      </FieldRow>
+
+      {/* 4-8 이미지 불러오기 */}
+      <FieldRow label="이미지 불러오기">
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50">
+            <Upload className="h-3.5 w-3.5" /> 이미지 업로드
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => onFile('rightImageUrl', e.target.files?.[0])} />
+          </label>
+          <LibraryPickButton images={images} onPick={(url) => onPatch({ rightImageUrl: url })} label="DB 에서 가져오기" />
+          {row.rightImageUrl && <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600"><ImageIcon className="h-3 w-3" />등록됨<button type="button" onClick={() => onPatch({ rightImageUrl: '' })} className="text-slate-400 hover:text-slate-700"><X className="h-3 w-3" /></button></span>}
         </div>
+      </FieldRow>
 
-        {/* 편집 — DS 유형 고정, 텍스트·이미지만 */}
-        <div className="min-w-0 flex-1">
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[11.5px] font-semibold text-indigo-700"><LayoutTemplate className="h-3.5 w-3.5" />{dsBannerTypeName(row.bannerType)}</span>
-              <span className="text-[11px] text-slate-400">텍스트·이미지만 편집</span>
-              <button type="button" onClick={() => onShared({ bannerType: '' })} className="ml-auto inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600">유형 변경</button>
-            </div>
-            {/* 규격 정보 — 폰트·이미지·배너 규격 안내 */}
-            <div className="mb-4 grid grid-cols-3 gap-2 rounded-lg bg-slate-50/70 p-2.5 text-[11px]">
-              <div className="min-w-0"><p className="text-slate-400">배너 규격</p><p className="truncate font-medium text-slate-700">{row.detail || '—'}</p></div>
-              <div className="min-w-0"><p className="text-slate-400">폰트</p><p className="truncate font-medium text-slate-700" title={dsBannerType(row.bannerType).font}>{dsBannerType(row.bannerType).font}</p></div>
-              <div className="min-w-0"><p className="text-slate-400">권장 이미지</p><p className="truncate font-medium text-slate-700" title={dsBannerType(row.bannerType).image}>{dsBannerType(row.bannerType).image}</p></div>
-            </div>
-            <div className="mb-4 flex items-center gap-2">
-              <div className="inline-flex rounded-lg bg-slate-100 p-0.5 text-[12.5px]">
-                {(['text', 'image'] as const).map((k) => (
-                  <button key={k} type="button" onClick={() => setTab(k)}
-                    className={'rounded-md px-3 py-1 font-medium transition ' + (tab === k ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
-                    {k === 'text' ? '텍스트' : '이미지'}
-                  </button>
-                ))}
-              </div>
-              {/* AI 배너 생성(스펙 4-6) — AI 추천 → 우측 AI 커뮤니케이터에서 메인/서브 타이틀·이미지·BG 컬러를 생성·반영. */}
-              <button type="button" onClick={() => setAiOpen(true)} title="AI 추천 — 메인/서브 타이틀·이미지·BG 컬러를 생성해 미리보기에 반영"
-                className="ml-auto inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-600 transition hover:bg-indigo-100">
-                <Sparkles className="h-3.5 w-3.5" /> AI 배너 생성
-              </button>
-            </div>
-
-            {tab === 'text' && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <L>타이틀</L>
-                  <Input value={row.title} onChange={(e) => onShared({ title: e.target.value })} placeholder="배너 타이틀" className="h-9 flex-1 text-sm" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <L>서브타이틀</L>
-                  <Input value={row.subtitle} onChange={(e) => onShared({ subtitle: e.target.value })} placeholder="서브 문구 (비우면 미표시)" className="h-9 flex-1 text-sm" />
-                </div>
-                <p className="text-[11px] text-muted-foreground"><b className="text-indigo-500">문구·유형은 모든 규격 공통</b> 1벌로 적용돼요. 배경·글자·정렬·CTA는 <b>{dsBannerTypeName(row.bannerType)}</b> 유형 규격을 따르고, <b>이미지만 규격별</b>로 바꿀 수 있어요.</p>
-              </div>
-            )}
-
-            {tab === 'image' && (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <L>이미지</L>
-                  {row.rightImageUrl
-                    ? <span className="flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600"><ImageIcon className="h-3 w-3" />등록됨<button type="button" onClick={() => onPatch({ rightImageUrl: '' })} className="text-slate-400 hover:text-slate-700"><X className="h-3 w-3" /></button></span>
-                    : null}
-                  <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-[12px] font-medium text-slate-700 hover:bg-slate-50">
-                    <Upload className="h-3 w-3" /> 로컬 업로드
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => onFile('rightImageUrl', e.target.files?.[0])} />
-                  </label>
-                  <LibraryPickButton images={images} onPick={(url) => onPatch({ rightImageUrl: url })} label="DB에서 가져오기" />
-                </div>
-                <p className="text-[11px] text-muted-foreground">이미지 위치·크기·모양은 유형 규격을 따릅니다. 이미지와 텍스트만 교체하세요.</p>
-              </div>
-            )}
-          </div>
+      {/* 4-9 메인 타이틀 */}
+      <FieldRow label="메인 타이틀" required>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Input value={row.title} onChange={(e) => onShared({ title: e.target.value })} placeholder="메인 타이틀을 입력하세요." className="h-9 w-full max-w-sm text-sm" />
+          <ColorField label="텍스트 컬러" color={row.titleColor} onColor={(c) => onShared({ titleColor: c })} />
         </div>
-      )}
-      </div>
+      </FieldRow>
+
+      {/* 4-10 서브 타이틀 */}
+      <FieldRow label="서브 타이틀">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Input value={row.subtitle} onChange={(e) => onShared({ subtitle: e.target.value })} placeholder="서브 타이틀을 입력하세요." className="h-9 w-full max-w-sm text-sm" />
+          <ColorField label="텍스트 컬러" color={row.subColor} onColor={(c) => onShared({ subColor: c })} />
+        </div>
+      </FieldRow>
+
+      {/* 4-11 BG 컬러 */}
+      <FieldRow label="BG 컬러">
+        <ColorField color={row.bgColor} onColor={(c) => onShared({ bgColor: c, bgType: 'solid' })} />
+      </FieldRow>
+    </>
   );
 }
 
@@ -715,10 +721,12 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
                 </div>
               </FieldRow>
 
-              {/* 대체텍스트(ALT) — 이 규격(사이즈) 전용 · 페이지마다 다른 문구 가능(2026-09-30) */}
+              {/* 대체텍스트(ALT) — 업로드형만(직접 만들기는 미리보기 행 안에 포함). 규격별 개별 입력. */}
+              {isUpload && (
               <FieldRow label="대체텍스트(ALT)">
                 <Input value={row.altText ?? ''} onChange={(e) => setRow(i, { altText: e.target.value })} placeholder="이 규격 전용 · 접근성을 위해 배너 이미지의 주요 내용(규격별)" className="h-9 text-sm" />
               </FieldRow>
+              )}
 
               {/* 상품 지정 — 상품배너형 · 이미지형(띠배너) */}
               {canPickProduct(row.type, row.detail) && (
@@ -734,22 +742,25 @@ export function BannerForm({ mode, action, value = {}, libImages = [] }: { mode:
                 </FieldRow>
               )}
 
-              {/* 미리보기 — 이미지 업로드형은 자리+파일정보, 직접 만들기는 조립 편집기 */}
-              <FieldRow label="미리보기">
-                {isUpload ? previewEl : <ComposeEditorInline row={row} onPatch={(patch) => setRow(i, patch)} onShared={setAllCompose} onFile={(key, file) => pickFile(i, key, file)} images={libImages} />}
-              </FieldRow>
-
-              {/* 이미지 불러오기 — 이미지 업로드형만 */}
-              {isUpload && (
-                <FieldRow label="이미지 불러오기">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50">
-                      <Upload className="h-3.5 w-3.5" /> 이미지 업로드
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(i, 'imageUrl', e.target.files?.[0])} />
-                    </label>
-                    <LibraryPickButton images={libImages} onPick={(url) => setRow(i, { imageUrl: url })} label="DB 에서 가져오기" />
-                  </div>
-                </FieldRow>
+              {/* 유형상세 본문 — 업로드형(이미지형·상품배너형·팝업배너형)은 미리보기+이미지 불러오기, 템플릿편집형은 스펙 행 레이아웃 */}
+              {isUpload ? (
+                <>
+                  {/* 미리보기 (이미지 업로드형) */}
+                  <FieldRow label="미리보기">{previewEl}</FieldRow>
+                  {/* 이미지 불러오기 */}
+                  <FieldRow label="이미지 불러오기">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50">
+                        <Upload className="h-3.5 w-3.5" /> 이미지 업로드
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(i, 'imageUrl', e.target.files?.[0])} />
+                      </label>
+                      <LibraryPickButton images={libImages} onPick={(url) => setRow(i, { imageUrl: url })} label="DB 에서 가져오기" />
+                    </div>
+                  </FieldRow>
+                </>
+              ) : (
+                /* 템플릿편집형 — DS 배너 유형·AI 배너 생성·미리보기·이미지 불러오기·메인/서브 타이틀·BG 컬러(스펙 4-6~4-11) */
+                <TemplateEditRows row={row} onPatch={(patch) => setRow(i, patch)} onShared={setAllCompose} onFile={(key, file) => pickFile(i, key, file)} images={libImages} />
               )}
             </div>
             );

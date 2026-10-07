@@ -65,10 +65,10 @@ const DIAGRAM_HTML = `
   <p class="eyebrow">NEXT채널 어드민 · 전시/관리 영역 · 구조도 v0.9</p>
   <p class="thesis"><b>디자인 시스템</b>이 코너 껍데기(원천 템플릿·규격)를 소유하고, 이를 코너 유형으로 등록·승인해요.<br>
 빌더에서는 승인된 <b>코너 유형을 가져와</b> Template에 쌓고, Corner에서 내용을 수정해요.<br>
-<b>상품</b>(상품원장·외부 BSS가 SSOT)과 <b>배너</b>(배너 캠페인 관리)는 빌더의 Corner로 바로 불러와요.<br>
+<b>상품</b>(EPC+전시상품 정보 · BSS·상품전시 어드민)과 <b>배너</b>(배너 캠페인 관리)는 빌더의 Corner로 바로 불러와요.<br>
 <b>화면</b>은 전체페이지 관리에서 Container를 등록한 뒤, Container › Template › Corner 순서로 만들어요.<br>
 어드민이 관리하는 건 <b>코너·템플릿·컨테이너</b>뿐이에요. 아톰·컴포넌트는 관리하지 않아요.<br>
-<b>CVM</b>(점선)은 선택이에요. 개인화는 코너 유형 관리에서, 배치 순서는 빌더에서 설정해요.</p>
+<b>CVM</b>(점선)은 선택이에요. 개인화 요소(상품·혜택·업무·문구·레이아웃·배치 순서)는 빌더의 Corner에서 적용해요.</p>
 </div>
 
 <section class="card diagram" aria-label="전시관리 구조도">
@@ -86,9 +86,9 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="44" y="116">재료와 데이터를 제공</text>
 
 <rect class="bx-ext" x="600" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="618" y="74">상품원장</text>
-<text class="tm t3" x="618" y="96">SSOT = 외부(BSS)</text>
-<text class="tm t3" x="618" y="114">BSS에서 끌어와 노출</text>
+<text class="tx t2" x="618" y="74">EPC+전시상품 정보</text>
+<text class="tm t3" x="618" y="96">BSS·상품전시 어드민에서</text>
+<text class="tm t3" x="618" y="114">정보 끌어와서 노출</text>
 
 <!-- 디자인 시스템 — 코너 유형 관리로만 연결(① 원천 템플릿 등록). 코너 껍데기(틀)를 소유. -->
 <rect class="bx-ext" x="250" y="44" width="200" height="96" rx="8"/>
@@ -114,15 +114,11 @@ const DIAGRAM_HTML = `
 <rect class="lbl-bg" x="36" y="176" width="96" height="20"/>
 <text class="ta tier" x="42" y="191">전시 어드민</text>
 
-<!-- 2단: 기준 정보 -->
-<text class="tx tier" x="44" y="250">기준 정보</text>
-<text class="tm t3" x="44" y="272">화면에 쓸 재료를</text>
-<text class="tm t3" x="44" y="290">어드민에 등록</text>
+<!-- 2단: 기준 정보 (라벨 제거, 2026-10-07) -->
 
 <rect class="bx" x="190" y="212" width="250" height="96" rx="8"/>
-<text class="tx t2" x="208" y="244">코너 유형 관리</text>
-<text class="tm t3" x="208" y="270">코너 유형 승인</text>
-<text class="tm t3" x="208" y="288">개인화(CVM) 설정</text>
+<text class="tx t2" x="208" y="248">코너 유형 관리</text>
+<text class="tm t3" x="208" y="276">코너 유형 승인</text>
 
 <rect class="bx" x="920" y="212" width="180" height="96" rx="8"/>
 <text class="tx t2" x="938" y="244">배너 캠페인 관리</text>
@@ -132,34 +128,34 @@ const DIAGRAM_HTML = `
 <!-- 3단: 전시/관리 -->
 <rect class="bx-main" x="40" y="342" width="1180" height="306" rx="12"/>
 <text class="ta t1" x="60" y="372">전시/관리</text>
-<text class="tm t3" x="350" y="371">화면을 만들고, 만든 화면을 관리</text>
 
 <rect class="bx-build" x="56" y="388" width="1148" height="146" rx="10"/>
-<text class="tx t2" x="74" y="414">신규 화면 빌더</text>
-<text class="tm t4" x="350" y="413">화면 구성 위계 (왼쪽이 상위)</text>
+<text class="tx t2" x="74" y="412">신규 화면 빌더</text>
 
-<rect class="bx-lv" x="72" y="430" width="160" height="88" rx="8"/>
-<text class="tx t2" x="88" y="458">Container</text>
-<text class="tm t3" x="88" y="480">전체페이지 관리에서 등록</text>
-<text class="tm t4" x="88" y="500">혜택 홈 · 쇼핑 홈</text>
-<text class="sep" x="244" y="482" text-anchor="middle">›</text>
+<!-- Container(가장 큼) ← Template(중간) ← Corner(두 개로 쪼개짐). 왼쪽이 상위(큰 단위가 작은 단위를 담음) -->
+<rect class="bx-lv" x="72" y="422" width="204" height="104" rx="8"/>
+<text class="tx t2" x="96" y="456">Container</text>
+<text class="tm t3" x="96" y="480">전체페이지 관리에서 등록</text>
+<text class="tm t4" x="96" y="502">혜택 홈 · 쇼핑 홈</text>
+<!-- Template → Container (담김) -->
+<path class="ar-a" d="M296 476H280" marker-end="url(#ma)"/>
 
-<rect class="bx-lv" x="256" y="430" width="160" height="88" rx="8"/>
-<text class="tx t2" x="272" y="458">Template</text>
-<text class="tm t3" x="272" y="480">코너 쌓기 · 배치 순서</text>
-<text class="tm t4" x="272" y="500">로그인 · 비로그인</text>
-<text class="sep" x="428" y="482" text-anchor="middle">›</text>
+<rect class="bx-lv" x="298" y="436" width="166" height="76" rx="8"/>
+<text class="tx t2" x="316" y="464">Template</text>
+<text class="tm t3" x="316" y="486">코너 쌓기 · 배치 순서</text>
+<text class="tm t4" x="316" y="504">로그인 · 비로그인</text>
+<!-- Corner → Template (쌓임) -->
+<path class="ar-a" d="M482 476H466" marker-end="url(#ma)"/>
 
-<rect class="bx-lv" x="440" y="430" width="748" height="88" rx="8"/>
-<text class="tx t2" x="456" y="458">Corner</text>
-<text class="tm t3" x="530" y="458">등록된 코너 유형을 Template에 쌓음</text>
-<text class="tm t4" x="456" y="482">코너 내 개인화는 코너 유형 관리에서 설정</text>
-<rect class="bx" x="456" y="492" width="100" height="20" rx="10"/><text class="tx t4" x="506" y="506" text-anchor="middle">기본 · 어드민 설정</text>
-<rect class="chip-opt" x="562" y="492" width="80" height="20" rx="10"/><text class="tm t4" x="602" y="506" text-anchor="middle">A · 가로형</text>
-<rect class="chip-opt" x="648" y="492" width="72" height="20" rx="10"/><text class="tm t4" x="684" y="506" text-anchor="middle">B · 탭형</text>
-<text class="tm t4" x="728" y="506">선택 · CVM</text>
-<text class="tm t3" x="840" y="458">아톰·컴포넌트는 어드민 관리 대상 아님</text>
-<text class="tm t4" x="840" y="482">코너·템플릿·컨테이너만 어드민에서 관리</text>
+<rect class="bx-lv" x="484" y="422" width="704" height="104" rx="8"/>
+<rect class="bx" x="500" y="432" width="116" height="38" rx="8"/><text class="tx t2" x="558" y="456" text-anchor="middle">Corner</text>
+<rect class="bx" x="500" y="478" width="116" height="38" rx="8"/><text class="tx t2" x="558" y="502" text-anchor="middle">Corner</text>
+<text class="tm t3" x="636" y="452">등록된 코너 유형을 불러온 후 빌더에서 컨텐츠 맵핑 · 개인화 설정 등 적용</text>
+<rect class="bx" x="636" y="468" width="100" height="20" rx="10"/><text class="tx t4" x="686" y="482" text-anchor="middle">기본 · 어드민 설정</text>
+<rect class="chip-opt" x="742" y="468" width="80" height="20" rx="10"/><text class="tm t4" x="782" y="482" text-anchor="middle">A · 가로형</text>
+<rect class="chip-opt" x="828" y="468" width="72" height="20" rx="10"/><text class="tm t4" x="864" y="482" text-anchor="middle">B · 탭형</text>
+<text class="tm t4" x="908" y="482">선택 · CVM</text>
+<text class="tm t4" x="636" y="506">아톰·컴포넌트는 어드민 관리 대상 아님 · 코너·템플릿·컨테이너만 어드민에서 관리</text>
 
 <!-- 빌더 ↔ 관리 -->
 <path class="ar-a" d="M300 534V566" marker-end="url(#ma)"/>
@@ -183,27 +179,29 @@ const DIAGRAM_HTML = `
 <circle class="num" cx="350" cy="174" r="10"/><text class="numt" x="350" y="178" text-anchor="middle">1</text>
 <text class="ta t4" x="334" y="178" text-anchor="end">원천 템플릿 등록</text>
 <!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음) -->
-<path class="ar-a" d="M300 308V426" marker-end="url(#ma)"/>
-<circle class="num" cx="300" cy="322" r="10"/><text class="numt" x="300" y="326" text-anchor="middle">2</text>
-<text class="ta t4" x="284" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
+<path class="ar-a" d="M322 308V436" marker-end="url(#ma)"/>
+<circle class="num" cx="322" cy="322" r="10"/><text class="numt" x="322" y="326" text-anchor="middle">2</text>
+<text class="ta t4" x="306" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
 <!-- ③ 코너 유형 관리 → Corner (유형 가져와 내용 수정) — 코너 유형 관리 오른쪽으로 뺀 뒤 하단으로 내림(2026-10-07). -->
-<path class="ar-a" d="M440 260H580V426" marker-end="url(#ma)"/>
-<circle class="num" cx="580" cy="300" r="10"/><text class="numt" x="580" y="304" text-anchor="middle">3</text>
-<text class="ta t4" x="564" y="304" text-anchor="end">유형 가져와 내용 수정</text>
+<path class="ar-a" d="M440 260H540V422" marker-end="url(#ma)"/>
+<circle class="num" cx="540" cy="366" r="10"/><text class="numt" x="540" y="370" text-anchor="middle">3</text>
+<text class="ta t4" x="556" y="370" text-anchor="start">유형 가져와 내용 수정</text>
 <!-- ③ 상품원장 → Corner (상품 불러오기) — 라벨은 번호 옆 -->
-<path class="ar-a" d="M690 140V426" marker-end="url(#ma)"/>
-<circle class="num" cx="690" cy="375" r="10"/><text class="numt" x="690" y="379" text-anchor="middle">3</text>
-<text class="ta t4" x="706" y="379" text-anchor="start">상품 불러오기</text>
+<path class="ar-a" d="M690 140V422" marker-end="url(#ma)"/>
+<circle class="num" cx="690" cy="366" r="10"/><text class="numt" x="690" y="370" text-anchor="middle">3</text>
+<text class="ta t4" x="706" y="370" text-anchor="start">상품 불러오기</text>
 <!-- ③ 배너 캠페인 → Corner (배너 불러오기) — 라벨은 번호 옆 -->
-<path class="ar-a" d="M1010 308V426" marker-end="url(#ma)"/>
-<circle class="num" cx="1010" cy="375" r="10"/><text class="numt" x="1010" y="379" text-anchor="middle">3</text>
-<text class="ta t4" x="1026" y="379" text-anchor="start">배너 불러오기</text>
-<!-- ④ CVM → Template (코너 배치 순서, 선택 · 점선) -->
-<path class="ar-opt" d="M1130 140V325H336V426" marker-end="url(#m)"/>
-<circle class="num" cx="1130" cy="250" r="10"/><text class="numt" x="1130" y="254" text-anchor="middle">4</text>
-<text class="tm t4" x="1146" y="238">(선택)</text>
-<text class="tm t4" x="1146" y="254">코너 배치</text>
-<text class="tm t4" x="1146" y="270">순서</text>
+<path class="ar-a" d="M1010 308V422" marker-end="url(#ma)"/>
+<circle class="num" cx="1010" cy="366" r="10"/><text class="numt" x="1010" y="370" text-anchor="middle">3</text>
+<text class="ta t4" x="1026" y="370" text-anchor="start">배너 불러오기</text>
+<!-- ④ CVM → Template (개인화 요소 적용, 선택 · 점선) -->
+<path class="ar-opt" d="M1130 140V325H400V436" marker-end="url(#m)"/>
+<circle class="num" cx="1130" cy="230" r="10"/><text class="numt" x="1130" y="234" text-anchor="middle">4</text>
+<text class="tm t4" x="1146" y="250" font-weight="700">개인화 요소(선택)</text>
+<text class="tm t4" x="1146" y="268">· 코너 내 상품·혜택·업무</text>
+<text class="tm t4" x="1146" y="284">· 문구</text>
+<text class="tm t4" x="1146" y="300">· 코너 레이아웃</text>
+<text class="tm t4" x="1146" y="316">· 코너 배치 순서</text>
 </svg>
 </section>
 
@@ -213,37 +211,28 @@ const DIAGRAM_HTML = `
     <li class="card"><span class="n">1</span><b>등록 · 승인</b><span>디자인 시스템이 소유한 코너 껍데기(원천 템플릿·규격)를 코너 유형 관리에 등록하고 승인해요.</span></li>
     <li class="card"><span class="n">2</span><b>Container 등록 · 쌓기</b><span>Container는 전체페이지 관리에서 등록하고, 승인된 코너 유형을 Template에 쌓아 Corner를 구성해요.</span></li>
     <li class="card"><span class="n">3</span><b>빌더에서 가져와 수정</b><span>코너 유형 관리의 승인된 유형을 빌더로 가져와 Corner에서 내용(문구·노출 등)을 수정해요. 상품과 배너는 Corner로 바로 불러와요. 아톰·컴포넌트는 어드민 관리 대상이 아니에요.</span></li>
-    <li class="card"><span class="n">4</span><b>CVM 설정 (선택)</b><span>코너 안의 개인화(레이아웃·상품·메시지)는 코너 유형 관리에서 설정하고, 코너 배치 순서는 빌더의 Template에서 설정해요.</span></li>
+    <li class="card"><span class="n">4</span><b>CVM 설정 (선택)</b><span>개인화 요소(코너 내 상품·혜택·업무·문구·레이아웃·배치 순서)를 빌더의 Corner에서 적용해요.</span></li>
     <li class="card"><span class="n">5</span><b>관리</b><span>저장한 화면은 기존 화면 관리에서 운영하고, 수정할 땐 빌더로 진입</span></li>
   </ol>
 </section>
 
 <section>
   <h2>구성 단위 — 누가 관리하나</h2>
-  <p class="tlead"><b>Atom·Component는 디자인 시스템이 정의하고 소유해요(어드민에서 관리하지 않음).</b> 어드민은 디자인 시스템에 등록된 것을 불러와 Corner를 구성하고, Template·Container로 화면을 만들어요. 작은 단위가 큰 단위에 감싸여요.</p>
+  <p class="tlead"><b>Atom·Component는 디자인 시스템이 정의하고 소유해요(어드민에서 관리하지 않음).</b> 어드민은 디자인 시스템에 등록된 것을 불러와 Corner를 구성하고, Template·Container로 화면을 만들어요. 큰 단위(Container)가 작은 단위(Atom)를 감싸요.</p>
   <div class="trow">
-    <div class="tcard ds"><span class="own">디자인 시스템 관리</span><h4>Atom</h4><p>가장 작은 표시 요소. 문구·이미지·CTA·가격·배지. 단독으로는 화면을 이루지 않아요.</p></div>
-    <span class="tarrow">›</span>
-    <div class="tcard ds"><span class="own">디자인 시스템 관리</span><h4>Component</h4><p>Atom을 조합한 기능 모듈. 배너·상품 카드·탭. 묶으면 코너 패턴이 돼요.</p></div>
-    <span class="tarrow">›</span>
-    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Corner</h4><p>Component를 올린 화면의 한 영역. 코너 유형 관리에 등록된 것으로 구성해요.</p></div>
+    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Container</h4><p>채널에 실제 나가는 화면 단위. 전체페이지 관리에서 등록하고 Template을 담아요(1:N).</p></div>
     <span class="tarrow">›</span>
     <div class="tcard adm"><span class="own">어드민 관리</span><h4>Template</h4><p>여러 Corner를 순서·배치로 구성한 레이아웃. 로그인·세그먼트로 분기해요.</p></div>
     <span class="tarrow">›</span>
-    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Container</h4><p>채널에 실제 나가는 화면 단위. 전체페이지 관리에서 등록하고 Template을 담아요(1:N).</p></div>
+    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Corner</h4><p>Component를 올린 화면의 한 영역. 코너 유형 관리에 등록된 것으로 구성해요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard ds"><span class="own">디자인 시스템 관리</span><h4>Component</h4><p>Atom을 조합한 기능 모듈. 배너·상품 카드·탭. 묶으면 코너 패턴이 돼요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard ds"><span class="own">디자인 시스템 관리</span><h4>Atom</h4><p>가장 작은 표시 요소. 문구·이미지·CTA·가격·배지. 단독으로는 화면을 이루지 않아요.</p></div>
   </div>
 </section>
 
-<section class="card">
-  <h2 style="padding:16px 18px 0;margin:0">확인할 점</h2>
-  <ol class="checks">
-    <li><span class="mk">1</span><div><b>코너 내 개인화가 유형 단위로 적용돼요</b><span>개인화 설정을 코너 유형 관리에서 하면 같은 유형을 쓰는 모든 화면의 코너에 같이 적용돼요. 화면·코너별로 개인화를 끄거나 켜야 하는 경우가 있는지 확인이 필요해요.</span></div></li>
-    <li><span class="mk">2</span><div><b>'템플릿'이라는 이름이 두 곳에 있어요</b><span>디자인 시스템의 원천 템플릿과 빌더의 Template(코너를 쌓는 판)을 다른 이름으로 구분하면 헷갈리지 않아요.</span></div></li>
-    <li><span class="mk">3</span><div><b>프로모션 빌더와 코너 유형의 관계</b><span>코너 유형 관리에 프로모션 탭(14종)이 있어요. 프로모션 빌더도 같은 코너 유형을 불러온다면 연결선이 하나 더 생겨요.</span></div></li>
-    <li><span class="mk">4</span><div><b>텍스트·버튼 같은 단일 코너의 내용 원천</b><span>빌더에서 직접 입력하는지, 문구 관리에서 가져오는지</span></div></li>
-    <li><span class="mk">5</span><div><b>맵핑 단위와 재승인 기준</b><span>코너 유형 하나에 원천 소스를 몇 개까지 맵핑하는지, 맵핑 후 소스 스펙(상품·배너 규격)이 바뀌면 재승인하는지</span></div></li>
-  </ol>
-</section>
+<div aria-hidden="true" style="height:56px"></div>
 `;
 
 function StructureView() {
