@@ -65,7 +65,7 @@ const DIAGRAM_HTML = `
   <p class="eyebrow">NEXT채널 어드민 · 전시/관리 영역 · 구조도 v0.9</p>
   <p class="thesis"><b>디자인 시스템</b>이 코너 껍데기(원천 템플릿·규격)를 소유하고, 이를 코너 유형으로 등록·승인해요.<br>
 빌더에서는 승인된 <b>코너 유형을 가져와</b> Template에 쌓고, Corner에서 내용을 수정해요.<br>
-<b>상품</b>(상품원장·외부 BSS가 SSOT)과 <b>배너</b>(배너 캠페인 관리)는 빌더의 Corner로 바로 불러와요.<br>
+<b>상품</b>(EPC+전시상품 정보 · BSS·상품전시 어드민)과 <b>배너</b>(배너 캠페인 관리)는 빌더의 Corner로 바로 불러와요.<br>
 <b>화면</b>은 전체페이지 관리에서 Container를 등록한 뒤, Container › Template › Corner 순서로 만들어요.<br>
 어드민이 관리하는 건 <b>코너·템플릿·컨테이너</b>뿐이에요. 아톰·컴포넌트는 관리하지 않아요.<br>
 <b>CVM</b>(점선)은 선택이에요. 개인화 요소(상품·혜택·업무·문구·레이아웃·배치 순서)는 빌더의 Corner에서 적용해요.</p>
@@ -114,15 +114,11 @@ const DIAGRAM_HTML = `
 <rect class="lbl-bg" x="36" y="176" width="96" height="20"/>
 <text class="ta tier" x="42" y="191">전시 어드민</text>
 
-<!-- 2단: 기준 정보 -->
-<text class="tx tier" x="44" y="250">기준 정보</text>
-<text class="tm t3" x="44" y="272">화면에 쓸 재료를</text>
-<text class="tm t3" x="44" y="290">어드민에 등록</text>
+<!-- 2단: 기준 정보 (라벨 제거, 2026-10-07) -->
 
 <rect class="bx" x="190" y="212" width="250" height="96" rx="8"/>
-<text class="tx t2" x="208" y="244">코너 유형 관리</text>
-<text class="tm t3" x="208" y="270">코너 유형 등록 · 승인</text>
-<text class="tm t3" x="208" y="288">원천 소스 맵핑</text>
+<text class="tx t2" x="208" y="248">코너 유형 관리</text>
+<text class="tm t3" x="208" y="276">코너 유형 승인</text>
 
 <rect class="bx" x="920" y="212" width="180" height="96" rx="8"/>
 <text class="tx t2" x="938" y="244">배너 캠페인 관리</text>
@@ -200,9 +196,9 @@ const DIAGRAM_HTML = `
 <path class="ar-a" d="M1010 308V426" marker-end="url(#ma)"/>
 <circle class="num" cx="1010" cy="375" r="10"/><text class="numt" x="1010" y="379" text-anchor="middle">3</text>
 <text class="ta t4" x="1026" y="379" text-anchor="start">배너 불러오기</text>
-<!-- ④ CVM → Corner (개인화 요소 적용, 선택 · 점선) -->
-<path class="ar-opt" d="M1130 140V426" marker-end="url(#m)"/>
-<circle class="num" cx="1130" cy="360" r="10"/><text class="numt" x="1130" y="364" text-anchor="middle">4</text>
+<!-- ④ CVM → Template (개인화 요소 적용, 선택 · 점선) -->
+<path class="ar-opt" d="M1130 140V325H336V426" marker-end="url(#m)"/>
+<circle class="num" cx="1130" cy="230" r="10"/><text class="numt" x="1130" y="234" text-anchor="middle">4</text>
 <text class="tm t4" x="1146" y="250" font-weight="700">개인화 요소(선택)</text>
 <text class="tm t4" x="1146" y="268">· 코너 내 상품·혜택·업무</text>
 <text class="tm t4" x="1146" y="284">· 문구</text>
@@ -224,30 +220,20 @@ const DIAGRAM_HTML = `
 
 <section>
   <h2>구성 단위 — 누가 관리하나</h2>
-  <p class="tlead"><b>Atom·Component는 디자인 시스템이 정의하고 소유해요(어드민에서 관리하지 않음).</b> 어드민은 디자인 시스템에 등록된 것을 불러와 Corner를 구성하고, Template·Container로 화면을 만들어요. 작은 단위가 큰 단위에 감싸여요.</p>
+  <p class="tlead"><b>Atom·Component는 디자인 시스템이 정의하고 소유해요(어드민에서 관리하지 않음).</b> 어드민은 디자인 시스템에 등록된 것을 불러와 Corner를 구성하고, Template·Container로 화면을 만들어요. 큰 단위(Container)가 작은 단위(Atom)를 감싸요.</p>
   <div class="trow">
-    <div class="tcard ds"><span class="own">디자인 시스템 관리</span><h4>Atom</h4><p>가장 작은 표시 요소. 문구·이미지·CTA·가격·배지. 단독으로는 화면을 이루지 않아요.</p></div>
-    <span class="tarrow">›</span>
-    <div class="tcard ds"><span class="own">디자인 시스템 관리</span><h4>Component</h4><p>Atom을 조합한 기능 모듈. 배너·상품 카드·탭. 묶으면 코너 패턴이 돼요.</p></div>
-    <span class="tarrow">›</span>
-    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Corner</h4><p>Component를 올린 화면의 한 영역. 코너 유형 관리에 등록된 것으로 구성해요.</p></div>
+    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Container</h4><p>채널에 실제 나가는 화면 단위. 전체페이지 관리에서 등록하고 Template을 담아요(1:N).</p></div>
     <span class="tarrow">›</span>
     <div class="tcard adm"><span class="own">어드민 관리</span><h4>Template</h4><p>여러 Corner를 순서·배치로 구성한 레이아웃. 로그인·세그먼트로 분기해요.</p></div>
     <span class="tarrow">›</span>
-    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Container</h4><p>채널에 실제 나가는 화면 단위. 전체페이지 관리에서 등록하고 Template을 담아요(1:N).</p></div>
+    <div class="tcard adm"><span class="own">어드민 관리</span><h4>Corner</h4><p>Component를 올린 화면의 한 영역. 코너 유형 관리에 등록된 것으로 구성해요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard ds"><span class="own">디자인 시스템 관리</span><h4>Component</h4><p>Atom을 조합한 기능 모듈. 배너·상품 카드·탭. 묶으면 코너 패턴이 돼요.</p></div>
+    <span class="tarrow">›</span>
+    <div class="tcard ds"><span class="own">디자인 시스템 관리</span><h4>Atom</h4><p>가장 작은 표시 요소. 문구·이미지·CTA·가격·배지. 단독으로는 화면을 이루지 않아요.</p></div>
   </div>
 </section>
 
-<section class="card">
-  <h2 style="padding:16px 18px 0;margin:0">확인할 점</h2>
-  <ol class="checks">
-    <li><span class="mk">1</span><div><b>코너 내 개인화가 유형 단위로 적용돼요</b><span>개인화 설정을 코너 유형 관리에서 하면 같은 유형을 쓰는 모든 화면의 코너에 같이 적용돼요. 화면·코너별로 개인화를 끄거나 켜야 하는 경우가 있는지 확인이 필요해요.</span></div></li>
-    <li><span class="mk">2</span><div><b>'템플릿'이라는 이름이 두 곳에 있어요</b><span>디자인 시스템의 원천 템플릿과 빌더의 Template(코너를 쌓는 판)을 다른 이름으로 구분하면 헷갈리지 않아요.</span></div></li>
-    <li><span class="mk">3</span><div><b>프로모션 빌더와 코너 유형의 관계</b><span>코너 유형 관리에 프로모션 탭(14종)이 있어요. 프로모션 빌더도 같은 코너 유형을 불러온다면 연결선이 하나 더 생겨요.</span></div></li>
-    <li><span class="mk">4</span><div><b>텍스트·버튼 같은 단일 코너의 내용 원천</b><span>빌더에서 직접 입력하는지, 문구 관리에서 가져오는지</span></div></li>
-    <li><span class="mk">5</span><div><b>맵핑 단위와 재승인 기준</b><span>코너 유형 하나에 원천 소스를 몇 개까지 맵핑하는지, 맵핑 후 소스 스펙(상품·배너 규격)이 바뀌면 재승인하는지</span></div></li>
-  </ol>
-</section>
 `;
 
 function StructureView() {
