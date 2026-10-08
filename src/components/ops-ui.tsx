@@ -5,35 +5,49 @@
 //    · 톤: 성공(승인완료) 초록 · 반려 빨강 · 진행(게시중) 파랑 · 대기 주황 · 중립(임시저장·미게시) 회색
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { CHIP_BASE } from '@/lib/display-taxonomy';
 
-/** 상태 칩 톤 — 의미별 단일 소스 */
+/**
+ * 상태 칩 톤 — 디자인 시스템 [BO-AX] COMPNT Lib v1.8 의 badge 토큰.
+ * **이 5종이 전부다.** 보라/인디고 등 다른 색 칩은 존재하지 않는다.
+ *   info     bg #D9E9FF / text #2E7AFF   (승인완료)
+ *   success  bg #C8F6E1 / text #038E52   (승인대기)
+ *   negative bg #FFDCDC / text #ED3B3E   (반려)
+ *   neutral  bg #DCE0E5 / text #454F59   (임시저장)
+ *   warning  bg #FFE4C4 / text #D66400   (요청취소)
+ */
 export const TONES = {
-  neutral: 'bg-[#eef0f3] text-[#53586a]',   // 임시저장 · 미게시 · 해당없음
-  muted:   'bg-[#f6f7f9] text-[#8d92a1]',   // 비활성
-  green:   'bg-[#e9f6ee] text-[#147a43]',   // 승인완료 · 사용 · 적용중
-  blue:    'bg-[#e8f0fe] text-[#1f5fd0]',   // 게시중 · 진행중
-  amber:   'bg-[#fff4e2] text-[#a95800]',   // 승인대기 · 게시예정 · 확정대기
-  red:     'bg-[#fdedef] text-[#cf2a3c]',   // 승인반려 · 중지
-  indigo:  'bg-[#efedfe] text-[#3a2fd8]',   // 브랜드 강조
+  info:     'bg-[#D9E9FF] text-[#2E7AFF]',
+  success:  'bg-[#C8F6E1] text-[#038E52]',
+  negative: 'bg-[#FFDCDC] text-[#ED3B3E]',
+  neutral:  'bg-[#DCE0E5] text-[#454F59]',
+  warning:  'bg-[#FFE4C4] text-[#D66400]',
 } as const;
 export type Tone = keyof typeof TONES;
-// 하위호환 별칭
-const TONE_ALIAS: Record<string, Tone> = { slate: 'neutral', gray: 'neutral', success: 'green', negative: 'red', warning: 'amber', info: 'blue' };
+// 예전 이름 → 5종 매핑 (보라/인디고 계열은 info 로 흡수)
+const TONE_ALIAS: Record<string, Tone> = {
+  green: 'success', ok: 'success',
+  red: 'negative', bad: 'negative', destructive: 'negative',
+  amber: 'warning', orange: 'warning',
+  blue: 'info', indigo: 'info', ac: 'info', emphasis: 'info', highlight: 'info', default: 'info',
+  slate: 'neutral', gray: 'neutral', muted: 'neutral', secondary: 'neutral', outline: 'neutral',
+};
 
-/** 상태 라벨 → 톤. 새 상태어가 생기면 여기만 고친다. */
+/** 상태 라벨 → 톤. 새 상태어가 생기면 여기만 고친다. (5종 외 색은 쓰지 않는다) */
 const STATUS_TONE: Record<string, Tone> = {
   // 승인
-  승인완료: 'green', 승인요청: 'amber', 승인대기: 'amber', 승인반려: 'red', 반려: 'red',
-  임시저장: 'neutral', 요청취소: 'neutral',
-  // 게시 · 노출
-  게시중: 'blue', 전시: 'green', 노출: 'green', 사용: 'green', 사용중: 'green',
-  게시예정: 'amber', 검수중: 'amber', '검수 중': 'amber',
-  게시종료: 'neutral', 미게시: 'neutral', 미전시: 'red', 미노출: 'red', 미사용: 'neutral',
+  승인완료: 'info', 승인요청: 'success', 승인대기: 'success', 승인반려: 'negative', 반려: 'negative',
+  임시저장: 'neutral', 요청취소: 'warning',
+  // 게시 · 노출 · 전시
+  게시중: 'success', 전시: 'success', 노출: 'success', 사용: 'success', 사용중: 'success',
+  게시예정: 'warning', 검수중: 'warning', '검수 중': 'warning', 일시중단: 'warning',
+  게시종료: 'neutral', 미게시: 'neutral', 미사용: 'neutral',
+  미전시: 'negative', 미노출: 'negative',
   // 적용 · 배포
-  적용중: 'green', 적용예정: 'amber', 적용종료: 'neutral',
-  배포완료: 'green', 배포예정: 'amber', 배포대기: 'amber', 배포중: 'blue',
+  적용중: 'success', 적용예정: 'warning', 적용종료: 'neutral',
+  배포완료: 'info', 배포예정: 'warning', 배포대기: 'warning', 배포중: 'success',
   // 기타
-  'URL 확정대기': 'amber', 'URL 미등록': 'neutral',
+  'URL 확정대기': 'warning', 'URL 미등록': 'neutral',
 };
 export const statusTone = (label: string): Tone => STATUS_TONE[label?.trim()] ?? 'neutral';
 
@@ -44,7 +58,7 @@ export const statusTone = (label: string): Tone => STATUS_TONE[label?.trim()] ??
 export function StatusPill({ label, tone, dot: _dot }: { label: string; tone?: string; dot?: boolean }) {
   const t: Tone = tone ? (TONE_ALIAS[tone] ?? (tone as Tone)) : statusTone(label);
   return (
-    <span className={cn('inline-flex h-[26px] items-center whitespace-nowrap rounded-[6px] px-2.5 text-[12px] font-semibold', TONES[t] ?? TONES.neutral)}>
+    <span className={cn(CHIP_BASE, TONES[t] ?? TONES.neutral)}>
       {label}
     </span>
   );

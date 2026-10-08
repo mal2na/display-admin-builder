@@ -641,6 +641,23 @@ th{font-weight:600}
 #viewList th{font-weight:600}
 #viewList td{font-weight:400}
 
+/* ── 칩 색 공식 5종 ([BO-AX] COMPNT Lib v1.8) — 이 외의 색은 쓰지 않는다 ──
+   info #D9E9FF/#2E7AFF · success #C8F6E1/#038E52 · negative #FFDCDC/#ED3B3E
+   neutral #DCE0E5/#454F59 · warning #FFE4C4/#D66400
+   치수: 높이 24 · 좌우 8 · 라운드 6 · 12px/600 · 테두리 없음 */
+.pill,.bdg,.tag,.st,.badge,[class*=" pill"],[class^="pill"]{
+  display:inline-flex!important;align-items:center;height:24px;min-width:0;padding:0 8px;
+  border-radius:6px!important;font-size:12px;font-weight:600;line-height:1;border:0!important;white-space:nowrap;
+}
+/* 상태 색 클래스 7종을 공식 5종으로 흡수 — 보라(p-purple)는 존재하지 않는 색이라 주의(warning)로 보낸다.
+   등록 중/등록완료 → info · 진행중 → success · 일시중단 & 기간종료 → warning
+   즉시종료 → negative · 진행예정/완료 → neutral */
+.p-blue,.p-sky{background:#D9E9FF!important;color:#2E7AFF!important}
+.p-green{background:#C8F6E1!important;color:#038E52!important}
+.p-red{background:#FFDCDC!important;color:#ED3B3E!important}
+.p-purple,.p-orange{background:#FFE4C4!important;color:#D66400!important}
+.p-grey{background:#DCE0E5!important;color:#454F59!important}
+
 /* 제목 ↔ 검색 필터 간격 + 제목 구분선 — 다른 어드민 페이지와 동일 */
 #viewList h1, #viewReg h1{margin:2px 0 0}
 #viewList .crumb, #viewReg .crumb{margin-bottom:6px}

@@ -299,7 +299,7 @@ function IaView() {
                   <li key={it.name} className={cn('flex flex-col gap-1 px-4 py-3.5 sm:flex-row sm:items-start sm:gap-4', checked && 'bg-[#efedfe]')}>
                     <div className="sm:w-52 sm:shrink-0">
                       <div className="mb-1.5 flex flex-wrap items-center gap-1">
-                        <label className={cn('inline-flex cursor-pointer select-none items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold', checked ? (it.partial ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-[#3a2fd8] bg-[#efedfe] text-[#3a2fd8]') : 'border-[#e6e7ec] bg-white text-slate-400')}>
+                        <label className={cn('inline-flex cursor-pointer select-none items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold', checked ? (it.partial ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-[#3a2fd8] bg-[#D9E9FF] text-[#2E7AFF]') : 'border-[#e6e7ec] bg-white text-slate-400')}>
                           <input type="checkbox" checked={checked} onChange={() => toggleReview(it.name)} className={cn('h-3 w-3', it.partial ? 'accent-amber-500' : 'accent-[#3a2fd8]')} />
                           오늘 리뷰
                         </label>

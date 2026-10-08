@@ -1083,7 +1083,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                       key={b}
                       type="button"
                       onClick={() => { setBase(b); setPage(1); }}
-                      className={cn('gap-1.5 transition', active ? `${CHIP_BASE} bg-[var(--ac)] text-white` : cn(color, 'opacity-70 hover:opacity-100'))}
+                      className={cn('gap-1.5 transition', active ? `${CHIP_BASE} bg-[#D9E9FF] text-[#2E7AFF]` : cn(color, 'opacity-60 hover:opacity-100'))}
                     >
                       {b}<span className="rounded bg-black/5 px-1.5 text-[11px] tabular-nums">{count}</span>
                     </button>

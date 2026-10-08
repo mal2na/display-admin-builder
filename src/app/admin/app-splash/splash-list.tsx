@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
+import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 export type SplashRow = {
   id: string;
@@ -25,16 +26,16 @@ export type SplashRow = {
 
 // 상태 배지 색 — 프로토타입 상태 팔레트 쌍
 const APPROVAL_TONE: Record<string, string> = {
-  승인완료: 'bg-[#e9f6ee] text-[#147a43]',
-  승인요청: 'bg-[#efedfe] text-[#3a2fd8]',
-  임시저장: 'bg-[#eef0f6] text-[#53586a]',
-  반려: 'bg-[#fdedef] text-[#cf2a3c]',
-  요청취소: 'bg-[#fff4e2] text-[#a95800]',
+  승인완료: 'bg-[#C8F6E1] text-[#038E52]',
+  승인요청: 'bg-[#D9E9FF] text-[#2E7AFF]',
+  임시저장: 'bg-[#DCE0E5] text-[#454F59]',
+  반려: 'bg-[#FFDCDC] text-[#ED3B3E]',
+  요청취소: 'bg-[#FFE4C4] text-[#D66400]',
 };
 const APPLY_TONE: Record<string, string> = {
-  적용중: 'bg-[#e9f6ee] text-[#147a43]',
-  적용예정: 'bg-[#efedfe] text-[#3a2fd8]',
-  적용종료: 'bg-[#eef0f6] text-[#53586a]',
+  적용중: 'bg-[#C8F6E1] text-[#038E52]',
+  적용예정: 'bg-[#D9E9FF] text-[#2E7AFF]',
+  적용종료: 'bg-[#DCE0E5] text-[#454F59]',
 };
 
 function fmtDT(iso: string | null): string {
@@ -156,8 +157,8 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
                   <td className="h-11 px-3 tabular-nums text-slate-500">{no}</td>
                   <td className="h-11 px-3">{r.osType}</td>
                   <td className="h-11 px-3 tabular-nums">{r.version}</td>
-                  <td className="h-11 px-3">{r.applyState === '-' ? <span className="text-slate-400">-</span> : <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPLY_TONE[r.applyState] ?? 'bg-[#eef0f6] text-[#53586a]')}>{r.applyState}</span>}</td>
-                  <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#eef0f6] text-[#53586a]')}>{r.approvalLabel}</span></td>
+                  <td className="h-11 px-3">{r.applyState === '-' ? <span className="text-slate-400">-</span> : <span className={cn(CHIP_BASE, APPLY_TONE[r.applyState] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{r.applyState}</span>}</td>
+                  <td className="h-11 px-3"><span className={cn(CHIP_BASE, APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{r.approvalLabel}</span></td>
                   <td className="h-11 max-w-[260px] truncate px-3 text-left" title={r.title}>{r.title}</td>
                   <td className="h-11 px-3 text-slate-500">{fmtDT(r.applyStartAt)}</td>
                   <td className="h-11 px-3 text-slate-600">{r.createdBy}</td>

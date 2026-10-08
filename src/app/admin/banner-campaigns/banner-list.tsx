@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { ComposedBanner, type ComposeFields } from './composed-banner';
 import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
+import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 export type BannerRow = {
   id: string; campaignCode: string; title: string; exposeYn: boolean;
@@ -43,8 +44,8 @@ function BannerThumb({ preview }: { preview: BannerRow['preview'] }) {
 }
 
 const APPROVAL_TONE: Record<string, string> = {
-  승인완료: 'bg-[#e9f6ee] text-[#147a43]', 승인요청: 'bg-[#eef0f6] text-[#53586a]',
-  반려: 'bg-[#fdedef] text-[#cf2a3c]', 요청취소: 'bg-[#fff4e2] text-[#a95800]', 임시저장: 'bg-[#eef0f6] text-[#53586a]',
+  승인완료: 'bg-[#C8F6E1] text-[#038E52]', 승인요청: 'bg-[#DCE0E5] text-[#454F59]',
+  반려: 'bg-[#FFDCDC] text-[#ED3B3E]', 요청취소: 'bg-[#FFE4C4] text-[#D66400]', 임시저장: 'bg-[#DCE0E5] text-[#454F59]',
 };
 function fmtDT(iso: string | null) {
   if (!iso) return '-';
@@ -144,9 +145,9 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
                 <td className="h-11 px-3 py-1.5"><div className="flex justify-center"><BannerThumb preview={r.preview} /></div></td>
                 <td className="h-11 px-3 tabular-nums">{r.campaignCode}</td>
                 <td className="h-11 px-3 text-left">{r.title}</td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.exposeYn ? 'bg-[#e9f6ee] text-[#147a43]' : 'bg-[#eef0f6] text-[#53586a]')}>{r.exposeYn ? '전시' : '미전시'}</span></td>
+                <td className="h-11 px-3"><span className={cn(CHIP_BASE, r.exposeYn ? 'bg-[#C8F6E1] text-[#038E52]' : 'bg-[#DCE0E5] text-[#454F59]')}>{r.exposeYn ? '전시' : '미전시'}</span></td>
                 <td className="h-11 px-3 text-left text-slate-500">{period(r)}</td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#eef0f6] text-[#53586a]')}>{r.approvalLabel}</span></td>
+                <td className="h-11 px-3"><span className={cn(CHIP_BASE, APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{r.approvalLabel}</span></td>
                 <td className="h-11 px-3 text-slate-600">{r.createdBy}</td>
                 <td className="h-11 px-3 text-slate-500">{fmtDT(r.createdAt)}</td>
                 <td className="h-11 px-3 text-slate-600">{r.updatedBy}</td>

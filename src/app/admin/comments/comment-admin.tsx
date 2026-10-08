@@ -8,19 +8,20 @@ import { Select } from '@/components/ui/select';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
+import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 // ── 공통 ──
 const box = 'h-9 w-full rounded-lg border bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-indigo-200';
 // 상태 배지 — 디자인 시스템(전체페이지 관리 테이블) 팔레트: 그린/레드/앰버/블루/슬레이트 pastel 쌍.
 const TONE: Record<string, string> = {
-  노출: 'bg-[#e9f6ee] text-[#147a43]', 미노출: 'bg-[#fdedef] text-[#cf2a3c]', '검수 중': 'bg-[#fff4e2] text-[#a95800]', 검수중: 'bg-[#fff4e2] text-[#a95800]',
-  답변완료: 'bg-[#e9f6ee] text-[#147a43]', 답변대기: 'bg-[#fff4e2] text-[#a95800]',
-  접수: 'bg-[#fff4e2] text-[#a95800]', 처리완료: 'bg-[#e9f6ee] text-[#147a43]', 반려: 'bg-[#eef0f6] text-[#53586a]',
-  차단중: 'bg-[#fdedef] text-[#cf2a3c]', 해제: 'bg-[#eef0f6] text-[#53586a]',
-  문의: 'bg-[#fff4e2] text-[#a95800]', 반응: 'bg-[#efedfe] text-[#3a2fd8]',
+  노출: 'bg-[#C8F6E1] text-[#038E52]', 미노출: 'bg-[#FFDCDC] text-[#ED3B3E]', '검수 중': 'bg-[#FFE4C4] text-[#D66400]', 검수중: 'bg-[#FFE4C4] text-[#D66400]',
+  답변완료: 'bg-[#C8F6E1] text-[#038E52]', 답변대기: 'bg-[#FFE4C4] text-[#D66400]',
+  접수: 'bg-[#FFE4C4] text-[#D66400]', 처리완료: 'bg-[#C8F6E1] text-[#038E52]', 반려: 'bg-[#DCE0E5] text-[#454F59]',
+  차단중: 'bg-[#FFDCDC] text-[#ED3B3E]', 해제: 'bg-[#DCE0E5] text-[#454F59]',
+  문의: 'bg-[#FFE4C4] text-[#D66400]', 반응: 'bg-[#D9E9FF] text-[#2E7AFF]',
 };
 function Pill({ children }: { children: string }) {
-  return <span className={cn('inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[12px]', TONE[children] ?? 'bg-[#eef0f6] text-[#53586a]')}>{children}</span>;
+  return <span className={cn(CHIP_BASE, TONE[children] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{children}</span>;
 }
 const TABS = [
   { key: 'comment', label: '댓글 관리' },

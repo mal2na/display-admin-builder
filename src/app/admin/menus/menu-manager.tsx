@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronUp, ImageIcon, X } from 'lucide-react';
 import { FilterPanel, THEAD_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
+import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 export type MenuNode = {
   id: string; pageCode: string; menuCode: string | null; menuName: string; path: string;
@@ -20,7 +21,7 @@ export type MenuHistoryRow = {
 type HeadInfo = { reflectedAt: string | null; updatedBy: string; updatedAt: string | null; approvalLabel: string };
 
 const HIST_TONE: Record<string, string> = {
-  승인요청: 'bg-[#eef0f6] text-[#53586a]', 승인완료: 'bg-[#e9f6ee] text-[#147a43]', 반려: 'bg-[#fdedef] text-[#cf2a3c]', 요청취소: 'bg-[#fff4e2] text-[#a95800]',
+  승인요청: 'bg-[#DCE0E5] text-[#454F59]', 승인완료: 'bg-[#C8F6E1] text-[#038E52]', 반려: 'bg-[#FFDCDC] text-[#ED3B3E]', 요청취소: 'bg-[#FFE4C4] text-[#D66400]',
 };
 function fmtDT(iso: string | null) {
   if (!iso) return '-';
@@ -163,7 +164,7 @@ function MenuInfoTab({ nodes, headInfo }: { nodes: MenuNode[]; headInfo: HeadInf
           <span>최종 반영일 <b className="text-slate-700">{fmtDT(headInfo.reflectedAt)}</b></span>
           <span>최종 수정자 <b className="text-slate-700">{headInfo.updatedBy}</b></span>
           <span>최종 수정일시 <b className="text-slate-700">{fmtDT(headInfo.updatedAt)}</b></span>
-          <span>승인상태 <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', HIST_TONE[headInfo.approvalLabel] ?? 'bg-[#eef0f6] text-[#53586a]')}>{headInfo.approvalLabel}</span></span>
+          <span>승인상태 <span className={cn(CHIP_BASE, HIST_TONE[headInfo.approvalLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{headInfo.approvalLabel}</span></span>
         </div>
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => setRedisOpen(true)} className="inline-flex h-9 items-center rounded-lg border border-[#d3d6de] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f6f7f9]">Redis Reload</button>
@@ -243,7 +244,7 @@ function HistoryTab({ history }: { history: MenuHistoryRow[] }) {
             {filtered.map((h) => (
               <tr key={h.id} className="border-b border-[#e6e7ec] text-center text-slate-700">
                 <td className="h-11 px-3 tabular-nums text-slate-400">{h.seq}</td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', HIST_TONE[h.statusLabel] ?? 'bg-[#eef0f6] text-[#53586a]')}>{h.statusLabel}</span></td>
+                <td className="h-11 px-3"><span className={cn(CHIP_BASE, HIST_TONE[h.statusLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{h.statusLabel}</span></td>
                 <td className="h-11 px-3">{h.requester}</td>
                 <td className="h-11 px-3">{h.manager}</td>
                 <td className="h-11 px-3 text-slate-500">{fmtDT(h.requestedAt)}</td>

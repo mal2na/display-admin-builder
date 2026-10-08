@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight, Minus, Plus } from 'lucide-react';
 import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
+import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 export type FPRow = {
   id: string; pageCode: string; menuName: string; path: string; url: string;
@@ -16,8 +17,8 @@ export type FPRow = {
 };
 
 const STATUS_TONE: Record<string, string> = {
-  'URL 확정대기': 'bg-[#fff4e2] text-[#a95800]', 승인요청: 'bg-[#efedfe] text-[#3a2fd8]',
-  승인완료: 'bg-[#e9f6ee] text-[#147a43]', 반려: 'bg-[#fdedef] text-[#cf2a3c]', 'URL 미등록': 'bg-[#eef0f6] text-[#53586a]',
+  'URL 확정대기': 'bg-[#FFE4C4] text-[#D66400]', 승인요청: 'bg-[#D9E9FF] text-[#2E7AFF]',
+  승인완료: 'bg-[#C8F6E1] text-[#038E52]', 반려: 'bg-[#FFDCDC] text-[#ED3B3E]', 'URL 미등록': 'bg-[#DCE0E5] text-[#454F59]',
 };
 function fmtDT(iso: string | null): string {
   if (!iso) return '-';
@@ -131,8 +132,8 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
                 <td className="h-11 px-3">{r.menuName}</td>
                 <td className="h-11 px-3 text-left text-slate-600">{r.path}</td>
                 <td className="h-11 px-3 text-left text-slate-600">{r.url}</td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', STATUS_TONE[r.statusLabel] ?? 'bg-[#eef0f6] text-[#53586a]')}>{r.statusLabel}</span></td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.useYn ? 'bg-[#efedfe] text-[#3a2fd8]' : 'bg-[#eef0f6] text-[#53586a]')}>{r.useYn ? '사용' : '미사용'}</span></td>
+                <td className="h-11 px-3"><span className={cn(CHIP_BASE, STATUS_TONE[r.statusLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{r.statusLabel}</span></td>
+                <td className="h-11 px-3"><span className={cn(CHIP_BASE, r.useYn ? 'bg-[#D9E9FF] text-[#2E7AFF]' : 'bg-[#DCE0E5] text-[#454F59]')}>{r.useYn ? '사용' : '미사용'}</span></td>
                 <td className="h-11 px-3 text-left">
                   <div className="flex flex-wrap gap-1">
                     {r.channels.length === 0 ? <span className="text-slate-400">-</span> : r.channels.map((c) => (
@@ -198,8 +199,8 @@ function IaTab({ rows }: { rows: FPRow[] }) {
               {hasChildren && (open ? <ChevronDown className="ml-1 h-3.5 w-3.5 text-slate-300" /> : <ChevronRight className="ml-1 h-3.5 w-3.5 text-slate-300" />)}
             </div>
           </td>
-          <td className="h-11 px-3 text-center"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.useYn ? 'bg-[#efedfe] text-[#3a2fd8]' : 'bg-[#eef0f6] text-[#53586a]')}>{r.useYn ? '사용' : '미사용'}</span></td>
-          <td className="h-11 px-3 text-center"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.frontExposeYn ? 'bg-[#e9f6ee] text-[#147a43]' : 'bg-[#eef0f6] text-[#53586a]')}>{r.frontExposeYn ? '노출' : '미노출'}</span></td>
+          <td className="h-11 px-3 text-center"><span className={cn(CHIP_BASE, r.useYn ? 'bg-[#D9E9FF] text-[#2E7AFF]' : 'bg-[#DCE0E5] text-[#454F59]')}>{r.useYn ? '사용' : '미사용'}</span></td>
+          <td className="h-11 px-3 text-center"><span className={cn(CHIP_BASE, r.frontExposeYn ? 'bg-[#C8F6E1] text-[#038E52]' : 'bg-[#DCE0E5] text-[#454F59]')}>{r.frontExposeYn ? '노출' : '미노출'}</span></td>
           <td className="h-11 px-3 text-center text-slate-500">{fmtD(r.createdAt)}</td>
         </tr>
       );

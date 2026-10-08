@@ -313,24 +313,25 @@ export function cornerTypeGovernance(cornerType?: string | null): string {
    모든 칩은 모양·크기·굵기가 같다: 라운드 6px · 높이 26 · 좌우 10 · 12px/600 · 테두리 없음.
    분류를 구분하는 것은 "색(톤)" 하나뿐이다. 호출부에서 크기·굵기를 따로 주지 말 것. */
 export const CHIP_BASE =
-  // border-0 · shadow-none 은 호출부가 border/ring 을 덧붙여도 규격이 이기게 하는 방어막이다.
-  'inline-flex h-[26px] items-center whitespace-nowrap rounded-[6px] border-0 px-2.5 text-[12px] font-semibold shadow-none ring-0';
+  // [BO-AX] COMPNT Lib v1.8 badge — 높이 24(패딩 y3 + 내용 18 + y3) · 좌우 8 · 라운드 6 · 12px/600 · 테두리 없음.
+  // border-0 / shadow-none / ring-0 은 호출부가 덧붙여도 규격이 이기게 하는 방어막.
+  'inline-flex h-6 items-center whitespace-nowrap rounded-[6px] border-0 px-2 text-[12px] font-semibold leading-none shadow-none ring-0';
 
-// 코너 유형 → 톤. 상태 칩(ops-ui TONES)과 같은 농도의 연배경 + 진한 글자.
+// 코너 유형 → 톤. 디자인 시스템에 칩 색은 5종뿐이라 그 안에서만 배정한다(보라 없음).
 export const CORNER_TYPE_CHIP: Record<CornerType, string> = {
-  상품형: 'bg-[#efedfe] text-[#3a2fd8]',
-  배너형: 'bg-[#fdedef] text-[#cf2a3c]',
-  '혜택·오퍼형': 'bg-[#fff4e2] text-[#a95800]',
-  '업무 진입형': 'bg-[#e8f0fe] text-[#1f5fd0]',
-  '상태 안내형': 'bg-[#e9f6ee] text-[#147a43]',
-  '콘텐츠 안내형': 'bg-[#f3eafd] text-[#7324b8]',
-  '고정·필수 노출형': 'bg-[#eef0f3] text-[#53586a]',
+  상품형: 'bg-[#D9E9FF] text-[#2E7AFF]',              // info
+  배너형: 'bg-[#FFDCDC] text-[#ED3B3E]',              // negative
+  '혜택·오퍼형': 'bg-[#FFE4C4] text-[#D66400]',        // warning
+  '업무 진입형': 'bg-[#D9E9FF] text-[#2E7AFF]',        // info
+  '상태 안내형': 'bg-[#C8F6E1] text-[#038E52]',        // success
+  '콘텐츠 안내형': 'bg-[#DCE0E5] text-[#454F59]',      // neutral
+  '고정·필수 노출형': 'bg-[#DCE0E5] text-[#454F59]',   // neutral
 };
 // 이벤트·미션 전용 코너 계열(3종)
 export const EVENT_CORNER_FAMILY_CHIP: Record<string, string> = {
-  혜택상품형: 'bg-[#e4f5f1] text-[#0f766e]',
-  디스플레이형: 'bg-[#e8f0fe] text-[#1f5fd0]',
-  동작형: 'bg-[#fdeee3] text-[#b45309]',
+  혜택상품형: 'bg-[#C8F6E1] text-[#038E52]',
+  디스플레이형: 'bg-[#D9E9FF] text-[#2E7AFF]',
+  동작형: 'bg-[#FFE4C4] text-[#D66400]',
 };
 
 /**
@@ -339,10 +340,10 @@ export const EVENT_CORNER_FAMILY_CHIP: Record<string, string> = {
  */
 export function cornerTypeChipClass(cornerType?: string | null): string {
   const tone = !cornerType
-    ? 'bg-[#eef0f3] text-[#53586a]'
+    ? 'bg-[#DCE0E5] text-[#454F59]'
     : (CORNER_TYPE_CHIP as Record<string, string>)[cornerType]
       ?? EVENT_CORNER_FAMILY_CHIP[cornerType]
-      ?? 'bg-[#eef0f3] text-[#53586a]';
+      ?? 'bg-[#DCE0E5] text-[#454F59]';
   return `${CHIP_BASE} ${tone}`;
 }
 
