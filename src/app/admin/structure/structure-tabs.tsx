@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 // ───────────────────────── 구조도 탭 ─────────────────────────
 const DIAGRAM_CSS = `
-.sdg{--surface:#ffffff;--ink:#1d1e23;--muted:#53586a;--line:#d3d6de;--accent:#3a2fd8;--accent-soft:#efedfe;--accent-2:#efedfe;--ext:#e6e7ec;--bg:#f6f7f9;--f-body:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;--f-mono:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-family:var(--f-body);color:var(--ink);display:grid;gap:28px;font-size:15px;line-height:1.6}
+.sdg{--surface:#ffffff;--ink:#1a1a1a;--muted:#454f59;--line:#dce0e5;--accent:#3617ce;--accent-soft:#f1f2ff;--accent-2:#f1f2ff;--ext:#e8ecef;--bg:#f8f9fb;--f-body:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;--f-mono:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-family:var(--f-body);color:var(--ink);display:grid;gap:28px;font-size:15px;line-height:1.6}
 .sdg .eyebrow{font-size:12px;letter-spacing:.04em;color:var(--muted);font-weight:600;margin:0 0 6px}
 .sdg .thesis{font-size:15.5px;line-height:1.7;margin:0;max-width:none;text-wrap:pretty}
 .sdg h2{font-size:18px;margin:0 0 12px;text-wrap:balance}
@@ -284,39 +284,39 @@ function IaView() {
   return (
     <div className="flex flex-col gap-5">
       <section>
-        <h2 className="mb-1 flex items-center gap-2 text-[15px] font-extrabold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-sm bg-[#3a2fd8]" />관리 메뉴 IA</h2>
+        <h2 className="mb-1 flex items-center gap-2 text-[15px] font-extrabold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-sm bg-[#3617ce]" />관리 메뉴 IA</h2>
         <p className="mb-3 flex flex-wrap items-center gap-2 text-[13px] font-medium text-slate-600">
           어드민(BO) 메뉴 구조 — 그룹별 메뉴와 역할·주요 항목. 메뉴명을 누르면 이동합니다.
-          <span className="rounded-md bg-[#efedfe] px-2 py-0.5 text-[12px] font-bold text-[#3a2fd8]">오늘 리뷰 {reviewChecked.size}개 체크</span>
+          <span className="rounded-md bg-[#f1f2ff] px-2 py-0.5 text-[12px] font-bold text-[#3617ce]">오늘 리뷰 {reviewChecked.size}개 체크</span>
         </p>
         <div className="flex flex-col gap-4">
           {ADMIN_IA.map((g) => (
-            <div key={g.group} className="rounded-xl border border-[#e6e7ec] bg-white">
-              <div className="border-b border-[#e6e7ec] bg-[#f6f7f9] px-4 py-2.5 text-[13px] font-bold text-slate-700">{g.group}</div>
+            <div key={g.group} className="rounded-xl border border-[#e8ecef] bg-white">
+              <div className="border-b border-[#e8ecef] bg-[#f8f9fb] px-4 py-2.5 text-[13px] font-bold text-slate-700">{g.group}</div>
               <ul className="divide-y divide-[#eef0f6]">
                 {g.items.map((it) => {
                   const checked = reviewChecked.has(it.name);
                   return (
-                  <li key={it.name} className={cn('flex flex-col gap-1 px-4 py-3.5 sm:flex-row sm:items-start sm:gap-4', checked && 'bg-[#efedfe]')}>
+                  <li key={it.name} className={cn('flex flex-col gap-1 px-4 py-3.5 sm:flex-row sm:items-start sm:gap-4', checked && 'bg-[#f1f2ff]')}>
                     <div className="sm:w-52 sm:shrink-0">
                       <div className="mb-1.5 flex flex-wrap items-center gap-1">
-                        <label className={cn('inline-flex cursor-pointer select-none items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold', checked ? (it.partial ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-[#3a2fd8] bg-[#D9E9FF] text-[#2E7AFF]') : 'border-[#e6e7ec] bg-white text-slate-400')}>
-                          <input type="checkbox" checked={checked} onChange={() => toggleReview(it.name)} className={cn('h-3 w-3', it.partial ? 'accent-amber-500' : 'accent-[#3a2fd8]')} />
+                        <label className={cn('inline-flex cursor-pointer select-none items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold', checked ? (it.partial ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-[#3617ce] bg-[#D9E9FF] text-[#2E7AFF]') : 'border-[#e8ecef] bg-white text-slate-400')}>
+                          <input type="checkbox" checked={checked} onChange={() => toggleReview(it.name)} className={cn('h-3 w-3', it.partial ? 'accent-amber-500' : 'accent-[#3617ce]')} />
                           오늘 리뷰
                         </label>
                         {checked && it.partial && <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">일부만</span>}
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
                         {it.path ? (
-                          <Link href={it.path} className="text-[14px] font-bold text-[#3a2fd8] hover:underline">{it.name}</Link>
+                          <Link href={it.path} className="text-[14px] font-bold text-[#3617ce] hover:underline">{it.name}</Link>
                         ) : <span className="text-[14px] font-bold text-slate-900">{it.name}</span>}
                         {it.tag && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{it.tag}</span>}
                       </div>
-                      {it.sub && <div className="mt-1 flex flex-wrap gap-1">{it.sub.map((s) => <span key={s} className="rounded-md bg-[#f6f7f9] px-1.5 py-0.5 text-[11px] font-medium text-slate-600">+ {s}</span>)}</div>}
+                      {it.sub && <div className="mt-1 flex flex-wrap gap-1">{it.sub.map((s) => <span key={s} className="rounded-md bg-[#f8f9fb] px-1.5 py-0.5 text-[11px] font-medium text-slate-600">+ {s}</span>)}</div>}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[13px] font-medium leading-relaxed text-slate-700">{it.role}</p>
-                      {it.fields && <p className="mt-1 font-mono text-[11.5px] font-medium text-[#3a2fd8]">{it.fields}</p>}
+                      {it.fields && <p className="mt-1 font-mono text-[11.5px] font-medium text-[#3617ce]">{it.fields}</p>}
                     </div>
                   </li>
                   );
@@ -328,7 +328,7 @@ function IaView() {
       </section>
 
       <section>
-        <h2 className="mb-1 flex items-center gap-2 text-[15px] font-extrabold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-sm bg-[#3a2fd8]" />전시 데이터 계층</h2>
+        <h2 className="mb-1 flex items-center gap-2 text-[15px] font-extrabold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-sm bg-[#3617ce]" />전시 데이터 계층</h2>
         <p className="mb-3 text-[13px] font-medium text-slate-600">화면이 실제로 구성되는 단위(작은 단위 → 큰 단위).</p>
         <div className="flex flex-wrap items-center gap-2">
           {[
@@ -339,7 +339,7 @@ function IaView() {
             { t: 'Container', s: '채널에 나가는 화면' },
           ].map((n, i, arr) => (
             <div key={n.t} className="flex items-center gap-2">
-              <div className="rounded-lg border border-[#e6e7ec] bg-white px-3 py-2">
+              <div className="rounded-lg border border-[#e8ecef] bg-white px-3 py-2">
                 <p className="text-[13px] font-bold text-slate-900">{n.t}</p>
                 <p className="mt-0.5 text-[11.5px] font-medium text-slate-600">{n.s}</p>
               </div>
@@ -354,13 +354,13 @@ function IaView() {
 }
 
 // ───────────────────────── 거버넌스 탭 ─────────────────────────
-//  "누가 무엇을 정하나"를 한눈에. 색은 회색 + 포인트 1색(#3a2fd8)만. 근거: CLAUDE.md(Container) · 순서 1안.
+//  "누가 무엇을 정하나"를 한눈에. 색은 회색 + 포인트 1색(#3617ce)만. 근거: CLAUDE.md(Container) · 순서 1안.
 function GovQ({ no, q, answer, children }: { no: number; q: string; answer: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-[#e6e7ec] bg-white p-5">
-      <p className="mb-1 text-[12px] font-bold text-[#3a2fd8]">Q{no}</p>
+    <section className="rounded-xl border border-[#e8ecef] bg-white p-5">
+      <p className="mb-1 text-[12px] font-bold text-[#3617ce]">Q{no}</p>
       <h3 className="mb-3 text-[16px] font-extrabold leading-snug text-slate-900">{q}</h3>
-      <p className="mb-4 border-l-[3px] border-[#3a2fd8] pl-3 text-[14px] font-bold leading-relaxed text-slate-800">{answer}</p>
+      <p className="mb-4 border-l-[3px] border-[#3617ce] pl-3 text-[14px] font-bold leading-relaxed text-slate-800">{answer}</p>
       {children}
     </section>
   );
@@ -369,7 +369,7 @@ function GovQ({ no, q, answer, children }: { no: number; q: string; answer: Reac
 //  좌우 패딩이 없어 글자가 테두리에 붙어 읽기 어려웠다 → 셀 패딩을 주고 행간을 넓힘(2026-10-08).
 function GovRow({ who, what, strong }: { who: string; what: React.ReactNode; strong?: boolean }) {
   return (
-    <div className={cn('grid grid-cols-[128px_1fr] gap-4 border-t border-[var(--line)] px-4 py-3.5 first:border-t-0', strong && 'bg-[#efedfe]/60')}>
+    <div className={cn('grid grid-cols-[128px_1fr] gap-4 border-t border-[var(--line)] px-4 py-3.5 first:border-t-0', strong && 'bg-[#f1f2ff]/60')}>
       <span className="text-[13px] font-bold leading-relaxed text-[var(--ink)]">{who}</span>
       <span className="text-[13px] leading-[1.7] text-[var(--ink2)]">{what}</span>
     </div>
@@ -380,26 +380,26 @@ function GovernanceView() {
     <div className="flex flex-col gap-5">
       <p className="text-[13px] leading-relaxed text-slate-500">
         운영에서 <b className="text-slate-800">“누가 무엇을 정하나”</b>를 한눈에. 원칙은 딱 하나 —
-        <b className="text-[#3a2fd8]"> 코너는 껍데기(규격), 콘텐츠는 빌더에서, 고객마다 실제는 CVM.</b>
+        <b className="text-[#3617ce]"> 코너는 껍데기(규격), 콘텐츠는 빌더에서, 고객마다 실제는 CVM.</b>
       </p>
 
       {/* Q1 — 코너는 껍데기 */}
       <GovQ no={1} q="코너에 콘텐츠를 미리 넣나요? 빌더에서 넣나요?"
         answer={<>코너 유형은 <u>껍데기(규격)만</u>. 콘텐츠(상품·배너·문구·개수·이름)는 <u>빌더(전시화면 관리)에서</u> 매핑해요.</>}>
-        <div className="rounded-lg border border-[#e6e7ec]">
+        <div className="rounded-lg border border-[#e8ecef]">
           <GovRow who="코너 유형" what={<>DS 포털 <b>껍데기</b>를 등록(배열·레이아웃·어떤 API를 쓰는지). <b>콘텐츠는 없음</b>.</>} />
           <GovRow who="빌더(전시화면)" what={<>코너를 쌓고 <b>이름·텍스트·노출 개수·상품/배너·수급 방식</b>(직접 지정 / 조건 / CVM)을 설정. 미리보기 즉시.</>} strong />
           <GovRow who="DS 포털" what={<><b>Atom·Component</b>를 소유. 코너·템플릿·컨테이너는 어드민이 구성.</>} />
         </div>
         <p className="mt-3.5 text-[12.5px] leading-[1.7] text-[var(--ink3)]">
-          왜냐면 — 같은 배너 코너라도 <b className="text-slate-700">A페이지=S18, B페이지=iPhone</b>이면, 콘텐츠를 코너에 박아두면 코너를 매번 새로 만들어야 해요. <b className="text-slate-700">껍데기 1개 + 페이지별 콘텐츠</b>가 효율적(T우주 방식). 그래서 <b className="text-[#3a2fd8]">코너 불러오기는 데이터 없는 가이드</b>로 와요.
+          왜냐면 — 같은 배너 코너라도 <b className="text-slate-700">A페이지=S18, B페이지=iPhone</b>이면, 콘텐츠를 코너에 박아두면 코너를 매번 새로 만들어야 해요. <b className="text-slate-700">껍데기 1개 + 페이지별 콘텐츠</b>가 효율적(T우주 방식). 그래서 <b className="text-[#3617ce]">코너 불러오기는 데이터 없는 가이드</b>로 와요.
         </p>
       </GovQ>
 
       {/* Q1b — 노출 순서 */}
       <GovQ no={2} q="노출 순서는 누가 정해요?"
         answer={<><u>기본 순서는 빌더(운영자)</u>가, <u>실제 순서는 CVM이 고객마다</u> 정해요.</>}>
-        <div className="rounded-lg border border-[#e6e7ec]">
+        <div className="rounded-lg border border-[#e8ecef]">
           <GovRow who="빌더(전시화면)" what={<>코너 <b>배치 순서·위치 고정</b> + 운영자 편성이면 상품·혜택 <b>순서를 직접</b>.</>} />
           <GovRow who="CVM (자동)" what={<>수급이 CVM이면 <b>실제 순서를 고객마다</b> 정해요(비고정 코너를 세그먼트별 재정렬). 미리보기는 기본만.</>} strong />
         </div>
@@ -408,7 +408,7 @@ function GovernanceView() {
       {/* Q3 — 컨테이너 단위 */}
       <GovQ no={3} q="전체 페이지 관리는 왜 ‘컨테이너’ 단위예요? 템플릿 단위로 하면 안 돼요?"
         answer={<>페이지는 <u>‘컨테이너(화면 1개)’ 단위로만</u> 관리해요. 템플릿 단위로는 <u>관리하면 안 돼요.</u></>}>
-        <div className="rounded-lg border border-[#e6e7ec] bg-[#f6f7f9] p-4">
+        <div className="rounded-lg border border-[#e8ecef] bg-[#f8f9fb] p-4">
           <p className="mb-2 text-[13px] font-bold text-slate-800">쉽게 — 집 주소와 인테리어처럼</p>
           <p className="text-[13px] leading-relaxed text-slate-600">
             <b>컨테이너 = 집 주소</b>(화면 1개, 하나뿐). <b>템플릿 = 그 집의 상황별 인테리어</b>(로그인/세그먼트/기간마다 다른 버전, 여러 개).<br />
@@ -421,7 +421,7 @@ function GovernanceView() {
           <li className="flex gap-2"><span className="text-slate-400">·</span><span>메뉴·URL이 <b>어느 템플릿을 가리켜야 할지</b> 애매해져요. 메뉴는 ‘화면’을 부르지 ‘그날의 버전’을 부르지 않아요.</span></li>
           <li className="flex gap-2"><span className="text-slate-400">·</span><span>“어떤 페이지가 있나(목록·IA)”와 “어떻게 달라지나(분기 로직)”가 <b>뒤섞여요</b>.</span></li>
         </ul>
-        <div className="mt-4 rounded-lg border border-[#e6e7ec]">
+        <div className="mt-4 rounded-lg border border-[#e8ecef]">
           <GovRow who="전체페이지 관리" what={<><b>컨테이너(페이지)</b>를 등록·상태·IA 트리·전체 메뉴(네비게이션) 연결. 메뉴 관리·페이지 개발 설정을 모두 흡수.</>} />
           <GovRow who="빌더(전시화면)" what={<>그 컨테이너 <b>안의 템플릿·코너</b>(분기·기간·배치)를 다뤄요.</>} />
         </div>
@@ -430,7 +430,7 @@ function GovernanceView() {
       {/* Q4 — 베리에이션 */}
       <GovQ no={4} q="문구·노출 타입 ‘베리에이션’은 누가 등록해요?"
         answer={<><u>빌더에서 후보를 등록</u>하고(콘텐츠니까), <u>그중 하나를 CVM이 고객마다</u> 골라요.</>}>
-        <div className="rounded-lg border border-[#e6e7ec]">
+        <div className="rounded-lg border border-[#e8ecef]">
           <GovRow who="빌더(전시화면)" what={<>각 컴포넌트의 <b>문구 베리에이션</b>(타겟별 대체 문구)과 <b>노출 타입 베리에이션</b>(코너 유형 카탈로그에서 골라 2~3개 조합)을 등록.</>} />
           <GovRow who="CVM (자동)" what={<>고객 세그먼트로 <b>후보 중 하나를 택1</b>(런타임). 미리보기는 기본(첫 후보)만.</>} strong />
         </div>

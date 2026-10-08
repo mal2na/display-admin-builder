@@ -2407,7 +2407,7 @@ function CornerInfoForm({
 
       <form key={resetKey} action={updateCornerMeta.bind(null, templateId, corner.id)} className="grid grid-cols-2 gap-3">
         {/* 수정 가능/불가 구분 범례 — 빌더에서 바꾸는 값 vs 코너 유형에서 정의(읽기 전용). 2026-10-01 사용자 요청 */}
-        <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-[#e6e7ec] bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
+        <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-[#e8ecef] bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
           <span className="inline-flex items-center gap-1"><Pencil className="h-3 w-3 text-indigo-500" /><b className="text-slate-600">빌더에서 수정</b> · 코너명 · 타이틀·서브 · 표시 항목 · 카테고리 탭 · 미 노출 조건 · 코너 설명 · 추천 수급(CVM) · 베리에이션 · 순서·위치 고정</span>
           <span className="text-slate-300">|</span>
           <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3 text-slate-400" /><b className="text-slate-600">코너 유형에서 정의(읽기 전용)</b> · 유형·배열 — ‘코너 불러오기’로 교체</span>
@@ -2890,7 +2890,7 @@ function OrderVariationExamples({ pinned, free }: { pinned: CornerNode[]; free: 
       {open && (
         <div className="mt-2 space-y-2">
           {ORDER_VAR_SEGMENTS.map((seg, si) => (
-            <div key={seg} className="rounded-md border border-[#e6e7ec] bg-white p-2">
+            <div key={seg} className="rounded-md border border-[#e8ecef] bg-white p-2">
               <p className="mb-1 flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-600">
                 <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[9.5px] text-violet-600">{seg}</span>
               </p>
@@ -3159,7 +3159,7 @@ function BannerLoadModal({
                       const sz = sizeOf(curSize.detail); const boxW = Math.min(340, sz ? sz.w / 2.1 : 300); const boxH = sz ? Math.min(240, boxW * (sz.h / sz.w)) : 130;
                       return (
                         <div className="pt-1">
-                          <div className="overflow-hidden rounded-lg border border-slate-200" style={{ width: boxW, height: boxH, backgroundColor: curSize.bgColor || '#f6f7f9' }}>
+                          <div className="overflow-hidden rounded-lg border border-slate-200" style={{ width: boxW, height: boxH, backgroundColor: curSize.bgColor || '#f8f9fb' }}>
                             {isImgSrc(curSize.imageUrl)
                               ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={curSize.imageUrl!} alt={sel.bannerAlt ?? sel.title} className="h-full w-full object-contain" />
                               : <div className="flex h-full w-full items-center justify-center text-[11px] text-slate-400">{sel.title}</div>}
@@ -3420,7 +3420,7 @@ function CornerLoadModal({
                   return (
                     <div>
                       <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">미리보기 · {sel.base} › {layoutLabel(sel.detail) || '기본'} <span className="text-slate-400">· 껍데기 가이드(콘텐츠는 불러온 뒤 빌더에서 매핑)</span></p>
-                      <div className="h-[440px] rounded-xl border border-[#e6e7ec] bg-[#eef0f6] p-3">
+                      <div className="h-[440px] rounded-xl border border-[#e8ecef] bg-[#eef0f6] p-3">
                         <DevicePreview corner={guide} fit="contain" align="center-middle" />
                       </div>
                     </div>
@@ -3795,7 +3795,7 @@ export function BuilderEditor({
         <div
           onClick={(e) => { if (e.target === e.currentTarget) toggleBothPanels(); }}
           title="빈 캔버스를 클릭하면 좌우 패널이 접히거나 펼쳐집니다"
-          className="flex-1 overflow-auto bg-[radial-gradient(circle,#e6e7ec_1px,transparent_1px)] p-6 [background-size:16px_16px]"
+          className="flex-1 overflow-auto bg-[radial-gradient(circle,#e8ecef_1px,transparent_1px)] p-6 [background-size:16px_16px]"
         >
           {/* zoom(CSS)은 레이아웃까지 축소 → mx-auto가 항상 정확히 중앙 정렬(폭이 캔버스보다 클 때만 스크롤). */}
           {/* 디바이스 + 노출타입 슬롯(항상 예약)을 함께 중앙 정렬 — 슬롯 폭이 고정이라 코너 전환 시 디바이스가 안 튐. */}

@@ -185,10 +185,10 @@ type TypeDetailRow = {
 const emptyRow = (): TypeDetailRow => ({
   type: '리스트형', detail: DETAIL_TYPES[0], useYn: true, imageUrl: '', altText: '',
   bgColor: '#eef0f6', bgColor2: '#DDE3F0', bgType: 'solid',
-  title: '', subtitle: '', titleColor: '#1d1e23', subColor: '#53586a', titleSize: 'md',
+  title: '', subtitle: '', titleColor: '#1a1a1a', subColor: '#454f59', titleSize: 'md',
   align: 'left', imagePos: 'right', imgSize: 'md', imgShape: 'square',
-  badgeText: '', badgeColor: '#3a2fd8',
-  ctaText: '', ctaColor: '#3a2fd8', rightImageUrl: '', bannerType: '',
+  badgeText: '', badgeColor: '#3617ce',
+  ctaText: '', ctaColor: '#3617ce', rightImageUrl: '', bannerType: '',
   productScope: 'all', productRef: '',
 });
 
@@ -197,9 +197,9 @@ const PALETTES = [
   { name: '라벤더', c1: '#eef0f6', c2: '#DDE3F0' },
   { name: '민트', c1: '#e9f6ee', c2: '#e9f6ee' },
   { name: '피치', c1: '#fdedef', c2: '#f5c2c8' },
-  { name: '스카이', c1: '#efedfe', c2: '#efedfe' },
-  { name: '그레이', c1: '#f6f7f9', c2: '#e6e7ec' },
-  { name: '네이비', c1: '#53586a', c2: '#1d1e23' },
+  { name: '스카이', c1: '#f1f2ff', c2: '#f1f2ff' },
+  { name: '그레이', c1: '#f8f9fb', c2: '#e8ecef' },
+  { name: '네이비', c1: '#454f59', c2: '#1a1a1a' },
 ] as const;
 
 // 배너 제작 방식(유형) — 직접 만들기(템플릿 편집형)를 우선 노출·기본값으로. 개인화(세그·CVM)를 위해 템플릿 기반이 기본(2026-09-30 회의).
@@ -337,7 +337,7 @@ function ColorField({ label, color, onColor }: { label?: string; color?: string;
       <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(color || '') ? (color as string) : '#000000'} onChange={(e) => onColor(e.target.value.toUpperCase())} className="h-8 w-9 shrink-0 cursor-pointer rounded border border-slate-300 bg-white p-0.5" aria-label={label || '컬러'} />
       <Input value={val} onChange={(e) => onColor(e.target.value.toUpperCase())} className="h-8 w-28 text-sm" />
       <label className="flex items-center gap-1 text-[12px] text-muted-foreground">
-        <input type="checkbox" checked={isBlack} onChange={(e) => onColor(e.target.checked ? '#000000' : '#1d1e23')} className="accent-indigo-600" /> 기본 컬러 : black
+        <input type="checkbox" checked={isBlack} onChange={(e) => onColor(e.target.checked ? '#000000' : '#1a1a1a')} className="accent-indigo-600" /> 기본 컬러 : black
       </label>
     </div>
   );
@@ -693,7 +693,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [], events }:
               </div>
             );
             return (
-            <div key={i} className="border-t border-[#e6e7ec] first:border-t-0">
+            <div key={i} className="border-t border-[#e8ecef] first:border-t-0">
               {/* 배너유형 · 규격 (한 줄) — 직접 만들기 우선(회의 결정). 사용여부는 별도 줄(배너의 사용, 2026-09-30) */}
               <FieldRow label="배너유형" required>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2">

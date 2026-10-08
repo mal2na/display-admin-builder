@@ -89,9 +89,9 @@ function ChipsView({ component }: { component: PreviewComponent }) {
     const twoRows = component.chipRows === 2;
     const chip = (a: PreviewAtom) => (
       <span key={a.id} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/50 py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#eef0f6] text-[#3a2fd8]">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#eef0f6] text-[#3617ce]">
           {a.imageUrl && isRenderableImg(a.imageUrl) && !isIconRef(a.imageUrl)
-            ? /* 디자인 제공 퀵칩 아이콘(#3a2fd8 svg) — 흰 원형 뱃지 위 글리프 크기로 렌더 */
+            ? /* 디자인 제공 퀵칩 아이콘(#3617ce svg) — 흰 원형 뱃지 위 글리프 크기로 렌더 */
               /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="h-3.5 w-3.5 object-contain" />
             : <IconGlyph name={a.imageUrl && isIconRef(a.imageUrl) ? a.imageUrl : 'icon:general/Category'} className="h-3.5 w-3.5" />}
         </span>
@@ -372,7 +372,7 @@ function PlanBannerRow({ component }: { component: PreviewComponent }) {
         ? <ImageBox atom={thumb} className="h-14 w-14 shrink-0 rounded-2xl" />
         : component.emptyImages
           ? <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-slate-100 text-slate-400"><ImageIcon className="h-4 w-4 opacity-60" /><span className="text-[9px] font-medium">이미지</span></div>
-          : <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#3a2fd8] to-[#3a2fd8]' : 'bg-gradient-to-br from-[#3a2fd8] to-[#3a2fd8]')}>{label || '요금제'}</div>}
+          : <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#3617ce] to-[#3617ce]' : 'bg-gradient-to-br from-[#3617ce] to-[#3617ce]')}>{label || '요금제'}</div>}
       <div className="min-w-0 flex-1">
         {name?.content && <p className="truncate text-[13px] text-slate-700">{name.content}</p>}
         {price?.content && <p className="truncate text-[15px] font-bold text-slate-900">{price.content}</p>}
@@ -666,7 +666,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 바코드 카드는 세로 패딩만 +2(레퍼런스 py:32). 그 외는 표준 카드 패딩.
   const hasBarcode = corner.components.some((c) => c.atoms.some((a) => a.atomType === 'BARCODE'));
   const stdPad = hasBarcode ? CARD_PAD_BARCODE : CARD_PAD;
-  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#e6e7ec] ${CHIP_CARD_PAD}` : `${CARD_RADIUS} bg-white ${stdPad} shadow-sm`);
+  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#e8ecef] ${CHIP_CARD_PAD}` : `${CARD_RADIUS} bg-white ${stdPad} shadow-sm`);
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.

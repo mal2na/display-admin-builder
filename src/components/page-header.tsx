@@ -32,7 +32,7 @@ export function PageHeader({
 }) {
   return (
     <header className={cn('mb-0', className)}>
-      <nav aria-label="breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[12px] text-[var(--ink3)]">
+      <nav aria-label="breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[14px] leading-[20px] text-[var(--ink3)]">
         <span>홈</span>
         {trail.map((t, i) => (
           <span key={i} className="flex items-center gap-1">
@@ -46,10 +46,10 @@ export function PageHeader({
           {back && <div className="mb-1.5">{back}</div>}
           <div className="flex flex-wrap items-center gap-2.5">
             {titlePrefix}
-            <h1 className="m-0 text-[22px] font-bold tracking-[-0.4px] text-[var(--ink)]">{title}</h1>
+            <h1 className="m-0 text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[var(--ink)]">{title}</h1>
             {titleSuffix}
           </div>
-          {subtitle && <p className="mt-1.5 text-[13px] text-[var(--ink2)]">{subtitle}</p>}
+          {subtitle && <p className="mt-1.5 text-[14px] leading-[20px] text-[var(--ink2)]">{subtitle}</p>}
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>

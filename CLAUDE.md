@@ -151,7 +151,28 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 > 이 파일은 라이브러리로 퍼블리시돼 있지 않아 전역 변수 검색(`search_design_system`)에 안 잡히고,
 > Code Connect 는 Enterprise 전용이라 쓸 수 없다 → **프레임 단위로 값을 뽑아 옮긴다.**
 
-**아래는 BO 공통 반영 전까지 쓰던 기존 기준이다. BO 공통으로 교체되는 대로 이 표는 지운다.**
+**핵심 토큰 — Figma 변수 실값 (2026-10-08 추출·반영 완료)**
+
+| | 값 | Figma 변수 |
+|---|---|---|
+| 브랜드 | `#3617ce` | color/text/text-brand · button/primary-bg-enable |
+| 본문 | **14 / 20 / -0.2** | typography/body/14 |
+| 페이지 제목 | **24 / 32 / -0.6 / 700** | typography/title/24 |
+| 브레드크럼 | 14, `#697582` | color/breadcrumb/text-inactive |
+| 글자 | `#1a1a1a` / `#454f59` / `#697582` / `#8b949e` / `#b3b9c0` | text-primary · neutral-strong · breadcrumb · neutral/500 · neutral/400 |
+| 보더 | `#e8ecef` / `#dce0e5` / `#c4c9cf` | border-subtle · border-default · border-strong |
+| 표면 | `#ffffff` / `#f8f9fb` / `#f1f3f5` / `#e8ecef` | surface-swhite · th-row-bg · surface-hover · surface-sunken |
+| 표 | th 40(inset-y 10) · td 48(inset-y-xl 14) · inset-x 12 | spacing/table/* |
+| 칩(badge) | h24 · r**4** · px8/py3 · min-w**40** · 12/600/18 | spacing·radius/badge/* |
+| 칩 톤 | **7종** info·success·negative·warning·neutral·**emphasis**·**highlight** | color/badge/* |
+| 입력 | h38 · r**6** · inset-x**14** · border `#c4c9cf` | radius/textfield/radius · spacing/textfield/* |
+| 탭 | 16/600 · padding **20/15** · gap **16** · underline 2 | spacing/tabs/* |
+| 페이저 | 13/500 · r4 · gap10 · padding10 | spacing·radius/pagination/* |
+| 버튼 | primary r10 · secondary r**full** | radius/button/* |
+
+> 값이 어긋나면 **Figma 변수를 먼저 보고 `globals.css` 의 `:root` 만 고친다.** 페이지 하드코딩 금지.
+
+**아래는 BO 공통 반영 전 기준이다 — 위 토큰과 충돌하면 위가 이긴다.**
 
 | 기준 | 역할 | 어떻게 쓰나 |
 |---|---|---|

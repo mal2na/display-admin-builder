@@ -55,7 +55,7 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
 
       <ListHeader title="위젯 유형 목록" count={filtered.length} />
 
-      <div className="border-y border-[#e6e7ec] bg-white">
+      <div className="border-y border-[#e8ecef] bg-white">
         <table className="w-full text-[13px] font-normal">
           <thead>
             <tr className={THEAD_TR_CLS}>

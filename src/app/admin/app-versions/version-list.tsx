@@ -1,7 +1,7 @@
 'use client';
 
 // SB-ETC-111 App 버전 관리 목록(클라이언트) — 검색 영역 + 목록 + Redis reload + 등록.
-//  디자인 시스템(프로토타입 토큰): accent #3a2fd8 · 헤더 #f6f7f9 · 보더 #e6e7ec · 13px 레귤러.
+//  디자인 시스템(프로토타입 토큰): accent #3617ce · 헤더 #f8f9fb · 보더 #e8ecef · 13px 레귤러.
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -126,7 +126,7 @@ export function VersionList({ rows }: { rows: VersionRow[] }) {
       <ListHeader title="조회결과" count={filtered.length} />
 
       {/* 목록 (2) */}
-      <div className="overflow-x-auto border-t border-[#e6e7ec]">
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1320px] text-[13px] font-normal">
           <thead>
             <tr className={THEAD_TR_CLS}>
@@ -175,8 +175,8 @@ export function VersionList({ rows }: { rows: VersionRow[] }) {
             <h3 className="text-[15px] font-bold text-slate-900">현재 변경된 최신 데이터를 Redis 캐시에 업데이트하시겠습니까?</h3>
             <p className="mt-2 text-[12.5px] leading-relaxed text-slate-500">승인 완료된 변경 사항을 캐시(Redis) 갱신으로 프론트 화면에 즉시 반영합니다. 미승인 변경은 반영 대상에서 제외됩니다.</p>
             <div className="mt-4 flex justify-end gap-2">
-              <button onClick={() => setReloadOpen(false)} className="h-9 rounded-lg border border-[#d3d6de] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f6f7f9]">취소</button>
-              <button onClick={() => setReloadOpen(false)} className="h-9 rounded-lg bg-[#3a2fd8] px-5 text-[13px] font-semibold text-white hover:brightness-110">확인</button>
+              <button onClick={() => setReloadOpen(false)} className="h-9 rounded-lg border border-[#dce0e5] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f8f9fb]">취소</button>
+              <button onClick={() => setReloadOpen(false)} className="h-9 rounded-lg bg-[#3617ce] px-5 text-[13px] font-semibold text-white hover:brightness-110">확인</button>
             </div>
           </div>
         </div>

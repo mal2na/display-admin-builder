@@ -434,9 +434,10 @@ export function cornerTypeGovernance(cornerType?: string | null): string {
    모든 칩은 모양·크기·굵기가 같다: 라운드 6px · 높이 26 · 좌우 10 · 12px/600 · 테두리 없음.
    분류를 구분하는 것은 "색(톤)" 하나뿐이다. 호출부에서 크기·굵기를 따로 주지 말 것. */
 export const CHIP_BASE =
-  // [BO-AX] COMPNT Lib v1.8 badge — 높이 24(패딩 y3 + 내용 18 + y3) · 좌우 8 · 라운드 6 · 12px/600 · 테두리 없음.
-  // border-0 / shadow-none / ring-0 은 호출부가 덧붙여도 규격이 이기게 하는 방어막.
-  'inline-flex h-6 items-center whitespace-nowrap rounded-[6px] border-0 px-2 text-[12px] font-semibold leading-none shadow-none ring-0';
+  // Figma badge — spacing/badge: padding-x 8 · padding-y 3 · min-width 40,
+  //  radius/badge/radius-text 4, font label/xs-semibold(12 / 18 / -0.2), 테두리 없음.
+  //  높이 = 18(lh) + 3 + 3 = 24.
+  'inline-flex h-6 min-w-10 items-center justify-center whitespace-nowrap rounded-[4px] border-0 px-2 text-[12px] font-semibold leading-[18px] tracking-[-0.2px] shadow-none ring-0';
 
 // 코너 유형 → 톤. 디자인 시스템에 칩 색은 5종뿐이라 그 안에서만 배정한다(보라 없음).
 export const CORNER_TYPE_CHIP: Record<CornerType, string> = {

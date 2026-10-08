@@ -114,8 +114,8 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
       </div>
 
       <ListHeader title="조회결과" count={COMMENTS.length} />
-      {/* 목록 — 디자인 시스템(전체페이지 관리 테이블): 헤더 #f6f7f9·보더 #e6e7ec·13px 레귤러 */}
-      <div className="overflow-x-auto border-t border-[#e6e7ec]">
+      {/* 목록 — 디자인 시스템(전체페이지 관리 테이블): 헤더 #f8f9fb·보더 #e8ecef·13px 레귤러 */}
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1140px] text-[13px] font-normal">
           <thead>
             <tr className={cn(THEAD_TR_CLS)}>
@@ -288,7 +288,7 @@ function ReviewsTab() {
       </div>
 
       <ListHeader title="조회결과" count={REVIEWS.length} />
-      <div className="overflow-x-auto border-t border-[#e6e7ec]">
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1000px] text-[13px] font-normal">
           <thead>
               <tr className={cn(THEAD_TR_CLS, '[&>th]:text-left')}>
@@ -339,12 +339,12 @@ function BlockTab() {
     <div>
       <div className="flex gap-1 rounded-lg border bg-white p-0.5 text-[13px]">
         {([['report', '신고 접수', ShieldAlert], ['history', '차단 이력', ShieldOff]] as const).map(([k, l, Icon]) => (
-          <button key={k} onClick={() => setSub(k)} className={cn('inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium', sub === k ? 'bg-[#3a2fd8] text-white' : 'text-slate-500 hover:text-slate-700')}><Icon className="h-3.5 w-3.5" /> {l}</button>
+          <button key={k} onClick={() => setSub(k)} className={cn('inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium', sub === k ? 'bg-[#3617ce] text-white' : 'text-slate-500 hover:text-slate-700')}><Icon className="h-3.5 w-3.5" /> {l}</button>
         ))}
       </div>
 
       {sub === 'report' ? (
-        <div className="overflow-x-auto border-t border-[#e6e7ec]">
+        <div className="overflow-x-auto border-t border-[#e8ecef]">
           <table className="w-full min-w-[900px] text-[13px] font-normal">
             <thead>
               <tr className={cn(THEAD_TR_CLS, '[&>th]:text-left')}>
@@ -369,7 +369,7 @@ function BlockTab() {
           </table>
         </div>
       ) : (
-        <div className="overflow-x-auto border-t border-[#e6e7ec]">
+        <div className="overflow-x-auto border-t border-[#e8ecef]">
           <table className="w-full min-w-[800px] text-[13px] font-normal">
             <thead>
               <tr className={cn(THEAD_TR_CLS, '[&>th]:text-left')}>

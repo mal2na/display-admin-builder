@@ -307,9 +307,9 @@
    셸·타이포·필터·칩·표 규격을 동일하게 맞춘다. 원본 규칙 뒤에 두어 확실히 이긴다.
    ══════════════════════════════════════════════════════════════════════════ */
 :root{
-  --ink:#1d1e23; --ink-2:#53586a; --ink-3:#8d92a1;
-  --accent:#3a2fd8; --accent-soft:#efedfe;
-  --line:#e6e7ec; --line-2:#d3d6de; --surface:#fff; --surface-2:#f8f9fb;
+  --ink:#1a1a1a; --ink-2:#454f59; --ink-3:#697582;
+  --accent:#3617ce; --accent-soft:#f1f2ff;
+  --line:#e8ecef; --line-2:#dce0e5; --surface:#fff; --surface-2:#f8f9fb;
   --ok:#147a43; --ok-soft:#e9f6ee; --warn:#cf2a3c; --warn-soft:#fdedef;
   --amber:#a95800; --amber-soft:#fff4e2;
 }
@@ -340,7 +340,7 @@ h1{margin:6px 0 0!important;line-height:1.35}
 .searchbar > label:not(:first-child)::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
   width:1px;height:24px;background:var(--line)}
 .searchbar label{font-size:13px;font-weight:400;gap:10px}
-.searchbar select,.searchbar input[type="text"],.searchbar input[type="date"]{min-height:38px;height:38px;border-radius:8px;border-color:#e3e5ea;font-size:13px;font-weight:400;padding:0 10px;box-sizing:border-box}
+.searchbar select,.searchbar input[type="text"],.searchbar input[type="date"]{min-height:38px;height:38px;border-radius:8px;border-color:#c4c9cf;font-size:13px;font-weight:400;padding:0 10px;box-sizing:border-box}
 /* 셀렉트 — React .sel 과 동일하게 브라우저 기본 화살표를 끄고 같은 SVG·패딩·폭을 쓴다.
    기본 화살표면 글자가 화살표에 붙고 폭도 내용폭이라 다른 화면과 어긋난다(2026-10-08). */
 .searchbar select{appearance:none;-webkit-appearance:none;min-width:200px;padding:0 32px 0 10px;cursor:pointer;
@@ -398,7 +398,7 @@ h1{margin:6px 0 0!important;line-height:1.35}
 .tag.ch.app,.tag.ch[data-ch="app"]{color:#2E7AFF!important}
 
 /* 목록 표 — 헤더 회색 배경 13px/600, 본문 13px/400 */
-table.list th{background:#f6f7f9;font-weight:600;font-size:13px;color:var(--ink-2)}
+table.list th{background:#f8f9fb;font-weight:600;font-size:13px;color:var(--ink-2)}
 table.list td{font-size:13px;font-weight:400}
 
 /* 상세 화면 폼 테이블(.mtable) — 라벨·값이 보더에 붙지 않게 제 패딩을 돌려준다 */
@@ -444,6 +444,23 @@ table.mtable th{background:var(--surface-2);font-weight:600;color:var(--ink-2);t
 table.list th,table.list td{height:48px;padding:8px 12px!important;box-sizing:border-box;vertical-align:middle;
   white-space:nowrap}
 /* 긴 경로·URL 은 줄바꿈 대신 가로 스크롤(React 목록과 동일) — 모든 행 높이를 48 로 유지 */
+
+/* ── [BO-AX] Figma 공통 컴포넌트 값 (2026-10-08) ──
+   body/14(14·20·-0.2) · title/24(24·32·-0.6) · breadcrumb 14 · tabs 20/15·gap16 ·
+   badge r4/min-w40 · textfield r6·inset-x14·border #c4c9cf */
+body{font-size:14px;line-height:20px;letter-spacing:-.2px}
+h1{font-size:24px!important;font-weight:700!important;line-height:32px!important;letter-spacing:-.6px!important}
+.crumb{font-size:14px!important;line-height:20px;color:#697582!important}
+.tab{font-size:16px!important;font-weight:600!important;padding:15px 20px!important;line-height:24px}
+.tabs{gap:16px}
+.tag,.chip-f,.dchip,.bdg{border-radius:4px!important;min-width:40px;justify-content:center}
+input[type=text],input[type=date],select,textarea{border-radius:6px!important;border-color:#c4c9cf!important;padding-left:14px!important}
+select{padding-right:32px!important}
+table th,table td{font-size:14px!important}
+/* Figma: th-row-inset-y 10 → 40 · td inset-y-xl 14 → 48.
+   단, 셀에 24px 칩이 들어가면 14+24+14=52 라 높이가 튄다 → 높이는 고정하고 세로 패딩은 8 로 둔다. */
+table.list th{height:40px!important;padding:8px 12px!important}
+table.list td{height:48px!important;padding:8px 12px!important}
 </style>
 </head>
 <body>

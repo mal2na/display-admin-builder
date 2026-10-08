@@ -608,10 +608,10 @@ tbody tr:hover td{background:inherit}
 /* 색 토큰을 어드민 팔레트로 재매핑 — 프로토타입 자체 색(#1c1f23/#697582/#8b949e/#3617ce)이
    본체와 미묘하게 달라 글자색이 페이지마다 다르게 보였다. */
 :root{
-  --text:#1d1e23; --muted:#53586a; --faint:#8d92a1;
-  --line:#e6e7ec; --line-strong:#d3d6de; --input-line:#d3d6de;
+  --text:#1a1a1a; --muted:#454f59; --faint:#697582;
+  --line:#e8ecef; --line-strong:#dce0e5; --input-line:#dce0e5;
   --surface:#fff; --surface-2:#f8f9fb; --bg:#eef0f6;
-  --accent:#3a2fd8; --accent-soft:#efedfe; --accent-ink:#fff;
+  --accent:#3617ce; --accent-soft:#f1f2ff; --accent-ink:#fff;
 }
 html,body{margin:0}
 body{background:#fff!important;font-size:13px;letter-spacing:-.1px}
@@ -643,7 +643,7 @@ th{font-weight:600}
 .search .fgrp > .chk-group{gap:6px 14px}
 .search select,
 .search input[type=text],
-.search input[type=date]{height:38px;border-radius:8px;border-color:#e3e5ea;font-size:13px;font-weight:400;box-sizing:border-box}
+.search input[type=date]{height:38px;border-radius:8px;border-color:#c4c9cf;font-size:13px;font-weight:400;box-sizing:border-box}
 /* 셀렉트 — React .sel 과 동일 규격(기본 화살표 끄고 전용 SVG · 폭 200) */
 .search select{appearance:none;-webkit-appearance:none;min-width:200px;width:auto;padding:0 32px 0 10px;cursor:pointer;
   background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%2353586a' stroke-width='1.4'/%3E%3C/svg%3E") no-repeat right 11px center}
@@ -713,6 +713,23 @@ h1 + *{margin-top:0}
 .res-head .count{font-size:13px;font-weight:400;color:var(--ink-2)}
 .res-head .count small{font-size:13px;font-weight:400}
 .res-head .count #count{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ── [BO-AX] Figma 공통 컴포넌트 값 (2026-10-08) ──
+   body/14(14·20·-0.2) · title/24(24·32·-0.6) · breadcrumb 14 · tabs 20/15·gap16 ·
+   badge r4/min-w40 · textfield r6·inset-x14·border #c4c9cf */
+body{font-size:14px;line-height:20px;letter-spacing:-.2px}
+h1{font-size:24px!important;font-weight:700!important;line-height:32px!important;letter-spacing:-.6px!important}
+.crumb{font-size:14px!important;line-height:20px;color:#697582!important}
+.tab{font-size:16px!important;font-weight:600!important;padding:15px 20px!important;line-height:24px}
+.tabs{gap:16px}
+.tag,.chip-f,.dchip,.bdg{border-radius:4px!important;min-width:40px;justify-content:center}
+input[type=text],input[type=date],select,textarea{border-radius:6px!important;border-color:#c4c9cf!important;padding-left:14px!important}
+select{padding-right:32px!important}
+table th,table td{font-size:14px!important}
+/* Figma: th-row-inset-y 10 → 40 · td inset-y-xl 14 → 48.
+   단, 셀에 24px 칩이 들어가면 14+24+14=52 라 높이가 튄다 → 높이는 고정하고 세로 패딩은 8 로 둔다. */
+#viewList th{height:40px!important;padding:8px 12px!important}
+#viewList td{height:48px!important;padding:8px 12px!important}
 </style>
 </head>
 <body>

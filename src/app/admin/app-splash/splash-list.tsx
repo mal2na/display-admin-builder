@@ -1,7 +1,7 @@
 'use client';
 
 // SB-ETC-116 App 스플래시 관리 목록(클라이언트) — 검색 영역 + 목록 + 페이지네이션.
-//  색·테이블은 프로모션 프로토타입 토큰 기준(accent #3a2fd8 · 헤더 #f6f7f9 · 보더 #e6e7ec · 13px 레귤러).
+//  색·테이블은 프로모션 프로토타입 토큰 기준(accent #3617ce · 헤더 #f8f9fb · 보더 #e8ecef · 13px 레귤러).
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -140,7 +140,7 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
 
       <ListHeader title="조회결과" count={filtered.length} />
       {/* 목록 (2) */}
-      <div className="overflow-x-auto border-t border-[#e6e7ec]">
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1200px] text-[13px] font-normal">
           <thead>
             <tr className={THEAD_TR_CLS}>

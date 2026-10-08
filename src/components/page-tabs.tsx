@@ -10,9 +10,10 @@ import { cn } from '@/lib/utils';
  */
 export type PageTab = { key: string; label: string; href?: string; count?: number };
 
-const TAB_CLS = '-mb-px shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-[14px] font-semibold transition';
+// Figma tabs — padding-x 20 · padding-y 15 · underline-width 2 · gap-item 16
+const TAB_CLS = '-mb-px shrink-0 whitespace-nowrap border-b-2 px-5 py-[15px] text-[16px] font-semibold leading-[24px] tracking-[-0.2px] transition';
 const ON = 'border-[var(--ac)] text-[var(--ac)]';
-const OFF = 'border-transparent text-[var(--ink3)] hover:text-[var(--ink2)]';
+const OFF = 'border-transparent text-[#697582] hover:text-[var(--ink2)]';
 
 export function PageTabs({
   tabs,
@@ -28,14 +29,15 @@ export function PageTabs({
   className?: string;
 }) {
   return (
-    <div className={cn('mt-5 flex gap-1 overflow-x-auto border-b border-[var(--line)]', className)} role="tablist">
+    <div className={cn('mt-5 flex gap-4 overflow-x-auto border-b border-[var(--line2)]', className)} role="tablist">
       {tabs.map((t) => {
         const active = t.key === value;
         const body = (
           <>
             {t.label}
             {t.count !== undefined && (
-              <span className={cn('ml-1.5 text-[13px] font-semibold tabular-nums', active ? 'text-[var(--ac)]' : 'text-[var(--ink3)]')}>
+              <span className={cn('ml-1.5 inline-flex items-center rounded-full px-1.5 text-[10px] font-medium leading-[13px] tabular-nums',
+                active ? 'bg-[#f1f2ff] text-[#3617ce]' : 'bg-[#f8f9fb] text-[#697582]')}>
                 {t.count}
               </span>
             )}

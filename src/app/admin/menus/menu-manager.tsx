@@ -1,7 +1,7 @@
 'use client';
 
 // SB PG460(메뉴 정보 관리) + PG462(변경·승인 이력) — 메뉴 관리.
-//  디자인 시스템: accent #3a2fd8 · 헤더/필터 #f6f7f9 · 보더 #e6e7ec · 13px 레귤러.
+//  디자인 시스템: accent #3617ce · 헤더/필터 #f8f9fb · 보더 #e8ecef · 13px 레귤러.
 import { useMemo, useState } from 'react';
 import { PageTabs } from '@/components/page-tabs';
 import { cn } from '@/lib/utils';
@@ -89,20 +89,20 @@ function MenuInfoTab({ nodes, headInfo }: { nodes: MenuNode[]; headInfo: HeadInf
       </div>
 
       <div className="mb-2 flex justify-center gap-2">
-        <button type="button" onClick={expandAll} className="h-8 rounded-lg border border-[#d3d6de] bg-white px-3 text-[12px] font-medium text-slate-600 hover:bg-[#f6f7f9]">전체 펼치기</button>
-        <button type="button" onClick={collapseAll} className="h-8 rounded-lg border border-[#d3d6de] bg-white px-3 text-[12px] font-medium text-slate-600 hover:bg-[#f6f7f9]">전체 접기</button>
+        <button type="button" onClick={expandAll} className="h-8 rounded-lg border border-[#dce0e5] bg-white px-3 text-[12px] font-medium text-slate-600 hover:bg-[#f8f9fb]">전체 펼치기</button>
+        <button type="button" onClick={collapseAll} className="h-8 rounded-lg border border-[#dce0e5] bg-white px-3 text-[12px] font-medium text-slate-600 hover:bg-[#f8f9fb]">전체 접기</button>
       </div>
 
       {/* 3분할 */}
-      <div className="grid grid-cols-[minmax(220px,1fr)_minmax(240px,1fr)_minmax(320px,1.3fr)] gap-0 overflow-hidden rounded-xl border border-[#e6e7ec]">
+      <div className="grid grid-cols-[minmax(220px,1fr)_minmax(240px,1fr)_minmax(320px,1.3fr)] gap-0 overflow-hidden rounded-xl border border-[#e8ecef]">
         {/* 1 Depth */}
-        <div className="border-r border-[#e6e7ec]">
-          <div className="border-b border-[#e6e7ec] bg-[#f6f7f9] px-4 py-2.5 text-center text-[13px] text-[#53586a]">1 Depth</div>
+        <div className="border-r border-[#e8ecef]">
+          <div className="border-b border-[#e8ecef] bg-[#f8f9fb] px-4 py-2.5 text-center text-[13px] text-[#454f59]">1 Depth</div>
           <ul>
             {roots.map((n) => (
               <li key={n.id}>
                 <button type="button" onClick={() => pick1(n.id)}
-                  className={cn('flex w-full items-center gap-1.5 border-b border-[#e6e7ec] px-4 py-3 text-left text-[13px]', sel1 === n.id ? 'bg-[#fff4e2] font-semibold text-slate-900' : 'hover:bg-[#f6f7f9]', !n.frontExposeYn && 'text-slate-400')}>
+                  className={cn('flex w-full items-center gap-1.5 border-b border-[#e8ecef] px-4 py-3 text-left text-[13px]', sel1 === n.id ? 'bg-[#fff4e2] font-semibold text-slate-900' : 'hover:bg-[#f8f9fb]', !n.frontExposeYn && 'text-slate-400')}>
                   {n.menuName}
                   {!n.frontExposeYn && <span className="rounded bg-[#fdedef] px-1.5 py-0.5 text-[10px] font-medium text-[#cf2a3c]">미노출</span>}
                 </button>
@@ -111,15 +111,15 @@ function MenuInfoTab({ nodes, headInfo }: { nodes: MenuNode[]; headInfo: HeadInf
           </ul>
         </div>
         {/* 2/3 Depth */}
-        <div className="border-r border-[#e6e7ec]">
-          <div className="border-b border-[#e6e7ec] bg-[#f6f7f9] px-4 py-2.5 text-center text-[13px] text-[#53586a]">2 Depth</div>
+        <div className="border-r border-[#e8ecef]">
+          <div className="border-b border-[#e8ecef] bg-[#f8f9fb] px-4 py-2.5 text-center text-[13px] text-[#454f59]">2 Depth</div>
           <ul>
             {depth2.filter(visible).map((n) => {
               const sub = kids(n.id);
               const open = expanded.has(n.id);
               return (
                 <li key={n.id}>
-                  <div className={cn('flex items-center justify-between border-b border-[#e6e7ec] px-4 py-3 text-[13px]', selNode === n.id ? 'bg-[#fff4e2]' : 'hover:bg-[#f6f7f9]', !n.frontExposeYn && 'text-slate-400')}>
+                  <div className={cn('flex items-center justify-between border-b border-[#e8ecef] px-4 py-3 text-[13px]', selNode === n.id ? 'bg-[#fff4e2]' : 'hover:bg-[#f8f9fb]', !n.frontExposeYn && 'text-slate-400')}>
                     <button type="button" onClick={() => setSelNode(n.id)} className="flex items-center gap-1.5 text-left">
                       {n.menuName}
                       {!n.frontExposeYn && <span className="rounded bg-[#fdedef] px-1.5 py-0.5 text-[10px] font-medium text-[#cf2a3c]">미노출</span>}
@@ -128,7 +128,7 @@ function MenuInfoTab({ nodes, headInfo }: { nodes: MenuNode[]; headInfo: HeadInf
                   </div>
                   {open && sub.filter(visible).map((c) => (
                     <button key={c.id} type="button" onClick={() => setSelNode(c.id)}
-                      className={cn('flex w-full items-center gap-1.5 border-b border-[#e6e7ec] py-2.5 pl-9 pr-4 text-left text-[13px]', selNode === c.id ? 'bg-[#fff4e2] font-medium text-slate-900' : 'bg-white hover:bg-[#f6f7f9]', !c.frontExposeYn && 'text-slate-400')}>
+                      className={cn('flex w-full items-center gap-1.5 border-b border-[#e8ecef] py-2.5 pl-9 pr-4 text-left text-[13px]', selNode === c.id ? 'bg-[#fff4e2] font-medium text-slate-900' : 'bg-white hover:bg-[#f8f9fb]', !c.frontExposeYn && 'text-slate-400')}>
                       {c.menuName}
                       {!c.frontExposeYn && <span className="rounded bg-[#fdedef] px-1.5 py-0.5 text-[10px] font-medium text-[#cf2a3c]">미노출</span>}
                     </button>
@@ -141,17 +141,17 @@ function MenuInfoTab({ nodes, headInfo }: { nodes: MenuNode[]; headInfo: HeadInf
         </div>
         {/* 상세 */}
         <div>
-          <div className="border-b border-[#e6e7ec] px-4 py-3 text-[15px] font-bold text-slate-900">{detail?.menuName ?? '-'}</div>
+          <div className="border-b border-[#e8ecef] px-4 py-3 text-[15px] font-bold text-slate-900">{detail?.menuName ?? '-'}</div>
           {detail && (
             <div className="grid grid-cols-[120px_1fr]">
-              <Cell label>페이지 ID</Cell><Cell><span className="text-[#3a2fd8] underline">{detail.pageCode}</span></Cell>
+              <Cell label>페이지 ID</Cell><Cell><span className="text-[#3617ce] underline">{detail.pageCode}</span></Cell>
               <Cell label>메뉴명</Cell><Cell>{detail.menuName}</Cell>
               <Cell label>경로</Cell><Cell>{detail.path}</Cell>
               <Cell label>Front 노출여부</Cell><Cell>{detail.frontExposeYn ? '노출' : '미노출'}</Cell>
-              <Cell label>운영채널</Cell><Cell><div className="flex flex-wrap gap-1">{detail.channels.length ? detail.channels.map((c) => <span key={c} className="inline-flex items-center rounded border border-[#e6e7ec] bg-white px-1.5 py-0.5 text-[11px] text-slate-600">{c}</span>) : '-'}</div></Cell>
+              <Cell label>운영채널</Cell><Cell><div className="flex flex-wrap gap-1">{detail.channels.length ? detail.channels.map((c) => <span key={c} className="inline-flex items-center rounded border border-[#e8ecef] bg-white px-1.5 py-0.5 text-[11px] text-slate-600">{c}</span>) : '-'}</div></Cell>
               {detail.depth === 1 && (<>
                 <Cell label>메뉴 아이콘</Cell>
-                <Cell><div className="flex h-12 w-12 items-center justify-center rounded-lg border border-[#e6e7ec] bg-[#f6f7f9]">{detail.iconUrl ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={detail.iconUrl} alt="" className="h-full w-full rounded object-contain" /> : <ImageIcon className="h-5 w-5 text-slate-300" />}</div></Cell>
+                <Cell><div className="flex h-12 w-12 items-center justify-center rounded-lg border border-[#e8ecef] bg-[#f8f9fb]">{detail.iconUrl ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={detail.iconUrl} alt="" className="h-full w-full rounded object-contain" /> : <ImageIcon className="h-5 w-5 text-slate-300" />}</div></Cell>
               </>)}
             </div>
           )}
@@ -167,8 +167,8 @@ function MenuInfoTab({ nodes, headInfo }: { nodes: MenuNode[]; headInfo: HeadInf
           <span>승인상태 <span className={cn(CHIP_BASE, HIST_TONE[headInfo.approvalLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{headInfo.approvalLabel}</span></span>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setRedisOpen(true)} className="inline-flex h-9 items-center rounded-lg border border-[#d3d6de] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f6f7f9]">Redis Reload</button>
-          <button type="button" className="inline-flex h-9 items-center rounded-lg bg-[#3a2fd8] px-5 text-[13px] font-semibold text-white hover:brightness-110">수정</button>
+          <button type="button" onClick={() => setRedisOpen(true)} className="inline-flex h-9 items-center rounded-lg border border-[#dce0e5] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f8f9fb]">Redis Reload</button>
+          <button type="button" className="inline-flex h-9 items-center rounded-lg bg-[#3617ce] px-5 text-[13px] font-semibold text-white hover:brightness-110">수정</button>
         </div>
       </div>
 
@@ -178,8 +178,8 @@ function MenuInfoTab({ nodes, headInfo }: { nodes: MenuNode[]; headInfo: HeadInf
             <h3 className="text-[15px] font-bold text-slate-900">현재 변경된 최신 데이터를 Redis 캐시에 업데이트하시겠습니까?</h3>
             <p className="mt-2 text-[12.5px] leading-relaxed text-slate-500">승인 완료된 변경 사항을 캐시(Redis) 갱신으로 프론트 화면에 즉시 반영합니다. 미승인 변경은 반영 대상에서 제외됩니다.</p>
             <div className="mt-4 flex justify-end gap-2">
-              <button onClick={() => setRedisOpen(false)} className="h-9 rounded-lg border border-[#d3d6de] bg-white px-4 text-[13px] font-medium text-slate-600">취소</button>
-              <button onClick={() => setRedisOpen(false)} className="h-9 rounded-lg bg-[#3a2fd8] px-5 text-[13px] font-semibold text-white">확인</button>
+              <button onClick={() => setRedisOpen(false)} className="h-9 rounded-lg border border-[#dce0e5] bg-white px-4 text-[13px] font-medium text-slate-600">취소</button>
+              <button onClick={() => setRedisOpen(false)} className="h-9 rounded-lg bg-[#3617ce] px-5 text-[13px] font-semibold text-white">확인</button>
             </div>
           </div>
         </div>
@@ -189,7 +189,7 @@ function MenuInfoTab({ nodes, headInfo }: { nodes: MenuNode[]; headInfo: HeadInf
 }
 
 function Cell({ label, children }: { label?: boolean; children: React.ReactNode }) {
-  return <div className={cn('border-b border-[#e6e7ec] px-4 py-3 text-[13px]', label ? 'flex items-center bg-[#f6f7f9] font-medium text-slate-600' : 'text-slate-800')}>{children}</div>;
+  return <div className={cn('border-b border-[#e8ecef] px-4 py-3 text-[13px]', label ? 'flex items-center bg-[#f8f9fb] font-medium text-slate-600' : 'text-slate-800')}>{children}</div>;
 }
 
 // ── 변경/승인 이력 탭 (PG462) ─────────────────────────────────
@@ -231,7 +231,7 @@ function HistoryTab({ history }: { history: MenuHistoryRow[] }) {
         />
       </div>
 
-      <div className="overflow-x-auto border-t border-[#e6e7ec]">
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1100px] text-[13px] font-normal whitespace-nowrap">
           <thead>
             <tr className={THEAD_TR_CLS}>
@@ -242,7 +242,7 @@ function HistoryTab({ history }: { history: MenuHistoryRow[] }) {
           </thead>
           <tbody>
             {filtered.map((h) => (
-              <tr key={h.id} className="border-b border-[#e6e7ec] text-center text-slate-700">
+              <tr key={h.id} className="border-b border-[#e8ecef] text-center text-slate-700">
                 <td className="h-11 px-3 tabular-nums text-slate-400">{h.seq}</td>
                 <td className="h-11 px-3"><span className={cn(CHIP_BASE, HIST_TONE[h.statusLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{h.statusLabel}</span></td>
                 <td className="h-11 px-3">{h.requester}</td>
@@ -251,8 +251,8 @@ function HistoryTab({ history }: { history: MenuHistoryRow[] }) {
                 <td className="h-11 px-3 text-left text-slate-600">{h.requestReason}</td>
                 <td className="h-11 px-3 text-slate-500">{fmtDT(h.processedAt)}</td>
                 <td className="h-11 px-3 text-left text-slate-600">{h.processReason}</td>
-                <td className="h-11 px-3"><button type="button" onClick={() => setDetail(h)} className="inline-flex h-7 items-center rounded-md border border-[#d3d6de] bg-white px-2.5 text-[11.5px] font-medium text-slate-600 hover:bg-[#f6f7f9]">상세보기</button></td>
-                <td className="h-11 px-3 tabular-nums text-[#3a2fd8]">{h.version}</td>
+                <td className="h-11 px-3"><button type="button" onClick={() => setDetail(h)} className="inline-flex h-7 items-center rounded-md border border-[#dce0e5] bg-white px-2.5 text-[11.5px] font-medium text-slate-600 hover:bg-[#f8f9fb]">상세보기</button></td>
+                <td className="h-11 px-3 tabular-nums text-[#3617ce]">{h.version}</td>
               </tr>
             ))}
           </tbody>
@@ -278,7 +278,7 @@ function ChangePopup({ h, onClose }: { h: MenuHistoryRow; onClose: () => void })
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-[#e6e7ec] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[#e8ecef] px-6 py-4">
           <h3 className="text-[16px] font-bold text-slate-900">변경사항 보기</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
         </div>
@@ -289,7 +289,7 @@ function ChangePopup({ h, onClose }: { h: MenuHistoryRow; onClose: () => void })
               <h4 className="text-[14px] font-bold text-slate-900">이력 정보</h4>
               <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-1 text-[12px] text-slate-500">{open ? '접기' : '펼치기'}{open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}</button>
             </div>
-            <div className="grid grid-cols-[120px_1fr_120px_1fr] overflow-hidden rounded-lg border border-[#e6e7ec]">
+            <div className="grid grid-cols-[120px_1fr_120px_1fr] overflow-hidden rounded-lg border border-[#e8ecef]">
               <Cell label>구분</Cell><Cell>{h.statusLabel}</Cell><Cell label>변경 사항</Cell><Cell>{h.changeNote ?? '-'}</Cell>
               {open && (<>
                 <Cell label>요청자</Cell><Cell>{h.requester}</Cell><Cell label>요청/저장 일시</Cell><Cell>{fmtDT(h.requestedAt)}</Cell>
@@ -300,18 +300,18 @@ function ChangePopup({ h, onClose }: { h: MenuHistoryRow; onClose: () => void })
           {/* 변경 사항 탭 */}
           <h4 className="mb-2 text-[14px] font-bold text-slate-900">변경 사항</h4>
           {tabs.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-[#e6e7ec] px-4 py-8 text-center text-[12.5px] text-slate-400">표시할 변경 상세가 없습니다.</p>
+            <p className="rounded-lg border border-dashed border-[#e8ecef] px-4 py-8 text-center text-[12.5px] text-slate-400">표시할 변경 상세가 없습니다.</p>
           ) : (<>
-            <div className="mb-3 flex gap-4 border-b border-[#e6e7ec]">
+            <div className="mb-3 flex gap-4 border-b border-[#e8ecef]">
               {tabs.map(([k, v]) => (
-                <button key={k} type="button" onClick={() => setTab(k)} className={cn('-mb-px flex items-center gap-1.5 border-b-2 px-1 py-2 text-[13px] font-medium', tab === k ? 'border-[#3a2fd8] text-[#3a2fd8]' : 'border-transparent text-slate-500')}>{k}<span className="rounded-full bg-[#e9f6ee] px-1.5 text-[10px] font-bold text-[#147a43]">{v}</span></button>
+                <button key={k} type="button" onClick={() => setTab(k)} className={cn('-mb-px flex items-center gap-1.5 border-b-2 px-1 py-2 text-[13px] font-medium', tab === k ? 'border-[#3617ce] text-[#3617ce]' : 'border-transparent text-slate-500')}>{k}<span className="rounded-full bg-[#e9f6ee] px-1.5 text-[10px] font-bold text-[#147a43]">{v}</span></button>
               ))}
             </div>
-            <p className="rounded-lg bg-[#f6f7f9] px-4 py-6 text-center text-[12.5px] text-slate-500">「{tab}」 {counts[tab]}건 — 회차 스냅샷 기준 변경 내역(항목·변경 전/후)이 표시됩니다.</p>
+            <p className="rounded-lg bg-[#f8f9fb] px-4 py-6 text-center text-[12.5px] text-slate-500">「{tab}」 {counts[tab]}건 — 회차 스냅샷 기준 변경 내역(항목·변경 전/후)이 표시됩니다.</p>
           </>)}
         </div>
-        <div className="flex justify-end border-t border-[#e6e7ec] px-6 py-4">
-          <button onClick={onClose} className="h-9 rounded-lg bg-[#3a2fd8] px-6 text-[13px] font-semibold text-white hover:brightness-110">닫기</button>
+        <div className="flex justify-end border-t border-[#e8ecef] px-6 py-4">
+          <button onClick={onClose} className="h-9 rounded-lg bg-[#3617ce] px-6 text-[13px] font-semibold text-white hover:brightness-110">닫기</button>
         </div>
       </div>
     </div>

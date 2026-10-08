@@ -55,11 +55,11 @@ export function ComposedBanner({ f, width, height, preview = false }: { f: Compo
 
   const textBlock = (
     <div className={'min-w-0 ' + (vertical ? 'w-full ' : 'flex-1 ') + (center ? 'text-center' : 'text-left')}>
-      {f.badgeText && <span className="mb-1 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: f.badgeColor || '#3a2fd8' }}>{f.badgeText}</span>}
-      {titleText && <p className={'line-clamp-2 whitespace-pre-line font-bold leading-snug ' + titleCls} style={{ color: f.titleColor || '#1d1e23' }}>{titleText}</p>}
-      {f.subtitle && <p className="mt-1 line-clamp-1 text-[11px]" style={{ color: f.subColor || '#53586a' }}>{f.subtitle}</p>}
+      {f.badgeText && <span className="mb-1 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: f.badgeColor || '#3617ce' }}>{f.badgeText}</span>}
+      {titleText && <p className={'line-clamp-2 whitespace-pre-line font-bold leading-snug ' + titleCls} style={{ color: f.titleColor || '#1a1a1a' }}>{titleText}</p>}
+      {f.subtitle && <p className="mt-1 line-clamp-1 text-[11px]" style={{ color: f.subColor || '#454f59' }}>{f.subtitle}</p>}
       {f.ctaText && !compact && (
-        <span className="mt-2 inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold text-white" style={{ backgroundColor: f.ctaColor || '#3a2fd8' }}>{f.ctaText}</span>
+        <span className="mt-2 inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold text-white" style={{ backgroundColor: f.ctaColor || '#3617ce' }}>{f.ctaText}</span>
       )}
     </div>
   );

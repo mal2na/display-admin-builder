@@ -18,11 +18,13 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
  *   warning  bg #FFE4C4 / text #D66400   (요청취소)
  */
 export const TONES = {
-  info:     'bg-[#D9E9FF] text-[#2E7AFF]',
-  success:  'bg-[#C8F6E1] text-[#038E52]',
-  negative: 'bg-[#FFDCDC] text-[#ED3B3E]',
-  neutral:  'bg-[#DCE0E5] text-[#454F59]',
-  warning:  'bg-[#FFE4C4] text-[#D66400]',
+  info:      'bg-[#d9e9ff] text-[#2e7aff]',
+  success:   'bg-[#c8f6e1] text-[#038e52]',
+  negative:  'bg-[#ffdcdc] text-[#ed3b3e]',
+  warning:   'bg-[#ffe4c4] text-[#d66400]',
+  neutral:   'bg-[#dce0e5] text-[#454f59]',
+  emphasis:  'bg-[#e1e3ff] text-[#3617ce]',
+  highlight: 'bg-[#ffe9a8] text-[#d17e28]',
 } as const;
 export type Tone = keyof typeof TONES;
 // 예전 이름 → 5종 매핑 (보라/인디고 계열은 info 로 흡수)
@@ -94,9 +96,9 @@ export function ListHeader({
   return (
     <div className={cn('mt-8 mb-3 flex flex-wrap items-center justify-between gap-3', className)}>
       <div className="flex items-baseline gap-2">
-        <h3 className="text-[17px] font-bold tracking-[-0.3px] text-[var(--ink)]">{title}</h3>
+        <h3 className="text-[16px] font-semibold leading-[24px] tracking-[-0.2px] text-[var(--ink)]">{title}</h3>
         {count !== undefined && (
-          <span className="text-[13px] text-[var(--ink2)]">
+          <span className="text-[14px] leading-[20px] text-[var(--ink2)]">
             {prefix} <b className="font-bold tabular-nums">{count}</b>{unit}
           </span>
         )}
@@ -168,7 +170,7 @@ export function Pager({
   const tailGap = end < totalPages - 1;
   const tail = end < totalPages ? totalPages : null;
 
-  const nav = 'grid h-5 w-5 shrink-0 place-items-center rounded-[4px] text-[var(--ink3)] transition hover:text-[var(--ac)] disabled:pointer-events-none disabled:opacity-30';
+  const nav = 'grid h-5 w-5 shrink-0 place-items-center rounded-[4px] text-[#454f59] transition hover:text-[var(--ac)] disabled:pointer-events-none disabled:text-[#b3b9c0]';
 
   return (
     <nav aria-label="페이지" className="flex items-center justify-center gap-[10px] px-[10px] py-[10px]">
@@ -188,7 +190,7 @@ export function Pager({
           onClick={() => go(n)}
           aria-current={n === page ? 'page' : undefined}
           className={cn(
-            'grid h-6 min-w-[24px] shrink-0 place-items-center rounded-[4px] px-1 text-[14px] tabular-nums transition',
+            'grid h-6 min-w-[24px] shrink-0 place-items-center rounded-[4px] px-1 text-[13px] font-medium leading-[20px] tabular-nums transition',
             n === page ? 'bg-[var(--ac)] font-bold text-white' : 'text-[var(--ink)] hover:bg-[var(--th)]',
           )}
         >
@@ -203,7 +205,7 @@ export function Pager({
           onClick={() => go(tail)}
           aria-current={tail === page ? 'page' : undefined}
           className={cn(
-            'grid h-6 min-w-[24px] shrink-0 place-items-center rounded-[4px] px-1 text-[14px] tabular-nums transition',
+            'grid h-6 min-w-[24px] shrink-0 place-items-center rounded-[4px] px-1 text-[13px] font-medium leading-[20px] tabular-nums transition',
             tail === page ? 'bg-[var(--ac)] font-bold text-white' : 'text-[var(--ink)] hover:bg-[var(--th)]',
           )}
         >
@@ -267,30 +269,30 @@ export function ListFooter({ left, children }: { left?: React.ReactNode; childre
    정렬(좌/중앙/우)은 표마다 달라서 각 th/td 가 직접 지정한다.
    색·굵기·테두리·호버는 아래 상수에서만 바꾼다.
    ═══════════════════════════════════════════════════════════════════════════ */
-export const TABLE_CLS = 'w-full border-collapse text-[13px]';
+export const TABLE_CLS = 'w-full border-collapse text-[14px]';
 export const THEAD_TR_CLS =
-  // 셀 높이 48 고정 (Figma spacing/table/inset-y-xl). 칩(24)이 들어가도 48 을 유지하도록 세로 패딩은 8.
-  // 페이지가 h-11·py-2.5 를 들고 있어도 이 규격이 이긴다.
-  'border-b border-[var(--line)] bg-[var(--th)] text-[var(--ink2)] [&>th]:!h-12 [&>th]:whitespace-nowrap [&>th]:!px-3 [&>th]:!py-2 [&>th]:font-semibold';
+  // Figma table — th: th-row-bg #f8f9fb · th-row-text #454f59 · th-row-inset-y 10 → 높이 40
+  //  td: inset-y-xl 14 → 높이 48 · inset-x 12 · border-default #e8ecef
+  'border-b border-[var(--line)] bg-[var(--th)] text-[var(--ink2)] [&>th]:!h-10 [&>th]:whitespace-nowrap [&>th]:!px-3 [&>th]:!py-2.5 [&>th]:font-semibold';
 export const TBODY_TR_CLS =
-  'border-b border-[var(--line)] text-[var(--ink)] hover:bg-[#fafaff] [&>td]:!h-12 [&>td]:!px-3 [&>td]:!py-2 [&>td]:align-middle';
+  'border-b border-[var(--line)] text-[var(--ink)] hover:bg-[var(--th)] [&>td]:!h-12 [&>td]:!px-3 [&>td]:!py-2 [&>td]:align-middle';
 
 export function OpsSection({ title, children }: { no?: number | string; title: string; children: React.ReactNode }) {
   return (
     <section className="mb-6">
       <div className="mb-2 flex items-center gap-2">
-        <h3 className="text-[15px] font-bold text-[#1d1e23]">{title}</h3>
+        <h3 className="text-[15px] font-bold text-[#1a1a1a]">{title}</h3>
       </div>
-      <div className="border-t border-[#e6e7ec]">{children}</div>
+      <div className="border-t border-[#e8ecef]">{children}</div>
     </section>
   );
 }
 
-// 라벨/값 2열 그리드 행 (상세·수정 공용). 보더·라벨 bg는 '전체 페이지·메뉴 관리' 기준(line #e6e7ec · head #f6f7f9).
+// 라벨/값 2열 그리드 행 (상세·수정 공용). 보더·라벨 bg는 '전체 페이지·메뉴 관리' 기준(line #e8ecef · head #f8f9fb).
 export function FieldRow({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] items-stretch border-b border-[#e6e7ec]">
-      <div className="flex items-center bg-[#f6f7f9] px-4 py-3 text-[13px] font-medium text-[#53586a]">
+    <div className="grid grid-cols-[140px_1fr] items-stretch border-b border-[#e8ecef]">
+      <div className="flex items-center bg-[var(--th)] px-4 py-3 text-[14px] font-medium text-[var(--ink2)]">
         {label}
         {required && <span className="ml-0.5 text-[#cf2a3c]">*</span>}
       </div>
@@ -301,7 +303,7 @@ export function FieldRow({ label, required, children }: { label: string; require
 
 // 읽기 전용 값 — 인풋박스 없이 텍스트로만
 export function ReadValue({ value }: { value: React.ReactNode }) {
-  return <div className="min-h-[20px] py-1.5 text-[13px] text-[#1d1e23]">{value ?? '-'}</div>;
+  return <div className="min-h-[20px] py-1.5 text-[14px] leading-[20px] text-[var(--ink)]">{value ?? '-'}</div>;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -349,19 +351,19 @@ export function FilterPanel({
                 grow ? 'grow-cell min-w-0 flex-1 basis-0' : '',
               )}
             >
-              <span className="shrink-0 whitespace-nowrap text-[13px] text-[var(--ink)]">{label}</span>
+              <span className="shrink-0 whitespace-nowrap text-[14px] leading-[20px] text-[var(--ink)]">{label}</span>
               <div className={cn('flex items-center gap-2', grow ? 'flex-1' : '')}>{node}</div>
             </div>
           ))}
           {r === last && (onReset || onSearch) && (
             <div className="ml-auto flex shrink-0 items-center gap-2 whitespace-nowrap pl-[14px]">
               {onReset && (
-                <button type="button" onClick={onReset} className="h-[38px] rounded-[8px] border border-[var(--line2)] bg-white px-5 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">
+                <button type="button" onClick={onReset} className="h-[38px] rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-5 text-[14px] font-semibold text-[var(--ink3)] hover:bg-[var(--th)]">
                   {resetLabel}
                 </button>
               )}
               {onSearch && (
-                <button type="button" onClick={onSearch} className="h-[38px] rounded-[8px] bg-[var(--ac)] px-6 text-[13px] font-semibold text-white hover:bg-[var(--ac-h)]">
+                <button type="button" onClick={onSearch} className="h-[38px] rounded-[var(--r-field)] bg-[var(--ac)] px-6 text-[14px] font-semibold text-white hover:bg-[var(--ac-h)]">
                   {searchLabel}
                 </button>
               )}

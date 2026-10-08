@@ -41,7 +41,7 @@ function SortableRow({ r, onOpen }: { r: ViewRow; onOpen: () => void }) {
   const ps = PUBLISH_STATUS[r.publishStatus];
   const style = { transform: CSS.Transform.toString(transform), transition } as React.CSSProperties;
   return (
-    <tr ref={setNodeRef} style={style} className={cn(TBODY_TR_CLS, isDragging && 'relative z-10 bg-[#efedfe] shadow-lg')}>
+    <tr ref={setNodeRef} style={style} className={cn(TBODY_TR_CLS, isDragging && 'relative z-10 bg-[#f1f2ff] shadow-lg')}>
       <td className="px-3 py-2">
         <div className="flex items-center gap-1.5">
           <button type="button" className="cursor-grab touch-none text-slate-300 hover:text-slate-500 active:cursor-grabbing" {...attributes} {...listeners} aria-label="드래그하여 순서 변경">
@@ -54,7 +54,7 @@ function SortableRow({ r, onOpen }: { r: ViewRow; onOpen: () => void }) {
       <td className="px-3 py-2"><StatusPill label={r.approvalLabel} tone={APPROVAL_TONE[r.approvalLabel] ?? 'slate'} /></td>
       <td className="px-3 py-2"><StatusPill label={ps.label} tone={ps.tone} dot={r.publishStatus === 'live' || r.publishStatus === 'unpublished'} /></td>
       <td className="px-3 py-2 text-slate-600">{DEPLOY_STATUS[r.deployStatus as keyof typeof DEPLOY_STATUS]?.label ?? r.deployStatus}</td>
-      <td className="cursor-pointer px-3 py-2 text-slate-800 hover:text-[#3a2fd8]" onClick={onOpen}>{r.bannerName}</td>
+      <td className="cursor-pointer px-3 py-2 text-slate-800 hover:text-[#3617ce]" onClick={onOpen}>{r.bannerName}</td>
       <td className="px-3 py-2 text-slate-500">{fmtPeriod(r.publishStart, r.publishEnd)}</td>
       <td className="px-3 py-2 text-slate-600">{r.updatedBy ?? '-'}</td>
       <td className="px-3 py-2 text-slate-500">{fmtDateTime(r.updatedAt)}</td>
@@ -182,7 +182,7 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
       />
 
       {/* 목록 — 드래그앤드롭 순서 변경 */}
-      <div className="overflow-x-auto border-t border-[#e6e7ec]">
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
             <tr className={THEAD_TR_CLS}>

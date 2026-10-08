@@ -1,7 +1,7 @@
 'use client';
 
 // SB PG003(상세검색 TAB) + PG027(IA 구조 TAB) — 전체페이지 관리.
-//  디자인 시스템(프로토타입 토큰): accent #3a2fd8 · 헤더/필터 #f6f7f9 · 보더 #e6e7ec · 13px 레귤러.
+//  디자인 시스템(프로토타입 토큰): accent #3617ce · 헤더/필터 #f8f9fb · 보더 #e8ecef · 13px 레귤러.
 import { useMemo, useState } from 'react';
 import { PageTabs } from '@/components/page-tabs';
 import { cn } from '@/lib/utils';
@@ -111,7 +111,7 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
       </div>
 
       <ListHeader title="조회결과" count={filtered.length} />
-      <div className="overflow-x-auto border-t border-[#e6e7ec]">
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
             <tr className={THEAD_TR_CLS}>
@@ -135,7 +135,7 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
                 <td className="h-11 px-3 text-left">
                   <div className="flex flex-wrap gap-1">
                     {r.channels.length === 0 ? <span className="text-slate-400">-</span> : r.channels.map((c) => (
-                      <span key={c} className="inline-flex items-center rounded border border-[#e6e7ec] bg-white px-1.5 py-0.5 text-[11px] text-slate-600">{c}</span>
+                      <span key={c} className="inline-flex items-center rounded border border-[#e8ecef] bg-white px-1.5 py-0.5 text-[11px] text-slate-600">{c}</span>
                     ))}
                   </div>
                 </td>
@@ -176,11 +176,11 @@ function IaTab({ rows }: { rows: FPRow[] }) {
       const hasChildren = children.length > 0;
       const open = expanded.has(r.id);
       const row = (
-        <tr key={r.id} className="border-b border-[#e6e7ec] hover:bg-[#f6f7f9]">
+        <tr key={r.id} className="border-b border-[#e8ecef] hover:bg-[#f8f9fb]">
           <td className="h-11 px-3">
             <div className="flex items-center" style={{ paddingLeft: (depth - 1) * 22 }}>
               {hasChildren ? (
-                <button type="button" onClick={() => toggle(r.id)} className="mr-1.5 flex h-5 w-5 items-center justify-center rounded border border-[#d3d6de] text-slate-500 hover:bg-white">
+                <button type="button" onClick={() => toggle(r.id)} className="mr-1.5 flex h-5 w-5 items-center justify-center rounded border border-[#dce0e5] text-slate-500 hover:bg-white">
                   {open ? <Minus className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                 </button>
               ) : <span className="mr-1.5 inline-block h-5 w-5" />}
@@ -211,12 +211,12 @@ function IaTab({ rows }: { rows: FPRow[] }) {
       <div className="mb-3 flex flex-wrap gap-2">
         {categories.map((c) => (
           <button key={c} type="button" onClick={() => setCat(c)}
-            className={cn('rounded-full border px-3.5 py-1.5 text-[12.5px] font-medium', cat === c ? 'border-[#3a2fd8] bg-[#3a2fd8] text-white' : 'border-[#e6e7ec] bg-white text-slate-600 hover:border-[#3a2fd8]')}>{c}</button>
+            className={cn('rounded-full border px-3.5 py-1.5 text-[12.5px] font-medium', cat === c ? 'border-[#3617ce] bg-[#3617ce] text-white' : 'border-[#e8ecef] bg-white text-slate-600 hover:border-[#3617ce]')}>{c}</button>
         ))}
       </div>
 
       <ListHeader title="조회결과" count={rows.length} />
-      <div className="overflow-x-auto border-t border-[#e6e7ec]">
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full text-[13px] font-normal">
           <thead>
             <tr className={THEAD_TR_CLS}>
@@ -235,9 +235,9 @@ function IaTab({ rows }: { rows: FPRow[] }) {
       </div>
 
       <div className="mt-8 flex justify-end gap-2">
-        <button type="button" onClick={expandAll} className="inline-flex h-9 items-center rounded-lg border border-[#d3d6de] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f6f7f9]">전체 펼치기</button>
-        <button type="button" onClick={collapseAll} className="inline-flex h-9 items-center rounded-lg border border-[#d3d6de] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f6f7f9]">전체 접기</button>
-        <button type="button" className="inline-flex h-9 items-center rounded-lg border border-[#d3d6de] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f6f7f9]">엑셀 다운로드</button>
+        <button type="button" onClick={expandAll} className="inline-flex h-9 items-center rounded-lg border border-[#dce0e5] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f8f9fb]">전체 펼치기</button>
+        <button type="button" onClick={collapseAll} className="inline-flex h-9 items-center rounded-lg border border-[#dce0e5] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f8f9fb]">전체 접기</button>
+        <button type="button" className="inline-flex h-9 items-center rounded-lg border border-[#dce0e5] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f8f9fb]">엑셀 다운로드</button>
       </div>
     </>
   );

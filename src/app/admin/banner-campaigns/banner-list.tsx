@@ -1,7 +1,7 @@
 'use client';
 
 // SB BO-AIM-ETC-PG061 배너 캠페인 관리 목록 — 검색 영역 + 목록 + 등록.
-//  디자인 시스템: accent #3a2fd8 · 헤더/필터 #f6f7f9 · 보더 #e6e7ec · 13px 레귤러.
+//  디자인 시스템: accent #3617ce · 헤더/필터 #f8f9fb · 보더 #e8ecef · 13px 레귤러.
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -29,18 +29,18 @@ const THUMB_H = Math.round(NAT_H * THUMB_SCALE);
 function BannerThumb({ preview }: { preview: BannerRow['preview'] }) {
   if (preview?.imageUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={preview.imageUrl} alt="" style={{ width: THUMB_W, height: THUMB_H }} className="rounded-md border border-[#e6e7ec] object-cover" />;
+    return <img src={preview.imageUrl} alt="" style={{ width: THUMB_W, height: THUMB_H }} className="rounded-md border border-[#e8ecef] object-cover" />;
   }
   if (preview?.f) {
     return (
-      <div style={{ width: THUMB_W, height: THUMB_H }} className="overflow-hidden rounded-md border border-[#e6e7ec]">
+      <div style={{ width: THUMB_W, height: THUMB_H }} className="overflow-hidden rounded-md border border-[#e8ecef]">
         <div style={{ width: NAT_W, height: NAT_H, transform: `scale(${THUMB_SCALE})`, transformOrigin: 'top left' }}>
           <ComposedBanner f={preview.f} width={NAT_W} height={NAT_H} preview />
         </div>
       </div>
     );
   }
-  return <div style={{ width: THUMB_W, height: THUMB_H }} className="flex items-center justify-center rounded-md border border-dashed border-[#e6e7ec] bg-[#f6f7f9] text-[11px] text-slate-300">미등록</div>;
+  return <div style={{ width: THUMB_W, height: THUMB_H }} className="flex items-center justify-center rounded-md border border-dashed border-[#e8ecef] bg-[#f8f9fb] text-[11px] text-slate-300">미등록</div>;
 }
 
 const APPROVAL_TONE: Record<string, string> = {
@@ -127,7 +127,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
       </div>
 
       <ListHeader title="조회결과" count={filtered.length} />
-      <div className="overflow-x-auto border-t border-[#e6e7ec]">
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1200px] text-[13px] font-normal whitespace-nowrap">
           <thead>
             <tr className={THEAD_TR_CLS}>

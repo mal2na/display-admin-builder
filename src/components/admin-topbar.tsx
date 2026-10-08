@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * 상단 GNB 바 — 참고 화면(번호이동 관리.png) 헤더를 실제 색 그대로 재현. 모든 화면(빌더 포함)에 표시.
- * 바 배경 = 밝은 라벤더그레이(#ebeef6), 활성 고객 그룹 = t-blue(#3a2fd8) + 흰 탭 pill(완전 라운드), 나머지 = 흰 pill.
+ * 바 배경 = 밝은 라벤더그레이(#ebeef6), 활성 고객 그룹 = t-blue(#3617ce) + 흰 탭 pill(완전 라운드), 나머지 = 흰 pill.
  * 좌측 ADMIN 브랜드 + 접기 토글 블록은 LNB 폭(w-56 / 접힘 w-14)과 동일하게 맞춰 경계를 정렬한다. 높이 56(h-14).
  */
 export function AdminTopbar({ collapsed, onToggleSidebar }: { collapsed: boolean; onToggleSidebar: () => void }) {
