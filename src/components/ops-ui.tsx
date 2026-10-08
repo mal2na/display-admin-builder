@@ -157,7 +157,7 @@ export function ReadValue({ value }: { value: React.ReactNode }) {
      · 라벨은 컨트롤 왼쪽 인라인. 행 첫 라벨은 고정 폭으로 세로 정렬을 맞춘다
      · 한 행에 「라벨 + 컨트롤」 쌍이 여러 개 흐름 배치
      · 초기화 / 조회는 마지막 행 오른쪽 끝
-     · 컨트롤 높이 38px · 라운드 8px · 패널 패딩 24px
+     · 컨트롤 높이 38px · 라운드 8px · 패널 패딩 24px · 라운드 12 · 칸 사이 gap 40
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /** 한 칸: [라벨, 컨트롤, grow(1이면 남는 폭을 채움)] */
@@ -182,7 +182,7 @@ export function FilterPanel({
   return (
     <div className="fp rounded-[12px] bg-[#f8f9fb] p-6">
       {rows.map((cells, r) => (
-        <div key={r} className={cn('flex flex-wrap items-center gap-x-5 gap-y-3', r > 0 && 'mt-3')}>
+        <div key={r} className={cn('flex flex-wrap items-center gap-x-10 gap-y-3', r > 0 && 'mt-3')}>
           {cells.map(([label, node, grow], c) => (
             <div key={c} className={cn('flex items-center gap-3', grow ? 'grow-cell min-w-0 flex-1 basis-0' : '')}>
               <span

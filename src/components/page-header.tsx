@@ -38,7 +38,7 @@ export function PageHeader({
           </span>
         ))}
       </nav>
-      <div className={cn('flex items-end justify-between gap-4 pt-2', divider ? 'border-b border-[var(--line)] pb-5' : 'pb-1')}>
+      <div className={cn('flex items-end justify-between gap-4 pt-2', divider ? 'border-b border-[var(--line)] pb-6' : 'pb-1')}>
         <div className="min-w-0">
           {back && <div className="mb-1.5">{back}</div>}
           <div className="flex flex-wrap items-center gap-2.5">
