@@ -69,7 +69,7 @@ export function ContainerTree({ containers }: { containers: TreeContainer[] }) {
         </Link>
       </div>
 
-      <div className="px-1.5">
+      <div className="tree-s px-1.5">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink3)]" />
           <input
@@ -81,7 +81,7 @@ export function ContainerTree({ containers }: { containers: TreeContainer[] }) {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-1.5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1">
         {view.length === 0 && (
           <p className="px-2 py-6 text-center text-[12px] text-[var(--ink3)]">
             {kw ? '검색 결과가 없습니다.' : '등록된 Container가 없습니다.'}
@@ -93,9 +93,9 @@ export function ContainerTree({ containers }: { containers: TreeContainer[] }) {
           const expanded = forced || (open[c.id] ?? true);
 
           return (
-            <div key={c.id}>
+            <div key={c.id} className={cn('tree-g', pathname === `/admin/containers/${c.id}` && 'on')}>
               {/* 캐럿은 펼침, 이름은 컨테이너 상세로 이동 */}
-              <div className={cn('pg-h text-[13px]', pathname === `/admin/containers/${c.id}` && 'bg-[var(--ac2)] text-[var(--ac)]')}>
+              <div className="pg-h text-[13px]">
                 <button
                   type="button"
                   onClick={() => toggle(c.id)}
@@ -111,7 +111,7 @@ export function ContainerTree({ containers }: { containers: TreeContainer[] }) {
               </div>
 
               {expanded && (
-                <>
+                <div className="leaves">
                   {templates.length === 0 && (
                     <p className="py-1 pl-[22px] text-[11.5px] text-[var(--ink3)]">Template 없음</p>
                   )}
@@ -134,7 +134,7 @@ export function ContainerTree({ containers }: { containers: TreeContainer[] }) {
                       </Link>
                     );
                   })}
-                </>
+                </div>
               )}
             </div>
           );

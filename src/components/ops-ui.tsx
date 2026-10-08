@@ -46,10 +46,17 @@ const STATUS_TONE: Record<string, Tone> = {
   // 적용 · 배포
   적용중: 'success', 적용예정: 'warning', 적용종료: 'neutral',
   배포완료: 'info', 배포예정: 'warning', 배포대기: 'warning', 배포중: 'success',
+  // 전시 상태 10종(DISPLAY_STATUSES) · 컨테이너 승인 4종 — 공백 제거 키로 매칭된다
+  초안작성중: 'neutral', 작성중: 'neutral', 검수대기: 'warning', 수정필요: 'negative',
+  예약대기: 'warning', 게시중지: 'negative', 종료: 'neutral', 롤백완료: 'neutral', 개인화제한: 'warning',
   // 기타
   'URL 확정대기': 'warning', 'URL 미등록': 'neutral',
 };
-export const statusTone = (label: string): Tone => STATUS_TONE[label?.trim()] ?? 'neutral';
+export const statusTone = (label: string): Tone => {
+  const k = (label ?? '').trim();
+  // '승인 대기' 처럼 띄어쓰기가 섞여 들어와도 같은 톤으로 판정한다.
+  return STATUS_TONE[k] ?? STATUS_TONE[k.replace(/\s+/g, '')] ?? 'neutral';
+};
 
 /**
  * 상태 칩 — 공식 규격. tone 을 주지 않으면 라벨로 자동 판정한다.
@@ -65,11 +72,11 @@ export function StatusPill({ label, tone, dot: _dot }: { label: string; tone?: s
 }
 
 /**
- * 목록 섹션 헤더 — 「검색결과 총 N건」 + 우측 액션/페이저.
+ * 목록 섹션 헤더 — 「조회결과 총 N건」 + 우측 액션/페이저.
  * 시안 기준: 제목 17px/700, 건수 13px/400(숫자만 브랜드색 볼드), 표와 12px 간격.
  */
 export function ListHeader({
-  title = '검색결과',
+  title = '조회결과',
   count,
   unit = '건',
   prefix = '총',

@@ -270,15 +270,26 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
   .fp .rng { gap: 8px; }
 
   /* ── 좌측 트리 패널 (참고 디자인 .tree / .pg-h / .mer) ──
-     그룹 머리 + 잎 항목(점 · 이름 · 보조라벨 · 건수) 구조. 컨테이너 목록이 이 규격을 쓴다. */
+     컨테이너 목록. 한 Container = 머리(이름·건수) + 잎(Template)을 하나의 카드로 묶는다.
+     검색 입력의 margin 은 래퍼(.tree-s)가 갖는다 — 입력에 주면 돋보기 아이콘(absolute 중앙)이
+     margin 만큼 아래로 내려간다. */
   .tree { border: 1px solid var(--line); border-radius: 12px; padding: 14px 10px; }
   .tree-h { display: flex; align-items: center; font-weight: 700; padding: 0 6px 10px; }
-  .tree .inp { width: 100%; margin-bottom: 10px; }
-  .pg-h { display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: none; padding: 8px 6px; cursor: pointer; font-weight: 700; text-align: left; border-radius: 6px; }
-  .pg-h:hover { background: var(--th); }
+  .tree-s { margin-bottom: 12px; }
+  .tree .inp { width: 100%; margin-bottom: 0; }
+
+  /* 그룹 카드 — 머리는 회색 바, 잎은 흰 바닥. 선택된 컨테이너는 머리를 보라로. */
+  .tree-g { border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; }
+  .tree-g + .tree-g { margin-top: 8px; }
+  .tree-g.on { border-color: var(--ac3); }
+  .pg-h { display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: var(--th); padding: 9px 10px; cursor: pointer; font-weight: 700; text-align: left; }
+  .pg-h:hover { background: #eef0f4; }
+  .tree-g.on .pg-h { background: var(--ac2); color: var(--ac); }
   .pg-h .car { width: 12px; color: var(--ink3); font-size: 11px; }
+  .tree-g .leaves { padding: 4px; border-top: 1px solid var(--line); }
   .c { margin-left: auto; color: var(--ink3); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
-  .mer { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 8px 8px 8px 22px; cursor: pointer; text-align: left; border-radius: 8px; }
+  .tree-g.on .c { color: var(--ac); }
+  .mer { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 7px 8px; cursor: pointer; text-align: left; border-radius: 6px; }
   .mer:hover { background: var(--th); }
   .mer.on { background: var(--ac2); }
   .mer.on .nm { color: var(--ac); font-weight: 700; }

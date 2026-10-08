@@ -226,7 +226,7 @@ function IaTab({ rows }: { rows: FPRow[] }) {
         ))}
       </div>
 
-      <ListHeader title="검색결과" count={rows.length} />
+      <ListHeader title="조회결과" count={rows.length} />
       <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full text-[13px] font-normal">
           <thead>

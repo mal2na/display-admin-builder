@@ -126,7 +126,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
         />
       </div>
 
-      <ListHeader title="검색결과" count={filtered.length} />
+      <ListHeader title="조회결과" count={filtered.length} />
       <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full min-w-[1200px] text-[13px] font-normal whitespace-nowrap">
           <thead>

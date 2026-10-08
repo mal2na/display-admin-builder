@@ -1152,7 +1152,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
 
       {/* 보기 전환 — 카드(배열 그룹) / 리스트(플랫 테이블). 기본=카드. */}
       <ListHeader
-        title="검색결과"
+        title="조회결과"
         count={filtered.length}
         right={
           <>

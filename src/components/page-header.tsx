@@ -13,6 +13,7 @@ export function PageHeader({
   className,
   divider = true,
   titlePrefix,
+  titleSuffix,
   back,
 }: {
   trail: string[]; // 현재 페이지까지의 경로(앞에 '홈' 자동)
@@ -24,6 +25,8 @@ export function PageHeader({
   divider?: boolean;
   /** 제목 왼쪽에 붙는 노드(코너 유형 칩 등) */
   titlePrefix?: React.ReactNode;
+  /** 제목 오른쪽에 붙는 노드(승인/전시 상태 칩 등) */
+  titleSuffix?: React.ReactNode;
   /** 제목 위 '← 돌아가기' 링크 */
   back?: React.ReactNode;
 }) {
@@ -44,6 +47,7 @@ export function PageHeader({
           <div className="flex flex-wrap items-center gap-2.5">
             {titlePrefix}
             <h1 className="m-0 text-[22px] font-bold tracking-[-0.4px] text-[var(--ink)]">{title}</h1>
+            {titleSuffix}
           </div>
           {subtitle && <p className="mt-1.5 text-[13px] text-[var(--ink2)]">{subtitle}</p>}
         </div>
