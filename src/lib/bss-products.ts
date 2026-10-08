@@ -109,67 +109,160 @@ export const BSS_PRODUCTS: BssProduct[] = RAW.flatMap((r) =>
 export const bssProductByKey = (key: string): BssProduct | undefined => BSS_PRODUCTS.find((p) => p.key === key);
 
 // ─────────────────────────────────────────────────────────────
-// T 디바이스 카탈로그 — '상품형' 코너(단말기 추천 등)에서 상품 불러오기 시 사용(2026-10-07 사용자 요청).
-//  T(SKT)에서 판매하는 디바이스: 제조사(category) · 유형(sub). 혜택 브랜드와 동일한 카드 구조(PickerItem)로 노출.
-export type PickerItem = { key: string; name: string; category: string; sub: string; logo: string; benefit: string; badges: string[] };
+// T 디바이스 카탈로그 — '상품형' 코너(단말기 추천 등)에서 상품 불러오기 시 사용.
+//  출처: NC-Channel Product Admin 번들 생성(bundle-create3) 상품 원장의 '기기서비스 · 약정형' 전량.
+//  모델 102종 / 용량·색상 조합(SKU) 565개. 혜택 브랜드와 동일한 카드 구조(PickerItem)로 노출한다.
+//  ※ 액세서리형(케이스·필름·배터리 등)은 디바이스가 아니므로 제외.
+export type PickerItem = {
+  key: string;
+  name: string;
+  category: string; // 제조사
+  sub: string;      // 디바이스 유형
+  logo: string;
+  benefit: string;
+  badges: string[];
+  /** 용량 / 색상 조합(SKU). 상품 불러오기 후 세부 선택·표기에 쓴다. */
+  variants?: string[];
+  /** 회선 구분(이동전화 · 태블릿 · 웨어러블 · 데이터전용) */
+  line?: string;
+  /** 망 구분(5G · LTE) */
+  net?: string;
+};
 
-export const DEVICE_MAKERS = ['Apple', 'Samsung', '기타'] as const;
-export const DEVICE_TYPES = ['스마트폰', '태블릿', '워치', '버즈'] as const;
+export const DEVICE_MAKERS = ['Apple', 'Samsung', 'Xiaomi', 'Motorola', 'SK텔레콤'] as const;
+export const DEVICE_TYPES = ['스마트폰', '태블릿·노트북', '워치', '키즈폰', '휴대용 와이파이'] as const;
 
-const DEV_RAW: { maker: string; type: string; items: { name: string; spec?: string; neo?: boolean }[] }[] = [
-  { maker: 'Apple', type: '스마트폰', items: [
-    { name: 'iPhone 15 Pro Max', spec: '256GB | 512GB | 1TB', neo: true },
-    { name: 'iPhone 15 Pro', spec: '128GB | 256GB | 512GB | 1TB', neo: true },
-    { name: 'iPhone 15 Plus', spec: '128GB | 256GB | 512GB' },
-    { name: 'iPhone 15', spec: '128GB | 256GB | 512GB' },
-    { name: 'iPhone 14', spec: '128GB | 256GB' },
-  ] },
-  { maker: 'Apple', type: '태블릿', items: [
-    { name: 'iPad Pro 13 (M4)', spec: '256GB~' },
-    { name: 'iPad Air 11 (M2)', spec: '128GB~' },
-    { name: 'iPad (10세대)', spec: '64GB | 256GB' },
-  ] },
-  { maker: 'Apple', type: '워치', items: [
-    { name: 'Apple Watch Series 9', spec: 'GPS | Cellular', neo: true },
-    { name: 'Apple Watch SE', spec: 'GPS | Cellular' },
-  ] },
-  { maker: 'Apple', type: '버즈', items: [
-    { name: 'AirPods Pro 2 (USB-C)', spec: '' },
-    { name: 'AirPods Max', spec: '' },
-  ] },
-  { maker: 'Samsung', type: '스마트폰', items: [
-    { name: 'Galaxy S24 Ultra', spec: '256GB | 512GB | 1TB', neo: true },
-    { name: 'Galaxy S24+', spec: '256GB | 512GB', neo: true },
-    { name: 'Galaxy S24', spec: '256GB | 512GB', neo: true },
-    { name: 'Galaxy Z Fold5', spec: '256GB | 512GB | 1TB' },
-    { name: 'Galaxy Z Flip5', spec: '256GB | 512GB' },
-    { name: 'Galaxy A35', spec: '128GB | 256GB' },
-  ] },
-  { maker: 'Samsung', type: '태블릿', items: [
-    { name: 'Galaxy Tab S9', spec: '128GB~' },
-    { name: 'Galaxy Tab S9 FE', spec: '128GB~' },
-  ] },
-  { maker: 'Samsung', type: '워치', items: [
-    { name: 'Galaxy Watch6', spec: 'BT | LTE' },
-    { name: 'Galaxy Watch6 Classic', spec: 'BT | LTE' },
-  ] },
-  { maker: 'Samsung', type: '버즈', items: [
-    { name: 'Galaxy Buds2 Pro', spec: '' },
-    { name: 'Galaxy Buds FE', spec: '' },
-  ] },
+// 유형별 대표 아이콘
+const DEVICE_TYPE_ICON: Record<string, string> = {
+  '스마트폰': 'icon:general/Device',
+  '태블릿·노트북': 'icon:general/Device',
+  '워치': 'icon:general/Device',
+  '키즈폰': 'icon:general/Family',
+  '휴대용 와이파이': 'icon:general/Roaming',
+};
+
+type DeviceRaw = { name: string; maker: string; type: string; line: string; net: string; variants: string[] };
+
+const DEV_RAW: DeviceRaw[] = [
+  { name: 'iPhone 18 Pro Max', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 버건디', '256G / 글레이서', '256G / 실버', '256G / 블랙', '512G / 버건디', '512G / 글레이서', '512G / 실버', '512G / 블랙', '1T / 버건디', '1T / 글레이서', '1T / 실버', '1T / 블랙', '2T / 버건디', '2T / 글레이서', '2T / 실버', '2T / 블랙'] },
+  { name: 'iPhone 18 Pro', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 버건디', '256G / 글레이셔', '256G / 실버', '256G / 블랙', '512G / 버건디', '512G / 글레이셔', '512G / 실버', '512G / 블랙', '1T / 버건디', '1T / 글레이셔', '1T / 실버', '1T / 블랙', '2T / 버건디', '2T / 글레이셔', '2T / 실버', '2T / 블랙'] },
+  { name: 'iPhone 17e', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 블랙', '256G / 화이트', '256G / 소프트 핑크', '512G / 블랙', '512G / 화이트', '512G / 소프트 핑크'] },
+  { name: 'iPhone 17', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 세이지', '256G / 라벤더', '256G / 미스트 블루', '256G / 화이트', '256G / 블랙', '512G / 세이지', '512G / 라벤더', '512G / 미스트 블루', '512G / 화이트', '512G / 블랙'] },
+  { name: 'iPhone Air', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 스카이 블루', '256G / 라이트 골드', '256G / 클라우드 화이트', '256G / 스페이스 블랙', '512G / 스카이 블루', '512G / 라이트 골드', '512G / 클라우드 화이트', '512G / 스페이스 블랙', '1T / 스카이 블루', '1T / 라이트 골드', '1T / 클라우드 화이트', '1T / 스페이스 블랙'] },
+  { name: 'iPhone 17 Pro', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 딥 블루', '256G / 코스믹 오렌지', '256G / 실버', '512G / 딥 블루', '512G / 코스믹 오렌지', '512G / 실버', '1T / 딥 블루', '1T / 코스믹 오렌지', '1T / 실버'] },
+  { name: 'iPhone 17 Pro Max', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 딥 블루', '256G / 코스믹 오렌지', '256G / 실버', '512G / 딥 블루', '512G / 코스믹 오렌지', '512G / 실버', '1T / 딥 블루', '1T / 코스믹 오렌지', '1T / 실버', '2T / 딥 블루', '2T / 코스믹 오렌지', '2T / 실버'] },
+  { name: 'iPhone 16e', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 화이트', '128G / 블랙', '256G / 화이트', '256G / 블랙', '512G / 화이트', '512G / 블랙'] },
+  { name: 'iPhone 16 Pro Max', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 블랙 티타늄', '256G / 화이트 티타늄', '256G / 내츄럴 티타늄', '256G / 데저트 티타늄', '512G / 블랙 티타늄', '512G / 화이트 티타늄', '512G / 내츄럴 티타늄', '512G / 데저트 티타늄', '1T / 블랙 티타늄', '1T / 화이트 티타늄', '1T / 내츄럴 티타늄', '1T / 데저트 티타늄'] },
+  { name: 'iPhone 16 Pro', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 블랙 티타늄', '128G / 화이트 티타늄', '128G / 내츄럴 티타늄', '128G / 데저트 티타늄', '256G / 블랙 티타늄', '256G / 화이트 티타늄', '256G / 내츄럴 티타늄', '256G / 데저트 티타늄', '512G / 블랙 티타늄', '512G / 화이트 티타늄', '512G / 내츄럴 티타늄', '512G / 데저트 티타늄', '1T / 블랙 티타늄', '1T / 화이트 티타늄', '1T / 내츄럴 티타늄', '1T / 데저트 티타늄'] },
+  { name: 'iPhone 16', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 블랙', '128G / 핑크', '128G / 화이트', '128G / 울트라마린', '128G / 틸', '256G / 블랙', '256G / 핑크', '256G / 화이트', '256G / 울트라마린', '256G / 틸', '512G / 블랙', '512G / 핑크', '512G / 화이트', '512G / 울트라마린', '512G / 틸'] },
+  { name: 'iPhone 15', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 블랙', '128G / 블루', '128G / 핑크', '128G / 옐로', '128G / 그린', '256G / 블랙', '256G / 블루', '256G / 핑크', '256G / 옐로', '256G / 그린', '512G / 블랙', '512G / 블루', '512G / 핑크', '512G / 옐로', '512G / 그린'] },
+  { name: 'iPhone 15 Plus', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 블랙', '128G / 블루', '128G / 핑크', '128G / 옐로', '128G / 그린', '256G / 블랙', '256G / 블루', '256G / 핑크', '256G / 옐로', '256G / 그린', '512G / 블랙', '512G / 블루', '512G / 핑크', '512G / 옐로', '512G / 그린'] },
+  { name: 'iPhone 15 Pro', maker: 'Apple', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 블루 티타늄', '128G / 블랙 티타늄', '128G / 화이트 티타늄', '128G / 내추럴 티타늄', '256G / 블루 티타늄', '256G / 블랙 티타늄', '256G / 화이트 티타늄', '256G / 내추럴 티타늄', '512G / 블루 티타늄', '512G / 블랙 티타늄', '512G / 화이트 티타늄', '512G / 내추럴 티타늄', '1T / 블루 티타늄', '1T / 블랙 티타늄', '1T / 화이트 티타늄', '1T / 내추럴 티타늄'] },
+  { name: '갤럭시 S26 FE', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 그라파이트', '256G / 피스타치오', '256G / 블루베리'] },
+  { name: '갤럭시 퀀텀7', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 어썸 그레이', '128G / 어썸 아이스블루', '128G / 어썸 라일락'] },
+  { name: '갤럭시 Z 플립8', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 핑크', '256G / 크림', '256G / 그라파이트', '512G / 핑크', '512G / 크림', '512G / 그라파이트'] },
+  { name: '갤럭시 Z 폴드8', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 라벤더', '256G / 크림', '256G / 그라파이트', '512G / 라벤더', '512G / 크림', '512G / 그라파이트', '1T / 라벤더', '1T / 크림', '1T / 그라파이트'] },
+  { name: '갤럭시 Z 폴드8 울트라', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 크림', '256G / 바이올렛 쉐도우', '256G / 그라파이트', '512G / 크림', '512G / 바이올렛 쉐도우', '512G / 그라파이트', '1T / 크림', '1T / 바이올렛 쉐도우', '1T / 그라파이트'] },
+  { name: '갤럭시 와이드9', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 블랙', '128G / 실버'] },
+  { name: '갤럭시 A37', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 어썸 라벤더', '128G / 어썸 화이트', '128G / 어썸 차콜'] },
+  { name: '갤럭시 S26 울트라', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 코발트 바이올렛', '256G / 블랙', '256G / 화이트', '256G / 스카이 블루', '512G / 코발트 바이올렛', '512G / 블랙', '512G / 화이트', '512G / 스카이 블루', '1T / 코발트 바이올렛', '1T / 블랙', '1T / 화이트', '1T / 스카이 블루'] },
+  { name: '갤럭시 S26+', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 코발트 바이올렛', '256G / 블랙', '256G / 화이트', '256G / 스카이 블루', '512G / 코발트 바이올렛', '512G / 블랙', '512G / 화이트', '512G / 스카이 블루'] },
+  { name: '갤럭시 S26', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 코발트 바이올렛', '256G / 블랙', '256G / 화이트', '256G / 스카이 블루', '512G / 코발트 바이올렛', '512G / 블랙', '512G / 화이트', '512G / 스카이 블루'] },
+  { name: '갤럭시 S25 FE', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 아이스블루', '256G / 화이트', '256G / 네이비', '256G / 제트블랙'] },
+  { name: '갤럭시 퀀텀6', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 어썸 라이트그레이', '128G / 어썸 그라파이트'] },
+  { name: '갤럭시 Z 플립7 FE', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 화이트', '256G / 블랙'] },
+  { name: '갤럭시 Z 플립7', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 코랄레드', '256G / 블루 쉐도우', '256G / 제트블랙', '512G / 코랄레드', '512G / 블루 쉐도우', '512G / 제트블랙'] },
+  { name: '갤럭시 Z 폴드7', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 제트블랙', '256G / 실버 쉐도우', '256G / 블루 쉐도우', '512G / 제트블랙', '512G / 실버 쉐도우', '512G / 블루 쉐도우', '1T / 제트블랙', '1T / 실버 쉐도우', '1T / 블루 쉐도우'] },
+  { name: '갤럭시 와이드8', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 라이트 그린', '128G / 라이트 핑크', '128G / 블랙'] },
+  { name: '갤럭시 A36', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 어썸 라벤더', '128G / 어썸 화이트', '128G / 어썸 블랙'] },
+  { name: '갤럭시 S25 엣지', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 티타늄 실버', '256G / 티타늄 아이스블루', '256G / 티타늄 제트블랙', '512G / 티타늄 실버', '512G / 티타늄 아이스블루', '512G / 티타늄 제트블랙'] },
+  { name: '갤럭시 S25', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 실버 쉐도우', '256G / 네이비', '256G / 아이스블루', '256G / 민트', '512G / 실버 쉐도우', '512G / 네이비', '512G / 아이스블루', '512G / 민트'] },
+  { name: '갤럭시 S25+', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 실버 쉐도우', '256G / 네이비', '256G / 아이스블루', '256G / 민트', '512G / 실버 쉐도우', '512G / 네이비', '512G / 아이스블루', '512G / 민트'] },
+  { name: '갤럭시 S25 울트라', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 티타늄 블랙', '256G / 티타늄 화이트실버', '256G / 티타늄 그레이', '256G / 티타늄 실버블루', '512G / 티타늄 블랙', '512G / 티타늄 화이트실버', '512G / 티타늄 그레이', '512G / 티타늄 실버블루', '1T / 티타늄 블랙', '1T / 티타늄 화이트실버', '1T / 티타늄 그레이', '1T / 티타늄 실버블루'] },
+  { name: '갤럭시 S24 FE', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 블루', '256G / 옐로우', '256G / 그레이', '256G / 그라파이트'] },
+  { name: '갤럭시 퀀텀5', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 어썸 아이스블루', '128G / 네이비', '128G / 어썸 라일락'] },
+  { name: '갤럭시 Z 플립6', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 블루', '256G / 민트', '256G / 옐로우', '256G / 실버 쉐도우', '512G / 블루', '512G / 민트', '512G / 옐로우', '512G / 실버 쉐도우'] },
+  { name: '갤럭시 A35 5G', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 어썸 아이스블루', '128G / 어썸 라일락', '128G / 어썸 네이비'] },
+  { name: '갤럭시 S24+ 5G', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 오닉스 블랙', '256G / 마블 그레이', '256G / 코발트 바이올렛', '256G / 앰버 옐로우', '512G / 오닉스 블랙', '512G / 마블 그레이', '512G / 코발트 바이올렛', '512G / 앰버 옐로우'] },
+  { name: '갤럭시 S24 5G', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 오닉스 블랙', '256G / 마블 그레이', '256G / 코발트 바이올렛', '256G / 앰버 옐로우', '512G / 오닉스 블랙', '512G / 마블 그레이', '512G / 코발트 바이올렛', '512G / 앰버 옐로우'] },
+  { name: '갤럭시 S24 울트라 5G', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 티타늄 블랙', '256G / 티타늄 그레이', '256G / 티타늄 바이올렛', '256G / 티타늄 옐로우', '512G / 티타늄 블랙', '512G / 티타늄 그레이', '512G / 티타늄 바이올렛', '512G / 티타늄 옐로우', '1T / 티타늄 블랙', '1T / 티타늄 그레이', '1T / 티타늄 바이올렛', '1T / 티타늄 옐로우'] },
+  { name: '갤럭시 A25 5G', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 옐로우', '128G / 라이트 블루', '128G / 블루 블랙'] },
+  { name: 'MOTO G86 power 5G', maker: 'Motorola', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / PANTONE 스펠바운드', '256G / PANTONE 코스믹 스카이'] },
+  { name: '홍미노트 14', maker: 'Xiaomi', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 라벤더 퍼플', '256G / 코랄 그린', '256G / 미드나이트 블랙'] },
+  { name: '홍미노트 14 프로 5G', maker: 'Xiaomi', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 미드나이트 블랙', '256G / 라벤더 퍼플', '256G / 코랄 그린'] },
+  { name: '갤럭시 A17', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 라이트 블루', '128G / 그레이', '128G / 블랙'] },
+  { name: '스타일 폴더2', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['32G / 화이트', '32G / 블랙'] },
+  { name: '갤럭시 A16', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 라이트 그린', '128G / 그레이', '128G / 블랙'] },
+  { name: '홍미 14C (4GB RAM)', maker: 'Xiaomi', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 미드나잇 블랙', '128G / 스태리 블루', '128G / 세이지 그린'] },
+  { name: '갤럭시 A15', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 옐로우', '128G / 라이트블루', '128G / 블루블랙'] },
+  { name: '홍미노트 13', maker: 'Xiaomi', type: '스마트폰', line: '이동전화', net: '5G', variants: ['256G / 미드나잇 블랙', '256G / 민트 그린'] },
+  { name: '갤럭시 A24', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['128G / 블랙', '128G / 라이트 그린', '128G / 다크 레드'] },
+  { name: '스타일 폴더', maker: 'Samsung', type: '스마트폰', line: '이동전화', net: '5G', variants: ['32G / 블랙', '32G / 화이트'] },
+  { name: 'ZEM폰 포켓피스', maker: 'Samsung', type: '키즈폰', line: '이동전화', net: 'LTE', variants: ['128G / 라이트 블루'] },
+  { name: 'ZEM폰 포켓몬에디션3', maker: 'Samsung', type: '키즈폰', line: '이동전화', net: 'LTE', variants: ['128G / 화이트'] },
+  { name: 'ZEM폰 포켓몬에디션2', maker: 'Samsung', type: '키즈폰', line: '이동전화', net: 'LTE', variants: ['128G / 화이트'] },
+  { name: 'iPad Air 13 (M4)', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 스페이스 그레이', '128G / 스타라이트', '128G / 블루', '128G / 퍼플', '256G / 스페이스 그레이', '256G / 스타라이트', '256G / 블루', '256G / 퍼플', '512G / 스페이스 그레이', '512G / 스타라이트', '512G / 블루', '512G / 퍼플', '1T / 스페이스 그레이', '1T / 스타라이트', '1T / 블루', '1T / 퍼플'] },
+  { name: 'iPad Air 11 (M4)', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 스페이스 그레이', '128G / 스타라이트', '128G / 블루', '128G / 퍼플', '256G / 스페이스 그레이', '256G / 스타라이트', '256G / 블루', '256G / 퍼플', '512G / 스페이스 그레이', '512G / 스타라이트', '512G / 블루', '512G / 퍼플', '1T / 스페이스 그레이', '1T / 스타라이트', '1T / 블루', '1T / 퍼플'] },
+  { name: '갤럭시 탭 A11+', maker: 'Samsung', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 그레이'] },
+  { name: 'iPad Pro 13 (M5)', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['256G / 실버', '256G / 스페이스 블랙', '512G / 실버', '512G / 스페이스 블랙', '1T / 실버', '1T / 스페이스 블랙'] },
+  { name: 'iPad Pro 11 (M5)', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['256G / 실버', '256G / 스페이스 블랙', '512G / 실버', '512G / 스페이스 블랙', '1T / 실버', '1T / 스페이스 블랙'] },
+  { name: '갤럭시 탭 S11 Ultra', maker: 'Samsung', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['256G / 그레이', '512G / 그레이'] },
+  { name: '갤럭시 탭 S11', maker: 'Samsung', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 그레이', '256G / 그레이'] },
+  { name: '갤럭시 탭 S10 FE+', maker: 'Samsung', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 그레이'] },
+  { name: '갤럭시 탭 S10 FE', maker: 'Samsung', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 그레이'] },
+  { name: 'iPad Pro 13 (M4 모델) NEW', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['256G / 실버', '256G / 스페이스 블랙', '512G / 실버', '512G / 스페이스 블랙'] },
+  { name: 'iPad Pro 11 (M4 모델) NEW', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['256G / 실버', '256G / 스페이스 블랙', '512G / 실버', '512G / 스페이스 블랙', '1T / 실버', '1T / 스페이스 블랙'] },
+  { name: 'iPad (A16 모델)', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 블루', '128G / 실버', '128G / 핑크', '128G / 옐로', '256G / 블루', '256G / 실버', '256G / 핑크', '256G / 옐로'] },
+  { name: 'iPad Air 13 (M3 모델)', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 퍼플', '128G / 블루', '128G / 스타라이트', '128G / 스페이스 그레이', '256G / 퍼플', '256G / 블루', '256G / 스타라이트', '256G / 스페이스 그레이', '512G / 퍼플', '512G / 블루', '512G / 스타라이트', '512G / 스페이스 그레이', '1T / 퍼플', '1T / 블루', '1T / 스타라이트', '1T / 스페이스 그레이'] },
+  { name: 'iPad Air 11 (M3 모델)', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 퍼플', '128G / 블루', '128G / 스타라이트', '128G / 스페이스 그레이', '256G / 퍼플', '256G / 블루', '256G / 스타라이트', '256G / 스페이스 그레이', '512G / 퍼플', '512G / 블루', '512G / 스타라이트', '512G / 스페이스 그레이', '1T / 퍼플', '1T / 블루', '1T / 스타라이트', '1T / 스페이스 그레이'] },
+  { name: '갤럭시 탭 S10+', maker: 'Samsung', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['256G / 문스톤 그레이'] },
+  { name: '갤럭시 탭 S10 Ultra', maker: 'Samsung', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['256G / 문스톤 그레이'] },
+  { name: 'iPad Pro 11 (M4 모델)', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['256G / 스페이스 블랙', '256G / 실버', '512G / 스페이스 블랙', '512G / 실버', '1T / 스페이스 블랙', '1T / 실버'] },
+  { name: 'iPad Air 13 (M2 모델)', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 스타라이트', '128G / 블루', '128G / 퍼플', '512G / 스타라이트', '512G / 블루', '512G / 퍼플'] },
+  { name: '갤럭시 북3 Go 5G', maker: 'Samsung', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['128G / 실버'] },
+  { name: '갤럭시 탭 A9+ 5G', maker: 'Samsung', type: '태블릿·노트북', line: '태블릿', net: '5G', variants: ['64G / 그라파이트'] },
+  { name: 'iPad (9세대) NEW', maker: 'Apple', type: '태블릿·노트북', line: '태블릿', net: 'LTE', variants: ['64G / 스페이스 그레이', '64G / 실버', '256G / 스페이스 그레이', '256G / 실버'] },
+  { name: '갤럭시탭 A8 (2023)', maker: 'Samsung', type: '태블릿·노트북', line: '태블릿', net: 'LTE', variants: ['64G / 그레이'] },
+  { name: 'Apple Watch Ultra 4', maker: 'Apple', type: '워치', line: '웨어러블', net: 'LTE', variants: ['64G / 내추럴 티타늄', '64G / 블랙 티타늄'] },
+  { name: 'Apple Watch Series 12', maker: 'Apple', type: '워치', line: '웨어러블', net: 'LTE', variants: ['(티타늄, 46mm) / 64G / 내추럴 티타늄', '(알루미늄, 46mm) / 64G / 스페이스 그레이', '(알루미늄, 46mm) / 64G / 라이트 골드', '(알루미늄, 46mm) / 64G / 다크 브론즈', '(알루미늄, 46mm) / 64G / 블랙', '(티타늄, 42mm) / 64G / 래디언트 골드 티타늄', '(티타늄, 42mm) / 64G / 내추럴 티타늄', '(알루미늄, 42mm) / 64G / 블랙', '(알루미늄, 42mm) / 64G / 다크 브론즈', '(알루미늄, 42mm) / 64G / 라이트 골드'] },
+  { name: '갤럭시 워치 울트라2', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['64G / 티타늄 실버', '64G / 티타늄 그레이'] },
+  { name: '갤럭시 워치9 44MM', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['32G / 그라파이트', '32G / 실버'] },
+  { name: '갤럭시 워치9 40MM', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['32G / 그라파이트', '32G / 크림'] },
+  { name: 'Apple Watch SE 3 44mm', maker: 'Apple', type: '워치', line: '웨어러블', net: 'LTE', variants: ['64G / 미드나이트', '64G / 스타라이트'] },
+  { name: 'Apple Watch SE 3 40mm', maker: 'Apple', type: '워치', line: '웨어러블', net: 'LTE', variants: ['64G / 미드나이트', '64G / 스타라이트'] },
+  { name: 'Apple Watch Ultra 3', maker: 'Apple', type: '워치', line: '웨어러블', net: 'LTE', variants: ['64G / 내추럴', '64G / 블랙'] },
+  { name: 'Apple Watch Series 11', maker: 'Apple', type: '워치', line: '웨어러블', net: 'LTE', variants: ['(티타늄, 46mm) / 64G / 내추럴', '(티타늄, 46mm) / 64G / 슬레이트', '(알루미늄, 46mm) / 64G / 실버', '(알루미늄, 46mm) / 64G / 제트 블랙', '(티타늄, 42mm) / 64G / 내추럴', '(티타늄, 42mm) / 64G / 슬레이트', '(알루미늄, 42mm) / 64G / 실버', '(알루미늄, 42mm) / 64G / 제트 블랙'] },
+  { name: '갤럭시 워치 울트라 47mm (2025)', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['64G / 티타늄 블루'] },
+  { name: '갤럭시 워치8 클래식 46mm', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['64G / 화이트', '64G / 블랙'] },
+  { name: '갤럭시 워치8 44mm', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['32G / 그라파이트', '32G / 실버'] },
+  { name: '갤럭시 워치8 40mm', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['32G / 그라파이트', '32G / 실버'] },
+  { name: '갤럭시 워치7 44mm', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['32G / 실버', '32G / 그린'] },
+  { name: '갤럭시 워치7 40mm', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['32G / 그린', '32G / 크림'] },
+  { name: '갤럭시 워치 울트라 47mm', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['32G / 티타늄 화이트', '32G / 티타늄 실버', '32G / 티타늄 그레이'] },
+  { name: 'Apple Watch SE 44mm (2023)', maker: 'Apple', type: '워치', line: '웨어러블', net: 'LTE', variants: ['32G / 미드나이트', '32G / 실버'] },
+  { name: '갤럭시 워치6 44mm', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['16G / 그라파이트', '16G / 실버'] },
+  { name: '갤럭시 워치6 40mm', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['16G / 골드', '16G / 그라파이트'] },
+  { name: '갤럭시 워치6 클래식 47mm', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['16G / 블랙', '16G / 실버'] },
+  { name: '갤럭시 워치6 클래식 43mm', maker: 'Samsung', type: '워치', line: '웨어러블', net: 'LTE', variants: ['16G / 블랙', '16G / 실버'] },
+  { name: 'Apple Watch Series 8', maker: 'Apple', type: '워치', line: '웨어러블', net: 'LTE', variants: ['(스테인리스, 45mm) / 32G / 그래파이트', '(알루미늄, 41mm) / 32G / 미드나이트', '(알루미늄, 41mm) / 32G / 실버'] },
+  { name: 'T 포켓파이 B', maker: 'SK텔레콤', type: '휴대용 와이파이', line: '데이터전용', net: 'LTE', variants: ['- / 글레이셔화이트'] },
 ];
 
-export const BSS_DEVICES: PickerItem[] = DEV_RAW.flatMap((r) =>
-  r.items.map((it) => ({
-    key: `dev:${it.name}`,
-    name: it.name,
-    category: r.maker,
-    sub: r.type,
-    logo: 'icon:general/Device',
-    benefit: ['선택 약정 12개월 기준', it.spec].filter(Boolean).join(' · '),
-    badges: it.neo ? ['NEW'] : [],
-  })),
-);
+export const BSS_DEVICES: PickerItem[] = DEV_RAW.map((d) => ({
+  key: `dev:${d.name}`,
+  name: d.name,
+  category: d.maker,
+  sub: d.type,
+  logo: DEVICE_TYPE_ICON[d.type] ?? 'icon:general/Device',
+  // 카드 한 줄 요약 — 망/회선 + 선택 가능한 조합 수
+  benefit: [d.net, d.line, d.variants.length > 1 ? `${d.variants.length}종 선택 가능` : d.variants[0]]
+    .filter(Boolean)
+    .join(' · '),
+  badges: [],
+  variants: d.variants,
+  line: d.line,
+  net: d.net,
+}));
 
 export const deviceByKey = (key: string): PickerItem | undefined => BSS_DEVICES.find((d) => d.key === key);
 

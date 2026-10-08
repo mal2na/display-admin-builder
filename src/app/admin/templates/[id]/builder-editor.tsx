@@ -53,7 +53,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download, GalleryHorizontalEnd, RotateCcw } from 'lucide-react';
 import {
-  updateTemplateMeta,
   createCorner,
   createCornerFromType,
   importBannerCampaignCorner,
@@ -1402,11 +1401,12 @@ const BSS_BADGE_TONE: Record<string, string> = {
 function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'benefit' }: { open: boolean; onClose: () => void; onPickMany: (keys: string[]) => void; pending: boolean; mode?: 'benefit' | 'device' }) {
   const [cat, setCat] = useState<string>('ALL');
   const [sub, setSub] = useState<string>('전체');
+  const [q, setQ] = useState(''); // 디바이스 102종 — 이름 검색 없이는 못 찾는다(2026-10-08)
   const [selected, setSelected] = useState<Set<string>>(new Set()); // 멀티 선택(2026-10-07)
   if (!open) return null;
   const device = mode === 'device'; // 상품형 코너 = T 디바이스 카탈로그(2026-10-07)
   const toggle = (key: string) => setSelected((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
-  const close = () => { setSelected(new Set()); onClose(); };
+  const close = () => { setSelected(new Set()); setQ(''); onClose(); };
   // 카테고리/세부 — 디바이스는 제조사(DEVICE_MAKERS)×유형(DEVICE_TYPES), 혜택은 EAT/BUY/PLAY×BSS_SUBCATEGORIES.
   const cats: string[] = device ? ['ALL', ...DEVICE_MAKERS] : ['ALL', 'EAT', 'BUY', 'PLAY'];
   const catLabel = (c: string) => c === 'ALL' ? '전체' : (device ? c : BSS_CATEGORY_LABELS[c as BssCategory]);
@@ -1414,7 +1414,13 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
     ? ['전체', ...DEVICE_TYPES.filter((t) => BSS_DEVICES.some((d) => d.category === cat && d.sub === t))]
     : ['전체', ...BSS_SUBCATEGORIES[cat as BssCategory]];
   const source: PickerItem[] = device ? BSS_DEVICES : BSS_PRODUCTS;
-  const list = source.filter((p) => (cat === 'ALL' || p.category === cat) && (cat === 'ALL' || sub === '전체' || p.sub === sub));
+  const kw = q.trim().toLowerCase();
+  const list = source.filter(
+    (p) =>
+      (cat === 'ALL' || p.category === cat) &&
+      (cat === 'ALL' || sub === '전체' || p.sub === sub) &&
+      (!kw || p.name.toLowerCase().includes(kw) || p.sub.toLowerCase().includes(kw) || p.category.toLowerCase().includes(kw)),
+  );
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
       {/* 고정 높이(h-[80vh]) — 카테고리 전환 시에도 모달 크기 불변, 리스트만 내부 스크롤 */}
@@ -1433,6 +1439,18 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
             </button>
           ))}
         </div>
+        {/* 이름 검색 — 디바이스처럼 항목이 많을 때 필수 */}
+        <div className="border-b px-4 py-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={device ? '모델명으로 검색 (예: iPhone 17, 갤럭시 Z 플립)' : '브랜드명으로 검색'}
+              className="h-8 w-full rounded-md border bg-white pl-8 pr-2 text-xs outline-none focus:border-primary"
+            />
+          </div>
+        </div>
         {/* 세부 카테고리 — 행 높이 고정(ALL도 안내문으로 자리 유지)해서 리스트 시작 위치가 흔들리지 않게 */}
         <div className="flex min-h-[37px] flex-wrap items-center gap-1 border-b bg-muted/30 px-4 py-2">
           {cat === 'ALL' ? (
@@ -1448,6 +1466,11 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
         </div>
         {/* 브랜드 리스트 — 남은 공간을 채우고 내부 스크롤(min-h-0), 항목이 적어도 위 정렬(content-start) */}
         <div className="grid min-h-0 flex-1 content-start grid-cols-1 gap-2 overflow-y-auto p-4 sm:grid-cols-2">
+          {list.length === 0 && (
+            <p className="col-span-full py-10 text-center text-xs text-muted-foreground">
+              조건에 맞는 {device ? '디바이스' : '브랜드'}가 없습니다.
+            </p>
+          )}
           {list.map((p) => {
             const on = selected.has(p.key);
             return (
@@ -3707,74 +3730,8 @@ export function BuilderEditor({
           </details>
         </div>
 
-        {/* Template 정보 편집 (하단) — 템플릿 등록 항목 전체 */}
-        <details className="border-t p-3">
-          <summary className="cursor-pointer text-xs font-semibold">템플릿 정보 편집</summary>
-          <form action={updateTemplateMeta.bind(null, templateId)} className="mt-2 space-y-2">
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">템플릿명 *</label>
-              <Input name="name" defaultValue={meta.name} placeholder="템플릿명" className="h-8 text-xs" required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">메모</label>
-              <Input name="memo" defaultValue={meta.memo ?? ''} maxLength={30} placeholder="30자 이내" className="h-8 text-xs" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">로그인 구분 *</label>
-              <div className="flex gap-3 text-xs">
-                {['로그인', '비로그인'].map((v) => (
-                  <label key={v} className="flex items-center gap-1.5">
-                    <input type="radio" name="conditionGroup" value={v} defaultChecked={meta.conditionGroup === v} className="accent-indigo-600" /> {v}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">기본 템플릿 여부 *</label>
-                <div className="flex gap-3 text-xs">
-                  {[
-                    { v: 'N', on: !meta.isDefault },
-                    { v: 'Y', on: meta.isDefault },
-                  ].map((o) => (
-                    <label key={o.v} className="flex items-center gap-1.5">
-                      <input type="radio" name="isDefault" value={o.v} defaultChecked={o.on} className="accent-indigo-600" /> {o.v}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">전시 여부 *</label>
-                <div className="flex gap-3 text-xs">
-                  {[
-                    { v: '전시', on: meta.displayOn },
-                    { v: '미전시', on: !meta.displayOn },
-                  ].map((o) => (
-                    <label key={o.v} className="flex items-center gap-1.5">
-                      <input type="radio" name="displayOn" value={o.v} defaultChecked={o.on} className="accent-indigo-600" /> {o.v}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <input type="checkbox" name="startAtOnApproval" defaultChecked={meta.startAtOnApproval} className="accent-indigo-600" /> 시작일을 승인일시로 설정
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">전시 기간 시작</label>
-                <Input name="startAt" type="datetime-local" defaultValue={meta.startAt ?? ''} className="h-8 text-xs" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">전시 기간 종료</label>
-                <Input name="endAt" type="datetime-local" defaultValue={meta.endAt ?? ''} className="h-8 text-xs" />
-              </div>
-            </div>
-            <Button type="submit" size="sm" variant="secondary" className="w-fit">
-              저장
-            </Button>
-          </form>
-        </details>
+        {/* 템플릿 정보(명칭·로그인 구분·전시 기간 등) 편집은 빌더에서 제외 — 컨테이너 상세의
+            「매핑 템플릿 정보」에서 다룬다(2026-10-08 사용자 요청). 빌더는 코너 배치에만 집중. */}
       </div>
 
       {/* 가운데: 실시간 디바이스 미리보기 */}
