@@ -19,7 +19,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
-import { FilterPanel, ListHeader } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
 
 // 등록된 코너 유형(코너 유형 관리 = 마스터)의 (코너유형·컴포넌트·배열) 조합. 등록 폼 ②③을 이걸로 좁힌다.
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
@@ -1245,7 +1245,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           {/* 테이블 폰트 통일: 모든 셀 13px · 레귤러(헤더/셀 동일) */}
           <table className="w-full text-[13px] font-normal">
             <thead>
-              <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
+              <tr className={THEAD_TR_CLS}>
                 <th className="w-14 px-3 py-2.5 text-left font-semibold">NO</th>
                 <th className="w-44 px-3 py-2.5 text-center font-semibold">미리보기</th>
                 <th className="px-3 py-2.5 text-left font-semibold">코너 유형</th>

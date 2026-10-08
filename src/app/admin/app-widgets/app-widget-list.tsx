@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { StatusPill, FilterPanel, ListHeader } from '@/components/ops-ui';
+import { StatusPill, FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
 import { PUBLISH_STATUS, PUBLISH_STATUS_OPTIONS, DEPLOY_STATUS, fmtPeriod, fmtDateTime, computePublishStatus, type PublishStatus } from '@/lib/widget-taxonomy';
 import { reorderAppWidgets, redisReloadAppWidgets } from './actions';
 import { cn } from '@/lib/utils';
@@ -185,7 +185,7 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
       <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
-            <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
+            <tr className={THEAD_TR_CLS}>
               <th className="w-24 h-11 px-3 text-left font-semibold">노출순서</th>
               <th className="h-11 px-3 text-left font-semibold">위젯유형</th>
               <th className="w-24 h-11 px-3 text-left font-semibold">승인상태</th>

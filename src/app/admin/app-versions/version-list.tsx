@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { FilterPanel, ListHeader } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
 
 export type VersionRow = {
@@ -126,7 +126,7 @@ export function VersionList({ rows }: { rows: VersionRow[] }) {
       <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full min-w-[1320px] text-[13px] font-normal">
           <thead>
-            <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
+            <tr className={THEAD_TR_CLS}>
               {['No.', '대상 App', 'OS유형', '적용상태', '승인상태', 'App 버전', '권장 버전', '강제 버전', 'App 업데이트 일시', '등록자', '등록일시', '최근 수정자', '최근 수정일시'].map((h) => (
                 <th key={h} className="h-11 px-3 font-normal whitespace-nowrap text-center">{h}</th>
               ))}

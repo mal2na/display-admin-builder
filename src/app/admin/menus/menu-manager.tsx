@@ -5,7 +5,7 @@
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronUp, ImageIcon, X } from 'lucide-react';
-import { FilterPanel } from '@/components/ops-ui';
+import { FilterPanel, THEAD_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
 
 export type MenuNode = {
@@ -234,7 +234,7 @@ function HistoryTab({ history }: { history: MenuHistoryRow[] }) {
       <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full min-w-[1100px] text-[13px] font-normal whitespace-nowrap">
           <thead>
-            <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
+            <tr className={THEAD_TR_CLS}>
               {['', '상태', '승인 요청자', '승인 담당자', '요청 일시', '요청 사유', '처리 일시', '처리 사유', '변경내용', '버전'].map((h, i) => (
                 <th key={i} className={cn('h-11 px-3 font-normal', h === '요청 사유' || h === '처리 사유' ? 'text-left' : 'text-center')}>{h}</th>
               ))}

@@ -94,6 +94,19 @@ export function ListFooter({ left, children }: { left?: React.ReactNode; childre
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   목록 표 공식 규격 (CLAUDE.md §4.1)
+     헤더 — 회색 배경 var(--th) · 13px/600 · 높이 44 · 아래 1px 선
+     본문 — 13px/400 · 행 아래 1px 선 · hover 연보라
+   정렬(좌/중앙/우)은 표마다 달라서 각 th/td 가 직접 지정한다.
+   색·굵기·테두리·호버는 아래 상수에서만 바꾼다.
+   ═══════════════════════════════════════════════════════════════════════════ */
+export const TABLE_CLS = 'w-full border-collapse text-[13px]';
+export const THEAD_TR_CLS =
+  'border-b border-[var(--line)] bg-[var(--th)] text-[var(--ink2)] [&>th]:h-11 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:font-semibold';
+export const TBODY_TR_CLS =
+  'border-b border-[var(--line)] text-[var(--ink)] hover:bg-[#fafaff]';
+
 // 섹션 카드 (제목). no 인자는 하위호환용으로 남겨두되 표시하지 않는다.
 export function OpsSection({ title, children }: { no?: number | string; title: string; children: React.ReactNode }) {
   return (

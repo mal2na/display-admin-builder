@@ -5,7 +5,7 @@
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight, Minus, Plus } from 'lucide-react';
-import { FilterPanel, ListHeader } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
 
 export type FPRow = {
@@ -116,7 +116,7 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
       <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
-            <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
+            <tr className={THEAD_TR_CLS}>
               {['NO', '페이지 ID', '메뉴명', '경로', 'URL', '상태', '사용 여부', '운영 채널', '최종 수정일자'].map((h) => (
                 <th key={h} className={cn('h-11 px-3 font-normal', h === '경로' || h === 'URL' || h === '운영 채널' ? 'text-left' : 'text-center')}>{h}</th>
               ))}
@@ -230,7 +230,7 @@ function IaTab({ rows }: { rows: FPRow[] }) {
       <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full text-[13px] font-normal">
           <thead>
-            <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
+            <tr className={THEAD_TR_CLS}>
               <th className="h-11 px-3 text-left font-semibold">메뉴명</th>
               <th className="h-11 w-28 px-3 text-center font-semibold">사용 여부</th>
               <th className="h-11 w-32 px-3 text-center font-semibold">Front 노출 여부</th>

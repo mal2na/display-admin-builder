@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
-import { FilterPanel, ListHeader } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
 
 // ── 공통 ──
 const box = 'h-9 w-full rounded-lg border bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-indigo-200';
@@ -121,7 +121,7 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
       <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full min-w-[1140px] text-[13px] font-normal">
           <thead>
-            <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a] [&>th]:h-11 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:font-semibold">
+            <tr className={cn(THEAD_TR_CLS)}>
               <th className="w-8"></th><th>번호</th><th className="text-left">멤버십 채널 ID</th><th>프로모션 ID</th><th>댓글유형</th><th className="text-left">댓글내용</th><th>노출여부</th><th>좋아요 수</th><th>등록일시</th><th className="text-left">답글내용</th><th>답글 등록자</th><th>총 답글 수</th><th>답변여부</th>
             </tr>
           </thead>
@@ -296,7 +296,7 @@ function ReviewsTab() {
       <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full min-w-[1000px] text-[13px] font-normal">
           <thead>
-              <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a] [&>th]:h-11 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:text-left [&>th]:font-semibold">
+              <tr className={cn(THEAD_TR_CLS, '[&>th]:text-left')}>
               <th>번호</th><th>멤버십 채널 ID</th><th>상품</th><th>별점</th><th>리뷰내용</th><th>사진</th><th>좋아요</th><th>등록일시</th><th>신고</th><th>노출여부</th>
             </tr>
           </thead>
@@ -349,7 +349,7 @@ function BlockTab() {
         <div className="overflow-x-auto border-t border-[#e6e7ec]">
           <table className="w-full min-w-[900px] text-[13px] font-normal">
             <thead>
-              <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a] [&>th]:h-11 [&>th]:px-3 [&>th]:text-left [&>th]:font-semibold">
+              <tr className={cn(THEAD_TR_CLS, '[&>th]:text-left')}>
                 <th>번호</th><th>대상(작성자)</th><th>위치</th><th>내용</th><th>신고 사유</th><th>신고자</th><th>접수일시</th><th>상태</th><th className="text-center">처리</th>
               </tr>
             </thead>
@@ -374,7 +374,7 @@ function BlockTab() {
         <div className="overflow-x-auto border-t border-[#e6e7ec]">
           <table className="w-full min-w-[800px] text-[13px] font-normal">
             <thead>
-              <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a] [&>th]:h-11 [&>th]:px-3 [&>th]:text-left [&>th]:font-semibold">
+              <tr className={cn(THEAD_TR_CLS, '[&>th]:text-left')}>
                 <th>번호</th><th>차단 사용자(멤버십 채널 ID)</th><th>차단 사유</th><th>차단 기간</th><th>처리자</th><th>상태</th><th className="text-center">관리</th>
               </tr>
             </thead>

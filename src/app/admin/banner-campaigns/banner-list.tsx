@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ComposedBanner, type ComposeFields } from './composed-banner';
-import { FilterPanel, ListHeader } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
 
 export type BannerRow = {
@@ -129,7 +129,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
       <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full min-w-[1200px] text-[13px] font-normal whitespace-nowrap">
           <thead>
-            <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
+            <tr className={THEAD_TR_CLS}>
               {['NO.', '미리보기', '배너캠페인 ID', '배너캠페인명', '전시여부', '전시기간', '승인상태', '등록자', '등록일시', '최종 수정자', '최종 수정일시'].map((h) => (
                 <th key={h} className={cn('h-11 px-3 font-normal', h === '배너캠페인명' || h === '전시기간' ? 'text-left' : 'text-center')}>{h}</th>
               ))}
