@@ -588,7 +588,8 @@ table th,table td{height:48px;padding:8px 12px!important;box-sizing:border-box;v
     if (p.state !== "live" || isChanged(p)) return '<span class="tag blue">임시저장</span>';
     return '<span class="tag ok">승인 완료</span>';
   }
-  function useChip(p) { return p.use ? '<span class="tag blue">사용</span>' : '<span class="tag gray">미사용</span>'; }
+  // ~여부 컬럼은 전부 Y/N (2026-10-08). 원래 라벨은 title 로 남긴다.
+  function useChip(p) { return p.use ? '<span class="tag ok" title="사용">Y</span>' : '<span class="tag gray" title="미사용">N</span>'; }
   function foChip(p) {
     if (!p.inMenu) return '<span class="tag gray">미등록</span>';
     if (!effUse(p) || depth(p) > MENU_MAX || p.state !== "live") return '<span class="tag gray">미노출</span>';

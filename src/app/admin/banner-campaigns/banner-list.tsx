@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ComposedBanner, type ComposeFields } from './composed-banner';
-import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS, YN } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
 import { CHIP_BASE } from '@/lib/display-taxonomy';
 
@@ -145,7 +145,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
                 <td className="h-11 px-3 py-1.5"><div className="flex justify-center"><BannerThumb preview={r.preview} /></div></td>
                 <td className="h-11 px-3 tabular-nums">{r.campaignCode}</td>
                 <td className="h-11 px-3 text-left">{r.title}</td>
-                <td className="h-11 px-3"><span className={cn(CHIP_BASE, r.exposeYn ? 'bg-[#C8F6E1] text-[#038E52]' : 'bg-[#DCE0E5] text-[#454F59]')}>{r.exposeYn ? '전시' : '미전시'}</span></td>
+                <td className="h-11 px-3"><YN yes={r.exposeYn} label={r.exposeYn ? '전시' : '미전시'} /></td>
                 <td className="h-11 px-3 text-left text-slate-500">{period(r)}</td>
                 <td className="h-11 px-3"><span className={cn(CHIP_BASE, APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{r.approvalLabel}</span></td>
                 <td className="h-11 px-3 text-slate-600">{r.createdBy}</td>

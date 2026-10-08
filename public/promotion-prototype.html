@@ -1040,7 +1040,7 @@ function render(){
     <td>${r.no}</td><td>${r.id}</td><td>${fullYmd(r.disp)}</td><td>${fullYmd(r.join)}</td><td>${r.cat} &gt; ${r.sub}</td>
     <td class="name" title="${esc(r.name)}">${r.ex?`<span class="ex-tag">예시</span>`:""}${esc(r.name.replace("[예시] ",""))}</td>
     <td>${pill(r.dispSt,r.dispSt==="전시"?"p-blue":"p-red")}</td>
-    <td>${pill(r.cmt,r.cmt==="사용"?"p-blue":"p-red")}</td>
+    <td>${pill(r.cmt==="사용"?"Y":"N", r.cmt==="사용"?"p-green":"p-grey")}</td>
     <td>${r.cmtCnt}</td><td>${r.reg}</td><td>${r.regAt}</td><td>${r.mod}</td><td>${r.modAt}</td>
     <td>${pill(r.st,STATUS_PILL[r.st])}</td></tr>`).join("")
     :`<tr><td class="empty" colspan="14">조회 조건에 맞는 프로모션이 없어요.<br>이벤트 유형·미션 유형·프로모션 상태 중 선택한 항목이 있는지 확인해 주세요.</td></tr>`;

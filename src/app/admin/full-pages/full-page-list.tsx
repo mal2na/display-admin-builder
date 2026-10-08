@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import { PageTabs } from '@/components/page-tabs';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight, Minus, Plus } from 'lucide-react';
-import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS, YN } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
 import { CHIP_BASE } from '@/lib/display-taxonomy';
 
@@ -131,7 +131,7 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
                 <td className="h-11 px-3 text-left text-slate-600">{r.path}</td>
                 <td className="h-11 px-3 text-left text-slate-600">{r.url}</td>
                 <td className="h-11 px-3"><span className={cn(CHIP_BASE, STATUS_TONE[r.statusLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{r.statusLabel}</span></td>
-                <td className="h-11 px-3"><span className={cn(CHIP_BASE, r.useYn ? 'bg-[#D9E9FF] text-[#2E7AFF]' : 'bg-[#DCE0E5] text-[#454F59]')}>{r.useYn ? '사용' : '미사용'}</span></td>
+                <td className="h-11 px-3"><YN yes={r.useYn} label={r.useYn ? '사용' : '미사용'} /></td>
                 <td className="h-11 px-3 text-left">
                   <div className="flex flex-wrap gap-1">
                     {r.channels.length === 0 ? <span className="text-slate-400">-</span> : r.channels.map((c) => (
@@ -188,8 +188,8 @@ function IaTab({ rows }: { rows: FPRow[] }) {
               {hasChildren && (open ? <ChevronDown className="ml-1 h-3.5 w-3.5 text-slate-300" /> : <ChevronRight className="ml-1 h-3.5 w-3.5 text-slate-300" />)}
             </div>
           </td>
-          <td className="h-11 px-3 text-center"><span className={cn(CHIP_BASE, r.useYn ? 'bg-[#D9E9FF] text-[#2E7AFF]' : 'bg-[#DCE0E5] text-[#454F59]')}>{r.useYn ? '사용' : '미사용'}</span></td>
-          <td className="h-11 px-3 text-center"><span className={cn(CHIP_BASE, r.frontExposeYn ? 'bg-[#C8F6E1] text-[#038E52]' : 'bg-[#DCE0E5] text-[#454F59]')}>{r.frontExposeYn ? '노출' : '미노출'}</span></td>
+          <td className="h-11 px-3 text-center"><YN yes={r.useYn} label={r.useYn ? '사용' : '미사용'} /></td>
+          <td className="h-11 px-3 text-center"><YN yes={r.frontExposeYn} label={r.frontExposeYn ? '노출' : '미노출'} /></td>
           <td className="h-11 px-3 text-center text-slate-500">{fmtD(r.createdAt)}</td>
         </tr>
       );

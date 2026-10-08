@@ -20,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
-import { FilterPanel, ListHeader, THEAD_TR_CLS, TBODY_TR_CLS, StatusPill } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, THEAD_TR_CLS, TBODY_TR_CLS, StatusPill, YN } from '@/components/ops-ui';
 
 // 등록된 코너 유형(코너 유형 관리 = 마스터)의 (코너유형·컴포넌트·배열) 조합. 등록 폼 ②③을 이걸로 좁힌다.
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
@@ -1262,7 +1262,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   <td className="whitespace-nowrap px-3 py-2.5 align-middle"><span className={cornerTypeChipClass(t.baseCategory)}>{t.baseCategory}</span></td>
                   <td className="px-3 py-2.5 align-middle text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
                   <td className="px-3 py-2.5 align-middle text-slate-800">{t.previewCorner?.name ?? '-'}</td>
-                  <td className="px-3 py-2.5 align-middle text-slate-600">{t.active ? '사용' : '미사용'}</td>
+                  <td className="px-3 py-2.5 align-middle"><YN yes={t.active} label={t.active ? '사용' : '미사용'} /></td>
                   <td className="whitespace-nowrap px-3 py-2.5 align-middle"><StatusPill label={CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status} /></td>
                   <td className="px-3 py-2.5 align-middle text-slate-600">{t.updatedBy ?? t.createdBy ?? '-'}</td>
                   <td className="px-3 py-2.5 align-middle text-slate-500">{(t.updatedAt ?? '').replace('T', ' ').slice(0, 16) || '-'}</td>

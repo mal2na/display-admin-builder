@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { StatusPill, FilterPanel, ListHeader, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
+import { StatusPill, FilterPanel, ListHeader, THEAD_TR_CLS, TBODY_TR_CLS, YN } from '@/components/ops-ui';
 import { cn } from '@/lib/utils';
 import { USE_LABEL, fmtDateTime } from '@/lib/widget-taxonomy';
 import { RotateCcw, Search } from 'lucide-react';
@@ -75,7 +75,7 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
                 <td className="px-3 py-2.5 text-slate-500">{i + 1}</td>
                 <td className="px-3 py-2.5 text-slate-800">{r.typeName}</td>
                 <td className="px-3 py-2.5 text-slate-600">{r.description ?? '-'}</td>
-                <td className="px-3 py-2.5">{r.useYn ? <StatusPill label="사용중" tone="green" /> : <StatusPill label="미사용" tone="amber" dot />}</td>
+                <td className="px-3 py-2.5"><YN yes={r.useYn} label={r.useYn ? '사용' : '미사용'} /></td>
                 <td className="px-3 py-2.5 text-slate-600">{r.updatedBy ?? '-'}</td>
                 <td className="px-3 py-2.5 text-[12px] text-slate-500">{fmtDateTime(r.updatedAt)}</td>
               </tr>

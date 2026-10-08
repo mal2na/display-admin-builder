@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
-import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS, YNCell } from '@/components/ops-ui';
 import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 // ── 공통 ──
@@ -133,13 +133,13 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
                 </td>
                 <td className="px-3 py-2.5"><Pill>{c.type}</Pill></td>
                 <td className="max-w-[220px] truncate px-3 py-2.5 text-left text-slate-700">{c.content}</td>
-                <td className="px-3 py-2.5"><Pill>{c.visible}</Pill></td>
+                <td className="px-3 py-2.5"><YNCell label={c.visible} /></td>
                 <td className="px-3 py-2.5 text-slate-600">{c.likes}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.at}</td>
                 <td className="max-w-[220px] truncate px-3 py-2.5 text-left text-slate-500">{c.reply || '-'}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.replyBy || '-'}</td>
                 <td className="px-3 py-2.5 text-slate-500">{c.replyCount || '-'}</td>
-                <td className="px-3 py-2.5"><Pill>{c.answered}</Pill></td>
+                <td className="px-3 py-2.5"><YNCell label={c.answered} /></td>
               </tr>
             ))}
           </tbody>
@@ -306,7 +306,7 @@ function ReviewsTab() {
                 <td className="px-3 py-2.5 text-slate-500">{r.likes}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{r.at}</td>
                 <td className="px-3 py-2.5 text-center">{r.reported > 0 ? <span className="inline-flex items-center gap-0.5 rounded bg-rose-100 px-1.5 py-0.5 text-[11px] font-semibold text-rose-600"><Flag className="h-3 w-3" />{r.reported}</span> : <span className="text-slate-300">-</span>}</td>
-                <td className="px-3 py-2.5"><Pill>{r.visible}</Pill></td>
+                <td className="px-3 py-2.5"><YNCell label={r.visible} /></td>
               </tr>
             ))}
           </tbody>

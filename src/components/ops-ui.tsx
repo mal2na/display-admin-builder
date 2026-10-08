@@ -107,6 +107,37 @@ export function ListHeader({
 }
 
 /**
+ * ~여부 컬럼 값 — 표에서는 전부 Y/N 으로 쓴다 (2026-10-08 사용자 지정).
+ *  '사용/미사용', '전시/미전시', '노출/미노출', '답변완료/답변대기' 처럼 뜻이 같은데 말만 다른
+ *  라벨이 표마다 흩어져 있어 스캔이 어려웠다. 표기는 Y/N 으로 통일하고 원래 라벨은 title 로 남긴다.
+ *  Y = success(초록) · N = neutral(회색).
+ */
+export function YN({ yes, label }: { yes: boolean; label?: string }) {
+  return (
+    <span className={cn(CHIP_BASE, 'justify-center px-2', yes ? TONES.success : TONES.neutral)} title={label}>
+      {yes ? 'Y' : 'N'}
+    </span>
+  );
+}
+
+/** 긍정 라벨 목록 — 이 중 하나면 Y. 3상태(검수 중 등)는 null 을 돌려 호출부에서 따로 처리한다. */
+const YES_LABELS = ['사용', '사용중', '사용함', '노출', '전시', '답변완료', '완료', 'Y', '예'];
+const NO_LABELS = ['미사용', '사용안함', '미노출', '미전시', '답변대기', '대기', 'N', '아니오'];
+export function ynOf(label: string): boolean | null {
+  const k = (label ?? '').replace(/\s+/g, '');
+  if (YES_LABELS.includes(k)) return true;
+  if (NO_LABELS.includes(k)) return false;
+  return null; // 3상태(예: '검수 중') — Y/N 으로 표현 불가
+}
+
+/** 라벨을 받아 Y/N 으로. Y/N 으로 못 바꾸는 값(검수 중 등)은 원래 상태 칩으로 둔다. */
+export function YNCell({ label }: { label: string }) {
+  const v = ynOf(label);
+  if (v === null) return <StatusPill label={label} />;
+  return <YN yes={v} label={label} />;
+}
+
+/**
  * 페이지네이션 — 공식 디자인 시스템 규격 (Figma pagination, 2026-10-08 사용자 지정).
  *   ⟪ ⟨ 1 2 3 4 5 6 7 8 9 … 100 ⟩ ⟫  ·  바깥 패딩 10 · 항목 간격 10 · 가운데 정렬
  *   현재 페이지만 브랜드 배경 + 흰 글자. 처음/이전/다음/마지막 화살표 포함.
