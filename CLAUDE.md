@@ -137,7 +137,21 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 
 ### 4.1 UI 디자인 시스템 — 단일 기준
 
-**어드민 UI는 NC-Channel Product Admin 디자인 시스템을 따른다.** (2026-10-08 확정)
+**1순위는 Figma `[BO-AX] NextBSS BO 공통 디자인 컴포넌트 리스트`다.** (2026-10-08 확정)
+
+| 순위 | 출처 | 범위 |
+|---|---|---|
+| **1** | **Figma — `[BO-AX] BO 공통 디자인 컴포넌트 리스트`**<br>`figma.com/design/BkugZKsd4Nop5ba2LEgFww` | **최우선.** 충돌하면 무조건 이쪽을 따른다. Components Library 1.8, 컴포넌트 35종(LNB·Breadcrumb·Tabs·Pagination·Button·Text Field·Select·Checkbox·Badge·Tag·Chips·Table·Title·Spacing …) |
+| 2 | Figma — `[SB] 포맷 가이드`<br>`figma.com/design/qvbelty0wRfyXcCCdyl8I6` | 보조. BO 공통에 없는 것만 참고 |
+| 3 | NC-Channel Product Admin<br>`nc-channel.vercel.app` | BO 공통 반영 전까지의 기존 이식분(아래 표). 위 둘과 어긋나면 **폐기 대상** |
+
+> **Figma MCP 사용 시 주의** — `get_design_context` / `get_variable_defs` 는 **프레임·컴포넌트 노드만** 받는다.
+> 페이지(캔버스) id 를 주면 "레이어를 먼저 선택하라"고 거부하고, `get_metadata` 는 페이지가 커서
+> 전송 한도(≈160~215KB)를 넘겨 끊긴다. 반드시 **프레임을 선택한 링크**(Copy link to selection)를 쓸 것.
+> 이 파일은 라이브러리로 퍼블리시돼 있지 않아 전역 변수 검색(`search_design_system`)에 안 잡히고,
+> Code Connect 는 Enterprise 전용이라 쓸 수 없다 → **프레임 단위로 값을 뽑아 옮긴다.**
+
+**아래는 BO 공통 반영 전까지 쓰던 기존 기준이다. BO 공통으로 교체되는 대로 이 표는 지운다.**
 
 | 기준 | 역할 | 어떻게 쓰나 |
 |---|---|---|
