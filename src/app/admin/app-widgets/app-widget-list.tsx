@@ -186,15 +186,15 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
         <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
             <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
-              <th className="w-24 h-11 px-3 text-left font-normal">노출순서</th>
-              <th className="h-11 px-3 text-left font-normal">위젯유형</th>
-              <th className="w-24 h-11 px-3 text-left font-normal">승인상태</th>
-              <th className="w-24 h-11 px-3 text-left font-normal">게시상태</th>
-              <th className="w-24 h-11 px-3 text-left font-normal">배포상태</th>
-              <th className="h-11 px-3 text-left font-normal">배너명</th>
-              <th className="h-11 px-3 text-left font-normal">게시기간</th>
-              <th className="h-11 px-3 text-left font-normal">최근 수정자</th>
-              <th className="h-11 px-3 text-left font-normal">최근 수정일시</th>
+              <th className="w-24 h-11 px-3 text-left font-semibold">노출순서</th>
+              <th className="h-11 px-3 text-left font-semibold">위젯유형</th>
+              <th className="w-24 h-11 px-3 text-left font-semibold">승인상태</th>
+              <th className="w-24 h-11 px-3 text-left font-semibold">게시상태</th>
+              <th className="w-24 h-11 px-3 text-left font-semibold">배포상태</th>
+              <th className="h-11 px-3 text-left font-semibold">배너명</th>
+              <th className="h-11 px-3 text-left font-semibold">게시기간</th>
+              <th className="h-11 px-3 text-left font-semibold">최근 수정자</th>
+              <th className="h-11 px-3 text-left font-semibold">최근 수정일시</th>
             </tr>
           </thead>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>

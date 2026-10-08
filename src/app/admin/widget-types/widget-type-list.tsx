@@ -58,12 +58,12 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
         <table className="w-full text-[13px] font-normal">
           <thead>
             <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[12px] text-[#53586a]">
-              <th className="w-16 px-3 py-2.5 text-left font-normal">번호</th>
-              <th className="px-3 py-2.5 text-left font-normal">위젯 유형</th>
-              <th className="px-3 py-2.5 text-left font-normal">유형설명</th>
-              <th className="w-24 px-3 py-2.5 text-left font-normal">사용여부</th>
-              <th className="px-3 py-2.5 text-left font-normal">최근 수정자</th>
-              <th className="px-3 py-2.5 text-left font-normal">최근 수정일시</th>
+              <th className="w-16 px-3 py-2.5 text-left font-semibold">번호</th>
+              <th className="px-3 py-2.5 text-left font-semibold">위젯 유형</th>
+              <th className="px-3 py-2.5 text-left font-semibold">유형설명</th>
+              <th className="w-24 px-3 py-2.5 text-left font-semibold">사용여부</th>
+              <th className="px-3 py-2.5 text-left font-semibold">최근 수정자</th>
+              <th className="px-3 py-2.5 text-left font-semibold">최근 수정일시</th>
             </tr>
           </thead>
           <tbody>

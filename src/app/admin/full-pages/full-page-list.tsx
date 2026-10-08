@@ -231,10 +231,10 @@ function IaTab({ rows }: { rows: FPRow[] }) {
         <table className="w-full text-[13px] font-normal">
           <thead>
             <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
-              <th className="h-11 px-3 text-left font-normal">메뉴명</th>
-              <th className="h-11 w-28 px-3 text-center font-normal">사용 여부</th>
-              <th className="h-11 w-32 px-3 text-center font-normal">Front 노출 여부</th>
-              <th className="h-11 w-32 px-3 text-center font-normal">등록일</th>
+              <th className="h-11 px-3 text-left font-semibold">메뉴명</th>
+              <th className="h-11 w-28 px-3 text-center font-semibold">사용 여부</th>
+              <th className="h-11 w-32 px-3 text-center font-semibold">Front 노출 여부</th>
+              <th className="h-11 w-32 px-3 text-center font-semibold">등록일</th>
             </tr>
           </thead>
           <tbody>

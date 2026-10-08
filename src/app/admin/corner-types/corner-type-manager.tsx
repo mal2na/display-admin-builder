@@ -1246,15 +1246,15 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           <table className="w-full text-[13px] font-normal">
             <thead>
               <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
-                <th className="w-14 px-3 py-2.5 text-left font-normal">NO</th>
-                <th className="w-44 px-3 py-2.5 text-center font-normal">미리보기</th>
-                <th className="px-3 py-2.5 text-left font-normal">코너 유형</th>
-                <th className="px-3 py-2.5 text-left font-normal">배열·레이아웃</th>
-                <th className="px-3 py-2.5 text-left font-normal">코너(케이스)</th>
-                <th className="w-20 px-3 py-2.5 text-left font-normal">사용여부</th>
-                <th className="w-28 px-3 py-2.5 text-left font-normal">승인상태</th>
-                <th className="px-3 py-2.5 text-left font-normal">최근 수정자</th>
-                <th className="px-3 py-2.5 text-left font-normal">최근 수정일시</th>
+                <th className="w-14 px-3 py-2.5 text-left font-semibold">NO</th>
+                <th className="w-44 px-3 py-2.5 text-center font-semibold">미리보기</th>
+                <th className="px-3 py-2.5 text-left font-semibold">코너 유형</th>
+                <th className="px-3 py-2.5 text-left font-semibold">배열·레이아웃</th>
+                <th className="px-3 py-2.5 text-left font-semibold">코너(케이스)</th>
+                <th className="w-20 px-3 py-2.5 text-left font-semibold">사용여부</th>
+                <th className="w-28 px-3 py-2.5 text-left font-semibold">승인상태</th>
+                <th className="px-3 py-2.5 text-left font-semibold">최근 수정자</th>
+                <th className="px-3 py-2.5 text-left font-semibold">최근 수정일시</th>
               </tr>
             </thead>
             <tbody>

@@ -204,11 +204,11 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
       <div className="min-h-0 flex-1 overflow-auto rounded-xl border bg-card">
         <table className="w-full border-separate border-spacing-0 text-[13px] font-normal" style={{ minWidth: 400 + targetCols.length * 150 }}>
           <thead className="sticky top-0 z-10">
-            <tr className="[&>th]:border-b-2 [&>th]:border-[#e6e7ec] [&>th]:bg-[#f6f7f9] [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-normal [&>th]:text-[#53586a]">
+            <tr className="[&>th]:border-b-2 [&>th]:border-[#e6e7ec] [&>th]:bg-[#f6f7f9] [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-semibold [&>th]:text-[#53586a]">
               <th className="sticky left-0 z-20 min-w-[240px]">문구</th>
               <th className="min-w-[160px]">기본 <span className="font-normal text-slate-400">· 폴백</span></th>
               {targetCols.map((c) => <th key={c} className="min-w-[150px]">{c}</th>)}
-              {targetCols.length === 0 && <th className="min-w-[150px] font-normal text-slate-400">타겟 문구 없음</th>}
+              {targetCols.length === 0 && <th className="min-w-[150px] font-semibold text-slate-400">타겟 문구 없음</th>}
             </tr>
           </thead>
           <tbody>
