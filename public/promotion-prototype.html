@@ -686,6 +686,18 @@ h1 + *{margin-top:0}
 
 /* ── 표 셀 높이 공식 규격 48 (padding 14/12) ── */
 #viewList th,#viewList td{height:48px;padding:8px 12px!important;box-sizing:border-box;vertical-align:middle}
+
+/* ── 브레드크럼 · 타이틀 · 구분선 간격을 React PageHeader 와 1:1 (2026-10-08 측정) ──
+   브레드크럼(12px) → 8 → 제목(22/700) → 24 + 1px 선 → 24 → 본문 */
+#viewList .crumb, #viewReg .crumb{margin:0 0 8px!important}
+#viewList h1, #viewReg h1{margin:0!important;line-height:1.5}
+.sheet h1::after{margin:24px 0 24px!important}
+
+/* 조회결과 헤더 — React ListHeader 와 동일(17px/700 제목 + 13px 건수, 색 없음) */
+.res-head h2{font-size:17px!important;font-weight:700!important;letter-spacing:-.3px}
+.res-head .count{font-size:13px;font-weight:400;color:var(--ink-2)}
+.res-head .count small{font-size:13px;font-weight:400}
+.res-head .count #count{font-weight:700;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -756,7 +768,7 @@ h1 + *{margin-top:0}
       </form>
 
       <div class="res-head">
-        <h2 data-sb="2">검색 결과</h2>
+        <h2 data-sb="2">조회결과</h2>
         <span class="count" data-sb="2-15"><small class="pre">총</small> <span id="count">0</span><small>건</small></span>
       </div>
 
