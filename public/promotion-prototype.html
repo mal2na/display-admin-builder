@@ -605,6 +605,14 @@ tbody tr:hover td{background:inherit}
    3) 타이포: 본문 13px·자간 -0.1px, 제목 22px, 표 헤더 600 — 어드민 공통 규격 */
 /* 브라우저 기본 body 마진 8px 제거 — 이게 남아 있어 본문이 다른 페이지보다
    가로·세로로 8px 씩 밀려 있었다. */
+/* 색 토큰을 어드민 팔레트로 재매핑 — 프로토타입 자체 색(#1c1f23/#697582/#8b949e/#3617ce)이
+   본체와 미묘하게 달라 글자색이 페이지마다 다르게 보였다. */
+:root{
+  --text:#1d1e23; --muted:#53586a; --faint:#8d92a1;
+  --line:#e6e7ec; --line-strong:#d3d6de; --input-line:#d3d6de;
+  --surface:#fff; --surface-2:#f8f9fb; --bg:#eef0f6;
+  --accent:#3a2fd8; --accent-soft:#efedfe; --accent-ink:#fff;
+}
 html,body{margin:0}
 body{background:#fff!important;font-size:13px;letter-spacing:-.1px}
 .main{padding:36px 48px 110px}

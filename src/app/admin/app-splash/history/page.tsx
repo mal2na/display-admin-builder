@@ -49,7 +49,6 @@ export default async function SplashHistoryPage() {
       <PageHeader
         trail={['운영 관리', 'App 스플래시 관리']}
         title="App 스플래시 관리"
-        divider={false}
       />
       <SplashTabs />
       <HistoryList rows={data} />

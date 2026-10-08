@@ -17,7 +17,6 @@ export default async function WidgetTypesPage() {
       <PageHeader
         trail={['운영 관리', 'App 위젯 관리']}
         title="App 위젯 관리"
-        divider={false}
       />
       <WidgetTabs />
       <WidgetTypeList rows={data} />

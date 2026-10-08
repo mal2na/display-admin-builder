@@ -33,7 +33,6 @@ export default async function AppWidgetsPage() {
       <PageHeader
         trail={['운영 관리', 'App 위젯 관리']}
         title="App 위젯 관리"
-        divider={false}
       />
       <WidgetTabs />
       <AppWidgetList rows={data} widgetTypes={types.map((t) => ({ id: t.id, name: t.typeName }))} />

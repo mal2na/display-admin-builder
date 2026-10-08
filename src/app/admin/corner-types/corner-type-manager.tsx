@@ -153,7 +153,7 @@ function domainOf(base: string): Domain {
   return '전시';
 }
 const DOMAIN_GUIDE: Record<Domain, string> = {
-  전시: '전시 코너 유형 — 상품형·배너형·혜택오퍼·업무진입·상태안내·콘텐츠안내·고정필수 7종 거버넌스로 나뉩니다. (배너형은 코너 유형이고, 배너 소재·문구는 배너 캠페인 관리가 소유)',
+  전시: '', // 안내 문구 제거 (2026-10-08 사용자 요청) — 칩 목록으로 충분해 중복 설명이었다
   프로모션: '프로모션(이벤트·미션) 전용 코너 유형 — 전시 거버넌스와 별개의 이벤트미션 계열로 관리합니다.',
   상품: '상품 전용 코너 유형은 아직 준비 중입니다. (현재 상품형은 전시 도메인에서 관리)',
 };
@@ -1056,7 +1056,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           );
         })}
       </div>
-      <p className="-mt-1 text-[12px] leading-relaxed text-muted-foreground">{DOMAIN_GUIDE[domain]}</p>
+      {DOMAIN_GUIDE[domain] && <p className="-mt-1 text-[12px] leading-relaxed text-[var(--ink3)]">{DOMAIN_GUIDE[domain]}</p>}
 
       {/* ── 상위 거버넌스: 승인 상태 탭 (언더라인 탭 — 참고 UI 스타일) ── */}
       {(() => {

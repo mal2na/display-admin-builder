@@ -211,8 +211,8 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
         </table>
       </div>
 
-      {/* 페이지네이션 + 액션 */}
-      <div className="flex items-center justify-between">
+      {/* 페이지네이션 + 액션 — 표에서 32px 띄운다(목록 공통 규격) */}
+      <div className="mt-8 flex items-center justify-between">
         <div className="flex items-center gap-1 text-sm">
           {totalPages > 1 && Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
             <button key={p} onClick={() => setPage(p)} className={`h-8 w-8 rounded-md text-xs ${p === page ? 'bg-[#3a2fd8] text-white' : 'hover:bg-secondary'}`}>{p}</button>

@@ -69,14 +69,16 @@ export function ContainerTree({ containers }: { containers: TreeContainer[] }) {
         </Link>
       </div>
 
-      <div className="relative px-1.5">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink3)]" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="컨테이너명, 템플릿명 검색"
-          className="inp !w-full !pl-8 text-[12.5px]"
-        />
+      <div className="px-1.5">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink3)]" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="컨테이너명, 템플릿명 검색"
+            className="inp !w-full !pl-9 text-[12.5px]"
+          />
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-1.5">
@@ -87,10 +89,8 @@ export function ContainerTree({ containers }: { containers: TreeContainer[] }) {
         )}
 
         {view.map(({ c, templates, forced }) => {
-          const onThisContainer =
-            pathname.startsWith(`/admin/containers/${c.id}`) ||
-            c.templates.some((t) => pathname.startsWith(`/admin/templates/${t.id}`));
-          const expanded = forced || (open[c.id] ?? onThisContainer);
+          // 기본은 펼침. 사용자가 접은 것(open[c.id] === false)만 접힌 상태로 둔다.
+          const expanded = forced || (open[c.id] ?? true);
 
           return (
             <div key={c.id}>

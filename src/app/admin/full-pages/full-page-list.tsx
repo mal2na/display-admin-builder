@@ -41,7 +41,6 @@ export function FullPageManager({ rows }: { rows: FPRow[] }) {
       <PageHeader
         trail={['운영관리', '전체페이지 관리']}
         title="전체페이지 관리"
-        divider={false}
       />
       {/* 상단 탭 */}
       <div className="mt-5 mb-1 flex gap-1 border-b border-[var(--line)]">

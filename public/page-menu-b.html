@@ -324,10 +324,10 @@ html,body{background:#fff;font-family:'Pretendard Variable',Pretendard,'Apple SD
 /* 머리 — 브레드크럼 12px, 제목 22/700, 아래 구분선 */
 .crumb{font-size:12px;color:var(--ink-3)}
 h1{font-size:22px;font-weight:700;letter-spacing:-.4px;margin:6px 0 0}
-/* 제목 아래 구분선 — 바로 밑에 탭이 오고 탭이 자기 선을 가지므로 중복이다.
-   어드민 규칙: 탭이 있으면 제목 구분선 없음. */
-.rule{display:none}
-h1{margin:6px 0 20px}
+/* 제목 아래 구분선 — 전 페이지 동일 규격(탭 유무와 무관). */
+.rule{display:block;height:1px;background:var(--line);margin:20px 0 0}
+h1{margin:6px 0 0}
+.tabs{margin-top:24px}
 .tabs{margin-bottom:0}
 .tab{font-size:14px;padding:12px 16px}
 

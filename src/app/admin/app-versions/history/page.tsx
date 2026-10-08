@@ -13,7 +13,6 @@ export default async function AppVersionHistoryPage() {
       <PageHeader
         trail={['운영 관리', 'App 버전 관리']}
         title="App 버전 관리"
-        divider={false}
       />
       <VersionTabs />
       <VersionHistoryList

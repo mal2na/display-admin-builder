@@ -35,7 +35,6 @@ export function MenuManager({ nodes, headInfo, history }: { nodes: MenuNode[]; h
       <PageHeader
         trail={['전시관리', '메뉴 관리']}
         title="메뉴 관리"
-        divider={false}
       />
       <div className="mb-5 flex gap-1 border-b border-[#e6e7ec]">
         {([['menu', '메뉴 정보 관리'], ['history', '변경/승인 이력']] as const).map(([k, label]) => (
