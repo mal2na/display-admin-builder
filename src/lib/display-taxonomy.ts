@@ -313,7 +313,8 @@ export function cornerTypeGovernance(cornerType?: string | null): string {
    모든 칩은 모양·크기·굵기가 같다: 라운드 6px · 높이 26 · 좌우 10 · 12px/600 · 테두리 없음.
    분류를 구분하는 것은 "색(톤)" 하나뿐이다. 호출부에서 크기·굵기를 따로 주지 말 것. */
 export const CHIP_BASE =
-  'inline-flex h-[26px] items-center whitespace-nowrap rounded-[6px] px-2.5 text-[12px] font-semibold';
+  // border-0 · shadow-none 은 호출부가 border/ring 을 덧붙여도 규격이 이기게 하는 방어막이다.
+  'inline-flex h-[26px] items-center whitespace-nowrap rounded-[6px] border-0 px-2.5 text-[12px] font-semibold shadow-none ring-0';
 
 // 코너 유형 → 톤. 상태 칩(ops-ui TONES)과 같은 농도의 연배경 + 진한 글자.
 export const CORNER_TYPE_CHIP: Record<CornerType, string> = {

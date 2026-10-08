@@ -19,7 +19,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
-import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, THEAD_TR_CLS, StatusPill } from '@/components/ops-ui';
 
 // 등록된 코너 유형(코너 유형 관리 = 마스터)의 (코너유형·컴포넌트·배열) 조합. 등록 폼 ②③을 이걸로 좁힌다.
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
@@ -1046,8 +1046,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition',
                 active
-                  ? 'bg-white text-[#3a2fd8] shadow-[0_1px_3px_rgba(0,0,0,0.1),0_0_0_1px_rgba(74,108,247,0.18)]'
-                  : 'text-slate-500 hover:text-slate-700',
+                  ? 'bg-white text-[var(--ac)]'
+                  : 'text-[var(--ink3)] hover:text-[var(--ink2)]',
               )}
             >
               {d}
@@ -1099,13 +1099,13 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                 {baseOptions.map((b) => {
                   const active = base === b;
                   const count = b === '전체' ? domainTypes.length : domainTypes.filter((t) => t.baseCategory === b).length;
-                  const color = b === '전체' ? `${CHIP_BASE} bg-white text-[var(--ink2)] ring-1 ring-inset ring-[var(--line2)]` : cornerTypeChipClass(b);
+                  const color = b === '전체' ? `${CHIP_BASE} bg-[#eef0f3] text-[var(--ink2)]` : cornerTypeChipClass(b);
                   return (
                     <button
                       key={b}
                       type="button"
                       onClick={() => { setBase(b); setPage(1); }}
-                      className={cn('gap-1.5 transition', color, active ? 'ring-2 ring-inset ring-[var(--ac)]' : 'opacity-75 hover:opacity-100')}
+                      className={cn('gap-1.5 transition', active ? `${CHIP_BASE} bg-[var(--ac)] text-white` : cn(color, 'opacity-70 hover:opacity-100'))}
                     >
                       {b}<span className="rounded bg-black/5 px-1.5 text-[11px] tabular-nums">{count}</span>
                     </button>
@@ -1269,11 +1269,11 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                       <DevicePreview corner={cornerRowPreview(t)} fit="contain" align="center-middle" />
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 align-middle"><span className={cn('inline-flex items-center whitespace-nowrap rounded-md border px-2 py-0.5 text-[12px]', cornerTypeChipClass(t.baseCategory))}>{t.baseCategory}</span></td>
+                  <td className="whitespace-nowrap px-3 py-2.5 align-middle"><span className={cornerTypeChipClass(t.baseCategory)}>{t.baseCategory}</span></td>
                   <td className="px-3 py-2.5 align-middle text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
                   <td className="px-3 py-2.5 align-middle text-slate-800">{t.previewCorner?.name ?? '-'}</td>
                   <td className="px-3 py-2.5 align-middle text-slate-600">{t.active ? '사용' : '미사용'}</td>
-                  <td className="whitespace-nowrap px-3 py-2.5 align-middle"><span className={cn('inline-flex items-center whitespace-nowrap rounded-md border px-2 py-0.5 text-[12px]', CORNER_TYPE_STATUS_COLOR[t.status] ?? 'bg-muted')}>{CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status}</span></td>
+                  <td className="whitespace-nowrap px-3 py-2.5 align-middle"><StatusPill label={CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status} /></td>
                   <td className="px-3 py-2.5 align-middle text-slate-600">{t.updatedBy ?? t.createdBy ?? '-'}</td>
                   <td className="px-3 py-2.5 align-middle text-slate-500">{(t.updatedAt ?? '').replace('T', ' ').slice(0, 16) || '-'}</td>
                 </tr>
