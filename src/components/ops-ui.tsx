@@ -143,7 +143,7 @@ export function ReadValue({ value }: { value: React.ReactNode }) {
      · 라벨은 컨트롤 왼쪽 인라인. 행 첫 라벨은 고정 폭으로 세로 정렬을 맞춘다
      · 한 행에 「라벨 + 컨트롤」 쌍이 여러 개 흐름 배치
      · 초기화 / 조회는 마지막 행 오른쪽 끝
-     · 컨트롤 높이 40px · 라운드 8px
+     · 컨트롤 높이 38px · 라운드 8px · 패널 패딩 24px
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /** 한 칸: [라벨, 컨트롤, grow(1이면 남는 폭을 채움)] */
@@ -166,7 +166,7 @@ export function FilterPanel({
 }) {
   const last = rows.length - 1;
   return (
-    <div className="fp rounded-[12px] bg-[#f8f9fb] px-7 py-5">
+    <div className="fp rounded-[12px] bg-[#f8f9fb] p-6">
       {rows.map((cells, r) => (
         <div key={r} className={cn('flex flex-wrap items-center gap-x-5 gap-y-3', r > 0 && 'mt-3')}>
           {cells.map(([label, node, grow], c) => (
@@ -183,12 +183,12 @@ export function FilterPanel({
           {r === last && (onReset || onSearch) && (
             <div className="ml-auto flex shrink-0 items-center gap-2 whitespace-nowrap">
               {onReset && (
-                <button type="button" onClick={onReset} className="h-10 rounded-[8px] border border-[var(--line2)] bg-white px-5 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">
+                <button type="button" onClick={onReset} className="h-[38px] rounded-[8px] border border-[var(--line2)] bg-white px-5 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">
                   {resetLabel}
                 </button>
               )}
               {onSearch && (
-                <button type="button" onClick={onSearch} className="h-10 rounded-[8px] bg-[var(--ac)] px-6 text-[13px] font-semibold text-white hover:bg-[var(--ac-h)]">
+                <button type="button" onClick={onSearch} className="h-[38px] rounded-[8px] bg-[var(--ac)] px-6 text-[13px] font-semibold text-white hover:bg-[var(--ac-h)]">
                   {searchLabel}
                 </button>
               )}

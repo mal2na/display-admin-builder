@@ -257,7 +257,7 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
 
 
   /* ── 검색 필터 패널 내부 컨트롤 (공식 규격: 높이 40 · 라운드 8) ── */
-  .fp .inp, .fp .sel, .fp input, .fp select { height: 40px; border-radius: 8px; border-color: #e3e5ea; }
+  .fp .inp, .fp .sel, .fp input, .fp select { height: 38px; border-radius: 8px; border-color: #e3e5ea; }
   .fp .sel, .fp select { min-width: 170px; }
   /* 남는 폭을 쓰는 칸(grow)에서는 검색어 입력이 늘어난다 */
   .fp .grow-cell .rng { display: flex; flex: 1; align-items: center; min-width: 0; }

@@ -329,10 +329,10 @@ h1{font-size:22px;font-weight:700;letter-spacing:-.4px;margin:6px 0 0}
 .tab{font-size:14px;padding:12px 16px}
 
 /* 검색 필터 — 공식 규격: 연회색 라운드 패널(테두리 없음) · 컨트롤 40px/라운드 8 */
-.searchbar{background:#f8f9fb;border:0;border-radius:12px;padding:20px 28px;gap:12px 20px;margin:0 0 8px}
+.searchbar{background:#f8f9fb;border:0;border-radius:12px;padding:24px;gap:12px 20px;margin:0 0 8px}
 .searchbar label{font-size:13px;font-weight:400;gap:10px}
-.searchbar select,.searchbar input[type="text"],.searchbar input[type="date"]{min-height:40px;height:40px;border-radius:8px;border-color:#e3e5ea;font-size:13px}
-.searchbar .btn{min-height:40px;height:40px;border-radius:8px;font-size:13px;padding:0 20px}
+.searchbar select,.searchbar input[type="text"],.searchbar input[type="date"]{min-height:38px;height:38px;border-radius:8px;border-color:#e3e5ea;font-size:13px}
+.searchbar .btn{min-height:38px;height:38px;border-radius:8px;font-size:13px;padding:0 20px}
 
 /* 버튼 */
 .btn{border-radius:7px;font-size:13px;font-weight:600;padding:0 15px;height:36px;display:inline-flex;align-items:center;gap:6px}
@@ -348,6 +348,16 @@ h1{font-size:22px;font-weight:700;letter-spacing:-.4px;margin:6px 0 0}
 .tag.acc{background:var(--accent-soft);color:var(--accent)}
 .chip-f{height:26px;border-radius:6px;padding:0 10px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;border:0;background:#eef0f3;color:var(--ink-2)}
 .chip-f.on{background:var(--accent-soft);color:var(--accent);border:0}
+/* 작은 변형(.tag.sm)도 칩 규격 안에서만 — 높이·라운드·굵기는 동일, 글자만 11px */
+.tag.sm{height:26px;padding:0 8px;font-size:11px;font-weight:600;margin-left:6px;border-radius:6px}
+/* 변형들(.ch/.type/.blue 등)이 원본에서 라운드·글자크기를 각자 바꾸고 있어 전부 규격으로 되돌린다.
+   색만 변형이 정하고 모양·크기·굵기는 .tag 하나로 고정. */
+.tag.ch,.tag.type,.tag.blue,.tag.gray,.tag.ok,.tag.warn,.tag.amber,.tag.acc{
+  height:26px;padding:0 10px;border-radius:6px;font-size:12px;font-weight:600;border:0;
+}
+.tag.type{padding:0 8px}
+.tag.ch{background:var(--accent-soft);color:var(--accent)}
+.dchip{font-size:12px;border-radius:6px;padding:0 8px;height:26px;display:inline-flex;align-items:center}
 
 /* 표 — 헤더 회색 배경 13px/600, 본문 13px/400 */
 table th{background:#f6f7f9;font-weight:600;font-size:13px;color:var(--ink-2)}
