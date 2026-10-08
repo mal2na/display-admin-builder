@@ -137,32 +137,34 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
       {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
+          // 한 줄에 들어갈 만큼 가로로 채운다 — 게시상태·위젯유형·게시기간이 한 행, 배너명이 남는 폭을 쓴다.
+          //  (예전엔 2개씩 두 줄이라 오른쪽이 비었다. 2026-10-08 사용자 요청)
           rows={[
             [
               ['게시상태', (
-                <Select key="st" value={status} onChange={(e) => setStatus(e.target.value)} className="w200">
+                <Select key="st" value={status} onChange={(e) => setStatus(e.target.value)}>
                   <option value="">전체</option>
                   {PUBLISH_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </Select>
               )],
               ['위젯유형', (
-                <Select key="ty" value={typeId} onChange={(e) => setTypeId(e.target.value)} className="w200">
+                <Select key="ty" value={typeId} onChange={(e) => setTypeId(e.target.value)}>
                   <option value="">전체</option>
                   {widgetTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </Select>
               )],
-            ],
-            [
               ['게시기간', (
                 <span key="pd" className="rng">
-                  <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[150px]" />
+                  <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
                   <span className="text-[var(--ink3)]">~</span>
-                  <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[150px]" />
+                  <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
                 </span>
               )],
+            ],
+            [
               ['배너명', (
-                <Input key="nm" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder="배너명을 입력하세요" className="w-[340px] max-w-full" />
-              )],
+                <Input key="nm" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder="배너명을 입력하세요" />
+              ), 3],
             ],
           ]}
           onReset={doReset}

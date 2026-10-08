@@ -83,12 +83,13 @@ export function PromoList({ onToast, onOpenExample, onRegister }: {
           [
             ['기간', (
               <span key="pd" className="flex items-center gap-2">
-                <select value={draft.periodType} onChange={(e) => set({ periodType: e.target.value })} className={cn(SEL, 'w-[130px]')}>
+                {/* 기간·전시상태·댓글 사용여부가 한 줄에 들어가도록 폭을 줄였다 */}
+                <select value={draft.periodType} onChange={(e) => set({ periodType: e.target.value })} className={cn(SEL, '!min-w-[120px]')}>
                   {PERIOD_TYPES.map((o) => <option key={o}>{o}</option>)}
                 </select>
-                <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} className={cn(INP, 'w-[150px]')} />
+                <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} className={cn(INP, '!w-[136px]')} />
                 <span className="text-[var(--ink3)]">~</span>
-                <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={cn(INP, 'w-[150px]')} />
+                <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={cn(INP, '!w-[136px]')} />
               </span>
             )],
             ['전시상태', (

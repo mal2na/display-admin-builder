@@ -115,11 +115,9 @@ export function ListHeader({
  *  Y = success(초록) · N = neutral(회색).
  */
 export function YN({ yes, label }: { yes: boolean; label?: string }) {
-  return (
-    <span className={cn(CHIP_BASE, 'justify-center px-2', yes ? TONES.success : TONES.neutral)} title={label}>
-      {yes ? 'Y' : 'N'}
-    </span>
-  );
+  // 칩이 아니라 본문 텍스트로 쓴다(2026-10-08 사용자 지정).
+  //  Y/N 은 값이 둘뿐이라 칩을 입히면 표 안에서 상태 칩(승인·게시 등)과 섞여 눈에 더 걸린다.
+  return <span className="text-[14px] leading-[20px] text-[var(--ink)]" title={label}>{yes ? 'Y' : 'N'}</span>;
 }
 
 /** 긍정 라벨 목록 — 이 중 하나면 Y. 3상태(검수 중 등)는 null 을 돌려 호출부에서 따로 처리한다. */

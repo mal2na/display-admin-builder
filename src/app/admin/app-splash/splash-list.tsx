@@ -108,16 +108,16 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
       {/* 검색 영역 (1) — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
+          // 두 줄로 가로를 꽉 채운다 — 폭이 넓은 기간을 첫 줄에 올려 오른쪽 빈자리를 없앴다.
+          //  (예전엔 2개씩 세 줄이라 오른쪽이 절반씩 비었다. 2026-10-08 사용자 요청)
           rows={[
             [
-              ['OS 유형', <select key="os" value={draft.os} onChange={(e) => set({ os: e.target.value })} className={cn(selectCls, 'w200')}>{['전체', 'Android', 'IOS'].map((o) => <option key={o}>{o}</option>)}</select>],
-              ['적용상태', <select key="ap" value={draft.apply} onChange={(e) => set({ apply: e.target.value })} className={cn(selectCls, 'w200')}>{['전체', '적용중', '적용예정', '적용종료'].map((o) => <option key={o}>{o}</option>)}</select>],
-            ],
-            [
-              ['승인상태', <select key="av" value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={cn(selectCls, 'w200')}>{['전체', '승인완료', '승인요청', '임시저장', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>],
+              ['OS 유형', <select key="os" value={draft.os} onChange={(e) => set({ os: e.target.value })} className={selectCls}>{['전체', 'Android', 'IOS'].map((o) => <option key={o}>{o}</option>)}</select>],
+              ['적용상태', <select key="ap" value={draft.apply} onChange={(e) => set({ apply: e.target.value })} className={selectCls}>{['전체', '적용중', '적용예정', '적용종료'].map((o) => <option key={o}>{o}</option>)}</select>],
               ['기간', (
                 <span key="dt" className="rng">
-                  <select value={draft.dateField} onChange={(e) => set({ dateField: e.target.value })} className={cn(selectCls, 'w200')}>{['등록일', '최근수정일', '적용시작일'].map((o) => <option key={o}>{o}</option>)}</select>
+                  {/* 기준 셀렉트는 라벨이 짧아 폭을 줄인다 — 줄여야 기간이 첫 줄에 함께 들어간다 */}
+                  <select value={draft.dateField} onChange={(e) => set({ dateField: e.target.value })} className={cn(selectCls, '!min-w-[140px]')}>{['등록일', '최근수정일', '적용시작일'].map((o) => <option key={o}>{o}</option>)}</select>
                   <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} className={inputCls} />
                   <span className="text-[var(--ink3)]">~</span>
                   <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={inputCls} />
@@ -125,10 +125,11 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
               )],
             ],
             [
+              ['승인상태', <select key="av" value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={selectCls}>{['전체', '승인완료', '승인요청', '임시저장', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>],
               ['구분검색', (
                 <span key="q" className="rng">
-                  <select value={draft.searchField} onChange={(e) => set({ searchField: e.target.value, q: '' })} className={cn(selectCls, 'w200')}>{['버전', '제목', '등록자', '최근수정자'].map((o) => <option key={o}>{o}</option>)}</select>
-                  <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder={SEARCH_PLACEHOLDER[draft.searchField]} className={cn(inputCls, 'w-[340px] max-w-full')} />
+                  <select value={draft.searchField} onChange={(e) => set({ searchField: e.target.value, q: '' })} className={selectCls}>{['버전', '제목', '등록자', '최근수정자'].map((o) => <option key={o}>{o}</option>)}</select>
+                  <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder={SEARCH_PLACEHOLDER[draft.searchField]} className={inputCls} />
                 </span>
               ), 3],
             ],
