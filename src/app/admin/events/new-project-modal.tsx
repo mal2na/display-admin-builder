@@ -39,13 +39,13 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   const matched = kind === '이벤트' ? TEMPLATES.filter((t) => t.key !== 'blank' && t.eventType === type) : [];
   const templates = [blank, ...matched];
 
-  const inputCls = 'h-10 w-full rounded-lg border px-3 text-sm';
+  const inputCls = 'inp';
   const labelCls = 'mb-1 block text-sm font-medium';
   const req = <span className="text-rose-500">*</span>;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b px-5 py-3.5">
           <div>
             <h2 className="text-base font-bold">새 프로젝트</h2>

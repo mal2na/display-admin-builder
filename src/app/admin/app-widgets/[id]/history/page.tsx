@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { WidgetDetailTabs } from '../../detail-tabs';
 import { WidgetHistoryTable } from '../../widget-history-table';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,9 +25,11 @@ export default async function AppWidgetHistoryPage({ params }: { params: { id: s
   }));
 
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 위젯 관리 › App 위젯 상세</nav>
-      <h1 className="mb-3 text-2xl font-bold">App 위젯 상세</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 위젯 관리', 'App 위젯 상세']}
+        title="App 위젯 상세"
+      />
       <WidgetDetailTabs id={w.id} />
       <p className="mb-2 text-sm font-semibold">{w.bannerName} <span className="ml-1 text-[12px] font-normal text-muted-foreground">변경/승인 이력 {rows.length}건</span></p>
       <WidgetHistoryTable rows={rows} />

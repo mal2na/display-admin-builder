@@ -38,7 +38,7 @@ export function NewCornerType({ builtOptions, registered = [], bannerCampaigns =
   };
 
   return (
-    <div className="space-y-4">
+    <div>
       <div className="flex items-center gap-3">
         <Link
           href="/admin/corner-types"

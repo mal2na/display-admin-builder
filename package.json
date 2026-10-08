@@ -4,6 +4,7 @@
   "private": true,
   "description": "전시/관리 어드민 빌더 — 데이터 모델(Phase 1)",
   "scripts": {
+    "predev": "npm run local:schema && prisma generate --schema prisma/schema.local.prisma",
     "dev": "next dev",
     "tokens": "node scripts/build-tokens.mjs",
     "build": "prisma generate && prisma db push --skip-generate && FORCE_SEED=1 tsx prisma/seed.ts && next build",

@@ -113,7 +113,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
   const bannerPreviews: BannerPreview[] = [];
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-12 py-9 pb-28">
       <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} usage={usage} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} siblings={siblings} />
     </div>
   );

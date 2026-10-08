@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { YN } from '@/components/ops-ui';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, Pencil, Plus, RotateCcw, Search, Trash2, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -261,10 +262,10 @@ export function CommentManager({
                 <Td className="text-center tabular-nums">{c.replyCount}</Td>
                 <Td className="whitespace-nowrap text-[12px] text-muted-foreground">{c.replyAt ?? '-'}</Td>
                 <Td className="text-center">
-                  <StatusPill on={c.answered} onLabel="답변완료" offLabel="답변대기" tone={c.answered ? 'green' : 'amber'} />
+                  <YN yes={c.answered} label={c.answered ? '답변완료' : '답변대기'} />
                 </Td>
                 <Td className="text-center">
-                  <StatusPill on={c.exposed} onLabel="노출" offLabel="미노출" tone={c.exposed ? 'green' : 'rose'} />
+                  <YN yes={c.exposed} label={c.exposed ? '노출' : '미노출'} />
                 </Td>
               </tr>
             ))}
@@ -529,7 +530,7 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
 function Modal({ width, onClose, children }: { width?: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className={cn('w-full rounded-xl bg-card p-5 shadow-xl', width ?? 'max-w-md')} onClick={(e) => e.stopPropagation()}>{children}</div>
+      <div className={cn('w-full rounded-2xl bg-card p-5 shadow-xl', width ?? 'max-w-md')} onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>
   );
 }

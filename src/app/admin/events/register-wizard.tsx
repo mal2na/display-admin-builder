@@ -158,7 +158,7 @@ export function RegisterWizard({ open, onClose }: { open: boolean; onClose: () =
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
-      <div className="flex max-h-[calc(100vh-32px)] w-[min(760px,100%)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="flex max-h-[calc(100vh-32px)] w-[min(760px,100%)] flex-col overflow-hidden dlg">
         {/* 헤더 */}
         <div className="flex items-start justify-between border-b px-6 py-4">
           <div>

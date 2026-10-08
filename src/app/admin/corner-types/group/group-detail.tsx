@@ -6,6 +6,7 @@ import { ChevronLeft, Pencil, Check, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { cornerTypeChipClass, cornerTypePurpose, layoutLabel } from '@/lib/display-taxonomy';
 import { DevicePreview, cornerRowPreview, type CornerTypeRow } from '../corner-type-manager';
+import { PageHeader } from '@/components/page-header';
 
 const SORT_LABEL: Record<string, string> = { MANUAL: '수동(배치 순서)', PRIORITY: '우선순위', RECENT: '최신순', POPULAR: '인기순', PRICE_ASC: '낮은 가격순', PRICE_DESC: '높은 가격순' };
 const FEATURES: [keyof CornerTypeRow, string][] = [
@@ -33,19 +34,21 @@ export function GroupDetail({ base, variations }: { base: string; variations: Co
   const hasDefaults = seed && (seed.defaultMinItems != null || seed.defaultMaxItems != null || seed.defaultSortStrategy || seed.defaultRecSource);
 
   return (
-    <div className="space-y-4">
-      <nav className="text-[12px] text-muted-foreground">홈 › 전시관리 › 코너 유형 관리 › {base}</nav>
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => router.push('/admin/corner-types')} className="inline-flex items-center gap-1 text-[12px] text-slate-500 hover:text-slate-700"><ChevronLeft className="h-3.5 w-3.5" />코너 유형 관리</button>
-        <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[15px] font-bold', cornerTypeChipClass(base))}>{base}</span>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-slate-600">베리에이션 {variations.length}개</span>
-      </div>
+    <div>
+      <PageHeader
+        trail={['전시관리', '코너 유형 관리', base]}
+        title={base}
+        back={
+          <button type="button" onClick={() => router.push('/admin/corner-types')} className="inline-flex items-center gap-1 text-[12px] text-[var(--ink3)] hover:text-[var(--ink)]"><ChevronLeft className="h-3.5 w-3.5" />코너 유형 관리</button>
+        }
+        action={<span className={cn(cornerTypeChipClass(base))}>베리에이션 {variations.length}개</span>}
+      />
 
       {/* 코너 유형 정보 (단일 패널) */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-2 border-b pb-3">
           <h2 className="text-sm font-semibold">코너 유형 정보</h2>
-          <button type="button" onClick={() => router.push(`/admin/corner-types/edit?base=${encodeURIComponent(base)}`)} className="inline-flex items-center gap-1 rounded-lg border border-[#C7D2FE] bg-[#EEF2FF] px-3.5 py-2 text-[12.5px] font-bold text-[#4A5CF0] hover:bg-[#E0E7FF]"><Pencil className="h-3.5 w-3.5" />수정</button>
+          <button type="button" onClick={() => router.push(`/admin/corner-types/edit?base=${encodeURIComponent(base)}`)} className="inline-flex items-center gap-1 rounded-lg border border-[#e1e3ff] bg-[#f1f2ff] px-3.5 py-2 text-[12.5px] font-bold text-[#3617ce] hover:bg-[#f1f2ff]"><Pencil className="h-3.5 w-3.5" />수정</button>
         </div>
 
         <div className="grid grid-cols-1 items-start gap-5 pt-4 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
@@ -62,7 +65,7 @@ export function GroupDetail({ base, variations }: { base: string; variations: Co
               ))}
             </div>
             {/* 고정 미리보기 — 선택된 배열만 표시(실사 렌더). 배너·칩·바코드·프로필·메뉴·상태 모두 CornerBlock이 처리 */}
-            <div className="overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#F0F2F9] p-4">
+            <div className="overflow-hidden rounded-lg border border-[#e8ecef] bg-[#eef0f6] p-4">
               <div className="pointer-events-none h-[400px]"><DevicePreview corner={cornerRowPreview(cur)} fit="contain" /></div>
             </div>
           </div>

@@ -1,11 +1,15 @@
 'use client';
 
 // SB-ETC-111 App 버전 관리 목록(클라이언트) — 검색 영역 + 목록 + Redis reload + 등록.
-//  디자인 시스템(프로토타입 토큰): accent #3616cd · 헤더 #f0f2f4 · 보더 #e8ebef · 13px 레귤러.
+//  디자인 시스템(프로토타입 토큰): accent #3617ce · 헤더 #f8f9fb · 보더 #e8ecef · 13px 레귤러.
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
+import { PageHeader } from '@/components/page-header';
+import { VersionTabs } from './version-tabs';
+import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 export type VersionRow = {
   id: string; targetApp: string; osType: string; applyState: string; approvalLabel: string;
@@ -14,14 +18,14 @@ export type VersionRow = {
 };
 
 const APPROVAL_TONE: Record<string, string> = {
-  승인완료: 'bg-[#e3f6ea] text-[#1f8a4c]', 승인요청: 'bg-[#e6efff] text-[#2d5fd9]',
-  임시저장: 'bg-[#eceef3] text-[#5d6275]', 반려: 'bg-[#ffe9e9] text-[#d93b3b]', 요청취소: 'bg-[#fff0de] text-[#c46a0b]',
+  승인완료: 'bg-[#C8F6E1] text-[#038E52]', 승인요청: 'bg-[#D9E9FF] text-[#2E7AFF]',
+  임시저장: 'bg-[#DCE0E5] text-[#454F59]', 반려: 'bg-[#FFDCDC] text-[#ED3B3E]', 요청취소: 'bg-[#FFE4C4] text-[#D66400]',
 };
 const APPLY_TONE: Record<string, string> = {
-  적용중: 'bg-[#e3f6ea] text-[#1f8a4c]', 적용예정: 'bg-[#e6efff] text-[#2d5fd9]', 적용종료: 'bg-[#eceef3] text-[#5d6275]',
+  적용중: 'bg-[#C8F6E1] text-[#038E52]', 적용예정: 'bg-[#D9E9FF] text-[#2E7AFF]', 적용종료: 'bg-[#DCE0E5] text-[#454F59]',
 };
 // App/권장/강제 버전 배지 — OS로 색 구분(Android=green, iOS=blue) (SB-ETC-111 ‘2’)
-const verTone = (os: string) => (os === 'IOS' ? 'bg-[#e6efff] text-[#2d5fd9]' : 'bg-[#e3f6ea] text-[#1f8a4c]');
+const verTone = (os: string) => (os === 'IOS' ? 'bg-[#D9E9FF] text-[#2E7AFF]' : 'bg-[#C8F6E1] text-[#038E52]');
 
 function fmtDT(iso: string | null): string {
   if (!iso) return '-';
@@ -30,8 +34,8 @@ function fmtDT(iso: string | null): string {
 }
 
 const PER_PAGE = 10;
-const selectCls = 'h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-2.5 text-[12.5px] text-slate-700';
-const inputCls = 'h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-3 text-[12.5px] text-slate-700 placeholder:text-slate-400';
+const selectCls = 'sel';
+const inputCls = 'inp';
 const SEARCH_PH: Record<string, string> = {
   'App 버전': '버전 번호를 입력하세요. 예: 2.0.0', '권장 버전': '버전 번호를 입력하세요. 예: 2.0.0', '강제 버전': '버전 번호를 입력하세요. 예: 2.0.0',
   등록자: '등록자 이름을 입력하세요.', 최근수정자: '최근 수정자 이름을 입력하세요.',
@@ -76,51 +80,55 @@ export function VersionList({ rows }: { rows: VersionRow[] }) {
   const doReset = () => { setDraft(DEFAULT); setApplied(DEFAULT); setPage(1); };
 
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-slate-400">홈 › 운영관리 › App 버전 관리</nav>
-      <h1 className="mb-4 text-[22px] font-bold text-slate-900">App 버전 관리</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영관리', 'App 버전 관리']}
+        title="App 버전 관리"
+      />
+      <VersionTabs />
 
-      {/* 검색 영역 (1) */}
-      <div className="mb-5 grid gap-3 rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-5">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <Field label="대상 App 유형">
-            <select value={draft.app} onChange={(e) => set({ app: e.target.value })} className={cn(selectCls, 'w-32')}>{['전체', '통합App', '구T월드'].map((o) => <option key={o}>{o}</option>)}</select>
-          </Field>
-          <Field label="OS 유형">
-            <select value={draft.os} onChange={(e) => set({ os: e.target.value })} className={cn(selectCls, 'w-28')}>{['전체', 'Android', 'IOS'].map((o) => <option key={o}>{o}</option>)}</select>
-          </Field>
-          <Field label="적용상태">
-            <select value={draft.apply} onChange={(e) => set({ apply: e.target.value })} className={cn(selectCls, 'w-28')}>{['전체', '적용중', '적용예정', '적용종료'].map((o) => <option key={o}>{o}</option>)}</select>
-          </Field>
-          <Field label="승인상태">
-            <select value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={cn(selectCls, 'w-28')}>{['전체', '승인완료', '승인요청', '임시저장', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>
-          </Field>
-          <Field label="기간">
-            <select value={draft.dateField} onChange={(e) => set({ dateField: e.target.value })} className={cn(selectCls, 'w-32')}>{['등록일자', '최근수정일자', 'App업데이트일시'].map((o) => <option key={o}>{o}</option>)}</select>
-            <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} className={cn(inputCls, 'w-[150px]')} />
-            <span className="text-slate-400">~</span>
-            <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={cn(inputCls, 'w-[150px]')} />
-          </Field>
-        </div>
-        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-          <Field label="구분검색">
-            <select value={draft.searchField} onChange={(e) => set({ searchField: e.target.value, q: '' })} className={cn(selectCls, 'w-32')}>{['App 버전', '권장 버전', '강제 버전', '등록자', '최근수정자'].map((o) => <option key={o}>{o}</option>)}</select>
-            <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder={SEARCH_PH[draft.searchField]} className={cn(inputCls, 'w-[340px] max-w-full')} />
-          </Field>
-          <div className="ml-auto flex items-center gap-2">
-            <button type="button" onClick={doReset} className="h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-4 text-[12.5px] font-medium text-slate-600 hover:bg-[#f0f2f4]">초기화</button>
-            <button type="button" onClick={doSearch} className="h-[34px] rounded-lg bg-[#3616cd] px-5 text-[12.5px] font-medium text-white hover:brightness-110">조회</button>
-          </div>
-        </div>
+      {/* 검색 영역 (1) — 참고 디자인 .ft 폼 테이블 + .sbtn */}
+      <div className="mt-6">
+        <FilterPanel
+          // 한 줄에 들어갈 만큼 가로로 채운다 — 셀렉트 4개가 한 행, 기간 + 구분검색이 한 행.
+          //  (예전엔 2개씩 네 줄이라 오른쪽이 절반씩 비었다. 2026-10-08 사용자 요청)
+          rows={[
+            [
+              ['대상 App 유형', <select key="app" value={draft.app} onChange={(e) => set({ app: e.target.value })} className={selectCls}>{['전체', '통합App', '구T월드'].map((o) => <option key={o}>{o}</option>)}</select>],
+              ['OS 유형', <select key="os" value={draft.os} onChange={(e) => set({ os: e.target.value })} className={selectCls}>{['전체', 'Android', 'IOS'].map((o) => <option key={o}>{o}</option>)}</select>],
+              ['적용상태', <select key="ap" value={draft.apply} onChange={(e) => set({ apply: e.target.value })} className={selectCls}>{['전체', '적용중', '적용예정', '적용종료'].map((o) => <option key={o}>{o}</option>)}</select>],
+              ['승인상태', <select key="av" value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={selectCls}>{['전체', '승인완료', '승인요청', '임시저장', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>],
+            ],
+            [
+              ['기간', (
+                <span key="dt" className="rng">
+                  <select value={draft.dateField} onChange={(e) => set({ dateField: e.target.value })} className={selectCls}>{['등록일자', '최근수정일자', 'App업데이트일시'].map((o) => <option key={o}>{o}</option>)}</select>
+                  <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} className={inputCls} />
+                  <span className="text-[var(--ink3)]">~</span>
+                  <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={inputCls} />
+                </span>
+              )],
+              ['구분검색', (
+                <span key="q" className="rng">
+                  <select value={draft.searchField} onChange={(e) => set({ searchField: e.target.value, q: '' })} className={selectCls}>{['App 버전', '권장 버전', '강제 버전', '등록자', '최근수정자'].map((o) => <option key={o}>{o}</option>)}</select>
+                  <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder={SEARCH_PH[draft.searchField]} className={inputCls} />
+                </span>
+              ), 3],
+            ],
+            [],
+          ]}
+          onReset={doReset}
+          onSearch={doSearch}
+        />
       </div>
 
-      <p className="mb-2 text-[13px] text-slate-500">조회결과 <b className="text-[#3616cd] tabular-nums">{filtered.length}</b>건</p>
+      <ListHeader title="조회결과" count={filtered.length} />
 
       {/* 목록 (2) */}
-      <div className="overflow-x-auto border-t border-[#e8ebef]">
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1320px] text-[13px] font-normal">
           <thead>
-            <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086]">
+            <tr className={THEAD_TR_CLS}>
               {['No.', '대상 App', 'OS유형', '적용상태', '승인상태', 'App 버전', '권장 버전', '강제 버전', 'App 업데이트 일시', '등록자', '등록일시', '최근 수정자', '최근 수정일시'].map((h) => (
                 <th key={h} className="h-11 px-3 font-normal whitespace-nowrap text-center">{h}</th>
               ))}
@@ -132,12 +140,12 @@ export function VersionList({ rows }: { rows: VersionRow[] }) {
             ) : paged.map((r, i) => {
               const no = filtered.length - ((curPage - 1) * PER_PAGE + i);
               return (
-                <tr key={r.id} onClick={() => router.push(`/admin/app-versions/${r.id}`)} className="cursor-pointer border-b border-[#e8ebef] text-center text-slate-700 hover:bg-[#f0f2f4]">
+                <tr key={r.id} onClick={() => router.push(`/admin/app-versions/${r.id}`)} className={cn(TBODY_TR_CLS, 'cursor-pointer text-center')}>
                   <td className="h-11 px-3 tabular-nums text-slate-500">{no}</td>
                   <td className="h-11 px-3">{r.targetApp}</td>
                   <td className="h-11 px-3">{r.osType}</td>
-                  <td className="h-11 px-3">{r.applyState === '-' ? <span className="text-slate-400">-</span> : <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPLY_TONE[r.applyState])}>{r.applyState}</span>}</td>
-                  <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.approvalLabel}</span></td>
+                  <td className="h-11 px-3">{r.applyState === '-' ? <span className="text-slate-400">-</span> : <span className={cn(CHIP_BASE, APPLY_TONE[r.applyState])}>{r.applyState}</span>}</td>
+                  <td className="h-11 px-3"><span className={cn(CHIP_BASE, APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{r.approvalLabel}</span></td>
                   <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px] tabular-nums', verTone(r.osType))}>{r.version}</span></td>
                   <td className="h-11 px-3 tabular-nums text-slate-600">{r.recommendVersion}</td>
                   <td className="h-11 px-3 tabular-nums text-slate-600">{r.forceVersion}</td>
@@ -154,19 +162,10 @@ export function VersionList({ rows }: { rows: VersionRow[] }) {
       </div>
 
       {/* 페이지네이션 + Redis reload + 등록 (3/4/5) */}
-      <div className="relative mt-4 flex items-center justify-center">
-        {totalPages > 1 && (
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-[13px]', p === curPage ? 'bg-[#3616cd] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
-            ))}
-          </div>
-        )}
-        <div className="absolute right-0 flex items-center gap-2">
-          <button type="button" onClick={() => setReloadOpen(true)} className="inline-flex h-9 items-center rounded-lg border border-[#cfd3e0] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f0f2f4]">Redis reload</button>
-          <Link href="/admin/app-versions/new" className="inline-flex h-9 items-center rounded-lg bg-[#3616cd] px-5 text-[13px] font-semibold text-white hover:brightness-110">등록</Link>
-        </div>
-      </div>
+      <ListBottom page={curPage} totalPages={totalPages} onPageChange={setPage}>
+        <button type="button" onClick={() => setReloadOpen(true)} className="inline-flex h-[38px] items-center rounded-[8px] border border-[var(--line2)] bg-white px-5 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">Redis reload</button>
+        <Link href="/admin/app-versions/new" className="inline-flex h-[38px] items-center rounded-[8px] bg-[var(--ac)] px-6 text-[13px] font-semibold text-white hover:bg-[var(--ac-h)]">등록</Link>
+      </ListBottom>
 
       {/* 4-1 변경사항 반영 팝업 */}
       {reloadOpen && (
@@ -175,8 +174,8 @@ export function VersionList({ rows }: { rows: VersionRow[] }) {
             <h3 className="text-[15px] font-bold text-slate-900">현재 변경된 최신 데이터를 Redis 캐시에 업데이트하시겠습니까?</h3>
             <p className="mt-2 text-[12.5px] leading-relaxed text-slate-500">승인 완료된 변경 사항을 캐시(Redis) 갱신으로 프론트 화면에 즉시 반영합니다. 미승인 변경은 반영 대상에서 제외됩니다.</p>
             <div className="mt-4 flex justify-end gap-2">
-              <button onClick={() => setReloadOpen(false)} className="h-9 rounded-lg border border-[#cfd3e0] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f0f2f4]">취소</button>
-              <button onClick={() => setReloadOpen(false)} className="h-9 rounded-lg bg-[#3616cd] px-5 text-[13px] font-semibold text-white hover:brightness-110">확인</button>
+              <button onClick={() => setReloadOpen(false)} className="h-9 rounded-lg border border-[#dce0e5] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f8f9fb]">취소</button>
+              <button onClick={() => setReloadOpen(false)} className="h-9 rounded-lg bg-[#3617ce] px-5 text-[13px] font-semibold text-white hover:brightness-110">확인</button>
             </div>
           </div>
         </div>

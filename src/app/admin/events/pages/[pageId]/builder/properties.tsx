@@ -16,7 +16,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
     </div>
   );
 }
-const inputCls = 'h-8 w-full rounded-md border px-2 text-[12px]';
+const inputCls = 'inp';
 
 export function PropertiesPanel({ pageId, node, onDelete, onPatch }: { pageId: string; node: NodeView; onDelete: () => void; onPatch?: (nodeId: string, patch: Record<string, unknown>) => void }) {
   const [, start] = useTransition();

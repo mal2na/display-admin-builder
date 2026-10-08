@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-// 네이티브 select 기반(shadcn 기본 스타일). 운영 어드민이라 가벼운 네이티브가 밀도/접근성에 유리.
+// NC-Channel Product Admin 셀렉트 규격 (.sel) — 네이티브 select + 커스텀 쉐브론.
 export const Select = React.forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
@@ -9,7 +9,9 @@ export const Select = React.forwardRef<
   <select
     ref={ref}
     className={cn(
-      'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+      'sel flex h-[34px] w-full cursor-pointer rounded-[6px] border border-[var(--line2)] text-[13px] text-[var(--ink)] transition-colors',
+      'focus-visible:border-[var(--ac)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ac)]/25',
+      'disabled:cursor-not-allowed disabled:bg-[var(--th)] disabled:text-[var(--ink3)]',
       className,
     )}
     {...props}

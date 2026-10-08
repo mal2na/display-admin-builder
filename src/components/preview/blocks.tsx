@@ -1,6 +1,6 @@
 import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles, ImageIcon } from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
-import { resolveCvmSample, cvmBindingLabel } from '@/lib/display-taxonomy';
+import { resolveCvmSample, cvmBindingLabel, isCvmSource } from '@/lib/display-taxonomy';
 import { PreviewImage } from './preview-image';
 import { cn } from '@/lib/utils';
 import { parseBannerOptions } from '@/lib/banner-options';
@@ -89,9 +89,9 @@ function ChipsView({ component }: { component: PreviewComponent }) {
     const twoRows = component.chipRows === 2;
     const chip = (a: PreviewAtom) => (
       <span key={a.id} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/50 py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EDEFF7] text-[#3617CE]">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#eef0f6] text-[#3617ce]">
           {a.imageUrl && isRenderableImg(a.imageUrl) && !isIconRef(a.imageUrl)
-            ? /* 디자인 제공 퀵칩 아이콘(#3617CE svg) — 흰 원형 뱃지 위 글리프 크기로 렌더 */
+            ? /* 디자인 제공 퀵칩 아이콘(#3617ce svg) — 흰 원형 뱃지 위 글리프 크기로 렌더 */
               /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="h-3.5 w-3.5 object-contain" />
             : <IconGlyph name={a.imageUrl && isIconRef(a.imageUrl) ? a.imageUrl : 'icon:general/Category'} className="h-3.5 w-3.5" />}
         </span>
@@ -279,7 +279,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     if (hasImg && isFullBanner) {
       return (
         <div className="overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-white">
-          <div className="flex w-full items-center justify-center bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5]" style={{ aspectRatio: ratio }}>
+          <div className="flex w-full items-center justify-center bg-gradient-to-br from-[#eef0f6] to-[#E3E9F5]" style={{ aspectRatio: ratio }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt={img?.altText ?? title?.content ?? ''} className="h-full w-full object-contain" />
           </div>
@@ -288,7 +288,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     }
     // 콤포즈형: 타이틀(좌) + 로고(우) — 롯데월드 배너처럼 딱 맞게. 규격이 커도 세로는 캡(뚱뚱 방지).
     return (
-      <div className="flex items-center gap-3 overflow-hidden rounded-[28px] bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: composeRatio }}>
+      <div className="flex items-center gap-3 overflow-hidden rounded-[28px] bg-gradient-to-br from-[#eef0f6] to-[#E3E9F5] px-4 shadow-sm ring-1 ring-white" style={{ aspectRatio: composeRatio }}>
         <div className="min-w-0 flex-1 py-3">
           <p className="line-clamp-2 whitespace-pre-line text-[14px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
           {sub?.content && <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{sub.content}</p>}
@@ -302,7 +302,7 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
     );
   }
   return (
-    <div className="flex items-center gap-3 rounded-[28px] bg-gradient-to-br from-[#EEF1F8] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-white">
+    <div className="flex items-center gap-3 rounded-[28px] bg-gradient-to-br from-[#eef0f6] to-[#E3E9F5] p-4 shadow-sm ring-1 ring-white">
       <div className="min-w-0 flex-1 space-y-1">
         <p className="whitespace-pre-line text-[15px] font-bold leading-snug text-slate-900">{title?.content ?? component.name}</p>
         {sub && <p className="text-[12px] text-slate-500">{sub.content}</p>}
@@ -372,7 +372,7 @@ function PlanBannerRow({ component }: { component: PreviewComponent }) {
         ? <ImageBox atom={thumb} className="h-14 w-14 shrink-0 rounded-2xl" />
         : component.emptyImages
           ? <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-slate-100 text-slate-400"><ImageIcon className="h-4 w-4 opacity-60" /><span className="text-[9px] font-medium">이미지</span></div>
-          : <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#4B63E6] to-[#3A4FCC]' : 'bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]')}>{label || '요금제'}</div>}
+          : <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl px-1 text-center text-[11px] font-bold text-white', isUnlimited ? 'bg-gradient-to-br from-[#3617ce] to-[#3617ce]' : 'bg-gradient-to-br from-[#3617ce] to-[#3617ce]')}>{label || '요금제'}</div>}
       <div className="min-w-0 flex-1">
         {name?.content && <p className="truncate text-[13px] text-slate-700">{name.content}</p>}
         {price?.content && <p className="truncate text-[15px] font-bold text-slate-900">{price.content}</p>}
@@ -666,7 +666,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 바코드 카드는 세로 패딩만 +2(레퍼런스 py:32). 그 외는 표준 카드 패딩.
   const hasBarcode = corner.components.some((c) => c.atoms.some((a) => a.atomType === 'BARCODE'));
   const stdPad = hasBarcode ? CARD_PAD_BARCODE : CARD_PAD;
-  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#E2E6F1] ${CHIP_CARD_PAD}` : `${CARD_RADIUS} bg-white ${stdPad} shadow-sm`);
+  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#e8ecef] ${CHIP_CARD_PAD}` : `${CARD_RADIUS} bg-white ${stdPad} shadow-sm`);
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
@@ -745,7 +745,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         if (!plan.length) return null;
         const primary = plan[0];
         const fallbacks = plan.slice(1);
-        const isCvm = primary === 'CVM 기반';
+        const isCvm = isCvmSource(primary);
         const personalized = isCvm; // 개인화 방식(CVM)이면 실제 노출이 미리보기(폴백)와 달라짐
         return (
           <div

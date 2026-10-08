@@ -1,23 +1,19 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { TONES, type Tone } from '@/components/ops-ui';
+import { CHIP_BASE } from '@/lib/display-taxonomy';
 
-// BSS 디자인 시스템 배지 — mapped 토큰(badge-*) 기반.
+// 상태 칩 공식 규격 — [BO-AX] COMPNT Lib v1.8. 색은 5종뿐(보라 없음).
 type BadgeVariant =
   | 'default' | 'emphasis' | 'info' | 'success' | 'warning' | 'highlight'
   | 'negative' | 'destructive' | 'neutral' | 'secondary' | 'outline';
 
-const variants: Record<BadgeVariant, string> = {
-  default: 'bg-badge-bg-emphasis text-badge-text-emphasis',
-  emphasis: 'bg-badge-bg-emphasis text-badge-text-emphasis',
-  info: 'bg-badge-bg-info text-badge-text-info',
-  success: 'bg-badge-bg-success text-badge-text-success',
-  warning: 'bg-badge-bg-warning text-badge-text-warning',
-  highlight: 'bg-badge-bg-highlight text-badge-text-highlight',
-  negative: 'bg-badge-bg-negative text-badge-text-negative',
-  destructive: 'bg-badge-bg-negative text-badge-text-negative',
-  neutral: 'bg-badge-bg-neutral text-badge-text-neutral',
-  secondary: 'bg-badge-bg-neutral text-badge-text-neutral',
-  outline: 'border border-border text-foreground',
+const VARIANT_TONE: Record<BadgeVariant, Tone> = {
+  default: 'info', emphasis: 'info', highlight: 'info', info: 'info',
+  success: 'success',
+  warning: 'warning',
+  negative: 'negative', destructive: 'negative',
+  neutral: 'neutral', secondary: 'neutral', outline: 'neutral',
 };
 
 export function Badge({
@@ -25,14 +21,5 @@ export function Badge({
   variant = 'default',
   ...props
 }: React.HTMLAttributes<HTMLSpanElement> & { variant?: BadgeVariant }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-badge-radius-text px-2 py-0.5 text-[11px] font-semibold',
-        variants[variant],
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <span className={cn(CHIP_BASE, TONES[VARIANT_TONE[variant]], className)} {...props} />;
 }

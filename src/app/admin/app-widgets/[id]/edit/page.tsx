@@ -5,6 +5,7 @@ import { AppWidgetForm } from '../../app-widget-form';
 import { updateAppWidget } from '../../actions';
 import { OpsSection, FieldRow, ReadValue, StatusPill } from '@/components/ops-ui';
 import { APPROVAL_STATUS, fmtDateTime } from '@/lib/widget-taxonomy';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,9 +40,11 @@ export default async function AppWidgetEditPage({ params }: { params: { id: stri
   );
 
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 위젯 관리 › App 위젯 수정</nav>
-      <h1 className="mb-5 text-2xl font-bold">App 위젯 수정</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 위젯 관리', 'App 위젯 수정']}
+        title="App 위젯 수정"
+      />
       <AppWidgetForm
         mode="edit"
         action={updateAppWidget.bind(null, w.id)}

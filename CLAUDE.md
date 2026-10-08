@@ -43,11 +43,22 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 - **Corner 유형(7종)에 따라 붙일 수 있는 Component 유형이 제한된다.** (핵심 규칙 — 아래 매핑표)
 - 구성 기준: **정렬(노출 순서), 최대 노출 개수**, 타이틀, 노출 조건, 우선순위, **추천 수급 방식**.
 - **개인화 추천은 별도 코너 유형이 아니다.** 각 코너 유형이 갖는 **"추천 수급 방식"** 설정으로 흡수한다. 값을 채우는 개인 정보 표시(이름·등급·바코드 등)는 별개(빌더 아톰의 `@cvm:key` 고객정보 바인딩).
-- **추천 수급 방식 = "콘텐츠를 어디서 가져오나"의 축. 딱 둘** (2026-08-31 회의·정책 재확인 반영):
-  - **CVM 기반** — 시스템(CVM)이 고객마다 후보·순위·추천 근거를 런타임 생성. 콘텐츠·순서는 CVM 대로, **게시 확정만 어드민 승인**(US-DSP-SYS-002). 값(등급 등)은 어드민이 입력하지 않고 CVM이 판정(PI-DSP-PER-001).
-  - **운영자 편성** — 운영자가 직접 구성. **항상 최하단 폴백**(대체 전시 필수 PI-DSP-PER-002, 토글 아님). = `운영 편성`·`수동 대체` 통합.
-  - **폐기**: `채널 데이터`(=CVM 개인화의 행동 기반, CVM에 흡수), `룰 기반`(="누구에게"는 타겟팅 축 → 수급 아님. Template 분기·코너 노출 조건 PI-DSP-RUL에서 다룸). 정책서엔 원래 CVM만 명시됐고 `POL-REC`는 실물 없음.
+- **콘텐츠 수급 방식 = "이 코너의 내용을 누가 채우나"의 축. 3종** (2026-10-08 CVM 협의로 CVM이 2갈래로 분리):
+  - **CVM 데이터 연동** — CVM은 **"어떤 아이템을 몇 번째로"까지만** 내려준다(아이템 ID + 순서). 이미지·설명 문구는 **상품(EPC) 원장이 소유(SSOT)** 하고 전시 어드민이 조립한다.
+  - **CVM 콘텐츠 연동** — 구좌(자리)만 뚫어 CVM에 위임. **이미지·문구·랜딩까지 CVM이 만들어** 내려주고 어드민은 받은 그대로 노출. 같은 오퍼를 배너·MMS·RCS 등 멀티채널에 일관되게 내보내기 위한 모체 관리가 CVM에 있다.
+  - **운영자 편성** — 운영자가 직접 구성. 대체 전시 필수(PI-DSP-PER-002)라 폴백의 기준이기도 하다. = `운영 편성`·`수동 대체` 통합.
+  - **한 구좌(코너)는 한 방식만.** 겸용 금지 — "이 구좌는 CVM 구좌야"라고 못박는다(2026-10-08 합의). CVM 구좌의 배너는 CVM에서 등록하고 전시 어드민에 이중 등록하지 않는다.
+  - **폐기**: `채널 데이터`(=CVM 개인화의 행동 기반, CVM에 흡수), `룰 기반`(="누구에게"는 타겟팅 축 → 수급 아님. Template 분기·코너 노출 조건 PI-DSP-RUL에서 다룸). 레거시 저장값 `CVM 기반`은 `CVM 데이터 연동`으로 정규화(`normalizeRecSource`).
   - **CVM은 모든 코너 유형에 옵션**으로 켤 수 있다(배너형 포함 — CVM 타겟 배너 TM-DSP-018). 켠 코너만 대상.
+
+- **CVM 추천 계약 — 받을 수 있는 것과 없는 것** (2026-10-08 협의. CVM은 전사 추천 엔진이 아니라 **캠페인의 확장**이다):
+  - **받는다**: 프로덕트 카탈로그 **중분류 단위 Top 5**(요금제 · 단말 · 멤버십 · 혜택 · 마케팅 프로그램 · 업무), 고객별 인텐트와 그 우선순위.
+  - **못 받는다**: ① **세그먼트** — CVM은 세그를 만들지 않고 개별 고객 단위로만 판정 ② **고객 성향·인사이트**(대가족·선호 색상 등) → C360·데이터실 ③ **제휴 콘텐츠**(영화·공연 등) — EPC 밖 ④ **레이아웃·카드 모양** — 전시 설계 영역이라 어드민 룰 ⑤ **문구만 따로 베리에이션** — CVM 문구는 (고객·오퍼·시점·채널)이 한 세트라 떼어 요청 불가.
+  - **폴백**: CVM 응답이 비면 **미노출이 기본**(대체용 기본 배너를 상시 운영할 수 없다). 등록된 항목이 있으면 '운영자 편성으로 대체'를 고를 수 있다.
+  - **동의**: 개인화 전시도 마케팅 수신·위치 정보 동의에 걸릴 수 있다(통합회원 확인 중).
+  - 구현: `display-taxonomy.ts`의 `REC_SOURCE_METHODS` / `CVM_CATALOGS` / `CVM_OUT_OF_SCOPE` / `CVM_FALLBACKS` / `fieldOwnerMap`, 화면은 빌더 우측 `CornerSupplyPanel`(① 껍데기 → ② 수급 → ③ 채우기·CVM 계약 → ④ 폴백 → ⑤ 출처 맵).
+
+- **'코너 불러오기'는 껍데기만 가져온다.** 코너 유형 관리에서 오는 건 레이아웃·노출 타입까지고, 내용물은 비어서 들어온다. 담을 내용은 빌더 '② 수급'에서 등록하거나 CVM에 요청한다.
 - **베리에이션 — "재료는 우리가, 조합은 CVM"** (크리테오 방식, 2026-08-31 회의): 운영자는 후보를 등록, 실서비스에선 CVM이 세그/인텐트로 고객마다 택1. 빌더 미리보기는 폴백이라 **기본(첫 번째)만** 노출. 두 축:
   - **노출 타입 베리에이션(껍데기)** — 한 코너에 노출 타입 2~3개 등록(`Corner.displayVariants` JSON). 코너 구성의 `DisplayVariantsControl`.
   - **문구 베리에이션(콘텐츠)** — 아톰(문구)에 문구 후보 여러 개(`Atom.contentVariants` JSON). 컴포넌트 편집의 아톰별 `＋문구`. (별도 문구 관리 메뉴 없음 — 각 콘텐츠 원장에서)
@@ -124,13 +135,112 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 
 ## 4. 참고 화면 / 디자인 기준
 
-프로젝트 폴더의 이미지 3장은 각각 역할이 다르다. **혼동하지 말 것.**
+### 4.1 UI 디자인 시스템 — 단일 기준
 
-| 파일 | 역할 | 어떻게 쓰나 |
+**1순위는 Figma `[BO-AX] NextBSS BO 공통 디자인 컴포넌트 리스트`다.** (2026-10-08 확정)
+
+| 순위 | 출처 | 범위 |
 |---|---|---|
-| `티우주.png` | **현재 빌딩 구조**를 만드는 이미지 (T우주 관리자포털 "전시화면 관리" 실제 화면 — 컨테이너 등록, 코너 유형 관리, 컴포넌트 노출유형 관리 등) | 빌더가 최종적으로 **만들어낼 수 있어야 하는 화면의 복잡도/구조 기준**. 빌더 UI가 이걸 똑같이 따를 필요는 없음. |
-| `레퍼런스.png` | 빌더 UI로 **실제로 보고 싶은 형태** (DS-portal 슬롯 빌더: 좌측 슬롯 트리 + 중앙 디바이스 프레임 미리보기 구조) | 빌더 자체의 화면 구성/인터랙션 레퍼런스. "저렇게 실제로 볼 수 있는 UI"를 지향. |
-| `bss ui.png` | **컬러/색감** 기준 | 빌더의 컬러·색감은 **이 BSS UI를 따른다**. |
+| **1** | **Figma — `[BO-AX] BO 공통 디자인 컴포넌트 리스트`**<br>`figma.com/design/BkugZKsd4Nop5ba2LEgFww` | **최우선.** 충돌하면 무조건 이쪽을 따른다. Components Library 1.8, 컴포넌트 35종(LNB·Breadcrumb·Tabs·Pagination·Button·Text Field·Select·Checkbox·Badge·Tag·Chips·Table·Title·Spacing …) |
+| 2 | Figma — `[SB] 포맷 가이드`<br>`figma.com/design/qvbelty0wRfyXcCCdyl8I6` | 보조. BO 공통에 없는 것만 참고 |
+| 3 | NC-Channel Product Admin<br>`nc-channel.vercel.app` | BO 공통 반영 전까지의 기존 이식분(아래 표). 위 둘과 어긋나면 **폐기 대상** |
+
+> **Figma MCP 사용 시 주의** — `get_design_context` / `get_variable_defs` 는 **프레임·컴포넌트 노드만** 받는다.
+> 페이지(캔버스) id 를 주면 "레이어를 먼저 선택하라"고 거부하고, `get_metadata` 는 페이지가 커서
+> 전송 한도(≈160~215KB)를 넘겨 끊긴다. 반드시 **프레임을 선택한 링크**(Copy link to selection)를 쓸 것.
+> 이 파일은 라이브러리로 퍼블리시돼 있지 않아 전역 변수 검색(`search_design_system`)에 안 잡히고,
+> Code Connect 는 Enterprise 전용이라 쓸 수 없다 → **프레임 단위로 값을 뽑아 옮긴다.**
+
+**핵심 토큰 — Figma 변수 실값 (2026-10-08 추출·반영 완료)**
+
+| | 값 | Figma 변수 |
+|---|---|---|
+| 브랜드 | `#3617ce` | color/text/text-brand · button/primary-bg-enable |
+| 본문 | **14 / 20 / -0.2** | typography/body/14 |
+| 페이지 제목 | **24 / 32 / -0.6 / 700** | typography/title/24 |
+| 브레드크럼 | 14, `#697582` | color/breadcrumb/text-inactive |
+| 글자 | `#1a1a1a` / `#454f59` / `#697582` / `#8b949e` / `#b3b9c0` | text-primary · neutral-strong · breadcrumb · neutral/500 · neutral/400 |
+| 보더 | `#e8ecef` / `#dce0e5` / `#c4c9cf` | border-subtle · border-default · border-strong |
+| 표면 | `#ffffff` / `#f8f9fb` / `#f1f3f5` / `#e8ecef` | surface-swhite · th-row-bg · surface-hover · surface-sunken |
+| 표 | th 40(inset-y 10) · td 48(inset-y-xl 14) · inset-x 12 | spacing/table/* |
+| 칩(badge) | h24 · r**4** · px8/py3 · min-w**40** · 12/600/18 | spacing·radius/badge/* |
+| 칩 톤 | **7종** info·success·negative·warning·neutral·**emphasis**·**highlight** | color/badge/* |
+| 입력 | h38 · r**6** · inset-x**14** · border `#c4c9cf` | radius/textfield/radius · spacing/textfield/* |
+| 탭 | 16/600 · padding **20/15** · gap **16** · underline 2 | spacing/tabs/* |
+| 페이저 | 13/500 · r4 · gap10 · padding10 | spacing·radius/pagination/* |
+| 섹션 제목(조회결과) | **20 / 28 / -0.6 / 700**, 건수와 gap 4 | typography/title/20 · spacing/header/gap-count |
+| 스크롤바 | 두께 6 · rfull · `#c4c9cf` | spacing·color/scrollbar/* |
+| 섹션 간격 | depth2 32 · depth3 24 · item depth1 20 / depth2 16 · 액션 8 | spacing/section-wrap·action-wrap/* |
+| 다이얼로그·모달 | **r16** · padding 24 · 제목 20/700 · 버튼 gap 8 · shadow `0 24 22 #2222220d` + `0 0 2 #2222221a` | radius·spacing/dialogpopup·modalpopup/* |
+| 알럿 | r16 · padding 24 · gap 8 | radius·spacing/alert/* |
+| 툴팁·팝오버 | r8 · padding 12 · bg `#fcfcfd` · text `#454f59` · shadow `0 0 8 -2 #0000001f` | radius·color/tooltip·popover/* |
+| 토스트 | r10 · padding 16/20 · bg `#000b14cf` · text `#fcfcfd` · 아이콘 성공 `#00a058`/경고 `#f5b54f`/오류 `#ed3b3e` | radius·color/toast/* |
+| 콜랩스 | r12 · padding 24 · border `#dce0e5` · 포커스 `#3617ce` | radius·color/collapse/* |
+| 입력 포커스 | border `#b3b9c0` + ring 2 `#dce0e5` / 에러 `#ea5154` + ring `#ffdcdc` | color/…/border-focused·error |
+| 날짜 | 필드 r6 · gap 4(미입력)/14(입력) · 피커 셀 9/3·r8(선택 rfull) · 범위 `#f1f2ff` · 주말 `#ed3b3e` | spacing·color/datefield·datepicker/* |
+| 이미지 업로드 | r6 · border `#c4c9cf` · 아이콘 `#b3b9c0` · gap 8 | radius·color/imageupload/* |
+| 공지(notice) | r8 · padding 20 · gap 제목8/목록6/본문14/콘텐츠20 | spacing/notice·notice-title/* |
+| 버튼 크기 | cta 12/28·rfull · lg 11/24·r10 · **default 9/16·r6(h38)** · sm 6/12·r6 · pill 6/12·rfull | spacing·radius/button/* |
+| 버튼 색 | primary `#3617ce`→hover `#502dfb`→press `#2f15b2`, disable `#d0d2ff` / outline border `#c4c9cf` / t-blue `#3617ce` / red `#ed3b3e` | color/button/* |
+| 체크·라디오 | r4(체크)·rfull(라디오) · border `#c4c9cf` · fill `#3617ce` · gap 6 | color/checkbox·radio/* |
+| 토글 | rfull · inset 4 · handler 12/20/24 · track `#b3b9c0` / 선택 `#3617ce` / 비활성 `#dce0e5` | spacing·color/toggle/* |
+
+> 값이 어긋나면 **Figma 변수를 먼저 보고 `globals.css` 의 `:root` 만 고친다.** 페이지 하드코딩 금지.
+
+> ✅ **목업 2종은 React 로 이식했다 (2026-10-08).** iframe 안의 독립 문서는 `globals.css` 가 닿지 않아
+> 토큰을 고칠 때마다 따로 손봐야 했다. 지금 상태:
+>
+> | 화면 | 상태 |
+> |---|---|
+> | 전체페이지 관리 | **전부 React** — `src/app/admin/page-menu-b/*` + `src/lib/page-menu/model.ts`. `public/page-menu-b.html` 은 더 이상 렌더되지 않는다(원본 참고용). |
+> | 프로모션 관리 | **목록만 React** — `src/app/admin/events/promo/*` + `src/lib/promotion/model.ts`. 등록·상세(조건 빌더·리워드·CTA·추천 구조)는 아직 `public/promotion-prototype.html` 을 딥링크(`#reg`, `#ex=<key>`)로 띄운다. |
+>
+> 아직 쓰이는 `promotion-prototype.html` 은 맨 끝 `</style>` 직전의 「Figma 공통 토큰 — 최종 정렬」 블록이
+> 같은 값을 복제해 들고 있다. 토큰을 바꾸면 **globals.css 와 이 블록을 같이** 고칠 것.
+
+#### 프로모션 관리 React 이식 — 진행 상황 (2026-10-08 기준)
+
+| 조각 | 상태 | 파일 |
+|---|---|---|
+| 목록(필터·표·페이저) | **완료** | `src/app/admin/events/promo/promo-list.tsx` · `src/lib/promotion/model.ts` |
+| 등록 시작 팝업(유형 결정·문답) | **완료** | `reg-start-modal.tsx` · `src/lib/promotion/reg-start.ts` |
+| **조건 빌더** (접근·참여·지급 공용) | **완료** | `cond-builder.tsx` · `master-picker.tsx` · `src/lib/promotion/cond.ts` |
+| 등록 폼 — 기본정보 / CTA / 검색·태그 | **미착수** | 프로토타입 `renderForm()` |
+| 등록 폼 — 참여 정보(prSection) · 리워드 | **미착수** | 프로토타입 `prSection()` / `rewardBlock()` |
+| 등록 폼 — 추천형(refSection) | **미착수** | 프로토타입 `refSection()` |
+| 상세 보기 · FO 미리보기 | **미착수** | 프로토타입 `buildDetail()` / `renderFo()` |
+
+> 조건 빌더 확인용 임시 페이지: `/admin/events/promo/cond-check`
+> (등록 폼에 붙이면 지울 것 — `src/app/admin/events/promo/cond-check/page.tsx`)
+>
+> **다음에 이어서 할 때**: 등록 폼 본체(`renderForm`)를 옮기고, 「공개 조건」 자리에
+> `<CondBuilder ctx="access" required />` 를 붙이면 된다.
+
+**아래는 BO 공통 반영 전 기준이다 — 위 토큰과 충돌하면 위가 이긴다.**
+
+| 기준 | 역할 | 어떻게 쓰나 |
+|---|---|---|
+| **NC-Channel Product Admin**<br>`nc-channel.vercel.app` | **디자인 시스템 전체** — 컬러·타이포·밀도·컴포넌트 | 단일 진실 원본. `src/app/globals.css` 에 CSS 변수(`--ac` `--ink` `--line` …)와 컴포넌트 클래스(`.tbl` `.btn` `.bdg` `.tree` …)로 이식돼 있다. |
+| 공식 시안 — **단축 URL 관리** | **검색 필터 규격** | 연회색 라운드 패널(테두리 없음) · 라벨 좌측 인라인 · 컨트롤 40px/라운드 8 · 초기화·조회는 마지막 행 오른쪽. `FilterPanel`(`src/components/ops-ui.tsx`)이 구현. |
+| 공식 시안 — **통합 공지사항 목록** | **목록·상태 칩 규격** | 칩은 **라운드 6px 사각형**(알약 아님) · 26px · 12px/600 · 테두리 없음. 상태어→톤 매핑은 `STATUS_TONE` 한 곳에서 관리. `ListHeader` / `Badge` / `StatusPill` 이 구현. |
+| 공식 시안 — **payment-merchant-product** | **좌측 트리 규격** | 헤더 → 검색 → 그룹(이름 + 건수) → 잎(점 · 이름 · 보조라벨) → 하단 요약. `ContainerTree` 가 구현. |
+| `번호이동 관리.png` | **GNB 헤더** | 상단 바 구성의 출처. `admin-topbar.tsx` 가 따른다. |
+
+**핵심 치수** — 본문 13px/자간 -0.1 · 제목 22px/700 · 표 헤더 13px/600 · 표 본문 13px/400 ·
+패널 좌상단 라운드 **16px**(전 메뉴 동일) · 페이지 패딩 48/36/110.
+
+> 색·치수를 바꿀 일이 생기면 **페이지가 아니라 `globals.css` 토큰과 공용 컴포넌트를 고친다.**
+> 페이지에 하드코딩하지 말 것.
+
+### 4.2 폐기된 참고 이미지
+
+아래 3장은 **프로젝트에서 사라졌다.** 의사결정 근거로만 남겨둔다. 되살리거나 다시 기준으로 삼지 말 것.
+
+| 파일 | 원래 역할 | 현재 |
+|---|---|---|
+| `bss ui.png` | 컬러/색감 기준 | **파일 없음 · 4.1 로 대체됨** |
+| `레퍼런스.png` | 빌더 UI 형태 (DS-portal 슬롯 빌더: 좌측 슬롯 트리 + 중앙 디바이스 프레임 미리보기) | **파일 없음.** 다만 *"조립 빌더는 디바이스 미리보기를 갖는다"* 는 방향은 유효 |
+| `티우주.png` | 빌더가 만들어낼 수 있어야 할 화면의 복잡도 기준 (T우주 관리자포털 전시화면 관리) | **파일 없음.** 복잡도 목표라는 의도만 유효 |
 
 ---
 

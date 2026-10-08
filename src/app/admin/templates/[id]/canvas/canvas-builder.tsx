@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { isCvmSource } from '@/lib/display-taxonomy';
 import { Plus, Sparkles, Layers, Minus, Package, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CornerBlock, DeviceFrame, type PreviewCorner } from '@/components/preview/blocks';
@@ -62,7 +63,7 @@ export function CanvasBuilder({ templateName, corners }: { templateName: string;
             <div className="min-w-0 flex-1">
               <div className="mb-2 flex items-center gap-2">
                 <span className="text-sm font-semibold">{selected.preview.name}</span>
-                {selected.preview.recSource === 'CVM 기반' && (
+                {isCvmSource(selected.preview.recSource) && (
                   <span className="inline-flex items-center gap-0.5 rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-600"><Sparkles className="h-3 w-3" /> CVM 택1</span>
                 )}
               </div>
@@ -97,7 +98,7 @@ export function CanvasBuilder({ templateName, corners }: { templateName: string;
               <span className="text-sm font-semibold">{selected.preview.name}</span>
             </div>
             <p className="text-[11px] text-muted-foreground">{selected.preview.layoutDetail || '레이아웃 미지정'}</p>
-            {selected.preview.recSource === 'CVM 기반' && (
+            {isCvmSource(selected.preview.recSource) && (
               <p className="mt-1.5 flex items-center gap-1 rounded bg-violet-50 px-2 py-1 text-[10px] text-violet-600"><Sparkles className="h-3 w-3 shrink-0" /> CVM 개인화 — 미리보기는 폴백(운영자 편성)</p>
             )}
           </div>

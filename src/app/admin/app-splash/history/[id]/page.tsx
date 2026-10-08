@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { SplashDetailView } from '../../splash-detail-view';
 import { APPLY_STATUS, computeApplyStatus } from '@/lib/widget-taxonomy';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,9 +21,11 @@ export default async function SplashHistoryDetailPage({ params }: { params: { id
   );
 
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 스플래시 관리 › 변경/승인이력 › 변경/승인이력 상세</nav>
-      <h1 className="mb-5 text-2xl font-bold">변경/승인이력 상세</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 스플래시 관리', '변경/승인이력', '변경/승인이력 상세']}
+        title="변경/승인이력 상세"
+      />
       <SplashDetailView s={{
         version: s.version, osType: s.osType, applyLabel: APPLY_STATUS[apply].label, title: s.title, applyStartAt: s.applyStartAt?.toISOString() ?? null, updateContent: s.updateContent,
         approvalStatus: s.approvalStatus, approvalRequester: s.approvalRequester, approvalManager: s.approvalManager,

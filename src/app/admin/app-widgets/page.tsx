@@ -2,6 +2,7 @@
 import { prisma } from '@/lib/prisma';
 import { AppWidgetList, type WidgetRow } from './app-widget-list';
 import { WidgetTabs } from './widget-tabs';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,9 +29,11 @@ export default async function AppWidgetsPage() {
   }));
 
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-slate-400">홈 › 운영 관리 › App 위젯 관리</nav>
-      <h1 className="mb-4 text-[22px] font-bold text-slate-900">App 위젯 관리</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 위젯 관리']}
+        title="App 위젯 관리"
+      />
       <WidgetTabs />
       <AppWidgetList rows={data} widgetTypes={types.map((t) => ({ id: t.id, name: t.typeName }))} />
     </div>

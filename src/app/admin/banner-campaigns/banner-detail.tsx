@@ -9,6 +9,7 @@ import { requestBannerApproval, cancelBannerApproval, approveBannerCampaign, rej
 import { Send, X as XIcon, Check, Undo2, MapPin } from 'lucide-react';
 import { DISPLAY_STATUS_LABEL } from '@/lib/display-taxonomy';
 import type { BannerUsage } from './banner-usage';
+import { PageHeader } from '@/components/page-header';
 
 const LANDING_LABEL: Record<string, string> = { direct: '직접입력', product: '상품', event: '이벤트', none: '연결안함' };
 const PAGE_LABEL: Record<string, string> = { current: '내부창', external: '외부창', none: '선택안함' };
@@ -57,7 +58,7 @@ function ChangeViewModal({ row, banner, onClose }: { row: BannerHistoryRow; bann
   const boxH = sz ? Math.round((boxW * sz.h) / sz.w) : 120;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <h2 className="text-sm font-semibold">변경사항 보기</h2>
           {diffs.length > 0 && <span className="text-xs text-muted-foreground">변경사항 <b className="text-indigo-600">{diffs.length}</b>건</span>}
@@ -192,8 +193,10 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
     <div>
       <div className="mb-3 flex items-start justify-between">
         <div>
-          <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 전시관리 › 배너 캠페인 관리 › 배너캠페인 상세</nav>
-          <h1 className="text-2xl font-bold">배너캠페인 상세</h1>
+      <PageHeader
+        trail={['전시관리', '배너 캠페인 관리', '배너캠페인 상세']}
+        title="배너캠페인 상세"
+      />
         </div>
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
           <span>승인상태</span><StatusPill label={ap.label} tone={ap.tone} />

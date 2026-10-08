@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { cornerTypeChipClass, cornerTypePurpose, layoutBi } from '@/lib/display-taxonomy';
 import { VariationCard, type CornerTypeRow } from '../corner-type-manager';
 import { CORNER_TYPE_INFO } from '../corner-type-manager';
+import { PageHeader } from '@/components/page-header';
 
 // 배열(레이아웃) 상세 — 같은 배열에 묶인 케이스(코너)들을 '합쳐서' 보여준다.
 //  각 케이스는 VariationCard로 렌더 → 개별 미리보기 + 상태 + 인라인 승인/반려/반영, 클릭 시 케이스 상세([id])로 편집.
@@ -13,12 +14,16 @@ export function LayoutCasesDetail({ base, detail, cases }: { base: string; detai
   const router = useRouter();
   const info = CORNER_TYPE_INFO[base];
   return (
-    <div className="space-y-4">
-      <nav className="text-[12px] text-muted-foreground">홈 › 전시관리 › 코너 유형 관리 › {base} › {layoutBi(detail) || detail}</nav>
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => router.push('/admin/corner-types')} className="inline-flex items-center gap-1 text-[12px] text-slate-500 hover:text-slate-700"><ChevronLeft className="h-3.5 w-3.5" />코너 유형 관리</button>
-        <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[15px] font-bold', cornerTypeChipClass(base))}>{base}</span>
-        <span className="text-[14px] font-semibold text-slate-700">{layoutBi(detail) || detail}</span>
+    <div>
+      <PageHeader
+        trail={['전시관리', '코너 유형 관리', base, layoutBi(detail) || detail]}
+        title={layoutBi(detail) || detail}
+        titlePrefix={<span className={cn(cornerTypeChipClass(base))}>{base}</span>}
+        back={
+          <button type="button" onClick={() => router.push('/admin/corner-types')} className="inline-flex items-center gap-1 text-[12px] text-[var(--ink3)] hover:text-[var(--ink)]"><ChevronLeft className="h-3.5 w-3.5" />코너 유형 관리</button>
+        }
+      />
+      <div className="hidden">
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[12px] font-medium tabular-nums text-slate-600">{cases.length}개 케이스</span>
       </div>
 

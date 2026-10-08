@@ -36,7 +36,7 @@ export function VersionHistoryList({ rows }: { rows: VersionHistoryRow[] }) {
   const cancel = (versionId: string) => start(async () => { if (confirm('승인 요청을 취소하시겠습니까?')) { await cancelRequestVersion(versionId); router.refresh(); } });
 
   return (
-    <div className="space-y-4">
+    <div>
       {/* 검색 */}
       <div className="rounded-xl border bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-4">

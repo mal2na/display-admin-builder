@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>A안 + 빌더 · 전체페이지 관리</title>
+<!-- Pretendard — iframe 은 별도 문서라 본체와 같은 서체를 직접 불러온다 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
   :root {
     --bg: #eef0f6; --surface: #fff; --surface-2: #f6f7fb; --line: #e3e5ee; --line-2: #d3d6e2;
@@ -299,6 +301,205 @@
   .steps .n { width: 22px; height: 22px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line-2); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
   .steps li.done .n { background: var(--ok); color: #fff; border-color: var(--ok); }
   .steps b { display: block; font-size: 12.5px; } .steps small { display: block; color: var(--ink-2); font-size: 11.5px; margin-top: 2px; line-height: 1.55; }
+/* ══════════════════════════════════════════════════════════════════════════
+   어드민 디자인 시스템 통합 (CLAUDE.md §4.1 · 2026-10-08)
+   전체페이지 관리는 어드민 LNB 안에서 iframe 으로 열리므로, 다른 메뉴와
+   셸·타이포·필터·칩·표 규격을 동일하게 맞춘다. 원본 규칙 뒤에 두어 확실히 이긴다.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --ink:#1a1a1a; --ink-2:#454f59; --ink-3:#697582;
+  --accent:#3617ce; --accent-soft:#f1f2ff;
+  --line:#e8ecef; --line-2:#dce0e5; --surface:#fff; --surface-2:#f8f9fb;
+  --ok:#147a43; --ok-soft:#e9f6ee; --warn:#cf2a3c; --warn-soft:#fdedef;
+  --amber:#a95800; --amber-soft:#fff4e2;
+}
+html,body{background:#fff;font-family:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;font-size:13px;letter-spacing:-.1px}
+
+/* 셸 — 떠 있는 카드(그림자) 제거하고 어드민 흰 패널 위에 평평하게 */
+.app{display:block;min-height:0}
+.lnb{display:none!important}
+.main{flex:none;padding:0;min-width:0}
+.card{background:transparent;border-radius:0;box-shadow:none;padding:36px 48px 110px;min-height:0}
+
+/* 머리 — 브레드크럼 12px, 제목 22/700, 아래 구분선 */
+.crumb{font-size:12px;color:var(--ink-3)}
+h1{font-size:22px;font-weight:700;letter-spacing:-.4px;margin:6px 0 0}
+/* 제목 → 구분선 → 탭 → 필터 간격을 다른 어드민 페이지와 동일하게.
+   (제목 20 · 구분선 24 · 탭 24. 탭과 필터가 0px 로 붙어 있던 것을 바로잡음) */
+h1{margin:6px 0 0!important;line-height:1.35}
+.rule{display:block;height:1px;background:var(--line);margin:20px 0 0!important}
+.tabs{margin:20px 0 0}
+.searchbar{margin:24px 0 0!important}
+.tabs{margin-bottom:0}
+.tab{font-size:14px;padding:12px 16px}
+
+/* 검색 필터 — 공식 규격: 연회색 라운드 패널(테두리 없음) · 컨트롤 40px/라운드 8 */
+.searchbar{background:#f8f9fb;border:0;border-radius:12px;padding:24px;gap:20px 14px;margin:0 0 8px}
+/* 칸 사이 28 = gap 14 + 아래 padding-left 14. 그 한가운데에 1px 구분선(높이 24) — 시안 실측(2026-10-08) */
+.searchbar > label:not(:first-child),.searchbar > .spacer + label{position:relative;padding-left:14px}
+.searchbar > label:not(:first-child)::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:1px;height:24px;background:var(--line)}
+.searchbar label{font-size:13px;font-weight:400;gap:10px}
+.searchbar select,.searchbar input[type="text"],.searchbar input[type="date"]{min-height:38px;height:38px;border-radius:8px;border-color:#c4c9cf;font-size:13px;font-weight:400;padding:0 10px;box-sizing:border-box}
+/* 셀렉트 — React .sel 과 동일하게 브라우저 기본 화살표를 끄고 같은 SVG·패딩·폭을 쓴다.
+   기본 화살표면 글자가 화살표에 붙고 폭도 내용폭이라 다른 화면과 어긋난다(2026-10-08). */
+.searchbar select{appearance:none;-webkit-appearance:none;min-width:200px;padding:0 32px 0 10px;cursor:pointer;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%2353586a' stroke-width='1.4'/%3E%3C/svg%3E") no-repeat right 11px center}
+.searchbar label{gap:12px}
+.searchbar .btn{min-height:38px;height:38px;border-radius:8px;font-size:13px;padding:0 20px}
+
+/* 버튼 */
+.btn{border-radius:7px;font-size:13px;font-weight:600;padding:0 15px;height:36px;display:inline-flex;align-items:center;gap:6px}
+.btn.pill{border-radius:7px;font-size:13px;font-weight:600;padding:0 15px;height:36px}
+
+/* 칩 — 공식 규격: 라운드 6 · 높이 26 · 12px/600 · 테두리 없음 */
+.tag{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:6px;font-size:12px;font-weight:600;border:0;background:#eef0f3;color:var(--ink-2)}
+.tag.ch{background:var(--accent-soft);color:var(--accent);border:0}
+.tag.gray{background:#eef0f3;color:var(--ink-2)}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag.amber{background:var(--amber-soft);color:var(--amber)}
+.tag.acc{background:var(--accent-soft);color:var(--accent)}
+.chip-f{height:26px;border-radius:6px;padding:0 10px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;border:0;background:#eef0f3;color:var(--ink-2)}
+.chip-f.on{background:var(--accent-soft);color:var(--accent);border:0}
+/* 작은 변형(.tag.sm)도 칩 규격 안에서만 — 높이·라운드·굵기는 동일, 글자만 11px */
+
+/* ── 칩 색 공식 5종 ([BO-AX] COMPNT Lib v1.8) — 이 외의 색은 쓰지 않는다 ──
+   info #D9E9FF/#2E7AFF · success #C8F6E1/#038E52 · negative #FFDCDC/#ED3B3E
+   neutral #DCE0E5/#454F59 · warning #FFE4C4/#D66400
+   치수: 높이 24 · 좌우 8 · 라운드 6 · 12px/600 · 테두리 없음 */
+.tag,.tag.sm,.tag.ch,.tag.type,.tag.blue,.tag.gray,.tag.ok,.tag.warn,.tag.amber,.tag.acc,.chip-f,.dchip{
+  display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;
+  font-size:12px;font-weight:600;line-height:1;border:0;white-space:nowrap;margin:0;
+  background:#DCE0E5;color:#454F59;
+}
+.tag.ch,.tag.blue,.tag.acc,.chip-f.on,.dchip{background:#D9E9FF;color:#2E7AFF}
+.tag.ok{background:#C8F6E1;color:#038E52}
+.tag.warn{background:#FFDCDC;color:#ED3B3E}
+.tag.amber{background:#FFE4C4;color:#D66400}
+.tag.gray,.tag.type,.chip-f{background:#DCE0E5;color:#454F59}
+.tag.sm{margin-left:6px}
+/* 변형 조합(.tag.type.builder / .tag.type.dev 등)은 선택자가 더 구체적이라 위 규칙을 덮는다.
+   색까지 5종으로 못박는다. */
+.tag.type.builder,.tag.builder{background:#D9E9FF!important;color:#2E7AFF!important}
+.tag.type.dev,.tag.dev{background:#DCE0E5!important;color:#454F59!important}
+.tag[class*="type"],.tag[class*="builder"],.tag[class*="dev"]{border:0!important;height:24px;border-radius:6px;font-size:12px;font-weight:600}
+
+/* ── 운영 채널 태그 (.tag.ch) — 상태 칩과 다른 컴포넌트다 (Figma TD_L_Input) ──
+   흰 배경 · 1px 연회색 테두리 · 완전 라운드(알약) · 높이 28 · 좌우 12 · 12px/500
+   상태 칩(5종 solid)과 구분되도록 테두리형으로 둔다. */
+.tag.ch,.tag.ch.type,td .tag.ch{
+  height:28px!important;padding:0 12px!important;border-radius:999px!important;
+  background:#fff!important;border:1px solid #DCE0E5!important;
+  color:#454F59!important;font-size:12px!important;font-weight:500!important;
+  display:inline-flex;align-items:center;line-height:1;white-space:nowrap;
+}
+/* 앱 계열은 글자만 브랜드 블루 */
+.tag.ch.app,.tag.ch[data-ch="app"]{color:#2E7AFF!important}
+
+/* 목록 표 — 헤더 회색 배경 13px/600, 본문 13px/400 */
+table.list th{background:#f8f9fb;font-weight:600;font-size:13px;color:var(--ink-2)}
+table.list td{font-size:13px;font-weight:400}
+
+/* 상세 화면 폼 테이블(.mtable) — 라벨·값이 보더에 붙지 않게 제 패딩을 돌려준다 */
+table.mtable th,table.mtable td{padding:10px 14px;vertical-align:middle;white-space:normal}
+table.mtable th{background:var(--surface-2);font-weight:600;color:var(--ink-2);text-align:left}
+
+/* ── 필터 버튼 묶음 ──
+   .searchbar 의 column-gap 40px 은 '필드 사이' 간격이다. 초기화·조회는 한 덩어리이므로
+   인접 버튼만 음수 마진으로 되돌려 React FilterPanel 과 같은 8px 로 붙인다. */
+.searchbar .btn + .btn{margin-left:-32px!important}
+.srch .btn + .btn{margin-left:0!important}
+
+/* ── 조회결과 헤더 ── React ListHeader 와 동일: 17px/700 제목 + 13px 건수(숫자만 보라) */
+.rmeta{align-items:baseline;gap:8px;font-size:17px;font-weight:700;letter-spacing:-.3px;color:var(--ink);margin:32px 0 13px!important}
+.rmeta .n{font-size:13px;font-weight:400;color:var(--ink-2)}
+.rmeta .n b,.rmeta .n{font-variant-numeric:tabular-nums}
+.rmeta .hint{font-size:13px;font-weight:400;color:var(--ink-3)}
+/* 필터 바로 아래 첫 조회결과는 필터 margin-bottom 8 과 합쳐지지 않게 32 로 고정 */
+.searchbar + .rmeta{margin-top:32px!important}
+
+/* ── 표 아래 액션 ── 목록 화면과 동일하게 32px 띄우고 버튼은 8px 간격 */
+.actions{gap:8px!important;margin-top:32px!important}
+.actions.between{margin-top:32px!important}
+.actions > div{display:flex;align-items:center;gap:8px}
+/* 목록 하단 — 페이지네이션(가운데) → 24 → 액션(오른쪽). 공식 규격 */
+.listfoot{margin-top:32px}
+.listfoot .lf-acts{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:24px}
+
+/* 페이지네이션 — Figma pagination: 바깥 패딩 10 · 항목 간격 10 · 현재 페이지만 브랜드 배경 */
+.pager{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;margin:0!important}
+.pager .pg{display:grid;place-items:center;min-width:24px;height:24px;padding:0 4px;border:0;background:none;
+  border-radius:4px;font-size:14px;color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.pager .pg:hover:not(:disabled){background:#f1f2f6}
+.pager .pg.on{background:var(--accent);color:#fff;font-weight:700}
+.pager .pg:disabled{opacity:.3;cursor:default}
+.pager .pg[aria-label$="페이지"][aria-label^="첫"],.pager .pg[aria-label^="이전"],
+.pager .pg[aria-label^="다음"],.pager .pg[aria-label^="마지막"]{color:var(--ink-3);font-size:13px}
+.pager .pg-gap{color:var(--ink-3);font-size:14px;line-height:1;user-select:none}
+
+/* 표 셀 높이 — 공식 규격 48 (padding 14/12) */
+/* 목록 표(.list)에만 적용한다 — 상세 화면의 폼 테이블(.mtable 등)까지 걸면
+   라벨·값 패딩이 깎이고 nowrap 때문에 글이 보더에 붙는다(2026-10-08 회귀 수정). */
+table.list th,table.list td{height:48px;padding:8px 12px!important;box-sizing:border-box;vertical-align:middle;
+  white-space:nowrap}
+/* 긴 경로·URL 은 줄바꿈 대신 가로 스크롤(React 목록과 동일) — 모든 행 높이를 48 로 유지 */
+
+/* ── [BO-AX] Figma 공통 컴포넌트 값 (2026-10-08) ──
+   body/14(14·20·-0.2) · title/24(24·32·-0.6) · breadcrumb 14 · tabs 20/15·gap16 ·
+   badge r4/min-w40 · textfield r6·inset-x14·border #c4c9cf */
+body{font-size:14px;line-height:20px;letter-spacing:-.2px}
+h1{font-size:24px!important;font-weight:700!important;line-height:32px!important;letter-spacing:-.6px!important}
+.crumb{font-size:14px!important;line-height:20px;color:#697582!important}
+.tab{font-size:16px!important;font-weight:600!important;padding:15px 20px!important;line-height:24px}
+.tabs{gap:16px}
+.tag,.chip-f,.dchip,.bdg{border-radius:4px!important;min-width:40px;justify-content:center}
+input[type=text],input[type=date],select,textarea{border-radius:6px!important;border-color:#c4c9cf!important;padding-left:14px!important}
+select{padding-right:32px!important}
+table th,table td{font-size:14px!important}
+/* Figma: th-row-inset-y 10 → 40 · td inset-y-xl 14 → 48.
+   단, 셀에 24px 칩이 들어가면 14+24+14=52 라 높이가 튄다 → 높이는 고정하고 세로 패딩은 8 로 둔다. */
+table.list th{height:40px!important;padding:8px 12px!important}
+table.list td{height:48px!important;padding:8px 12px!important}
+
+/* ══════════════════════════════════════════════════════════════════
+   [BO-AX] Figma 공통 토큰 — 최종 정렬 (2026-10-08)
+   이 블록이 마지막이라 위의 어떤 규칙보다 우선한다.
+   값의 출처는 globals.css :root 와 동일(Figma 변수 실값). 둘을 같이 고칠 것.
+   ══════════════════════════════════════════════════════════════════ */
+:root{
+  --accent:#3617ce; --accent-soft:#f1f2ff; --ac:#3617ce; --ac-h:#2a11a4;
+  --ink:#1a1a1a; --text:#1a1a1a; --ink-2:#454f59; --muted:#454f59;
+  --ink-3:#697582; --faint:#697582;
+  --line:#e8ecef; --line-2:#dce0e5; --line-3:#c4c9cf;
+  --surface-2:#f8f9fb; --surface:#ffffff;
+  --ok:#038e52; --ok-soft:#c8f6e1;
+  --warn:#d66400; --warn-soft:#ffe4c4;
+  --bad:#ed3b3e; --bad-soft:#ffdcdc;
+  --info:#2e7aff; --info-soft:#d9e9ff;
+  --amber:#d17e28; --amber-soft:#ffe9a8;
+}
+/* 조회결과 제목 — typography/title/20 */
+.rmeta,.res-head h2{font-size:20px!important;font-weight:700!important;line-height:28px!important;letter-spacing:-.6px!important}
+.rmeta .n,.res-head .count{font-size:14px!important;font-weight:400!important;line-height:20px;letter-spacing:-.2px}
+/* 버튼 — spacing/button medium 9·16 · radius/button/radius-medium 6 · body/14 semibold */
+.btn,.btn.primary,.btn.dark,.searchbar .btn,.search .btn{
+  box-sizing:border-box;border-radius:6px!important;font-size:14px!important;font-weight:600!important;line-height:20px;
+  padding:9px 16px!important;height:38px!important;min-height:0}
+.btn.primary{background:#3617ce!important;border-color:#3617ce!important;color:#fff!important}
+.btn.primary:hover{background:#502dfb!important;border-color:#502dfb!important}
+.btn:not(.primary){background:#fff!important;border:1px solid #c4c9cf!important;color:#1a1a1a!important}
+.btn:not(.primary):hover{background:#dce0e5!important}
+/* 상태 칩(badge) — radius 4 · min-width 40 · padding 3/8 · 12/600 */
+.tag,.chip-f,.dchip,.pill,.bdg{border-radius:4px!important;min-width:40px;padding:3px 8px!important;
+  font-size:12px!important;font-weight:600!important;line-height:18px!important;
+  display:inline-flex;align-items:center;justify-content:center;border:0!important}
+/* 상태 칩 5종 — color/badge/* */
+.pill.p-blue,.tag.acc,.tag.ch{background:#d9e9ff!important;color:#2e7aff!important}
+.pill.p-green,.tag.ok{background:#c8f6e1!important;color:#038e52!important}
+.pill.p-red,.tag.bad{background:#ffdcdc!important;color:#ed3b3e!important}
+.pill.p-orange,.pill.p-purple,.tag.warn,.tag.amber{background:#ffe4c4!important;color:#d66400!important}
+.pill.p-grey,.pill.p-sky,.tag.gray{background:#dce0e5!important;color:#454f59!important}
 </style>
 </head>
 <body>
@@ -458,7 +659,8 @@
     if (p.state !== "live" || isChanged(p)) return '<span class="tag blue">임시저장</span>';
     return '<span class="tag ok">승인 완료</span>';
   }
-  function useChip(p) { return p.use ? '<span class="tag blue">사용</span>' : '<span class="tag gray">미사용</span>'; }
+  // ~여부 컬럼은 전부 Y/N (2026-10-08). 원래 라벨은 title 로 남긴다.
+  function useChip(p) { return p.use ? '<span class="tag ok" title="사용">Y</span>' : '<span class="tag gray" title="미사용">N</span>'; }
   function foChip(p) {
     if (!p.inMenu) return '<span class="tag gray">미등록</span>';
     if (!effUse(p) || depth(p) > MENU_MAX || p.state !== "live") return '<span class="tag gray">미노출</span>';
@@ -652,6 +854,26 @@
   function stateKey(p) { if (p.rejected) return "rejected"; if (!noUrl(p) && !p.fixed) return "url"; if (p.state === "pending") return "pending"; if (p.state !== "live" || isChanged(p)) return "temp"; return "live"; }
   tree(null).forEach(function (p) { iaExp[p.id] = true; });
 
+  // 페이지네이션 — 공식 디자인 시스템 규격(Figma pagination). 번호 9칸 창 + 말줄임 + 마지막 페이지.
+  function pagerHtml(page, pages) {
+    if (!pages || pages < 1) pages = 1;
+    var b = function (label, p, opt) {
+      opt = opt || {};
+      return '<button type="button" class="pg' + (opt.on ? " on" : "") + (opt.gap ? " gap" : "") + '"' +
+        (opt.dis ? " disabled" : "") + (p ? ' data-pg="' + p + '"' : "") +
+        ' aria-label="' + (opt.aria || label + " 페이지") + '">' + label + "</button>";
+    };
+    var W = 9;
+    var start = Math.min(Math.max(1, page - Math.floor(W / 2)), Math.max(1, pages - W + 1));
+    var end = Math.min(pages, start + W - 1);
+    var h = b("‹‹", 1, { dis: page === 1, aria: "첫" }) + b("‹", page - 1, { dis: page === 1, aria: "이전" });
+    for (var i = start; i <= end; i++) h += b(i, i, { on: i === page });
+    if (end < pages - 1) h += '<span class="pg-gap">···</span>';
+    if (end < pages) h += b(pages, pages, { on: pages === page });
+    h += b("›", page + 1, { dis: page === pages, aria: "다음" }) + b("››", pages, { dis: page === pages, aria: "마지막" });
+    return '<nav class="pager" aria-label="페이지">' + h + "</nav>";
+  }
+
   function header(bc, title, extra) { return '<div class="crumb"><span>홈</span><span>›</span><span>전시관리</span><span>›</span>' + bc.map(function (b, i) { return (i ? "<span>›</span>" : "") + '<span class="' + (i === bc.length - 1 ? "cur" : "") + '">' + esc(b) + "</span>"; }).join("") + "</div><div style='display:flex;align-items:center'><h1 style='margin-bottom:18px'>" + esc(title) + '</h1><span class="spacer"></span>' + (extra || "") + '</div><div class="rule"></div>'; }
   function modeBar() { return ""; }
   function modeBarOld() {
@@ -666,7 +888,8 @@
   function chChips(p) {
     var out = []; if (p.channels.indexOf("pcweb") !== -1) out.push("PC웹"); if (p.channels.indexOf("mweb") !== -1) out.push("모바일웹");
     var a = p.channels.indexOf("aos") !== -1, i = p.channels.indexOf("ios") !== -1; if (a && i) out.push("Android / iOS 앱"); else if (a) out.push("Android 앱"); else if (i) out.push("iOS 앱");
-    return out.map(function (c) { return '<span class="tag ch">' + c + "</span>"; }).join(" ");
+    // 앱 계열은 글자만 브랜드 블루 (Figma TD_L_Input: APP 파랑 / 모웹 먹색)
+    return out.map(function (c) { var app = c.indexOf("앱") !== -1; return '<span class="tag ch' + (app ? " app" : "") + '">' + c + "</span>"; }).join(" ");
   }
 
   /* ---- 목록 */
@@ -683,13 +906,15 @@
       '<label>운영 채널 ' + sel("f-ch", [["","전체"]].concat(CH), f.ch, 130) + '</label>' +
       '<label>등록 유형 ' + sel("f-ptype", [["","전체"],["dev","개발 화면"],["builder","전시 컨테이너"]], f.ptype, 150) + '</label>' +
       '<span class="spacer"></span><button class="btn dark" id="f-reset">초기화</button><button class="btn primary" id="f-go">조회</button></div>' +
-      '<div class="rmeta">검색결과 <span class="n">' + rs.length + '건</span></div>' +
-      '<div style="overflow-x:auto"><table><thead><tr><th>NO</th><th>페이지 ID</th><th class="nw">메뉴명</th><th class="nw">등록 유형</th><th class="nw">컨테이너 ID</th><th style="min-width:130px">경로</th><th>URL</th><th class="nw" style="text-align:center">상태</th><th class="nw" style="text-align:center">사용 여부</th><th>운영 채널</th><th class="nw">최종 수정일자</th></tr></thead><tbody>' +
+      '<div class="rmeta">조회결과 <span class="n">' + rs.length + '건</span></div>' +
+      '<div style="overflow-x:auto"><table class="list"><thead><tr><th>NO</th><th>페이지 ID</th><th class="nw">메뉴명</th><th class="nw">등록 유형</th><th class="nw">컨테이너 ID</th><th style="min-width:130px">경로</th><th>URL</th><th class="nw" style="text-align:center">상태</th><th class="nw" style="text-align:center">사용 여부</th><th>운영 채널</th><th class="nw">최종 수정일자</th></tr></thead><tbody>' +
       (s.length ? s.map(function (p, i) { var no = rs.length - ((f.page - 1) * PER + i);
         return '<tr class="rowlink ' + (effUse(p) ? "" : "dim") + '" data-id="' + p.id + '"><td>' + no + '</td><td class="mono">' + p.id + "</td><td class='nw'>" + esc(p.name) + blockMark(p) + "</td><td class='nw'>" + typeChip(p) + "</td><td class='nw'>" + ctLink(p) + "</td><td>" + esc(crumb(p)) + "</td><td class='mono'>" + (noUrl(p) ? '<span class="tag gray">URL 미등록</span>' : esc(p.url)) + "</td><td class='nw' style='text-align:center'>" + stateChip(p) + "</td><td class='nw' style='text-align:center'>" + useChip(p) + "</td><td class='nw'>" + chChips(p) + '</td><td class="nw">' + esc(p.updated) + "</td></tr>"; }).join("")
         : '<tr><td colspan="11" style="text-align:center;padding:60px;color:var(--ink-3)">등록 및 검색 결과가 없습니다.</td></tr>') + "</tbody></table></div>" +
-      '<div class="pager">' + Array.apply(null, { length: max }).map(function (_, i) { return '<button data-pg="' + (i + 1) + '"' + (f.page === i + 1 ? ' class="on"' : "") + ">" + (i + 1) + "</button>"; }).join("") + "</div>" +
-      '<div class="actions between"><div></div><div><button class="btn"' + (rs.length ? "" : " disabled") + '>엑셀다운로드</button> <button class="btn primary" id="b-new">등록</button></div></div>';
+      // 페이저 + 우측 액션을 한 줄로 — React 목록 화면(mt-8 · 가운데 페이저 · 우측 버튼)과 동일 규격
+      // 페이지네이션 공식 규격 — 처음·이전 · 번호 9칸 · … · 마지막 번호 · 다음·마지막
+      '<div class="listfoot">' + pagerHtml(f.page, max) +
+      '<div class="lf-acts"><button class="btn"' + (rs.length ? "" : " disabled") + '>엑셀다운로드</button><button class="btn primary" id="b-new">등록</button></div></div>';
     card.querySelectorAll("tr.rowlink").forEach(function (tr) { var id = tr.getAttribute("data-id"); tr.onclick = function () { goDetail(id); }; });
     bindTabs();
     card.querySelector("#f-go").onclick = function () { f.q = card.querySelector("#f-q").value.trim(); f.field = card.querySelector("#f-field").value; f.state = card.querySelector("#f-state").value; f.use = card.querySelector("#f-use").value; f.ch = card.querySelector("#f-ch").value; f.ptype = card.querySelector("#f-ptype").value; f.page = 1; renderList(); };
@@ -727,7 +952,7 @@
     card.innerHTML = header(["전체페이지 관리"], "전체페이지 관리", menuLink()) + modeBar() + tabsHtml() +
       '<div class="searchbar"><label>메뉴명 <input type="text" id="ia-q" placeholder="메뉴명을 입력해주세요" style="width:230px" value="' + esc(iaQ) + '"></label><span class="spacer"></span><button class="btn dark" id="ia-reset">초기화</button><button class="btn primary" id="ia-go">조회</button></div>' +
       '<div class="chips">' + [["all", "전체"]].concat(children(null).filter(function (r) { return noUrl(r) || children(r.id).length; }).map(function (r) { return [r.id, r.name]; })).map(function (c) { return '<button class="chip-f' + (iaChip === c[0] ? " on" : "") + '" data-chip="' + c[0] + '">' + esc(c[1]) + "</button>"; }).join("") + "</div>" +
-      '<div class="rmeta">검색결과 <span class="n">' + rs.length + "건</span></div>" +
+      '<div class="rmeta">조회결과 <span class="n">' + rs.length + "건</span></div>" +
       (!iaEdit ? '<div class="ttop"><span class="hint">뎁스 추가 · 순서 변경은 [수정]에서 합니다</span><span class="spacer"></span><button class="btn primary" id="ia-edit">수정</button></div>' : '<div class="ttop"><button class="btn primary" id="ia-addroot">+ 1 Depth 추가</button><button class="btn" id="ia-addsub"' + (!sel || !sel.use ? " disabled" : "") + ' title="' + (sel ? "선택한 메뉴 「" + esc(sel.name) + "」 하위에 추가" : "트리에서 메뉴를 선택하세요") + '">+ 하위 Depth 추가</button><span class="hint">' + (sel ? "선택: " + esc(crumb(sel)) : "트리에서 메뉴를 선택하면 그 하위에 추가할 수 있습니다") + '</span><span class="spacer"></span><span class="hint">⋮⋮ 를 끌어 같은 상위 안에서 순서 변경</span></div>') +
       '<div class="treewrap"><div class="ihead"><div style="text-align:center">메뉴명</div><div class="c">사용 여부</div><div class="c">FO 메뉴 노출</div><div class="c">등록일</div></div>' +
       rs.map(function (p) { var d = depth(p), kids = children(p.id).length; return '<div class="irow' + (iaSel === p.id ? " sel" : "") + '" data-ia="' + p.id + '"' + (iaEdit ? ' draggable="true"' : "") + ' style="padding-left:' + (14 + (d - 1) * 20) + 'px"><div>' + (iaEdit ? '<span class="grip" title="끌어서 같은 상위 안에서 순서 변경">⋮⋮</span>' : "") + '<span class="dchip">D' + d + "</span>" + esc(p.name) + blockMark(p) + (kids ? '<span class="chev" data-tg="' + p.id + '">' + (iaExp[p.id] ? "︿" : "﹀") + "</span>" : "") + editTag(p) + '</div><div class="c">' + useChip(p) + '</div><div class="c">' + foChip(p) + '</div><div class="c">' + esc(p.created) + "</div></div>"; }).join("") +

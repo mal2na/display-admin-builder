@@ -34,7 +34,7 @@ export function VersionDetailView({ v, topExtra, footer }: { v: VersionView; top
       {topExtra}
 
       <OpsSection title="기본정보">
-        {/* 디자인 시스템 통일 — 단일 2열 그리드, 보더는 FieldRow border-b(1px #e8ebef)만. 긴 항목은 col-span-2 전폭 */}
+        {/* 디자인 시스템 통일 — 단일 2열 그리드, 보더는 FieldRow border-b(1px #e8ecef)만. 긴 항목은 col-span-2 전폭 */}
         <div className="grid grid-cols-2">
           <FieldRow label="대상 App"><ReadValue value={v.targetApp} /></FieldRow>
           <FieldRow label="OS 유형"><ReadValue value={v.osType} /></FieldRow>
@@ -81,7 +81,7 @@ export function VersionDetailView({ v, topExtra, footer }: { v: VersionView; top
 
       {preview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPreview(null)}>
-          <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-bold">이미지 미리보기</h3>
               <button onClick={() => setPreview(null)} className="text-slate-400 hover:text-slate-700"><X className="h-4 w-4" /></button>

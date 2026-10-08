@@ -36,7 +36,7 @@ export default async function CornerTypesPage() {
   const types: CornerTypeRow[] = rows.map((r) => ({ ...toCornerTypeRow(r, lastActor.get(r.id) ?? null), previewCorner: previewByType.get(r.id) ?? null }));
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-12 py-9 pb-28">
       <CornerTypeManager types={types} builtOptions={builtOptions} />
     </div>
   );

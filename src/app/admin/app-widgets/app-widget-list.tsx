@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { StatusPill } from '@/components/ops-ui';
+import { StatusPill, FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
 import { PUBLISH_STATUS, PUBLISH_STATUS_OPTIONS, DEPLOY_STATUS, fmtPeriod, fmtDateTime, computePublishStatus, type PublishStatus } from '@/lib/widget-taxonomy';
 import { reorderAppWidgets, redisReloadAppWidgets } from './actions';
 import { cn } from '@/lib/utils';
@@ -41,7 +41,7 @@ function SortableRow({ r, onOpen }: { r: ViewRow; onOpen: () => void }) {
   const ps = PUBLISH_STATUS[r.publishStatus];
   const style = { transform: CSS.Transform.toString(transform), transition } as React.CSSProperties;
   return (
-    <tr ref={setNodeRef} style={style} className={cn('border-b border-[#e8ebef] hover:bg-[#f0f2f4] [&>td]:h-11', isDragging && 'relative z-10 bg-[#f0f0ff] shadow-lg')}>
+    <tr ref={setNodeRef} style={style} className={cn(TBODY_TR_CLS, isDragging && 'relative z-10 bg-[#f1f2ff] shadow-lg')}>
       <td className="px-3 py-2">
         <div className="flex items-center gap-1.5">
           <button type="button" className="cursor-grab touch-none text-slate-300 hover:text-slate-500 active:cursor-grabbing" {...attributes} {...listeners} aria-label="드래그하여 순서 변경">
@@ -54,7 +54,7 @@ function SortableRow({ r, onOpen }: { r: ViewRow; onOpen: () => void }) {
       <td className="px-3 py-2"><StatusPill label={r.approvalLabel} tone={APPROVAL_TONE[r.approvalLabel] ?? 'slate'} /></td>
       <td className="px-3 py-2"><StatusPill label={ps.label} tone={ps.tone} dot={r.publishStatus === 'live' || r.publishStatus === 'unpublished'} /></td>
       <td className="px-3 py-2 text-slate-600">{DEPLOY_STATUS[r.deployStatus as keyof typeof DEPLOY_STATUS]?.label ?? r.deployStatus}</td>
-      <td className="cursor-pointer px-3 py-2 text-slate-800 hover:text-[#3616cd]" onClick={onOpen}>{r.bannerName}</td>
+      <td className="cursor-pointer px-3 py-2 text-slate-800 hover:text-[#3617ce]" onClick={onOpen}>{r.bannerName}</td>
       <td className="px-3 py-2 text-slate-500">{fmtPeriod(r.publishStart, r.publishEnd)}</td>
       <td className="px-3 py-2 text-slate-600">{r.updatedBy ?? '-'}</td>
       <td className="px-3 py-2 text-slate-500">{fmtDateTime(r.updatedAt)}</td>
@@ -133,61 +133,70 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
   const redisReload = () => start(async () => { await redisReloadAppWidgets(); alert('Redis Reload 요청되었습니다. (배포 공통 프로세스 확정 후 실제 연동)'); });
 
   return (
-    <div className="space-y-4">
-      {/* 검색 영역 — 라벨 인라인, 버튼 우측 (SB) */}
-      <div className="rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-5">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">게시상태</span>
-            <Select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-28 text-sm">
-              <option value="">전체</option>
-              {PUBLISH_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">위젯유형</span>
-            <Select value={typeId} onChange={(e) => setTypeId(e.target.value)} className="h-9 w-40 text-sm">
-              <option value="">전체</option>
-              {widgetTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">게시기간</span>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-36 text-sm" />
-            <span className="text-muted-foreground">-</span>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-36 text-sm" />
-          </div>
-          <div className="flex flex-1 items-center gap-2">
-            <span className="whitespace-nowrap text-[13px] font-medium text-slate-600">배너명</span>
-            <Input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder="배너명을 입력하세요" className="h-9 min-w-[160px] flex-1 text-sm" />
-          </div>
-          <div className="ml-auto flex gap-2">
-            <Button type="button" variant="outline" onClick={doReset}><RotateCcw className="mr-1 h-3.5 w-3.5" />초기화</Button>
-            <Button type="button" onClick={doSearch}><Search className="mr-1 h-3.5 w-3.5" />조회</Button>
-          </div>
-        </div>
+    <div>
+      {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
+      <div className="mt-6">
+        <FilterPanel
+          // 한 줄에 들어갈 만큼 가로로 채운다 — 게시상태·위젯유형·게시기간이 한 행, 배너명이 남는 폭을 쓴다.
+          //  (예전엔 2개씩 두 줄이라 오른쪽이 비었다. 2026-10-08 사용자 요청)
+          rows={[
+            [
+              ['게시상태', (
+                <Select key="st" value={status} onChange={(e) => setStatus(e.target.value)}>
+                  <option value="">전체</option>
+                  {PUBLISH_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </Select>
+              )],
+              ['위젯유형', (
+                <Select key="ty" value={typeId} onChange={(e) => setTypeId(e.target.value)}>
+                  <option value="">전체</option>
+                  {widgetTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </Select>
+              )],
+              ['게시기간', (
+                <span key="pd" className="rng">
+                  <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+                  <span className="text-[var(--ink3)]">~</span>
+                  <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+                </span>
+              )],
+            ],
+            [
+              ['배너명', (
+                <Input key="nm" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder="배너명을 입력하세요" />
+              ), 3],
+            ],
+          ]}
+          onReset={doReset}
+          onSearch={doSearch}
+        />
       </div>
 
       {/* 테이블 정보 */}
-      <div className="flex items-center justify-between">
-        <p className="text-[13px] text-slate-500">조회결과 <b className="text-[#3616cd] tabular-nums">{orderedView.length}</b>건</p>
-        {dirty && <span className="text-[12px] font-medium text-amber-600">순서가 변경되었습니다. ‘순서저장’을 눌러 반영하세요.</span>}
-      </div>
+      <ListHeader
+        title="조회결과"
+        count={orderedView.length}
+        right={
+          <>
+            {dirty && <span className="text-[12px] font-medium text-amber-600">순서가 변경되었습니다. ‘순서저장’을 눌러 반영하세요.</span>}
+          </>
+        }
+      />
 
       {/* 목록 — 드래그앤드롭 순서 변경 */}
-      <div className="overflow-x-auto border-t border-[#e8ebef]">
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
-            <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086]">
-              <th className="w-24 h-11 px-3 text-left font-normal">노출순서</th>
-              <th className="h-11 px-3 text-left font-normal">위젯유형</th>
-              <th className="w-24 h-11 px-3 text-left font-normal">승인상태</th>
-              <th className="w-24 h-11 px-3 text-left font-normal">게시상태</th>
-              <th className="w-24 h-11 px-3 text-left font-normal">배포상태</th>
-              <th className="h-11 px-3 text-left font-normal">배너명</th>
-              <th className="h-11 px-3 text-left font-normal">게시기간</th>
-              <th className="h-11 px-3 text-left font-normal">최근 수정자</th>
-              <th className="h-11 px-3 text-left font-normal">최근 수정일시</th>
+            <tr className={THEAD_TR_CLS}>
+              <th className="w-24 h-11 px-3 text-left font-semibold">노출순서</th>
+              <th className="h-11 px-3 text-left font-semibold">위젯유형</th>
+              <th className="w-24 h-11 px-3 text-left font-semibold">승인상태</th>
+              <th className="w-24 h-11 px-3 text-left font-semibold">게시상태</th>
+              <th className="w-24 h-11 px-3 text-left font-semibold">배포상태</th>
+              <th className="h-11 px-3 text-left font-semibold">배너명</th>
+              <th className="h-11 px-3 text-left font-semibold">게시기간</th>
+              <th className="h-11 px-3 text-left font-semibold">최근 수정자</th>
+              <th className="h-11 px-3 text-left font-semibold">최근 수정일시</th>
             </tr>
           </thead>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -204,19 +213,12 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
         </table>
       </div>
 
-      {/* 페이지네이션 + 액션 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 text-sm">
-          {totalPages > 1 && Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
-            <button key={p} onClick={() => setPage(p)} className={`h-8 w-8 rounded-md text-xs ${p === page ? 'bg-[#3616cd] text-white' : 'hover:bg-secondary'}`}>{p}</button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" onClick={redisReload} disabled={pending}>Redis Reload</Button>
-          <Button type="button" variant="outline" onClick={saveOrder} disabled={pending || !dirty}>순서저장</Button>
-          <Button type="button" onClick={() => router.push('/admin/app-widgets/new')}>등록</Button>
-        </div>
-      </div>
+      {/* 하단 — 전 메뉴 공통: 페이지네이션(가운데) → 24 → 액션(오른쪽) */}
+      <ListBottom page={page} totalPages={totalPages} onPageChange={setPage}>
+        <Button type="button" variant="outline" onClick={redisReload} disabled={pending}>Redis Reload</Button>
+        <Button type="button" variant="outline" onClick={saveOrder} disabled={pending || !dirty}>순서저장</Button>
+        <Button type="button" onClick={() => router.push('/admin/app-widgets/new')}>등록</Button>
+      </ListBottom>
     </div>
   );
 }

@@ -1,30 +1,52 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-// BSS 디자인 시스템 버튼 — mapped 토큰(button-*) 기반. 상태(hover/active/disabled)까지 토큰으로.
-type Variant = 'default' | 'primary' | 'tblue' | 'outline' | 'secondary' | 'ghost' | 'destructive';
-type Size = 'default' | 'lg' | 'sm' | 'icon';
+/**
+ * 버튼 — Figma [BO-AX] BO 공통 `Button` (node 2580:3590) 실값.
+ *
+ * 크기 (spacing/button/*)
+ *   cta     inset 12/28 · radius full   · control/16 semibold · 그림자 0 8 16 #1b0b6629
+ *   lg      inset 11/24 · radius 10     · control/16 semibold · gap 8
+ *   default inset  9/16 · radius  6     · body/14    semibold · gap 4   → 높이 38
+ *   sm      inset  6/12 · radius  6     · control/14 medium            → 높이 32
+ *   pill    inset  6/12 · radius full   · body/12   medium  (secondary)
+ *
+ * 색 (color/button/*)
+ *   primary bg #3617ce · hover #502dfb · press #2f15b2 · disable #d0d2ff / text #fff
+ *   outline bg #fff · border #c4c9cf · text #1a1a1a · hover bg #dce0e5 · press bg #c4c9cf
+ *   t-blue  text·border #3617ce · hover bg #f1f2ff · press bg #b4b7ff
+ *   ghost   text·border #1a1a1a
+ *   red     text·border #ed3b3e · hover bg #ffe9e9 · press bg #fcb9b9
+ */
+type Variant = 'default' | 'primary' | 'cta' | 'tblue' | 'outline' | 'secondary' | 'ghost' | 'destructive';
+type Size = 'default' | 'cta' | 'lg' | 'sm' | 'pill' | 'icon';
 
 const variants: Record<Variant, string> = {
-  // primary = 브랜드 채움 (t-blue)
-  default: 'bg-button-primary-bg-enable text-button-primary-text-on hover:bg-button-primary-bg-hover active:bg-button-primary-bg-press disabled:bg-button-primary-bg-disable disabled:text-button-primary-text-disable',
-  primary: 'bg-button-primary-bg-enable text-button-primary-text-on hover:bg-button-primary-bg-hover active:bg-button-primary-bg-press disabled:bg-button-primary-bg-disable disabled:text-button-primary-text-disable',
-  // tblue = 브랜드 아웃라인(토널)
-  tblue: 'border border-button-tblue-border-default text-button-tblue-text-on bg-transparent hover:bg-button-tblue-bg-hover active:bg-button-tblue-bg-press disabled:border-button-tblue-border-disable disabled:text-button-tblue-text-disable',
-  // outline = 중립 아웃라인
-  outline: 'border border-button-outline-border-enable bg-button-outline-bg-enable text-button-outline-text-on hover:border-button-outline-border-hover hover:bg-button-outline-bg-hover active:bg-button-outline-bg-press disabled:border-button-outline-border-disable disabled:bg-button-outline-bg-disable disabled:text-button-outline-text-disable',
-  secondary: 'border border-button-outline-border-enable bg-button-outline-bg-enable text-button-outline-text-on hover:border-button-outline-border-hover hover:bg-button-outline-bg-hover active:bg-button-outline-bg-press disabled:text-button-outline-text-disable',
-  // ghost = 배경/테두리 없음
-  ghost: 'text-button-ghost-text-on hover:bg-button-ghost-bg-hover active:bg-button-ghost-bg-press disabled:text-button-ghost-text-disable',
-  // destructive = 위험(빨강)
-  destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50',
+  default:
+    'bg-[#3617ce] border border-[#3617ce] text-white hover:bg-[#502dfb] hover:border-[#502dfb] active:bg-[#2f15b2] disabled:bg-[#d0d2ff] disabled:border-[#d0d2ff] disabled:text-[#f1f2ff]',
+  primary:
+    'bg-[#3617ce] border border-[#3617ce] text-white hover:bg-[#502dfb] hover:border-[#502dfb] active:bg-[#2f15b2] disabled:bg-[#d0d2ff] disabled:border-[#d0d2ff] disabled:text-[#f1f2ff]',
+  cta:
+    'bg-[#3617ce] border border-[#3617ce] text-white shadow-[0_8px_16px_0_#1b0b6629] hover:bg-[#502dfb] active:bg-[#2f15b2] disabled:bg-[#d0d2ff] disabled:text-[#f1f2ff]',
+  tblue:
+    'border border-[#3617ce] bg-white text-[#3617ce] hover:bg-[#f1f2ff] active:bg-[#b4b7ff] disabled:border-[#b4b7ff] disabled:text-[#b4b7ff]',
+  outline:
+    'border border-[#c4c9cf] bg-white text-[#1a1a1a] hover:bg-[#dce0e5] active:bg-[#c4c9cf] active:border-[#b3b9c0] disabled:border-[#dce0e5] disabled:text-[#b3b9c0] disabled:bg-white',
+  secondary:
+    'border border-[#c4c9cf] bg-white text-[#697582] hover:bg-[#dce0e5] active:bg-[#c4c9cf] disabled:border-[#dce0e5] disabled:text-[#b3b9c0]',
+  ghost:
+    'border border-transparent bg-transparent text-[#1a1a1a] hover:bg-[#6c7b8e33] active:bg-[#5161714d] disabled:text-[#b3b9c0]',
+  destructive:
+    'border border-[#ed3b3e] bg-white text-[#ed3b3e] hover:bg-[#ffe9e9] active:bg-[#fcb9b9] disabled:border-[#fcb9b9] disabled:text-[#fcb9b9]',
 };
 
 const sizes: Record<Size, string> = {
-  lg: 'h-11 gap-2 rounded-button-radius-large px-6 text-[15px]',
-  default: 'h-10 gap-1.5 rounded-button-radius-medium px-4 text-sm',
-  sm: 'h-8 gap-1 rounded-button-radius-medium px-4 text-[13px]',
-  icon: 'h-9 w-9 rounded-button-radius-medium',
+  cta:     'gap-2 rounded-full px-7 py-3 text-[16px] font-semibold leading-[24px]',
+  lg:      'gap-2 rounded-[10px] px-6 py-[11px] text-[16px] font-semibold leading-[24px]',
+  default: 'gap-1 rounded-[6px] px-4 py-[9px] text-[14px] font-semibold leading-[20px]',
+  sm:      'gap-1 rounded-[6px] px-3 py-[6px] text-[14px] font-medium leading-[20px]',
+  pill:    'gap-0 rounded-full px-3 py-[6px] text-[12px] font-medium leading-[18px]',
+  icon:    'h-9 w-9 rounded-[6px]',
 };
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -37,7 +59,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center whitespace-nowrap tracking-[-0.2px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3617ce]/40 disabled:pointer-events-none disabled:cursor-not-allowed',
         variants[variant],
         sizes[size],
         className,

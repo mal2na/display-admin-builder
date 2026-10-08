@@ -591,12 +591,12 @@ function SortableRewardRow({ id, row, order, canDelete, onPatch, onAdd, onDelete
 
 // DS포탈 예시 자산 (실제 연동 전 목업 카탈로그)
 const DS_PORTAL_ASSETS: { name: string; tag: string; c1: string; c2: string }[] = [
-  { name: 'T멤버십 신규 제휴 배너', tag: '배너', c1: '#7c3aed', c2: '#4f46e5' },
-  { name: '루쥬 코코 프로모션', tag: '상품', c1: '#ec4899', c2: '#f43f5e' },
-  { name: '여름 혜택 기획전', tag: '기획전', c1: '#0ea5e9', c2: '#06b6d4' },
-  { name: '우주패스 구독 안내', tag: '구독', c1: '#f59e0b', c2: '#f97316' },
-  { name: '카드 제휴 혜택', tag: '혜택', c1: '#10b981', c2: '#22c55e' },
-  { name: '서울랜드 예매 안내', tag: '이벤트', c1: '#6366f1', c2: '#8b5cf6' },
+  { name: 'T멤버십 신규 제휴 배너', tag: '배너', c1: '#3617ce', c2: '#3617ce' },
+  { name: '루쥬 코코 프로모션', tag: '상품', c1: '#cf2a3c', c2: '#cf2a3c' },
+  { name: '여름 혜택 기획전', tag: '기획전', c1: '#3617ce', c2: '#3617ce' },
+  { name: '우주패스 구독 안내', tag: '구독', c1: '#a95800', c2: '#a95800' },
+  { name: '카드 제휴 혜택', tag: '혜택', c1: '#147a43', c2: '#147a43' },
+  { name: '서울랜드 예매 안내', tag: '이벤트', c1: '#3617ce', c2: '#3617ce' },
 ];
 const dsThumb = (label: string, c1: string, c2: string) =>
   'data:image/svg+xml;utf8,' + encodeURIComponent(
@@ -644,7 +644,7 @@ function ImageField({ url, alt, onUrl, onAlt, urlName, altName }: {
 
       {dsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDsOpen(false)}>
-          <div className="w-full max-w-lg rounded-xl bg-card p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-lg rounded-2xl bg-card p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><Globe className="h-4 w-4 text-primary" /> DS포탈 이미지 가져오기</h3>

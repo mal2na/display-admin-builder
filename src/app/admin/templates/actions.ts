@@ -1407,3 +1407,31 @@ export async function swapCornerRef(templateId: string, templateCornerId: string
   await prisma.templateCorner.update({ where: { id: templateCornerId }, data: { cornerId } });
   rp(templateId);
 }
+
+// ── CVM 연동 계약 저장 (2026-10-08 CVM 협의) ──────────────────────────────
+//  한 코너(구좌)는 한 수급 방식만 쓴다. 방식을 바꾸면 그 방식에서 의미 없는 값은 비운다.
+//    · CVM 데이터 연동 : cvmCatalog + cvmTopN 사용, cvmSlotId 불필요
+//    · CVM 콘텐츠 연동 : cvmSlotId 사용, cvmCatalog/cvmTopN 불필요
+//    · 운영자 편성     : CVM 필드 전부 비움
+export async function setCornerSupply(
+  templateId: string,
+  cornerId: string,
+  input: { recSource: string; cvmCatalog?: string | null; cvmTopN?: number | null; cvmSlotId?: string | null; cvmFallback?: string | null },
+) {
+  const mode = input.recSource;
+  const isData = mode === 'CVM 데이터 연동';
+  const isContent = mode === 'CVM 콘텐츠 연동';
+  await prisma.corner.update({
+    where: { id: cornerId },
+    data: {
+      recSource: mode || null,
+      // 폴백은 '운영자 편성'이 1순위일 때만 의미가 없다. CVM 계열이면 항상 값을 유지(기본 미노출).
+      recSourcePlan: isData || isContent ? JSON.stringify([mode, '운영자 편성']) : JSON.stringify(['운영자 편성']),
+      cvmCatalog: isData ? (input.cvmCatalog || null) : null,
+      cvmTopN: isData ? (input.cvmTopN ?? null) : null,
+      cvmSlotId: isContent ? (input.cvmSlotId?.trim() || null) : null,
+      cvmFallback: isData || isContent ? (input.cvmFallback || '미노출') : null,
+    },
+  });
+  rp(templateId);
+}

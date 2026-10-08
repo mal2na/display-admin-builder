@@ -1,10 +1,14 @@
 'use client';
 
 // SB PG003(상세검색 TAB) + PG027(IA 구조 TAB) — 전체페이지 관리.
-//  디자인 시스템(프로토타입 토큰): accent #3616cd · 헤더/필터 #f0f2f4 · 보더 #e8ebef · 13px 레귤러.
+//  디자인 시스템(프로토타입 토큰): accent #3617ce · 헤더/필터 #f8f9fb · 보더 #e8ecef · 13px 레귤러.
 import { useMemo, useState } from 'react';
+import { PageTabs } from '@/components/page-tabs';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight, Minus, Plus } from 'lucide-react';
+import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS, YN } from '@/components/ops-ui';
+import { PageHeader } from '@/components/page-header';
+import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 export type FPRow = {
   id: string; pageCode: string; menuName: string; path: string; url: string;
@@ -14,8 +18,8 @@ export type FPRow = {
 };
 
 const STATUS_TONE: Record<string, string> = {
-  'URL 확정대기': 'bg-[#fff0de] text-[#c46a0b]', 승인요청: 'bg-[#efe8ff] text-[#6a3fd4]',
-  승인완료: 'bg-[#e3f6ea] text-[#1f8a4c]', 반려: 'bg-[#ffe9e9] text-[#d93b3b]', 'URL 미등록': 'bg-[#eceef3] text-[#5d6275]',
+  'URL 확정대기': 'bg-[#FFE4C4] text-[#D66400]', 승인요청: 'bg-[#D9E9FF] text-[#2E7AFF]',
+  승인완료: 'bg-[#C8F6E1] text-[#038E52]', 반려: 'bg-[#FFDCDC] text-[#ED3B3E]', 'URL 미등록': 'bg-[#DCE0E5] text-[#454F59]',
 };
 function fmtDT(iso: string | null): string {
   if (!iso) return '-';
@@ -27,26 +31,25 @@ function fmtD(iso: string | null): string {
   const d = new Date(iso); const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
 }
-const selectCls = 'h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-2.5 text-[12.5px] text-slate-700';
-const inputCls = 'h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-3 text-[12.5px] text-slate-700 placeholder:text-slate-400';
+const selectCls = 'sel';
+const inputCls = 'inp';
 const CHANNELS = ['PC웹', '모바일웹', 'Android앱', 'iOS앱'];
 const PER_PAGE = 10;
 
 export function FullPageManager({ rows }: { rows: FPRow[] }) {
   const [tab, setTab] = useState<'search' | 'ia'>('search');
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-slate-400">홈 › 운영관리 › 전체페이지 관리</nav>
-      <h1 className="mb-4 text-[22px] font-bold text-slate-900">전체페이지 관리</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영관리', '전체페이지 관리']}
+        title="전체페이지 관리"
+      />
       {/* 상단 탭 */}
-      <div className="mb-5 flex gap-1 border-b border-[#e8ebef]">
-        {([['search', '상세검색'], ['ia', 'IA 구조']] as const).map(([k, label]) => (
-          <button key={k} type="button" onClick={() => setTab(k)}
-            className={cn('-mb-px border-b-2 px-4 py-2.5 text-[14px] font-semibold', tab === k ? 'border-[#3616cd] text-[#3616cd]' : 'border-transparent text-slate-500 hover:text-slate-700')}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <PageTabs
+        tabs={[{ key: 'search', label: '상세검색' }, { key: 'ia', label: 'IA 구조' }]}
+        value={tab}
+        onChange={(k) => setTab(k as 'search' | 'ia')}
+      />
       {tab === 'search' ? <SearchTab rows={rows} /> : <IaTab rows={rows} />}
     </div>
   );
@@ -82,32 +85,36 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
 
   return (
     <>
-      <div className="mb-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-5">
-        <div className="flex items-center gap-2">
-          <span className="text-[12.5px] font-medium text-slate-600">검색 항목</span>
-          <select value={draft.field} onChange={(e) => set({ field: e.target.value, q: '' })} className={cn(selectCls, 'w-28')}>{['메뉴명', '페이지ID', '메뉴URL'].map((o) => <option key={o}>{o}</option>)}</select>
-          <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && (setApplied(draft), setPage(1))} placeholder="검색어를 입력해주세요" className={cn(inputCls, 'w-[240px]')} />
-        </div>
-        <div className="flex items-center gap-2"><span className="text-[12.5px] font-medium text-slate-600">상태</span>
-          <select value={draft.status} onChange={(e) => set({ status: e.target.value })} className={cn(selectCls, 'w-32')}>{['전체', 'URL 확정대기', '승인요청', '승인완료', '반려', 'URL 미등록'].map((o) => <option key={o}>{o}</option>)}</select>
-        </div>
-        <div className="flex items-center gap-2"><span className="text-[12.5px] font-medium text-slate-600">사용 여부</span>
-          <select value={draft.use} onChange={(e) => set({ use: e.target.value })} className={cn(selectCls, 'w-28')}>{['전체', '사용', '사용안함'].map((o) => <option key={o}>{o}</option>)}</select>
-        </div>
-        <div className="flex items-center gap-2"><span className="text-[12.5px] font-medium text-slate-600">운영 채널</span>
-          <select value={draft.channel} onChange={(e) => set({ channel: e.target.value })} className={cn(selectCls, 'w-32')}>{['전체', ...CHANNELS].map((o) => <option key={o}>{o}</option>)}</select>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <button type="button" onClick={() => { setDraft(DEF); setApplied(DEF); setPage(1); }} className="h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-4 text-[12.5px] font-medium text-slate-600 hover:bg-[#f0f2f4]">초기화</button>
-          <button type="button" onClick={() => { setApplied(draft); setPage(1); }} className="h-[34px] rounded-lg bg-[#3616cd] px-5 text-[12.5px] font-medium text-white hover:brightness-110">조회</button>
-        </div>
+      {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
+      <div className="mt-6">
+        <FilterPanel
+          rows={[
+            [
+              ['검색 항목', (
+                <span key="q" className="rng">
+                  <select value={draft.field} onChange={(e) => set({ field: e.target.value, q: '' })} className={cn(selectCls, 'w200')}>{['메뉴명', '페이지ID', '메뉴URL'].map((o) => <option key={o}>{o}</option>)}</select>
+                  <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && (setApplied(draft), setPage(1))} placeholder="검색어를 입력해주세요" className={cn(inputCls, 'w-[320px] max-w-full')} />
+                </span>
+              ), 3],
+            ],
+            [
+              ['상태', <select key="st" value={draft.status} onChange={(e) => set({ status: e.target.value })} className={cn(selectCls, 'w200')}>{['전체', 'URL 확정대기', '승인요청', '승인완료', '반려', 'URL 미등록'].map((o) => <option key={o}>{o}</option>)}</select>],
+              ['사용 여부', <select key="us" value={draft.use} onChange={(e) => set({ use: e.target.value })} className={cn(selectCls, 'w200')}>{['전체', '사용', '사용안함'].map((o) => <option key={o}>{o}</option>)}</select>],
+            ],
+            [
+              ['운영 채널', <select key="ch" value={draft.channel} onChange={(e) => set({ channel: e.target.value })} className={cn(selectCls, 'w200')}>{['전체', ...CHANNELS].map((o) => <option key={o}>{o}</option>)}</select>, 3],
+            ],
+          ]}
+          onReset={() => { setDraft(DEF); setApplied(DEF); setPage(1); }}
+          onSearch={() => { setApplied(draft); setPage(1); }}
+        />
       </div>
 
-      <p className="mb-2 text-[13px] text-slate-500">조회결과 <b className="text-[#3616cd] tabular-nums">{filtered.length}</b>건</p>
-      <div className="overflow-x-auto border-t border-[#e8ebef]">
+      <ListHeader title="조회결과" count={filtered.length} />
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
-            <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086]">
+            <tr className={THEAD_TR_CLS}>
               {['NO', '페이지 ID', '메뉴명', '경로', 'URL', '상태', '사용 여부', '운영 채널', '최종 수정일자'].map((h) => (
                 <th key={h} className={cn('h-11 px-3 font-normal', h === '경로' || h === 'URL' || h === '운영 채널' ? 'text-left' : 'text-center')}>{h}</th>
               ))}
@@ -117,18 +124,18 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
             {paged.length === 0 ? (
               <tr><td colSpan={9} className="px-3 py-16 text-center text-slate-400">조회 결과가 없습니다.</td></tr>
             ) : paged.map((r, i) => (
-              <tr key={r.id} className="cursor-pointer border-b border-[#e8ebef] text-center text-slate-700 hover:bg-[#f0f2f4]">
+              <tr key={r.id} className={cn(TBODY_TR_CLS, 'cursor-pointer text-center')}>
                 <td className="h-11 px-3 tabular-nums text-slate-500">{filtered.length - ((curPage - 1) * PER_PAGE + i)}</td>
                 <td className="h-11 px-3 tabular-nums">{r.pageCode}</td>
                 <td className="h-11 px-3">{r.menuName}</td>
                 <td className="h-11 px-3 text-left text-slate-600">{r.path}</td>
                 <td className="h-11 px-3 text-left text-slate-600">{r.url}</td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', STATUS_TONE[r.statusLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.statusLabel}</span></td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.useYn ? 'bg-[#e6efff] text-[#2d5fd9]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.useYn ? '사용' : '미사용'}</span></td>
+                <td className="h-11 px-3"><span className={cn(CHIP_BASE, STATUS_TONE[r.statusLabel] ?? 'bg-[#DCE0E5] text-[#454F59]')}>{r.statusLabel}</span></td>
+                <td className="h-11 px-3"><YN yes={r.useYn} label={r.useYn ? '사용' : '미사용'} /></td>
                 <td className="h-11 px-3 text-left">
                   <div className="flex flex-wrap gap-1">
                     {r.channels.length === 0 ? <span className="text-slate-400">-</span> : r.channels.map((c) => (
-                      <span key={c} className="inline-flex items-center rounded border border-[#e8ebef] bg-white px-1.5 py-0.5 text-[11px] text-slate-600">{c}</span>
+                      <span key={c} className="inline-flex items-center rounded border border-[#e8ecef] bg-white px-1.5 py-0.5 text-[11px] text-slate-600">{c}</span>
                     ))}
                   </div>
                 </td>
@@ -139,19 +146,10 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
         </table>
       </div>
 
-      <div className="relative mt-4 flex items-center justify-center">
-        {totalPages > 1 && (
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-[13px]', p === curPage ? 'bg-[#3616cd] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
-            ))}
-          </div>
-        )}
-        <div className="absolute right-0 flex items-center gap-2">
-          {filtered.length > 0 && <button type="button" className="inline-flex h-9 items-center rounded-lg border border-[#cfd3e0] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f0f2f4]">엑셀다운로드</button>}
-          <button type="button" className="inline-flex h-9 items-center rounded-lg bg-[#3616cd] px-5 text-[13px] font-semibold text-white hover:brightness-110">등록</button>
-        </div>
-      </div>
+      <ListBottom page={curPage} totalPages={totalPages} onPageChange={setPage}>
+        {filtered.length > 0 && <button type="button" className="inline-flex h-[38px] items-center rounded-[8px] border border-[var(--line2)] bg-white px-5 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">엑셀다운로드</button>}
+        <button type="button" className="inline-flex h-[38px] items-center rounded-[8px] bg-[var(--ac)] px-6 text-[13px] font-semibold text-white hover:bg-[var(--ac-h)]">등록</button>
+      </ListBottom>
     </>
   );
 }
@@ -178,11 +176,11 @@ function IaTab({ rows }: { rows: FPRow[] }) {
       const hasChildren = children.length > 0;
       const open = expanded.has(r.id);
       const row = (
-        <tr key={r.id} className="border-b border-[#e8ebef] hover:bg-[#f0f2f4]">
+        <tr key={r.id} className="border-b border-[#e8ecef] hover:bg-[#f8f9fb]">
           <td className="h-11 px-3">
             <div className="flex items-center" style={{ paddingLeft: (depth - 1) * 22 }}>
               {hasChildren ? (
-                <button type="button" onClick={() => toggle(r.id)} className="mr-1.5 flex h-5 w-5 items-center justify-center rounded border border-[#cfd3e0] text-slate-500 hover:bg-white">
+                <button type="button" onClick={() => toggle(r.id)} className="mr-1.5 flex h-5 w-5 items-center justify-center rounded border border-[#dce0e5] text-slate-500 hover:bg-white">
                   {open ? <Minus className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                 </button>
               ) : <span className="mr-1.5 inline-block h-5 w-5" />}
@@ -190,8 +188,8 @@ function IaTab({ rows }: { rows: FPRow[] }) {
               {hasChildren && (open ? <ChevronDown className="ml-1 h-3.5 w-3.5 text-slate-300" /> : <ChevronRight className="ml-1 h-3.5 w-3.5 text-slate-300" />)}
             </div>
           </td>
-          <td className="h-11 px-3 text-center"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.useYn ? 'bg-[#e6efff] text-[#2d5fd9]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.useYn ? '사용' : '미사용'}</span></td>
-          <td className="h-11 px-3 text-center"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.frontExposeYn ? 'bg-[#e3f6ea] text-[#1f8a4c]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.frontExposeYn ? '노출' : '미노출'}</span></td>
+          <td className="h-11 px-3 text-center"><YN yes={r.useYn} label={r.useYn ? '사용' : '미사용'} /></td>
+          <td className="h-11 px-3 text-center"><YN yes={r.frontExposeYn} label={r.frontExposeYn ? '노출' : '미노출'} /></td>
           <td className="h-11 px-3 text-center text-slate-500">{fmtD(r.createdAt)}</td>
         </tr>
       );
@@ -200,33 +198,32 @@ function IaTab({ rows }: { rows: FPRow[] }) {
 
   return (
     <>
-      <div className="mb-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-5">
-        <div className="flex items-center gap-2"><span className="text-[12.5px] font-medium text-slate-600">메뉴명</span>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="메뉴명을 입력해주세요" className={cn(inputCls, 'w-[260px]')} />
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <button type="button" onClick={() => { setQ(''); setCat('전체'); }} className="h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-4 text-[12.5px] font-medium text-slate-600 hover:bg-[#f0f2f4]">초기화</button>
-          <button type="button" className="h-[34px] rounded-lg bg-[#3616cd] px-5 text-[12.5px] font-medium text-white hover:brightness-110">조회</button>
-        </div>
+      {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
+      <div className="mt-6">
+        <FilterPanel
+          rows={[[['메뉴명', <input key="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="메뉴명을 입력해주세요" className={cn(inputCls, 'w-[420px] max-w-full')} />, 3]]]}
+          onReset={() => { setQ(''); setCat('전체'); }}
+          onSearch={() => {}}
+        />
       </div>
 
       {/* 1depth 칩 */}
       <div className="mb-3 flex flex-wrap gap-2">
         {categories.map((c) => (
           <button key={c} type="button" onClick={() => setCat(c)}
-            className={cn('rounded-full border px-3.5 py-1.5 text-[12.5px] font-medium', cat === c ? 'border-[#3616cd] bg-[#3616cd] text-white' : 'border-[#e8ebef] bg-white text-slate-600 hover:border-[#3616cd]')}>{c}</button>
+            className={cn('rounded-full border px-3.5 py-1.5 text-[12.5px] font-medium', cat === c ? 'border-[#3617ce] bg-[#3617ce] text-white' : 'border-[#e8ecef] bg-white text-slate-600 hover:border-[#3617ce]')}>{c}</button>
         ))}
       </div>
 
-      <p className="mb-2 text-[13px] text-slate-500">검색결과 <b className="text-[#3616cd] tabular-nums">{rows.length}</b>건</p>
-      <div className="overflow-x-auto border-t border-[#e8ebef]">
+      <ListHeader title="조회결과" count={rows.length} />
+      <div className="overflow-x-auto border-t border-[#e8ecef]">
         <table className="w-full text-[13px] font-normal">
           <thead>
-            <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086]">
-              <th className="h-11 px-3 text-left font-normal">메뉴명</th>
-              <th className="h-11 w-28 px-3 text-center font-normal">사용 여부</th>
-              <th className="h-11 w-32 px-3 text-center font-normal">Front 노출 여부</th>
-              <th className="h-11 w-32 px-3 text-center font-normal">등록일</th>
+            <tr className={THEAD_TR_CLS}>
+              <th className="h-11 px-3 text-left font-semibold">메뉴명</th>
+              <th className="h-11 w-28 px-3 text-center font-semibold">사용 여부</th>
+              <th className="h-11 w-32 px-3 text-center font-semibold">Front 노출 여부</th>
+              <th className="h-11 w-32 px-3 text-center font-semibold">등록일</th>
             </tr>
           </thead>
           <tbody>
@@ -237,10 +234,10 @@ function IaTab({ rows }: { rows: FPRow[] }) {
         </table>
       </div>
 
-      <div className="mt-4 flex justify-end gap-2">
-        <button type="button" onClick={expandAll} className="inline-flex h-9 items-center rounded-lg border border-[#cfd3e0] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f0f2f4]">전체 펼치기</button>
-        <button type="button" onClick={collapseAll} className="inline-flex h-9 items-center rounded-lg border border-[#cfd3e0] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f0f2f4]">전체 접기</button>
-        <button type="button" className="inline-flex h-9 items-center rounded-lg border border-[#cfd3e0] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f0f2f4]">엑셀 다운로드</button>
+      <div className="mt-8 flex justify-end gap-2">
+        <button type="button" onClick={expandAll} className="inline-flex h-9 items-center rounded-lg border border-[#dce0e5] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f8f9fb]">전체 펼치기</button>
+        <button type="button" onClick={collapseAll} className="inline-flex h-9 items-center rounded-lg border border-[#dce0e5] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f8f9fb]">전체 접기</button>
+        <button type="button" className="inline-flex h-9 items-center rounded-lg border border-[#dce0e5] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f8f9fb]">엑셀 다운로드</button>
       </div>
     </>
   );

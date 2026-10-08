@@ -36,7 +36,7 @@ export default async function CornerTypesPage() {
   const types: CornerTypeRow[] = rows.map((r) => ({ ...toCornerTypeRow(r, lastActor.get(r.id) ?? null), previewCorner: previewByType.get(r.id) ?? null }));
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-12 py-9 pb-28">
       {/* 백업본 — 2026-10-06 코너 유형 관리 대대적 개편 직전 상태 스냅샷(독립 라우트). 라이브는 /admin/corner-types. */}
       <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-[12.5px] font-medium text-amber-800">
         <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">백업본</span>

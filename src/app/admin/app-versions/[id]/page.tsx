@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { VersionDetailView } from '../version-detail-view';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +19,11 @@ export default async function AppVersionDetailPage({ params }: { params: { id: s
   );
 
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 버전 관리 › App 버전 상세</nav>
-      <h1 className="mb-5 text-2xl font-bold">App 버전 상세</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 버전 관리', 'App 버전 상세']}
+        title="App 버전 상세"
+      />
       <VersionDetailView
         v={{
           targetApp: v.targetApp, osType: v.osType, updateDate: v.updateDate?.toISOString() ?? null, version: v.version,

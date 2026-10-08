@@ -574,7 +574,7 @@ export function EventEditor({ meta, tree, previewTree }: { meta: Meta; tree: Nod
         {/* 프로모션 코너 불러오기 모달 — 전용 카탈로그 프리셋 */}
         {promoLoadOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPromoLoadOpen(false)}>
-            <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-2 border-b px-5 py-3">
                 <LucideIcon name="Copy" className="h-4 w-4 text-primary" />
                 <h2 className="text-sm font-semibold">코너 불러오기</h2>
@@ -605,7 +605,7 @@ export function EventEditor({ meta, tree, previewTree }: { meta: Meta; tree: Nod
         )}
 
         {/* 중앙 캔버스 */}
-        <div className="flex flex-col overflow-hidden bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]">
+        <div className="flex flex-col overflow-hidden bg-[radial-gradient(circle,#e8ecef_1px,transparent_1px)] [background-size:16px_16px]">
           <div className="flex-1 overflow-y-auto p-8">
             <div className="mx-auto w-fit" onClick={(e) => e.stopPropagation()}>
               <DeviceShell width={device.w} height={device.h - 110} headerLabel={meta.projectName}>

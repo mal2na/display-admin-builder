@@ -7,6 +7,7 @@ import { restoreProject, purgeProject, setDisplayState } from './actions';
 import { LayoutTemplate, Rocket, Trash2, Plus, Search, LayoutGrid, Table2, ArrowDownUp, ArrowUp, ArrowDown, Eye, EyeOff, RotateCcw, ExternalLink, PencilRuler, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { EVENT_TYPES, MISSION_TYPES } from '@/lib/event-taxonomy';
 import { PageHeader } from '@/components/page-header';
+import { YNCell } from '@/components/ops-ui';
 import { RegisterWizard } from './register-wizard';
 
 type SortKey = 'recent' | 'name' | 'type' | 'status' | 'author';
@@ -180,7 +181,7 @@ function ProjectTable({ rows, startIndex, sortKey, sortDir, onSort }: { rows: Pr
                 </td>
                 <td className="max-w-[260px] truncate px-2.5 py-2.5 text-left font-medium text-foreground">{p.name}</td>
                 <td className="px-2.5 py-2.5"><span className={`inline-block whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${EXPOSURE_BADGE[p.displayState] ?? EXPOSURE_BADGE['미노출']}`}>{p.displayState}</span></td>
-                <td className="whitespace-nowrap px-2.5 py-2.5 text-muted-foreground">{p.commentUse}</td>
+                <td className="whitespace-nowrap px-2.5 py-2.5"><YNCell label={p.commentUse} /></td>
                 <td className="whitespace-nowrap px-2.5 py-2.5 tabular-nums text-muted-foreground">{p.commentCount.toLocaleString()}</td>
                 <td className="whitespace-nowrap px-2.5 py-2.5 text-foreground">{p.author}</td>
                 <td className="whitespace-nowrap px-2.5 py-2.5 text-[11px] text-muted-foreground">{p.createdDateTime}</td>

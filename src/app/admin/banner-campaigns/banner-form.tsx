@@ -136,7 +136,7 @@ function DsTypePickButton({ onPick, label = 'DS 배너 유형 가져오기' }: {
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
-          <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 border-b px-4 py-3">
               <LayoutTemplate className="h-4 w-4 text-indigo-500" />
               <h3 className="text-sm font-semibold">DS 배너 유형 가져오기</h3>
@@ -184,22 +184,22 @@ type TypeDetailRow = {
 };
 const emptyRow = (): TypeDetailRow => ({
   type: '리스트형', detail: DETAIL_TYPES[0], useYn: true, imageUrl: '', altText: '',
-  bgColor: '#EEF1F8', bgColor2: '#DDE3F0', bgType: 'solid',
-  title: '', subtitle: '', titleColor: '#0F172A', subColor: '#64748B', titleSize: 'md',
+  bgColor: '#eef0f6', bgColor2: '#DDE3F0', bgType: 'solid',
+  title: '', subtitle: '', titleColor: '#1a1a1a', subColor: '#454f59', titleSize: 'md',
   align: 'left', imagePos: 'right', imgSize: 'md', imgShape: 'square',
-  badgeText: '', badgeColor: '#4F46E5',
-  ctaText: '', ctaColor: '#4F46E5', rightImageUrl: '', bannerType: '',
+  badgeText: '', badgeColor: '#3617ce',
+  ctaText: '', ctaColor: '#3617ce', rightImageUrl: '', bannerType: '',
   productScope: 'all', productRef: '',
 });
 
 // 배경 팔레트 프리셋 (단색 c1 / 그라데이션 c1→c2)
 const PALETTES = [
-  { name: '라벤더', c1: '#EEF1F8', c2: '#DDE3F0' },
-  { name: '민트', c1: '#E6F7EF', c2: '#CFEFE0' },
-  { name: '피치', c1: '#FDEEE8', c2: '#F9D9CE' },
-  { name: '스카이', c1: '#E7F0FD', c2: '#D3E4FB' },
-  { name: '그레이', c1: '#F1F5F9', c2: '#E2E8F0' },
-  { name: '네이비', c1: '#334155', c2: '#0F172A' },
+  { name: '라벤더', c1: '#eef0f6', c2: '#DDE3F0' },
+  { name: '민트', c1: '#e9f6ee', c2: '#e9f6ee' },
+  { name: '피치', c1: '#fdedef', c2: '#f5c2c8' },
+  { name: '스카이', c1: '#f1f2ff', c2: '#f1f2ff' },
+  { name: '그레이', c1: '#f8f9fb', c2: '#e8ecef' },
+  { name: '네이비', c1: '#454f59', c2: '#1a1a1a' },
 ] as const;
 
 // 배너 제작 방식(유형) — 직접 만들기(템플릿 편집형)를 우선 노출·기본값으로. 개인화(세그·CVM)를 위해 템플릿 기반이 기본(2026-09-30 회의).
@@ -337,7 +337,7 @@ function ColorField({ label, color, onColor }: { label?: string; color?: string;
       <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(color || '') ? (color as string) : '#000000'} onChange={(e) => onColor(e.target.value.toUpperCase())} className="h-8 w-9 shrink-0 cursor-pointer rounded border border-slate-300 bg-white p-0.5" aria-label={label || '컬러'} />
       <Input value={val} onChange={(e) => onColor(e.target.value.toUpperCase())} className="h-8 w-28 text-sm" />
       <label className="flex items-center gap-1 text-[12px] text-muted-foreground">
-        <input type="checkbox" checked={isBlack} onChange={(e) => onColor(e.target.checked ? '#000000' : '#1E293B')} className="accent-indigo-600" /> 기본 컬러 : black
+        <input type="checkbox" checked={isBlack} onChange={(e) => onColor(e.target.checked ? '#000000' : '#1a1a1a')} className="accent-indigo-600" /> 기본 컬러 : black
       </label>
     </div>
   );
@@ -513,7 +513,7 @@ function PickerModal({ title, idLabel, items, onPick, onClose }: { title: string
   const list = items.filter((it) => (q ? it.name.includes(q) || it.id.toLowerCase().includes(q.toLowerCase()) : true));
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex max-h-[80vh] w-full max-w-lg flex-col dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b px-5 py-3">
           <h3 className="text-sm font-bold">{title}</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X className="h-4 w-4" /></button>
@@ -693,7 +693,7 @@ export function BannerForm({ mode, action, value = {}, libImages = [], events }:
               </div>
             );
             return (
-            <div key={i} className="border-t border-[#e8ebef] first:border-t-0">
+            <div key={i} className="border-t border-[#e8ecef] first:border-t-0">
               {/* 배너유형 · 규격 (한 줄) — 직접 만들기 우선(회의 결정). 사용여부는 별도 줄(배너의 사용, 2026-09-30) */}
               <FieldRow label="배너유형" required>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2">

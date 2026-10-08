@@ -5,20 +5,118 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 타이포 프리셋 — Figma 디자인 시스템의 글자 스타일(크기+행간+자간). 굵기는 font-* 유틸로 조합.
-   예: <h1 class="type-title-24 font-bold"> */
+/* ═══════════════════════════════════════════════════════════════════════════
+   [BO-AX] NextBSS BO 공통 디자인 컴포넌트 리스트 — Figma 변수 실값 (2026-10-08)
+   출처: figma.com/design/BkugZKsd4Nop5ba2LEgFww (Components Library 1.8)
+   Figma MCP `get_variable_defs` 로 Table/Badge/Chip/Pagination/Title 노드에서 추출.
+   ※ 값을 바꿀 일이 생기면 Figma 변수를 먼저 보고 여기만 고친다. 페이지에 하드코딩 금지.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ── 브랜드 ── color/text/text-brand · color/button/primary-bg-enable */
+  --ac: #3617ce;
+  --ac-h: #2a11a4;            /* hover (파생) */
+  --ac2: #f1f2ff;             /* color/surface/surface-brand-subtle */
+  --ac3: #e1e3ff;             /* color/badge/bg-emphasis · color/tabs/bg */
+
+  /* ── 중립 / 표면 ── */
+  --bg: #eef0f6;              /* 앱 크롬 배경(프로젝트 고유) */
+  --panel: #ffffff;           /* color/surface/surface-swhite */
+  --th: #f8f9fb;              /* color/table/th-row-bg · color/docs/bg */
+  --surface-hover: #f1f3f5;   /* color/surface/surface-hover */
+  --surface-sunken: #e8ecef;  /* color/surface/surface-sunken */
+
+  /* ── 보더 ── */
+  --line: #e8ecef;            /* color/border/border-subtle · table/border-default · divider */
+  --line2: #dce0e5;           /* color/border/border-default · table/border-strong */
+  --line3: #c4c9cf;           /* color/border/border-strong · 입력 테두리 */
+
+  /* ── 글자 ── */
+  --ink: #1a1a1a;             /* color/text/text-primary */
+  --ink2: #454f59;            /* color/text/text-neutral-strong */
+  --ink3: #697582;            /* color/breadcrumb/text-inactive · 보조 */
+  --ink4: #8b949e;            /* color/neutral/500 · text-title-sub */
+  --ink5: #b3b9c0;            /* color/neutral/400 · disabled · placeholder */
+
+  /* ── 상태색 (badge 7종) ── */
+  --ok: #038e52;   --okbg: #c8f6e1;
+  --warn: #d66400; --warnbg: #ffe4c4;
+  --bad: #ed3b3e;  --badbg: #ffdcdc;
+  --info: #2e7aff; --infobg: #d9e9ff;
+  --neutral: #454f59; --neutralbg: #dce0e5;
+  --emph: #3617ce; --emphbg: #e1e3ff;
+  --hl: #d17e28;   --hlbg: #ffe9a8;
+  --mk: #ed3b3e;              /* color/table/required-mark */
+
+  /* ── 타이포 (typography/*) ── */
+  --font: 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --fs-body: 14px;     --lh-body: 20px;   --ls-body: -0.2px;   /* body/14 */
+  --fs-sm: 13px;       --lh-sm: 20px;                          /* control/13 */
+  --fs-xs: 12px;       --lh-xs: 18px;                          /* body/12 */
+  --fs-2xs: 11px;      --lh-2xs: 16px;    --ls-2xs: 0;         /* body/11 */
+  --fs-title: 24px;    --lh-title: 32px;  --ls-title: -0.6px;  /* title/24 */
+  --fs-section: 16px;  --lh-section: 24px;                     /* title/16 */
+  --fs-lg: 20px;       --lh-lg: 28px;                          /* title/20 */
+
+  /* ── 오버레이·피드백 (2026-10-08 Figma 추가 추출) ── */
+  --dlg-r: 16px;              /* radius/dialogpopup·modalpopup·alert/radius */
+  --dlg-pad: 24px;            /* spacing/dialogpopup·modalpopup/padding-x */
+  --dlg-shadow: 0 24px 22px 0 #2222220d, 0 0 2px 0 #2222221a;  /* shadow/dialog */
+  --tip-bg: #fcfcfd;          /* color/tooltip·popover/bg */
+  --tip-text: #454f59;        /* color/tooltip·popover/text */
+  --tip-r: 8px;               /* radius/tooltip·popover/radius */
+  --tip-pad: 12px;
+  --tip-shadow: 0 0 8px -2px #0000001f;                        /* shadow/tooltip */
+  --toast-bg: #000b14cf;      /* color/toast/bg */
+  --toast-text: #fcfcfd;
+  --toast-r: 10px;            /* radius/toast/radius-medium */
+  --collapse-r: 12px;         /* radius/collapse/radius */
+  --focus-ring: #dce0e5;      /* color/…/border-focus-ring (stroke 2) */
+  --focus-border: #b3b9c0;    /* color/…/border-focused */
+  --err: #ea5154;             /* color/datefield/border-error · textfield/text-helper-error */
+  --err-ring: #ffdcdc;
+
+  /* ── 라운드 (radius/*) ── */
+  --r-badge: 4px;      /* radius/badge/radius-text */
+  --r-field: 6px;      /* radius/textfield/radius · radius/r6 */
+  --r-btn: 10px;       /* radius/button/radius-large */
+  --r-full: 9999px;    /* radius/rfull — chip · tag · secondary button */
+
+  /* shadcn 토큰 재매핑 (위 팔레트의 HSL) */
+  --background: 225 31% 95%;      /* --bg */
+  --foreground: 0 0% 10%;         /* --ink  #1a1a1a */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 253 80% 45%;         /* --ac   #3617ce */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 33% 98%;       /* --th   #f8f9fb */
+  --secondary-foreground: 210 13% 31%; /* --ink2 #454f59 */
+  --muted: 220 33% 98%;
+  --muted-foreground: 211 11% 46%;/* --ink3 #697582 */
+  --accent: 240 100% 97%;         /* --ac2  #f1f2ff */
+  --accent-foreground: 253 80% 45%;
+  --destructive: 359 83% 58%;     /* --bad  #ed3b3e */
+  --destructive-foreground: 0 0% 100%;
+  --border: 200 20% 93%;          /* --line #e8ecef */
+  --input: 210 11% 79%;           /* --line3 #c4c9cf */
+  --ring: 253 80% 45%;
+  --radius: 0.375rem;             /* 6px — radius/r6 */
+}
+
+/* 타이포 프리셋 — 참고 디자인 밀도(본문 13px)에 맞춰 재조정 */
 @layer components {
-  .type-display-32 { font-size: 32px; line-height: 44px; letter-spacing: -0.6px; }
-  .type-title-28 { font-size: 28px; line-height: 36px; letter-spacing: -0.6px; }
-  .type-title-24 { font-size: 24px; line-height: 32px; letter-spacing: -0.6px; }
-  .type-title-20 { font-size: 20px; line-height: 28px; letter-spacing: -0.6px; }
-  .type-title-18 { font-size: 18px; line-height: 26px; letter-spacing: -0.2px; }
-  .type-title-16 { font-size: 16px; line-height: 24px; letter-spacing: -0.2px; }
-  .type-body-14 { font-size: 14px; line-height: 20px; letter-spacing: -0.2px; }
-  .type-body-13 { font-size: 13px; line-height: 20px; letter-spacing: -0.2px; }
-  .type-body-12 { font-size: 12px; line-height: 18px; letter-spacing: -0.2px; }
-  .type-control-13 { font-size: 13px; letter-spacing: -0.2px; }
-  .type-control-10 { font-size: 10px; letter-spacing: -0.2px; }
+  .type-display-32 { font-size: 28px; line-height: 38px; letter-spacing: -0.6px; }
+  .type-title-28 { font-size: 24px; line-height: 32px; letter-spacing: -0.5px; }
+  .type-title-24 { font-size: 22px; line-height: 30px; letter-spacing: -0.4px; }
+  .type-title-20 { font-size: 18px; line-height: 26px; letter-spacing: -0.3px; }
+  .type-title-18 { font-size: 17px; line-height: 25px; letter-spacing: -0.3px; }
+  .type-title-16 { font-size: 15px; line-height: 23px; letter-spacing: -0.2px; }
+  .type-body-14 { font-size: 13px; line-height: 20px; letter-spacing: -0.1px; }
+  .type-body-13 { font-size: 13px; line-height: 20px; letter-spacing: -0.1px; }
+  .type-body-12 { font-size: 12px; line-height: 18px; letter-spacing: -0.1px; }
+  .type-control-13 { font-size: 13px; letter-spacing: -0.1px; }
+  .type-control-10 { font-size: 11px; letter-spacing: -0.1px; }
 }
 
 * {
@@ -28,27 +126,301 @@
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-family: var(--font);
+  /* body/14 — Figma typography/body/14 (14 / 20 / -0.2) */
+  font: var(--fs-body)/var(--lh-body) var(--font);
+  letter-spacing: var(--ls-body);
   font-feature-settings: 'tnum';
   -webkit-font-smoothing: antialiased;
 }
 
+button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
+:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+
 /* BO 스크롤바 — 얇고 뉴트럴 */
+/* Figma scrollbar — 두께 6 · radius full · #c4c9cf */
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) transparent;
+  scrollbar-color: #c4c9cf transparent;
 }
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-thumb { background: #c4c9cf; border-radius: 9999px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background-color: hsl(var(--border)); border-radius: 9999px; }
+*::-webkit-scrollbar-thumb:hover { background-color: hsl(var(--muted-foreground) / 0.5); }
+::selection { background-color: var(--ac2); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   참고 디자인 컴포넌트 클래스 — 원본 CSS를 그대로 이식.
+   페이지에서 <table class="tbl">, <button class="btn pri"> 처럼 바로 쓴다.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@layer components {
+  /* ── 페이지 머리 ── */
+  .crumb { font-size: 12px; color: var(--ink3); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .crumb b { color: var(--ink2); font-weight: 500; }
+  .ph { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 8px 0 20px; border-bottom: 1px solid var(--line); }
+  .h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.4px; }
+  .ph-r { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .sec { margin-top: 44px; }
+  .sec:first-of-type { margin-top: 32px; }
+  .sec-h { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; flex-wrap: wrap; }
+  .sec-h h3 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: -0.3px; }
+  .sec-h .hint { color: var(--ink3); font-size: 12px; }
+  .sec-h .sp { flex: 1; }
+  .desc { color: var(--ink2); margin: 10px 0 0; max-width: 760px; }
+
+  /* ── 폼 테이블 ── */
+  .ft { width: 100%; border-collapse: collapse; border-top: 1px solid var(--line); }
+  .ft th { width: 148px; background: var(--th); text-align: left; font-weight: 500; color: var(--ink2); padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+  .ft td { padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .ft td.ro { color: var(--ink); }
+  .ft .req::after { content: ' *'; color: var(--bad); }
+  .ft td .help { color: var(--ink3); font-size: 12px; margin-left: 10px; }
+  .sbtn { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
+
+  /* ── 컨트롤 ── */
+  /* Figma textfield — radius 6 · inset-x 14 · border-default #c4c9cf (var(--line3)) */
+  .inp, .sel { height: 34px; border: 1px solid var(--line3); border-radius: var(--r-field); background: #fff; padding: 0 14px; min-width: 0; }
+  .inp { width: 220px; }
+  .inp.wide { width: 100%; max-width: 420px; }
+  .inp.num { width: 96px; text-align: right; font-variant-numeric: tabular-nums; }
+  .inp[type='date'] { width: 150px; }
+  .sel { appearance: none; padding-right: 32px; min-width: 150px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%2353586a' stroke-width='1.4'/%3E%3C/svg%3E") no-repeat right 11px center; cursor: pointer; }
+  .sel.w200 { min-width: 200px; }
+  .inp:disabled, .sel:disabled { background-color: var(--th); color: var(--ink3); cursor: not-allowed; }
+  textarea.inp { height: 72px; padding: 8px 10px; width: 100%; resize: vertical; }
+  .ck-g { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center; }
+  .ck-g label, .rd label, label.ck { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; white-space: nowrap; }
+  .ck-g label.off { color: var(--ink3); cursor: not-allowed; }
+  .unit { display: inline-flex; align-items: center; gap: 6px; }
+  .unit em { font-style: normal; color: var(--ink3); font-size: 12px; }
+  .rng { display: inline-flex; align-items: center; gap: 8px; }
+
+  /* ── 버튼 ── */
+  .btn { height: 36px; padding: 0 15px; border-radius: 7px; border: 1px solid var(--line2); background: #fff; cursor: pointer; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:hover { background: #f7f7fa; }
+  .btn.pri { background: var(--ac); border-color: var(--ac); color: #fff; }
+  .btn.pri:hover { background: var(--ac-h); }
+  .btn.sm { height: 32px; padding: 0 12px; font-size: 12.5px; }
+  .btn.lg { height: 46px; min-width: 78px; padding: 0 20px; font-size: 15px; border-radius: 8px; }
+  .btn.dng { color: var(--bad); border-color: var(--badln); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .lk { border: 0; background: none; color: var(--ac); cursor: pointer; padding: 2px 3px; font-weight: 500; text-align: left; }
+  .lk:hover { text-decoration: underline; }
+  .lk.strong { font-weight: 700; color: var(--ink); }
+  .lk.dng { color: var(--bad); }
+  .acts { white-space: nowrap; }
+  .acts .lk { font-size: 12.5px; padding: 2px 5px; }
+  .acts .lk + .lk { border-left: 1px solid var(--line2); border-radius: 0; }
+
+  /* ── 배지 ── */
+  .bdg { display: inline-flex; align-items: center; height: 23px; padding: 0 9px; border-radius: 999px; font-size: 11.5px; border: 1px solid var(--line2); color: var(--ink2); background: #fff; white-space: nowrap; font-weight: 500; }
+  .bdg.ok { color: var(--ok); background: var(--okbg); border-color: var(--okln); }
+  .bdg.warn { color: var(--warn); background: var(--warnbg); border-color: var(--warnln); }
+  .bdg.bad { color: var(--bad); background: var(--badbg); border-color: var(--badln); }
+  .bdg.ac { color: var(--ac); background: var(--ac2); border-color: var(--ac3); }
+  .bdg.gray { color: var(--ink3); background: var(--th); }
+  .sub { font-size: 11.5px; color: var(--ink3); margin-top: 2px; }
+  .dim-t { color: var(--ink3); }
+  .mid { font-variant-numeric: tabular-nums; letter-spacing: 0; }
+
+  /* ── 데이터 테이블 ── */
+  .bar { display: flex; align-items: center; gap: 8px; margin: 30px 0 10px; flex-wrap: wrap; }
+  .bar .cnt { color: var(--ink2); }
+  .bar .cnt b { color: var(--ac); font-weight: 700; }
+  .bar .sp { flex: 1; }
+  .bar .sep { width: 1px; height: 18px; background: var(--line2); margin: 0 4px; }
+  .tw { overflow-x: auto; }
+  .tbl { width: 100%; border-collapse: collapse; border-top: 1px solid var(--line2); }
+  .tbl th { background: var(--th); font-weight: 600; padding: 12px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; text-align: center; }
+  .tbl td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: center; vertical-align: middle; white-space: nowrap; }
+  .tbl td.l { white-space: normal; min-width: 120px; }
+  .tbl td.l, .tbl th.l { text-align: left; }
+  .tbl td.r, .tbl th.r { text-align: right; }
+  .tbl .num { font-variant-numeric: tabular-nums; }
+  .tbl th.ck, .tbl td.ck { width: 44px; }
+  .tbl tbody tr:hover { background: #f8f9fb; }
+  .tbl tbody tr.sel { background: var(--ac2); }
+  .tbl tbody tr.click { cursor: pointer; }
+  .tbl tbody tr.off td { color: var(--ink3); }
+  .tbl tfoot td { background: var(--th); font-weight: 700; padding: 12px 10px; text-align: right; font-variant-numeric: tabular-nums; }
+  .tbl th.sortable { cursor: pointer; user-select: none; }
+  .tbl th.sortable:hover { color: var(--ac); }
+  .sa { font-size: 10px; color: var(--ink3); margin-left: 4px; }
+  .tbl th[aria-sort='ascending'] .sa, .tbl th[aria-sort='descending'] .sa { color: var(--ac); }
+  .empty { padding: 44px 10px !important; color: var(--ink3); }
+  .pager { display: flex; justify-content: center; gap: 4px; margin-top: 18px; }
+  .pager button { min-width: 32px; height: 32px; border: 1px solid transparent; border-radius: 6px; background: none; cursor: pointer; color: var(--ink2); }
+  .pager button.on { border-color: var(--ac); color: var(--ac); font-weight: 700; }
+  .pager button:disabled { color: var(--line2); cursor: default; }
+  .chipline { display: inline-flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+  .off-t { color: var(--ink3); text-decoration: line-through; }
+
+  /* ── 탭 ── */
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-top: 28px; }
+  .tabs button { border: 0; background: none; padding: 12px 18px; cursor: pointer; color: var(--ink3); font-size: 15px; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 6px; }
+  .tabs button.on { color: var(--ac); border-bottom-color: var(--ac); font-weight: 700; }
+  .tabs button:disabled { cursor: not-allowed; opacity: 0.5; }
+  .tabs.small button { font-size: 13.5px; padding: 11px 16px; }
+
+  /* ── 알림 박스 ── */
+  .call { display: flex; gap: 10px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--th); color: var(--ink2); margin: 14px 0; }
+  .call.warn { background: var(--warnbg); border-color: var(--warnln); color: #6f3b00; }
+  .call.bad { background: var(--badbg); border-color: var(--badln); color: #8b1724; }
+  .call.ac { background: var(--ac2); border-color: var(--ac3); color: #2a2192; }
+  .call b { font-weight: 700; }
+  .call ul { margin: 4px 0 0; padding-left: 18px; }
+
+  /* ── 토글 ── */
+  .tgl { width: 46px; height: 26px; border-radius: 13px; border: 0; background: #cfd2dc; position: relative; cursor: pointer; padding: 0; transition: background 0.15s; }
+  .tgl::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left 0.15s; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); }
+  .tgl.on { background: var(--ac); }
+  .tgl.on::after { left: 23px; }
+  .tgl:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── 요약 스트립 ── */
+  .sum { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 12px; margin-top: 28px; }
+  .sum > div { padding: 16px 20px; }
+  .sum > div + div { border-left: 1px solid var(--line); }
+  .sum span { color: var(--ink2); font-size: 12.5px; }
+  .sum b { display: block; font-size: 20px; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -0.4px; }
+  .strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 12px; margin-top: 24px; }
+  .strip > div { padding: 14px 18px; }
+  .strip > div + div { border-left: 1px solid var(--line); }
+  .strip span { display: block; color: var(--ink3); font-size: 12px; }
+  .strip b { font-size: 14.5px; }
+
+  /* ── 모달 ── */
+  .dimbg { position: fixed; inset: 0; background: rgba(18, 19, 32, 0.42); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 20px; z-index: 40; overflow: auto; }
+  .mdl { background: #fff; border-radius: 14px; width: min(720px, 100%); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25); }
+  .mdl.w9 { width: min(960px, 100%); }
+  .mdl.w5 { width: min(520px, 100%); }
+  .mdl-h { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
+  .mdl-h h2 { font-size: 18px; margin: 0; }
+  .mdl-h .x { border: 0; background: none; font-size: 22px; cursor: pointer; color: var(--ink3); width: 34px; height: 34px; border-radius: 8px; }
+  .mdl-h .x:hover { background: var(--th); }
+  .mdl-b { padding: 16px 24px 8px; max-height: 68vh; overflow: auto; }
+  .mdl-f { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px 20px; border-top: 1px solid var(--line); margin-top: 8px; }
+  .kv { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; }
+  .kv dt { color: var(--ink3); }
+  .kv dd { margin: 0; }
+
+
+  /* ── 검색 필터 패널 내부 컨트롤 (공식 규격: 높이 40 · 라운드 8) ── */
+  .fp .inp, .fp .sel, .fp input, .fp select { height: 38px; border-radius: var(--r-field); border-color: var(--line3); padding-left: 14px; }
+  .fp .sel, .fp select { min-width: 170px; }
+  /* 남는 폭을 쓰는 칸(grow)에서는 검색어 입력이 늘어난다 */
+  .fp .grow-cell .rng { display: flex; flex: 1; align-items: center; min-width: 0; }
+  .fp .grow-cell .rng > .inp:last-child:not([type='date']),
+  .fp .grow-cell > .inp:not([type='date']) { flex: 1; min-width: 0; width: auto; }
+  .fp .inp[type='date'] { width: 150px; flex: none; }
+  .fp .sel.w200, .fp select.w200 { min-width: 200px; }
+  .fp input[type='checkbox'], .fp input[type='radio'] { height: 16px; width: 16px; border-radius: 4px; min-width: 0; }
+  .fp .ck-g { gap: 10px 20px; }
+  .fp .rng { gap: 8px; }
+
+  /* ── 좌측 트리 패널 (참고 디자인 .tree / .pg-h / .mer) ──
+     컨테이너 목록. 한 Container = 머리(이름·건수) + 잎(Template)을 하나의 카드로 묶는다.
+     검색 입력의 margin 은 래퍼(.tree-s)가 갖는다 — 입력에 주면 돋보기 아이콘(absolute 중앙)이
+     margin 만큼 아래로 내려간다. */
+  .tree { border: 1px solid var(--line); border-radius: 12px; padding: 14px 10px; }
+  .tree-h { display: flex; align-items: center; font-weight: 700; padding: 0 6px 10px; }
+  .tree-s { margin-bottom: 12px; }
+  .tree .inp { width: 100%; margin-bottom: 0; }
+
+  /* 그룹 카드 — 머리는 회색 바, 잎은 흰 바닥. 선택된 컨테이너는 머리를 보라로. */
+  .tree-g { border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; }
+  .tree-g + .tree-g { margin-top: 8px; }
+  .tree-g.on { border-color: var(--ac3); }
+  .pg-h { display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: var(--th); padding: 9px 10px; cursor: pointer; font-weight: 700; text-align: left; }
+  .pg-h:hover { background: #eef0f4; }
+  .tree-g.on .pg-h { background: var(--ac2); color: var(--ac); }
+  .pg-h .car { width: 12px; color: var(--ink3); font-size: 11px; }
+  .tree-g .leaves { padding: 4px; border-top: 1px solid var(--line); }
+  .c { margin-left: auto; color: var(--ink3); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .tree-g.on .c { color: var(--ac); }
+  .mer { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 7px 8px; cursor: pointer; text-align: left; border-radius: 6px; }
+  .mer:hover { background: var(--th); }
+  .mer.on { background: var(--ac2); }
+  .mer.on .nm { color: var(--ac); font-weight: 700; }
+  .mer .nm { display: flex; flex-direction: column; line-height: 1.35; min-width: 0; }
+  .mer .nm > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mer small { color: var(--ink3); font-size: 11.5px; font-weight: 400; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink3); flex: none; }
+  .dot.ok { background: #22a35a; }
+  .dot.warn { background: #e59a1a; }
+  .dot.gray { background: #c4c7d1; }
+  .tree .unl { margin-top: 12px; border-top: 1px solid var(--line); padding: 10px 6px 0; color: var(--ink2); font-size: 12px; }
+
+  /* ── 빌더 우측 패널(.bpanel) 타이포 정규화 ──
+     한 패널에 9·10·10.5·11·11.5·12·12.5·13·14·16px 가 섞여 글이 잘게 부서져 보였다(2026-10-08).
+     공식 4단계로 수렴시킨다: 섹션 15/700 · 본문 13 · 보조 12 · 라벨·배지 11.
+     한글은 keep-all 로 단어 중간에서 끊기지 않게 한다. */
+  .bpanel { word-break: keep-all; overflow-wrap: anywhere; }
+  .bpanel [class*='text-[9px]'],
+  .bpanel [class*='text-[10px]'],
+  .bpanel [class*='text-[10.5px]'],
+  .bpanel [class*='text-[11px]'],
+  .bpanel [class*='text-[11.5px]'] { font-size: 11px; line-height: 1.6; }
+  .bpanel [class*='text-[12px]'],
+  .bpanel [class*='text-[12.5px]'] { font-size: 12px; line-height: 1.6; }
+  .bpanel [class*='text-[13px]'],
+  .bpanel .text-sm,
+  .bpanel [class*='text-[14px]'] { font-size: 13px; line-height: 1.6; }
+  .bpanel .text-xs { font-size: 12px; line-height: 1.6; }
+  .bpanel h2, .bpanel [class*='text-[16px]'], .bpanel [class*='text-[17px]'] { font-size: 15px; line-height: 1.45; }
+  /* 긴 설명문은 보조 톤으로 — 본문과 같은 굵기로 겹쳐 보이지 않게 */
+  .bpanel p { letter-spacing: -0.1px; }
+
+  /* ── 체크박스 · 라디오 · 토글 — Figma [BO-AX] 공통 컴포넌트 실값 (2026-10-08) ──
+     checkbox  radius 4 · border #c4c9cf · fill #3617ce · icon #fff · gap 6
+     radio     border #c4c9cf · fill #3617ce · gap 6
+     toggle    radius full · inset 4 · handler 12(xs)/20(s)/24(m) · track #b3b9c0 / 선택 #3617ce / 비활성 #dce0e5 */
+  input[type='checkbox'], input[type='radio'] {
+    appearance: none; width: 16px; height: 16px; flex: none; margin: 0;
+    border: 1px solid var(--line3); background: #fff; cursor: pointer;
+    display: inline-grid; place-content: center; transition: background-color .12s, border-color .12s;
+  }
+  input[type='checkbox'] { border-radius: 4px; }
+  input[type='radio'] { border-radius: 9999px; }
+  input[type='checkbox']:checked, input[type='radio']:checked { background: var(--ac); border-color: var(--ac); }
+  input[type='checkbox']:checked::after {
+    content: ''; width: 9px; height: 5px; border: 2px solid #fff; border-top: 0; border-right: 0;
+    transform: rotate(-45deg) translate(1px, -1px);
+  }
+  input[type='radio']:checked::after { content: ''; width: 6px; height: 6px; border-radius: 9999px; background: #fff; }
+  input[type='checkbox']:disabled, input[type='radio']:disabled {
+    background: var(--surface-sunken); border-color: var(--line3); cursor: not-allowed;
+  }
+  input[type='checkbox']:checked:disabled, input[type='radio']:checked:disabled { background: var(--line3); border-color: var(--line3); }
+  /* 라벨 — gap 6, 기본 #697582 / 선택 #1a1a1a */
+  label:has(> input[type='checkbox']), label:has(> input[type='radio']) { gap: 6px; color: var(--ink3); }
+  label:has(> input:checked) { color: var(--ink); }
+
+  /* ── 다이얼로그 · 모달 — Figma dialogpopup/modalpopup (radius 16 · padding 24 · title 20/700) ── */
+  .dlg { border-radius: var(--dlg-r); background: #fff; box-shadow: var(--dlg-shadow); }
+  .dlg-head { padding: 18px var(--dlg-pad) 4px; }
+  .dlg-head h2, .dlg-head h3 { font-size: 20px; font-weight: 700; line-height: 28px; letter-spacing: -0.6px; color: var(--ink); margin: 0; }
+  .dlg-body { padding: 8px var(--dlg-pad) 0; font-size: 13px; line-height: 20px; color: var(--ink); }
+  .dlg-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 24px var(--dlg-pad) var(--dlg-pad); }
+
+  /* ── 툴팁 · 팝오버 ── */
+  .tip { background: var(--tip-bg); color: var(--tip-text); border-radius: var(--tip-r); padding: var(--tip-pad); box-shadow: var(--tip-shadow); font-size: 12px; line-height: 18px; font-weight: 500; }
+
+  /* ── 입력 포커스·에러 — Figma textfield/datefield ── */
+  .inp:focus, .sel:focus, .fp input:focus, .fp select:focus,
+  input[type='text']:focus, input[type='date']:focus, input[type='datetime-local']:focus, textarea:focus {
+    outline: none; border-color: var(--focus-border) !important; box-shadow: 0 0 0 2px var(--focus-ring) !important;
+  }
+  .inp[aria-invalid='true'], input[aria-invalid='true'] { border-color: var(--err) !important; box-shadow: 0 0 0 2px var(--err-ring) !important; }
+
+  /* ── 하단 액션 ── */
+  .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 60px; }
+  .emptybox { border: 1px dashed var(--line2); border-radius: 12px; padding: 56px 24px; text-align: center; color: var(--ink2); }
+  .emptybox h4 { margin: 0 0 6px; font-size: 16px; color: var(--ink); }
 }
-*::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--border));
-  border-radius: 9999px;
-}
-*::-webkit-scrollbar-thumb:hover {
-  background-color: hsl(var(--muted-foreground) / 0.5);
-}
-::selection {
-  background-color: var(--surface-brand-subtle);
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
 }

@@ -104,6 +104,8 @@ export async function updateContainerInfo(id: string, formData: FormData) {
   await writeContainerAudit({ id, before, after: data, reason: '기본/메타 정보 수정', result: 'UPDATED' });
   revalidatePath(`/admin/containers/${id}`);
   revalidatePath('/admin/containers');
+  // 정보 수정은 독립 페이지 — 저장 후 상세로 돌아간다(2026-10-08).
+  redirect(`/admin/containers/${id}`);
 }
 
 // ── 컨테이너 승인 워크플로우 (작성중 → 승인 대기 → 승인 완료/반려) ──
