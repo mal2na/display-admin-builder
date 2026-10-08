@@ -198,6 +198,24 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 > 아직 쓰이는 `promotion-prototype.html` 은 맨 끝 `</style>` 직전의 「Figma 공통 토큰 — 최종 정렬」 블록이
 > 같은 값을 복제해 들고 있다. 토큰을 바꾸면 **globals.css 와 이 블록을 같이** 고칠 것.
 
+#### 프로모션 관리 React 이식 — 진행 상황 (2026-10-08 기준)
+
+| 조각 | 상태 | 파일 |
+|---|---|---|
+| 목록(필터·표·페이저) | **완료** | `src/app/admin/events/promo/promo-list.tsx` · `src/lib/promotion/model.ts` |
+| 등록 시작 팝업(유형 결정·문답) | **완료** | `reg-start-modal.tsx` · `src/lib/promotion/reg-start.ts` |
+| **조건 빌더** (접근·참여·지급 공용) | **완료** | `cond-builder.tsx` · `master-picker.tsx` · `src/lib/promotion/cond.ts` |
+| 등록 폼 — 기본정보 / CTA / 검색·태그 | **미착수** | 프로토타입 `renderForm()` |
+| 등록 폼 — 참여 정보(prSection) · 리워드 | **미착수** | 프로토타입 `prSection()` / `rewardBlock()` |
+| 등록 폼 — 추천형(refSection) | **미착수** | 프로토타입 `refSection()` |
+| 상세 보기 · FO 미리보기 | **미착수** | 프로토타입 `buildDetail()` / `renderFo()` |
+
+> 조건 빌더 확인용 임시 페이지: `/admin/events/promo/cond-check`
+> (등록 폼에 붙이면 지울 것 — `src/app/admin/events/promo/cond-check/page.tsx`)
+>
+> **다음에 이어서 할 때**: 등록 폼 본체(`renderForm`)를 옮기고, 「공개 조건」 자리에
+> `<CondBuilder ctx="access" required />` 를 붙이면 된다.
+
 **아래는 BO 공통 반영 전 기준이다 — 위 토큰과 충돌하면 위가 이긴다.**
 
 | 기준 | 역할 | 어떻게 쓰나 |
