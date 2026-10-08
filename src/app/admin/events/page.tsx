@@ -9,7 +9,7 @@ export default function EventsPage() {
     <iframe
       src="/promotion-prototype.html"
       title="프로모션 관리"
-      className="h-full w-full border-0 bg-[#eef0f6]"
+      className="h-full w-full border-0 bg-white"
     />
   );
 }

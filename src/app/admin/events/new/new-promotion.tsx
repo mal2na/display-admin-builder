@@ -179,7 +179,7 @@ export function NewPromotion() {
         </form>
 
         {/* 우측: 예시 갤러리 */}
-        <div className="overflow-y-auto bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] p-6 [background-size:16px_16px]">
+        <div className="overflow-y-auto bg-[radial-gradient(circle,#e6e7ec_1px,transparent_1px)] p-6 [background-size:16px_16px]">
           <div className="mb-3 flex items-center gap-2">
             <h2 className="text-sm font-semibold">{kind === '미션' ? '미션은 빈 페이지에서 시작합니다' : `${type} 예시`}</h2>
             <span className="text-xs text-muted-foreground">예시를 클릭해 선택하세요</span>

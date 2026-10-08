@@ -45,7 +45,7 @@ export function GroupDetail({ base, variations }: { base: string; variations: Co
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-2 border-b pb-3">
           <h2 className="text-sm font-semibold">코너 유형 정보</h2>
-          <button type="button" onClick={() => router.push(`/admin/corner-types/edit?base=${encodeURIComponent(base)}`)} className="inline-flex items-center gap-1 rounded-lg border border-[#C7D2FE] bg-[#EEF2FF] px-3.5 py-2 text-[12.5px] font-bold text-[#4A5CF0] hover:bg-[#E0E7FF]"><Pencil className="h-3.5 w-3.5" />수정</button>
+          <button type="button" onClick={() => router.push(`/admin/corner-types/edit?base=${encodeURIComponent(base)}`)} className="inline-flex items-center gap-1 rounded-lg border border-[#d9d5fb] bg-[#efedfe] px-3.5 py-2 text-[12.5px] font-bold text-[#3a2fd8] hover:bg-[#efedfe]"><Pencil className="h-3.5 w-3.5" />수정</button>
         </div>
 
         <div className="grid grid-cols-1 items-start gap-5 pt-4 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
@@ -62,7 +62,7 @@ export function GroupDetail({ base, variations }: { base: string; variations: Co
               ))}
             </div>
             {/* 고정 미리보기 — 선택된 배열만 표시(실사 렌더). 배너·칩·바코드·프로필·메뉴·상태 모두 CornerBlock이 처리 */}
-            <div className="overflow-hidden rounded-lg border border-[#E6E8EF] bg-[#F0F2F9] p-4">
+            <div className="overflow-hidden rounded-lg border border-[#e6e7ec] bg-[#eef0f6] p-4">
               <div className="pointer-events-none h-[400px]"><DevicePreview corner={cornerRowPreview(cur)} fit="contain" /></div>
             </div>
           </div>

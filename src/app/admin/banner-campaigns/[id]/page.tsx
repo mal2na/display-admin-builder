@@ -14,7 +14,7 @@ export default async function BannerCampaignDetailPage({ params }: { params: { i
   const usage = (await getBannerUsage([b.id]))[b.id] ?? [];
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-12 py-9 pb-28">
       <BannerDetail
         d={{
           id: b.id, campaignCode: b.campaignCode, title: b.title, subtitle: b.subtitle, purpose: b.purpose, platform: b.platform,

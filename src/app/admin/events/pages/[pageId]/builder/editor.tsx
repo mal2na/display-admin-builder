@@ -605,7 +605,7 @@ export function EventEditor({ meta, tree, previewTree }: { meta: Meta; tree: Nod
         )}
 
         {/* 중앙 캔버스 */}
-        <div className="flex flex-col overflow-hidden bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]">
+        <div className="flex flex-col overflow-hidden bg-[radial-gradient(circle,#e6e7ec_1px,transparent_1px)] [background-size:16px_16px]">
           <div className="flex-1 overflow-y-auto p-8">
             <div className="mx-auto w-fit" onClick={(e) => e.stopPropagation()}>
               <DeviceShell width={device.w} height={device.h - 110} headerLabel={meta.projectName}>

@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
+// 참고 디자인에는 그림자 카드가 없다 → 테두리 1px + 라운드 12px 의 담백한 블록.
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('rounded-lg border bg-card text-card-foreground shadow-sm', className)}
+      className={cn('rounded-[12px] border border-[var(--line)] bg-white text-[var(--ink)]', className)}
       {...props}
     />
   );
@@ -15,7 +16,7 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn('text-sm font-semibold', className)} {...props} />;
+  return <h3 className={cn('text-[15px] font-bold tracking-[-0.2px]', className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

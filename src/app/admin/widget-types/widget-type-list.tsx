@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { StatusPill } from '@/components/ops-ui';
+import { StatusPill, FilterPanel, ListHeader } from '@/components/ops-ui';
 import { USE_LABEL, fmtDateTime } from '@/lib/widget-taxonomy';
 import { RotateCcw, Search } from 'lucide-react';
 
@@ -29,34 +29,35 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">위젯유형
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="위젯유형" className="h-9 w-56 text-sm" />
-          </label>
-          <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">사용여부
-            <Select value={use} onChange={(e) => setUse(e.target.value)} className="h-9 w-28 text-sm">
-              <option value="">전체</option>
-              <option value="true">사용</option>
-              <option value="false">미사용</option>
-            </Select>
-          </label>
-          <label className="flex flex-1 flex-col gap-1 text-[12px] text-muted-foreground">유형설명
-            <Input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="키워드를 입력하세요" className="h-9 text-sm" />
-          </label>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => { setQ(''); setUse(''); setDesc(''); setApplied({ q: '', use: '', desc: '' }); }}><RotateCcw className="mr-1 h-3.5 w-3.5" />초기화</Button>
-            <Button type="button" onClick={() => setApplied({ q, use, desc })}><Search className="mr-1 h-3.5 w-3.5" />조회</Button>
-          </div>
-        </div>
+      {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
+      <div className="mt-6">
+        <FilterPanel
+          rows={[
+            [
+              ['위젯유형', <Input key="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="위젯유형" className="w-[220px]" />],
+              ['사용여부', (
+                <Select key="use" value={use} onChange={(e) => setUse(e.target.value)} className="w200">
+                  <option value="">전체</option>
+                  <option value="true">사용</option>
+                  <option value="false">미사용</option>
+                </Select>
+              )],
+            ],
+            [
+              ['유형설명', <Input key="d" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="키워드를 입력하세요" className="w-[420px] max-w-full" />, 3],
+            ],
+          ]}
+          onReset={() => { setQ(''); setUse(''); setDesc(''); setApplied({ q: '', use: '', desc: '' }); }}
+          onSearch={() => setApplied({ q, use, desc })}
+        />
       </div>
 
-      <p className="text-sm font-semibold">위젯 유형 목록 <span className="text-[#3616cd]">{filtered.length}건</span></p>
+      <ListHeader title="위젯 유형 목록" count={filtered.length} />
 
-      <div className="border-y border-[#e8ebef] bg-white">
+      <div className="border-y border-[#e6e7ec] bg-white">
         <table className="w-full text-[13px] font-normal">
           <thead>
-            <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[12px] text-[#6b7086]">
+            <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[12px] text-[#53586a]">
               <th className="w-16 px-3 py-2.5 text-left font-normal">번호</th>
               <th className="px-3 py-2.5 text-left font-normal">위젯 유형</th>
               <th className="px-3 py-2.5 text-left font-normal">유형설명</th>
@@ -69,7 +70,7 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
             {filtered.length === 0 ? (
               <tr><td colSpan={6} className="px-3 py-10 text-center text-muted-foreground">조회 결과가 없습니다.</td></tr>
             ) : filtered.map((r, i) => (
-              <tr key={r.id} className="cursor-pointer border-b border-[#e8ebef] last:border-b-0 hover:bg-[#f0f2f4]" onClick={() => router.push(`/admin/widget-types/${r.id}`)}>
+              <tr key={r.id} className="cursor-pointer border-b border-[#e6e7ec] last:border-b-0 hover:bg-[#f6f7f9]" onClick={() => router.push(`/admin/widget-types/${r.id}`)}>
                 <td className="px-3 py-2.5 text-slate-500">{i + 1}</td>
                 <td className="px-3 py-2.5 text-slate-800">{r.typeName}</td>
                 <td className="px-3 py-2.5 text-slate-600">{r.description ?? '-'}</td>

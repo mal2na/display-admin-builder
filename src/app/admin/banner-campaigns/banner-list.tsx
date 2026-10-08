@@ -1,12 +1,14 @@
 'use client';
 
 // SB BO-AIM-ETC-PG061 배너 캠페인 관리 목록 — 검색 영역 + 목록 + 등록.
-//  디자인 시스템: accent #3616cd · 헤더/필터 #f0f2f4 · 보더 #e8ebef · 13px 레귤러.
+//  디자인 시스템: accent #3a2fd8 · 헤더/필터 #f6f7f9 · 보더 #e6e7ec · 13px 레귤러.
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ComposedBanner, type ComposeFields } from './composed-banner';
+import { FilterPanel, ListHeader } from '@/components/ops-ui';
+import { PageHeader } from '@/components/page-header';
 
 export type BannerRow = {
   id: string; campaignCode: string; title: string; exposeYn: boolean;
@@ -26,31 +28,31 @@ const THUMB_H = Math.round(NAT_H * THUMB_SCALE);
 function BannerThumb({ preview }: { preview: BannerRow['preview'] }) {
   if (preview?.imageUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={preview.imageUrl} alt="" style={{ width: THUMB_W, height: THUMB_H }} className="rounded-md border border-[#e8ebef] object-cover" />;
+    return <img src={preview.imageUrl} alt="" style={{ width: THUMB_W, height: THUMB_H }} className="rounded-md border border-[#e6e7ec] object-cover" />;
   }
   if (preview?.f) {
     return (
-      <div style={{ width: THUMB_W, height: THUMB_H }} className="overflow-hidden rounded-md border border-[#e8ebef]">
+      <div style={{ width: THUMB_W, height: THUMB_H }} className="overflow-hidden rounded-md border border-[#e6e7ec]">
         <div style={{ width: NAT_W, height: NAT_H, transform: `scale(${THUMB_SCALE})`, transformOrigin: 'top left' }}>
           <ComposedBanner f={preview.f} width={NAT_W} height={NAT_H} preview />
         </div>
       </div>
     );
   }
-  return <div style={{ width: THUMB_W, height: THUMB_H }} className="flex items-center justify-center rounded-md border border-dashed border-[#d9dce6] bg-[#f6f7fb] text-[11px] text-slate-300">미등록</div>;
+  return <div style={{ width: THUMB_W, height: THUMB_H }} className="flex items-center justify-center rounded-md border border-dashed border-[#e6e7ec] bg-[#f6f7f9] text-[11px] text-slate-300">미등록</div>;
 }
 
 const APPROVAL_TONE: Record<string, string> = {
-  승인완료: 'bg-[#e3f6ea] text-[#1f8a4c]', 승인요청: 'bg-[#eceef3] text-[#5d6275]',
-  반려: 'bg-[#ffe9e9] text-[#d93b3b]', 요청취소: 'bg-[#fff0de] text-[#c46a0b]', 임시저장: 'bg-[#eceef3] text-[#5d6275]',
+  승인완료: 'bg-[#e9f6ee] text-[#147a43]', 승인요청: 'bg-[#eef0f6] text-[#53586a]',
+  반려: 'bg-[#fdedef] text-[#cf2a3c]', 요청취소: 'bg-[#fff4e2] text-[#a95800]', 임시저장: 'bg-[#eef0f6] text-[#53586a]',
 };
 function fmtDT(iso: string | null) {
   if (!iso) return '-';
   const d = new Date(iso); const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
-const selectCls = 'h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-2.5 text-[12.5px] text-slate-700';
-const inputCls = 'h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-3 text-[12.5px] text-slate-700 placeholder:text-slate-400';
+const selectCls = 'sel';
+const inputCls = 'inp';
 const PER_PAGE = 10;
 
 type F = { field: string; q: string; expose: string; from: string; to: string; approval: string };
@@ -86,39 +88,48 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
   const period = (r: BannerRow) => (r.publishStart || r.publishEnd) ? `${fmtDT(r.publishStart)} ~ ${fmtDT(r.publishEnd)}` : '-';
 
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-slate-400">홈 › 운영관리 › 배너 캠페인 관리</nav>
-      <h1 className="mb-4 text-[22px] font-bold text-slate-900">배너 캠페인 관리</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영관리', '배너 캠페인 관리']}
+        title="배너 캠페인 관리"
+      />
 
-      {/* 검색 영역 */}
-      <div className="mb-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-[#e8ebef] bg-[#f0f2f4] p-5">
-        <div className="flex items-center gap-2">
-          <span className="text-[12.5px] font-medium text-slate-600">검색 항목</span>
-          <select value={draft.field} onChange={(e) => set({ field: e.target.value, q: '' })} className={cn(selectCls, 'w-36')}>{['배너캠페인 ID', '배너캠페인명'].map((o) => <option key={o}>{o}</option>)}</select>
-          <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && (setApplied(draft), setPage(1))} placeholder="검색 항목을 선택 후 검색하세요" className={cn(inputCls, 'w-[220px]')} />
-        </div>
-        <div className="flex items-center gap-2"><span className="text-[12.5px] font-medium text-slate-600">전시여부</span>
-          <select value={draft.expose} onChange={(e) => set({ expose: e.target.value })} className={cn(selectCls, 'w-28')}>{['전체', '전시', '미전시'].map((o) => <option key={o}>{o}</option>)}</select>
-        </div>
-        <div className="flex items-center gap-2"><span className="text-[12.5px] font-medium text-slate-600">전시기간</span>
-          <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} className={cn(inputCls, 'w-[150px]')} />
-          <span className="text-slate-400">~</span>
-          <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={cn(inputCls, 'w-[150px]')} />
-        </div>
-        <div className="flex items-center gap-2"><span className="text-[12.5px] font-medium text-slate-600">승인상태</span>
-          <select value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={cn(selectCls, 'w-32')}>{['전체', '승인요청', '승인완료', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <button type="button" onClick={() => { setDraft(DEF); setApplied(DEF); setPage(1); }} className="h-[34px] rounded-lg border border-[#cfd3e0] bg-white px-4 text-[12.5px] font-medium text-slate-600 hover:bg-[#f0f2f4]">초기화</button>
-          <button type="button" onClick={() => { setApplied(draft); setPage(1); }} className="h-[34px] rounded-lg bg-[#3616cd] px-5 text-[12.5px] font-medium text-white hover:brightness-110">조회</button>
-        </div>
+      {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
+      <div className="mt-6">
+        <FilterPanel
+          rows={[
+            [
+              ['검색 항목', (
+                <span key="q" className="rng">
+                  <select value={draft.field} onChange={(e) => set({ field: e.target.value, q: '' })} className={cn(selectCls, 'w200')}>{['배너캠페인 ID', '배너캠페인명'].map((o) => <option key={o}>{o}</option>)}</select>
+                  <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && (setApplied(draft), setPage(1))} placeholder="검색 항목을 선택 후 검색하세요" className={cn(inputCls, 'w-[320px] max-w-full')} />
+                </span>
+              ), 3],
+            ],
+            [
+              ['전시여부', <select key="ex" value={draft.expose} onChange={(e) => set({ expose: e.target.value })} className={cn(selectCls, 'w200')}>{['전체', '전시', '미전시'].map((o) => <option key={o}>{o}</option>)}</select>],
+              ['승인상태', <select key="av" value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={cn(selectCls, 'w200')}>{['전체', '승인요청', '승인완료', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>],
+            ],
+            [
+              ['전시기간', (
+                <span key="pd" className="rng">
+                  <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} className={inputCls} />
+                  <span className="text-[var(--ink3)]">~</span>
+                  <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={inputCls} />
+                </span>
+              ), 3],
+            ],
+          ]}
+          onReset={() => { setDraft(DEF); setApplied(DEF); setPage(1); }}
+          onSearch={() => { setApplied(draft); setPage(1); }}
+        />
       </div>
 
-      <p className="mb-2 text-[13px] text-slate-500">검색결과 <b className="text-[#3616cd] tabular-nums">{filtered.length}</b>건</p>
-      <div className="overflow-x-auto border-t border-[#e8ebef]">
+      <ListHeader title="검색결과" count={filtered.length} />
+      <div className="overflow-x-auto border-t border-[#e6e7ec]">
         <table className="w-full min-w-[1200px] text-[13px] font-normal whitespace-nowrap">
           <thead>
-            <tr className="border-b border-[#e8ebef] bg-[#f0f2f4] text-[#6b7086]">
+            <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[#53586a]">
               {['NO.', '미리보기', '배너캠페인 ID', '배너캠페인명', '전시여부', '전시기간', '승인상태', '등록자', '등록일시', '최종 수정자', '최종 수정일시'].map((h) => (
                 <th key={h} className={cn('h-11 px-3 font-normal', h === '배너캠페인명' || h === '전시기간' ? 'text-left' : 'text-center')}>{h}</th>
               ))}
@@ -128,14 +139,14 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
             {paged.length === 0 ? (
               <tr><td colSpan={11} className="px-3 py-16 text-center text-slate-400">조회된 배너 캠페인이 없습니다.</td></tr>
             ) : paged.map((r, i) => (
-              <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b border-[#e8ebef] text-center text-slate-700 hover:bg-[#f0f2f4]">
+              <tr key={r.id} onClick={() => router.push(`/admin/banner-campaigns/${r.id}`)} className="cursor-pointer border-b border-[#e6e7ec] text-center text-slate-700 hover:bg-[#f6f7f9]">
                 <td className="h-11 px-3 tabular-nums text-slate-500">{filtered.length - ((curPage - 1) * PER_PAGE + i)}</td>
                 <td className="h-11 px-3 py-1.5"><div className="flex justify-center"><BannerThumb preview={r.preview} /></div></td>
                 <td className="h-11 px-3 tabular-nums">{r.campaignCode}</td>
                 <td className="h-11 px-3 text-left">{r.title}</td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.exposeYn ? 'bg-[#e3f6ea] text-[#1f8a4c]' : 'bg-[#eceef3] text-[#5d6275]')}>{r.exposeYn ? '전시' : '미전시'}</span></td>
+                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', r.exposeYn ? 'bg-[#e9f6ee] text-[#147a43]' : 'bg-[#eef0f6] text-[#53586a]')}>{r.exposeYn ? '전시' : '미전시'}</span></td>
                 <td className="h-11 px-3 text-left text-slate-500">{period(r)}</td>
-                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#eceef3] text-[#5d6275]')}>{r.approvalLabel}</span></td>
+                <td className="h-11 px-3"><span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[12px]', APPROVAL_TONE[r.approvalLabel] ?? 'bg-[#eef0f6] text-[#53586a]')}>{r.approvalLabel}</span></td>
                 <td className="h-11 px-3 text-slate-600">{r.createdBy}</td>
                 <td className="h-11 px-3 text-slate-500">{fmtDT(r.createdAt)}</td>
                 <td className="h-11 px-3 text-slate-600">{r.updatedBy}</td>
@@ -146,15 +157,15 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
         </table>
       </div>
 
-      <div className="relative mt-4 flex items-center justify-center">
+      <div className="relative mt-8 flex items-center justify-center">
         {totalPages > 1 && (
           <div className="flex items-center gap-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-[13px]', p === curPage ? 'bg-[#3616cd] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
+              <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-[13px]', p === curPage ? 'bg-[#3a2fd8] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
             ))}
           </div>
         )}
-        <Link href="/admin/banner-campaigns/new" className="absolute right-0 inline-flex h-9 items-center rounded-lg bg-[#3616cd] px-5 text-[13px] font-semibold text-white hover:brightness-110">등록</Link>
+        <Link href="/admin/banner-campaigns/new" className="absolute right-0 inline-flex h-9 items-center rounded-lg bg-[#3a2fd8] px-5 text-[13px] font-semibold text-white hover:brightness-110">등록</Link>
       </div>
     </div>
   );

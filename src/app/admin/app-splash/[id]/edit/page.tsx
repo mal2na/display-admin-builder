@@ -5,6 +5,7 @@ import { SplashForm } from '../../splash-form';
 import { updateSplash } from '../../actions';
 import { OpsSection, FieldRow, ReadValue, StatusPill } from '@/components/ops-ui';
 import { APPLY_STATUS, SPLASH_APPROVAL, computeApplyStatus, fmtDateTime } from '@/lib/widget-taxonomy';
+import { PageHeader } from '@/components/page-header';
 export const dynamic = 'force-dynamic';
 export default async function SplashEditPage({ params }: { params: { id: string } }) {
   const s = await prisma.appSplash.findUnique({ where: { id: params.id } });
@@ -34,9 +35,11 @@ export default async function SplashEditPage({ params }: { params: { id: string 
   );
 
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 스플래시 관리 › App 스플래시 수정</nav>
-      <h1 className="mb-5 text-2xl font-bold">App 스플래시 수정</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 스플래시 관리', 'App 스플래시 수정']}
+        title="App 스플래시 수정"
+      />
       <SplashForm mode="edit" action={updateSplash.bind(null, s.id)} topExtra={approvalSection} bottomExtra={managerSection} value={{
         version: s.version, osType: s.osType, applyLabel: APPLY_STATUS[apply].label, title: s.title,
         updateContent: s.updateContent, applyStartAt: s.applyStartAt?.toISOString() ?? null,

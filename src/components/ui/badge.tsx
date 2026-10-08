@@ -1,23 +1,19 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { TONES, type Tone } from '@/components/ops-ui';
 
-// BSS 디자인 시스템 배지 — mapped 토큰(badge-*) 기반.
+// 상태 칩 공식 규격 (ops-ui StatusPill 과 동일) — 라운드 6 · 높이 26 · 12px/600 · 테두리 없음.
 type BadgeVariant =
   | 'default' | 'emphasis' | 'info' | 'success' | 'warning' | 'highlight'
   | 'negative' | 'destructive' | 'neutral' | 'secondary' | 'outline';
 
-const variants: Record<BadgeVariant, string> = {
-  default: 'bg-badge-bg-emphasis text-badge-text-emphasis',
-  emphasis: 'bg-badge-bg-emphasis text-badge-text-emphasis',
-  info: 'bg-badge-bg-info text-badge-text-info',
-  success: 'bg-badge-bg-success text-badge-text-success',
-  warning: 'bg-badge-bg-warning text-badge-text-warning',
-  highlight: 'bg-badge-bg-highlight text-badge-text-highlight',
-  negative: 'bg-badge-bg-negative text-badge-text-negative',
-  destructive: 'bg-badge-bg-negative text-badge-text-negative',
-  neutral: 'bg-badge-bg-neutral text-badge-text-neutral',
-  secondary: 'bg-badge-bg-neutral text-badge-text-neutral',
-  outline: 'border border-border text-foreground',
+const VARIANT_TONE: Record<BadgeVariant, Tone> = {
+  default: 'indigo', emphasis: 'indigo', highlight: 'indigo',
+  info: 'blue',
+  success: 'green',
+  warning: 'amber',
+  negative: 'red', destructive: 'red',
+  neutral: 'neutral', secondary: 'neutral', outline: 'neutral',
 };
 
 export function Badge({
@@ -28,8 +24,8 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-badge-radius-text px-2 py-0.5 text-[11px] font-semibold',
-        variants[variant],
+        'inline-flex h-[26px] items-center whitespace-nowrap rounded-[6px] px-2.5 text-[12px] font-semibold',
+        TONES[VARIANT_TONE[variant]],
         className,
       )}
       {...props}

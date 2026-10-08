@@ -2,6 +2,7 @@
 import { prisma } from '@/lib/prisma';
 import { SplashTabs } from '../splash-tabs';
 import { HistoryList, type HistoryRow } from './history-list';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,9 +45,12 @@ export default async function SplashHistoryPage() {
   // 적용중 2건을 최상단으로 (그 외는 기존 최신순 유지)
   data.sort((a, b) => (b.applyLabel === '적용중' ? 1 : 0) - (a.applyLabel === '적용중' ? 1 : 0));
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 스플래시 관리</nav>
-      <h1 className="mb-3 text-2xl font-bold">App 스플래시 관리</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 스플래시 관리']}
+        title="App 스플래시 관리"
+        divider={false}
+      />
       <SplashTabs />
       <HistoryList rows={data} />
     </div>

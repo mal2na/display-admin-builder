@@ -1,16 +1,16 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-// BSS 디자인 시스템 인풋 — input-* 토큰 기반 (기본/포커스/에러/비활성 상태).
+// NC-Channel Product Admin 인풋 규격 (.inp) — 높이 34 · 라운드 6 · 테두리 var(--line2).
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => (
     <input
       ref={ref}
       className={cn(
-        'flex h-10 w-full rounded-text-field-radius border border-input-border-default bg-input-bg-default px-3.5 text-sm text-input-text-input-default transition-colors',
-        'placeholder:text-input-text-placeholder-default',
-        'focus-visible:border-input-border-typing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
-        'disabled:cursor-not-allowed disabled:border-input-border-inactive disabled:bg-input-bg-disabled disabled:text-input-text-input-disabled',
+        'flex h-[34px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-[10px] text-[13px] text-[var(--ink)] transition-colors',
+        'placeholder:text-[var(--ink3)]',
+        'focus-visible:border-[var(--ac)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ac)]/25',
+        'disabled:cursor-not-allowed disabled:bg-[var(--th)] disabled:text-[var(--ink3)]',
         className,
       )}
       {...props}

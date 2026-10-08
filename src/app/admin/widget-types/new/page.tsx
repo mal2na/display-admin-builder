@@ -1,14 +1,17 @@
 // 위젯 유형 등록 · 운영 관리
 import { WidgetTypeForm } from '../widget-type-form';
 import { createWidgetType } from '../actions';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
 export default function WidgetTypeNewPage() {
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 위젯 관리 › 위젯 유형 등록</nav>
-      <h1 className="mb-5 text-2xl font-bold">위젯 유형 등록</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 위젯 관리', '위젯 유형 등록']}
+        title="위젯 유형 등록"
+      />
       <WidgetTypeForm mode="new" action={createWidgetType} />
     </div>
   );

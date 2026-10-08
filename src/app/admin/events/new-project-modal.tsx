@@ -39,7 +39,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   const matched = kind === '이벤트' ? TEMPLATES.filter((t) => t.key !== 'blank' && t.eventType === type) : [];
   const templates = [blank, ...matched];
 
-  const inputCls = 'h-10 w-full rounded-lg border px-3 text-sm';
+  const inputCls = 'inp';
   const labelCls = 'mb-1 block text-sm font-medium';
   const req = <span className="text-rose-500">*</span>;
 

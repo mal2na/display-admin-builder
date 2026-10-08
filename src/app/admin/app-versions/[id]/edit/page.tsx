@@ -5,6 +5,7 @@ import { VersionForm } from '../../version-form';
 import { updateVersion } from '../../actions';
 import { OpsSection, FieldRow, ReadValue } from '@/components/ops-ui';
 import { fmtDateTime } from '@/lib/widget-taxonomy';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,9 +29,11 @@ export default async function AppVersionEditPage({ params }: { params: { id: str
   );
 
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 버전 관리 › App 버전 관리 수정</nav>
-      <h1 className="mb-5 text-2xl font-bold">App 버전 관리 수정</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 버전 관리', 'App 버전 관리 수정']}
+        title="App 버전 관리 수정"
+      />
       <VersionForm
         mode="edit"
         action={updateVersion.bind(null, v.id)}

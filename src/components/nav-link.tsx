@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
+// NC-Channel Product Admin LNB 항목 규격 (.lnb .it)
+//  기본 var(--ink2) · hover #e4e6ef · 활성 흰 배경 + var(--ac) 볼드 + 옅은 그림자.
 export function NavLink({
   href,
   icon,
@@ -16,8 +18,8 @@ export function NavLink({
   icon: React.ReactNode;
   label: string;
   collapsed?: boolean;
-  alsoActiveFor?: string[]; // 통합 메뉴: 다른 경로에서도 활성 표시
-  badge?: string; // 라벨 옆 작은 태그(예: 테스트)
+  alsoActiveFor?: string[];
+  badge?: string;
 }) {
   const pathname = usePathname();
   const active =
@@ -29,17 +31,19 @@ export function NavLink({
       href={href}
       title={collapsed ? label : undefined}
       className={cn(
-        'flex items-center gap-2 rounded-md py-2 text-sm font-medium transition-colors',
+        'flex items-center gap-2 rounded-[9px] py-[9px] text-[13px] transition-colors',
         collapsed ? 'justify-center px-2' : 'px-3',
         active
-          ? 'bg-white font-semibold text-primary shadow-sm'
-          : 'text-foreground/70 hover:bg-white/70 hover:text-foreground',
+          ? 'bg-white font-bold text-[var(--ac)] shadow-[0_1px_2px_rgba(25,25,60,.07)]'
+          : 'text-[var(--ink2)] hover:bg-[#e4e6ef]',
       )}
     >
       <span className="shrink-0">{icon}</span>
       {!collapsed && <span className="truncate">{label}</span>}
       {!collapsed && badge && (
-        <span className="ml-auto shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{badge}</span>
+        <span className="ml-auto shrink-0 rounded-full border border-[var(--warnln)] bg-[var(--warnbg)] px-1.5 py-px text-[10px] font-semibold text-[var(--warn)]">
+          {badge}
+        </span>
       )}
     </Link>
   );

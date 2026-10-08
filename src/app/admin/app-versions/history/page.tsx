@@ -2,15 +2,19 @@
 import { prisma } from '@/lib/prisma';
 import { VersionTabs } from '../version-tabs';
 import { VersionHistoryList } from '../history-list';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AppVersionHistoryPage() {
   const rows = await prisma.appVersionHistory.findMany({ orderBy: { createdAt: 'desc' } });
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 버전 관리</nav>
-      <h1 className="mb-3 text-2xl font-bold">App 버전 관리</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 버전 관리']}
+        title="App 버전 관리"
+        divider={false}
+      />
       <VersionTabs />
       <VersionHistoryList
         rows={rows.map((h) => ({

@@ -5,6 +5,7 @@ import { WidgetTypeForm } from '../widget-type-form';
 import { updateWidgetType } from '../actions';
 import { OpsSection, FieldRow, ReadValue, StatusPill } from '@/components/ops-ui';
 import { APPROVAL_STATUS, fmtDateTime } from '@/lib/widget-taxonomy';
+import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,9 +37,11 @@ export default async function WidgetTypeDetailPage({ params }: { params: { id: s
   );
 
   return (
-    <div className="px-8 py-6">
-      <nav className="mb-1 text-[12px] text-muted-foreground">홈 › 운영 관리 › App 위젯 관리 › 위젯 유형 상세</nav>
-      <h1 className="mb-3 text-2xl font-bold">위젯 유형 상세</h1>
+    <div className="px-12 py-9 pb-28">
+      <PageHeader
+        trail={['운영 관리', 'App 위젯 관리', '위젯 유형 상세']}
+        title="위젯 유형 상세"
+      />
       <div className="mb-5 flex gap-5 border-b text-sm">
         <span className="-mb-px border-b-2 border-indigo-600 pb-2 font-semibold text-indigo-700">상세정보</span>
         <span className="pb-2 text-muted-foreground">변경/승인이력</span>

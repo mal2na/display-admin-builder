@@ -309,27 +309,40 @@ export function cornerTypeGovernance(cornerType?: string | null): string {
 
 // 코너 유형(8종) → Chip 색상. 같은 유형이면 코너 유형 관리·빌더 어디서든 같은 색으로 보이게 하는 SSOT.
 // 부드러운 톤(bg-50/text-700/border-200) — BSS UI 라벤더/인디고 크롬과 충돌하지 않는 8색.
+/* ── 칩 공식 규격 (CLAUDE.md §4.1) ──
+   모든 칩은 모양·크기·굵기가 같다: 라운드 6px · 높이 26 · 좌우 10 · 12px/600 · 테두리 없음.
+   분류를 구분하는 것은 "색(톤)" 하나뿐이다. 호출부에서 크기·굵기를 따로 주지 말 것. */
+export const CHIP_BASE =
+  'inline-flex h-[26px] items-center whitespace-nowrap rounded-[6px] px-2.5 text-[12px] font-semibold';
+
+// 코너 유형 → 톤. 상태 칩(ops-ui TONES)과 같은 농도의 연배경 + 진한 글자.
 export const CORNER_TYPE_CHIP: Record<CornerType, string> = {
-  상품형: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  배너형: 'bg-rose-50 text-rose-700 border-rose-200',
-  '혜택·오퍼형': 'bg-amber-50 text-amber-700 border-amber-200',
-  '업무 진입형': 'bg-sky-50 text-sky-700 border-sky-200',
-  '상태 안내형': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  '콘텐츠 안내형': 'bg-violet-50 text-violet-700 border-violet-200',
-  '고정·필수 노출형': 'bg-slate-100 text-slate-700 border-slate-300',
+  상품형: 'bg-[#efedfe] text-[#3a2fd8]',
+  배너형: 'bg-[#fdedef] text-[#cf2a3c]',
+  '혜택·오퍼형': 'bg-[#fff4e2] text-[#a95800]',
+  '업무 진입형': 'bg-[#e8f0fe] text-[#1f5fd0]',
+  '상태 안내형': 'bg-[#e9f6ee] text-[#147a43]',
+  '콘텐츠 안내형': 'bg-[#f3eafd] text-[#7324b8]',
+  '고정·필수 노출형': 'bg-[#eef0f3] text-[#53586a]',
 };
-// 이벤트·미션 전용 코너 계열(3종) → Chip 색상. (전시 8색과 구분되는 톤)
+// 이벤트·미션 전용 코너 계열(3종)
 export const EVENT_CORNER_FAMILY_CHIP: Record<string, string> = {
-  혜택상품형: 'bg-teal-50 text-teal-700 border-teal-200',
-  디스플레이형: 'bg-blue-50 text-blue-700 border-blue-200',
-  동작형: 'bg-orange-50 text-orange-700 border-orange-200',
+  혜택상품형: 'bg-[#e4f5f1] text-[#0f766e]',
+  디스플레이형: 'bg-[#e8f0fe] text-[#1f5fd0]',
+  동작형: 'bg-[#fdeee3] text-[#b45309]',
 };
-// 코너 유형 → Chip className. 알 수 없는 값은 중립(회색)으로.
+
+/**
+ * 코너 유형 → 칩 className (모양 + 색 전체).
+ * cn() 의 마지막 인자로 넘기면 호출부가 들고 있던 크기·굵기를 덮어써 규격이 강제된다.
+ */
 export function cornerTypeChipClass(cornerType?: string | null): string {
-  if (!cornerType) return 'bg-slate-100 text-slate-600 border-slate-200';
-  return (CORNER_TYPE_CHIP as Record<string, string>)[cornerType]
-    ?? EVENT_CORNER_FAMILY_CHIP[cornerType]
-    ?? 'bg-slate-100 text-slate-600 border-slate-200';
+  const tone = !cornerType
+    ? 'bg-[#eef0f3] text-[#53586a]'
+    : (CORNER_TYPE_CHIP as Record<string, string>)[cornerType]
+      ?? EVENT_CORNER_FAMILY_CHIP[cornerType]
+      ?? 'bg-[#eef0f3] text-[#53586a]';
+  return `${CHIP_BASE} ${tone}`;
 }
 
 // ── 코너 유형 카탈로그 (T우주 "코너 유형 관리") 부가 상수 ──
