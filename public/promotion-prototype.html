@@ -626,16 +626,29 @@ th{font-weight:600}
 /* ── 검색 필터: 사내 공식 규격에 맞춤 (2026-10-08) ──
    둥근 연회색 패널(테두리 없음) · 라벨은 왼쪽 정렬 고정폭 · 컨트롤 40px/라운드 8
    · 초기화/조회는 마지막 행 오른쪽 끝 (기존 구조 그대로라 CSS 만으로 맞춰짐) */
-.search{border:0;border-radius:12px;background:#f8f9fb;padding:24px;gap:12px}
-.search .row{gap:16px 40px}
-/* 라벨 ↔ 입력 12px — 고정 폭 라벨 금지(2026-10-08 시안) */
-.search .row > label{gap:12px}
-.search .lbl{width:88px;text-align:left;font-weight:400;font-size:13px}
+.search{border:0;border-radius:12px;background:#f8f9fb;padding:24px;gap:20px}
+/* ── 필터 (2026-10-08 시안) ──
+   한 행은 [라벨][컨트롤] 쌍이 흐르는 flex. 라벨↔컨트롤 12 · 쌍 사이 40.
+   플랫 flex 라 gap 하나로 두 간격을 못 내므로, 라벨에 음수 마진을 줘 40 → 12 로 좁힌다.
+   .lbl 의 88px 고정 폭은 제거 — 짧은 라벨일수록 컨트롤이 멀어지던 원인이었다. */
+.search .row{gap:20px 14px;align-items:center}
+/* 칸 사이 28 = gap 14 + padding-left 14, 가운데 1px 구분선(높이 24) — 시안 실측(2026-10-08) */
+.search .row > .fgrp:not(:first-child){position:relative;padding-left:14px}
+.search .row > .fgrp:not(:first-child)::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:1px;height:24px;background:var(--line)}
+.search .lbl{width:auto!important;min-width:0;flex:none;text-align:left;font-weight:400;font-size:13px;white-space:nowrap}
+.search .fgrp{display:inline-flex;align-items:center;gap:12px;min-width:0}
+.search .fgrp > .field,.search .fgrp > .chk-group{display:inline-flex;align-items:center;flex-wrap:wrap}
+.search .fgrp > .field{gap:8px}
+.search .fgrp > .chk-group{gap:6px 14px}
 .search select,
 .search input[type=text],
-.search input[type=date]{height:38px;border-radius:8px;border-color:#e3e5ea;font-size:13px}
-.search select{min-width:170px;width:auto}
-.search input[type=date]{width:150px}
+.search input[type=date]{height:38px;border-radius:8px;border-color:#e3e5ea;font-size:13px;font-weight:400;box-sizing:border-box}
+/* 셀렉트 — React .sel 과 동일 규격(기본 화살표 끄고 전용 SVG · 폭 200) */
+.search select{appearance:none;-webkit-appearance:none;min-width:200px;width:auto;padding:0 32px 0 10px;cursor:pointer;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%2353586a' stroke-width='1.4'/%3E%3C/svg%3E") no-repeat right 11px center}
+.search input[type=text]{padding:0 10px}
+.search input[type=date]{width:170px;padding:0 10px}
 .search .btn{height:38px;border-radius:8px;font-size:13px;font-weight:600;padding:0 20px}
 .search .btn.primary{padding:0 24px}
 
@@ -722,44 +735,58 @@ h1 + *{margin-top:0}
     </div>
 
     <div class="sheet" id="viewList">
-      <div class="crumb">홈 &gt; 프로모션 관리</div>
+      <div class="crumb">홈 › 프로모션 관리</div>
       <h1>프로모션 관리</h1>
 
       <form class="search" id="searchForm" data-sb="1" autocomplete="off">
         <div class="row">
-          <span class="lbl" data-sb="1-1">이벤트 유형</span>
-          <div class="chk-group" id="grpEvent"></div>
+          <span class="fgrp">
+            <span class="lbl" data-sb="1-1">이벤트 유형</span>
+            <span class="chk-group" id="grpEvent"></span>
+          </span>
         </div>
         <div class="row">
-          <span class="lbl" data-sb="1-2">미션 유형</span>
-          <div class="chk-group" id="grpMission"></div>
+          <span class="fgrp">
+            <span class="lbl" data-sb="1-2">미션 유형</span>
+            <span class="chk-group" id="grpMission"></span>
+          </span>
         </div>
         <div class="row">
-          <span class="lbl" data-sb="1-3">프로모션 상태</span>
-          <div class="chk-group" id="grpStatus"></div>
+          <span class="fgrp">
+            <span class="lbl" data-sb="1-3">프로모션 상태</span>
+            <span class="chk-group" id="grpStatus"></span>
+          </span>
         </div>
         <div class="row">
-          <span class="lbl" data-sb="1-4">기간</span>
-          <div class="field">
-            <select id="periodType" aria-label="기간 기준">
-              <option>전시기간</option><option>참여기간</option><option>등록일시</option><option>최종수정일시</option>
-            </select>
-            <input type="date" id="dateFrom" aria-label="시작일">
-            <span class="tilde">~</span>
-            <input type="date" id="dateTo" aria-label="종료일">
-          </div>
-          <span class="lbl" data-sb="1-5" style="width:auto;margin-left:10px">전시상태</span>
-          <select id="dispSel" aria-label="전시상태"><option>전체</option><option>전시</option><option>미전시</option></select>
-          <span class="lbl" data-sb="1-6" style="width:auto;margin-left:10px">댓글 사용여부</span>
-          <select id="cmtSel" aria-label="댓글 사용여부"><option>전체</option><option>사용</option><option>미사용</option></select>
+          <span class="fgrp">
+            <span class="lbl" data-sb="1-4">기간</span>
+            <span class="field">
+              <select id="periodType" aria-label="기간 기준">
+                <option>전시기간</option><option>참여기간</option><option>등록일시</option><option>최종수정일시</option>
+              </select>
+              <input type="date" id="dateFrom" aria-label="시작일">
+              <span class="tilde">~</span>
+              <input type="date" id="dateTo" aria-label="종료일">
+            </span>
+          </span>
+          <span class="fgrp">
+            <span class="lbl" data-sb="1-5">전시상태</span>
+            <select id="dispSel" aria-label="전시상태"><option>전체</option><option>전시</option><option>미전시</option></select>
+          </span>
+          <span class="fgrp">
+            <span class="lbl" data-sb="1-6">댓글 사용여부</span>
+            <select id="cmtSel" aria-label="댓글 사용여부"><option>전체</option><option>사용</option><option>미사용</option></select>
+          </span>
         </div>
         <div class="row bottom">
           <div class="left">
-            <span class="lbl" data-sb="1-7">검색 항목</span>
-            <select id="keyType" aria-label="검색 항목">
-              <option>프로모션 명</option><option>프로모션 ID</option><option>등록자</option><option>최종수정자</option>
-            </select>
-            <input type="text" id="keyword" placeholder="내용을 입력하세요.">
+            <span class="fgrp">
+              <span class="lbl" data-sb="1-7">검색 항목</span>
+              <select id="keyType" aria-label="검색 항목">
+                <option>프로모션 명</option><option>프로모션 ID</option><option>등록자</option><option>최종수정자</option>
+              </select>
+              <input type="text" id="keyword" placeholder="내용을 입력하세요.">
+            </span>
           </div>
           <div class="actions">
             <button class="btn" type="button" id="resetBtn" data-sb="1-8">초기화</button>
@@ -797,7 +824,7 @@ h1 + *{margin-top:0}
     </div>
     <div class="sheet" id="viewReg" hidden>
       <button class="back" type="button" id="regBack">‹ 프로모션 관리</button>
-      <div class="crumb">홈 &gt; 프로모션 관리 &gt; <b id="regCrumb">프로모션 등록</b></div>
+      <div class="crumb">홈 › 프로모션 관리 › <b id="regCrumb">프로모션 등록</b></div>
       <h1 id="regH1">프로모션 등록</h1>
       <div class="dtabs" id="dTabs" role="tablist" hidden><button type="button" class="on" data-sb="1">프로모션 정보</button><button type="button" data-dtab="댓글 관리">댓글 관리</button><button type="button" data-dtab="변경/승인 이력">변경/승인 이력</button></div>
       <div class="ex-banner" id="exBanner" hidden><b>설정 예시</b> 실제 운영 중인 이벤트를 참고해 만든 예시예요. 참고: <span id="exSrc"></span><label class="st-demo">프로모션 상태 바꿔보기 (프로토타입 전용) <select id="stDemo"></select></label></div>

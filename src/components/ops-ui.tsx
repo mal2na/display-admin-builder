@@ -307,10 +307,11 @@ export function ReadValue({ value }: { value: React.ReactNode }) {
 /* ═══════════════════════════════════════════════════════════════════════════
    검색 필터 공식 규격 (사내 표준 — 2026-10-08 사용자 제공 시안 기준)
      · 둥근 연회색 패널, 테두리 없음
-     · 라벨은 컨트롤 왼쪽 인라인, 라벨 ↔ 컨트롤 간격 12px (고정 폭 금지)
+     · 라벨은 컨트롤 왼쪽 인라인, 라벨 ↔ 컨트롤 12px (고정 폭 금지)
+     · 칸 사이 28px, 그 한가운데 1px 구분선(높이 24 · var(--line)) · 행 사이 20px
      · 한 행에 「라벨 + 컨트롤」 쌍이 여러 개 흐름 배치
      · 초기화 / 조회는 마지막 행 오른쪽 끝
-     · 컨트롤 높이 38px · 라운드 8px · 패널 패딩 24px · 라운드 12 · 칸 사이 gap 40
+     · 컨트롤 높이 38px · 라운드 8px · 패널 패딩 24px · 라운드 12
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /** 한 칸: [라벨, 컨트롤, grow(1이면 남는 폭을 채움)] */
@@ -333,18 +334,27 @@ export function FilterPanel({
   return (
     <div className="fp rounded-[12px] bg-[#f8f9fb] p-6">
       {rows.map((cells, r) => (
-        <div key={r} className={cn('flex flex-wrap items-center gap-x-10 gap-y-4', r > 0 && 'mt-4')}>
+        <div key={r} className={cn('flex flex-wrap items-center gap-x-[14px] gap-y-5', r > 0 && 'mt-5')}>
           {cells.map(([label, node, grow], c) => (
-            // 라벨 ↔ 입력은 항상 12px. 예전엔 각 행 첫 라벨에 88px 고정 폭을 줘서
+            // 라벨 ↔ 입력 12px. 각 행 첫 라벨에 88px 고정 폭을 주던 걸 없앴다 —
             // 짧은 라벨일수록 입력이 멀어졌다(기간 78 · 적용상태 55 · 대상 App 유형 26).
-            // 시안은 라벨만 왼쪽으로 맞추고 입력 위치는 제각각이다 — 고정 폭을 쓰지 않는다(2026-10-08).
-            <div key={c} className={cn('flex items-center gap-3', grow ? 'grow-cell min-w-0 flex-1 basis-0' : '')}>
+            // 칸 사이는 28px, 그 한가운데에 1px 구분선(높이 24)이 들어간다(시안 실측).
+            // 행 gap 14 + 아래 pl-[14px] = 28, 구분선은 ::before 로 그 가운데에 그린다.
+            <div
+              key={c}
+              className={cn(
+                'relative flex items-center gap-3',
+                c > 0 &&
+                  'pl-[14px] before:absolute before:left-0 before:top-1/2 before:h-6 before:w-px before:-translate-y-1/2 before:bg-[var(--line)] before:content-[\'\']',
+                grow ? 'grow-cell min-w-0 flex-1 basis-0' : '',
+              )}
+            >
               <span className="shrink-0 whitespace-nowrap text-[13px] text-[var(--ink)]">{label}</span>
               <div className={cn('flex items-center gap-2', grow ? 'flex-1' : '')}>{node}</div>
             </div>
           ))}
           {r === last && (onReset || onSearch) && (
-            <div className="ml-auto flex shrink-0 items-center gap-2 whitespace-nowrap">
+            <div className="ml-auto flex shrink-0 items-center gap-2 whitespace-nowrap pl-[14px]">
               {onReset && (
                 <button type="button" onClick={onReset} className="h-[38px] rounded-[8px] border border-[var(--line2)] bg-white px-5 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">
                   {resetLabel}
