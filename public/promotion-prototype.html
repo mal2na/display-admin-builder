@@ -2911,7 +2911,10 @@ apply();
     var h=location.hash||"";
     if(h==="#reg"){openReg();return}
     var m=h.match(/^#ex=(.+)$/);
-    if(m){applyPreset(decodeURIComponent(m[1]))}
+    if(m){applyPreset(decodeURIComponent(m[1]));return}
+    /* #form=<유형>[&jm=직접|행동] — 유형 선택은 React 팝업에서 끝내고 폼만 연다 */
+    m=h.match(/^#form=([^&]+)(?:&jm=(.+))?$/);
+    if(m){showReg(decodeURIComponent(m[1]),m[2]?decodeURIComponent(m[2]):null)}
   }
   route();
   window.addEventListener("hashchange",route);

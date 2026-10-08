@@ -9,10 +9,12 @@
 import * as React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { PromoList } from './promo-list';
+import { RegStartModal } from './reg-start-modal';
 import type { PromoRow } from '@/lib/promotion/model';
 
 export function PromoAdmin() {
   const [proto, setProto] = React.useState<string | null>(null);
+  const [regOpen, setRegOpen] = React.useState(false);
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,10 +54,20 @@ export function PromoAdmin() {
       <div className="mt-6">
         <PromoList
           onToast={toast}
-          onRegister={() => setProto('#reg')}
+          onRegister={() => setRegOpen(true)}
           onOpenExample={(r: PromoRow) => setProto(`#ex=${encodeURIComponent(r.ex ?? '')}`)}
         />
       </div>
+
+      {regOpen && (
+        <RegStartModal
+          onClose={() => setRegOpen(false)}
+          onPick={({ type, jm }) => {
+            setRegOpen(false);
+            setProto(`#form=${encodeURIComponent(type)}${jm ? `&jm=${encodeURIComponent(jm)}` : ''}`);
+          }}
+        />
+      )}
 
       {toastMsg && (
         <div className="pointer-events-none fixed bottom-10 left-1/2 z-[90] -translate-x-1/2">
