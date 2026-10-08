@@ -127,6 +127,14 @@ model Corner {
   recSource String? // (대표) 1순위 수급 방식 — null | CVM 기반 | 운영 편성 | 수동 대체
   // 여러 수급 방식을 우선순위로 편성. JSON 배열, 1순위→폴백 순. 예: ["CVM 기반","운영 편성"] = CVM 우선, 없으면 운영자 편성(직접 구성).
   recSourcePlan String?
+
+  // ── CVM 연동 계약 (2026-10-08 CVM 협의) ──
+  //  recSource = 'CVM 데이터 연동'  : CVM은 아이템 ID·순서만. 이미지·문구는 상품(EPC) 원장.
+  //  recSource = 'CVM 콘텐츠 연동'  : 구좌만 넘기고 이미지·문구까지 CVM이 내려줌.
+  cvmCatalog  String? // 요청 중분류 (요금제 | 단말 | 멤버십 | 혜택 | 마케팅 프로그램 | 업무) — 데이터 연동일 때
+  cvmTopN     Int?    // 요청 개수(1~5). CVM은 중분류당 Top5 까지 내려준다
+  cvmSlotId   String? // CVM 구좌 ID — 콘텐츠 연동일 때 CVM 쪽 캠페인 구좌와 맞추는 키
+  cvmFallback String? // 응답이 비었을 때: 미노출(기본) | 운영자 편성으로 대체
   // 추천 근거(추천 사유) 카드 표시 여부 (PG-REC-CARD-001 / TM-REA-005). 값은 CVM이 런타임 제공, 여기선 표시 on/off만.
   showRecReason Boolean @default(false)
   moreButtonUse      Boolean @default(false) // 더보기 사용 여부

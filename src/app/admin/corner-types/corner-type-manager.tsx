@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react';
 import { PageTabs } from '@/components/page-tabs';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE } from '@/lib/display-taxonomy';
+import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource } from '@/lib/display-taxonomy';
 import { CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
 import { compositionToPreviewCorner, chipIconForLabel } from '@/components/preview/composition-preview';
 import { isEventCornerFamily } from '@/lib/event-taxonomy';
@@ -1453,7 +1453,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const descOn = featureApplies('useDesc') ? features.useDesc : true; // 설명(부가/흐린 글씨) — 상품형 외엔 기본 노출
   // 추천 수급 방식 + 노출 구성 = 한 섹션. CVM 수급이면 노출 구성(정렬·CTA)은 CVM이 결정 → 선택 불가.
   const isRecEligible = ['상품형', '혜택·오퍼형', '콘텐츠 안내형'].includes(base);
-  const cvmChosen = recSource === 'CVM 기반';
+  const cvmChosen = isCvmSource(recSource);
 
   // ④ 빅배너 구분자는 '상품형' 모듈(상품·혜택 리스트/카드) 위에 얹는 것만 의미가 있다 → 상품형일 때만 노출/적용.
   const canBigBanner = compValid === '상품형';

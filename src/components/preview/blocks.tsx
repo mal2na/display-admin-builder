@@ -1,6 +1,6 @@
 import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles, ImageIcon } from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
-import { resolveCvmSample, cvmBindingLabel } from '@/lib/display-taxonomy';
+import { resolveCvmSample, cvmBindingLabel, isCvmSource } from '@/lib/display-taxonomy';
 import { PreviewImage } from './preview-image';
 import { cn } from '@/lib/utils';
 import { parseBannerOptions } from '@/lib/banner-options';
@@ -745,7 +745,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         if (!plan.length) return null;
         const primary = plan[0];
         const fallbacks = plan.slice(1);
-        const isCvm = primary === 'CVM 기반';
+        const isCvm = isCvmSource(primary);
         const personalized = isCvm; // 개인화 방식(CVM)이면 실제 노출이 미리보기(폴백)와 달라짐
         return (
           <div

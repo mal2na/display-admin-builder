@@ -237,31 +237,145 @@ export const CVM_TARGET_HINTS: { key: string; axis: string; note: string }[] = [
   { key: '결합·가족', axis: '세그먼트', note: '결합·가족 혜택' },
 ];
 
-// 추천 수급 방식 — '콘텐츠를 어디서 가져오나(출처)'의 축. 딱 둘: CVM(시스템 개인화) / 운영자 편성(직접 구성=최하단 폴백).
-//  · '채널 데이터'(행동 기반) = CVM 개인화의 일부(PI-DSP-PER-001)라 CVM에 흡수·폐기.
-//  · '룰 기반'(노출 조건) = '누구에게 보여주나'의 타겟팅 축이라 수급이 아님 → Template 분기·코너 노출 조건(PI-DSP-RUL)에서 다룸. 수급에서 제거(2026-08-31 사용자 결정).
-//  · '운영 편성'/'수동 대체'는 결국 같은 동작(운영자가 직접 고른 항목 노출)이고, 정책상 그게 곧 최하단 폴백(대체 전시 필수 PI-DSP-PER-002, 토글 아님)이라 '운영자 편성' 하나로 통합. (legacy 값 '운영 편성'·'수동 대체'는 normalizeRecSource로 흡수)
-export const REC_SOURCE_METHODS = ['CVM 기반', '운영자 편성'] as const;
+// ═══════════════════════════════════════════════════════════════════════════
+// 콘텐츠 수급 방식 — '이 코너의 내용을 누가 채우나'의 축.
+//   2026-10-08 CVM 협의 결과로 CVM 연동이 두 갈래로 갈라졌다(기존 'CVM 기반' 1종 → 2종).
+//     · CVM 데이터 연동  — CVM은 "어떤 아이템을, 몇 번째로" 만 내려준다(상품/혜택 ID + 순서).
+//                          이미지·설명 문구는 상품(EPC) 원장이 소유(SSOT)하고 전시 어드민이 조립한다.
+//     · CVM 콘텐츠 연동  — 구좌(자리)만 뚫어 CVM에 위임. 이미지·문구까지 CVM이 만들어 내려준다.
+//                          멀티채널(배너·MMS·RCS)에 같은 오퍼를 일관되게 내보내기 위한 모체 관리가 CVM에 있다.
+//     · 운영자 편성      — 운영자가 직접 고른 항목을 정한 순서대로. 폴백의 기준이기도 하다.
+//   한 구좌(코너)는 한 방식만 쓴다 — 겸용 금지(2026-10-08 합의: "이 구좌는 CVM 구좌야"라고 정해놓는 게 낫다).
+// ═══════════════════════════════════════════════════════════════════════════
+export const REC_SOURCE_METHODS = ['CVM 데이터 연동', 'CVM 콘텐츠 연동', '운영자 편성'] as const;
 export type RecSourceMethod = (typeof REC_SOURCE_METHODS)[number];
-// legacy 저장값('운영 편성'·'수동 대체'·'채널 데이터')을 현행 두 방식으로 정규화.
+
+/** CVM 연동(데이터·콘텐츠) 여부 */
+export const isCvmSource = (m?: string | null) => !!m && normalizeRecSource(m).startsWith('CVM');
+
+// legacy 저장값 정규화. 기존 'CVM 기반'은 아이템만 받던 동작이므로 '데이터 연동'으로 흡수한다.
 export function normalizeRecSource(m: string): string {
-  if (m === '채널 데이터') return 'CVM 기반'; // 행동 기반 → CVM에 흡수
+  if (m === '채널 데이터') return 'CVM 데이터 연동'; // 행동 기반 → CVM에 흡수
+  if (m === 'CVM 기반') return 'CVM 데이터 연동'; // 2026-10-08 분리 전 저장값
   if (m === '운영 편성' || m === '수동 대체') return '운영자 편성'; // 직접 구성 폴백으로 통합
   return m;
 }
-// 각 방식: 짧은 태그 + '어떻게 골라 보여주는지' 친절 설명 + 개인화 표기 여부.
-export const REC_SOURCE_INFO: Record<string, { tag: string; how: string; personalized: boolean }> = {
-  'CVM 기반': {
-    tag: '개인화(자동)',
-    how: '시스템(CVM)이 고객마다 맞는 상품을 자동으로 골라 순서까지 정해 보여줘요. 운영자는 “최대 몇 개 보여줄지”와 “추천이 없을 때 대신 보여줄 것(대체안)”만 정하면 됩니다. (로그인·동의 시 개인화로 표기)',
+
+// 각 방식: 짧은 태그 + '무엇을 받고 무엇을 우리가 채우나' + 개인화 표기 여부.
+export const REC_SOURCE_INFO: Record<
+  string,
+  { tag: string; how: string; personalized: boolean; cvmGives: string; weBuild: string }
+> = {
+  'CVM 데이터 연동': {
+    tag: '개인화 · 데이터만',
+    how: 'CVM은 “이 고객에게 이 아이템을 이 순서로”까지만 내려줍니다. 이미지·설명 문구는 상품(EPC) 원장 값을 전시 어드민이 가져와 조립합니다.',
     personalized: true,
+    cvmGives: '아이템 ID · 노출 순서',
+    weBuild: '이미지 · 설명 문구 · 레이아웃',
+  },
+  'CVM 콘텐츠 연동': {
+    tag: '개인화 · 구좌 위임',
+    how: '자리(구좌)만 뚫어 CVM에 넘깁니다. 이미지·문구까지 CVM이 만들어 내려주고, 전시 어드민은 받은 그대로 노출합니다. 같은 오퍼를 배너·MMS 등 여러 채널에 일관되게 내보낼 때 씁니다.',
+    personalized: true,
+    cvmGives: '이미지 · 문구 · 랜딩까지 완성본',
+    weBuild: '자리(구좌)와 규격만',
   },
   '운영자 편성': {
     tag: '운영자 직접 구성',
-    how: '운영자가 상품·혜택을 직접 골라 정한 순서대로 보여줘요(기획전·시즌 등). 이 구성은 CVM 추천이 없을 때 대신 보여줄 것(대체안)으로도 함께 쓰입니다.',
+    how: '운영자가 상품·혜택을 직접 골라 정한 순서대로 보여줍니다(기획전·시즌 등). CVM 연동이 비었을 때 대체안으로도 쓰입니다.',
     personalized: false,
+    cvmGives: '없음',
+    weBuild: '아이템 · 순서 · 문구 전부',
   },
 };
+
+// ── CVM 추천 계약 (2026-10-08 협의) ────────────────────────────────────────
+//  CVM은 '캠페인(오퍼링)의 확장'이지 전사 추천 엔진이 아니다. 줄 수 있는 범위가 정해져 있다.
+
+/** CVM이 Top-N 으로 내려주는 단위 = 프로덕트 카탈로그 중분류. */
+export const CVM_CATALOGS = ['요금제', '단말', '멤버십', '혜택', '마케팅 프로그램', '업무'] as const;
+export type CvmCatalog = (typeof CVM_CATALOGS)[number];
+
+/** 중분류별 Top-N 상한. CVM은 카탈로그당 5개까지 내려준다. */
+export const CVM_TOP_N_MAX = 5;
+
+/** CVM이 주지 않는 것 — 요청해도 받을 수 없으니 어드민이 룰로 풀거나 데이터실에 따로 받아야 한다. */
+export const CVM_OUT_OF_SCOPE: { item: string; why: string; instead: string }[] = [
+  {
+    item: '세그먼트(고객군)',
+    why: 'CVM은 세그를 만들지 않고 개별 고객 단위로만 판정합니다.',
+    instead: '고객군이 필요하면 어드민 노출 조건(룰)으로 나누세요.',
+  },
+  {
+    item: '고객 성향 · 인사이트',
+    why: '대가족 · 선호 색상 같은 가공된 성향 값은 CVM 산출물이 아닙니다.',
+    instead: 'C360 · 데이터실에 별도 요건으로 요청하세요.',
+  },
+  {
+    item: '제휴 콘텐츠(영화 · 공연 등)',
+    why: 'CVM이 아는 건 EPC 상품 · 마케팅 프로그램 · 업무 카탈로그까지입니다.',
+    instead: '해당 코너는 운영자 편성으로 채우세요.',
+  },
+  {
+    item: '레이아웃 · 카드 모양',
+    why: '전시 방식은 추천 결과가 아니라 화면 설계 영역입니다.',
+    instead: '코너 유형 관리에서 노출 타입을 정하거나 어드민 룰로 분기하세요.',
+  },
+  {
+    item: '문구만 따로 베리에이션',
+    why: 'CVM 문구는 (고객 · 오퍼 · 시점 · 채널)이 한 세트로 생성돼, 문구만 떼어 요청할 수 없습니다.',
+    instead: '묶음 대표 문구는 어드민 룰로 베리에이션하세요.',
+  },
+];
+
+/** CVM 응답을 못 받았을 때 처리. 기본값은 미노출(기본 배너를 상시 운영할 수 없다 — 2026-10-08). */
+export const CVM_FALLBACKS = ['미노출', '운영자 편성으로 대체'] as const;
+export type CvmFallback = (typeof CVM_FALLBACKS)[number];
+
+/** 표시 요소별 소유자(SSOT) — '이 값이 어디서 오나'를 빌더에서 그대로 보여준다. */
+export type FieldOwner = 'CVM' | '상품 원장' | '전시 어드민' | '코너 유형';
+export const FIELD_OWNER_TONE: Record<FieldOwner, string> = {
+  CVM: 'bg-[#D9E9FF] text-[#2E7AFF]',
+  '상품 원장': 'bg-[#C8F6E1] text-[#038E52]',
+  '전시 어드민': 'bg-[#FFE4C4] text-[#D66400]',
+  '코너 유형': 'bg-[#DCE0E5] text-[#454F59]',
+};
+
+/** 수급 방식별 데이터 출처 맵 — 우측 패널의 'SSOT 맵'에 그대로 렌더한다. */
+export function fieldOwnerMap(recSource?: string | null): { field: string; owner: FieldOwner; note: string }[] {
+  const m = recSource ? normalizeRecSource(recSource) : '운영자 편성';
+  const layout = { field: '레이아웃 · 노출 타입', owner: '코너 유형' as FieldOwner, note: '코너 유형 관리에서 정의(개발·DS 영역)' };
+  const groupCopy = {
+    field: '묶음 대표 문구(타이틀)',
+    owner: '전시 어드민' as FieldOwner,
+    note: 'CVM은 문구만 따로 못 만듭니다 — 어드민에서 직접 쓰거나 룰로 베리에이션',
+  };
+  if (m === 'CVM 콘텐츠 연동') {
+    return [
+      layout,
+      { field: '노출 아이템 · 순서', owner: 'CVM', note: '고객별 런타임 판정' },
+      { field: '이미지 · 설명 문구', owner: 'CVM', note: '완성본을 그대로 노출(어드민 편집 불가)' },
+      { field: '랜딩', owner: 'CVM', note: '오퍼와 한 세트' },
+      groupCopy,
+    ];
+  }
+  if (m === 'CVM 데이터 연동') {
+    return [
+      layout,
+      { field: '노출 아이템 · 순서', owner: 'CVM', note: '아이템 ID와 순서만 내려받음' },
+      { field: '이미지 · 설명 문구', owner: '상품 원장', note: '상품(EPC) 값 그대로 — 개인화 대상 아님' },
+      { field: '랜딩', owner: '상품 원장', note: '상품 상세 · 지정 URL' },
+      groupCopy,
+    ];
+  }
+  return [
+    layout,
+    { field: '노출 아이템 · 순서', owner: '전시 어드민', note: '운영자가 직접 고르고 정렬' },
+    { field: '이미지 · 설명 문구', owner: '상품 원장', note: '상품(EPC) 값 그대로' },
+    { field: '랜딩', owner: '상품 원장', note: '상품 상세 · 지정 URL' },
+    groupCopy,
+  ];
+}
 
 // ── Corner 유형 (7종) ───────────────────────────────────────
 // 개인화 추천형은 별도 유형이 아니라, 각 유형의 '추천 수급 방식(CVM 등)' 설정으로 흡수됨.
