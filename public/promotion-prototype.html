@@ -730,6 +730,45 @@ table th,table td{font-size:14px!important}
    단, 셀에 24px 칩이 들어가면 14+24+14=52 라 높이가 튄다 → 높이는 고정하고 세로 패딩은 8 로 둔다. */
 #viewList th{height:40px!important;padding:8px 12px!important}
 #viewList td{height:48px!important;padding:8px 12px!important}
+
+/* ══════════════════════════════════════════════════════════════════
+   [BO-AX] Figma 공통 토큰 — 최종 정렬 (2026-10-08)
+   이 블록이 마지막이라 위의 어떤 규칙보다 우선한다.
+   값의 출처는 globals.css :root 와 동일(Figma 변수 실값). 둘을 같이 고칠 것.
+   ══════════════════════════════════════════════════════════════════ */
+:root{
+  --accent:#3617ce; --accent-soft:#f1f2ff; --ac:#3617ce; --ac-h:#2a11a4;
+  --ink:#1a1a1a; --text:#1a1a1a; --ink-2:#454f59; --muted:#454f59;
+  --ink-3:#697582; --faint:#697582;
+  --line:#e8ecef; --line-2:#dce0e5; --line-3:#c4c9cf;
+  --surface-2:#f8f9fb; --surface:#ffffff;
+  --ok:#038e52; --ok-soft:#c8f6e1;
+  --warn:#d66400; --warn-soft:#ffe4c4;
+  --bad:#ed3b3e; --bad-soft:#ffdcdc;
+  --info:#2e7aff; --info-soft:#d9e9ff;
+  --amber:#d17e28; --amber-soft:#ffe9a8;
+}
+/* 조회결과 제목 — typography/title/20 */
+.rmeta,.res-head h2{font-size:20px!important;font-weight:700!important;line-height:28px!important;letter-spacing:-.6px!important}
+.rmeta .n,.res-head .count{font-size:14px!important;font-weight:400!important;line-height:20px;letter-spacing:-.2px}
+/* 버튼 — spacing/button medium 9·16 · radius/button/radius-medium 6 · body/14 semibold */
+.btn,.btn.primary,.btn.dark,.searchbar .btn,.search .btn{
+  box-sizing:border-box;border-radius:6px!important;font-size:14px!important;font-weight:600!important;line-height:20px;
+  padding:9px 16px!important;height:38px!important;min-height:0}
+.btn.primary{background:#3617ce!important;border-color:#3617ce!important;color:#fff!important}
+.btn.primary:hover{background:#502dfb!important;border-color:#502dfb!important}
+.btn:not(.primary){background:#fff!important;border:1px solid #c4c9cf!important;color:#1a1a1a!important}
+.btn:not(.primary):hover{background:#dce0e5!important}
+/* 상태 칩(badge) — radius 4 · min-width 40 · padding 3/8 · 12/600 */
+.tag,.chip-f,.dchip,.pill,.bdg{border-radius:4px!important;min-width:40px;padding:3px 8px!important;
+  font-size:12px!important;font-weight:600!important;line-height:18px!important;
+  display:inline-flex;align-items:center;justify-content:center;border:0!important}
+/* 상태 칩 5종 — color/badge/* */
+.pill.p-blue,.tag.acc,.tag.ch{background:#d9e9ff!important;color:#2e7aff!important}
+.pill.p-green,.tag.ok{background:#c8f6e1!important;color:#038e52!important}
+.pill.p-red,.tag.bad{background:#ffdcdc!important;color:#ed3b3e!important}
+.pill.p-orange,.pill.p-purple,.tag.warn,.tag.amber{background:#ffe4c4!important;color:#d66400!important}
+.pill.p-grey,.pill.p-sky,.tag.gray{background:#dce0e5!important;color:#454f59!important}
 </style>
 </head>
 <body>
