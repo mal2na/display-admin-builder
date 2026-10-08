@@ -12,6 +12,8 @@ export function PageHeader({
   action,
   className,
   divider = true,
+  titlePrefix,
+  back,
 }: {
   trail: string[]; // 현재 페이지까지의 경로(앞에 '홈' 자동)
   title: string;
@@ -20,6 +22,10 @@ export function PageHeader({
   className?: string;
   /** 제목 아래 구분선. 바로 밑에 탭이 오는 화면은 false (탭이 자기 선을 갖는다) */
   divider?: boolean;
+  /** 제목 왼쪽에 붙는 노드(코너 유형 칩 등) */
+  titlePrefix?: React.ReactNode;
+  /** 제목 위 '← 돌아가기' 링크 */
+  back?: React.ReactNode;
 }) {
   return (
     <header className={cn('mb-0', className)}>
@@ -34,7 +40,11 @@ export function PageHeader({
       </nav>
       <div className={cn('flex items-end justify-between gap-4 pt-2', divider ? 'border-b border-[var(--line)] pb-5' : 'pb-1')}>
         <div className="min-w-0">
-          <h1 className="m-0 text-[22px] font-bold tracking-[-0.4px] text-[var(--ink)]">{title}</h1>
+          {back && <div className="mb-1.5">{back}</div>}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {titlePrefix}
+            <h1 className="m-0 text-[22px] font-bold tracking-[-0.4px] text-[var(--ink)]">{title}</h1>
+          </div>
           {subtitle && <p className="mt-1.5 text-[13px] text-[var(--ink2)]">{subtitle}</p>}
         </div>
         {action && <div className="shrink-0">{action}</div>}

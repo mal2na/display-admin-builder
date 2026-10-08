@@ -627,6 +627,21 @@ th{font-weight:600}
 #viewList th, #viewList td{font-size:13px}
 #viewList th{font-weight:600}
 #viewList td{font-weight:400}
+
+/* 제목 ↔ 검색 필터 간격 + 제목 구분선 — 다른 어드민 페이지와 동일 */
+#viewList h1, #viewReg h1{margin:2px 0 0}
+#viewList .crumb, #viewReg .crumb{margin-bottom:6px}
+.sheet > h1 + .search,
+.sheet > h1 + form.search{margin-top:0}
+h1 + *{margin-top:0}
+.sheet h1::after{content:"";display:block;border-bottom:1px solid var(--line);margin:20px 0 24px}
+
+/* 폰트 굵기 — 어드민 공통 규격에 맞춤
+   (프로토타입은 라벨·버튼·표머리를 모두 500 으로 썼다) */
+.lbl{font-weight:400}
+.btn{font-weight:600}
+.count{font-weight:400}
+.chk, .chk.all{font-weight:400}
 </style>
 </head>
 <body>
