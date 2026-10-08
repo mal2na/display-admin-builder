@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>A안 + 빌더 · 전체페이지 관리</title>
+<!-- Pretendard — iframe 은 별도 문서라 본체와 같은 서체를 직접 불러온다 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
   :root {
     --bg: #eef0f6; --surface: #fff; --surface-2: #f6f7fb; --line: #e3e5ee; --line-2: #d3d6e2;
@@ -299,6 +301,57 @@
   .steps .n { width: 22px; height: 22px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line-2); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
   .steps li.done .n { background: var(--ok); color: #fff; border-color: var(--ok); }
   .steps b { display: block; font-size: 12.5px; } .steps small { display: block; color: var(--ink-2); font-size: 11.5px; margin-top: 2px; line-height: 1.55; }
+/* ══════════════════════════════════════════════════════════════════════════
+   어드민 디자인 시스템 통합 (CLAUDE.md §4.1 · 2026-10-08)
+   전체페이지 관리는 어드민 LNB 안에서 iframe 으로 열리므로, 다른 메뉴와
+   셸·타이포·필터·칩·표 규격을 동일하게 맞춘다. 원본 규칙 뒤에 두어 확실히 이긴다.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --ink:#1d1e23; --ink-2:#53586a; --ink-3:#8d92a1;
+  --accent:#3a2fd8; --accent-soft:#efedfe;
+  --line:#e6e7ec; --line-2:#d3d6de; --surface:#fff; --surface-2:#f8f9fb;
+  --ok:#147a43; --ok-soft:#e9f6ee; --warn:#cf2a3c; --warn-soft:#fdedef;
+  --amber:#a95800; --amber-soft:#fff4e2;
+}
+html,body{background:#fff;font-family:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;font-size:13px;letter-spacing:-.1px}
+
+/* 셸 — 떠 있는 카드(그림자) 제거하고 어드민 흰 패널 위에 평평하게 */
+.app{display:block;min-height:0}
+.lnb{display:none!important}
+.main{flex:none;padding:0;min-width:0}
+.card{background:transparent;border-radius:0;box-shadow:none;padding:36px 48px 110px;min-height:0}
+
+/* 머리 — 브레드크럼 12px, 제목 22/700, 아래 구분선 */
+.crumb{font-size:12px;color:var(--ink-3)}
+h1{font-size:22px;font-weight:700;letter-spacing:-.4px;margin:6px 0 0}
+.rule{margin:20px 0 24px}
+.tabs{margin-bottom:0}
+.tab{font-size:14px;padding:12px 16px}
+
+/* 검색 필터 — 공식 규격: 연회색 라운드 패널(테두리 없음) · 컨트롤 40px/라운드 8 */
+.searchbar{background:#f8f9fb;border:0;border-radius:12px;padding:20px 28px;gap:12px 20px;margin:0 0 8px}
+.searchbar label{font-size:13px;font-weight:400;gap:10px}
+.searchbar select,.searchbar input[type="text"],.searchbar input[type="date"]{min-height:40px;height:40px;border-radius:8px;border-color:#e3e5ea;font-size:13px}
+.searchbar .btn{min-height:40px;height:40px;border-radius:8px;font-size:13px;padding:0 20px}
+
+/* 버튼 */
+.btn{border-radius:7px;font-size:13px;font-weight:600;padding:0 15px;height:36px;display:inline-flex;align-items:center;gap:6px}
+.btn.pill{border-radius:7px;font-size:13px;font-weight:600;padding:0 15px;height:36px}
+
+/* 칩 — 공식 규격: 라운드 6 · 높이 26 · 12px/600 · 테두리 없음 */
+.tag{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:6px;font-size:12px;font-weight:600;border:0;background:#eef0f3;color:var(--ink-2)}
+.tag.ch{background:var(--accent-soft);color:var(--accent);border:0}
+.tag.gray{background:#eef0f3;color:var(--ink-2)}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag.amber{background:var(--amber-soft);color:var(--amber)}
+.tag.acc{background:var(--accent-soft);color:var(--accent)}
+.chip-f{height:26px;border-radius:6px;padding:0 10px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;border:0;background:#eef0f3;color:var(--ink-2)}
+.chip-f.on{background:var(--accent-soft);color:var(--accent);border:0}
+
+/* 표 — 헤더 회색 배경 13px/600, 본문 13px/400 */
+table th{background:#f6f7f9;font-weight:600;font-size:13px;color:var(--ink-2)}
+table td{font-size:13px;font-weight:400}
 </style>
 </head>
 <body>
