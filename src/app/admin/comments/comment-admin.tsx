@@ -160,10 +160,11 @@ function FT({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)] overflow-hidden rounded-lg border-l border-t border-slate-200 text-[13px]">{children}</div>;
 }
 function L({ children, span }: { children?: React.ReactNode; span?: string }) {
-  return <div className={cn('flex items-center border-b border-r border-slate-200 bg-slate-50 px-3 py-2.5 font-medium text-slate-600', span)}>{children}</div>;
+  // 패딩은 공용 FieldRow 와 동일하게 — 라벨 12/16, 값 10/16 (2026-10-08 상세 화면 통일)
+  return <div className={cn('flex items-center border-b border-r border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-600', span)}>{children}</div>;
 }
 function C({ children, span }: { children?: React.ReactNode; span?: string }) {
-  return <div className={cn('flex items-center gap-2 border-b border-r border-slate-200 bg-white px-3 py-2', span)}>{children}</div>;
+  return <div className={cn('flex items-center gap-2 border-b border-r border-slate-200 bg-white px-4 py-2.5', span)}>{children}</div>;
 }
 const roBox = 'h-8 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-[13px] text-slate-600 flex items-center';
 

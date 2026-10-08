@@ -336,7 +336,12 @@ h1{margin:6px 0 0!important;line-height:1.35}
 /* 검색 필터 — 공식 규격: 연회색 라운드 패널(테두리 없음) · 컨트롤 40px/라운드 8 */
 .searchbar{background:#f8f9fb;border:0;border-radius:12px;padding:24px;gap:12px 40px;margin:0 0 8px}
 .searchbar label{font-size:13px;font-weight:400;gap:10px}
-.searchbar select,.searchbar input[type="text"],.searchbar input[type="date"]{min-height:38px;height:38px;border-radius:8px;border-color:#e3e5ea;font-size:13px}
+.searchbar select,.searchbar input[type="text"],.searchbar input[type="date"]{min-height:38px;height:38px;border-radius:8px;border-color:#e3e5ea;font-size:13px;font-weight:400;padding:0 10px;box-sizing:border-box}
+/* 셀렉트 — React .sel 과 동일하게 브라우저 기본 화살표를 끄고 같은 SVG·패딩·폭을 쓴다.
+   기본 화살표면 글자가 화살표에 붙고 폭도 내용폭이라 다른 화면과 어긋난다(2026-10-08). */
+.searchbar select{appearance:none;-webkit-appearance:none;min-width:200px;padding:0 32px 0 10px;cursor:pointer;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%2353586a' stroke-width='1.4'/%3E%3C/svg%3E") no-repeat right 11px center}
+.searchbar label{gap:12px}
 .searchbar .btn{min-height:38px;height:38px;border-radius:8px;font-size:13px;padding:0 20px}
 
 /* 버튼 */
@@ -388,9 +393,13 @@ h1{margin:6px 0 0!important;line-height:1.35}
 /* 앱 계열은 글자만 브랜드 블루 */
 .tag.ch.app,.tag.ch[data-ch="app"]{color:#2E7AFF!important}
 
-/* 표 — 헤더 회색 배경 13px/600, 본문 13px/400 */
-table th{background:#f6f7f9;font-weight:600;font-size:13px;color:var(--ink-2)}
-table td{font-size:13px;font-weight:400}
+/* 목록 표 — 헤더 회색 배경 13px/600, 본문 13px/400 */
+table.list th{background:#f6f7f9;font-weight:600;font-size:13px;color:var(--ink-2)}
+table.list td{font-size:13px;font-weight:400}
+
+/* 상세 화면 폼 테이블(.mtable) — 라벨·값이 보더에 붙지 않게 제 패딩을 돌려준다 */
+table.mtable th,table.mtable td{padding:10px 14px;vertical-align:middle;white-space:normal}
+table.mtable th{background:var(--surface-2);font-weight:600;color:var(--ink-2);text-align:left}
 
 /* ── 필터 버튼 묶음 ──
    .searchbar 의 column-gap 40px 은 '필드 사이' 간격이다. 초기화·조회는 한 덩어리이므로
@@ -426,7 +435,9 @@ table td{font-size:13px;font-weight:400}
 .pager .pg-gap{color:var(--ink-3);font-size:14px;line-height:1;user-select:none}
 
 /* 표 셀 높이 — 공식 규격 48 (padding 14/12) */
-table th,table td{height:48px;padding:8px 12px!important;box-sizing:border-box;vertical-align:middle;
+/* 목록 표(.list)에만 적용한다 — 상세 화면의 폼 테이블(.mtable 등)까지 걸면
+   라벨·값 패딩이 깎이고 nowrap 때문에 글이 보더에 붙는다(2026-10-08 회귀 수정). */
+table.list th,table.list td{height:48px;padding:8px 12px!important;box-sizing:border-box;vertical-align:middle;
   white-space:nowrap}
 /* 긴 경로·URL 은 줄바꿈 대신 가로 스크롤(React 목록과 동일) — 모든 행 높이를 48 로 유지 */
 </style>
@@ -836,7 +847,7 @@ table th,table td{height:48px;padding:8px 12px!important;box-sizing:border-box;v
       '<label>등록 유형 ' + sel("f-ptype", [["","전체"],["dev","개발 화면"],["builder","전시 컨테이너"]], f.ptype, 150) + '</label>' +
       '<span class="spacer"></span><button class="btn dark" id="f-reset">초기화</button><button class="btn primary" id="f-go">조회</button></div>' +
       '<div class="rmeta">조회결과 <span class="n">' + rs.length + '건</span></div>' +
-      '<div style="overflow-x:auto"><table><thead><tr><th>NO</th><th>페이지 ID</th><th class="nw">메뉴명</th><th class="nw">등록 유형</th><th class="nw">컨테이너 ID</th><th style="min-width:130px">경로</th><th>URL</th><th class="nw" style="text-align:center">상태</th><th class="nw" style="text-align:center">사용 여부</th><th>운영 채널</th><th class="nw">최종 수정일자</th></tr></thead><tbody>' +
+      '<div style="overflow-x:auto"><table class="list"><thead><tr><th>NO</th><th>페이지 ID</th><th class="nw">메뉴명</th><th class="nw">등록 유형</th><th class="nw">컨테이너 ID</th><th style="min-width:130px">경로</th><th>URL</th><th class="nw" style="text-align:center">상태</th><th class="nw" style="text-align:center">사용 여부</th><th>운영 채널</th><th class="nw">최종 수정일자</th></tr></thead><tbody>' +
       (s.length ? s.map(function (p, i) { var no = rs.length - ((f.page - 1) * PER + i);
         return '<tr class="rowlink ' + (effUse(p) ? "" : "dim") + '" data-id="' + p.id + '"><td>' + no + '</td><td class="mono">' + p.id + "</td><td class='nw'>" + esc(p.name) + blockMark(p) + "</td><td class='nw'>" + typeChip(p) + "</td><td class='nw'>" + ctLink(p) + "</td><td>" + esc(crumb(p)) + "</td><td class='mono'>" + (noUrl(p) ? '<span class="tag gray">URL 미등록</span>' : esc(p.url)) + "</td><td class='nw' style='text-align:center'>" + stateChip(p) + "</td><td class='nw' style='text-align:center'>" + useChip(p) + "</td><td class='nw'>" + chChips(p) + '</td><td class="nw">' + esc(p.updated) + "</td></tr>"; }).join("")
         : '<tr><td colspan="11" style="text-align:center;padding:60px;color:var(--ink-3)">등록 및 검색 결과가 없습니다.</td></tr>') + "</tbody></table></div>" +
