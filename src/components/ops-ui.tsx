@@ -307,7 +307,7 @@ export function ReadValue({ value }: { value: React.ReactNode }) {
 /* ═══════════════════════════════════════════════════════════════════════════
    검색 필터 공식 규격 (사내 표준 — 2026-10-08 사용자 제공 시안 기준)
      · 둥근 연회색 패널, 테두리 없음
-     · 라벨은 컨트롤 왼쪽 인라인. 행 첫 라벨은 고정 폭으로 세로 정렬을 맞춘다
+     · 라벨은 컨트롤 왼쪽 인라인, 라벨 ↔ 컨트롤 간격 12px (고정 폭 금지)
      · 한 행에 「라벨 + 컨트롤」 쌍이 여러 개 흐름 배치
      · 초기화 / 조회는 마지막 행 오른쪽 끝
      · 컨트롤 높이 38px · 라운드 8px · 패널 패딩 24px · 라운드 12 · 칸 사이 gap 40
@@ -322,28 +322,24 @@ export function FilterPanel({
   onSearch,
   resetLabel = '초기화',
   searchLabel = '조회',
-  labelWidth = 88,
 }: {
   rows: FilterCell[][];
   onReset?: () => void;
   onSearch?: () => void;
   resetLabel?: string;
   searchLabel?: string;
-  labelWidth?: number;
 }) {
   const last = rows.length - 1;
   return (
     <div className="fp rounded-[12px] bg-[#f8f9fb] p-6">
       {rows.map((cells, r) => (
-        <div key={r} className={cn('flex flex-wrap items-center gap-x-10 gap-y-3', r > 0 && 'mt-3')}>
+        <div key={r} className={cn('flex flex-wrap items-center gap-x-10 gap-y-4', r > 0 && 'mt-4')}>
           {cells.map(([label, node, grow], c) => (
+            // 라벨 ↔ 입력은 항상 12px. 예전엔 각 행 첫 라벨에 88px 고정 폭을 줘서
+            // 짧은 라벨일수록 입력이 멀어졌다(기간 78 · 적용상태 55 · 대상 App 유형 26).
+            // 시안은 라벨만 왼쪽으로 맞추고 입력 위치는 제각각이다 — 고정 폭을 쓰지 않는다(2026-10-08).
             <div key={c} className={cn('flex items-center gap-3', grow ? 'grow-cell min-w-0 flex-1 basis-0' : '')}>
-              <span
-                className="shrink-0 whitespace-nowrap text-[13px] text-[var(--ink)]"
-                style={c === 0 ? { width: labelWidth } : undefined}
-              >
-                {label}
-              </span>
+              <span className="shrink-0 whitespace-nowrap text-[13px] text-[var(--ink)]">{label}</span>
               <div className={cn('flex items-center gap-2', grow ? 'flex-1' : '')}>{node}</div>
             </div>
           ))}
