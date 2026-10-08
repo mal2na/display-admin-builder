@@ -32,7 +32,7 @@ export function IconPickerModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
         // 고정 높이(h-[80vh]) — 카테고리/검색으로 결과가 바뀌어도 모달 크기 불변, 아이콘 그리드만 내부 스크롤
-        className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl"
+        className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden dlg"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}

@@ -58,7 +58,7 @@ function ChangeViewModal({ row, banner, onClose }: { row: BannerHistoryRow; bann
   const boxH = sz ? Math.round((boxW * sz.h) / sz.w) : 120;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <h2 className="text-sm font-semibold">변경사항 보기</h2>
           {diffs.length > 0 && <span className="text-xs text-muted-foreground">변경사항 <b className="text-indigo-600">{diffs.length}</b>건</span>}

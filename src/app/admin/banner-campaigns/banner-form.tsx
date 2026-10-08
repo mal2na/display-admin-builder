@@ -136,7 +136,7 @@ function DsTypePickButton({ onPick, label = 'DS 배너 유형 가져오기' }: {
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
-          <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 border-b px-4 py-3">
               <LayoutTemplate className="h-4 w-4 text-indigo-500" />
               <h3 className="text-sm font-semibold">DS 배너 유형 가져오기</h3>
@@ -513,7 +513,7 @@ function PickerModal({ title, idLabel, items, onPick, onClose }: { title: string
   const list = items.filter((it) => (q ? it.name.includes(q) || it.id.toLowerCase().includes(q.toLowerCase()) : true));
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex max-h-[80vh] w-full max-w-lg flex-col dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b px-5 py-3">
           <h3 className="text-sm font-bold">{title}</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X className="h-4 w-4" /></button>

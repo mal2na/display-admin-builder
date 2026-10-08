@@ -57,6 +57,24 @@
   --fs-section: 16px;  --lh-section: 24px;                     /* title/16 */
   --fs-lg: 20px;       --lh-lg: 28px;                          /* title/20 */
 
+  /* ── 오버레이·피드백 (2026-10-08 Figma 추가 추출) ── */
+  --dlg-r: 16px;              /* radius/dialogpopup·modalpopup·alert/radius */
+  --dlg-pad: 24px;            /* spacing/dialogpopup·modalpopup/padding-x */
+  --dlg-shadow: 0 24px 22px 0 #2222220d, 0 0 2px 0 #2222221a;  /* shadow/dialog */
+  --tip-bg: #fcfcfd;          /* color/tooltip·popover/bg */
+  --tip-text: #454f59;        /* color/tooltip·popover/text */
+  --tip-r: 8px;               /* radius/tooltip·popover/radius */
+  --tip-pad: 12px;
+  --tip-shadow: 0 0 8px -2px #0000001f;                        /* shadow/tooltip */
+  --toast-bg: #000b14cf;      /* color/toast/bg */
+  --toast-text: #fcfcfd;
+  --toast-r: 10px;            /* radius/toast/radius-medium */
+  --collapse-r: 12px;         /* radius/collapse/radius */
+  --focus-ring: #dce0e5;      /* color/…/border-focus-ring (stroke 2) */
+  --focus-border: #b3b9c0;    /* color/…/border-focused */
+  --err: #ea5154;             /* color/datefield/border-error · textfield/text-helper-error */
+  --err-ring: #ffdcdc;
+
   /* ── 라운드 (radius/*) ── */
   --r-badge: 4px;      /* radius/badge/radius-text */
   --r-field: 6px;      /* radius/textfield/radius · radius/r6 */
@@ -379,6 +397,23 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
   /* 라벨 — gap 6, 기본 #697582 / 선택 #1a1a1a */
   label:has(> input[type='checkbox']), label:has(> input[type='radio']) { gap: 6px; color: var(--ink3); }
   label:has(> input:checked) { color: var(--ink); }
+
+  /* ── 다이얼로그 · 모달 — Figma dialogpopup/modalpopup (radius 16 · padding 24 · title 20/700) ── */
+  .dlg { border-radius: var(--dlg-r); background: #fff; box-shadow: var(--dlg-shadow); }
+  .dlg-head { padding: 18px var(--dlg-pad) 4px; }
+  .dlg-head h2, .dlg-head h3 { font-size: 20px; font-weight: 700; line-height: 28px; letter-spacing: -0.6px; color: var(--ink); margin: 0; }
+  .dlg-body { padding: 8px var(--dlg-pad) 0; font-size: 13px; line-height: 20px; color: var(--ink); }
+  .dlg-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 24px var(--dlg-pad) var(--dlg-pad); }
+
+  /* ── 툴팁 · 팝오버 ── */
+  .tip { background: var(--tip-bg); color: var(--tip-text); border-radius: var(--tip-r); padding: var(--tip-pad); box-shadow: var(--tip-shadow); font-size: 12px; line-height: 18px; font-weight: 500; }
+
+  /* ── 입력 포커스·에러 — Figma textfield/datefield ── */
+  .inp:focus, .sel:focus, .fp input:focus, .fp select:focus,
+  input[type='text']:focus, input[type='date']:focus, input[type='datetime-local']:focus, textarea:focus {
+    outline: none; border-color: var(--focus-border) !important; box-shadow: 0 0 0 2px var(--focus-ring) !important;
+  }
+  .inp[aria-invalid='true'], input[aria-invalid='true'] { border-color: var(--err) !important; box-shadow: 0 0 0 2px var(--err-ring) !important; }
 
   /* ── 하단 액션 ── */
   .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 60px; }

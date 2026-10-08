@@ -530,7 +530,7 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
 function Modal({ width, onClose, children }: { width?: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className={cn('w-full rounded-xl bg-card p-5 shadow-xl', width ?? 'max-w-md')} onClick={(e) => e.stopPropagation()}>{children}</div>
+      <div className={cn('w-full rounded-2xl bg-card p-5 shadow-xl', width ?? 'max-w-md')} onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>
   );
 }

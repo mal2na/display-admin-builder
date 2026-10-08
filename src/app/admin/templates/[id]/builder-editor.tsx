@@ -755,7 +755,7 @@ function MessagePickerModal({
   const list = messages.filter((m) => (scope === 'all' || m.use === use) && (!kw || m.text.toLowerCase().includes(kw)));
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex max-h-[70vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex max-h-[70vh] w-full max-w-md flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div>
             <p className="text-sm font-semibold text-slate-800">문구 불러오기</p>
@@ -1484,7 +1484,7 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
       {/* 고정 높이(h-[80vh]) — 카테고리 전환 시에도 모달 크기 불변, 리스트만 내부 스크롤 */}
-      <div className="flex h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[80vh] w-full max-w-xl flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <h2 className="text-sm font-semibold">{single ? '세트로 불러오기' : device ? '디바이스 불러오기' : '상품 불러오기'}</h2>
           <span className="text-xs text-muted-foreground">
@@ -2701,7 +2701,7 @@ function BannerLibraryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <ImageIcon className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold">배너 라이브러리</h2>
@@ -3099,7 +3099,7 @@ function BannerLoadModal({
   const curSize = allSizes.find((s) => s.detail === selSize) ?? allSizes[0] ?? null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <GalleryHorizontalEnd className="h-4 w-4 text-indigo-500" />
           <h2 className="text-sm font-semibold">배너 불러오기 <span className="font-normal text-muted-foreground">· 배너 캠페인 관리</span></h2>
@@ -3311,7 +3311,7 @@ function CornerLoadModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex h-[80vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[80vh] w-full max-w-4xl flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
           <Copy className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold">{isSwap ? '코너 유형 교체' : '코너 불러오기'}</h2>

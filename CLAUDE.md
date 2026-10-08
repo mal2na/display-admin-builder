@@ -171,6 +171,15 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 | 섹션 제목(조회결과) | **20 / 28 / -0.6 / 700**, 건수와 gap 4 | typography/title/20 · spacing/header/gap-count |
 | 스크롤바 | 두께 6 · rfull · `#c4c9cf` | spacing·color/scrollbar/* |
 | 섹션 간격 | depth2 32 · depth3 24 · item depth1 20 / depth2 16 · 액션 8 | spacing/section-wrap·action-wrap/* |
+| 다이얼로그·모달 | **r16** · padding 24 · 제목 20/700 · 버튼 gap 8 · shadow `0 24 22 #2222220d` + `0 0 2 #2222221a` | radius·spacing/dialogpopup·modalpopup/* |
+| 알럿 | r16 · padding 24 · gap 8 | radius·spacing/alert/* |
+| 툴팁·팝오버 | r8 · padding 12 · bg `#fcfcfd` · text `#454f59` · shadow `0 0 8 -2 #0000001f` | radius·color/tooltip·popover/* |
+| 토스트 | r10 · padding 16/20 · bg `#000b14cf` · text `#fcfcfd` · 아이콘 성공 `#00a058`/경고 `#f5b54f`/오류 `#ed3b3e` | radius·color/toast/* |
+| 콜랩스 | r12 · padding 24 · border `#dce0e5` · 포커스 `#3617ce` | radius·color/collapse/* |
+| 입력 포커스 | border `#b3b9c0` + ring 2 `#dce0e5` / 에러 `#ea5154` + ring `#ffdcdc` | color/…/border-focused·error |
+| 날짜 | 필드 r6 · gap 4(미입력)/14(입력) · 피커 셀 9/3·r8(선택 rfull) · 범위 `#f1f2ff` · 주말 `#ed3b3e` | spacing·color/datefield·datepicker/* |
+| 이미지 업로드 | r6 · border `#c4c9cf` · 아이콘 `#b3b9c0` · gap 8 | radius·color/imageupload/* |
+| 공지(notice) | r8 · padding 20 · gap 제목8/목록6/본문14/콘텐츠20 | spacing/notice·notice-title/* |
 | 버튼 크기 | cta 12/28·rfull · lg 11/24·r10 · **default 9/16·r6(h38)** · sm 6/12·r6 · pill 6/12·rfull | spacing·radius/button/* |
 | 버튼 색 | primary `#3617ce`→hover `#502dfb`→press `#2f15b2`, disable `#d0d2ff` / outline border `#c4c9cf` / t-blue `#3617ce` / red `#ed3b3e` | color/button/* |
 | 체크·라디오 | r4(체크)·rfull(라디오) · border `#c4c9cf` · fill `#3617ce` · gap 6 | color/checkbox·radio/* |

@@ -644,7 +644,7 @@ function ImageField({ url, alt, onUrl, onAlt, urlName, altName }: {
 
       {dsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDsOpen(false)}>
-          <div className="w-full max-w-lg rounded-xl bg-card p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-lg rounded-2xl bg-card p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><Globe className="h-4 w-4 text-primary" /> DS포탈 이미지 가져오기</h3>

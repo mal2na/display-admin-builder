@@ -149,7 +149,7 @@ export function HistoryList({ rows }: { rows: HistoryRow[] }) {
       {/* 승인요청 취소 모달 */}
       {cancelRow && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={closeCancel}>
-          <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold text-slate-900">승인요청 취소</h3>
               <button onClick={closeCancel} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
@@ -189,7 +189,7 @@ export function HistoryList({ rows }: { rows: HistoryRow[] }) {
       {/* 최종 확인 팝업 */}
       {cancelRow && confirmOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={() => setConfirmOpen(false)}>
-          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-2 flex items-start justify-between gap-2">
               <h3 className="text-[15px] font-bold text-slate-900">승인요청을 취소하시겠습니까?</h3>
               <button onClick={() => setConfirmOpen(false)} className="text-slate-400 hover:text-slate-700"><X className="h-4 w-4" /></button>

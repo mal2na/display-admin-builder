@@ -202,7 +202,7 @@ export function CornerTypeReviewBar(props: CornerTypeReviewData) {
       {/* 승인 요청 메모 모달 — 변경 사항(재승인 시 "어디를 고쳐 다시 보냄")을 적어 함께 전송 */}
       {reqOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={() => !pending && setReqOpen(false)}>
-          <div className="w-full max-w-md rounded-xl bg-card p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-2xl bg-card p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-1 flex items-center gap-1.5">
               <Send className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-semibold">{status === 'REJECTED' ? '재승인 요청' : '승인 요청'}</h3>

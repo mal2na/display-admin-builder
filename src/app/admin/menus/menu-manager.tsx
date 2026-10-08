@@ -277,7 +277,7 @@ function ChangePopup({ h, onClose }: { h: MenuHistoryRow; onClose: () => void })
   const [tab, setTab] = useState(tabs[0]?.[0] ?? '정보 변경');
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex max-h-[85vh] w-full max-w-3xl flex-col dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[#e8ecef] px-6 py-4">
           <h3 className="text-[16px] font-bold text-slate-900">변경사항 보기</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>

@@ -122,7 +122,7 @@ export function HistoryTable({ rows }: { rows: HistoryRow[] }) {
       {/* 승인ID 상세 모달 */}
       {sel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setSel(null)}>
-          <div className="w-full max-w-lg overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-lg overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 border-b px-5 py-3">
               <h3 className="text-sm font-semibold">승인 이력 상세</h3>
               <span className="font-mono text-xs text-muted-foreground">{sel.approvalId}</span>

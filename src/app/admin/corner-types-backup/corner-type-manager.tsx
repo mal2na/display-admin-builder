@@ -271,7 +271,7 @@ function BannerPickerModal({ open, onClose, campaigns, usedIds, onAdd }: { open:
   const close = () => { setChecked(new Set()); setQ(''); onClose(); };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
-      <div className="flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[80vh] w-full max-w-lg flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-4 py-3">
           <Plus className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold">배너 담기</h2>
@@ -435,7 +435,7 @@ function ProductPickerModal({ open, onClose, options, usedKeys, onAdd }: { open:
   const close = () => { reset(); onClose(); };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}>
-      <div className="flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[80vh] w-full max-w-lg flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-4 py-3">
           <Plus className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold">상품·혜택 담기</h2>
