@@ -82,7 +82,7 @@ import {
   refreshBannerComponent,
   addBssProduct,
 } from '../actions';
-import { BSS_PRODUCTS, BSS_CATEGORY_LABELS, BSS_SUBCATEGORIES, BSS_DEVICES, DEVICE_MAKERS, DEVICE_TYPES, type BssCategory, type PickerItem } from '@/lib/bss-products';
+import { BSS_PRODUCTS, BSS_CATEGORY_LABELS, BSS_SUBCATEGORIES, BSS_DEVICES, DEVICE_MAKERS, DEVICE_TYPES, pickerItemByKey, type BssCategory, type PickerItem } from '@/lib/bss-products';
 import { parseBannerOptions, type BannerOptions } from '@/lib/banner-options';
 import { isChipAllowed } from '@/lib/chip-types';
 import { DevImpactGuide, DevLockBadge } from '@/components/dev-impact-guide';
@@ -911,9 +911,10 @@ function AtomRow({
             <div className={cn('flex h-8 min-w-0 flex-1 items-center rounded-md border px-2.5 text-xs', atom.content ? 'border-slate-200 bg-slate-50 text-slate-800' : 'border-dashed border-slate-300 bg-white text-slate-400')}>
               <span className="truncate">{atom.content || '문구 미선택 — 불러오기'}</span>
             </div>
-            <button type="button" onClick={() => setPickOpen(true)}
-              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100">
-              <Download className="h-3 w-3" /> 불러오기
+            {/* 개별 교체 — 기본 동선은 위 '세트로 불러오기'. 이 칸만 바꾸고 싶을 때의 보조 버튼. */}
+            <button type="button" onClick={() => setPickOpen(true)} title="이 문구만 개별 교체 (문구 관리 원장에서)"
+              className="flex w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:border-indigo-300 hover:text-indigo-600">
+              <Download className="h-3 w-3" />
             </button>
             {atom.content && (
               <button type="button" onClick={() => onChange({ content: '' })} title="선택 해제"
@@ -1143,8 +1144,70 @@ function AtomManager({
 
   // API 자동 연동(상품형) 여부 — 이미지·문구·가격은 상품 원장에서 자동. 카드 상단에 요약을 한 번만 노출.
   const apiSourced = component.componentType === '상품형' && atoms.some((a) => atomSourceLock(a.atomType, component.componentType, recSource)?.tag === 'API');
+
+  // ── 세트로 불러오기 (2026-10-08 사용자 요청) ───────────────────────────────
+  //  상품·콘텐츠 원장의 한 항목 = (이름 · 설명 · 이미지) 한 세트다. 문구를 칸마다 따로 긁어오는 게 아니라
+  //  항목 하나를 고르면 이 컴포넌트의 아톰이 한 번에 채워진다. 개별 칸 교체는 각 줄의 보조 버튼으로 남긴다.
+  const [setPickOpen, setSetPickOpen] = useState(false);
+  const textAtom = atoms.find((a) => a.atomType === 'TEXT' || a.atomType === 'BENEFIT_TEXT');
+  const descAtom = atoms.find((a) => a.atomType === 'INFO' || a.atomType === 'PRICE');
+  const imgAtom = atoms.find((a) => a.atomType === 'IMAGE' || a.atomType === 'ICON');
+  const canPickSet = !!(textAtom || descAtom || imgAtom);
+  const applySet = (key: string) => {
+    const item = pickerItemByKey(key);
+    if (!item) return;
+    // 한 번의 상태 갱신으로 전부 반영 — 칸마다 따로 쓰면 중간 상태가 미리보기에 번갈아 보인다.
+    const next = atoms.map((a) => {
+      if (a.componentAtomId === textAtom?.componentAtomId) return { ...a, content: item.name };
+      if (a.componentAtomId === descAtom?.componentAtomId) return { ...a, content: item.benefit };
+      if (a.componentAtomId === imgAtom?.componentAtomId) return { ...a, imageUrl: item.logo, altText: a.altText || item.name };
+      return a;
+    });
+    setAtoms(next);
+    pushAtoms(component.cornerComponentId, next);
+    onAtomsChange?.(next);
+    setSetPickOpen(false);
+  };
+
   return (
     <div className="mt-1 space-y-2 rounded-md bg-muted/40 p-2">
+      {/* 세트로 불러오기 — 편집을 열면 가장 먼저 보이는 기본 동선 */}
+      {canPickSet && (
+        <div className="rounded-md border border-indigo-200 bg-white px-2.5 py-2">
+          <div className="flex items-center gap-2">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[11px] font-semibold text-slate-800">세트로 불러오기</span>
+              <span className="block text-[10px] leading-relaxed text-muted-foreground">
+                항목 하나를 고르면 {(() => {
+                  const fields = [textAtom && '텍스트', descAtom && '설명', imgAtom && '이미지'].filter(Boolean) as string[];
+                  const list = fields.join(' · ');
+                  // 마지막 글자 받침에 따라 '이/가' — 한글 음절 코드로 종성 유무 판정
+                  const last = list.charCodeAt(list.length - 1);
+                  const hasFinal = last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 !== 0;
+                  return `${list}${hasFinal ? '이' : '가'}`;
+                })()} 한 번에 채워집니다.
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setSetPickOpen(true)}
+              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[var(--ac)] px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-[var(--ac-h)]"
+            >
+              <Download className="h-3 w-3" /> 불러오기
+            </button>
+          </div>
+        </div>
+      )}
+      {setPickOpen && (
+        <BssProductPickerModal
+          open
+          pending={false}
+          mode={component.componentType === '상품형' ? 'device' : 'benefit'}
+          single
+          onClose={() => setSetPickOpen(false)}
+          onPickMany={(keys) => keys[0] && applySet(keys[0])}
+        />
+      )}
       {apiSourced && (
         <div className="rounded-md border border-sky-200 bg-sky-50/70 px-2.5 py-2 text-[11px] leading-relaxed">
           <p className="flex items-center gap-1.5 font-semibold text-sky-800">
@@ -1405,14 +1468,18 @@ const BSS_BADGE_TONE: Record<string, string> = {
   사용: 'bg-blue-100 text-blue-700',
   'VIP PICK': 'bg-violet-600 text-white',
 };
-function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'benefit' }: { open: boolean; onClose: () => void; onPickMany: (keys: string[]) => void; pending: boolean; mode?: 'benefit' | 'device' }) {
+function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'benefit', single = false }: { open: boolean; onClose: () => void; onPickMany: (keys: string[]) => void; pending: boolean; mode?: 'benefit' | 'device'; single?: boolean }) {
   const [cat, setCat] = useState<string>('ALL');
   const [sub, setSub] = useState<string>('전체');
   const [q, setQ] = useState(''); // 디바이스 102종 — 이름 검색 없이는 못 찾는다(2026-10-08)
   const [selected, setSelected] = useState<Set<string>>(new Set()); // 멀티 선택(2026-10-07)
   if (!open) return null;
   const device = mode === 'device'; // 상품형 코너 = T 디바이스 카탈로그(2026-10-07)
-  const toggle = (key: string) => setSelected((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+  // single = 세트 불러오기(한 항목만). 고르는 즉시 적용하고 닫는다.
+  const toggle = (key: string) => {
+    if (single) { onPickMany([key]); return; }
+    setSelected((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+  };
   const close = () => { setSelected(new Set()); setQ(''); onClose(); };
   // 카테고리/세부 — 디바이스는 제조사(DEVICE_MAKERS)×유형(DEVICE_TYPES), 혜택은 EAT/BUY/PLAY×BSS_SUBCATEGORIES.
   const cats: string[] = device ? ['ALL', ...DEVICE_MAKERS] : ['ALL', 'EAT', 'BUY', 'PLAY'];
@@ -1433,8 +1500,14 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
       {/* 고정 높이(h-[80vh]) — 카테고리 전환 시에도 모달 크기 불변, 리스트만 내부 스크롤 */}
       <div className="flex h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
-          <h2 className="text-sm font-semibold">{device ? '디바이스 불러오기' : '상품 불러오기'}</h2>
-          <span className="text-xs text-muted-foreground">{device ? 'T에서 판매하는 디바이스를 선택해 코너에 추가' : '여러 개 선택해 한 번에 코너에 추가'}</span>
+          <h2 className="text-sm font-semibold">{single ? '세트로 불러오기' : device ? '디바이스 불러오기' : '상품 불러오기'}</h2>
+          <span className="text-xs text-muted-foreground">
+            {single
+              ? '항목을 고르면 텍스트 · 설명 · 이미지가 한 번에 채워집니다'
+              : device
+                ? 'T에서 판매하는 디바이스를 선택해 코너에 추가'
+                : '여러 개 선택해 한 번에 코너에 추가'}
+          </span>
           <button type="button" onClick={close} className="ml-auto text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
         {/* 카테고리 탭 */}
@@ -1483,9 +1556,11 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
             return (
             <button key={p.key} type="button" disabled={pending} onClick={() => toggle(p.key)}
               className={cn('relative flex items-center gap-3 rounded-xl border bg-white p-3 text-left transition disabled:opacity-50', on ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-primary/50 hover:bg-primary/5')}>
-              <span className={cn('absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full border', on ? 'border-primary bg-primary text-white' : 'border-slate-300 bg-white')}>
-                {on && <Check className="h-3 w-3" />}
-              </span>
+              {!single && (
+                <span className={cn('absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full border', on ? 'border-primary bg-primary text-white' : 'border-slate-300 bg-white')}>
+                  {on && <Check className="h-3 w-3" />}
+                </span>
+              )}
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-50 ring-1 ring-slate-200">
                 {isIconRef(p.logo) ? <IconGlyph name={p.logo} className="h-5 w-5 text-slate-700" /> : isRenderableIconUrl(p.logo) ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -1505,7 +1580,8 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
           })}
           {list.length === 0 && <p className="col-span-full py-10 text-center text-xs text-muted-foreground">해당 카테고리에 {device ? '디바이스' : '브랜드'}가 없습니다.</p>}
         </div>
-        {/* 하단 — 선택 개수 + 한 번에 추가 */}
+        {/* 하단 — 선택 개수 + 한 번에 추가. single(세트 불러오기)은 클릭 즉시 적용되므로 생략. */}
+        {!single && (
         <div className="flex items-center gap-3 border-t px-5 py-3">
           <span className="text-xs text-muted-foreground"><b className="text-foreground">{selected.size}</b>개 선택됨</span>
           {selected.size > 0 && <button type="button" onClick={() => setSelected(new Set())} className="text-[11px] text-muted-foreground underline-offset-2 hover:underline">선택 해제</button>}
@@ -1513,6 +1589,7 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
             {pending ? '추가 중…' : `${selected.size}개 코너에 추가`}
           </Button>
         </div>
+        )}
       </div>
     </div>
   );
