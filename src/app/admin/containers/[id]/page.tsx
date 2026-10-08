@@ -70,11 +70,12 @@ const APPROVAL_BADGE_VARIANT: Record<string, 'secondary' | 'success' | 'warning'
   REJECTED: 'destructive',
 };
 
+// 정보 행 — 공식 폼 테이블(.ft) 규격: 라벨 칸 회색 148px, 값 칸 흰색, 가로선만.
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex border-b last:border-0">
-      <div className="w-36 shrink-0 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">{label}</div>
-      <div className="flex-1 bg-white px-3 py-2 text-sm text-slate-800">{children}</div>
+    <div className="flex border-b border-[var(--line)]">
+      <div className="flex w-[148px] shrink-0 items-center bg-[var(--th)] px-3.5 py-3 text-[13px] font-medium text-[var(--ink2)]">{label}</div>
+      <div className="flex-1 bg-white px-3.5 py-3 text-[13px] text-[var(--ink)]">{children}</div>
     </div>
   );
 }
@@ -195,7 +196,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
             }}
           />
         </div>
-        <div className="grid grid-cols-1 overflow-hidden rounded-md border bg-card sm:grid-cols-2">
+        <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
           <Row label="컨테이너 ID">{container.id.slice(-10)}</Row>
           <Row label="컨테이너 타입">{container.kind ?? TYPE_LABELS[container.containerType ?? ''] ?? '—'}</Row>
           <Row label="플랫폼">{container.platform ?? container.channel ?? '—'}</Row>
@@ -215,7 +216,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
       {/* 메타 정보 */}
       <section>
         <h2 className="mb-2 text-sm font-semibold">메타 정보</h2>
-        <div className="grid grid-cols-1 overflow-hidden rounded-md border bg-card sm:grid-cols-2">
+        <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
           <Row label="사용 여부">{container.metaUse ? '사용' : '미사용'}</Row>
           <Row label="검색 태그">{container.searchTags ?? '—'}</Row>
           <Row label="og:title">{container.ogTitle ?? '—'}</Row>

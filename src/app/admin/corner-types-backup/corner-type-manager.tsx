@@ -998,7 +998,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const chkInput = 'h-4 w-4 rounded accent-[#3a2fd8]';
 
   return (
-    <div className="space-y-4">
+    <div>
       <PageHeader
         trail={['전시 관리', '코너 유형 관리']}
         title="코너 유형 관리"
@@ -1163,7 +1163,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                 return <div className="rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">{types.length === 0 ? <>등록된 코너 유형이 없습니다. 우측 상단 <b className="text-foreground">등록</b>으로 추가하세요.</> : '검색 조건에 맞는 배열이 없습니다.'}</div>;
               }
               return (
-                <div className="space-y-4">
+                <div>
                   {visible.map((bc) => {
                     const rows = filtered.filter((t) => t.baseCategory === bc);
                     // 같은 배열(typeDetail)의 케이스(코너)들을 묶는다 — 목록은 '배열 단위'로 보여준다(케이스별 나열 X).

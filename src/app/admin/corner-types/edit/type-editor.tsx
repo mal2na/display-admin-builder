@@ -21,7 +21,7 @@ export function TypeVariationsEditor({ base, variations, builtOptions, registere
   const arrays = variations.map((v) => v.typeDetail ?? '').filter(Boolean);
 
   return (
-    <div className="space-y-4">
+    <div>
       <PageHeader
         trail={['전시관리', '코너 유형 관리', base, '유형 수정']}
         title="유형 수정"

@@ -58,7 +58,7 @@ export function HistoryList({ rows }: { rows: HistoryRow[] }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div>
       {/* 검색 */}
       <div className="rounded-xl border bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-4">

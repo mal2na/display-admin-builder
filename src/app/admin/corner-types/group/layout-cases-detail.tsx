@@ -14,7 +14,7 @@ export function LayoutCasesDetail({ base, detail, cases }: { base: string; detai
   const router = useRouter();
   const info = CORNER_TYPE_INFO[base];
   return (
-    <div className="space-y-4">
+    <div>
       <PageHeader
         trail={['전시관리', '코너 유형 관리', base, layoutBi(detail) || detail]}
         title={layoutBi(detail) || detail}

@@ -94,11 +94,21 @@ export function ContainerTree({ containers }: { containers: TreeContainer[] }) {
 
           return (
             <div key={c.id}>
-              <button type="button" onClick={() => toggle(c.id)} className="pg-h text-[13px]">
-                <span className="car">{expanded ? '▾' : '▸'}</span>
-                <span className="truncate">{c.name}</span>
+              {/* 캐럿은 펼침, 이름은 컨테이너 상세로 이동 */}
+              <div className={cn('pg-h text-[13px]', pathname === `/admin/containers/${c.id}` && 'bg-[var(--ac2)] text-[var(--ac)]')}>
+                <button
+                  type="button"
+                  onClick={() => toggle(c.id)}
+                  className="car shrink-0 cursor-pointer"
+                  aria-label={expanded ? '접기' : '펼치기'}
+                >
+                  {expanded ? '▾' : '▸'}
+                </button>
+                <Link href={`/admin/containers/${c.id}`} className="min-w-0 flex-1 truncate">
+                  {c.name}
+                </Link>
                 <span className="c">{c.templates.length}</span>
-              </button>
+              </div>
 
               {expanded && (
                 <>

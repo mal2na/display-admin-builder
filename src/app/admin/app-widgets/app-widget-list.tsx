@@ -133,9 +133,9 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
   const redisReload = () => start(async () => { await redisReloadAppWidgets(); alert('Redis Reload 요청되었습니다. (배포 공통 프로세스 확정 후 실제 연동)'); });
 
   return (
-    <div className="space-y-4">
+    <div>
       {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
-      <div className="sec">
+      <div className="mt-6">
         <FilterPanel
           rows={[
             [

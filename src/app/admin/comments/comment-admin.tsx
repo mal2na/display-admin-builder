@@ -82,7 +82,7 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
 
   const toggle = (no: number) => setChecked((s) => { const n = new Set(s); n.has(no) ? n.delete(no) : n.add(no); return n; });
   return (
-    <div className="space-y-4">
+    <div>
       {/* 검색 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
@@ -265,7 +265,7 @@ const REVIEWS: Review[] = [
 ];
 function ReviewsTab() {
   return (
-    <div className="space-y-4">
+    <div>
       {/* 검색 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
@@ -338,7 +338,7 @@ const BLOCKS: Block[] = [
 function BlockTab() {
   const [sub, setSub] = useState<'report' | 'history'>('report');
   return (
-    <div className="space-y-4">
+    <div>
       <div className="flex gap-1 rounded-lg border bg-white p-0.5 text-[13px]">
         {([['report', '신고 접수', ShieldAlert], ['history', '차단 이력', ShieldOff]] as const).map(([k, l, Icon]) => (
           <button key={k} onClick={() => setSub(k)} className={cn('inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium', sub === k ? 'bg-[#3a2fd8] text-white' : 'text-slate-500 hover:text-slate-700')}><Icon className="h-3.5 w-3.5" /> {l}</button>

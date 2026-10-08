@@ -103,7 +103,7 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
       />
 
       {/* 검색 영역 (1) — 참고 디자인 .ft 폼 테이블 + .sbtn */}
-      <div className="sec">
+      <div className="mt-6">
         <FilterPanel
           rows={[
             [

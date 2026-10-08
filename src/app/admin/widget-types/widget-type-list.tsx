@@ -28,7 +28,7 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
     [rows, applied]);
 
   return (
-    <div className="space-y-4">
+    <div>
       {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
