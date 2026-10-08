@@ -187,11 +187,16 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 
 > 값이 어긋나면 **Figma 변수를 먼저 보고 `globals.css` 의 `:root` 만 고친다.** 페이지 하드코딩 금지.
 
-> ⚠️ **목업 2종은 토큰이 자동으로 안 간다.** `전체페이지 관리`(`public/page-menu-b.html`)와
-> `프로모션 관리`(`public/promotion-prototype.html`)는 React 가 아니라 iframe 안의 독립 문서라
-> `globals.css` 가 닿지 않는다. 두 파일 **맨 끝 `</style>` 직전의 「Figma 공통 토큰 — 최종 정렬」 블록**이
-> 같은 값을 복제해 들고 있으니, 토큰을 바꾸면 **globals.css 와 이 블록을 같이** 고쳐야 한다.
-> (근본 해결은 두 목업을 React 로 포팅하는 것 — 별도 과제)
+> ✅ **목업 2종은 React 로 이식했다 (2026-10-08).** iframe 안의 독립 문서는 `globals.css` 가 닿지 않아
+> 토큰을 고칠 때마다 따로 손봐야 했다. 지금 상태:
+>
+> | 화면 | 상태 |
+> |---|---|
+> | 전체페이지 관리 | **전부 React** — `src/app/admin/page-menu-b/*` + `src/lib/page-menu/model.ts`. `public/page-menu-b.html` 은 더 이상 렌더되지 않는다(원본 참고용). |
+> | 프로모션 관리 | **목록만 React** — `src/app/admin/events/promo/*` + `src/lib/promotion/model.ts`. 등록·상세(조건 빌더·리워드·CTA·추천 구조)는 아직 `public/promotion-prototype.html` 을 딥링크(`#reg`, `#ex=<key>`)로 띄운다. |
+>
+> 아직 쓰이는 `promotion-prototype.html` 은 맨 끝 `</style>` 직전의 「Figma 공통 토큰 — 최종 정렬」 블록이
+> 같은 값을 복제해 들고 있다. 토큰을 바꾸면 **globals.css 와 이 블록을 같이** 고칠 것.
 
 **아래는 BO 공통 반영 전 기준이다 — 위 토큰과 충돌하면 위가 이긴다.**
 

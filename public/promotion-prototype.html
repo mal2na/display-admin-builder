@@ -2901,6 +2901,21 @@ $("fSave").addEventListener("click",()=>{ if(!validate())return;
 
 
 apply();
+
+/* 딥링크 — React 목록(/admin/events)에서 등록·예시 상세로 바로 들어올 때 쓴다.
+   #reg      → 등록(유형 선택) 팝업
+   #ex=<key> → 해당 설정 예시 상세
+   목록은 React 로 옮겼고(2026-10-08), 등록/상세 화면만 아직 이 프로토타입을 쓴다. */
+(function(){
+  function route(){
+    var h=location.hash||"";
+    if(h==="#reg"){openReg();return}
+    var m=h.match(/^#ex=(.+)$/);
+    if(m){applyPreset(decodeURIComponent(m[1]))}
+  }
+  route();
+  window.addEventListener("hashchange",route);
+})();
 })();
 </script>
 </body>

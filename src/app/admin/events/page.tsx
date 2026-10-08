@@ -1,15 +1,10 @@
+// 프로모션 관리 — 목록은 React(src/app/admin/events/promo), 등록·상세는 아직 프로토타입 HTML.
+//  예전에는 화면 전체를 public/promotion-prototype.html iframe 으로 띄웠다. iframe 은 별도 문서라
+//  globals.css 의 디자인 토큰이 닿지 않아, 공통 규격을 고쳐도 이 화면만 따로 손봐야 했다(2026-10-08).
+import { PromoAdmin } from './promo/promo-admin';
+
 export const dynamic = 'force-dynamic';
 
-// 프로모션 관리 — 리뷰 반영 프로토타입(정적)을 그대로 embed.
-//  프로토타입(목록·등록 wizard·상세·초대자 화면)은 자체 완결형 SPA(단일 HTML, 인라인 CSS/JS)라
-//  public/promotion-prototype.html 을 iframe으로 그대로 렌더한다(프로젝트 Tailwind와 격리).
-//  ※ 원본: https://prototype-promotion-black.vercel.app/  (2026-10-01 교체)
 export default function EventsPage() {
-  return (
-    <iframe
-      src="/promotion-prototype.html"
-      title="프로모션 관리"
-      className="h-full w-full border-0 bg-white"
-    />
-  );
+  return <PromoAdmin />;
 }
