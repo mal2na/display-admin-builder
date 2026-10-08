@@ -95,8 +95,8 @@ export function ListHeader({
 }) {
   return (
     <div className={cn('mt-8 mb-3 flex flex-wrap items-center justify-between gap-3', className)}>
-      <div className="flex items-baseline gap-2">
-        <h3 className="text-[16px] font-semibold leading-[24px] tracking-[-0.2px] text-[var(--ink)]">{title}</h3>
+      <div className="flex items-baseline gap-1">
+        <h3 className="text-[20px] font-bold leading-[28px] tracking-[-0.6px] text-[var(--ink)]">{title}</h3>
         {count !== undefined && (
           <span className="text-[14px] leading-[20px] text-[var(--ink2)]">
             {prefix} <b className="font-bold tabular-nums">{count}</b>{unit}

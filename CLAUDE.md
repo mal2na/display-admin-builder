@@ -168,6 +168,9 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 | 입력 | h38 · r**6** · inset-x**14** · border `#c4c9cf` | radius/textfield/radius · spacing/textfield/* |
 | 탭 | 16/600 · padding **20/15** · gap **16** · underline 2 | spacing/tabs/* |
 | 페이저 | 13/500 · r4 · gap10 · padding10 | spacing·radius/pagination/* |
+| 섹션 제목(조회결과) | **20 / 28 / -0.6 / 700**, 건수와 gap 4 | typography/title/20 · spacing/header/gap-count |
+| 스크롤바 | 두께 6 · rfull · `#c4c9cf` | spacing·color/scrollbar/* |
+| 섹션 간격 | depth2 32 · depth3 24 · item depth1 20 / depth2 16 · 액션 8 | spacing/section-wrap·action-wrap/* |
 | 버튼 크기 | cta 12/28·rfull · lg 11/24·r10 · **default 9/16·r6(h38)** · sm 6/12·r6 · pill 6/12·rfull | spacing·radius/button/* |
 | 버튼 색 | primary `#3617ce`→hover `#502dfb`→press `#2f15b2`, disable `#d0d2ff` / outline border `#c4c9cf` / t-blue `#3617ce` / red `#ed3b3e` | color/button/* |
 | 체크·라디오 | r4(체크)·rfull(라디오) · border `#c4c9cf` · fill `#3617ce` · gap 6 | color/checkbox·radio/* |
