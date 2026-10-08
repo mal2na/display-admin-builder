@@ -883,7 +883,7 @@ function AtomRow({
             aria-checked={shown}
             onClick={() => onChange({ visible: !shown })}
             title={shown ? '표시 중 — 클릭 시 숨김 (삭제 아님)' : '숨김 — 클릭 시 표시'}
-            className={cn('relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors', shown ? 'bg-primary' : 'bg-slate-300')}
+            className={cn('relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors', shown ? 'bg-[#3617ce]' : 'bg-[#b3b9c0]')}
           >
             <span className={cn('inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform', shown ? 'translate-x-4' : 'translate-x-0.5')} />
           </button>
@@ -2024,7 +2024,7 @@ function BigBannerControl({ templateId, corner, banners }: { templateId: string;
           <span className="text-[10px] text-indigo-600/80">이 코너 상단에 큰 배너를 얹어요. 켜면 아래 <b>‘상단 배너’</b>에서 이미지를 등록·변경합니다.</span>
         </span>
         <button type="button" role="switch" aria-checked={on} disabled={pending} onClick={toggle}
-          className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', on ? 'bg-indigo-500' : 'bg-slate-300')}>
+          className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', on ? 'bg-[#3617ce]' : 'bg-[#b3b9c0]')}>
           <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', on ? 'translate-x-4' : 'translate-x-0.5')} />
         </button>
       </label>
@@ -2445,7 +2445,7 @@ function CornerInfoForm({
               <button type="button" role="switch" aria-checked={hasTab}
                 onClick={() => startTab(() => toggleCornerTab(templateId, corner.id))}
                 title={hasTab ? '카테고리 탭 끄기' : '카테고리 탭 켜기'}
-                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', hasTab ? 'bg-primary' : 'bg-slate-300')}>
+                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', hasTab ? 'bg-[#3617ce]' : 'bg-[#b3b9c0]')}>
                 <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', hasTab ? 'translate-x-4' : 'translate-x-0.5')} />
               </button>
             </div>
@@ -2483,7 +2483,7 @@ function CornerInfoForm({
                 role="switch"
                 aria-checked={userCustom}
                 onClick={() => setUserCustom((v) => !v)}
-                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-sky-500' : 'bg-slate-300')}
+                className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-[#3617ce]' : 'bg-[#b3b9c0]')}
               >
                 <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
               </button>

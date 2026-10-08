@@ -351,6 +351,31 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
   /* 긴 설명문은 보조 톤으로 — 본문과 같은 굵기로 겹쳐 보이지 않게 */
   .bpanel p { letter-spacing: -0.1px; }
 
+  /* ── 체크박스 · 라디오 · 토글 — Figma [BO-AX] 공통 컴포넌트 실값 (2026-10-08) ──
+     checkbox  radius 4 · border #c4c9cf · fill #3617ce · icon #fff · gap 6
+     radio     border #c4c9cf · fill #3617ce · gap 6
+     toggle    radius full · inset 4 · handler 12(xs)/20(s)/24(m) · track #b3b9c0 / 선택 #3617ce / 비활성 #dce0e5 */
+  input[type='checkbox'], input[type='radio'] {
+    appearance: none; width: 16px; height: 16px; flex: none; margin: 0;
+    border: 1px solid var(--line3); background: #fff; cursor: pointer;
+    display: inline-grid; place-content: center; transition: background-color .12s, border-color .12s;
+  }
+  input[type='checkbox'] { border-radius: 4px; }
+  input[type='radio'] { border-radius: 9999px; }
+  input[type='checkbox']:checked, input[type='radio']:checked { background: var(--ac); border-color: var(--ac); }
+  input[type='checkbox']:checked::after {
+    content: ''; width: 9px; height: 5px; border: 2px solid #fff; border-top: 0; border-right: 0;
+    transform: rotate(-45deg) translate(1px, -1px);
+  }
+  input[type='radio']:checked::after { content: ''; width: 6px; height: 6px; border-radius: 9999px; background: #fff; }
+  input[type='checkbox']:disabled, input[type='radio']:disabled {
+    background: var(--surface-sunken); border-color: var(--line3); cursor: not-allowed;
+  }
+  input[type='checkbox']:checked:disabled, input[type='radio']:checked:disabled { background: var(--line3); border-color: var(--line3); }
+  /* 라벨 — gap 6, 기본 #697582 / 선택 #1a1a1a */
+  label:has(> input[type='checkbox']), label:has(> input[type='radio']) { gap: 6px; color: var(--ink3); }
+  label:has(> input:checked) { color: var(--ink); }
+
   /* ── 하단 액션 ── */
   .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 60px; }
   .emptybox { border: 1px dashed var(--line2); border-radius: 12px; padding: 56px 24px; text-align: center; color: var(--ink2); }

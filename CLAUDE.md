@@ -168,7 +168,10 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 | 입력 | h38 · r**6** · inset-x**14** · border `#c4c9cf` | radius/textfield/radius · spacing/textfield/* |
 | 탭 | 16/600 · padding **20/15** · gap **16** · underline 2 | spacing/tabs/* |
 | 페이저 | 13/500 · r4 · gap10 · padding10 | spacing·radius/pagination/* |
-| 버튼 | primary r10 · secondary r**full** | radius/button/* |
+| 버튼 크기 | cta 12/28·rfull · lg 11/24·r10 · **default 9/16·r6(h38)** · sm 6/12·r6 · pill 6/12·rfull | spacing·radius/button/* |
+| 버튼 색 | primary `#3617ce`→hover `#502dfb`→press `#2f15b2`, disable `#d0d2ff` / outline border `#c4c9cf` / t-blue `#3617ce` / red `#ed3b3e` | color/button/* |
+| 체크·라디오 | r4(체크)·rfull(라디오) · border `#c4c9cf` · fill `#3617ce` · gap 6 | color/checkbox·radio/* |
+| 토글 | rfull · inset 4 · handler 12/20/24 · track `#b3b9c0` / 선택 `#3617ce` / 비활성 `#dce0e5` | spacing·color/toggle/* |
 
 > 값이 어긋나면 **Figma 변수를 먼저 보고 `globals.css` 의 `:root` 만 고친다.** 페이지 하드코딩 금지.
 

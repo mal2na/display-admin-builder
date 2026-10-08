@@ -1304,7 +1304,7 @@ function StepHead({ n, title, required, hint }: { n: number; title: string; requ
 function Switch({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button type="button" disabled={disabled} onClick={() => onChange(!checked)}
-      className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition', checked ? 'bg-[#3617ce]' : 'bg-slate-300', disabled && 'cursor-not-allowed opacity-40')}
+      className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition', checked ? 'bg-[#3617ce]' : 'bg-[#b3b9c0]', disabled && 'cursor-not-allowed opacity-40')}
       aria-pressed={checked}>
       <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition', checked ? 'translate-x-4' : 'translate-x-0.5')} />
     </button>
@@ -1859,7 +1859,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                       <span className="text-[11px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
                     </span>
                     <button type="button" role="switch" aria-checked={userCustom} onClick={() => setUserCustom((v) => !v)}
-                      className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-sky-500' : 'bg-slate-300')}>
+                      className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-[#3617ce]' : 'bg-[#b3b9c0]')}>
                       <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
                     </button>
                   </label>
