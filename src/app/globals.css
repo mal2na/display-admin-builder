@@ -302,6 +302,26 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
   .dot.gray { background: #c4c7d1; }
   .tree .unl { margin-top: 12px; border-top: 1px solid var(--line); padding: 10px 6px 0; color: var(--ink2); font-size: 12px; }
 
+  /* ── 빌더 우측 패널(.bpanel) 타이포 정규화 ──
+     한 패널에 9·10·10.5·11·11.5·12·12.5·13·14·16px 가 섞여 글이 잘게 부서져 보였다(2026-10-08).
+     공식 4단계로 수렴시킨다: 섹션 15/700 · 본문 13 · 보조 12 · 라벨·배지 11.
+     한글은 keep-all 로 단어 중간에서 끊기지 않게 한다. */
+  .bpanel { word-break: keep-all; overflow-wrap: anywhere; }
+  .bpanel [class*='text-[9px]'],
+  .bpanel [class*='text-[10px]'],
+  .bpanel [class*='text-[10.5px]'],
+  .bpanel [class*='text-[11px]'],
+  .bpanel [class*='text-[11.5px]'] { font-size: 11px; line-height: 1.6; }
+  .bpanel [class*='text-[12px]'],
+  .bpanel [class*='text-[12.5px]'] { font-size: 12px; line-height: 1.6; }
+  .bpanel [class*='text-[13px]'],
+  .bpanel .text-sm,
+  .bpanel [class*='text-[14px]'] { font-size: 13px; line-height: 1.6; }
+  .bpanel .text-xs { font-size: 12px; line-height: 1.6; }
+  .bpanel h2, .bpanel [class*='text-[16px]'], .bpanel [class*='text-[17px]'] { font-size: 15px; line-height: 1.45; }
+  /* 긴 설명문은 보조 톤으로 — 본문과 같은 굵기로 겹쳐 보이지 않게 */
+  .bpanel p { letter-spacing: -0.1px; }
+
   /* ── 하단 액션 ── */
   .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 60px; }
   .emptybox { border: 1px dashed var(--line2); border-radius: 12px; padding: 56px 24px; text-align: center; color: var(--ink2); }

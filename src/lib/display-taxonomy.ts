@@ -261,31 +261,38 @@ export function normalizeRecSource(m: string): string {
   return m;
 }
 
-// 각 방식: 짧은 태그 + '무엇을 받고 무엇을 우리가 채우나' + 개인화 표기 여부.
+// 각 방식: 짧은 태그 + 한 줄 요약(how) + 길게 풀어 쓴 설명(detail, 툴팁용) + 역할 분담.
+//  좁은 패널에 긴 문장을 깔면 글이 잘게 부서져 읽히지 않는다 → 화면엔 how, 자세한 건 detail 로.
 export const REC_SOURCE_INFO: Record<
   string,
-  { tag: string; how: string; personalized: boolean; cvmGives: string; weBuild: string }
+  { tag: string; how: string; detail: string; personalized: boolean; cvmGives: string; weBuild: string }
 > = {
   'CVM 데이터 연동': {
     tag: '개인화 · 데이터만',
-    how: 'CVM은 “이 고객에게 이 아이템을 이 순서로”까지만 내려줍니다. 이미지·설명 문구는 상품(EPC) 원장 값을 전시 어드민이 가져와 조립합니다.',
+    how: 'CVM은 아이템과 순서만, 문구·이미지는 상품 원장',
+    detail:
+      'CVM은 “이 고객에게 이 아이템을 이 순서로”까지만 내려줍니다. 이미지·설명 문구는 상품(EPC) 원장 값을 전시 어드민이 가져와 조립합니다.',
     personalized: true,
-    cvmGives: '아이템 ID · 노출 순서',
-    weBuild: '이미지 · 설명 문구 · 레이아웃',
+    cvmGives: '아이템 · 순서',
+    weBuild: '문구 · 이미지',
   },
   'CVM 콘텐츠 연동': {
     tag: '개인화 · 구좌 위임',
-    how: '자리(구좌)만 뚫어 CVM에 넘깁니다. 이미지·문구까지 CVM이 만들어 내려주고, 전시 어드민은 받은 그대로 노출합니다. 같은 오퍼를 배너·MMS 등 여러 채널에 일관되게 내보낼 때 씁니다.',
+    how: '자리만 넘기고 완성본을 받아 그대로 노출',
+    detail:
+      '자리(구좌)만 뚫어 CVM에 넘깁니다. 이미지·문구·랜딩까지 CVM이 만들어 내려주고 전시 어드민은 받은 그대로 노출합니다. 같은 오퍼를 배너·MMS 등 여러 채널에 일관되게 내보낼 때 씁니다.',
     personalized: true,
-    cvmGives: '이미지 · 문구 · 랜딩까지 완성본',
-    weBuild: '자리(구좌)와 규격만',
+    cvmGives: '완성본 전부',
+    weBuild: '자리 · 규격',
   },
   '운영자 편성': {
     tag: '운영자 직접 구성',
-    how: '운영자가 상품·혜택을 직접 골라 정한 순서대로 보여줍니다(기획전·시즌 등). CVM 연동이 비었을 때 대체안으로도 쓰입니다.',
+    how: '운영자가 고른 항목을 정한 순서대로',
+    detail:
+      '운영자가 상품·혜택을 직접 골라 정한 순서대로 보여줍니다(기획전·시즌 등). CVM 연동이 비었을 때 대체안으로도 쓰입니다.',
     personalized: false,
     cvmGives: '없음',
-    weBuild: '아이템 · 순서 · 문구 전부',
+    weBuild: '전부',
   },
 };
 

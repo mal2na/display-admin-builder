@@ -234,7 +234,7 @@ function CornerTypeChip({ corner, className, compact }: { corner: CornerNode; cl
   // compact — 좁은 좌측 목록용. 영문 병기를 빼고 칩만 남긴다(전체 표기는 title 툴팁으로).
   const title = `${isBanner ? '배너' : base}${baseEn ? ` (${baseEn})` : ''}${rest ? ` · ${rest}${restEn ? ` (${restEn})` : ''}` : ''}`;
   return (
-    <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)} title={title}>
+    <span className={cn('inline-flex min-w-0 max-w-full items-center gap-1.5', className)} title={title}>
       <span className={cn('min-w-0 max-w-full truncate', cornerTypeChipClass(base), compact && 'text-[11px]')}>
         {isBanner ? '배너' : base}
         {!compact && baseEn && <span className="ml-1 font-normal opacity-70">{baseEn}</span>}
@@ -847,8 +847,7 @@ function AtomRow({
   onChange: (patch: Partial<AtomNode>) => void;
 }) {
   const f = ATOM_TYPE_FIELDS[atom.atomType as AtomType] ?? { content: true, image: false, link: false };
-  const msgUse = ATOM_TYPE_LABELS[atom.atomType as AtomType] ?? '텍스트';
-  const [pickOpen, setPickOpen] = useState(false);
+  // 문구는 컴포넌트 단위 '세트로 불러오기'로만 채운다 — 칸별 개별 피커는 제거(2026-10-08 사용자 요청).
   const altMissing = (atom.atomType === 'IMAGE' || atom.atomType === 'ICON') && !atom.altText;
   // 이미지는 카드의 핵심 시각요소 → 개별 표시/숨김 토글을 두지 않는다(항상 노출).
   const noToggle = atom.atomType === 'IMAGE';
@@ -911,11 +910,6 @@ function AtomRow({
             <div className={cn('flex h-8 min-w-0 flex-1 items-center rounded-md border px-2.5 text-xs', atom.content ? 'border-slate-200 bg-slate-50 text-slate-800' : 'border-dashed border-slate-300 bg-white text-slate-400')}>
               <span className="truncate">{atom.content || '문구 미선택 — 불러오기'}</span>
             </div>
-            {/* 개별 교체 — 기본 동선은 위 '세트로 불러오기'. 이 칸만 바꾸고 싶을 때의 보조 버튼. */}
-            <button type="button" onClick={() => setPickOpen(true)} title="이 문구만 개별 교체 (문구 관리 원장에서)"
-              className="flex w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:border-indigo-300 hover:text-indigo-600">
-              <Download className="h-3 w-3" />
-            </button>
             {atom.content && (
               <button type="button" onClick={() => onChange({ content: '' })} title="선택 해제"
                 className="flex w-6 shrink-0 items-center justify-center rounded-md border text-muted-foreground hover:bg-secondary">
@@ -985,14 +979,6 @@ function AtomRow({
           </div>
         );
       })()}
-      {pickOpen && (
-        <MessagePickerModal
-          use={msgUse}
-          messages={messages}
-          onPick={(text) => { onChange({ content: text }); setPickOpen(false); }}
-          onClose={() => setPickOpen(false)}
-        />
-      )}
       {f.image &&
         (sourceLock ? (
           <LockedSource lock={sourceLock} sample={atom.imageUrl} kind="image" />
@@ -1739,8 +1725,9 @@ function ComponentList({
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex gap-2 border-b py-1.5 last:border-0">
-      <div className="w-24 shrink-0 text-[11px] text-muted-foreground">{label}</div>
-      <div className="flex-1 whitespace-pre-line text-xs text-foreground">{value}</div>
+      <div className="w-20 shrink-0 text-[11px] text-muted-foreground">{label}</div>
+      {/* min-w-0 가 없으면 flex 자식이 내용 폭만큼 버텨 패널 밖으로 삐져나간다 */}
+      <div className="min-w-0 flex-1 whitespace-pre-line break-words text-xs text-foreground">{value}</div>
     </div>
   );
 }
@@ -3514,7 +3501,7 @@ export function BuilderEditor({
     const startX = e.clientX;
     const startW = dir === 'right' ? rightW : leftW;
     const move = (ev: PointerEvent) => {
-      if (dir === 'right') setRightW(Math.min(820, Math.max(320, startW + (startX - ev.clientX))));
+      if (dir === 'right') setRightW(Math.min(820, Math.max(380, startW + (startX - ev.clientX))));
       else setLeftW(Math.min(560, Math.max(220, startW + (ev.clientX - startX))));
     };
     const up = () => {
@@ -3844,7 +3831,7 @@ export function BuilderEditor({
       </div>
 
       {/* 우측: 선택 코너 상세 (드래그로 너비 조절). 접히면 폭 0. */}
-      <div className={cn('relative overflow-y-auto border-l bg-background p-4', !rightOpen && 'pointer-events-none opacity-0')}>
+      <div className={cn('bpanel relative overflow-y-auto border-l bg-background p-4', !rightOpen && 'pointer-events-none opacity-0')}>
         <div
           onPointerDown={(e) => startResize('right', e)}
           title="드래그로 패널 너비 조절"
@@ -3852,9 +3839,10 @@ export function BuilderEditor({
         />
         {selectedCorner ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <CornerTypeChip corner={selectedCorner} />
-              <h2 className="truncate text-base font-semibold">{selectedCorner.name}</h2>
+            {/* 패널 머리 — 좁혀도 안 터지게 제목이 한 줄, 유형 칩은 아랫줄로 떨어진다 */}
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold" title={selectedCorner.name}>{selectedCorner.name}</h2>
+              <CornerTypeChip corner={selectedCorner} compact className="mt-1.5 flex-wrap" />
             </div>
 
             {/* 개발 영향 안내 — 어드민이 무중단으로 바꿀 수 있는 것 / 개발 필요한 것 구분 */}

@@ -49,14 +49,23 @@ export type SupplyCorner = {
 /* ── 소품 ───────────────────────────────────────────────────────── */
 
 function Step({ no, title, desc, children, tone }: { no: number; title: string; desc?: string; children: React.ReactNode; tone?: 'muted' }) {
+  // 설명(desc)은 제목 옆 '?'의 툴팁으로 — 좁은 패널에 긴 문장을 깔면 글이 부서져 읽히지 않는다.
   return (
     <section className={cn('rounded-[10px] border border-[var(--line)] bg-white p-3.5', tone === 'muted' && 'bg-[var(--th)]')}>
-      <div className="mb-2.5 flex items-baseline gap-2">
+      <div className="mb-3 flex items-center gap-2">
         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">{no}</span>
-        <h3 className="text-[13px] font-bold text-[var(--ink)]">{title}</h3>
+        <h3 className="min-w-0 flex-1 truncate text-[13px] font-bold text-[var(--ink)]">{title}</h3>
+        {desc && (
+          <span
+            title={desc}
+            className="grid h-4 w-4 shrink-0 cursor-help place-items-center rounded-full bg-[var(--th)] text-[11px] font-bold text-[var(--ink3)]"
+            aria-label={desc}
+          >
+            ?
+          </span>
+        )}
       </div>
-      {desc && <p className="-mt-1.5 mb-2.5 pl-7 text-[11px] leading-relaxed text-[var(--ink3)]">{desc}</p>}
-      <div className="pl-7">{children}</div>
+      {children}
     </section>
   );
 }
@@ -81,16 +90,15 @@ function ShellStep({ corner }: { corner: SupplyCorner }) {
     <Step
       no={1}
       title="껍데기 — 코너 유형에서 가져옴"
-      desc="‘코너 불러오기’로 가져오는 건 레이아웃·노출 타입까지입니다. 내용물은 비어 있고, 아래에서 채웁니다."
+      desc="‘코너 불러오기’로 가져오는 건 레이아웃·노출 타입까지입니다. 내용물은 비어 있고, 아래 ②~③에서 채웁니다. 이 세 값은 코너 유형 관리(DS·개발 영역)에서 정의하므로 빌더에서 바꿀 수 없습니다."
     >
       <div className="rounded-[8px] bg-[var(--th)] p-2.5">
         <Row k="코너 유형" v={corner.cornerType} />
         <Row k="배열·레이아웃" v={corner.layoutDetail || corner.cornerLayout || '—'} />
         <Row k="노출 개수" v={corner.maxItems != null ? `최대 ${corner.maxItems}개` : '—'} />
       </div>
-      <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-[var(--ink3)]">
-        <Lock className="mt-0.5 h-3 w-3 shrink-0" />
-        <span>이 세 가지는 <b className="text-[var(--ink2)]">코너 유형 관리</b>(DS·개발 영역)에서 정의합니다. 빌더에서는 바꿀 수 없어요.</span>
+      <p className="mt-2 flex items-center gap-1.5 text-[11px] text-[var(--ink3)]">
+        <Lock className="h-3 w-3 shrink-0" /> 코너 유형 관리에서 정의 · 빌더 수정 불가
       </p>
     </Step>
   );
@@ -128,6 +136,7 @@ function SupplyStep({
               key={m}
               type="button"
               disabled={pending}
+              title={info.detail}
               onClick={() => onPick(m)}
               className={cn(
                 'w-full rounded-[8px] border p-2.5 text-left transition disabled:opacity-50',
@@ -142,11 +151,11 @@ function SupplyStep({
                   {MODE_ICON[m]} {m}
                 </span>
               </span>
-              <span className="mt-1.5 block pl-5.5 text-[11px] leading-relaxed text-[var(--ink2)]">{info.how}</span>
-              <span className="mt-1.5 flex flex-wrap items-center gap-1 pl-5.5 text-[10.5px]">
-                <span className="rounded-[4px] bg-[#D9E9FF] px-1.5 py-px font-semibold text-[#2E7AFF]">CVM이 줌 · {info.cvmGives}</span>
-                <ArrowRight className="h-3 w-3 text-[var(--ink3)]" />
-                <span className="rounded-[4px] bg-[#FFE4C4] px-1.5 py-px font-semibold text-[#D66400]">우리가 채움 · {info.weBuild}</span>
+              <span className="mt-1 block pl-6 text-[12px] text-[var(--ink2)]">{info.how}</span>
+              <span className="mt-1.5 flex flex-wrap items-center gap-1 pl-6 text-[11px]">
+                <span className="rounded-[4px] bg-[#D9E9FF] px-1.5 py-0.5 font-semibold text-[#2E7AFF]">CVM {info.cvmGives}</span>
+                <ArrowRight className="h-3 w-3 shrink-0 text-[var(--ink3)]" />
+                <span className="rounded-[4px] bg-[#FFE4C4] px-1.5 py-0.5 font-semibold text-[#D66400]">우리 {info.weBuild}</span>
               </span>
             </button>
           );
@@ -228,8 +237,9 @@ function CvmContractStep({
             </div>
           </div>
           {corner.cvmCatalog && (
-            <p className="rounded-[6px] bg-[#D9E9FF] px-2.5 py-2 text-[11px] leading-relaxed text-[#2E7AFF]">
-              이 고객에게 맞는 <b>{corner.cvmCatalog}</b> {topN}개를 순서대로 주세요 — 이미지·설명 문구는 상품 원장에서 붙입니다.
+            <p className="rounded-[6px] bg-[#D9E9FF] px-2.5 py-2 text-[11px] text-[#2E7AFF]"
+               title="이미지·설명 문구는 CVM이 주지 않습니다. 상품(EPC) 원장 값을 전시 어드민이 붙입니다.">
+              요청: 이 고객에게 맞는 <b>{corner.cvmCatalog}</b> {topN}개 · 순서대로
             </p>
           )}
         </div>
@@ -246,22 +256,22 @@ function CvmContractStep({
               className="h-8 w-full rounded-[6px] border border-[var(--line2)] px-2.5 text-[12px] outline-none focus:border-[var(--ac)] disabled:opacity-50"
             />
           </label>
-          <p className="flex items-start gap-1.5 rounded-[6px] bg-[#D9E9FF] px-2.5 py-2 text-[11px] leading-relaxed text-[#2E7AFF]">
+          <p className="flex items-start gap-1.5 rounded-[6px] bg-[#D9E9FF] px-2.5 py-2 text-[11px] text-[#2E7AFF]"
+             title="한 구좌는 한 방식만 씁니다. 전시 어드민에 같은 배너를 또 등록하면 이중 등록이 됩니다.">
             <Info className="mt-0.5 h-3 w-3 shrink-0" />
-            <span>이 구좌의 배너는 <b>CVM에서 등록</b>합니다. 전시 어드민에 따로 등록하지 마세요(이중 등록 방지).</span>
+            <span>이 구좌의 배너는 <b>CVM에서 등록</b> · 어드민 중복 등록 금지</span>
           </p>
         </div>
       )}
 
       {/* CVM이 못 주는 것 — 요청해도 안 되는 걸 미리 알려 헛돌지 않게 */}
-      <details className="mt-2.5 rounded-[6px] bg-[var(--th)] px-2.5 py-2">
-        <summary className="cursor-pointer text-[11px] font-semibold text-[var(--ink2)]">CVM이 주지 않는 것 {CVM_OUT_OF_SCOPE.length}가지</summary>
-        <ul className="mt-1.5 space-y-1.5">
+      <details className="mt-3 rounded-[6px] bg-[var(--th)] px-2.5 py-2">
+        <summary className="cursor-pointer text-[12px] font-semibold text-[var(--ink2)]">CVM이 주지 않는 것 {CVM_OUT_OF_SCOPE.length}가지</summary>
+        <ul className="mt-2 space-y-2">
           {CVM_OUT_OF_SCOPE.map((o) => (
-            <li key={o.item} className="text-[10.5px] leading-relaxed text-[var(--ink3)]">
-              <b className="text-[var(--ink2)]">{o.item}</b> — {o.why}
-              <br />
-              <span className="text-[var(--ac)]">↳ {o.instead}</span>
+            <li key={o.item} className="text-[11px] text-[var(--ink3)]" title={o.why}>
+              <b className="text-[var(--ink2)]">{o.item}</b>
+              <span className="mt-0.5 block text-[var(--ac)]">↳ {o.instead}</span>
             </li>
           ))}
         </ul>
@@ -304,12 +314,12 @@ function FallbackStep({
               </span>
               <span className="min-w-0 flex-1">
                 <span className={cn('block text-[12px] font-semibold', on ? 'text-[var(--ac)]' : 'text-[var(--ink)]')}>{f}</span>
-                <span className="block text-[10.5px] leading-relaxed text-[var(--ink3)]">
+                <span className="block text-[11px] text-[var(--ink3)]">
                   {f === '미노출'
-                    ? '코너 자체를 숨깁니다. 빈 자리가 남지 않아요.'
+                    ? '코너를 숨김 · 빈 자리 없음'
                     : blocked
-                      ? '아래에 등록된 항목이 없어 쓸 수 없습니다. 먼저 상품을 등록하세요.'
-                      : `운영자가 등록한 ${corner.itemCount}개를 대신 노출합니다.`}
+                      ? '등록된 항목 없음 · 먼저 상품 등록'
+                      : `등록한 ${corner.itemCount}개를 대신 노출`}
                 </span>
               </span>
             </button>
@@ -328,12 +338,9 @@ function OwnerMapStep({ recSource }: { recSource: string | null }) {
     <Step no={5} title="출처 — 이 값이 어디서 오나" tone="muted">
       <div className="space-y-1.5">
         {rows.map((r) => (
-          <div key={r.field} className="flex items-start gap-2">
-            <span className="w-[108px] shrink-0 pt-0.5 text-[11.5px] font-medium text-[var(--ink)]">{r.field}</span>
-            <span className="shrink-0">
-              <OwnerChip owner={r.owner} />
-            </span>
-            <span className="min-w-0 flex-1 pt-0.5 text-[10.5px] leading-relaxed text-[var(--ink3)]">{r.note}</span>
+          <div key={r.field} className="flex items-center gap-2" title={r.note}>
+            <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-[var(--ink)]">{r.field}</span>
+            <OwnerChip owner={r.owner} />
           </div>
         ))}
       </div>
@@ -395,11 +402,10 @@ export function CornerSupplyPanel({
       <OwnerMapStep recSource={mode} />
 
       {cvm && (
-        <p className="flex items-start gap-1.5 rounded-[8px] bg-[#FFE4C4] px-2.5 py-2 text-[11px] leading-relaxed text-[#D66400]">
+        <p className="flex items-start gap-1.5 rounded-[8px] bg-[#FFE4C4] px-2.5 py-2 text-[11px] text-[#D66400]"
+           title="통합회원 확인 중(2026-10-08). 인바운드 개인화 전시에도 마케팅 수신·위치 정보 동의가 필요할 수 있습니다.">
           <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" />
-          <span>
-            개인화 전시는 <b>마케팅 수신·위치 정보 동의</b> 여부에 걸릴 수 있습니다(통합회원 확인 중, 2026-10-08). 동의가 없으면 폴백으로 처리됩니다.
-          </span>
+          <span>개인화 전시는 <b>마케팅 수신·위치 동의</b>에 걸릴 수 있습니다 · 미동의 시 폴백</span>
         </p>
       )}
     </div>
