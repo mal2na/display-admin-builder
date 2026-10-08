@@ -17,8 +17,9 @@ export function AdminMain({ children }: { children: React.ReactNode }) {
   const ownsLayout = path.startsWith('/admin/containers');
 
   if (isBuilder) {
-    // 빌더: 라벤더 여백 위에 자식(루트 div)이 라운드 패널로 뜬다.
-    return <main className="min-h-0 flex-1 overflow-hidden bg-[var(--bg)] p-3">{children}</main>;
+    // 빌더: 다른 메뉴와 동일한 작업영역 크기 — 좌/상단은 LNB·GNB 에 붙이고 하단·우측만 라벤더 여백.
+    //  (예전엔 p-3 라 좌·상단이 12px 씩 안쪽으로 들어가 다른 화면보다 작아 보였다. 2026-10-08)
+    return <main className="min-h-0 flex-1 overflow-hidden bg-[var(--bg)] pb-3 pr-3">{children}</main>;
   }
   if (ownsLayout) {
     return <main className="min-h-0 flex-1 overflow-hidden bg-[var(--bg)]">{children}</main>;

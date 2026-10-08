@@ -17,7 +17,7 @@ export default async function ContainerEditPage({ params }: { params: { id: stri
   if (!c) notFound();
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-7 pb-20">
+    <div className="px-12 py-9 pb-28">
       <PageHeader
         trail={['전시관리', '전시화면 관리', c.name, '정보 수정']}
         title="컨테이너 정보 수정"

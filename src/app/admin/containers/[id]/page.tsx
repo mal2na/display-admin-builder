@@ -65,7 +65,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
   const toggleStatus = setContainerStatus.bind(null, container.id, nextStatus);
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-7 pb-20">
+    <div className="px-12 py-9 pb-28">
       <PageHeader
         trail={['전시관리', '전시화면 관리', container.name]}
         title={container.name}

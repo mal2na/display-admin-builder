@@ -14,7 +14,7 @@ export default async function NewTemplatePage({ params }: { params: { id: string
   const back = `/admin/containers/${c.id}`;
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-7 pb-20">
+    <div className="px-12 py-9 pb-28">
       <PageHeader
         trail={['전시관리', '전시화면 관리', c.name, '템플릿 추가']}
         title="템플릿 추가"

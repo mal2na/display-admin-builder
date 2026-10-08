@@ -6,6 +6,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { CHIP_BASE } from '@/lib/display-taxonomy';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 /**
  * 상태 칩 톤 — 디자인 시스템 [BO-AX] COMPNT Lib v1.8 의 badge 토큰.
@@ -73,7 +74,7 @@ export function StatusPill({ label, tone, dot: _dot }: { label: string; tone?: s
 
 /**
  * 목록 섹션 헤더 — 「조회결과 총 N건」 + 우측 액션/페이저.
- * 시안 기준: 제목 17px/700, 건수 13px/400(숫자만 브랜드색 볼드), 표와 12px 간격.
+ * 시안 기준: 제목 17px/700, 건수 13px/400(숫자만 볼드 · 색은 넣지 않는다), 표와 12px 간격.
  */
 export function ListHeader({
   title = '조회결과',
@@ -96,11 +97,124 @@ export function ListHeader({
         <h3 className="text-[17px] font-bold tracking-[-0.3px] text-[var(--ink)]">{title}</h3>
         {count !== undefined && (
           <span className="text-[13px] text-[var(--ink2)]">
-            {prefix} <b className="font-bold tabular-nums text-[var(--ac)]">{count}</b>{unit}
+            {prefix} <b className="font-bold tabular-nums">{count}</b>{unit}
           </span>
         )}
       </div>
       {right && <div className="flex shrink-0 flex-wrap items-center gap-2">{right}</div>}
+    </div>
+  );
+}
+
+/**
+ * 페이지네이션 — 공식 디자인 시스템 규격 (Figma pagination, 2026-10-08 사용자 지정).
+ *   ⟪ ⟨ 1 2 3 4 5 6 7 8 9 … 100 ⟩ ⟫  ·  바깥 패딩 10 · 항목 간격 10 · 가운데 정렬
+ *   현재 페이지만 브랜드 배경 + 흰 글자. 처음/이전/다음/마지막 화살표 포함.
+ *   표 아래 어디서든 이 컴포넌트만 쓴다 — 페이지마다 다른 페이저를 만들지 말 것.
+ */
+const PAGER_WINDOW = 9; // 말줄임 앞에 보여줄 번호 개수
+
+export function Pager({
+  page,
+  totalPages,
+  onChange,
+  showEdge = true,
+}: {
+  page: number;
+  totalPages: number;
+  onChange: (p: number) => void;
+  /** 처음(⟪)·마지막(⟫) 버튼 노출 */
+  showEdge?: boolean;
+}) {
+  if (totalPages <= 1) return null;
+  const go = (p: number) => onChange(Math.min(Math.max(1, p), totalPages));
+
+  // 현재 페이지가 들어가는 9칸 창 + (뒤가 남으면) … + 마지막 페이지
+  const start = Math.min(Math.max(1, page - Math.floor(PAGER_WINDOW / 2)), Math.max(1, totalPages - PAGER_WINDOW + 1));
+  const end = Math.min(totalPages, start + PAGER_WINDOW - 1);
+  const nums: number[] = [];
+  for (let n = start; n <= end; n += 1) nums.push(n);
+  const tailGap = end < totalPages - 1;
+  const tail = end < totalPages ? totalPages : null;
+
+  const nav = 'grid h-5 w-5 shrink-0 place-items-center rounded-[4px] text-[var(--ink3)] transition hover:text-[var(--ac)] disabled:pointer-events-none disabled:opacity-30';
+
+  return (
+    <nav aria-label="페이지" className="flex items-center justify-center gap-[10px] px-[10px] py-[10px]">
+      {showEdge && (
+        <button type="button" className={nav} onClick={() => go(1)} disabled={page === 1} aria-label="첫 페이지">
+          <ChevronsLeft className="h-4 w-4" />
+        </button>
+      )}
+      <button type="button" className={nav} onClick={() => go(page - 1)} disabled={page === 1} aria-label="이전 페이지">
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+
+      {nums.map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => go(n)}
+          aria-current={n === page ? 'page' : undefined}
+          className={cn(
+            'grid h-6 min-w-[24px] shrink-0 place-items-center rounded-[4px] px-1 text-[14px] tabular-nums transition',
+            n === page ? 'bg-[var(--ac)] font-bold text-white' : 'text-[var(--ink)] hover:bg-[var(--th)]',
+          )}
+        >
+          {n}
+        </button>
+      ))}
+
+      {tailGap && <span className="select-none px-0.5 text-[14px] leading-none text-[var(--ink3)]">···</span>}
+      {tail !== null && (
+        <button
+          type="button"
+          onClick={() => go(tail)}
+          aria-current={tail === page ? 'page' : undefined}
+          className={cn(
+            'grid h-6 min-w-[24px] shrink-0 place-items-center rounded-[4px] px-1 text-[14px] tabular-nums transition',
+            tail === page ? 'bg-[var(--ac)] font-bold text-white' : 'text-[var(--ink)] hover:bg-[var(--th)]',
+          )}
+        >
+          {tail}
+        </button>
+      )}
+
+      <button type="button" className={nav} onClick={() => go(page + 1)} disabled={page === totalPages} aria-label="다음 페이지">
+        <ChevronRight className="h-4 w-4" />
+      </button>
+      {showEdge && (
+        <button type="button" className={nav} onClick={() => go(totalPages)} disabled={page === totalPages} aria-label="마지막 페이지">
+          <ChevronsRight className="h-4 w-4" />
+        </button>
+      )}
+    </nav>
+  );
+}
+
+/**
+ * 목록 하단 — 표와 32px 간격. 페이지네이션(가운데) → 24px → 액션 버튼(오른쪽).
+ * 시안 기준 stack 24. 전 메뉴가 이 구조를 쓴다.
+ */
+export function ListBottom({
+  page = 1,
+  totalPages = 1,
+  onPageChange,
+  children,
+}: {
+  page?: number;
+  totalPages?: number;
+  onPageChange?: (p: number) => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="mt-8">
+      {onPageChange && <Pager page={page} totalPages={totalPages} onChange={onPageChange} />}
+      {children && (
+        <div className={cn('flex flex-wrap items-center justify-end gap-2', onPageChange && totalPages > 1 && 'mt-6')}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -124,11 +238,12 @@ export function ListFooter({ left, children }: { left?: React.ReactNode; childre
    ═══════════════════════════════════════════════════════════════════════════ */
 export const TABLE_CLS = 'w-full border-collapse text-[13px]';
 export const THEAD_TR_CLS =
-  'border-b border-[var(--line)] bg-[var(--th)] text-[var(--ink2)] [&>th]:h-11 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:font-semibold';
+  // 셀 높이 48 고정 (Figma spacing/table/inset-y-xl). 칩(24)이 들어가도 48 을 유지하도록 세로 패딩은 8.
+  // 페이지가 h-11·py-2.5 를 들고 있어도 이 규격이 이긴다.
+  'border-b border-[var(--line)] bg-[var(--th)] text-[var(--ink2)] [&>th]:!h-12 [&>th]:whitespace-nowrap [&>th]:!px-3 [&>th]:!py-2 [&>th]:font-semibold';
 export const TBODY_TR_CLS =
-  'border-b border-[var(--line)] text-[var(--ink)] hover:bg-[#fafaff]';
+  'border-b border-[var(--line)] text-[var(--ink)] hover:bg-[#fafaff] [&>td]:!h-12 [&>td]:!px-3 [&>td]:!py-2 [&>td]:align-middle';
 
-// 섹션 카드 (제목). no 인자는 하위호환용으로 남겨두되 표시하지 않는다.
 export function OpsSection({ title, children }: { no?: number | string; title: string; children: React.ReactNode }) {
   return (
     <section className="mb-6">

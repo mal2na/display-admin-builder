@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { StatusPill, FilterPanel, ListHeader } from '@/components/ops-ui';
+import { StatusPill, FilterPanel, ListHeader, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
+import { cn } from '@/lib/utils';
 import { USE_LABEL, fmtDateTime } from '@/lib/widget-taxonomy';
 import { RotateCcw, Search } from 'lucide-react';
 
@@ -57,20 +58,20 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
       <div className="border-y border-[#e6e7ec] bg-white">
         <table className="w-full text-[13px] font-normal">
           <thead>
-            <tr className="border-b border-[#e6e7ec] bg-[#f6f7f9] text-[12px] text-[#53586a]">
-              <th className="w-16 px-3 py-2.5 text-left font-semibold">번호</th>
-              <th className="px-3 py-2.5 text-left font-semibold">위젯 유형</th>
-              <th className="px-3 py-2.5 text-left font-semibold">유형설명</th>
-              <th className="w-24 px-3 py-2.5 text-left font-semibold">사용여부</th>
-              <th className="px-3 py-2.5 text-left font-semibold">최근 수정자</th>
-              <th className="px-3 py-2.5 text-left font-semibold">최근 수정일시</th>
+            <tr className={THEAD_TR_CLS}>
+              <th className="w-16 text-left">번호</th>
+              <th className="text-left">위젯 유형</th>
+              <th className="text-left">유형설명</th>
+              <th className="w-24 text-left">사용여부</th>
+              <th className="text-left">최근 수정자</th>
+              <th className="text-left">최근 수정일시</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr><td colSpan={6} className="px-3 py-10 text-center text-muted-foreground">조회 결과가 없습니다.</td></tr>
             ) : filtered.map((r, i) => (
-              <tr key={r.id} className="cursor-pointer border-b border-[#e6e7ec] last:border-b-0 hover:bg-[#f6f7f9]" onClick={() => router.push(`/admin/widget-types/${r.id}`)}>
+              <tr key={r.id} className={cn(TBODY_TR_CLS, 'cursor-pointer last:border-b-0')} onClick={() => router.push(`/admin/widget-types/${r.id}`)}>
                 <td className="px-3 py-2.5 text-slate-500">{i + 1}</td>
                 <td className="px-3 py-2.5 text-slate-800">{r.typeName}</td>
                 <td className="px-3 py-2.5 text-slate-600">{r.description ?? '-'}</td>

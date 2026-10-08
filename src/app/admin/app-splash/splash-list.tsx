@@ -6,8 +6,9 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
+import { SplashTabs } from './splash-tabs';
 import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 export type SplashRow = {
@@ -102,6 +103,7 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
         trail={['운영관리', 'App 스플래시 관리']}
         title="App 스플래시 관리"
       />
+      <SplashTabs />
 
       {/* 검색 영역 (1) — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
@@ -153,7 +155,7 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
             ) : paged.map((r, i) => {
               const no = filtered.length - ((curPage - 1) * PER_PAGE + i);
               return (
-                <tr key={r.id} onClick={() => router.push(`/admin/app-splash/${r.id}`)} className="cursor-pointer border-b border-[#e6e7ec] text-center text-slate-700 hover:bg-[#f6f7f9]">
+                <tr key={r.id} onClick={() => router.push(`/admin/app-splash/${r.id}`)} className={cn(TBODY_TR_CLS, 'cursor-pointer text-center')}>
                   <td className="h-11 px-3 tabular-nums text-slate-500">{no}</td>
                   <td className="h-11 px-3">{r.osType}</td>
                   <td className="h-11 px-3 tabular-nums">{r.version}</td>
@@ -173,16 +175,9 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
       </div>
 
       {/* 페이지네이션 + 등록 (3) */}
-      <div className="relative mt-8 flex items-center justify-center">
-        {totalPages > 1 && (
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-[13px]', p === curPage ? 'bg-[#3a2fd8] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
-            ))}
-          </div>
-        )}
-        <Link href="/admin/app-splash/new" className="absolute right-0 inline-flex h-9 items-center rounded-lg bg-[#3a2fd8] px-5 text-[13px] font-semibold text-white hover:brightness-110">등록</Link>
-      </div>
+      <ListBottom page={curPage} totalPages={totalPages} onPageChange={setPage}>
+        <Link href="/admin/app-splash/new" className="inline-flex h-[38px] items-center rounded-[8px] bg-[var(--ac)] px-6 text-[13px] font-semibold text-white hover:bg-[var(--ac-h)]">등록</Link>
+      </ListBottom>
     </div>
   );
 }

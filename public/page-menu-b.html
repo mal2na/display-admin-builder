@@ -410,10 +410,25 @@ table td{font-size:13px;font-weight:400}
 .actions{gap:8px!important;margin-top:32px!important}
 .actions.between{margin-top:32px!important}
 .actions > div{display:flex;align-items:center;gap:8px}
-/* 페이저 + 우측 액션 한 줄 (React 목록 하단과 동일) */
-.listfoot{position:relative;display:flex;align-items:center;justify-content:center;margin-top:32px}
-.listfoot .pager{margin:0!important}
-.listfoot .lf-acts{position:absolute;right:0;display:flex;align-items:center;gap:8px}
+/* 목록 하단 — 페이지네이션(가운데) → 24 → 액션(오른쪽). 공식 규격 */
+.listfoot{margin-top:32px}
+.listfoot .lf-acts{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:24px}
+
+/* 페이지네이션 — Figma pagination: 바깥 패딩 10 · 항목 간격 10 · 현재 페이지만 브랜드 배경 */
+.pager{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;margin:0!important}
+.pager .pg{display:grid;place-items:center;min-width:24px;height:24px;padding:0 4px;border:0;background:none;
+  border-radius:4px;font-size:14px;color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.pager .pg:hover:not(:disabled){background:#f1f2f6}
+.pager .pg.on{background:var(--accent);color:#fff;font-weight:700}
+.pager .pg:disabled{opacity:.3;cursor:default}
+.pager .pg[aria-label$="페이지"][aria-label^="첫"],.pager .pg[aria-label^="이전"],
+.pager .pg[aria-label^="다음"],.pager .pg[aria-label^="마지막"]{color:var(--ink-3);font-size:13px}
+.pager .pg-gap{color:var(--ink-3);font-size:14px;line-height:1;user-select:none}
+
+/* 표 셀 높이 — 공식 규격 48 (padding 14/12) */
+table th,table td{height:48px;padding:8px 12px!important;box-sizing:border-box;vertical-align:middle;
+  white-space:nowrap}
+/* 긴 경로·URL 은 줄바꿈 대신 가로 스크롤(React 목록과 동일) — 모든 행 높이를 48 로 유지 */
 </style>
 </head>
 <body>
@@ -767,6 +782,26 @@ table td{font-size:13px;font-weight:400}
   function stateKey(p) { if (p.rejected) return "rejected"; if (!noUrl(p) && !p.fixed) return "url"; if (p.state === "pending") return "pending"; if (p.state !== "live" || isChanged(p)) return "temp"; return "live"; }
   tree(null).forEach(function (p) { iaExp[p.id] = true; });
 
+  // 페이지네이션 — 공식 디자인 시스템 규격(Figma pagination). 번호 9칸 창 + 말줄임 + 마지막 페이지.
+  function pagerHtml(page, pages) {
+    if (!pages || pages < 1) pages = 1;
+    var b = function (label, p, opt) {
+      opt = opt || {};
+      return '<button type="button" class="pg' + (opt.on ? " on" : "") + (opt.gap ? " gap" : "") + '"' +
+        (opt.dis ? " disabled" : "") + (p ? ' data-pg="' + p + '"' : "") +
+        ' aria-label="' + (opt.aria || label + " 페이지") + '">' + label + "</button>";
+    };
+    var W = 9;
+    var start = Math.min(Math.max(1, page - Math.floor(W / 2)), Math.max(1, pages - W + 1));
+    var end = Math.min(pages, start + W - 1);
+    var h = b("‹‹", 1, { dis: page === 1, aria: "첫" }) + b("‹", page - 1, { dis: page === 1, aria: "이전" });
+    for (var i = start; i <= end; i++) h += b(i, i, { on: i === page });
+    if (end < pages - 1) h += '<span class="pg-gap">···</span>';
+    if (end < pages) h += b(pages, pages, { on: pages === page });
+    h += b("›", page + 1, { dis: page === pages, aria: "다음" }) + b("››", pages, { dis: page === pages, aria: "마지막" });
+    return '<nav class="pager" aria-label="페이지">' + h + "</nav>";
+  }
+
   function header(bc, title, extra) { return '<div class="crumb"><span>홈</span><span>›</span><span>전시관리</span><span>›</span>' + bc.map(function (b, i) { return (i ? "<span>›</span>" : "") + '<span class="' + (i === bc.length - 1 ? "cur" : "") + '">' + esc(b) + "</span>"; }).join("") + "</div><div style='display:flex;align-items:center'><h1 style='margin-bottom:18px'>" + esc(title) + '</h1><span class="spacer"></span>' + (extra || "") + '</div><div class="rule"></div>'; }
   function modeBar() { return ""; }
   function modeBarOld() {
@@ -805,7 +840,8 @@ table td{font-size:13px;font-weight:400}
         return '<tr class="rowlink ' + (effUse(p) ? "" : "dim") + '" data-id="' + p.id + '"><td>' + no + '</td><td class="mono">' + p.id + "</td><td class='nw'>" + esc(p.name) + blockMark(p) + "</td><td class='nw'>" + typeChip(p) + "</td><td class='nw'>" + ctLink(p) + "</td><td>" + esc(crumb(p)) + "</td><td class='mono'>" + (noUrl(p) ? '<span class="tag gray">URL 미등록</span>' : esc(p.url)) + "</td><td class='nw' style='text-align:center'>" + stateChip(p) + "</td><td class='nw' style='text-align:center'>" + useChip(p) + "</td><td class='nw'>" + chChips(p) + '</td><td class="nw">' + esc(p.updated) + "</td></tr>"; }).join("")
         : '<tr><td colspan="11" style="text-align:center;padding:60px;color:var(--ink-3)">등록 및 검색 결과가 없습니다.</td></tr>') + "</tbody></table></div>" +
       // 페이저 + 우측 액션을 한 줄로 — React 목록 화면(mt-8 · 가운데 페이저 · 우측 버튼)과 동일 규격
-      '<div class="listfoot"><div class="pager">' + Array.apply(null, { length: max }).map(function (_, i) { return '<button data-pg="' + (i + 1) + '"' + (f.page === i + 1 ? ' class="on"' : "") + ">" + (i + 1) + "</button>"; }).join("") + "</div>" +
+      // 페이지네이션 공식 규격 — 처음·이전 · 번호 9칸 · … · 마지막 번호 · 다음·마지막
+      '<div class="listfoot">' + pagerHtml(f.page, max) +
       '<div class="lf-acts"><button class="btn"' + (rs.length ? "" : " disabled") + '>엑셀다운로드</button><button class="btn primary" id="b-new">등록</button></div></div>';
     card.querySelectorAll("tr.rowlink").forEach(function (tr) { var id = tr.getAttribute("data-id"); tr.onclick = function () { goDetail(id); }; });
     bindTabs();

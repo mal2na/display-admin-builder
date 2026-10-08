@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { PageTabs } from '@/components/page-tabs';
 import Link from 'next/link';
-import { Search, Download, ChevronLeft, ChevronRight, ShieldAlert, ShieldOff, Flag, ExternalLink } from 'lucide-react';
+import { Search, Download, ShieldAlert, ShieldOff, Flag, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
-import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
 import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 // ── 공통 ──
@@ -43,12 +44,7 @@ export function CommentAdmin({ promoHref = '/admin/events' }: { promoHref?: stri
 
       {/* 탭 — 목록에서만 표시(상세 진입 시 숨김) */}
       {!detailOpen && (
-        <div className="mb-5 flex gap-1 border-b border-[#e6e7ec]">
-          {TABS.map((t) => (
-            <button key={t.key} onClick={() => { setTab(t.key); setDetailOpen(false); }}
-              className={cn('-mb-px border-b-2 px-4 py-2.5 text-[14px] font-semibold', tab === t.key ? 'border-[#3a2fd8] text-[#3a2fd8]' : 'border-transparent text-slate-500 hover:text-slate-700')}>{t.label}</button>
-          ))}
-        </div>
+        <PageTabs tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => { setTab(k as typeof tab); setDetailOpen(false); }} />
       )}
 
       <div>
@@ -128,7 +124,7 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
           </thead>
           <tbody>
             {COMMENTS.map((c) => (
-              <tr key={c.no} className="cursor-pointer border-b border-[#e6e7ec] text-center hover:bg-[#f6f7f9] [&>td]:h-11" onClick={() => open(c)}>
+              <tr key={c.no} className={cn(TBODY_TR_CLS, 'cursor-pointer text-center')} onClick={() => open(c)}>
                 <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={checked.has(c.no)} onChange={() => toggle(c.no)} className="h-4 w-4 accent-indigo-600" /></td>
                 <td className="px-3 py-2.5 text-slate-600">{c.no}</td>
                 <td className="px-3 py-2.5 text-left"><span className="font-mono text-[11px] text-slate-500">{c.ch.slice(0, 10)}…</span></td>
@@ -150,14 +146,11 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
         </table>
       </div>
 
-      {/* 하단 액션 */}
-      <div className="flex items-center">
-        <Pagination />
-        <div className="ml-auto flex gap-2">
-          <Button variant="primary" size="sm" disabled={checked.size === 0}>노출여부 변경{checked.size > 0 ? ` (${checked.size})` : ''}</Button>
-          <Button variant="outline" size="sm"><Download className="mr-1 h-3.5 w-3.5" /> 엑셀 다운로드</Button>
-        </div>
-      </div>
+      {/* 하단 — 전 메뉴 공통: 표와 32px · 가운데 페이저 · 우측 액션 */}
+      <ListBottom page={1} totalPages={5} onPageChange={() => {}}>
+        <Button variant="primary" size="sm" disabled={checked.size === 0}>노출여부 변경{checked.size > 0 ? ` (${checked.size})` : ''}</Button>
+        <Button variant="outline" size="sm"><Download className="mr-1 h-3.5 w-3.5" /> 엑셀 다운로드</Button>
+      </ListBottom>
     </div>
   );
 }
@@ -303,7 +296,7 @@ function ReviewsTab() {
           </thead>
           <tbody>
             {REVIEWS.map((r) => (
-              <tr key={r.no} className="border-b border-[#e6e7ec] hover:bg-[#f6f7f9] [&>td]:h-11">
+              <tr key={r.no} className={cn(TBODY_TR_CLS)}>
                 <td className="px-3 py-2.5 text-slate-500">{r.no}</td>
                 <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{r.ch.slice(0, 10)}…</span></td>
                 <td className="px-3 py-2.5 text-slate-700">{r.product}</td>
@@ -319,7 +312,10 @@ function ReviewsTab() {
           </tbody>
         </table>
       </div>
-      <div className="flex items-center"><Pagination /><div className="ml-auto flex gap-2"><Button variant="primary" size="sm">노출여부 변경</Button><Button variant="outline" size="sm"><Download className="mr-1 h-3.5 w-3.5" /> 엑셀 다운로드</Button></div></div>
+      <ListBottom page={1} totalPages={5} onPageChange={() => {}}>
+        <Button variant="primary" size="sm">노출여부 변경</Button>
+        <Button variant="outline" size="sm"><Download className="mr-1 h-3.5 w-3.5" /> 엑셀 다운로드</Button>
+      </ListBottom>
     </div>
   );
 }
@@ -356,7 +352,7 @@ function BlockTab() {
             </thead>
             <tbody>
               {REPORTS.map((r) => (
-                <tr key={r.no} className="border-b border-[#e6e7ec] hover:bg-[#f6f7f9] [&>td]:h-11">
+                <tr key={r.no} className={cn(TBODY_TR_CLS)}>
                   <td className="px-3 py-2.5 text-slate-500">{r.no}</td>
                   <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{r.target.slice(0, 10)}…</span></td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{r.where}</td>
@@ -381,7 +377,7 @@ function BlockTab() {
             </thead>
             <tbody>
               {BLOCKS.map((b) => (
-                <tr key={b.no} className="border-b border-[#e6e7ec] hover:bg-[#f6f7f9] [&>td]:h-11">
+                <tr key={b.no} className={cn(TBODY_TR_CLS)}>
                   <td className="px-3 py-2.5 text-slate-500">{b.no}</td>
                   <td className="px-3 py-2.5"><span className="font-mono text-[11px] text-slate-500">{b.member}</span></td>
                   <td className="px-3 py-2.5 text-slate-700">{b.reason}</td>
@@ -419,12 +415,4 @@ function LabelSel({ opts, w }: { opts: string[]; w?: string }) {
 function Radio({ name, label, checked, disabled }: { name: string; label: string; checked?: boolean; disabled?: boolean }) {
   return <label className={cn('flex items-center gap-1.5', disabled ? 'cursor-default text-slate-400' : 'cursor-pointer')}><input type="radio" name={name} defaultChecked={checked} disabled={disabled} className="h-4 w-4 accent-indigo-600 disabled:accent-slate-300" /> {label}</label>;
 }
-function Pagination() {
-  return (
-    <div className="flex items-center gap-1 text-[12px] text-slate-500">
-      <button className="grid h-7 w-7 place-items-center rounded border hover:bg-slate-50"><ChevronLeft className="h-3.5 w-3.5" /></button>
-      {[1, 2, 3, 4, 5].map((n) => <button key={n} className={cn('grid h-7 w-7 place-items-center rounded-md', n === 1 ? 'bg-[#3a2fd8] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{n}</button>)}
-      <button className="grid h-7 w-7 place-items-center rounded border hover:bg-slate-50"><ChevronRight className="h-3.5 w-3.5" /></button>
-    </div>
-  );
-}
+

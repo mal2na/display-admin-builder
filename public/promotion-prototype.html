@@ -673,6 +673,19 @@ h1 + *{margin-top:0}
 .btn{font-weight:600}
 .count{font-weight:400}
 .chk, .chk.all{font-weight:400}
+
+/* ── 페이지네이션 공식 규격 (Figma pagination, 2026-10-08) ──
+   바깥 패딩 10 · 항목 간격 10 · 번호 24×24/14px · 현재 페이지만 브랜드 배경 */
+.pager{display:flex!important;align-items:center;justify-content:center;gap:10px!important;padding:10px!important;flex-wrap:nowrap}
+.pager .pg{display:grid;place-items:center;min-width:24px;height:24px;padding:0 4px;border:0!important;background:none!important;
+  border-radius:4px!important;font-size:14px;color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums;box-shadow:none!important}
+.pager .pg:hover:not(:disabled){background:#f1f2f6!important}
+.pager .pg.on{background:var(--ac)!important;color:#fff!important;font-weight:700}
+.pager .pg:disabled{opacity:.3;cursor:default}
+.pager .pg.gap{color:var(--ink-3);opacity:1}
+
+/* ── 표 셀 높이 공식 규격 48 (padding 14/12) ── */
+#viewList th,#viewList td{height:48px;padding:8px 12px!important;box-sizing:border-box;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -695,8 +708,8 @@ h1 + *{margin-top:0}
     </div>
 
     <div class="sheet" id="viewList">
-      <div class="crumb">홈 &gt; 프로모션 관리 &gt; <b>프로모션</b></div>
-      <h1>프로모션</h1>
+      <div class="crumb">홈 &gt; 프로모션 관리</div>
+      <h1>프로모션 관리</h1>
 
       <form class="search" id="searchForm" data-sb="1" autocomplete="off">
         <div class="row">
@@ -769,8 +782,8 @@ h1 + *{margin-top:0}
       </div>
     </div>
     <div class="sheet" id="viewReg" hidden>
-      <button class="back" type="button" id="regBack">‹ 프로모션 목록</button>
-      <div class="crumb">홈 &gt; 프로모션 관리 &gt; 프로모션 &gt; <b id="regCrumb">프로모션 등록</b></div>
+      <button class="back" type="button" id="regBack">‹ 프로모션 관리</button>
+      <div class="crumb">홈 &gt; 프로모션 관리 &gt; <b id="regCrumb">프로모션 등록</b></div>
       <h1 id="regH1">프로모션 등록</h1>
       <div class="dtabs" id="dTabs" role="tablist" hidden><button type="button" class="on" data-sb="1">프로모션 정보</button><button type="button" data-dtab="댓글 관리">댓글 관리</button><button type="button" data-dtab="변경/승인 이력">변경/승인 이력</button></div>
       <div class="ex-banner" id="exBanner" hidden><b>설정 예시</b> 실제 운영 중인 이벤트를 참고해 만든 예시예요. 참고: <span id="exSrc"></span><label class="st-demo">프로모션 상태 바꿔보기 (프로토타입 전용) <select id="stDemo"></select></label></div>

@@ -3,9 +3,10 @@
 // SB PG003(상세검색 TAB) + PG027(IA 구조 TAB) — 전체페이지 관리.
 //  디자인 시스템(프로토타입 토큰): accent #3a2fd8 · 헤더/필터 #f6f7f9 · 보더 #e6e7ec · 13px 레귤러.
 import { useMemo, useState } from 'react';
+import { PageTabs } from '@/components/page-tabs';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight, Minus, Plus } from 'lucide-react';
-import { FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
 import { CHIP_BASE } from '@/lib/display-taxonomy';
 
@@ -44,14 +45,11 @@ export function FullPageManager({ rows }: { rows: FPRow[] }) {
         title="전체페이지 관리"
       />
       {/* 상단 탭 */}
-      <div className="mt-5 mb-1 flex gap-1 border-b border-[var(--line)]">
-        {([['search', '상세검색'], ['ia', 'IA 구조']] as const).map(([k, label]) => (
-          <button key={k} type="button" onClick={() => setTab(k)}
-            className={cn('-mb-px border-b-2 px-4 py-2.5 text-[14px] font-semibold', tab === k ? 'border-[#3a2fd8] text-[#3a2fd8]' : 'border-transparent text-slate-500 hover:text-slate-700')}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <PageTabs
+        tabs={[{ key: 'search', label: '상세검색' }, { key: 'ia', label: 'IA 구조' }]}
+        value={tab}
+        onChange={(k) => setTab(k as 'search' | 'ia')}
+      />
       {tab === 'search' ? <SearchTab rows={rows} /> : <IaTab rows={rows} />}
     </div>
   );
@@ -126,7 +124,7 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
             {paged.length === 0 ? (
               <tr><td colSpan={9} className="px-3 py-16 text-center text-slate-400">조회 결과가 없습니다.</td></tr>
             ) : paged.map((r, i) => (
-              <tr key={r.id} className="cursor-pointer border-b border-[#e6e7ec] text-center text-slate-700 hover:bg-[#f6f7f9]">
+              <tr key={r.id} className={cn(TBODY_TR_CLS, 'cursor-pointer text-center')}>
                 <td className="h-11 px-3 tabular-nums text-slate-500">{filtered.length - ((curPage - 1) * PER_PAGE + i)}</td>
                 <td className="h-11 px-3 tabular-nums">{r.pageCode}</td>
                 <td className="h-11 px-3">{r.menuName}</td>
@@ -148,19 +146,10 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
         </table>
       </div>
 
-      <div className="relative mt-8 flex items-center justify-center">
-        {totalPages > 1 && (
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={cn('h-8 w-8 rounded-md text-[13px]', p === curPage ? 'bg-[#3a2fd8] font-semibold text-white' : 'text-slate-600 hover:bg-slate-100')}>{p}</button>
-            ))}
-          </div>
-        )}
-        <div className="absolute right-0 flex items-center gap-2">
-          {filtered.length > 0 && <button type="button" className="inline-flex h-9 items-center rounded-lg border border-[#d3d6de] bg-white px-4 text-[13px] font-medium text-slate-600 hover:bg-[#f6f7f9]">엑셀다운로드</button>}
-          <button type="button" className="inline-flex h-9 items-center rounded-lg bg-[#3a2fd8] px-5 text-[13px] font-semibold text-white hover:brightness-110">등록</button>
-        </div>
-      </div>
+      <ListBottom page={curPage} totalPages={totalPages} onPageChange={setPage}>
+        {filtered.length > 0 && <button type="button" className="inline-flex h-[38px] items-center rounded-[8px] border border-[var(--line2)] bg-white px-5 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">엑셀다운로드</button>}
+        <button type="button" className="inline-flex h-[38px] items-center rounded-[8px] bg-[var(--ac)] px-6 text-[13px] font-semibold text-white hover:bg-[var(--ac-h)]">등록</button>
+      </ListBottom>
     </>
   );
 }

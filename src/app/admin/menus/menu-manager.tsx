@@ -3,6 +3,7 @@
 // SB PG460(메뉴 정보 관리) + PG462(변경·승인 이력) — 메뉴 관리.
 //  디자인 시스템: accent #3a2fd8 · 헤더/필터 #f6f7f9 · 보더 #e6e7ec · 13px 레귤러.
 import { useMemo, useState } from 'react';
+import { PageTabs } from '@/components/page-tabs';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronUp, ImageIcon, X } from 'lucide-react';
 import { FilterPanel, THEAD_TR_CLS } from '@/components/ops-ui';
@@ -37,12 +38,11 @@ export function MenuManager({ nodes, headInfo, history }: { nodes: MenuNode[]; h
         trail={['전시관리', '메뉴 관리']}
         title="메뉴 관리"
       />
-      <div className="mb-5 flex gap-1 border-b border-[#e6e7ec]">
-        {([['menu', '메뉴 정보 관리'], ['history', '변경/승인 이력']] as const).map(([k, label]) => (
-          <button key={k} type="button" onClick={() => setTab(k)}
-            className={cn('-mb-px border-b-2 px-4 py-2.5 text-[14px] font-semibold', tab === k ? 'border-[#3a2fd8] text-[#3a2fd8]' : 'border-transparent text-slate-500 hover:text-slate-700')}>{label}</button>
-        ))}
-      </div>
+      <PageTabs
+        tabs={[{ key: 'menu', label: '메뉴 정보 관리' }, { key: 'history', label: '변경/승인 이력' }]}
+        value={tab}
+        onChange={(k) => setTab(k as 'menu' | 'history')}
+      />
       {tab === 'menu' ? <MenuInfoTab nodes={nodes} headInfo={headInfo} /> : <HistoryTab history={history} />}
     </div>
   );

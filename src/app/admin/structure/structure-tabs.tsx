@@ -4,6 +4,7 @@
 //  구조도 = 전시관리 구조도(원천→기준정보→운영IA→전시/관리→F/O). 폰트 Pretendard.
 //  IA = 관리 메뉴와 전시 데이터 계층 정리.
 import { useState } from 'react';
+import { PageTabs } from '@/components/page-tabs';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -446,14 +447,11 @@ export function StructureTabs() {
   const [tab, setTab] = useState<'map' | 'ia' | 'gov'>('map');
   return (
     <div>
-      <div className="mb-5 flex gap-1 border-b border-[#e6e7ec]">
-        {([['map', '구조도'], ['ia', 'IA'], ['gov', '거버넌스']] as const).map(([k, label]) => (
-          <button key={k} type="button" onClick={() => setTab(k)}
-            className={cn('-mb-px border-b-2 px-4 py-2.5 text-[14px] font-semibold', tab === k ? 'border-[#3a2fd8] text-[#3a2fd8]' : 'border-transparent text-slate-500 hover:text-slate-700')}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <PageTabs
+        tabs={[{ key: 'map', label: '구조도' }, { key: 'ia', label: 'IA' }, { key: 'gov', label: '거버넌스' }]}
+        value={tab}
+        onChange={(k) => setTab(k as 'map' | 'ia' | 'gov')}
+      />
       {tab === 'map' ? <StructureView /> : tab === 'ia' ? <IaView /> : <GovernanceView />}
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
+import { PageTabs } from '@/components/page-tabs';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE } from '@/lib/display-taxonomy';
@@ -19,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
-import { FilterPanel, ListHeader, THEAD_TR_CLS, StatusPill } from '@/components/ops-ui';
+import { FilterPanel, ListHeader, THEAD_TR_CLS, TBODY_TR_CLS, StatusPill } from '@/components/ops-ui';
 
 // 등록된 코너 유형(코너 유형 관리 = 마스터)의 (코너유형·컴포넌트·배열) 조합. 등록 폼 ②③을 이걸로 좁힌다.
 export type RegisteredCombo = { baseCategory: string; componentType: string | null; typeDetail: string | null; bigBanner?: boolean };
@@ -1065,26 +1066,15 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         // 라벨·순서는 정책서 상태값(CORNER_TYPE_STATUSES) 그대로 사용: 승인완료·승인요청·반려·임시저장
         const tabs: { key: string; label: string }[] = [{ key: '전체', label: '전체' }, ...statusKeys.map((k) => ({ key: k, label: CORNER_TYPE_STATUS_LABEL[k] ?? k }))];
         return (
-          <div className="mt-6 flex flex-wrap items-center gap-6 border-b border-[var(--line)]">
-            {tabs.map((t) => {
-              const active = statusTabActive === t.key;
-              const count = t.key === '전체' ? domainTypes.length : domainTypes.filter((x) => x.status === t.key).length;
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setStatusTab(t.key)}
-                  className={cn(
-                    '-mb-px border-b-2 pb-2.5 text-sm font-semibold transition',
-                    active ? 'border-[#3a2fd8] text-[#3a2fd8]' : 'border-transparent text-slate-400 hover:text-slate-600',
-                  )}
-                >
-                  {t.label}
-                  <span className={cn('ml-1.5 text-xs tabular-nums', active ? 'text-primary' : 'text-muted-foreground/70')}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
+          <PageTabs
+            tabs={tabs.map((t) => ({
+              key: t.key,
+              label: t.label,
+              count: t.key === '전체' ? domainTypes.length : domainTypes.filter((x) => x.status === t.key).length,
+            }))}
+            value={statusTabActive}
+            onChange={setStatusTab}
+          />
         );
       })()}
 
@@ -1261,7 +1251,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               {pageRows.length === 0 ? (
                 <tr><td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">검색 결과가 없습니다.</td></tr>
               ) : pageRows.map((t, i) => (
-                <tr key={t.id} className="cursor-pointer border-b border-[#e6e7ec] last:border-0 hover:bg-[#f6f7f9]" onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
+                <tr key={t.id} className={cn(TBODY_TR_CLS, 'cursor-pointer last:border-0')} onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
                   <td className="px-3 py-2.5 align-middle tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
                   <td className="px-3 py-2.5">
                     {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함 */}

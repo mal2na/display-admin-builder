@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { StatusPill, FilterPanel, ListHeader, THEAD_TR_CLS } from '@/components/ops-ui';
+import { StatusPill, FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
 import { PUBLISH_STATUS, PUBLISH_STATUS_OPTIONS, DEPLOY_STATUS, fmtPeriod, fmtDateTime, computePublishStatus, type PublishStatus } from '@/lib/widget-taxonomy';
 import { reorderAppWidgets, redisReloadAppWidgets } from './actions';
 import { cn } from '@/lib/utils';
@@ -41,7 +41,7 @@ function SortableRow({ r, onOpen }: { r: ViewRow; onOpen: () => void }) {
   const ps = PUBLISH_STATUS[r.publishStatus];
   const style = { transform: CSS.Transform.toString(transform), transition } as React.CSSProperties;
   return (
-    <tr ref={setNodeRef} style={style} className={cn('border-b border-[#e6e7ec] hover:bg-[#f6f7f9] [&>td]:h-11', isDragging && 'relative z-10 bg-[#efedfe] shadow-lg')}>
+    <tr ref={setNodeRef} style={style} className={cn(TBODY_TR_CLS, isDragging && 'relative z-10 bg-[#efedfe] shadow-lg')}>
       <td className="px-3 py-2">
         <div className="flex items-center gap-1.5">
           <button type="button" className="cursor-grab touch-none text-slate-300 hover:text-slate-500 active:cursor-grabbing" {...attributes} {...listeners} aria-label="드래그하여 순서 변경">
@@ -211,19 +211,12 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
         </table>
       </div>
 
-      {/* 페이지네이션 + 액션 — 표에서 32px 띄운다(목록 공통 규격) */}
-      <div className="mt-8 flex items-center justify-between">
-        <div className="flex items-center gap-1 text-sm">
-          {totalPages > 1 && Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
-            <button key={p} onClick={() => setPage(p)} className={`h-8 w-8 rounded-md text-xs ${p === page ? 'bg-[#3a2fd8] text-white' : 'hover:bg-secondary'}`}>{p}</button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" onClick={redisReload} disabled={pending}>Redis Reload</Button>
-          <Button type="button" variant="outline" onClick={saveOrder} disabled={pending || !dirty}>순서저장</Button>
-          <Button type="button" onClick={() => router.push('/admin/app-widgets/new')}>등록</Button>
-        </div>
-      </div>
+      {/* 하단 — 전 메뉴 공통: 페이지네이션(가운데) → 24 → 액션(오른쪽) */}
+      <ListBottom page={page} totalPages={totalPages} onPageChange={setPage}>
+        <Button type="button" variant="outline" onClick={redisReload} disabled={pending}>Redis Reload</Button>
+        <Button type="button" variant="outline" onClick={saveOrder} disabled={pending || !dirty}>순서저장</Button>
+        <Button type="button" onClick={() => router.push('/admin/app-widgets/new')}>등록</Button>
+      </ListBottom>
     </div>
   );
 }

@@ -35,6 +35,7 @@ import {
   normalizeRecSource,
   CVM_TARGET_HINTS,
   defaultComposition,
+  CHIP_BASE,
   type AtomType,
   type CornerType,
 } from '@/lib/display-taxonomy';
@@ -218,18 +219,25 @@ function BigBannerBadge({ className }: { className?: string }) {
 
 // 코너 유형은 색 Chip으로 분리, 나머지 경로(컴포넌트 · 배열)는 회색 텍스트, 빅배너는 별도 구분자 배지.
 // 코너 유형 관리와 같은 8색 팔레트(cornerTypeChipClass)를 공유한다.
-function CornerTypeChip({ corner, className }: { corner: CornerNode; className?: string }) {
+function CornerTypeChip({ corner, className, compact }: { corner: CornerNode; className?: string; compact?: boolean }) {
   const { base, rest, bigBanner } = cornerTypeParts(corner);
   // 배너형은 코너 유형이 아니라 배너 캠페인이므로, '배너형 · 이미지형'이 아니라 그냥 '배너'로만 표기
   const isBanner = base === '배너형';
   const baseEn = isBanner ? 'Banner' : cornerTypeEn(base);
   const restEn = rest ? layoutEn(rest) : '';
+  // compact — 좁은 좌측 목록용. 영문 병기를 빼고 칩만 남긴다(전체 표기는 title 툴팁으로).
+  const title = `${isBanner ? '배너' : base}${baseEn ? ` (${baseEn})` : ''}${rest ? ` · ${rest}${restEn ? ` (${restEn})` : ''}` : ''}`;
   return (
-    <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)} title={`${isBanner ? '배너' : base}${baseEn ? ` (${baseEn})` : ''}${rest ? ` · ${rest}${restEn ? ` (${restEn})` : ''}` : ''}`}>
-      <span className={cn('inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold', cornerTypeChipClass(base))}>
-        {isBanner ? '배너' : base}{baseEn && <span className="ml-1 font-normal opacity-70">{baseEn}</span>}
+    <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)} title={title}>
+      <span className={cn('min-w-0 max-w-full truncate', cornerTypeChipClass(base), compact && 'text-[11px]')}>
+        {isBanner ? '배너' : base}
+        {!compact && baseEn && <span className="ml-1 font-normal opacity-70">{baseEn}</span>}
       </span>
-      {!isBanner && rest && <span className="truncate text-xs text-muted-foreground">{rest}{restEn && <span className="opacity-70"> ({restEn})</span>}</span>}
+      {!isBanner && rest && (
+        <span className="min-w-0 truncate text-[11px] text-[var(--ink3)]">
+          {rest}{!compact && restEn && <span className="opacity-70"> ({restEn})</span>}
+        </span>
+      )}
       {bigBanner && <BigBannerBadge className="shrink-0" />}
     </span>
   );
@@ -2881,6 +2889,7 @@ function CornerListRow({
     disabled: locked,
   });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const subtitle = (corner.mainTitle || corner.title || '').split('\n')[0];
   return (
     <div
       ref={setNodeRef}
@@ -2888,92 +2897,121 @@ function CornerListRow({
       style={style}
       onClick={() => onSelect(corner.templateCornerId)}
       className={cn(
-        'cursor-pointer rounded-md border p-2 scroll-mt-2',
-        selected ? 'border-primary bg-accent' : 'bg-card hover:bg-muted/50',
-        locked && !selected && 'border-indigo-200 bg-indigo-50/40',
+        // 2026-10-08 — 좁은 좌측 폭에서 내용이 터지지 않도록 2행 고정 구조.
+        //  1행: 핸들 + 이름/부제(truncate) + 액션 / 2행: 유형 칩(남는 폭) + 고정·노출(고정 폭)
+        'cursor-pointer rounded-[10px] border p-2.5 transition scroll-mt-2',
+        selected
+          ? 'border-[var(--ac)] bg-[var(--ac2)]'
+          : 'border-[var(--line)] bg-white hover:border-[var(--line2)] hover:bg-[var(--th)]',
+        locked && !selected && 'border-[var(--ac3)] bg-[#f8f7ff]',
         !corner.visible && 'opacity-55',
       )}
     >
-      <div className="flex items-center gap-1.5">
+      {/* 1행 — 핸들 · 이름 · 액션 */}
+      <div className="flex items-start gap-1.5">
         {locked ? (
-          <span className="text-indigo-400" aria-label="위치 고정" title="위치 고정 — 드래그로 순서를 바꿀 수 없어요(아래 ‘고정’ 체크 해제 시 이동 가능)">
+          <span className="mt-px shrink-0 text-[var(--ac)]" aria-label="위치 고정" title="위치 고정 — 드래그로 순서를 바꿀 수 없어요(아래 ‘고정’ 해제 시 이동 가능)">
             <Lock className="h-4 w-4" />
           </span>
         ) : (
           <button
-            className="cursor-grab text-muted-foreground active:cursor-grabbing"
+            className="mt-px shrink-0 cursor-grab text-[var(--ink3)] hover:text-[var(--ink2)] active:cursor-grabbing"
             {...attributes}
             {...listeners}
             onClick={(e) => e.stopPropagation()}
             aria-label="순서 변경"
+            title="드래그하여 순서 변경"
           >
             <GripVertical className="h-4 w-4" />
           </button>
         )}
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-sm font-medium">{corner.name}</span>
-          {(corner.mainTitle || corner.title) && (
-            <span className="truncate text-[10px] text-muted-foreground">{(corner.mainTitle || corner.title || '').split('\n')[0]}</span>
+
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-semibold leading-tight text-[var(--ink)]" title={corner.name}>
+            {corner.name}
+          </span>
+          {subtitle && (
+            <span className="mt-0.5 block truncate text-[11px] leading-tight text-[var(--ink3)]" title={subtitle}>
+              {subtitle}
+            </span>
           )}
         </span>
-        <form action={duplicateCorner.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
-          <button className="text-muted-foreground hover:text-primary" aria-label="Corner 복제" title="복제">
-            <Copy className="h-3.5 w-3.5" />
-          </button>
-        </form>
-        <DeleteConfirmForm
-          action={removeCorner.bind(null, templateId, corner.templateCornerId)}
-          itemLabel={corner.cornerType === '배너형' ? '배너' : '코너'}
-          childSummary={
-            corner.cornerType === '배너형'
-              ? undefined
-              : corner.components.length
-                ? `데이터셋 ${corner.components.length}개 · Atom ${corner.components.reduce((s, c) => s + c.atoms.length, 0)}개`
-                : undefined
-          }
-          ariaLabel={corner.cornerType === '배너형' ? '배너 삭제' : 'Corner 삭제'}
-          stopPropagation
-        />
-      </div>
-      <div className="mt-1 flex items-center gap-1.5 pl-5">
-        <CornerTypeChip corner={corner} className="min-w-0 flex-1" />
-        {!corner.visible && <Badge variant="outline" className="shrink-0">비노출</Badge>}
-        {/* 위치 고정 체크박스 — 상단 퀵메뉴처럼 자리를 잠근다(드래그·CVM 자동 재정렬 제외) */}
-        <form className="ml-auto shrink-0" action={toggleCornerPinned.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
-          <button type="submit" aria-pressed={locked}
-            title={locked ? '위치 고정됨 (클릭 시 해제 — 순서 변경 가능)' : '위치 고정 (클릭 시 상단에 잠금)'}
-            className={cn('inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold transition', locked ? 'border-indigo-300 bg-indigo-100 text-indigo-700' : 'border-slate-200 bg-white text-slate-400 hover:border-indigo-300')}>
-            <Lock className="h-3 w-3" /> 고정
-          </button>
-        </form>
-        {/* 토글: 오른쪽 끝에 배치 */}
-        <form className="shrink-0" action={toggleCornerVisible.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
-          <button
-            type="submit"
-            role="switch"
-            aria-checked={corner.visible}
-            aria-label={corner.visible ? '비노출로 전환' : '노출로 전환'}
-            title={corner.visible ? '노출 중 (클릭 시 비노출)' : '비노출 (클릭 시 노출)'}
-            className={cn(
-              'relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors',
-              corner.visible ? 'bg-primary' : 'bg-slate-300',
-            )}
-          >
-            <span
-              className={cn(
-                'inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform',
-                corner.visible ? 'translate-x-3.5' : 'translate-x-0.5',
-              )}
-            />
-          </button>
-        </form>
+
+        <span className="flex shrink-0 items-center gap-0.5">
+          <form action={duplicateCorner.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
+            <button className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--ink3)] hover:bg-white hover:text-[var(--ac)]" aria-label="Corner 복제" title="복제">
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+          </form>
+          <DeleteConfirmForm
+            action={removeCorner.bind(null, templateId, corner.templateCornerId)}
+            itemLabel={corner.cornerType === '배너형' ? '배너' : '코너'}
+            childSummary={
+              corner.cornerType === '배너형'
+                ? undefined
+                : corner.components.length
+                  ? `데이터셋 ${corner.components.length}개 · Atom ${corner.components.reduce((s, c) => s + c.atoms.length, 0)}개`
+                  : undefined
+            }
+            ariaLabel={corner.cornerType === '배너형' ? '배너 삭제' : 'Corner 삭제'}
+            stopPropagation
+          />
+        </span>
       </div>
 
-      {/* 화면에 추가된 배너를 좌측에 읽기 전용으로 표시 — 배너 변경/해제는 우측 코너 편집에서만(좌측에서 컨트롤 금지) */}
+      {/* 2행 — 왼쪽은 남는 폭 전부(넘치면 말줄임), 오른쪽 컨트롤은 고정 폭 */}
+      <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+        <CornerTypeChip corner={corner} compact className="min-w-0" />
+
+        <span className="flex shrink-0 items-center gap-1">
+          {!corner.visible && (
+            <span className={cn(CHIP_BASE, 'h-[22px] bg-[#DCE0E5] text-[11px] text-[#454F59]')}>비노출</span>
+          )}
+          {/* 위치 고정 — 상단 퀵메뉴처럼 자리를 잠근다(드래그·CVM 자동 재정렬 제외) */}
+          <form action={toggleCornerPinned.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="submit"
+              aria-pressed={locked}
+              title={locked ? '위치 고정됨 (클릭 시 해제 — 순서 변경 가능)' : '위치 고정 (클릭 시 상단에 잠금)'}
+              className={cn(
+                'inline-flex h-[22px] items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
+                locked ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink3)] hover:bg-white hover:text-[var(--ac)]',
+              )}
+            >
+              <Lock className="h-3 w-3" /> 고정
+            </button>
+          </form>
+          {/* 노출 토글 */}
+          <form action={toggleCornerVisible.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="submit"
+              role="switch"
+              aria-checked={corner.visible}
+              aria-label={corner.visible ? '비노출로 전환' : '노출로 전환'}
+              title={corner.visible ? '노출 중 (클릭 시 비노출)' : '비노출 (클릭 시 노출)'}
+              className={cn(
+                'relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors',
+                corner.visible ? 'bg-[var(--ac)]' : 'bg-[#c9ccd6]',
+              )}
+            >
+              <span
+                className={cn(
+                  'inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform',
+                  corner.visible ? 'translate-x-3.5' : 'translate-x-0.5',
+                )}
+              />
+            </button>
+          </form>
+        </span>
+      </div>
+
+      {/* 화면에 추가된 배너를 좌측에 읽기 전용으로 표시 — 배너 변경/해제는 우측 코너 편집에서만 */}
       {corner.bannerName && (
-        <div className="mt-1.5 ml-5 flex items-center gap-1.5 rounded-md border border-dashed bg-muted/40 px-2 py-1">
-          <ImageIcon className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
-          <span className="flex-1 truncate text-[11px] text-muted-foreground">배너: {corner.bannerName}</span>
+        <div className="mt-2 flex items-center gap-1.5 rounded-[6px] bg-[var(--th)] px-2 py-1">
+          <ImageIcon className="h-3.5 w-3.5 shrink-0 text-[var(--ac)]" />
+          <span className="min-w-0 flex-1 truncate text-[11px] text-[var(--ink2)]" title={corner.bannerName}>
+            배너: {corner.bannerName}
+          </span>
         </div>
       )}
     </div>
