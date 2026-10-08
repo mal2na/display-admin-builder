@@ -365,11 +365,12 @@ function GovQ({ no, q, answer, children }: { no: number; q: string; answer: Reac
   );
 }
 // 담당 → 역할 한 줄 (단색).
+//  좌우 패딩이 없어 글자가 테두리에 붙어 읽기 어려웠다 → 셀 패딩을 주고 행간을 넓힘(2026-10-08).
 function GovRow({ who, what, strong }: { who: string; what: React.ReactNode; strong?: boolean }) {
   return (
-    <div className={cn('grid grid-cols-[112px_1fr] gap-3 border-t border-[#eef0f6] py-2.5 first:border-t-0', strong && 'bg-[#efedfe]/60')}>
-      <span className="text-[13px] font-bold text-slate-900">{who}</span>
-      <span className="text-[13px] leading-relaxed text-slate-600">{what}</span>
+    <div className={cn('grid grid-cols-[128px_1fr] gap-4 border-t border-[var(--line)] px-4 py-3.5 first:border-t-0', strong && 'bg-[#efedfe]/60')}>
+      <span className="text-[13px] font-bold leading-relaxed text-[var(--ink)]">{who}</span>
+      <span className="text-[13px] leading-[1.7] text-[var(--ink2)]">{what}</span>
     </div>
   );
 }
@@ -389,7 +390,7 @@ function GovernanceView() {
           <GovRow who="빌더(전시화면)" what={<>코너를 쌓고 <b>이름·텍스트·노출 개수·상품/배너·수급 방식</b>(직접 지정 / 조건 / CVM)을 설정. 미리보기 즉시.</>} strong />
           <GovRow who="DS 포털" what={<><b>Atom·Component</b>를 소유. 코너·템플릿·컨테이너는 어드민이 구성.</>} />
         </div>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500">
+        <p className="mt-3.5 text-[12.5px] leading-[1.7] text-[var(--ink3)]">
           왜냐면 — 같은 배너 코너라도 <b className="text-slate-700">A페이지=S18, B페이지=iPhone</b>이면, 콘텐츠를 코너에 박아두면 코너를 매번 새로 만들어야 해요. <b className="text-slate-700">껍데기 1개 + 페이지별 콘텐츠</b>가 효율적(T우주 방식). 그래서 <b className="text-[#3a2fd8]">코너 불러오기는 데이터 없는 가이드</b>로 와요.
         </p>
       </GovQ>
@@ -414,7 +415,7 @@ function GovernanceView() {
           </p>
         </div>
         <p className="mb-2 mt-4 text-[13px] font-bold text-slate-800">템플릿 단위로 관리하면 생기는 문제</p>
-        <ul className="space-y-1.5 text-[13px] leading-relaxed text-slate-600">
+        <ul className="space-y-2 text-[13px] leading-[1.7] text-[var(--ink2)]">
           <li className="flex gap-2"><span className="text-slate-400">·</span><span>한 페이지가 <b>여러 줄</b>로 쪼개져요(로그인용·비로그인용·기간용…). 목록이 금세 지저분해져요.</span></li>
           <li className="flex gap-2"><span className="text-slate-400">·</span><span>메뉴·URL이 <b>어느 템플릿을 가리켜야 할지</b> 애매해져요. 메뉴는 ‘화면’을 부르지 ‘그날의 버전’을 부르지 않아요.</span></li>
           <li className="flex gap-2"><span className="text-slate-400">·</span><span>“어떤 페이지가 있나(목록·IA)”와 “어떻게 달라지나(분기 로직)”가 <b>뒤섞여요</b>.</span></li>
@@ -432,7 +433,7 @@ function GovernanceView() {
           <GovRow who="빌더(전시화면)" what={<>각 컴포넌트의 <b>문구 베리에이션</b>(타겟별 대체 문구)과 <b>노출 타입 베리에이션</b>(코너 유형 카탈로그에서 골라 2~3개 조합)을 등록.</>} />
           <GovRow who="CVM (자동)" what={<>고객 세그먼트로 <b>후보 중 하나를 택1</b>(런타임). 미리보기는 기본(첫 후보)만.</>} strong />
         </div>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500">
+        <p className="mt-3.5 text-[12.5px] leading-[1.7] text-[var(--ink3)]">
           원리는 <b className="text-slate-700">“재료는 우리가(빌더에서 등록), 조합은 CVM”</b> — 베리에이션도 콘텐츠라 빌더에서. 노출 타입의 <b>후보 목록</b>은 코너 유형(껍데기)에 등록된 배열·레이아웃에서 골라요.
         </p>
       </GovQ>
