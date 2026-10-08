@@ -1012,7 +1012,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       />
 
       {/* ── 최상위 분기: 전시 / 프로모션 / 상품 (DS 포털식 세그먼트) ── */}
-      <div className="inline-flex rounded-xl border border-[#e6e7ec] bg-[#f6f7f9] p-1">
+      <div className="mt-6 inline-flex rounded-xl border border-[var(--line)] bg-[var(--th)] p-1">
         {DOMAINS.map((d) => {
           const active = domain === d;
           const cnt = types.filter((t) => domainOf(t.baseCategory) === d).length;
@@ -1034,7 +1034,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           );
         })}
       </div>
-      {DOMAIN_GUIDE[domain] && <p className="-mt-1 text-[12px] leading-relaxed text-[var(--ink3)]">{DOMAIN_GUIDE[domain]}</p>}
+      {DOMAIN_GUIDE[domain] && <p className="mt-3 text-[12px] leading-relaxed text-[var(--ink3)]">{DOMAIN_GUIDE[domain]}</p>}
 
       {/* ── 상위 거버넌스: 승인 상태 탭 (언더라인 탭 — 참고 UI 스타일) ── */}
       {(() => {
@@ -1043,7 +1043,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         // 라벨·순서는 정책서 상태값(CORNER_TYPE_STATUSES) 그대로 사용: 승인완료·승인요청·반려·임시저장
         const tabs: { key: string; label: string }[] = [{ key: '전체', label: '전체' }, ...statusKeys.map((k) => ({ key: k, label: CORNER_TYPE_STATUS_LABEL[k] ?? k }))];
         return (
-          <div className="flex flex-wrap items-center gap-6 border-b">
+          <div className="mt-6 flex flex-wrap items-center gap-6 border-b border-[var(--line)]">
             {tabs.map((t) => {
               const active = statusTabActive === t.key;
               const count = t.key === '전체' ? domainTypes.length : domainTypes.filter((x) => x.status === t.key).length;
