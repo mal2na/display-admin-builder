@@ -1105,7 +1105,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             ), 3]],
             [
               ['유형 상세', (
-                <select key="dt" value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={`${selectCls} w200`}>
+                <select key="dt" value={detail} onChange={(e) => { setDetail(e.target.value); setPage(1); }} className={selectCls}>
                   {detailOptions.map((o) => <option key={o} value={o}>{o === '전체' ? '전체' : layoutLabel(o)}</option>)}
                 </select>
               )],
@@ -1116,18 +1116,18 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   <label className={chkCls}><input type="checkbox" className={chkInput} checked={useOff} onChange={(e) => { setUseOff(e.target.checked); setPage(1); }} />미사용</label>
                 </span>
               )],
-            ],
-            [['승인상태', (
+              ['승인상태', (
               <span key="st" className="ck-g">
                 <label className={chkCls}><input type="checkbox" className={chkInput} checked={statusSel.size === statusKeys.length} onChange={(e) => { setStatusSel(e.target.checked ? new Set(statusKeys) : new Set()); setPage(1); }} />전체</label>
                 {statusKeys.map((k) => (
                   <label key={k} className={chkCls}><input type="checkbox" className={chkInput} checked={statusSel.has(k)} onChange={(e) => { const n = new Set(statusSel); if (e.target.checked) n.add(k); else n.delete(k); setStatusSel(n); setPage(1); }} />{CORNER_TYPE_STATUS_LABEL[k] ?? k}</label>
                 ))}
               </span>
-            ), 3]],
+            )],
+            ],
             [['직접 검색', (
               <span key="q" className="rng">
-                <select value={field} onChange={(e) => setField(e.target.value as typeof field)} className={`${selectCls} w200`}>
+                <select value={field} onChange={(e) => setField(e.target.value as typeof field)} className={selectCls}>
                   <option value="typeId">코너 유형 ID</option>
                   <option value="createdBy">등록자</option>
                 </select>

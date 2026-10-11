@@ -98,25 +98,24 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
       {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
+          // 한 줄에 들어갈 만큼 가로로 채운다 — 오른쪽이 비지 않게(2026-10-12 사용자 요청)
           rows={[
             [
-              ['검색 항목', (
-                <span key="q" className="rng">
-                  <select value={draft.field} onChange={(e) => set({ field: e.target.value, q: '' })} className={cn(selectCls, 'w200')}>{['배너캠페인 ID', '배너캠페인명'].map((o) => <option key={o}>{o}</option>)}</select>
-                  <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && (setApplied(draft), setPage(1))} placeholder="검색 항목을 선택 후 검색하세요" className={cn(inputCls, 'w-[320px] max-w-full')} />
-                </span>
-              ), 3],
-            ],
-            [
-              ['전시여부', <select key="ex" value={draft.expose} onChange={(e) => set({ expose: e.target.value })} className={cn(selectCls, 'w200')}>{['전체', '전시', '미전시'].map((o) => <option key={o}>{o}</option>)}</select>],
-              ['승인상태', <select key="av" value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={cn(selectCls, 'w200')}>{['전체', '승인요청', '승인완료', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>],
-            ],
-            [
+              ['전시여부', <select key="ex" value={draft.expose} onChange={(e) => set({ expose: e.target.value })} className={selectCls}>{['전체', '전시', '미전시'].map((o) => <option key={o}>{o}</option>)}</select>],
+              ['승인상태', <select key="av" value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={selectCls}>{['전체', '승인요청', '승인완료', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>],
               ['전시기간', (
                 <span key="pd" className="rng">
                   <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} className={inputCls} />
                   <span className="text-[var(--ink3)]">~</span>
                   <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={inputCls} />
+                </span>
+              )],
+            ],
+            [
+              ['검색 항목', (
+                <span key="q" className="rng">
+                  <select value={draft.field} onChange={(e) => set({ field: e.target.value, q: '' })} className={selectCls}>{['배너캠페인 ID', '배너캠페인명'].map((o) => <option key={o}>{o}</option>)}</select>
+                  <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && (setApplied(draft), setPage(1))} placeholder="검색 항목을 선택 후 검색하세요" className={inputCls} />
                 </span>
               ), 3],
             ],

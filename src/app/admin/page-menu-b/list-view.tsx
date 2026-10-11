@@ -66,8 +66,7 @@ export function ListView({ f, setF }: { f: ListFilter; setF: (f: ListFilter) => 
                 />
               </span>
             ), 3],
-          ],
-          [
+            // 상태를 검색 항목 줄로 올려 두 줄 안에 다 넣는다 — 버튼이 혼자 한 줄을 쓰지 않게(2026-10-12)
             ['상태', (
               <select key="st" value={draft.state} onChange={(e) => set({ state: e.target.value })} className={cn(SEL, 'w-[150px]')}>
                 <option value="">전체</option>
@@ -78,6 +77,8 @@ export function ListView({ f, setF }: { f: ListFilter; setF: (f: ListFilter) => 
                 <option value="rejected">반려</option>
               </select>
             )],
+          ],
+          [
             ['사용 여부', (
               <select key="use" value={draft.use} onChange={(e) => set({ use: e.target.value })} className={cn(SEL, 'w-[120px]')}>
                 <option value="">전체</option>
