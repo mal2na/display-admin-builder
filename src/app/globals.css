@@ -75,6 +75,23 @@
   --err: #ea5154;             /* color/datefield/border-error · textfield/text-helper-error */
   --err-ring: #ffdcdc;
 
+  /* ── 체크박스·라디오 — Figma [BO-AX] Checkbox (node 2715:18568) 실값 (2026-10-12) ──
+     Large 20 / Small 16 · radius 4 · gap 6 · 라벨 14/20/600 */
+  --cb-r: 4px;                     /* radius/checkbox/radius */
+  --cb-gap: 6px;                   /* spacing/checkbox/gap */
+  --cb-bg: #ffffff;                /* color/checkbox/bg */
+  --cb-border: #c4c9cf;            /* color/checkbox/border-default */
+  --cb-border-hover: #8b949e;      /* color/checkbox/border-hover */
+  --cb-fill: #3617ce;              /* color/checkbox/fill-enable */
+  --cb-fill-hover: #502dfb;        /* color/checkbox/fill-hover */
+  --cb-icon: #ffffff;              /* color/checkbox/icon-selected */
+  --cb-fill-disable: #e8ecef;      /* color/checkbox/fill-disable */
+  --cb-border-disable: #c4c9cf;    /* color/checkbox/border-disable */
+  --cb-fill-sel-disable: #c4c9cf;  /* color/checkbox/fill-selected-disable */
+  --cb-text: #697582;              /* color/checkbox/text-default */
+  --cb-text-selected: #1a1a1a;     /* color/checkbox/text-selected */
+  --cb-text-disable: #c4c9cf;      /* color/checkbox/text-disable */
+
   /* ── 라운드 (radius/*) ── */
   --r-badge: 4px;      /* radius/badge/radius-text */
   --r-field: 6px;      /* radius/textfield/radius · radius/r6 */
@@ -316,7 +333,8 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
   .fp .grow-cell > .inp:not([type='date']) { flex: 1; min-width: 0; width: auto; }
   .fp .inp[type='date'] { width: 150px; flex: none; }
   .fp .sel.w200, .fp select.w200 { min-width: 200px; }
-  .fp input[type='checkbox'], .fp input[type='radio'] { height: 16px; width: 16px; border-radius: 4px; min-width: 0; }
+  .fp input[type='checkbox'] { height: 16px; width: 16px; border-radius: var(--cb-r); min-width: 0; }
+  .fp input[type='radio'] { height: 16px; width: 16px; min-width: 0; }
   .fp .ck-g { gap: 10px 20px; }
   .fp .rng { gap: 8px; }
 
@@ -379,24 +397,41 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
      toggle    radius full · inset 4 · handler 12(xs)/20(s)/24(m) · track #b3b9c0 / 선택 #3617ce / 비활성 #dce0e5 */
   input[type='checkbox'], input[type='radio'] {
     appearance: none; width: 16px; height: 16px; flex: none; margin: 0;
-    border: 1px solid var(--line3); background: #fff; cursor: pointer;
-    display: inline-grid; place-content: center; transition: background-color .12s, border-color .12s;
+    border: 1px solid var(--cb-border); background: var(--cb-bg); cursor: pointer;
+    display: inline-grid; place-content: center;
+    transition: background-color .12s, border-color .12s;
   }
-  input[type='checkbox'] { border-radius: 4px; }
+  input[type='checkbox'] { border-radius: var(--cb-r); }
   input[type='radio'] { border-radius: 9999px; }
-  input[type='checkbox']:checked, input[type='radio']:checked { background: var(--ac); border-color: var(--ac); }
+  /* Large 20 — 밀도가 낮은 폼에서 쓴다 (input 에 .ck-lg) */
+  input.ck-lg[type='checkbox'], input.ck-lg[type='radio'] { width: 20px; height: 20px; }
+
+  input[type='checkbox']:hover:not(:disabled), input[type='radio']:hover:not(:disabled) { border-color: var(--cb-border-hover); }
+  input[type='checkbox']:checked, input[type='radio']:checked { background: var(--cb-fill); border-color: var(--cb-fill); }
+  input[type='checkbox']:checked:hover:not(:disabled), input[type='radio']:checked:hover:not(:disabled) {
+    background: var(--cb-fill-hover); border-color: var(--cb-fill-hover);
+  }
+  /* 체크 표시 — 회전한 보더 대신 SVG. 박스가 16/20 어느 쪽이어도 비율이 유지된다 */
   input[type='checkbox']:checked::after {
-    content: ''; width: 9px; height: 5px; border: 2px solid #fff; border-top: 0; border-right: 0;
-    transform: rotate(-45deg) translate(1px, -1px);
+    content: ''; width: 100%; height: 100%;
+    background: center / 72% 72% no-repeat
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.4 8.3l3.1 3.1 6.1-6.6' fill='none' stroke='white' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   }
-  input[type='radio']:checked::after { content: ''; width: 6px; height: 6px; border-radius: 9999px; background: #fff; }
+  input[type='radio']:checked::after { content: ''; width: 37.5%; height: 37.5%; border-radius: 9999px; background: var(--cb-icon); }
+
   input[type='checkbox']:disabled, input[type='radio']:disabled {
-    background: var(--surface-sunken); border-color: var(--line3); cursor: not-allowed;
+    background: var(--cb-fill-disable); border-color: var(--cb-border-disable); cursor: not-allowed;
   }
-  input[type='checkbox']:checked:disabled, input[type='radio']:checked:disabled { background: var(--line3); border-color: var(--line3); }
-  /* 라벨 — gap 6, 기본 #697582 / 선택 #1a1a1a */
-  label:has(> input[type='checkbox']), label:has(> input[type='radio']) { gap: 6px; color: var(--ink3); }
-  label:has(> input:checked) { color: var(--ink); }
+  input[type='checkbox']:checked:disabled, input[type='radio']:checked:disabled {
+    background: var(--cb-fill-sel-disable); border-color: var(--cb-fill-sel-disable);
+  }
+  /* 라벨 — gap 6 · 14/20/600 · 기본 #697582 / 선택 #1a1a1a / 비활성 #c4c9cf */
+  label:has(> input[type='checkbox']), label:has(> input[type='radio']) {
+    gap: var(--cb-gap); color: var(--cb-text);
+    font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: 0;
+  }
+  label:has(> input:checked) { color: var(--cb-text-selected); }
+  label:has(> input:disabled) { color: var(--cb-text-disable); }
 
   /* ── 다이얼로그 · 모달 — Figma dialogpopup/modalpopup (radius 16 · padding 24 · title 20/700) ── */
   .dlg { border-radius: var(--dlg-r); background: #fff; box-shadow: var(--dlg-shadow); }

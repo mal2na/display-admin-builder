@@ -10,11 +10,14 @@ import * as React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { PromoList } from './promo-list';
 import { RegStartModal } from './reg-start-modal';
+import { RegForm } from './reg-form';
 import type { PromoRow } from '@/lib/promotion/model';
 
 export function PromoAdmin() {
   const [proto, setProto] = React.useState<string | null>(null);
   const [regOpen, setRegOpen] = React.useState(false);
+  /** React 로 옮긴 등록 폼 (지금은 안내형만) */
+  const [form, setForm] = React.useState<null | { type: string; jm: '직접' | '행동' }>(null);
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -24,6 +27,42 @@ export function PromoAdmin() {
     timer.current = setTimeout(() => setToastMsg(null), 2600);
   }, []);
   React.useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  /** 유형이 정해지면 등록 화면으로 — 안내형은 React 폼, 나머지는 아직 프로토타입 */
+  function openReg(type: string, jm: string | null) {
+    if (type === '안내형') { setProto(null); setForm({ type, jm: (jm as '직접' | '행동') ?? '직접' }); return; }
+    setForm(null);
+    setProto(`#form=${encodeURIComponent(type)}${jm ? `&jm=${encodeURIComponent(jm)}` : ''}`);
+  }
+
+  if (form) {
+    return (
+      <>
+        <RegForm
+          type={form.type} jm={form.jm}
+          onCancel={() => setForm(null)}
+          onSaved={() => setForm(null)}
+          onToast={toast}
+          onChangeType={() => { setForm(null); setRegOpen(true); }}
+        />
+        {toastMsg && (
+          <div className="pointer-events-none fixed bottom-10 left-1/2 z-[90] -translate-x-1/2">
+            <div className="rounded-[8px] bg-[var(--toast-bg)] px-4 py-2.5 text-[14px] leading-[20px] text-white shadow-[var(--dlg-shadow)]">
+              {toastMsg}
+            </div>
+          </div>
+        )}
+        {regOpen && (
+          <RegStartModal
+            change={form.type}
+            curJoinMode={form.jm}
+            onClose={() => setRegOpen(false)}
+            onPick={({ type, jm }) => { setRegOpen(false); openReg(type, jm); }}
+          />
+        )}
+      </>
+    );
+  }
 
   if (proto) {
     return (
@@ -62,10 +101,7 @@ export function PromoAdmin() {
       {regOpen && (
         <RegStartModal
           onClose={() => setRegOpen(false)}
-          onPick={({ type, jm }) => {
-            setRegOpen(false);
-            setProto(`#form=${encodeURIComponent(type)}${jm ? `&jm=${encodeURIComponent(jm)}` : ''}`);
-          }}
+          onPick={({ type, jm }) => { setRegOpen(false); openReg(type, jm); }}
         />
       )}
 

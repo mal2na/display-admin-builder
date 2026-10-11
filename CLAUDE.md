@@ -205,16 +205,19 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 | 목록(필터·표·페이저) | **완료** | `src/app/admin/events/promo/promo-list.tsx` · `src/lib/promotion/model.ts` |
 | 등록 시작 팝업(유형 결정·문답) | **완료** | `reg-start-modal.tsx` · `src/lib/promotion/reg-start.ts` |
 | **조건 빌더** (접근·참여·지급 공용) | **완료** | `cond-builder.tsx` · `master-picker.tsx` · `src/lib/promotion/cond.ts` |
-| 등록 폼 — 기본정보 / CTA / 검색·태그 | **미착수** | 프로토타입 `renderForm()` |
+| 등록 폼 — 기본정보 / CTA / 검색·태그 | **완료(안내형)** | `reg-form.tsx` · `form-ui.tsx` · `form-pickers.tsx` · `src/lib/promotion/form.ts` |
 | 등록 폼 — 참여 정보(prSection) · 리워드 | **미착수** | 프로토타입 `prSection()` / `rewardBlock()` |
 | 등록 폼 — 추천형(refSection) | **미착수** | 프로토타입 `refSection()` |
 | 상세 보기 · FO 미리보기 | **미착수** | 프로토타입 `buildDetail()` / `renderFo()` |
 
-> 조건 빌더 확인용 임시 페이지: `/admin/events/promo/cond-check`
-> (등록 폼에 붙이면 지울 것 — `src/app/admin/events/promo/cond-check/page.tsx`)
+> **등록 화면 분기** — `[등록]` → 유형 결정 팝업(React) → **안내형이면 React 폼**,
+> 참여ㆍ리워드형·추천형·미션·기획전은 아직 프로토타입(`#form=<유형>&jm=<참여방식>`).
+> 분기 지점은 `promo-admin.tsx` 의 `openReg()`.
 >
-> **다음에 이어서 할 때**: 등록 폼 본체(`renderForm`)를 옮기고, 「공개 조건」 자리에
-> `<CondBuilder ctx="access" required />` 를 붙이면 된다.
+> 조건 빌더 확인용 임시 페이지: `/admin/events/promo/cond-check` (다 옮기면 지울 것)
+>
+> **다음에 이어서 할 때**: `prSection()`(참여 정보)·`rewardBlock()`(리워드)을 옮겨
+> 참여ㆍ리워드형을 React 폼으로 돌리고, `openReg()` 의 분기에서 빼면 된다.
 
 **아래는 BO 공통 반영 전 기준이다 — 위 토큰과 충돌하면 위가 이긴다.**
 
