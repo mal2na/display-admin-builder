@@ -253,6 +253,16 @@ function CvmContractStep({
 
 /* ── ④ 폴백 ─────────────────────────────────────────────────────── */
 
+// 네비게이션·필수 코너 — 사라지면 안 되는 자리(업무 진입형 탭·고정·필수 노출형). pinned 기본 + 정책 PI-DSP-PER-002 '대체 전시 필수'.
+//  이 유형은 CVM이 비어도 미노출 불가 → 폴백을 '운영자 편성'으로 강제한다(2026-10-12 사용자 결정).
+const NAV_MUST_SHOW = ['업무 진입형', '고정·필수 노출형'];
+const mustAlwaysShow = (cornerType: string) => NAV_MUST_SHOW.includes(cornerType);
+// 효과적 폴백 — 네비/필수형은 저장값이 '미노출'이거나 비어 있어도 '운영자 편성'으로 간주(미노출 불가). 그 외는 저장값 없으면 미노출.
+const effectiveFallback = (cornerType: string, cvmFallback: string | null | undefined) =>
+  mustAlwaysShow(cornerType)
+    ? (cvmFallback && cvmFallback !== '미노출' ? cvmFallback : '운영자 편성으로 대체')
+    : (cvmFallback ?? '미노출');
+
 function FallbackStep({
   corner,
   onSave,
@@ -262,13 +272,20 @@ function FallbackStep({
   onSave: (f: string) => void;
   pending: boolean;
 }) {
-  const cur = corner.cvmFallback ?? '미노출';
+  const mustShow = mustAlwaysShow(corner.cornerType);
+  const cur = effectiveFallback(corner.cornerType, corner.cvmFallback);
   return (
-    <Step no={4} title="폴백 — CVM 응답이 비었을 때" desc="기본은 미노출입니다. 대체용 기본 배너를 상시 운영할 수는 없다는 전제(2026-10-08).">
+    <Step no={4} title="폴백 — CVM 응답이 비었을 때"
+      desc={mustShow
+        ? '네비게이션·필수 코너는 숨길 수 없어 운영자 편성이 기본 폴백입니다(대체 전시 필수 · 정책 PI-DSP-PER-002).'
+        : '기본은 미노출입니다. 대체용 기본 배너를 상시 운영할 수는 없다는 전제(2026-10-08).'}>
       <div className="space-y-1.5">
         {CVM_FALLBACKS.map((f) => {
           const on = cur === f;
-          const blocked = f === '운영자 편성으로 대체' && corner.itemCount === 0;
+          // 네비/필수형: 미노출 금지(운영자 편성 강제). 그 외: 운영자 편성은 등록 항목 0이면 비활성.
+          const blocked = mustShow
+            ? f === '미노출'
+            : f === '운영자 편성으로 대체' && corner.itemCount === 0;
           return (
             <button
               key={f}
@@ -287,10 +304,12 @@ function FallbackStep({
                 <span className={cn('block text-[12px] font-semibold', on ? 'text-[var(--ac)]' : 'text-[var(--ink)]')}>{f}</span>
                 <span className="block text-[11px] text-[var(--ink3)]">
                   {f === '미노출'
-                    ? '코너를 숨김 · 빈 자리 없음'
-                    : blocked
-                      ? '등록된 항목 없음 · 먼저 상품 등록'
-                      : `등록한 ${corner.itemCount}개를 대신 노출`}
+                    ? (mustShow ? '네비게이션·필수 코너는 숨길 수 없어요' : '코너를 숨김 · 빈 자리 없음')
+                    : mustShow
+                      ? '운영자가 편성한 내용으로 대체 노출(필수)'
+                      : blocked
+                        ? '등록된 항목 없음 · 먼저 상품 등록'
+                        : `등록한 ${corner.itemCount}개를 대신 노출`}
                 </span>
               </span>
             </button>
@@ -337,6 +356,8 @@ export function CornerSupplyPanel({
   const [pending, start] = useTransition();
   const mode = corner.recSource ? normalizeRecSource(corner.recSource) : '운영자 편성';
   const cvm = isCvmSource(mode);
+  // 효과적 폴백 — 네비/필수형은 '미노출'/빈 값이어도 '운영자 편성'(미노출 금지). 저장·'폴백용 항목' 노출 판정에 공통 사용.
+  const effFallback = effectiveFallback(corner.cornerType, corner.cvmFallback);
 
   const save = (patch: Partial<Parameters<typeof setCornerSupply>[2]>) =>
     start(async () => {
@@ -345,7 +366,7 @@ export function CornerSupplyPanel({
         cvmCatalog: corner.cvmCatalog,
         cvmTopN: corner.cvmTopN,
         cvmSlotId: corner.cvmSlotId,
-        cvmFallback: corner.cvmFallback ?? '미노출',
+        cvmFallback: effFallback,
         ...patch,
       });
     });
@@ -361,8 +382,8 @@ export function CornerSupplyPanel({
           <FallbackStep corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
           {/* 노출 타입 베리에이션 — CVM이 변형 중 고객마다 택1(못 고르면 ④폴백). CVM 수급일 때만 여기 노출(2026-10-12 사용자 요청). */}
           {variantsSlot}
-          {/* CVM 구좌라도 폴백이 '운영자 편성'이면 등록해 둔 항목이 필요하다 → 등록 UI를 계속 연다 */}
-          {corner.cvmFallback === '운영자 편성으로 대체' && (
+          {/* CVM 구좌라도 폴백이 '운영자 편성'이면 등록해 둔 항목이 필요하다 → 등록 UI를 계속 연다(네비/필수형은 기본값으로 항상) */}
+          {effFallback === '운영자 편성으로 대체' && (
             <Step no={5} title="폴백용 항목" desc="CVM이 비었을 때 대신 나갈 항목입니다.">
               {children}
             </Step>
