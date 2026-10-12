@@ -1944,23 +1944,22 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
         </div>
       ) : (
         <>
-          <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="mb-1 flex items-center justify-between gap-2">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-700"><Sparkles className="h-3.5 w-3.5" /> 추가 노출 타입 {vars.length}개 <span className="font-normal text-violet-400">클릭해 변경 · CVM 택1</span></p>
             {vars.length < 4 && <button type="button" onClick={add} className="shrink-0 rounded-md border border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100"><Plus className="mr-0.5 inline h-2.5 w-2.5" />타입</button>}
           </div>
+          <p className="mb-2 text-[10px] leading-relaxed text-muted-foreground">타겟별로 바뀌는 건 <b className="text-violet-600">레이아웃 + 코너 타이틀(문구)</b>뿐이에요. <b className="text-slate-600">상품·혜택 아이템은 원장에서 통으로</b> 가져와 고객 공통(어떤 아이템을 고를지 선별은 CVM 런타임).</p>
           <div className="flex items-start gap-4">
             {vars.map((v, i) => {
-              // 각 타입 = 자기 노출 타입(카탈로그) 레이아웃 + 타겟이 있으면 그 타겟 문구로 치환 → 껍데기·문구 모두 타입별로 다르게.
+              // 각 타입 = 자기 노출 타입(카탈로그) 레이아웃 + 타겟이 있으면 '코너 타이틀(문구)'만 그 타겟 문구로 치환.
+              //  상품·혜택 아이템(배스킨라빈스·공차 등)은 원장(BSS/EPC)에서 '통으로' 가져오는 재료라 타겟별로 바꾸지 않는다 — 고객 공통.
+              //  (어떤 아이템이 나갈지 '선별·순위'는 CVM 런타임, 미리보기는 폴백이라 base 아이템 그대로. 2026-10-12 사용자 결정.)
               const vType = v.typeId ? cornerTypes.find((t) => t.id === v.typeId) : null;
               const withTarget = (pc: PreviewCorner): PreviewCorner => {
                 if (!v.target) return pc;
                 // 노출 제외(enabled=false)된 후보는 매칭에서 빠지고 기본(base)으로 폴백 — 채널 통제 권한 반영.
                 const tHit = titleVars.find((t) => t.target === v.target && t.text && t.enabled !== false);
-                return {
-                  ...pc,
-                  mainTitle: tHit ? tHit.text : pc.mainTitle,
-                  components: pc.components.map((c) => ({ ...c, atoms: c.atoms.map((a) => { const hit = a.contentVariants?.find((cv) => cv.target === v.target && cv.text && cv.enabled !== false); return hit ? { ...a, content: hit.text } : a; }) })),
-                };
+                return tHit ? { ...pc, mainTitle: tHit.text } : pc; // 코너 타이틀만 변형, 아이템은 그대로
               };
               const vPreview: PreviewCorner = withTarget(vType
                 ? { ...preview, cornerLayout: null, layoutDetail: vType.typeDetail ?? preview.layoutDetail, bigBanner: vType.bigBanner ?? false }
@@ -1987,7 +1986,7 @@ function VariantSpread({ templateId, corner, preview, cornerTypes }: { templateI
                   {v.target && <span className="absolute right-2 top-2 z-10 rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">{v.target}</span>}
                   <CornerBlock corner={vPreview} />
                 </div>
-                <p className="mt-1 text-center text-[9px] text-amber-600">{vType ? `노출 타입: ${vType.typeDetail || vType.name}` : '노출 타입을 선택하면 그 레이아웃으로 렌더'}{v.target ? ` · 타겟 ${v.target} 문구` : ''}</p>
+                <p className="mt-1 text-center text-[9px] text-amber-600">{vType ? `노출 타입: ${vType.typeDetail || vType.name}` : '노출 타입을 선택하면 그 레이아웃으로 렌더'}{v.target ? ` · 타겟 ${v.target} 코너 문구(아이템은 원장 통으로)` : ''}</p>
               </div>
               );
             })}
