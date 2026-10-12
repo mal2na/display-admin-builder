@@ -4,7 +4,7 @@
  * 코너 수급 파이프라인 — 빌더 우측 패널의 뼈대 (2026-10-08 CVM 협의 반영).
  *
  * 회의에서 정해진 모델을 화면 순서 그대로 보여준다.
- *   ① 껍데기   — '코너 불러오기'로 가져오는 건 레이아웃·노출 타입뿐. 내용은 비어 있다.
+ *   ① 코너 정보 — 껍데기(스펙)+콘텐츠. '코너 정보' 카드가 담당(이 파일 밖).
  *   ② 수급     — 이 자리를 누가 채우나. 한 구좌는 한 방식만(겸용 금지).
  *   ③ 채우기   — 운영자 편성이면 상품 등록, CVM이면 무엇을 요청할지(계약).
  *   ④ 폴백     — 못 받았을 때. 기본은 미노출(기본 배너 상시 운영 불가).
@@ -28,7 +28,7 @@ import {
   type FieldOwner,
 } from '@/lib/display-taxonomy';
 import { setCornerSupply } from '@/app/admin/templates/actions';
-import { Layers, Lock, Sparkles, PackageSearch, ShieldAlert, ArrowRight, Info } from 'lucide-react';
+import { Layers, Sparkles, PackageSearch, ShieldAlert, ArrowRight, Info } from 'lucide-react';
 
 export type SupplyCorner = {
   id: string;
@@ -74,37 +74,8 @@ function OwnerChip({ owner }: { owner: FieldOwner }) {
   return <span className={cn(CHIP_BASE, 'h-[22px] text-[11px]', FIELD_OWNER_TONE[owner])}>{owner}</span>;
 }
 
-function Row({ k, v }: { k: string; v: React.ReactNode }) {
-  return (
-    <div className="flex items-start gap-2 border-b border-[var(--line)] py-1.5 last:border-b-0">
-      <span className="w-[92px] shrink-0 text-[11px] text-[var(--ink3)]">{k}</span>
-      <span className="min-w-0 flex-1 text-[11.5px] text-[var(--ink)]">{v}</span>
-    </div>
-  );
-}
-
-/* ── ① 껍데기 ───────────────────────────────────────────────────── */
-
-function ShellStep({ corner }: { corner: SupplyCorner }) {
-  return (
-    <Step
-      no={1}
-      title="껍데기 — 코너 유형에서 가져옴"
-      desc="‘코너 불러오기’로 가져오는 건 레이아웃·노출 타입까지입니다. 내용물은 비어 있고, 아래 ②~③에서 채웁니다. 이 세 값은 코너 유형 관리(DS·개발 영역)에서 정의하므로 빌더에서 바꿀 수 없습니다."
-    >
-      <div className="rounded-[8px] bg-[var(--th)] p-2.5">
-        <Row k="코너 유형" v={corner.cornerType} />
-        <Row k="배열·레이아웃" v={corner.layoutDetail || corner.cornerLayout || '—'} />
-        <Row k="노출 개수" v={corner.maxItems != null ? `최대 ${corner.maxItems}개` : '—'} />
-      </div>
-      <p className="mt-2 flex items-center gap-1.5 text-[11px] text-[var(--ink3)]">
-        <Lock className="h-3 w-3 shrink-0" /> 코너 유형 관리에서 정의 · 빌더 수정 불가
-      </p>
-    </Step>
-  );
-}
-
 /* ── ② 수급 방식 ────────────────────────────────────────────────── */
+/* (① 코너 정보 = 껍데기+콘텐츠는 '코너 정보' 카드가 담당 — 2026-10-12) */
 
 const MODE_ICON: Record<string, React.ReactNode> = {
   '운영자 편성': <PackageSearch className="h-3.5 w-3.5" />,
@@ -282,6 +253,16 @@ function CvmContractStep({
 
 /* ── ④ 폴백 ─────────────────────────────────────────────────────── */
 
+// 네비게이션·필수 코너 — 사라지면 안 되는 자리(업무 진입형 탭·고정·필수 노출형). pinned 기본 + 정책 PI-DSP-PER-002 '대체 전시 필수'.
+//  이 유형은 CVM이 비어도 미노출 불가 → 폴백을 '운영자 편성'으로 강제한다(2026-10-12 사용자 결정).
+const NAV_MUST_SHOW = ['업무 진입형', '고정·필수 노출형'];
+const mustAlwaysShow = (cornerType: string) => NAV_MUST_SHOW.includes(cornerType);
+// 효과적 폴백 — 네비/필수형은 저장값이 '미노출'이거나 비어 있어도 '운영자 편성'으로 간주(미노출 불가). 그 외는 저장값 없으면 미노출.
+const effectiveFallback = (cornerType: string, cvmFallback: string | null | undefined) =>
+  mustAlwaysShow(cornerType)
+    ? (cvmFallback && cvmFallback !== '미노출' ? cvmFallback : '운영자 편성으로 대체')
+    : (cvmFallback ?? '미노출');
+
 function FallbackStep({
   corner,
   onSave,
@@ -291,13 +272,20 @@ function FallbackStep({
   onSave: (f: string) => void;
   pending: boolean;
 }) {
-  const cur = corner.cvmFallback ?? '미노출';
+  const mustShow = mustAlwaysShow(corner.cornerType);
+  const cur = effectiveFallback(corner.cornerType, corner.cvmFallback);
   return (
-    <Step no={4} title="폴백 — CVM 응답이 비었을 때" desc="기본은 미노출입니다. 대체용 기본 배너를 상시 운영할 수는 없다는 전제(2026-10-08).">
+    <Step no={4} title="폴백 — CVM 응답이 비었을 때"
+      desc={mustShow
+        ? '네비게이션·필수 코너는 숨길 수 없어 운영자 편성이 기본 폴백입니다(대체 전시 필수 · 정책 PI-DSP-PER-002).'
+        : '기본은 미노출입니다. 대체용 기본 배너를 상시 운영할 수는 없다는 전제(2026-10-08).'}>
       <div className="space-y-1.5">
         {CVM_FALLBACKS.map((f) => {
           const on = cur === f;
-          const blocked = f === '운영자 편성으로 대체' && corner.itemCount === 0;
+          // 네비/필수형: 미노출 금지(운영자 편성 강제). 그 외: 운영자 편성은 등록 항목 0이면 비활성.
+          const blocked = mustShow
+            ? f === '미노출'
+            : f === '운영자 편성으로 대체' && corner.itemCount === 0;
           return (
             <button
               key={f}
@@ -316,10 +304,12 @@ function FallbackStep({
                 <span className={cn('block text-[12px] font-semibold', on ? 'text-[var(--ac)]' : 'text-[var(--ink)]')}>{f}</span>
                 <span className="block text-[11px] text-[var(--ink3)]">
                   {f === '미노출'
-                    ? '코너를 숨김 · 빈 자리 없음'
-                    : blocked
-                      ? '등록된 항목 없음 · 먼저 상품 등록'
-                      : `등록한 ${corner.itemCount}개를 대신 노출`}
+                    ? (mustShow ? '네비게이션·필수 코너는 숨길 수 없어요' : '코너를 숨김 · 빈 자리 없음')
+                    : mustShow
+                      ? '운영자가 편성한 내용으로 대체 노출(필수)'
+                      : blocked
+                        ? '등록된 항목 없음 · 먼저 상품 등록'
+                        : `등록한 ${corner.itemCount}개를 대신 노출`}
                 </span>
               </span>
             </button>
@@ -354,15 +344,20 @@ export function CornerSupplyPanel({
   templateId,
   corner,
   children,
+  variantsSlot,
 }: {
   templateId: string;
   corner: SupplyCorner;
   /** ③에서 '운영자 편성'일 때 그대로 끼워 넣는 기존 상품 등록 UI */
   children?: React.ReactNode;
+  /** 노출 타입 베리에이션 — CVM이 변형 중 택1하므로 CVM 수급일 때만 ④폴백 옆에 끼운다(2026-10-12). */
+  variantsSlot?: React.ReactNode;
 }) {
   const [pending, start] = useTransition();
   const mode = corner.recSource ? normalizeRecSource(corner.recSource) : '운영자 편성';
   const cvm = isCvmSource(mode);
+  // 효과적 폴백 — 네비/필수형은 '미노출'/빈 값이어도 '운영자 편성'(미노출 금지). 저장·'폴백용 항목' 노출 판정에 공통 사용.
+  const effFallback = effectiveFallback(corner.cornerType, corner.cvmFallback);
 
   const save = (patch: Partial<Parameters<typeof setCornerSupply>[2]>) =>
     start(async () => {
@@ -371,24 +366,27 @@ export function CornerSupplyPanel({
         cvmCatalog: corner.cvmCatalog,
         cvmTopN: corner.cvmTopN,
         cvmSlotId: corner.cvmSlotId,
-        cvmFallback: corner.cvmFallback ?? '미노출',
+        cvmFallback: effFallback,
         ...patch,
       });
     });
 
   return (
     <div className="space-y-2.5">
-      <ShellStep corner={corner} />
-
+      {/* ① 껍데기는 '코너 정보' 카드(위쪽 🔒 스펙 영역)로 흡수 — 중복 제거(2026-10-12). 여기선 수급부터. */}
       <SupplyStep mode={mode} pending={pending} onPick={(m) => save({ recSource: m })} />
 
       {cvm ? (
         <>
           <CvmContractStep corner={corner} mode={mode} pending={pending} onSave={(p) => save(p)} />
           <FallbackStep corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
-          {/* CVM 구좌라도 폴백이 '운영자 편성'이면 등록해 둔 항목이 필요하다 → 등록 UI를 계속 연다 */}
-          {corner.cvmFallback === '운영자 편성으로 대체' && (
-            <Step no={5} title="폴백용 항목" desc="CVM이 비었을 때 대신 나갈 항목입니다.">
+          {/* 노출 타입 베리에이션 — CVM이 변형 중 고객마다 택1(못 고르면 ④폴백). CVM 수급일 때만 여기 노출(2026-10-12 사용자 요청). */}
+          {variantsSlot}
+          {/* 폴백용 항목(등록 UI) 노출 조건:
+              · 폴백이 '운영자 편성으로 대체'면 대체 항목이 필요 → 연다(네비/필수형은 기본값으로 항상)
+              · CVM 콘텐츠 연동이면 완성본이 안 오는 경우를 대비해 운영자가 폴백 콘텐츠를 등록해둔다 → 항상 연다(2026-10-12 사용자 요청) */}
+          {(effFallback === '운영자 편성으로 대체' || mode === 'CVM 콘텐츠 연동') && (
+            <Step no={5} title="폴백용 항목" desc="CVM 완성본이 안 왔을 때 대신 나갈 항목을 운영자가 등록합니다.">
               {children}
             </Step>
           )}

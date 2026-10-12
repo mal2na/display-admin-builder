@@ -442,17 +442,105 @@ function GovernanceView() {
   );
 }
 
+// ───────────────────────── CVM 노출 탭 ─────────────────────────
+//  "CVM이 빌더 어디에·어떻게 노출되나"를 한눈에. 근거: 2026-10-01 스크럼 CVM · 2026-10-06/07 회의 · POL-REC v0.23 · CLAUDE.md.
+function CvmCard({ no, title, children }: { no: string; title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border border-[#e8ecef] bg-white p-5">
+      <p className="mb-1 text-[12px] font-bold text-[#3617ce]">{no}</p>
+      <h3 className="mb-3 text-[16px] font-extrabold leading-snug text-slate-900">{title}</h3>
+      {children}
+    </section>
+  );
+}
+function CvmSpotRow({ where, what, ui }: { where: string; what: React.ReactNode; ui: string }) {
+  return (
+    <div className="grid grid-cols-[120px_1fr_132px] gap-3 border-t border-[var(--line)] px-4 py-3 first:border-t-0">
+      <span className="text-[13px] font-bold leading-relaxed text-[var(--ink)]">{where}</span>
+      <span className="text-[13px] leading-[1.7] text-[var(--ink2)]">{what}</span>
+      <span className="text-[11.5px] leading-relaxed text-[var(--ink3)]">{ui}</span>
+    </div>
+  );
+}
+function CvmView() {
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-[13px] leading-relaxed text-slate-500">
+        CVM이 <b className="text-slate-800">빌더 어디에·어떻게</b> 노출되는지. 한 줄 원칙 —
+        <b className="text-[#3617ce]"> 재료(후보)는 운영자가 빌더에서, 조합·택1·순위는 CVM이 고객마다.</b>
+      </p>
+
+      {/* ① 개인화 요소 */}
+      <CvmCard no="① CVM이 제공하는 것" title="개인화 요소 — 코너 안에서 고객마다 달라지는 것">
+        <div className="rounded-lg border border-[#e8ecef]">
+          <GovRow who="콘텐츠(핵심)" what={<>상품·혜택·업무. 큰 후보 풀(50·300개)에서 <b>고객별 N개(3~5) 선별·순위</b>. “3개 등록 3개 노출”이 아니라 풀에서 골라줘요.</>} strong />
+          <GovRow who="문구" what={<>타겟별 대체 문구 중 <b>고객마다 택1</b> (문구 베리에이션).</>} />
+          <GovRow who="레이아웃" what={<>등록된 노출 타입 중 <b>택1</b> (노출 타입 베리에이션 — 스크럼상 ‘부차적’).</>} />
+          <GovRow who="배치 순서" what={<>비고정 코너를 <b>런타임 재정렬</b>(고정 코너 제외).</>} />
+          <GovRow who="값 바인딩" what={<>이름·등급·바코드 등 고객정보 표시(@cvm:key) — 수급 방식과 <b>별개</b>.</>} />
+        </div>
+      </CvmCard>
+
+      {/* ② 거버넌스 */}
+      <CvmCard no="② 어디서 정하나" title="CVM 설정은 빌더 Corner에서 (2026-10-07 변경)">
+        <p className="mb-3 border-l-[3px] border-[#3617ce] pl-3 text-[13.5px] font-bold leading-relaxed text-slate-800">
+          전에는 ‘코너 유형 관리에서 CVM 정의’였지만, 2026-10-07 회의로 <u>개인화(CVM)는 빌더 Corner에서 적용</u>으로 바뀌었어요.
+        </p>
+        <div className="rounded-lg border border-[#e8ecef]">
+          <GovRow who="코너 유형 관리" what={<>껍데기(규격)만 정의·승인. <b>CVM 설정 없음</b>.</>} />
+          <GovRow who="빌더(Corner)" what={<>소재 채우기 + <b>개인화(CVM) 적용 전부</b>(수급 방식·요청·폴백·베리에이션).</>} strong />
+          <GovRow who="룰(세그먼트)" what={<>어드민이 <b>안 적어요</b>. CVM 블랙박스(AI)가 판정 — 세그는 CVM/C360/세일즈포스 입력, 어드민은 <b>룰값 표시만</b>.</>} />
+        </div>
+      </CvmCard>
+
+      {/* ③ 빌더 노출 지점 */}
+      <CvmCard no="③ 빌더 어디에 뜨나" title="수급 = CVM 켠 코너에서만 노출">
+        <div className="rounded-lg border border-[#e8ecef]">
+          <div className="grid grid-cols-[120px_1fr_132px] gap-3 bg-[#f3f4f8] px-4 py-2.5 text-[11px] font-bold text-[var(--ink2)]">
+            <span>지점</span><span>무엇</span><span>현재 위치</span>
+          </div>
+          <CvmSpotRow where="수급 방식" what={<>CVM 기반 / 운영자 편성 택1. CVM 켠 코너만 아래가 열림.</>} ui="② 수급" />
+          <CvmSpotRow where="요청(풀→택M)" what={<>CVM에 무엇을·몇 개 달라고 할지 + 콘텐츠 묶음 N중M 보충.</>} ui="③ 요청 · 보충 배지" />
+          <CvmSpotRow where="폴백" what={<>응답 없을 때(미노출 / 운영자 편성). 미리보기는 항상 폴백 기준.</>} ui="④ 폴백" />
+          <CvmSpotRow where="문구 베리에이션" what={<>타겟별 대체 문구(CVM 택1). 등록=아톰 ＋문구 / 요약=‘문구 한눈에 보기’.</>} ui="CVM 흐름(폴백 옆)" />
+          <CvmSpotRow where="노출 타입 베리에이션" what={<>레이아웃 후보 2~3개(CVM 택1).</>} ui="CVM 흐름(폴백 옆)" />
+          <CvmSpotRow where="배치 순서" what={<>비고정 코너 런타임 재정렬. 위치 고정(Lock)은 제외.</>} ui="템플릿 배치 · 순서 예시" />
+          <CvmSpotRow where="값 바인딩" what={<>이름·등급·바코드 = @cvm:key 고객정보(수급과 별개).</>} ui="아톰 바인딩" />
+        </div>
+        <div className="mt-3.5 rounded-lg bg-[#f1f2ff]/60 px-4 py-3 text-[12.5px] leading-[1.8] text-slate-700">
+          CVM 흐름 묶음(수급=CVM일 때만):{' '}
+          <b className="text-[#3617ce]">③ 요청 → ④ 폴백 → [개인화 베리에이션: 노출 타입 + 문구] → ⑤ 출처</b>
+        </div>
+      </CvmCard>
+
+      {/* ④ 미확정 */}
+      <section className="rounded-xl border border-[#f2c6a3] bg-[#fff7f1] p-5">
+        <p className="mb-1 text-[12px] font-bold text-[#c2410c]">④ 아직 확정 전</p>
+        <h3 className="mb-3 text-[16px] font-extrabold leading-snug text-slate-900">회의에서 열려 있는 쟁점</h3>
+        <ul className="space-y-2 text-[13px] leading-[1.7] text-[var(--ink2)]">
+          <li className="flex gap-2"><span className="text-[#c2410c]">·</span><span><b>연동 지점·에셋 등록 위치</b> — ‘어드민 등록 + CVM 데이터 수신’(우리 안) vs ‘CVM 등록’.</span></li>
+          <li className="flex gap-2"><span className="text-[#c2410c]">·</span><span><b>코너 순서 개인화</b> — 세일즈포스 “불가” vs 우리 “원함”.</span></li>
+        </ul>
+      </section>
+
+      <p className="text-[11px] leading-relaxed text-slate-400">
+        근거 — 2026-10-01 데일리 스크럼(CVM) · 2026-10-06/07 회의 · 추천 정책서 POL-REC v0.23 · CLAUDE.md.
+      </p>
+    </div>
+  );
+}
+
 // ───────────────────────── 탭 셸 ─────────────────────────
 export function StructureTabs() {
-  const [tab, setTab] = useState<'map' | 'ia' | 'gov'>('map');
+  const [tab, setTab] = useState<'map' | 'ia' | 'gov' | 'cvm'>('map');
   return (
     <div>
       <PageTabs
-        tabs={[{ key: 'map', label: '구조도' }, { key: 'ia', label: 'IA' }, { key: 'gov', label: '거버넌스' }]}
+        tabs={[{ key: 'map', label: '구조도' }, { key: 'ia', label: 'IA' }, { key: 'gov', label: '거버넌스' }, { key: 'cvm', label: 'CVM 노출' }]}
         value={tab}
-        onChange={(k) => setTab(k as 'map' | 'ia' | 'gov')}
+        onChange={(k) => setTab(k as 'map' | 'ia' | 'gov' | 'cvm')}
       />
-      {tab === 'map' ? <StructureView /> : tab === 'ia' ? <IaView /> : <GovernanceView />}
+      {tab === 'map' ? <StructureView /> : tab === 'ia' ? <IaView /> : tab === 'gov' ? <GovernanceView /> : <CvmView />}
     </div>
   );
 }

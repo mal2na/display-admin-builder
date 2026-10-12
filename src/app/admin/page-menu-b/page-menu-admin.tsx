@@ -70,7 +70,8 @@ export function PageMenuAdmin() {
   return (
     <Ctx.Provider value={ctx}>
       <div className="px-12 py-9 pb-28">
-        <PageHeader trail={trail} title={title} divider={!isListish && !(view === 'detail')} />
+        {/* 제목 아래 구분선은 다른 메뉴(App 버전·스플래시 등)와 동일하게 항상 둔다 — 탭이 뒤따라도 마찬가지(2026-10-12) */}
+        <PageHeader trail={trail} title={title} />
 
         {isListish && (
           <>

@@ -83,16 +83,15 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
       {/* 검색 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
+          // 한 줄에 들어갈 만큼 가로로 채운다(2026-10-12 사용자 요청)
           rows={[
             [
               ['노출여부', <LabelSel key="a" opts={['전체', '노출', '미노출', '검수 중']} />],
               ['댓글유형', <LabelSel key="b" opts={['전체', '문의', '반응']} />],
-            ],
-            [
-              ['답변여부', <LabelSel key="c" opts={['전체', '답변완료', '답변대기']} />],
               ['기간', (
                 <span key="d" className="rng">
-                  <LabelSel opts={['등록일시', '답글 등록일']} w="w200" />
+                  {/* 라벨이 짧아 폭을 줄인다 — 줄여야 기간이 첫 줄에 함께 들어간다 */}
+                  <LabelSel opts={['등록일시', '답글 등록일']} w="!min-w-[150px]" />
                   <input type="date" className="inp" />
                   <span className="text-[var(--ink3)]">~</span>
                   <input type="date" className="inp" />
@@ -100,10 +99,11 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
               )],
             ],
             [
+              ['답변여부', <LabelSel key="c" opts={['전체', '답변완료', '답변대기']} />],
               ['검색', (
                 <span key="e" className="rng">
                   <LabelSel opts={['전체', '댓글내용', '답글내용', '멤버십 채널 ID']} />
-                  <input className="inp w-[340px] max-w-full" placeholder="내용을 입력하세요." />
+                  <input className="inp" placeholder="내용을 입력하세요." />
                 </span>
               ), 3],
             ],
@@ -266,18 +266,16 @@ function ReviewsTab() {
         <FilterPanel
           rows={[
             [
-              ['노출여부', <LabelSel key="a" opts={['전체', '노출', '미노출', '검수 중']} w="w200" />],
-              ['별점', <LabelSel key="b" opts={['전체', '5점', '4점', '3점', '2점', '1점']} w="w200" />],
-            ],
-            [
-              ['신고', <LabelSel key="c" opts={['전체', '신고 있음', '신고 없음']} w="w200" />],
-              ['기간', <LabelSel key="d" opts={['등록일시']} w="w200" />],
+              ['노출여부', <LabelSel key="a" opts={['전체', '노출', '미노출', '검수 중']} />],
+              ['별점', <LabelSel key="b" opts={['전체', '5점', '4점', '3점', '2점', '1점']} />],
+              ['신고', <LabelSel key="c" opts={['전체', '신고 있음', '신고 없음']} />],
+              ['기간', <LabelSel key="d" opts={['등록일시']} />],
             ],
             [
               ['검색', (
                 <span key="e" className="rng">
-                  <LabelSel opts={['전체', '상품명', '리뷰내용', '멤버십 채널 ID']} w="w200" />
-                  <input className="inp w-[340px] max-w-full" placeholder="내용을 입력하세요." />
+                  <LabelSel opts={['전체', '상품명', '리뷰내용', '멤버십 채널 ID']} />
+                  <input className="inp" placeholder="내용을 입력하세요." />
                 </span>
               ), 3],
             ],
