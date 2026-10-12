@@ -3847,7 +3847,7 @@ export function BuilderEditor({
                 {/* 표시 옵션 — 껍데기(노출 타입)와 문구 정리. 수급과 무관하게 항상 쓴다. */}
                 <div className="rounded-lg border bg-card p-4">
                   <p className="mb-0.5 text-sm font-semibold">표시 옵션</p>
-                  <p className="mb-2 text-[11px] text-muted-foreground">노출 타입(껍데기) 후보와 이 코너의 문구를 정리합니다.</p>
+                  <p className="mb-2 text-[11px] text-muted-foreground">빅배너 강조 · 노출 타입 후보 · 코너 문구를 정리합니다.</p>
                   <BigBannerControl templateId={templateId} corner={selectedCorner} banners={library.banners} />
                   <DisplayVariantsControl templateId={templateId} corner={selectedCorner} cornerTypes={library.cornerTypes} />
                   <CopyOverview templateId={templateId} corner={selectedCorner} />
