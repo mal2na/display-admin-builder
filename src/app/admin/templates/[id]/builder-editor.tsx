@@ -810,7 +810,6 @@ function MessagePickerModal({
 //  어제 논의(2026-09-09) 반영 — '누가 채우냐'의 축. 어드민은 실제로 정하는 것만 편집한다.
 //   · 상품형 컴포넌트(상품·영화 등): 상품 정보가 BSS·API 원장에 이미 있어 하나하나 편집이 아니라 '가져오기'만.
 //   · 코너 수급이 CVM 기반: 콘텐츠가 런타임에 고객별로 채워짐 → 어드민 편집 불가.
-//  잠그는 필드 = 문구(content)·이미지(image). 링크·표시토글·개수·배치는 운영자 몫이라 그대로 편집.
 //  선택형(카테고리 탭 등 구조)은 운영자 편성이라 잠그지 않는다.
 function atomSourceLock(
   atomType: string,
@@ -819,25 +818,23 @@ function atomSourceLock(
 ): { tag: string; label: string } | null {
   if (componentType === '선택형') return null;
   const f = ATOM_TYPE_FIELDS[atomType as AtomType] ?? {};
-  if (!f.content && !f.image) return null; // 링크/버튼 등 순수 편집 항목은 대상 아님
-  // 상품형 = '재료는 API, 문구는 운영자/CVM'(크리테오·껍데기 모델). 상품 원장에서 오는
-  //  이미지·아이콘·가격만 잠그고(위변조 방지), 마케팅 문구(텍스트)는 운영자가 편집+베리에이션 가능(2026-10-07 사용자 결정: 문구/노출만 편집).
+  // 상품형 = 아이템을 EPC+전시상품 정보에서 '통으로' 가져온다. 문구·이미지·아이콘·가격·랜딩 모두 원장 값 → 개별 편집 잠금(순서·노출 on/off만 운영자 몫).
+  //  바꾸려면 '상품 불러오기(EPC+전시상품 정보)'로 다른 상품을 통으로 불러온다. (2026-10-12 사용자 결정 '가' — 기존 '문구·링크 편집 허용'(10-07) 폐기.)
   if (componentType === '상품형') {
-    return (atomType === 'IMAGE' || atomType === 'ICON' || atomType === 'PRICE')
-      ? { tag: 'API', label: '상품 정보 · 자동' }
-      : null;
+    return (f.content || f.image || f.link) ? { tag: 'EPC', label: 'EPC+전시상품 정보 · 자동' } : null;
   }
+  if (!f.content && !f.image) return null; // 링크/버튼 등 순수 편집 항목은 대상 아님(상품형 외)
   if (isCvmSource(recSource)) return { tag: 'CVM', label: '개인화 · 고객별 자동' };
   return null;
 }
 
 // 잠긴(가져오는) 콘텐츠 표시 — 입력이 아니라 '자동 연동 값'임을 컴팩트한 읽기 전용 한 줄로.
 //  form처럼 보이지 않게 최소화(자물쇠 + 값). 카드 상단 요약(AutoSourceSummary)이 맥락을 설명하므로 여기선 값만.
-function LockedSource({ lock, sample, kind }: { lock: { tag: string; label: string }; sample?: string | null; kind: 'content' | 'image' }) {
+function LockedSource({ lock, sample, kind }: { lock: { tag: string; label: string }; sample?: string | null; kind: 'content' | 'image' | 'link' }) {
   return (
     <div className="flex items-center gap-1.5 px-0.5 py-0.5 text-[11px] text-slate-500">
       <Lock className="h-2.5 w-2.5 shrink-0 text-slate-400" />
-      <span className="truncate">{kind === 'image' ? '이미지 자동 연동' : sample ? sample : '실서비스에서 자동'}</span>
+      <span className="truncate">{kind === 'image' ? '이미지 자동 연동' : kind === 'link' ? (sample ? `랜딩 ${sample}` : '아이템 랜딩 자동') : sample ? sample : '실서비스에서 자동'}</span>
       <span className="ml-auto shrink-0 rounded bg-slate-100 px-1 text-[9px] font-semibold text-slate-400">{lock.tag} 자동</span>
     </div>
   );
@@ -955,17 +952,20 @@ function AtomRow({
             onClear={() => onChange({ imageUrl: '' })}
           />
         ))}
-      {f.link && (
-        <div className="space-y-0.5">
-          <span className="text-[10px] text-muted-foreground">이동 URL</span>
-          <Input
-            value={atom.linkUrl ?? ''}
-            onChange={(e) => onChange({ linkUrl: e.target.value })}
-            placeholder="이동 URL 입력 (예: /movie)"
-            className="h-8 text-xs"
-          />
-        </div>
-      )}
+      {f.link &&
+        (sourceLock ? (
+          <LockedSource lock={sourceLock} sample={atom.linkUrl} kind="link" />
+        ) : (
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-muted-foreground">이동 URL</span>
+            <Input
+              value={atom.linkUrl ?? ''}
+              onChange={(e) => onChange({ linkUrl: e.target.value })}
+              placeholder="이동 URL 입력 (예: /movie)"
+              className="h-8 text-xs"
+            />
+          </div>
+        ))}
     </div>
   );
 }
@@ -1083,7 +1083,7 @@ function AtomManager({
   }, [component.cornerComponentId]);
 
   // API 자동 연동(상품형) 여부 — 이미지·문구·가격은 상품 원장에서 자동. 카드 상단에 요약을 한 번만 노출.
-  const apiSourced = component.componentType === '상품형' && atoms.some((a) => atomSourceLock(a.atomType, component.componentType, recSource)?.tag === 'API');
+  const apiSourced = component.componentType === '상품형' && atoms.some((a) => atomSourceLock(a.atomType, component.componentType, recSource)?.tag === 'EPC');
 
   // ── 세트로 불러오기 (2026-10-08 사용자 요청) ───────────────────────────────
   //  상품·콘텐츠 원장의 한 항목 = (이름 · 설명 · 이미지) 한 세트다. 문구를 칸마다 따로 긁어오는 게 아니라
@@ -1151,10 +1151,10 @@ function AtomManager({
       {apiSourced && (
         <div className="rounded-md border border-sky-200 bg-sky-50/70 px-2.5 py-2 text-[11px] leading-relaxed">
           <p className="flex items-center gap-1.5 font-semibold text-sky-800">
-            <Lock className="h-3 w-3" /> 상품 자동 연동 <span className="rounded bg-sky-600 px-1 text-[9px] font-bold text-white">API</span>
+            <Lock className="h-3 w-3" /> 상품 자동 연동 <span className="rounded bg-sky-600 px-1 text-[9px] font-bold text-white">EPC</span>
           </p>
-          <p className="mt-0.5 text-slate-500"><b className="text-slate-600">이미지·가격</b>은 <b className="text-slate-600">상품 원장(API)</b>에서 자동 채워집니다. 바꾸려면 <b className="text-slate-600">‘상품 불러오기’</b>로 다른 상품을 선택하세요.</p>
-          <p className="mt-1 text-emerald-700">편집 가능: <b>마케팅 문구(＋베리에이션) · 노출 on/off · 이동 링크 · 순서</b></p>
+          <p className="mt-0.5 text-slate-500"><b className="text-slate-600">이미지·문구·가격·랜딩</b>은 <b className="text-slate-600">EPC+전시상품 정보</b>에서 <b className="text-slate-600">통으로</b> 채워집니다. 바꾸려면 <b className="text-slate-600">‘상품 불러오기’</b>로 다른 상품을 통으로 선택하세요.</p>
+          <p className="mt-1 text-emerald-700">편집 가능: <b>노출 on/off · 순서</b> (개별 아이콘·텍스트·URL 편집 불가)</p>
         </div>
       )}
       {atoms.length === 0 && <p className="text-[11px] text-muted-foreground">Atom 없음 — 아래에서 추가하세요</p>}
