@@ -1788,9 +1788,11 @@ function CopyOverview({ templateId, corner }: { templateId: string; corner: Corn
   );
 }
 
-// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치+배너 선택). 상품형/혜택·오퍼형에서만(콘텐츠 안내형은 빅배너 없음 — 2026-10-06). 즉시 저장.
+// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치+배너 선택). 즉시 저장.
+//  노출 조건 = 상품형/혜택·오퍼형 중 '+배너' 레이아웃만(세로형+배너·가로형+배너 등). 빅배너는 코너 유형 카탈로그에서 '배너' 레이아웃에만 등록되므로
+//  (시드 bigBanner = /배너/.test(layoutDetail)), 세로형+칩·가로형 등 '배너' 없는 레이아웃엔 토글을 띄우지 않는다 — 코너 유형 관리와 1:1(2026-10-12 사용자 지적).
 function BigBannerControl({ templateId, corner, banners }: { templateId: string; corner: CornerNode; banners: LibraryData['banners'] }) {
-  const canBigBanner = ['상품형', '혜택·오퍼형'].includes(corner.cornerType);
+  const canBigBanner = ['상품형', '혜택·오퍼형'].includes(corner.cornerType) && (/배너/.test(corner.layoutDetail ?? '') || !!corner.bigBanner);
   const [on, setOn] = useState(!!corner.bigBanner);
   const [pending, start] = useTransition();
   useEffect(() => { setOn(!!corner.bigBanner); }, [corner.bigBanner, corner.templateCornerId]);
