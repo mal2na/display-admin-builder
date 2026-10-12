@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
-import { PageTabs } from '@/components/page-tabs';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource } from '@/lib/display-taxonomy';
@@ -1059,26 +1058,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
       </div>
       {DOMAIN_GUIDE[domain] && <p className="mt-3 text-[12px] leading-relaxed text-[var(--ink3)]">{DOMAIN_GUIDE[domain]}</p>}
 
-      {/* ── 상위 거버넌스: 승인 상태 탭 (언더라인 탭 — 참고 UI 스타일) ── */}
-      {(() => {
-        const statusTabActive = statusSel.size >= statusKeys.length ? '전체' : statusSel.size === 1 ? [...statusSel][0] : '';
-        const setStatusTab = (k: string) => { setStatusSel(k === '전체' ? new Set(statusKeys) : new Set([k])); setPage(1); };
-        // 라벨·순서는 정책서 상태값(CORNER_TYPE_STATUSES) 그대로 사용: 승인완료·승인요청·반려·임시저장
-        const tabs: { key: string; label: string }[] = [{ key: '전체', label: '전체' }, ...statusKeys.map((k) => ({ key: k, label: CORNER_TYPE_STATUS_LABEL[k] ?? k }))];
-        return (
-          <PageTabs
-            tabs={tabs.map((t) => ({
-              key: t.key,
-              label: t.label,
-              count: t.key === '전체' ? domainTypes.length : domainTypes.filter((x) => x.status === t.key).length,
-            }))}
-            value={statusTabActive}
-            onChange={setStatusTab}
-          />
-        );
-      })()}
-
-      {/* 코너 유형은 상위 탭이 아니라 아래 상세 필터에서 고른다 (승인 상태만 상위 거버넌스 탭). */}
+      {/* 상단 승인 상태 탭(전체·승인완료·승인요청·반려·임시저장) 제거 — 상태 필터는 아래 상세검색의 '승인상태'로 일원화(2026-10-12 사용자 요청). */}
 
       {/* 검색 필터 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">

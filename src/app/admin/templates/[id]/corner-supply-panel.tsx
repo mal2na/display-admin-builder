@@ -4,11 +4,11 @@
  * 코너 수급 파이프라인 — 빌더 우측 패널의 뼈대 (2026-10-08 CVM 협의 반영).
  *
  * 회의에서 정해진 모델을 화면 순서 그대로 보여준다.
- *   (껍데기 스펙은 '코너 정보' 카드 상단으로 흡수 — 2026-10-12)
- *   ① 수급     — 이 자리를 누가 채우나. 한 구좌는 한 방식만(겸용 금지).
- *   ② 채우기   — 운영자 편성이면 상품 등록, CVM이면 무엇을 요청할지(계약).
- *   ③ 폴백     — 못 받았을 때. 기본은 미노출(기본 배너 상시 운영 불가).
- *   ④ 출처 맵  — 각 표시 요소를 누가 소유하나(SSOT).
+ *   ① 코너 정보 — 껍데기(스펙)+콘텐츠. '코너 정보' 카드가 담당(이 파일 밖).
+ *   ② 수급     — 이 자리를 누가 채우나. 한 구좌는 한 방식만(겸용 금지).
+ *   ③ 채우기   — 운영자 편성이면 상품 등록, CVM이면 무엇을 요청할지(계약).
+ *   ④ 폴백     — 못 받았을 때. 기본은 미노출(기본 배너 상시 운영 불가).
+ *   ⑤ 출처 맵  — 각 표시 요소를 누가 소유하나(SSOT).
  */
 
 import { useState, useTransition } from 'react';
@@ -74,8 +74,8 @@ function OwnerChip({ owner }: { owner: FieldOwner }) {
   return <span className={cn(CHIP_BASE, 'h-[22px] text-[11px]', FIELD_OWNER_TONE[owner])}>{owner}</span>;
 }
 
-/* ── ① 수급 방식 ────────────────────────────────────────────────── */
-/* (껍데기 스펙은 '코너 정보' 카드 상단으로 흡수 — 2026-10-12) */
+/* ── ② 수급 방식 ────────────────────────────────────────────────── */
+/* (① 코너 정보 = 껍데기+콘텐츠는 '코너 정보' 카드가 담당 — 2026-10-12) */
 
 const MODE_ICON: Record<string, React.ReactNode> = {
   '운영자 편성': <PackageSearch className="h-3.5 w-3.5" />,
@@ -94,7 +94,7 @@ function SupplyStep({
 }) {
   return (
     <Step
-      no={1}
+      no={2}
       title="수급 — 이 자리를 누가 채우나"
       desc="한 구좌는 한 방식만 씁니다. CVM 구좌로 넘기면 그 자리는 CVM이 통제합니다(겸용 불가)."
     >
@@ -155,7 +155,7 @@ function CvmContractStep({
 
   return (
     <Step
-      no={2}
+      no={3}
       title={isData ? '요청 — CVM에 무엇을 달라고 할지' : '구좌 — CVM에 넘길 자리'}
       desc={
         isData
@@ -264,7 +264,7 @@ function FallbackStep({
 }) {
   const cur = corner.cvmFallback ?? '미노출';
   return (
-    <Step no={3} title="폴백 — CVM 응답이 비었을 때" desc="기본은 미노출입니다. 대체용 기본 배너를 상시 운영할 수는 없다는 전제(2026-10-08).">
+    <Step no={4} title="폴백 — CVM 응답이 비었을 때" desc="기본은 미노출입니다. 대체용 기본 배너를 상시 운영할 수는 없다는 전제(2026-10-08).">
       <div className="space-y-1.5">
         {CVM_FALLBACKS.map((f) => {
           const on = cur === f;
@@ -306,7 +306,7 @@ function FallbackStep({
 function OwnerMapStep({ recSource }: { recSource: string | null }) {
   const rows = fieldOwnerMap(recSource);
   return (
-    <Step no={4} title="출처 — 이 값이 어디서 오나" tone="muted">
+    <Step no={5} title="출처 — 이 값이 어디서 오나" tone="muted">
       <div className="space-y-1.5">
         {rows.map((r) => (
           <div key={r.field} className="flex items-center gap-2" title={r.note}>
@@ -358,13 +358,13 @@ export function CornerSupplyPanel({
           <FallbackStep corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
           {/* CVM 구좌라도 폴백이 '운영자 편성'이면 등록해 둔 항목이 필요하다 → 등록 UI를 계속 연다 */}
           {corner.cvmFallback === '운영자 편성으로 대체' && (
-            <Step no={4} title="폴백용 항목" desc="CVM이 비었을 때 대신 나갈 항목입니다.">
+            <Step no={5} title="폴백용 항목" desc="CVM이 비었을 때 대신 나갈 항목입니다.">
               {children}
             </Step>
           )}
         </>
       ) : (
-        <Step no={2} title="채우기 — 상품 등록" desc="등록한 항목이 정한 순서 그대로 나갑니다. CVM 연동으로 바꾸면 이 구성은 폴백으로 쓰입니다.">
+        <Step no={3} title="채우기 — 상품 등록" desc="등록한 항목이 정한 순서 그대로 나갑니다. CVM 연동으로 바꾸면 이 구성은 폴백으로 쓰입니다.">
           {children}
         </Step>
       )}

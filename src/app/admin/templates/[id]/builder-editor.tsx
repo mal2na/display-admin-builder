@@ -2364,6 +2364,8 @@ function CornerInfoForm({
       {/* 헤더: '코너 정보' 라벨 + 액션 버튼은 한 줄 고정(줄바꿈 방지), 넓은 유형 칩은 아랫줄로 내려 터지지 않게 */}
       <div className="mb-3 space-y-1.5">
         <div className="flex items-center gap-1.5">
+          {/* 수급 파이프라인 ① 단계 — 코너 정보(껍데기+콘텐츠). 이어서 ②수급 ③채우기 ④폴백 ⑤출처. */}
+          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">1</span>
           <p className="shrink-0 text-sm font-semibold">코너 정보</p>
           {/* 코너는 껍데기 — 콘텐츠·이름·텍스트·노출 개수 등은 빌더에서 설정(회의 반영). 코너 유형은 규격만. */}
           {edit ? (
@@ -3852,7 +3854,7 @@ export function BuilderEditor({
               </div>
             ) : (
               <>
-                {/* 수급 파이프라인 — 수급 방식 → 채우기/CVM 계약 → 폴백 → 출처 맵 (껍데기 스펙은 '코너 정보' 카드로 흡수, 2026-10-12) */}
+                {/* 수급 파이프라인 — ①코너 정보(카드) → ②수급 → ③채우기/CVM 계약 → ④폴백 → ⑤출처 맵 (2026-10-12) */}
                 <CornerSupplyPanel
                   key={selectedCorner.templateCornerId}
                   templateId={templateId}
