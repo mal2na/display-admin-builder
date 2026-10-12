@@ -25,6 +25,8 @@ import {
   FIELD_OWNER_TONE,
   fieldOwnerMap,
   CHIP_BASE,
+  mustAlwaysShow,
+  effectiveFallback,
   type FieldOwner,
 } from '@/lib/display-taxonomy';
 import { setCornerSupply } from '@/app/admin/templates/actions';
@@ -251,15 +253,7 @@ function CvmContractStep({
 
 /* ── ④ 폴백 ─────────────────────────────────────────────────────── */
 
-// 네비게이션·필수 코너 — 사라지면 안 되는 자리(업무 진입형 탭·고정·필수 노출형). pinned 기본 + 정책 PI-DSP-PER-002 '대체 전시 필수'.
-//  이 유형은 CVM이 비어도 미노출 불가 → 폴백을 '운영자 편성'으로 강제한다(2026-10-12 사용자 결정).
-const NAV_MUST_SHOW = ['업무 진입형', '고정·필수 노출형'];
-const mustAlwaysShow = (cornerType: string) => NAV_MUST_SHOW.includes(cornerType);
-// 효과적 폴백 — 네비/필수형은 저장값이 '미노출'이거나 비어 있어도 '운영자 편성'으로 간주(미노출 불가). 그 외는 저장값 없으면 미노출.
-const effectiveFallback = (cornerType: string, cvmFallback: string | null | undefined) =>
-  mustAlwaysShow(cornerType)
-    ? (cvmFallback && cvmFallback !== '미노출' ? cvmFallback : '운영자 편성으로 대체')
-    : (cvmFallback ?? '미노출');
+// 네비게이션·필수 코너 판정 + 효과적 폴백은 display-taxonomy의 SSOT를 쓴다(빌더 폴백 미리보기와 공유).
 
 function FallbackStep({
   corner,

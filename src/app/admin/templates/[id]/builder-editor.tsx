@@ -34,6 +34,7 @@ import {
   REC_SOURCE_INFO,
   normalizeRecSource,
   isCvmSource,
+  effectiveFallback,
   CVM_TARGET_HINTS,
   defaultComposition,
   CHIP_BASE,
@@ -3249,6 +3250,47 @@ function CornerLoadModal({
   );
 }
 
+// ── 운영자 폴백 미리보기 (디바이스 옆 보조 캔버스) ─────────────────────────
+//  CVM 수급 코너는 실서비스에서 CVM이 채우지만, 비면 폴백이 노출된다. 메인 폰은 'CVM이 채운 모습'(콘텐츠 연동=빈 구좌),
+//  이 보조 캔버스는 '폴백=운영자 편성일 때 실제로 뭐가 뜨는지'를 운영자가 바로 비교해 볼 수 있게 한다. (2026-10-12 사용자 요청: 기존 노출타입 캔버스 자리를 폴백용으로 재활용)
+function FallbackSpread({ corner, preview }: { corner: CornerNode; preview: PreviewCorner }) {
+  if (!isCvmSource(corner.recSource)) return null; // 운영자 편성 수급은 폴백 개념이 없다(메인이 곧 운영자 구성).
+  const effFallback = effectiveFallback(corner.cornerType, corner.cvmFallback);
+  const bodyCount = (corner.components ?? []).filter((x) => x.componentType !== '선택형').length;
+  const hasItems = bodyCount > 0 || !!corner.bannerImageUrl;
+  return (
+    <div className="w-[300px] shrink-0">
+      <div className="mb-1.5 flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700"><Layers className="h-3 w-3" /> 운영자 폴백</span>
+        <span className="text-[10px] text-muted-foreground">CVM이 비면 이게 노출</span>
+      </div>
+      {effFallback === '운영자 편성으로 대체' ? (
+        hasItems ? (
+          <>
+            <div className="relative overflow-hidden rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
+              <span className="absolute right-2 top-2 z-10 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">폴백</span>
+              <CornerBlock corner={preview} />
+            </div>
+            <p className="mt-1 text-center text-[9px] text-amber-600">운영자가 등록한 대체 구성 · ‘④ 폴백 &gt; 폴백용 항목’에서 편집</p>
+          </>
+        ) : (
+          <div className="flex min-h-[132px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/50 p-5 text-center">
+            <Layers className="h-5 w-5 text-amber-300" />
+            <p className="text-[11px] font-medium text-amber-700">폴백용 항목이 비어 있어요</p>
+            <p className="text-[10px] leading-relaxed text-amber-500">우측 ‘④ 폴백 &gt; 폴백용 항목’에서<br />대체로 노출할 구성을 등록하세요</p>
+          </div>
+        )
+      ) : (
+        <div className="flex min-h-[132px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/60 p-5 text-center">
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-slate-200 text-slate-400"><X className="h-3.5 w-3.5" /></span>
+          <p className="text-[11px] font-medium text-slate-500">미노출 (폴백 없음)</p>
+          <p className="text-[10px] leading-relaxed text-slate-400">CVM이 비면 이 코너는 고객에게<br />노출되지 않아요. 바꾸려면 ‘④ 폴백’에서<br />‘운영자 편성으로 대체’를 고르세요.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BuilderEditor({
   meta,
   corners,
@@ -3606,7 +3648,11 @@ export function BuilderEditor({
                 ))
               )}
             </DeviceFrame>
-            {/* 노출 타입 '추가 변형(CVM 택1)' 캔버스 제거(2026-10-12): 노출 타입(레이아웃)은 CVM이 아니라 운영자가 단일 선택(코너 정보 → 코너 불러오기). 캔버스엔 선택된 코너 1벌만. */}
+            {/* 디바이스 옆 보조 캔버스 = 운영자 폴백 미리보기 (CVM 수급 코너에서만). 2026-10-12 사용자 요청으로 기존 노출타입 캔버스 자리를 재활용. */}
+            {selectedCorner && (() => {
+              const selPv = previewCorners.find((c) => c.id === selectedCorner.templateCornerId);
+              return selPv ? <FallbackSpread corner={selectedCorner} preview={selPv} /> : null;
+            })()}
           </div>
         </div>
       </div>
