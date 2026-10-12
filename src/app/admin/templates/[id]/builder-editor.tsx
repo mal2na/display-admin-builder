@@ -254,15 +254,11 @@ function CornerTypeChip({ corner, className, compact }: { corner: CornerNode; cl
 function CornerGovernance({ base, layoutDetail }: { base: string; layoutDetail?: string | null }) {
   const purpose = cornerTypePurpose(base);
   if (!purpose && !layoutDetail) return null;
+  // 설명(목적)은 ? 툴팁으로 — 인라인 산문 제거(2026-10-12 사용자 요청: 설명은 전부 툴팁).
   return (
-    <div className="mt-1.5 space-y-1.5 rounded-md border border-slate-200 bg-slate-50/70 p-2">
-      {purpose && <p className="text-[10.5px] leading-relaxed text-slate-600"><span className="font-semibold text-slate-500">목적</span> · {purpose}</p>}
-      {layoutDetail && (
-        <p className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
-          배열·레이아웃 · <b className="text-slate-700">{layoutLabel(layoutDetail)}</b>
-          <DevLockBadge reason="레이아웃(배열)은 DS/개발 영역 — 어드민은 등록된 배열을 '코너 불러오기'로 교체만 가능" />
-        </p>
-      )}
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
+      {layoutDetail && <>배열·레이아웃 · <b className="text-slate-700">{layoutLabel(layoutDetail)}</b><DevLockBadge reason="레이아웃(배열)은 DS/개발 영역 — 어드민은 등록된 배열을 '코너 불러오기'로 교체만 가능" /></>}
+      {purpose && <span title={purpose} aria-label="코너 목적" className="inline-flex cursor-help items-center gap-0.5 text-slate-400">목적 <span className="grid h-3.5 w-3.5 place-items-center rounded-full bg-slate-200 text-[9px] font-bold text-slate-500">?</span></span>}
     </div>
   );
 }
@@ -2253,9 +2249,8 @@ function CornerInfoForm({
         {isMenuListCorner && (
           <div className="col-span-2 space-y-2 rounded-md border border-sky-200 bg-sky-50/40 p-2.5">
             <label className="flex items-center justify-between gap-2">
-              <span className="flex flex-col">
-                <span className="text-xs font-semibold text-sky-800">FO 사용자 설정 가능</span>
-                <span className="text-[10px] text-sky-600/80">켜면 고객이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 그대로 유지.</span>
+              <span className="flex items-center gap-1 text-xs font-semibold text-sky-800">FO 사용자 설정 가능
+                <span title="켜면 고객이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정(🔒) 항목은 항상 포함되고 삭제 불가. 고객은 최소~최대 범위 안에서 노출/숨김합니다." aria-label="FO 사용자 설정 안내" className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-sky-100 text-[9px] font-bold text-sky-500">?</span>
               </span>
               <button
                 type="button"
@@ -2278,7 +2273,6 @@ function CornerInfoForm({
                   <label className="text-[10px] text-sky-700">고객 노출 최대 개수</label>
                   <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
                 </div>
-                <p className="col-span-2 text-[10px] text-sky-600/80">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함되고 삭제 불가.</p>
               </div>
             )}
           </div>
@@ -2337,7 +2331,9 @@ function CornerInfoForm({
         {hasProductComp && (
           <div className="col-span-2 space-y-1.5 rounded-md border bg-slate-50/60 p-2.5">
             {/* 표시 항목 — 빌더에서 코너별 on/off(회의: 콘텐츠·표시는 빌더). */}
-            <label className="text-[11px] font-semibold text-slate-700">표시 항목 <span className="font-normal text-slate-400">· 이 코너 카드에 보일 요소</span></label>
+            <label className="flex items-center gap-1 text-[11px] font-semibold text-slate-700">표시 항목
+              <span title="이 코너 카드에 보일 요소. 끄면 미리보기에서 숨겨요(내용은 지우지 않음). 배지는 가격을 켜야 사용 가능." aria-label="표시 항목 안내" className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-slate-200 text-[9px] font-bold text-slate-500">?</span>
+            </label>
             <div className="flex flex-wrap gap-x-4 gap-y-1.5">
               {([
                 ['showImage', '상품 이미지'],
@@ -2354,7 +2350,6 @@ function CornerInfoForm({
                 );
               })}
             </div>
-            <p className="text-[10px] text-slate-400">끄면 미리보기에서 숨겨요(내용은 지우지 않음).</p>
           </div>
         )}
 
@@ -2418,14 +2413,7 @@ function CornerInfoForm({
         </div>
       </form>
 
-      {/* 코너 유형은 '코너 유형 관리'에서만 등록·관리한다(단일 원본). 여기서는 등록된 유형을 고르기만 한다. */}
-      <p className="mt-3 rounded-md border border-dashed bg-muted/20 px-2.5 py-2 text-[11px] text-muted-foreground">
-        코너 유형은{' '}
-        <a href="/admin/corner-types" className="font-medium text-primary hover:underline">
-          코너 유형 관리
-        </a>
-        에서 등록·관리합니다. 여기서는 등록된 유형만 선택할 수 있어요.
-      </p>
+      {/* 하단 '코너 유형 관리' 안내문 제거(2026-10-12 설명 과다) — 코너 유형 블록의 '유형 변경은 코너 불러오기로'로 충분. */}
       </>
       )}
 

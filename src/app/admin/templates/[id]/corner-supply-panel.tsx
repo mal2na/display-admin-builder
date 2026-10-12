@@ -382,9 +382,11 @@ export function CornerSupplyPanel({
           <FallbackStep corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
           {/* 노출 타입 베리에이션 — CVM이 변형 중 고객마다 택1(못 고르면 ④폴백). CVM 수급일 때만 여기 노출(2026-10-12 사용자 요청). */}
           {variantsSlot}
-          {/* CVM 구좌라도 폴백이 '운영자 편성'이면 등록해 둔 항목이 필요하다 → 등록 UI를 계속 연다(네비/필수형은 기본값으로 항상) */}
-          {effFallback === '운영자 편성으로 대체' && (
-            <Step no={5} title="폴백용 항목" desc="CVM이 비었을 때 대신 나갈 항목입니다.">
+          {/* 폴백용 항목(등록 UI) 노출 조건:
+              · 폴백이 '운영자 편성으로 대체'면 대체 항목이 필요 → 연다(네비/필수형은 기본값으로 항상)
+              · CVM 콘텐츠 연동이면 완성본이 안 오는 경우를 대비해 운영자가 폴백 콘텐츠를 등록해둔다 → 항상 연다(2026-10-12 사용자 요청) */}
+          {(effFallback === '운영자 편성으로 대체' || mode === 'CVM 콘텐츠 연동') && (
+            <Step no={5} title="폴백용 항목" desc="CVM 완성본이 안 왔을 때 대신 나갈 항목을 운영자가 등록합니다.">
               {children}
             </Step>
           )}
