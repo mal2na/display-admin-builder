@@ -918,67 +918,7 @@ function AtomRow({
             )}
           </div>
         ))}
-      {/* 문구 베리에이션 — 타겟별 후보를 빌더에서 직접 편집. 기본(=위 문구)은 그대로, 여기 후보는 실서비스에서 CVM이 세그/인텐트로 택1. 미리보기는 폴백이라 기본만 노출. 회의 2026-08-31. */}
-      {f.content && !sourceLock && !isCvmBinding(atom.content) && (() => {
-        const vars = atom.contentVariants ?? [];
-        const setVars = (next: { text: string; target?: string; enabled?: boolean }[]) => onChange({ contentVariants: next });
-        const patchVar = (i: number, p: Partial<{ text: string; target?: string; enabled?: boolean }>) =>
-          setVars(vars.map((v, idx) => (idx === i ? { ...v, ...p } : v)));
-        return (
-          <div className="space-y-1.5 rounded-md border border-dashed border-violet-200 bg-violet-50/40 px-2 py-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold text-violet-700">문구 베리에이션 <span className="font-normal text-violet-400">· 타겟별 · 실서비스 CVM 택1 · 기본=위 문구</span></span>
-              <button
-                type="button"
-                onClick={() => setVars([...vars, { text: '', target: '', enabled: true }])}
-                className="inline-flex shrink-0 items-center gap-0.5 rounded border border-violet-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-100"
-              >
-                <Plus className="h-3 w-3" /> 문구
-              </button>
-            </div>
-            {vars.length === 0 ? (
-              <p className="text-[10px] text-violet-400">타겟별 대체 문구가 없습니다 — <span className="font-medium text-violet-500">＋문구</span>로 추가하면 실서비스에서 세그먼트별로 노출됩니다.</p>
-            ) : (
-              vars.map((v, i) => {
-                const on = v.enabled !== false;
-                return (
-                  <div key={i} className={cn('flex items-center gap-1', !on && 'opacity-55')}>
-                    <input
-                      value={v.text}
-                      onChange={(e) => patchVar(i, { text: e.target.value })}
-                      placeholder="대체 문구"
-                      className="h-7 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2 text-[11px] text-slate-800 focus:border-violet-400 focus:outline-none"
-                    />
-                    <input
-                      value={v.target ?? ''}
-                      onChange={(e) => patchVar(i, { target: e.target.value })}
-                      placeholder="타겟"
-                      title="노출 타겟 힌트 (예: VIP, 신규, 20대) — CVM 세그먼트 매칭용"
-                      className="h-7 w-20 shrink-0 rounded-md border border-slate-200 bg-white px-1.5 text-[10px] text-violet-700 focus:border-violet-400 focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => patchVar(i, { enabled: !on })}
-                      title={on ? '노출 중 — 클릭 시 후보에서 제외' : '제외됨 — 클릭 시 후보 포함'}
-                      className={cn('h-7 shrink-0 rounded px-1.5 text-[9px] font-semibold ring-1 ring-inset', on ? 'bg-emerald-50 text-emerald-600 ring-emerald-200' : 'bg-slate-100 text-slate-400 ring-slate-200')}
-                    >
-                      {on ? '노출' : '제외'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setVars(vars.filter((_, idx) => idx !== i))}
-                      title="문구 삭제"
-                      className="flex h-7 w-6 shrink-0 items-center justify-center rounded-md border text-muted-foreground hover:bg-secondary"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        );
-      })()}
+      {/* 아이템(상품·혜택 등) 아톰의 '문구 베리에이션(＋문구)' 제거(2026-10-12 사용자 결정): 아이템 문구는 원장에서 '통으로' 가져오는 재료라 타겟별로 바꾸지 않는다. 문구 변형은 코너 타이틀만. 배너 타겟별 문구는 배너 레일에서 별도 유지. */}
       {f.image &&
         (sourceLock ? (
           <LockedSource lock={sourceLock} sample={atom.imageUrl} kind="image" />
@@ -1847,71 +1787,40 @@ function DisplayVariantsControl({ templateId, corner, cornerTypes }: { templateI
   );
 }
 
-// 문구 한눈에 보기 — 이 코너의 모든 문구(타이틀 + 텍스트 아톰)와 타겟별 대체 문구를 한 화면에 모아 본다. (별도 메뉴 아님 — 코너 편집 내 정리 뷰)
-//  타이틀 베리에이션은 여기서 직접 편집(즉시 저장). 아톰 문구는 컴포넌트 ‘수정’에서.
-function CopyOverview({ templateId, corner }: { templateId: string; corner: CornerNode }) {
+// 코너 타이틀 베리에이션 한눈에 보기 — 이 코너에서 타겟별로 바뀌는 건 '코너 타이틀'뿐(2026-10-12). 상품·혜택 아이템 문구는 원장에서 통으로 가져오므로 변형 없음.
+function CopyOverview({ corner }: { corner: CornerNode }) {
   type TV = { text: string; target?: string; enabled?: boolean };
   const parseTitle = (): TV[] => { try { const a = JSON.parse(corner.mainTitleVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.text === 'string'); } catch { /* noop */ } return []; };
   const [tvars, setTvars] = useState<TV[]>(parseTitle());
   useEffect(() => { setTvars(parseTitle()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.mainTitleVariants, corner.templateCornerId]);
 
-  const atomRows: { label: string; base: string | null; variants: TV[] }[] = [];
-  corner.components.forEach((cp) => cp.atoms.forEach((a) => {
-    const isText = !['IMAGE', 'ICON', 'BARCODE'].includes(a.atomType);
-    if (isText && (a.content || (a.contentVariants?.length ?? 0) > 0))
-      atomRows.push({ label: `${cp.name} · ${ATOM_TYPE_LABELS[a.atomType as AtomType] ?? a.atomType}`, base: a.content, variants: a.contentVariants ?? [] });
-  }));
-  const hasTitle = !!corner.mainTitle;
-  if (!hasTitle && atomRows.length === 0) return null;
-  const totalVars = tvars.length + atomRows.reduce((n, r) => n + r.variants.length, 0);
+  if (!corner.mainTitle) return null;
   return (
     <details className="mb-3 rounded-xl border bg-card">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-slate-700">
-        <List className="h-3.5 w-3.5 text-violet-500" /> 문구 한눈에 보기 <span className="font-normal text-slate-400">· 문구 {atomRows.length + (hasTitle ? 1 : 0)}종 · 타겟별 대체 {totalVars}개</span>
-        <span className="ml-auto rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">편집은 데이터셋 정보 ‘수정’에서</span>
+        <List className="h-3.5 w-3.5 text-violet-500" /> 코너 타이틀 베리에이션 <span className="font-normal text-slate-400">· 타겟별 대체 {tvars.length}개 · CVM 택1</span>
+        <span className="ml-auto rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">미리보기는 기본(폴백)</span>
       </summary>
       <div className="space-y-2.5 border-t p-3">
-        {/* 타이틀 — 읽기 전용(편집은 문구 관리에서). 타겟별 대체 = 타이틀 베리에이션 */}
-        {hasTitle && (
-          <div className="space-y-1 rounded-lg bg-violet-50/50 p-2">
-            <p className="text-[10px] font-semibold text-violet-600">타이틀 · 타겟별 대체(CVM 택1)</p>
-            <div className="flex items-start gap-1.5">
-              <span className="inline-flex h-5 shrink-0 items-center rounded bg-slate-200 px-1.5 text-[9px] font-bold text-slate-600">기본</span>
-              <span className="flex-1 whitespace-pre-line text-[11px] text-slate-800">{corner.mainTitle}</span>
-            </div>
-            {tvars.map((v, j) => {
-              const on = v.enabled !== false;
-              return (
-                <div key={j} className={cn('flex items-start gap-1.5', !on && 'opacity-55')}>
-                  <span className="inline-flex h-5 shrink-0 items-center rounded bg-rose-100 px-1.5 text-[9px] font-bold text-rose-600">{v.target || '타겟없음'}</span>
-                  <span className="flex-1 text-[11px] text-rose-700">{v.text || <span className="text-slate-400">(빈 문구)</span>}</span>
-                  {!on && <span className="shrink-0 rounded bg-slate-200 px-1 text-[9px] font-semibold text-slate-500">제외</span>}
-                </div>
-              );
-            })}
+        <div className="space-y-1 rounded-lg bg-violet-50/50 p-2">
+          <p className="text-[10px] font-semibold text-violet-600">타이틀 · 타겟별 대체(CVM 택1)</p>
+          <div className="flex items-start gap-1.5">
+            <span className="inline-flex h-5 shrink-0 items-center rounded bg-slate-200 px-1.5 text-[9px] font-bold text-slate-600">기본</span>
+            <span className="flex-1 whitespace-pre-line text-[11px] text-slate-800">{corner.mainTitle}</span>
           </div>
-        )}
-        {/* 아톰 문구 — 읽기 전용(편집은 문구 관리에서) */}
-        {atomRows.map((r, i) => (
-          <div key={i} className="space-y-1">
-            <p className="text-[10px] font-semibold text-slate-500">{r.label}</p>
-            <div className="flex items-start gap-1.5">
-              <span className="inline-flex h-5 shrink-0 items-center rounded bg-slate-200 px-1.5 text-[9px] font-bold text-slate-600">기본</span>
-              <span className="flex-1 whitespace-pre-line text-[11px] text-slate-800">{r.base || <span className="text-slate-400">—</span>}</span>
-            </div>
-            {r.variants.map((v, j) => {
-              const on = v.enabled !== false;
-              return (
+          {tvars.map((v, j) => {
+            const on = v.enabled !== false;
+            return (
               <div key={j} className={cn('flex items-start gap-1.5', !on && 'opacity-55')}>
                 <span className="inline-flex h-5 shrink-0 items-center rounded bg-rose-100 px-1.5 text-[9px] font-bold text-rose-600">{v.target || '타겟없음'}</span>
                 <span className="flex-1 text-[11px] text-rose-700">{v.text || <span className="text-slate-400">(빈 문구)</span>}</span>
                 {!on && <span className="shrink-0 rounded bg-slate-200 px-1 text-[9px] font-semibold text-slate-500">제외</span>}
               </div>
-              );
-            })}
-          </div>
-        ))}
-        <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">여기는 <b>모아 보기</b>입니다. 아톰 문구·타겟별 대체는 각 데이터셋 정보 <b>‘수정’</b>의 ‘문구 베리에이션’에서 추가·편집합니다. 최종 매칭·택1은 CVM이 고객마다 수행.</p>
+            );
+          })}
+          {tvars.length === 0 && <p className="text-[10px] text-slate-400">타겟별 대체 타이틀이 없습니다 — 기본 타이틀만 노출됩니다.</p>}
+        </div>
+        <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">타겟별로 바뀌는 건 <b>코너 타이틀</b>뿐이에요(CVM 택1, 미리보기는 기본·폴백). 상품·혜택 아이템 문구는 원장에서 <b>통으로</b> 가져옵니다.</p>
       </div>
     </details>
   );
@@ -3874,7 +3783,7 @@ export function BuilderEditor({
                     cvmFallback: selectedCorner.cvmFallback,
                     itemCount: selectedCorner.components.filter((c) => c.componentType !== '선택형').length,
                   }}
-                  variantsSlot={<><DisplayVariantsControl templateId={templateId} corner={selectedCorner} cornerTypes={library.cornerTypes} /><CopyOverview templateId={templateId} corner={selectedCorner} /></>}
+                  variantsSlot={<><DisplayVariantsControl templateId={templateId} corner={selectedCorner} cornerTypes={library.cornerTypes} /><CopyOverview corner={selectedCorner} /></>}
                 >
                   <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
                 </CornerSupplyPanel>
