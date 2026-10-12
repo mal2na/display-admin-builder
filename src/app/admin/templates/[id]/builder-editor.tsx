@@ -76,9 +76,9 @@ import {
   setCornerBanner,
   saveChips,
   swapCornerToType,
-  setCornerDisplayVariants,
-  setCornerMainTitleVariants,
   setCornerBigBanner,
+  setCornerNoDisplay,
+  setCornerSubTitleLink,
   refreshBannerComponent,
   addBssProduct,
 } from '../actions';
@@ -129,6 +129,7 @@ export type CornerNode = {
   mainTitleVariants: string | null; // 타이틀 베리에이션 (JSON [{text,target}]) — 실서비스 CVM 택1
   subTitle: string | null;
   subTitleIcon: string | null;
+  subTitleLink: string | null;
   sortStrategy: string | null;
   minItems: number | null;
   noDisplayCondition: string | null;
@@ -1730,60 +1731,45 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
 
 
 
-// 코너 타이틀 베리에이션 편집기 — 기본 타이틀(코너 유형 정의, 읽기전용) + 타겟별 대체 타이틀(빌더에서 편집). 실서비스 CVM 택1, 미리보기=기본(폴백). 2026-10-12.
-//  이 코너에서 타겟별로 바뀌는 건 '코너 타이틀'뿐. 상품·혜택 아이템 문구는 원장에서 통으로 가져오므로 변형 없음.
-function CopyOverview({ templateId, corner }: { templateId: string; corner: CornerNode }) {
-  type TV = { text: string; target?: string; enabled?: boolean };
-  const parse = (): TV[] => { try { const a = JSON.parse(corner.mainTitleVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.text === 'string'); } catch { /* noop */ } return []; };
-  const [vars, setVars] = useState<TV[]>(parse());
+// 서브타이틀 이동 URL — 서브타이틀 화살표(›) 클릭 시 이동할 주소. 직접 입력 + '불러오기'(등록된 링크). 즉시 저장(setCornerSubTitleLink). 2026-10-12 사용자 요청.
+function SubTitleLinkField({ templateId, corner, links }: { templateId: string; corner: CornerNode; links: LibraryData['links'] }) {
+  const [url, setUrl] = useState(corner.subTitleLink ?? '');
+  const [open, setOpen] = useState(false);
   const [, start] = useTransition();
-  useEffect(() => { setVars(parse()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.mainTitleVariants, corner.templateCornerId]);
-  const save = (next: TV[]) => { setVars(next); start(() => setCornerMainTitleVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
-  const patch = (i: number, p: Partial<TV>) => save(vars.map((v, idx) => (idx === i ? { ...v, ...p } : v)));
-
-  if (!corner.mainTitle) return null; // 타이틀 없는 코너(배너 등)는 베리에이션 없음
+  useEffect(() => { setUrl(corner.subTitleLink ?? ''); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.subTitleLink, corner.templateCornerId]);
+  const save = (v: string) => { start(() => setCornerSubTitleLink(templateId, corner.id, v)); };
+  const label = url ? links.find((l) => l.url === url)?.label : null;
   return (
-    <div className="mb-3 space-y-2 rounded-xl border bg-card p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1 text-[11px] font-semibold text-violet-700"><List className="h-3.5 w-3.5 text-violet-500" /> 코너 타이틀 베리에이션 <span className="font-normal text-violet-400">· 타겟별 · CVM 택1</span></span>
-        <button type="button" onClick={() => save([...vars, { text: '', target: '', enabled: true }])}
-          className="inline-flex shrink-0 items-center gap-0.5 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100"><Plus className="h-3 w-3" /> 타이틀</button>
+    <div className="col-span-2 space-y-1">
+      <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">서브타이틀 이동 URL
+        <span title="서브타이틀 화살표(›)를 누르면 이동할 주소. 직접 입력하거나 ‘불러오기’로 등록된 링크를 고릅니다." aria-label="서브타이틀 이동 URL 안내" className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-400">?</span>
+      </label>
+      <div className="flex items-center gap-1.5">
+        <Input value={url} onChange={(e) => setUrl(e.target.value)} onBlur={() => url !== (corner.subTitleLink ?? '') && save(url)}
+          placeholder="https:// 또는 tworld://…" className="h-8 min-w-0 flex-1 text-xs" />
+        <button type="button" onClick={() => setOpen(true)} className="shrink-0 rounded-md border px-2 py-1.5 text-[11px] font-medium hover:bg-secondary">불러오기</button>
+        {url && <button type="button" onClick={() => { setUrl(''); save(''); }} title="해제" className="shrink-0 text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>}
       </div>
-      {/* 기본 타이틀 — 코너 유형 정의(읽기전용). 변경은 코너 정보 → 코너 유형에서. */}
-      <div className="flex items-start gap-1.5 rounded-md bg-slate-50 px-2 py-1.5">
-        <span className="inline-flex h-5 shrink-0 items-center rounded bg-slate-200 px-1.5 text-[9px] font-bold text-slate-600">기본</span>
-        <span className="flex-1 whitespace-pre-line text-[11px] text-slate-800">{corner.mainTitle}</span>
-        <span className="shrink-0 text-[9px] text-slate-400">미리보기 기준</span>
-      </div>
-      {/* 타겟별 대체 — 빌더에서 편집 */}
-      {vars.length === 0 ? (
-        <p className="text-[10px] leading-relaxed text-violet-400">타겟별 대체 타이틀이 없습니다 — <span className="font-medium text-violet-500">＋타이틀</span>로 추가하면 실서비스에서 <b>CVM이 세그먼트별로 택1</b>합니다. (미리보기는 기본)</p>
-      ) : (
-        <div className="space-y-1.5">
-          {vars.map((v, i) => {
-            const on = v.enabled !== false;
-            return (
-              <div key={i} className={cn('flex items-start gap-1', !on && 'opacity-55')}>
-                <Textarea value={v.text} onChange={(e) => patch(i, { text: e.target.value })} placeholder="대체 타이틀 (줄바꿈 가능)"
-                  className="min-h-[38px] min-w-0 flex-1 text-[11px]" />
-                <div className="flex shrink-0 flex-col gap-1">
-                  <Select value={v.target ?? ''} onChange={(e) => patch(i, { target: e.target.value })} className="h-7 w-24 text-[10px]" title="노출 타겟 힌트 — CVM 세그먼트 매칭용">
-                    <option value="">타겟 없음</option>
-                    {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
-                  </Select>
-                  <div className="flex gap-1">
-                    <button type="button" onClick={() => patch(i, { enabled: !on })} title={on ? '노출 중 — 클릭 시 후보 제외' : '제외됨 — 클릭 시 포함'}
-                      className={cn('h-7 flex-1 rounded px-1 text-[9px] font-semibold ring-1 ring-inset', on ? 'bg-emerald-50 text-emerald-600 ring-emerald-200' : 'bg-slate-100 text-slate-400 ring-slate-200')}>{on ? '노출' : '제외'}</button>
-                    <button type="button" onClick={() => save(vars.filter((_, idx) => idx !== i))} title="삭제"
-                      className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><X className="h-3 w-3" /></button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">기본 타이틀은 코너 유형 정의(읽기전용) — 여기선 <b>타겟별 대체</b>만 추가·편집. 실서비스는 CVM이 고객마다 택1, 미리보기는 기본(폴백). 상품·혜택 아이템 문구는 원장에서 통으로.</p>
+      {label && <p className="text-[10px] text-slate-400">{label}</p>}
+      <AssetPickerModal open={open} kind="link" images={[]} links={links} onClose={() => setOpen(false)} onSelect={(v) => { setUrl(v.url); save(v.url); setOpen(false); }} />
+    </div>
+  );
+}
+
+// 미 노출 조건 — '운영자 편성' 콘텐츠의 옵션(수급 패널 ③채우기/폴백용 항목에 끼운다). 즉시 저장(setCornerNoDisplay). 코너 정보 폼에서 분리(2026-10-12 사용자 요청).
+function NoDisplayControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
+  const [val, setVal] = useState(corner.noDisplayCondition ?? '선택 없음');
+  const [, start] = useTransition();
+  useEffect(() => { setVal(corner.noDisplayCondition ?? '선택 없음'); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.noDisplayCondition, corner.templateCornerId]);
+  const change = (v: string) => { setVal(v); start(() => setCornerNoDisplay(templateId, corner.id, v)); };
+  return (
+    <div className="mt-2 flex items-center gap-2 rounded-md border bg-white px-2.5 py-2">
+      <label className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-[var(--ink2)]">미 노출 조건
+        <span title="운영자가 채운 콘텐츠가 조건을 못 채우면 코너를 숨깁니다(데이터 없음·재고 소진·혜택 종료·개인화 제한 시)." aria-label="미 노출 조건 안내" className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-400">?</span>
+      </label>
+      <Select value={val} onChange={(e) => change(e.target.value)} className="h-7 min-w-0 flex-1 text-xs">
+        {NO_DISPLAY_CONDITIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+      </Select>
     </div>
   );
 }
@@ -2316,6 +2302,8 @@ function CornerInfoForm({
                 ))}
               </Select>
             </div>
+            {/* 서브타이틀 화살표(클릭 이동)일 때만 랜딩 URL 입력(직접+불러오기). 2026-10-12 사용자 요청 */}
+            {subTitleIcon === '화살표' && <SubTitleLinkField templateId={templateId} corner={corner} links={library.links} />}
           </>
         )}
         {/* 코너 레이아웃 필드는 표시하지 않음 (값 보존 · 배치는 유형 상세로 추론) */}
@@ -2372,17 +2360,8 @@ function CornerInfoForm({
             </Select>
           </div>
         )}
-        {/* 미 노출 조건 — 빌드 시점(코너별)에 정함(정책 TM-DSP-008). 빌더에서 편집. */}
-        {isRecCorner && (
-          <div className="space-y-1">
-            <label className="text-[11px] text-muted-foreground">미 노출 조건 <span className="text-muted-foreground/60">· 데이터 없음/조건 미충족 시 숨김</span></label>
-            <Select name="noDisplayCondition" defaultValue={corner.noDisplayCondition ?? '선택 없음'} className="h-8 text-xs">
-              {NO_DISPLAY_CONDITIONS.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </Select>
-          </div>
-        )}
+        {/* 미 노출 조건은 '운영자 편성' 콘텐츠 옵션으로 이동(2026-10-12 사용자 요청) — 여기선 폼 제출 시 값만 보존(즉시저장은 수급 패널의 NoDisplayControl). */}
+        <input type="hidden" name="noDisplayCondition" value={corner.noDisplayCondition ?? '선택 없음'} />
         {/* 하단 CTA(더보기/전체보기) 버튼은 '코너 구성'의 MoreButtonControl로 이동 — 코너 정보에서는 관리하지 않음. */}
 
         {/* 코너 설명 — 빌더에서 편집(업무 진입형 탭형은 숨김, 값은 보존). */}
@@ -3652,9 +3631,12 @@ export function BuilderEditor({
                     cvmFallback: selectedCorner.cvmFallback,
                     itemCount: selectedCorner.components.filter((c) => c.componentType !== '선택형').length,
                   }}
-                  variantsSlot={<CopyOverview templateId={templateId} corner={selectedCorner} />}
                 >
-                  <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
+                  <>
+                    <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
+                    {/* 미 노출 조건 — '운영자 편성' 콘텐츠의 옵션(2026-10-12 사용자 요청). 운영자가 채운 콘텐츠가 조건 미충족 시 숨김. */}
+                    <NoDisplayControl templateId={templateId} corner={selectedCorner} />
+                  </>
                 </CornerSupplyPanel>
                 {/* 표시 옵션 카드 해체(2026-10-12): 빅배너 강조·문구 한눈에 보기는 ①코너 정보 카드로, 노출 타입 베리에이션은 CVM 수급 흐름(variantsSlot)으로 이동. */}
               </>

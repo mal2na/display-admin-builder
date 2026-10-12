@@ -118,6 +118,7 @@ model Corner {
   mainTitleVariants String?
   subTitle     String? // 서브 타이틀
   subTitleIcon String? // 서브 타이틀 아이콘 (사용안함 | 말줄임표 | 화살표 | 정보)
+  subTitleLink String? // 서브 타이틀 랜딩 URL (화살표일 때 클릭 이동) — 직접 입력 또는 '불러오기'. 2026-10-12
 
   // ── 상품형 코너 전용 컬럼 (코너3·코너4 참고) ──
   minItems           Int?    // 최소 노출 개수

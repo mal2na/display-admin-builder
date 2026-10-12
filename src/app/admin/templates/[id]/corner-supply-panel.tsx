@@ -344,14 +344,11 @@ export function CornerSupplyPanel({
   templateId,
   corner,
   children,
-  variantsSlot,
 }: {
   templateId: string;
   corner: SupplyCorner;
   /** ③에서 '운영자 편성'일 때 그대로 끼워 넣는 기존 상품 등록 UI */
   children?: React.ReactNode;
-  /** 노출 타입 베리에이션 — CVM이 변형 중 택1하므로 CVM 수급일 때만 ④폴백 옆에 끼운다(2026-10-12). */
-  variantsSlot?: React.ReactNode;
 }) {
   const [pending, start] = useTransition();
   const mode = corner.recSource ? normalizeRecSource(corner.recSource) : '운영자 편성';
@@ -380,8 +377,7 @@ export function CornerSupplyPanel({
         <>
           <CvmContractStep corner={corner} mode={mode} pending={pending} onSave={(p) => save(p)} />
           <FallbackStep corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
-          {/* 노출 타입 베리에이션 — CVM이 변형 중 고객마다 택1(못 고르면 ④폴백). CVM 수급일 때만 여기 노출(2026-10-12 사용자 요청). */}
-          {variantsSlot}
+          {/* 문구(코너 타이틀) 베리에이션 제거(2026-10-12): CVM은 '문구만 따로 베리에이션'을 못 함(CLAUDE.md 못받는것 ⑤). 타겟별 타이틀은 어드민 타겟팅 룰(Template 분기) 소관. */}
           {/* 폴백용 항목(등록 UI) 노출 조건:
               · 폴백이 '운영자 편성으로 대체'면 대체 항목이 필요 → 연다(네비/필수형은 기본값으로 항상)
               · CVM 콘텐츠 연동이면 완성본이 안 오는 경우를 대비해 운영자가 폴백 콘텐츠를 등록해둔다 → 항상 연다(2026-10-12 사용자 요청) */}

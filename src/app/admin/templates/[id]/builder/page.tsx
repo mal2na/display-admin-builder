@@ -178,6 +178,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     mainTitleVariants: tc.corner.mainTitleVariants ?? null,
     subTitle: tc.corner.subTitle,
     subTitleIcon: tc.corner.subTitleIcon,
+    subTitleLink: tc.corner.subTitleLink,
     sortStrategy: tc.corner.sortStrategy,
     minItems: tc.corner.minItems,
     noDisplayCondition: tc.corner.noDisplayCondition,
