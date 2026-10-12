@@ -212,7 +212,8 @@ const LF = ({ label, req, err, children }: { label: string; req?: boolean; err?:
   </div>
 );
 
-function LineView({ l, idx, total, E, onSet, onDel, onToast }: {
+/** 리워드 줄 — 리워드 목록과 추천형 단계 카드가 같이 쓴다 */
+export function LineView({ l, idx, total, E, onSet, onDel, onToast }: {
   l: RewardLine; idx: number; total: number; E: Record<string, string>;
   onSet: (p: Partial<RewardLine>) => void; onDel: () => void; onToast: (m: string) => void;
 }) {

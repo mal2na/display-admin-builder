@@ -30,7 +30,7 @@ export function PromoAdmin() {
 
   /** 유형이 정해지면 등록 화면으로 — 안내형은 React 폼, 나머지는 아직 프로토타입 */
   function openReg(type: string, jm: string | null) {
-    if (type === '안내형' || type === '참여ㆍ리워드형') {
+    if (type === '안내형' || type === '참여ㆍ리워드형' || type === '추천형') {
       setProto(null); setForm({ type, jm: (jm as '직접' | '행동') ?? '직접' }); return;
     }
     setForm(null);

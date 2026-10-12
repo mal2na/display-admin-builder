@@ -397,8 +397,11 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
      toggle    radius full · inset 4 · handler 12(xs)/20(s)/24(m) · track #b3b9c0 / 선택 #3617ce / 비활성 #dce0e5 */
   input[type='checkbox'], input[type='radio'] {
     appearance: none; width: 16px; height: 16px; flex: none; margin: 0;
-    border: 1px solid var(--cb-border); background: var(--cb-bg); cursor: pointer;
-    display: inline-grid; place-content: center;
+    border: 1px solid var(--cb-border); background-color: var(--cb-bg); cursor: pointer;
+    display: inline-block; vertical-align: middle;
+    /* 체크 표시·라디오 점은 ::after 가 아니라 배경 이미지로 그린다.
+       ::after + place-content:center 는 그리드 트랙이 0 폭이라 width:100% 가 0 이 돼 아무것도 안 보인다. */
+    background-repeat: no-repeat; background-position: center; background-size: 100% 100%;
     transition: background-color .12s, border-color .12s;
   }
   input[type='checkbox'] { border-radius: var(--cb-r); }
@@ -407,18 +410,21 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
   input.ck-lg[type='checkbox'], input.ck-lg[type='radio'] { width: 20px; height: 20px; }
 
   input[type='checkbox']:hover:not(:disabled), input[type='radio']:hover:not(:disabled) { border-color: var(--cb-border-hover); }
-  input[type='checkbox']:checked, input[type='radio']:checked { background: var(--cb-fill); border-color: var(--cb-fill); }
+  input[type='checkbox']:checked, input[type='radio']:checked { background-color: var(--cb-fill); border-color: var(--cb-fill); }
   input[type='checkbox']:checked:hover:not(:disabled), input[type='radio']:checked:hover:not(:disabled) {
-    background: var(--cb-fill-hover); border-color: var(--cb-fill-hover);
+    background-color: var(--cb-fill-hover); border-color: var(--cb-fill-hover);
   }
-  /* 체크 표시 — 회전한 보더 대신 SVG. 박스가 16/20 어느 쪽이어도 비율이 유지된다 */
-  input[type='checkbox']:checked::after {
-    content: ''; width: 100%; height: 100%;
-    background: center / 72% 72% no-repeat
-      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.4 8.3l3.1 3.1 6.1-6.6' fill='none' stroke='white' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  /* 체크 표시 — Figma 컴포넌트(2715:18776 Selected/Large)를 픽셀 실측해 옮긴 값.
+     20 단위 viewBox 를 박스에 100% 로 깔아 16/20 어느 쪽이든 비율이 같다.
+     왼팔 끝 (5.8,8.9) · 꼭짓점 (8.4,12.1) · 오른팔 끝 (14,6.7) · 선 두께 2.2(=박스의 11%) · 둥근 끝.
+     실측: 커버리지 28.3px² / 경로 12.25 → 두께 2.3, Small 은 17.9 / 9.8 → 1.8 로 비례.
+     꺾쇠·# 은 반드시 퍼센트 인코딩할 것 — 날것으로 두면 data URI 가 깨진다. */
+  input[type='checkbox']:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.8 8.9l2.6 3.2 5.6-5.4' fill='none' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
-  input[type='radio']:checked::after { content: ''; width: 37.5%; height: 37.5%; border-radius: 9999px; background: var(--cb-icon); }
-
+  input[type='radio']:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='3.75' fill='%23ffffff'/%3E%3C/svg%3E");
+  }
   input[type='checkbox']:disabled, input[type='radio']:disabled {
     background: var(--cb-fill-disable); border-color: var(--cb-border-disable); cursor: not-allowed;
   }

@@ -208,11 +208,11 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 | 등록 폼 — 기본정보 / CTA / 검색·태그 | **완료(안내형)** | `reg-form.tsx` · `form-ui.tsx` · `form-pickers.tsx` · `src/lib/promotion/form.ts` |
 | 등록 폼 — 참여 정보 · 리워드 | **완료(참여ㆍ리워드형)** | `join-actions.tsx` · `reward-blocks.tsx` · `src/lib/promotion/pr.ts` |
 | 등록 폼 — 약관 매핑 · 비회원 참여 | **완료** | `terms.tsx` · `src/lib/promotion/terms.ts` |
-| 등록 폼 — 추천형(refSection) | **미착수** | 프로토타입 `refSection()` |
+| 등록 폼 — 추천형 | **완료** | `ref-section.tsx` (모델은 `pr.ts`) |
 | 상세 보기 · FO 미리보기 | **미착수** | 프로토타입 `buildDetail()` / `renderFo()` |
 
-> **등록 화면 분기** — `[등록]` → 유형 결정 팝업(React) → **안내형·참여ㆍ리워드형은 React 폼**,
-> 추천형·미션·기획전은 아직 프로토타입(`#form=<유형>&jm=<참여방식>`).
+> **등록 화면 분기** — `[등록]` → 유형 결정 팝업(React) → **이벤트 3종(안내형·참여ㆍ리워드형·추천형)은
+> 전부 React 폼**. 미션·기획전만 아직 프로토타입(`#form=<유형>&jm=<참여방식>`).
 > 분기 지점은 `promo-admin.tsx` 의 `openReg()`.
 >
 > 참여·리워드의 얽힌 규칙(룰렛 ↔ 추첨 ↔ 선정 시점 ↔ 선택형 ↔ 자동 CTA)은
@@ -220,9 +220,8 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 >
 > 조건 빌더 확인용 임시 페이지: `/admin/events/promo/cond-check` (다 옮기면 지울 것)
 >
-> **다음에 이어서 할 때**: `refSection()`(추천형 — 초대자 단계별 혜택·피초대자 혜택)을 옮기고
-> `openReg()` 분기에서 추천형을 빼면 등록 폼은 이벤트 3종이 모두 React 가 된다.
-> 남은 것: 추천형 · 상세 보기 · FO 미리보기.
+> **다음에 이어서 할 때**: 상세 보기(`buildDetail`)와 FO 미리보기(`renderFo`)가 남았다.
+> 미션·기획전은 프로토타입에도 본문이 없다(SB 확정 후 추가 예정).
 
 **아래는 BO 공통 반영 전 기준이다 — 위 토큰과 충돌하면 위가 이긴다.**
 

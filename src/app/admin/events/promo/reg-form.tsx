@@ -11,6 +11,7 @@ import { CondBuilder } from './cond-builder';
 import { CautionPicker, PagePicker } from './form-pickers';
 import { JoinActions } from './join-actions';
 import { TermsPicker, TermsMap, GuestBlock } from './terms';
+import { RefSections } from './ref-section';
 import { RewardSection } from './reward-blocks';
 import {
   Sect, Row, Hint, Note, Rd, Ck, RdPair, BTN, BTN_PRI, BTN_SM, BTN_PILL, INP, SEL, DT,
@@ -326,16 +327,20 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
             </>
           )}
 
-          {/* ── 추천형은 아직 프로토타입 ── */}
+          {/* ── 추천형 ── */}
           {f.type === '추천형' && (
-            <Sect title="초대자 · 피초대자 정보">
-              <div className="border-b border-[var(--line)] bg-[var(--th)] px-4 py-6 text-[14px] leading-[20px] text-[var(--ink2)]">
-                <b className="block">{typeLabel(f.type)} 전용 영역</b>
-                <span className="mt-1 block text-[13px] text-[var(--ink3)]">
-                  초대자/피초대자 전용 콘텐츠, 리워드 지급 조건, 추천 코드·초대 링크 발급은 아직 프로토타입에 있어요.
-                </span>
-              </div>
-            </Sect>
+            <RefSections
+              r={f.ref} onChange={(ref) => set({ ref })} E={E} onToast={onToast}
+              guest={{
+                guest: f.guest, fields: f.guestFields, auth: f.guestAuth, terms: f.guestTerms, err: E.guestField,
+                onChange: (p) => set({
+                  ...(p.guest !== undefined ? { guest: p.guest } : {}),
+                  ...(p.fields !== undefined ? { guestFields: p.fields } : {}),
+                  ...(p.auth !== undefined ? { guestAuth: p.auth } : {}),
+                  ...(p.terms !== undefined ? { guestTerms: p.terms } : {}),
+                }),
+              }}
+            />
           )}
 
           {/* ── 하단 CTA ── */}

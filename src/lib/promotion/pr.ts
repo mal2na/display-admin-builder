@@ -343,3 +343,98 @@ export function validatePr(s: PrState, maxJoin: string): { errors: Record<string
 
   return { errors: E, alert: null };
 }
+
+
+/* ── 추천형 ────────────────────────────────────────────────────── */
+/** 초대자는 단계(달성 인원 수)를 갖고, 피초대자는 단계 없이 1장이다 */
+export type RefCard = { id: number; name: string; thr: string; lines: RewardLine[] };
+
+export type RefState = {
+  invCond: import('./cond').CondNode[];
+  ineCond: import('./cond').CondNode[];
+  invLimit: '제한 없음' | '제한';
+  maxInvite: string;
+  invPayCond: import('./cond').CondNode[];
+  inePayCond: import('./cond').CondNode[];
+  inviter: RefCard[];
+  invitee: RefCard;
+};
+
+let refSeq = 0;
+export function newRefCard(): RefCard { refSeq += 1; return { id: 10000 + refSeq, name: '', thr: '', lines: [newLine()] }; }
+
+export function emptyRef(): RefState {
+  return {
+    invCond: [], ineCond: [],
+    invLimit: '제한 없음', maxInvite: '',
+    invPayCond: [], inePayCond: [],
+    inviter: [newRefCard()],
+    invitee: newRefCard(),
+  };
+}
+
+/** 단계는 앞 단계보다 큰 인원이어야 한다 */
+export function thrErrors(inviter: RefCard[]): Record<string, string> {
+  const E: Record<string, string> = {};
+  let prev: number | null = null; let prevIdx = 0;
+  inviter.forEach((c, idx) => {
+    const v = c.thr;
+    if (v && prev !== null && +v <= prev) E[`it${c.id}_thr`] = `${prevIdx}단계(${prev}명)보다 큰 수를 입력해주세요`;
+    if (v) { prev = +v; prevIdx = idx + 1; }
+  });
+  return E;
+}
+
+/** 리워드 줄 하나 검증 — 리워드 목록과 추천형이 같이 쓴다 */
+export function lineErrors(l: RewardLine): Record<string, string> {
+  const E: Record<string, string> = {};
+  const k = `rw${l.id}`;
+  if (!l.type) E[`${k}_type`] = '유형을 선택해주세요';
+  if (RPICK[l.type] && !l.pick.length) E[`${k}_pick`] = `${RPICK[l.type][1]}을(를) 선택해주세요`;
+  if (l.type === '실물 경품' && !l.detail.trim()) E[`${k}_detail`] = '경품명을(를) 입력해주세요';
+  if (l.type === 'T 플러스 포인트') {
+    if (!l.point.trim()) E[`${k}_point`] = '지급 포인트을(를) 입력해주세요';
+    if (!l.expire) E[`${k}_expire`] = '소멸 예정일을(를) 입력해주세요';
+  }
+  if (l.type === '데이터 혜택') {
+    if (!l.dataAmt.trim()) E[`${k}_dataAmt`] = '데이터 용량을(를) 입력해주세요';
+    if (!l.dataExp) E[`${k}_dataExp`] = '사용 기한을(를) 입력해주세요';
+  }
+  if (l.type === '제휴사 쿠폰' || l.type === '제휴사 바우처') {
+    const kind = l.type === '제휴사 바우처' ? '제휴사 바우처 연동코드' : '제휴사 쿠폰 연동코드';
+    if (!l.code.trim()) E[`${k}_code`] = `${kind}을(를) 입력해주세요`;
+    if (!l.url.trim()) E[`${k}_url`] = '제휴사 URL을(를) 입력해주세요';
+    if (!l.btn.trim()) E[`${k}_btn`] = '제휴사 URL 버튼명을(를) 입력해주세요';
+  }
+  if (!l.method) E[`${k}_method`] = '지급 방식을 선택해주세요';
+  if (l.method === '고객 수령') {
+    if (!l.claimS || !l.claimE) E[`${k}_payAt`] = '수령 가능 기간을 입력해주세요';
+    else if (l.claimS > l.claimE) E[`${k}_payAt`] = '수령 가능 기간의 종료일이 시작일보다 빠를 수 없습니다.';
+  } else if (l.payWhen === '추후' && !l.payAt) E[`${k}_payAt`] = '지급 일시를 입력해주세요';
+  return E;
+}
+
+/** 리워드 줄의 잠김 규칙 — 지급 방식 제한, 수기 지급은 '추후'만 */
+export function normalizeLine(l: RewardLine): RewardLine {
+  let x = { ...l };
+  const ok = PAY_OK[x.type] ?? PAY_M;
+  if (x.type && x.method && !ok.includes(x.method)) x.method = ok[0];
+  const manual = x.method === 'SKT 담당자 수기 지급' || x.method === '대행사·제휴사 지급';
+  if (manual && x.payWhen === '대상자 선정 시') x = { ...x, payWhen: '추후' };
+  if (x.payWhen !== '추후') x = { ...x, payAt: '' };
+  if (x.method !== '고객 수령') x = { ...x, claimS: '', claimE: '' };
+  return x;
+}
+
+export function validateRef(r: RefState): Record<string, string> {
+  const E: Record<string, string> = {};
+  if (r.invLimit === '제한' && !r.maxInvite) E.maxInvite = '최대 초대 인정 수를 입력해주세요';
+  const cards = [...r.inviter, r.invitee];
+  cards.forEach((c) => {
+    if (!c.name.trim()) E[`it${c.id}_name`] = '사용자 노출명을 입력해주세요';
+    c.lines.forEach((l) => Object.assign(E, lineErrors(l)));
+  });
+  r.inviter.forEach((c) => { if (!c.thr) E[`it${c.id}_thr`] = '달성 인원 수를 입력해주세요'; });
+  Object.assign(E, thrErrors(r.inviter));
+  return E;
+}

@@ -11,7 +11,8 @@ import { validate as validateCond } from './cond';
 import type { EventType, JoinMode } from './reg-start';
 import {
   newJaItem, newBlock, applyRules, validatePr, needJoinCta, needClaimCta,
-  type JaItem, type RewardBlock, type PrState,
+  emptyRef, validateRef,
+  type JaItem, type RewardBlock, type PrState, type RefState,
 } from './pr';
 import { GUEST_TERM_FIX, initialGuestFields, termById, initialReq, type TermMap, type GuestField } from './terms';
 
@@ -105,6 +106,8 @@ export type PromoForm = {
   guestFields: GuestField[];
   guestAuth: string;
   guestTerms: TermMap[];
+  /** 추천형 전용 */
+  ref: RefState;
 };
 
 let ctaSeq = 0;
@@ -150,6 +153,7 @@ export function emptyForm(type: string, jm: JoinMode): PromoForm {
     guestAuth: '휴대폰 본인인증(CI)',
     // 비회원 개인정보 수집·이용 동의는 고정으로 들어간다
     guestTerms: [{ id: GUEST_TERM_FIX, req: initialReq(termById(GUEST_TERM_FIX)!) }],
+    ref: emptyRef(),
   };
 }
 
@@ -273,6 +277,14 @@ export function validateForm(f: PromoForm): ValidateResult {
 
   if (f.type !== '안내형' && f.guest === '허용' && !f.guestFields.some((g) => g.use)) {
     E.guestField = '개인정보 입력 항목을 1개 이상 사용으로 설정해주세요';
+  }
+
+  if (f.type === '추천형') {
+    Object.assign(E, validateRef(f.ref));
+    [f.ref.invCond, f.ref.ineCond, f.ref.invPayCond, f.ref.inePayCond].forEach((nodes, i) => {
+      const r = validateCond(nodes);
+      if (r.top) { E[`refCond${i}`] = r.top; Object.assign(condErrors, r.errors); }
+    });
   }
 
   if (f.type === '참여ㆍ리워드형') {
