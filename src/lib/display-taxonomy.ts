@@ -339,6 +339,20 @@ export const CVM_OUT_OF_SCOPE: { item: string; why: string; instead: string }[] 
 export const CVM_FALLBACKS = ['미노출', '운영자 편성으로 대체'] as const;
 export type CvmFallback = (typeof CVM_FALLBACKS)[number];
 
+/** CVM이 비어도 '미노출' 불가 → 폴백을 '운영자 편성'으로 강제하는 코너 유형(2026-10-12 사용자 결정). */
+export const NAV_MUST_SHOW = ['업무 진입형', '고정·필수 노출형'] as const;
+export const mustAlwaysShow = (cornerType: string) => (NAV_MUST_SHOW as readonly string[]).includes(cornerType);
+
+/**
+ * 효과적 폴백 — 네비/필수형은 저장값이 '미노출'이거나 비어 있어도 '운영자 편성'으로 간주(미노출 불가).
+ * 그 외는 저장값이 없으면 '미노출'. 수급 패널·빌더 폴백 미리보기가 공통으로 쓰는 SSOT.
+ */
+export function effectiveFallback(cornerType: string, cvmFallback: string | null | undefined): CvmFallback {
+  // 네비/필수형은 미노출 불가 → 항상 운영자 편성. 그 외는 저장값(없으면 미노출).
+  if (mustAlwaysShow(cornerType)) return '운영자 편성으로 대체';
+  return (cvmFallback as CvmFallback) ?? '미노출';
+}
+
 /** 표시 요소별 소유자(SSOT) — '이 값이 어디서 오나'를 빌더에서 그대로 보여준다. */
 export type FieldOwner = 'CVM' | '상품 원장' | '전시 어드민' | '코너 유형';
 export const FIELD_OWNER_TONE: Record<FieldOwner, string> = {
@@ -362,7 +376,7 @@ export function fieldOwnerMap(recSource?: string | null): { field: string; owner
       layout,
       { field: '노출 아이템 · 순서', owner: 'CVM', note: '고객별 런타임 판정' },
       { field: '이미지 · 설명 문구', owner: 'CVM', note: '완성본을 그대로 노출(어드민 편집 불가)' },
-      { field: '랜딩', owner: 'CVM', note: '오퍼와 한 세트' },
+      { field: '아이템 랜딩', owner: 'CVM', note: '오퍼와 한 세트' },
       groupCopy,
     ];
   }
@@ -371,7 +385,7 @@ export function fieldOwnerMap(recSource?: string | null): { field: string; owner
       layout,
       { field: '노출 아이템 · 순서', owner: 'CVM', note: '아이템 ID와 순서만 내려받음' },
       { field: '이미지 · 설명 문구', owner: '상품 원장', note: '상품(EPC) 값 그대로 — 개인화 대상 아님' },
-      { field: '랜딩', owner: '상품 원장', note: '상품 상세 · 지정 URL' },
+      { field: '아이템 랜딩', owner: '상품 원장', note: '상품 상세 · 지정 URL' },
       groupCopy,
     ];
   }
@@ -379,7 +393,7 @@ export function fieldOwnerMap(recSource?: string | null): { field: string; owner
     layout,
     { field: '노출 아이템 · 순서', owner: '전시 어드민', note: '운영자가 직접 고르고 정렬' },
     { field: '이미지 · 설명 문구', owner: '상품 원장', note: '상품(EPC) 값 그대로' },
-    { field: '랜딩', owner: '상품 원장', note: '상품 상세 · 지정 URL' },
+    { field: '아이템 랜딩', owner: '상품 원장', note: '상품 상세 · 지정 URL' },
     groupCopy,
   ];
 }

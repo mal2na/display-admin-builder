@@ -884,6 +884,18 @@ export async function setCornerBigBanner(templateId: string, cornerId: string, o
   rp(templateId);
 }
 
+// 미 노출 조건 — '운영자 편성' 콘텐츠 옵션에서 즉시 저장(코너 정보 폼에서 분리, 2026-10-12 사용자 요청). 운영자가 채운 콘텐츠가 조건 미충족 시 숨김.
+export async function setCornerNoDisplay(templateId: string, cornerId: string, cond: string) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { noDisplayCondition: cond } });
+  rp(templateId);
+}
+
+// 서브타이틀 랜딩 URL — 서브타이틀 화살표(클릭 이동)일 때의 목적지. 즉시 저장(코너 정보 폼은 subtitle 계열을 저장 안 함). 2026-10-12.
+export async function setCornerSubTitleLink(templateId: string, cornerId: string, url: string) {
+  await prisma.corner.update({ where: { id: cornerId }, data: { subTitleLink: url || null } });
+  rp(templateId);
+}
+
 // 빅배너 위치(상단/하단) — '코너 구성' 컨트롤에서 즉시 저장. 코너 정보 저장과 독립.
 export async function setCornerBannerPosition(templateId: string, cornerId: string, pos: string) {
   await prisma.corner.update({ where: { id: cornerId }, data: { bannerPosition: pos === '하단' ? '하단' : '상단' } });

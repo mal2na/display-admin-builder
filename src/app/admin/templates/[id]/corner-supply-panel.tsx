@@ -25,6 +25,8 @@ import {
   FIELD_OWNER_TONE,
   fieldOwnerMap,
   CHIP_BASE,
+  mustAlwaysShow,
+  effectiveFallback,
   type FieldOwner,
 } from '@/lib/display-taxonomy';
 import { setCornerSupply } from '@/app/admin/templates/actions';
@@ -56,12 +58,10 @@ function Step({ no, title, desc, children, tone }: { no: number; title: string; 
         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">{no}</span>
         <h3 className="min-w-0 flex-1 truncate text-[13px] font-bold text-[var(--ink)]">{title}</h3>
         {desc && (
-          <span
-            title={desc}
-            className="grid h-4 w-4 shrink-0 cursor-help place-items-center rounded-full bg-[var(--th)] text-[11px] font-bold text-[var(--ink3)]"
-            aria-label={desc}
-          >
-            ?
+          // 호버하면 즉시 뜨는 CSS 툴팁(네이티브 title 대신). Figma 툴팁 토큰(bg #fcfcfd·text #454f59·r8·shadow). 2026-10-12.
+          <span className="group/tip relative inline-flex shrink-0">
+            <span className="grid h-4 w-4 cursor-help place-items-center rounded-full bg-[var(--th)] text-[11px] font-bold text-[var(--ink3)]" aria-label={desc}>?</span>
+            <span role="tooltip" className="pointer-events-none absolute right-0 top-full z-[60] mt-1 hidden w-60 max-w-[16rem] whitespace-normal rounded-lg border border-[#e8ecef] bg-[#fcfcfd] px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-[#454f59] shadow-[0_0_8px_-2px_#0000001f] group-hover/tip:block">{desc}</span>
           </span>
         )}
       </div>
@@ -253,15 +253,7 @@ function CvmContractStep({
 
 /* ── ④ 폴백 ─────────────────────────────────────────────────────── */
 
-// 네비게이션·필수 코너 — 사라지면 안 되는 자리(업무 진입형 탭·고정·필수 노출형). pinned 기본 + 정책 PI-DSP-PER-002 '대체 전시 필수'.
-//  이 유형은 CVM이 비어도 미노출 불가 → 폴백을 '운영자 편성'으로 강제한다(2026-10-12 사용자 결정).
-const NAV_MUST_SHOW = ['업무 진입형', '고정·필수 노출형'];
-const mustAlwaysShow = (cornerType: string) => NAV_MUST_SHOW.includes(cornerType);
-// 효과적 폴백 — 네비/필수형은 저장값이 '미노출'이거나 비어 있어도 '운영자 편성'으로 간주(미노출 불가). 그 외는 저장값 없으면 미노출.
-const effectiveFallback = (cornerType: string, cvmFallback: string | null | undefined) =>
-  mustAlwaysShow(cornerType)
-    ? (cvmFallback && cvmFallback !== '미노출' ? cvmFallback : '운영자 편성으로 대체')
-    : (cvmFallback ?? '미노출');
+// 네비게이션·필수 코너 판정 + 효과적 폴백은 display-taxonomy의 SSOT를 쓴다(빌더 폴백 미리보기와 공유).
 
 function FallbackStep({
   corner,
@@ -325,7 +317,8 @@ function FallbackStep({
 function OwnerMapStep({ recSource }: { recSource: string | null }) {
   const rows = fieldOwnerMap(recSource);
   return (
-    <Step no={5} title="출처 — 이 값이 어디서 오나" tone="muted">
+    <Step no={5} title="출처 — 이 값이 어디서 오나" tone="muted"
+      desc="이 코너의 각 표시 요소를 누가 소유·공급하는지(SSOT). 레이아웃은 코너 유형, 아이템·순서는 수급 방식에 따라 CVM/운영자, 이미지·문구·아이템 랜딩은 상품 원장(또는 CVM 완성본).">
       <div className="space-y-1.5">
         {rows.map((r) => (
           <div key={r.field} className="flex items-center gap-2" title={r.note}>
@@ -344,14 +337,11 @@ export function CornerSupplyPanel({
   templateId,
   corner,
   children,
-  variantsSlot,
 }: {
   templateId: string;
   corner: SupplyCorner;
   /** ③에서 '운영자 편성'일 때 그대로 끼워 넣는 기존 상품 등록 UI */
   children?: React.ReactNode;
-  /** 노출 타입 베리에이션 — CVM이 변형 중 택1하므로 CVM 수급일 때만 ④폴백 옆에 끼운다(2026-10-12). */
-  variantsSlot?: React.ReactNode;
 }) {
   const [pending, start] = useTransition();
   const mode = corner.recSource ? normalizeRecSource(corner.recSource) : '운영자 편성';
@@ -380,8 +370,7 @@ export function CornerSupplyPanel({
         <>
           <CvmContractStep corner={corner} mode={mode} pending={pending} onSave={(p) => save(p)} />
           <FallbackStep corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
-          {/* 노출 타입 베리에이션 — CVM이 변형 중 고객마다 택1(못 고르면 ④폴백). CVM 수급일 때만 여기 노출(2026-10-12 사용자 요청). */}
-          {variantsSlot}
+          {/* 문구(코너 타이틀) 베리에이션 제거(2026-10-12): CVM은 '문구만 따로 베리에이션'을 못 함(CLAUDE.md 못받는것 ⑤). 타겟별 타이틀은 어드민 타겟팅 룰(Template 분기) 소관. */}
           {/* 폴백용 항목(등록 UI) 노출 조건:
               · 폴백이 '운영자 편성으로 대체'면 대체 항목이 필요 → 연다(네비/필수형은 기본값으로 항상)
               · CVM 콘텐츠 연동이면 완성본이 안 오는 경우를 대비해 운영자가 폴백 콘텐츠를 등록해둔다 → 항상 연다(2026-10-12 사용자 요청) */}

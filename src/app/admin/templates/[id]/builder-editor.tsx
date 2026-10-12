@@ -34,6 +34,7 @@ import {
   REC_SOURCE_INFO,
   normalizeRecSource,
   isCvmSource,
+  effectiveFallback,
   CVM_TARGET_HINTS,
   defaultComposition,
   CHIP_BASE,
@@ -76,9 +77,10 @@ import {
   setCornerBanner,
   saveChips,
   swapCornerToType,
-  setCornerDisplayVariants,
-  setCornerMainTitleVariants,
   setCornerBigBanner,
+  setCornerNoDisplay,
+  setCornerSubTitleLink,
+  setCornerMoreButton,
   refreshBannerComponent,
   addBssProduct,
 } from '../actions';
@@ -129,6 +131,7 @@ export type CornerNode = {
   mainTitleVariants: string | null; // 타이틀 베리에이션 (JSON [{text,target}]) — 실서비스 CVM 택1
   subTitle: string | null;
   subTitleIcon: string | null;
+  subTitleLink: string | null;
   sortStrategy: string | null;
   minItems: number | null;
   noDisplayCondition: string | null;
@@ -249,6 +252,22 @@ function CornerTypeChip({ corner, className, compact }: { corner: CornerNode; cl
   );
 }
 
+// ? 호버 툴팁 — 네이티브 title 대신 즉시 뜨는 CSS 팝오버(호버하면 바로 노출). Figma 툴팁 토큰(bg #fcfcfd·text #454f59·r8·shadow) 사용. 2026-10-12.
+//  label을 주면 '{label} ?' 형태(라벨+아이콘), 없으면 ? 아이콘만. tone으로 아이콘 배경색만 바꾼다.
+function Tip({ text, label, tone, align = 'center' }: { text: string; label?: string; tone?: string; align?: 'center' | 'right' }) {
+  return (
+    <span className="group/tip relative inline-flex items-center gap-0.5 align-middle">
+      {label && <span className="cursor-help text-inherit">{label}</span>}
+      <span className={cn('grid h-3.5 w-3.5 shrink-0 cursor-help place-items-center rounded-full text-[9px] font-bold', tone ?? 'bg-slate-200 text-slate-500')} aria-label={text}>?</span>
+      <span role="tooltip"
+        className={cn('pointer-events-none absolute top-full z-[60] mt-1 hidden w-56 max-w-[16rem] whitespace-normal rounded-lg border border-[#e8ecef] bg-[#fcfcfd] px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-[#454f59] shadow-[0_0_8px_-2px_#0000001f] group-hover/tip:block',
+          align === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2')}>
+        {text}
+      </span>
+    </span>
+  );
+}
+
 // 코너 거버넌스 패널 — 이 코너의 목적 + 배열·레이아웃만. (담을 수 있는 컴포넌트 표시는 제외 — 제약은
 //  CORNER_COMPONENT_MAP으로 컴포넌트 추가 시 강제. 유형=컴포넌트 중복 표기가 어색해 숨김.)
 function CornerGovernance({ base, layoutDetail }: { base: string; layoutDetail?: string | null }) {
@@ -258,7 +277,7 @@ function CornerGovernance({ base, layoutDetail }: { base: string; layoutDetail?:
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
       {layoutDetail && <>배열·레이아웃 · <b className="text-slate-700">{layoutLabel(layoutDetail)}</b><DevLockBadge reason="레이아웃(배열)은 DS/개발 영역 — 어드민은 등록된 배열을 '코너 불러오기'로 교체만 가능" /></>}
-      {purpose && <span title={purpose} aria-label="코너 목적" className="inline-flex cursor-help items-center gap-0.5 text-slate-400">목적 <span className="grid h-3.5 w-3.5 place-items-center rounded-full bg-slate-200 text-[9px] font-bold text-slate-500">?</span></span>}
+      {purpose && <span className="text-slate-400"><Tip text={purpose} label="목적" /></span>}
     </div>
   );
 }
@@ -792,7 +811,6 @@ function MessagePickerModal({
 //  어제 논의(2026-09-09) 반영 — '누가 채우냐'의 축. 어드민은 실제로 정하는 것만 편집한다.
 //   · 상품형 컴포넌트(상품·영화 등): 상품 정보가 BSS·API 원장에 이미 있어 하나하나 편집이 아니라 '가져오기'만.
 //   · 코너 수급이 CVM 기반: 콘텐츠가 런타임에 고객별로 채워짐 → 어드민 편집 불가.
-//  잠그는 필드 = 문구(content)·이미지(image). 링크·표시토글·개수·배치는 운영자 몫이라 그대로 편집.
 //  선택형(카테고리 탭 등 구조)은 운영자 편성이라 잠그지 않는다.
 function atomSourceLock(
   atomType: string,
@@ -801,25 +819,23 @@ function atomSourceLock(
 ): { tag: string; label: string } | null {
   if (componentType === '선택형') return null;
   const f = ATOM_TYPE_FIELDS[atomType as AtomType] ?? {};
-  if (!f.content && !f.image) return null; // 링크/버튼 등 순수 편집 항목은 대상 아님
-  // 상품형 = '재료는 API, 문구는 운영자/CVM'(크리테오·껍데기 모델). 상품 원장에서 오는
-  //  이미지·아이콘·가격만 잠그고(위변조 방지), 마케팅 문구(텍스트)는 운영자가 편집+베리에이션 가능(2026-10-07 사용자 결정: 문구/노출만 편집).
+  // 상품형 = 아이템을 EPC+전시상품 정보에서 '통으로' 가져온다. 문구·이미지·아이콘·가격·랜딩 모두 원장 값 → 개별 편집 잠금(순서·노출 on/off만 운영자 몫).
+  //  바꾸려면 '상품 불러오기(EPC+전시상품 정보)'로 다른 상품을 통으로 불러온다. (2026-10-12 사용자 결정 '가' — 기존 '문구·링크 편집 허용'(10-07) 폐기.)
   if (componentType === '상품형') {
-    return (atomType === 'IMAGE' || atomType === 'ICON' || atomType === 'PRICE')
-      ? { tag: 'API', label: '상품 정보 · 자동' }
-      : null;
+    return (f.content || f.image || f.link) ? { tag: 'EPC', label: 'EPC+전시상품 정보 · 자동' } : null;
   }
+  if (!f.content && !f.image) return null; // 링크/버튼 등 순수 편집 항목은 대상 아님(상품형 외)
   if (isCvmSource(recSource)) return { tag: 'CVM', label: '개인화 · 고객별 자동' };
   return null;
 }
 
 // 잠긴(가져오는) 콘텐츠 표시 — 입력이 아니라 '자동 연동 값'임을 컴팩트한 읽기 전용 한 줄로.
 //  form처럼 보이지 않게 최소화(자물쇠 + 값). 카드 상단 요약(AutoSourceSummary)이 맥락을 설명하므로 여기선 값만.
-function LockedSource({ lock, sample, kind }: { lock: { tag: string; label: string }; sample?: string | null; kind: 'content' | 'image' }) {
+function LockedSource({ lock, sample, kind }: { lock: { tag: string; label: string }; sample?: string | null; kind: 'content' | 'image' | 'link' }) {
   return (
     <div className="flex items-center gap-1.5 px-0.5 py-0.5 text-[11px] text-slate-500">
       <Lock className="h-2.5 w-2.5 shrink-0 text-slate-400" />
-      <span className="truncate">{kind === 'image' ? '이미지 자동 연동' : sample ? sample : '실서비스에서 자동'}</span>
+      <span className="truncate">{kind === 'image' ? '이미지 자동 연동' : kind === 'link' ? (sample ? `랜딩 ${sample}` : '아이템 랜딩 자동') : sample ? sample : '실서비스에서 자동'}</span>
       <span className="ml-auto shrink-0 rounded bg-slate-100 px-1 text-[9px] font-semibold text-slate-400">{lock.tag} 자동</span>
     </div>
   );
@@ -937,17 +953,20 @@ function AtomRow({
             onClear={() => onChange({ imageUrl: '' })}
           />
         ))}
-      {f.link && (
-        <div className="space-y-0.5">
-          <span className="text-[10px] text-muted-foreground">이동 URL</span>
-          <Input
-            value={atom.linkUrl ?? ''}
-            onChange={(e) => onChange({ linkUrl: e.target.value })}
-            placeholder="이동 URL 입력 (예: /movie)"
-            className="h-8 text-xs"
-          />
-        </div>
-      )}
+      {f.link &&
+        (sourceLock ? (
+          <LockedSource lock={sourceLock} sample={atom.linkUrl} kind="link" />
+        ) : (
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-muted-foreground">이동 URL</span>
+            <Input
+              value={atom.linkUrl ?? ''}
+              onChange={(e) => onChange({ linkUrl: e.target.value })}
+              placeholder="이동 URL 입력 (예: /movie)"
+              className="h-8 text-xs"
+            />
+          </div>
+        ))}
     </div>
   );
 }
@@ -1065,7 +1084,7 @@ function AtomManager({
   }, [component.cornerComponentId]);
 
   // API 자동 연동(상품형) 여부 — 이미지·문구·가격은 상품 원장에서 자동. 카드 상단에 요약을 한 번만 노출.
-  const apiSourced = component.componentType === '상품형' && atoms.some((a) => atomSourceLock(a.atomType, component.componentType, recSource)?.tag === 'API');
+  const apiSourced = component.componentType === '상품형' && atoms.some((a) => atomSourceLock(a.atomType, component.componentType, recSource)?.tag === 'EPC');
 
   // ── 세트로 불러오기 (2026-10-08 사용자 요청) ───────────────────────────────
   //  상품·콘텐츠 원장의 한 항목 = (이름 · 설명 · 이미지) 한 세트다. 문구를 칸마다 따로 긁어오는 게 아니라
@@ -1133,10 +1152,10 @@ function AtomManager({
       {apiSourced && (
         <div className="rounded-md border border-sky-200 bg-sky-50/70 px-2.5 py-2 text-[11px] leading-relaxed">
           <p className="flex items-center gap-1.5 font-semibold text-sky-800">
-            <Lock className="h-3 w-3" /> 상품 자동 연동 <span className="rounded bg-sky-600 px-1 text-[9px] font-bold text-white">API</span>
+            <Lock className="h-3 w-3" /> 상품 자동 연동 <span className="rounded bg-sky-600 px-1 text-[9px] font-bold text-white">EPC</span>
           </p>
-          <p className="mt-0.5 text-slate-500"><b className="text-slate-600">이미지·가격</b>은 <b className="text-slate-600">상품 원장(API)</b>에서 자동 채워집니다. 바꾸려면 <b className="text-slate-600">‘상품 불러오기’</b>로 다른 상품을 선택하세요.</p>
-          <p className="mt-1 text-emerald-700">편집 가능: <b>마케팅 문구(＋베리에이션) · 노출 on/off · 이동 링크 · 순서</b></p>
+          <p className="mt-0.5 text-slate-500"><b className="text-slate-600">이미지·문구·가격·랜딩</b>은 <b className="text-slate-600">EPC+전시상품 정보</b>에서 <b className="text-slate-600">통으로</b> 채워집니다. 바꾸려면 <b className="text-slate-600">‘상품 불러오기’</b>로 다른 상품을 통으로 선택하세요.</p>
+          <p className="mt-1 text-emerald-700">편집 가능: <b>노출 on/off · 순서</b> (개별 아이콘·텍스트·URL 편집 불가)</p>
         </div>
       )}
       {atoms.length === 0 && <p className="text-[11px] text-muted-foreground">Atom 없음 — 아래에서 추가하세요</p>}
@@ -1730,67 +1749,54 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
 
 
 
-// 코너 타이틀 베리에이션 편집기 — 기본 타이틀(코너 유형 정의, 읽기전용) + 타겟별 대체 타이틀(빌더에서 편집). 실서비스 CVM 택1, 미리보기=기본(폴백). 2026-10-12.
-//  이 코너에서 타겟별로 바뀌는 건 '코너 타이틀'뿐. 상품·혜택 아이템 문구는 원장에서 통으로 가져오므로 변형 없음.
-function CopyOverview({ templateId, corner }: { templateId: string; corner: CornerNode }) {
-  type TV = { text: string; target?: string; enabled?: boolean };
-  const parse = (): TV[] => { try { const a = JSON.parse(corner.mainTitleVariants ?? ''); if (Array.isArray(a)) return a.filter((x) => x && typeof x.text === 'string'); } catch { /* noop */ } return []; };
-  const [vars, setVars] = useState<TV[]>(parse());
+// 서브타이틀 이동 URL — 서브타이틀 화살표(›) 클릭 시 이동할 주소. 직접 입력 + '불러오기'(등록된 링크). 즉시 저장(setCornerSubTitleLink). 2026-10-12 사용자 요청.
+function SubTitleLinkField({ templateId, corner, links }: { templateId: string; corner: CornerNode; links: LibraryData['links'] }) {
+  const [url, setUrl] = useState(corner.subTitleLink ?? '');
+  const [open, setOpen] = useState(false);
   const [, start] = useTransition();
-  useEffect(() => { setVars(parse()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.mainTitleVariants, corner.templateCornerId]);
-  const save = (next: TV[]) => { setVars(next); start(() => setCornerMainTitleVariants(templateId, corner.id, next.length ? JSON.stringify(next) : '')); };
-  const patch = (i: number, p: Partial<TV>) => save(vars.map((v, idx) => (idx === i ? { ...v, ...p } : v)));
-
-  if (!corner.mainTitle) return null; // 타이틀 없는 코너(배너 등)는 베리에이션 없음
+  useEffect(() => { setUrl(corner.subTitleLink ?? ''); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.subTitleLink, corner.templateCornerId]);
+  const save = (v: string) => { start(() => setCornerSubTitleLink(templateId, corner.id, v)); };
+  const label = url ? links.find((l) => l.url === url)?.label : null;
   return (
-    <div className="mb-3 space-y-2 rounded-xl border bg-card p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1 text-[11px] font-semibold text-violet-700"><List className="h-3.5 w-3.5 text-violet-500" /> 코너 타이틀 베리에이션 <span className="font-normal text-violet-400">· 타겟별 · CVM 택1</span></span>
-        <button type="button" onClick={() => save([...vars, { text: '', target: '', enabled: true }])}
-          className="inline-flex shrink-0 items-center gap-0.5 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-100"><Plus className="h-3 w-3" /> 타이틀</button>
+    <div className="col-span-2 space-y-1">
+      <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">서브타이틀 이동 URL
+        <Tip text="서브타이틀 화살표(›)를 누르면 이동할 주소. 직접 입력하거나 ‘불러오기’로 등록된 링크를 고릅니다." />
+      </label>
+      <div className="flex items-center gap-1.5">
+        <Input value={url} onChange={(e) => setUrl(e.target.value)} onBlur={() => url !== (corner.subTitleLink ?? '') && save(url)}
+          placeholder="https:// 또는 tworld://…" className="h-8 min-w-0 flex-1 text-xs" />
+        <button type="button" onClick={() => setOpen(true)} className="shrink-0 rounded-md border px-2 py-1.5 text-[11px] font-medium hover:bg-secondary">불러오기</button>
+        {url && <button type="button" onClick={() => { setUrl(''); save(''); }} title="해제" className="shrink-0 text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>}
       </div>
-      {/* 기본 타이틀 — 코너 유형 정의(읽기전용). 변경은 코너 정보 → 코너 유형에서. */}
-      <div className="flex items-start gap-1.5 rounded-md bg-slate-50 px-2 py-1.5">
-        <span className="inline-flex h-5 shrink-0 items-center rounded bg-slate-200 px-1.5 text-[9px] font-bold text-slate-600">기본</span>
-        <span className="flex-1 whitespace-pre-line text-[11px] text-slate-800">{corner.mainTitle}</span>
-        <span className="shrink-0 text-[9px] text-slate-400">미리보기 기준</span>
-      </div>
-      {/* 타겟별 대체 — 빌더에서 편집 */}
-      {vars.length === 0 ? (
-        <p className="text-[10px] leading-relaxed text-violet-400">타겟별 대체 타이틀이 없습니다 — <span className="font-medium text-violet-500">＋타이틀</span>로 추가하면 실서비스에서 <b>CVM이 세그먼트별로 택1</b>합니다. (미리보기는 기본)</p>
-      ) : (
-        <div className="space-y-1.5">
-          {vars.map((v, i) => {
-            const on = v.enabled !== false;
-            return (
-              <div key={i} className={cn('flex items-start gap-1', !on && 'opacity-55')}>
-                <Textarea value={v.text} onChange={(e) => patch(i, { text: e.target.value })} placeholder="대체 타이틀 (줄바꿈 가능)"
-                  className="min-h-[38px] min-w-0 flex-1 text-[11px]" />
-                <div className="flex shrink-0 flex-col gap-1">
-                  <Select value={v.target ?? ''} onChange={(e) => patch(i, { target: e.target.value })} className="h-7 w-24 text-[10px]" title="노출 타겟 힌트 — CVM 세그먼트 매칭용">
-                    <option value="">타겟 없음</option>
-                    {CVM_TARGET_HINTS.map((t) => <option key={t.key} value={t.key}>{t.key}</option>)}
-                  </Select>
-                  <div className="flex gap-1">
-                    <button type="button" onClick={() => patch(i, { enabled: !on })} title={on ? '노출 중 — 클릭 시 후보 제외' : '제외됨 — 클릭 시 포함'}
-                      className={cn('h-7 flex-1 rounded px-1 text-[9px] font-semibold ring-1 ring-inset', on ? 'bg-emerald-50 text-emerald-600 ring-emerald-200' : 'bg-slate-100 text-slate-400 ring-slate-200')}>{on ? '노출' : '제외'}</button>
-                    <button type="button" onClick={() => save(vars.filter((_, idx) => idx !== i))} title="삭제"
-                      className="flex h-7 w-6 shrink-0 items-center justify-center rounded border text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><X className="h-3 w-3" /></button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      <p className="border-t pt-2 text-[9px] leading-relaxed text-muted-foreground">기본 타이틀은 코너 유형 정의(읽기전용) — 여기선 <b>타겟별 대체</b>만 추가·편집. 실서비스는 CVM이 고객마다 택1, 미리보기는 기본(폴백). 상품·혜택 아이템 문구는 원장에서 통으로.</p>
+      {label && <p className="text-[10px] text-slate-400">{label}</p>}
+      <AssetPickerModal open={open} kind="link" images={[]} links={links} onClose={() => setOpen(false)} onSelect={(v) => { setUrl(v.url); save(v.url); setOpen(false); }} />
     </div>
   );
 }
 
-// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치+배너 선택). 상품형/혜택·오퍼형에서만(콘텐츠 안내형은 빅배너 없음 — 2026-10-06). 즉시 저장.
+// 미 노출 조건 — '운영자 편성' 콘텐츠의 옵션(수급 패널 ③채우기/폴백용 항목에 끼운다). 즉시 저장(setCornerNoDisplay). 코너 정보 폼에서 분리(2026-10-12 사용자 요청).
+function NoDisplayControl({ templateId, corner }: { templateId: string; corner: CornerNode }) {
+  const [val, setVal] = useState(corner.noDisplayCondition ?? '선택 없음');
+  const [, start] = useTransition();
+  useEffect(() => { setVal(corner.noDisplayCondition ?? '선택 없음'); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.noDisplayCondition, corner.templateCornerId]);
+  const change = (v: string) => { setVal(v); start(() => setCornerNoDisplay(templateId, corner.id, v)); };
+  return (
+    <div className="mt-2 flex items-center gap-2 rounded-md border bg-white px-2.5 py-2">
+      <label className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-[var(--ink2)]">미 노출 조건
+        <Tip text="운영자가 채운 콘텐츠가 조건을 못 채우면 코너를 숨깁니다(데이터 없음·재고 소진·혜택 종료·개인화 제한 시)." />
+      </label>
+      <Select value={val} onChange={(e) => change(e.target.value)} className="h-7 min-w-0 flex-1 text-xs">
+        {NO_DISPLAY_CONDITIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+      </Select>
+    </div>
+  );
+}
+
+// '코너 구성' 표시 옵션 — 빅배너로 강조(+위치+배너 선택). 즉시 저장.
+//  노출 조건 = 상품형/혜택·오퍼형 중 '+배너' 레이아웃만(세로형+배너·가로형+배너 등). 빅배너는 코너 유형 카탈로그에서 '배너' 레이아웃에만 등록되므로
+//  (시드 bigBanner = /배너/.test(layoutDetail)), 세로형+칩·가로형 등 '배너' 없는 레이아웃엔 토글을 띄우지 않는다 — 코너 유형 관리와 1:1(2026-10-12 사용자 지적).
 function BigBannerControl({ templateId, corner, banners }: { templateId: string; corner: CornerNode; banners: LibraryData['banners'] }) {
-  const canBigBanner = ['상품형', '혜택·오퍼형'].includes(corner.cornerType);
+  const canBigBanner = ['상품형', '혜택·오퍼형'].includes(corner.cornerType) && (/배너/.test(corner.layoutDetail ?? '') || !!corner.bigBanner);
   const [on, setOn] = useState(!!corner.bigBanner);
   const [pending, start] = useTransition();
   useEffect(() => { setOn(!!corner.bigBanner); }, [corner.bigBanner, corner.templateCornerId]);
@@ -2057,6 +2063,10 @@ function CornerInfoForm({
   const [loadOpen, setLoadOpen] = useState(false); // '코너 불러오기' 피커 열림
   const [resetKey, setResetKey] = useState(0); // '취소'로 폼(비제어 필드) 초기화
   const [, startTab] = useTransition(); // 상단 카테고리 탭 토글
+  // 전체보기(하단 더보기 CTA) on/off — 서브타이틀 링크와 중복될 수 있어 운영자가 끈다(2026-10-12 사용자). 즉시 저장.
+  const [moreOn, setMoreOn] = useState(corner.moreButtonUse);
+  const [, startMore] = useTransition();
+  useEffect(() => { setMoreOn(corner.moreButtonUse); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.moreButtonUse, corner.templateCornerId]);
   const family = cornerFamily(ct);
   const hasProductComp = corner.components.some((c) => c.componentType === '상품형'); // 표시 항목(상품 카드 요소) UI 노출 기준 — 혜택·오퍼형 2.5 등도 커버
 
@@ -2235,7 +2245,7 @@ function CornerInfoForm({
           <div className="col-span-2 flex items-center gap-1.5 rounded-md bg-violet-50/50 px-2.5 py-1.5 text-[10.5px] text-violet-700">
             <Sparkles className="h-3.5 w-3.5 shrink-0 text-violet-500" />
             <span>수급 <b>{recSource ? normalizeRecSource(recSource) : '운영자 편성'}</b></span>
-            <span title="이 코너를 누가 채우는지(운영자 편성 / CVM 데이터 연동 / CVM 콘텐츠 연동)는 아래 ‘② 수급’에서 정합니다." className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-violet-100 text-[9px] font-bold text-violet-500" aria-label="수급 방식 안내">?</span>
+            <Tip text="이 코너를 누가 채우는지(운영자 편성 / CVM 데이터 연동 / CVM 콘텐츠 연동)는 아래 ‘② 수급’에서 정합니다. CVM 데이터 연동=아이템·순서만 CVM, 문구·이미지는 상품 원장 / CVM 콘텐츠 연동=완성본까지 CVM / 운영자 편성=운영자가 직접 구성." tone="bg-violet-100 text-violet-500" />
           </div>
         )}
         <input type="hidden" name="recSource" value={recSource} />
@@ -2250,7 +2260,7 @@ function CornerInfoForm({
           <div className="col-span-2 space-y-2 rounded-md border border-sky-200 bg-sky-50/40 p-2.5">
             <label className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1 text-xs font-semibold text-sky-800">FO 사용자 설정 가능
-                <span title="켜면 고객이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정(🔒) 항목은 항상 포함되고 삭제 불가. 고객은 최소~최대 범위 안에서 노출/숨김합니다." aria-label="FO 사용자 설정 안내" className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-sky-100 text-[9px] font-bold text-sky-500">?</span>
+                <Tip text="켜면 고객이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정(🔒) 항목은 항상 포함되고 삭제 불가. 고객은 최소~최대 범위 안에서 노출/숨김합니다." tone="bg-sky-100 text-sky-500" />
               </span>
               <button
                 type="button"
@@ -2296,7 +2306,7 @@ function CornerInfoForm({
           <>
             <div className="col-span-2 space-y-1">
               <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">타이틀
-                <span title="여기 값이 기본(폴백·미리보기). 타겟별 대체(CVM 택1)는 CVM 흐름의 ‘코너 타이틀 베리에이션’에서 추가합니다." className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-400" aria-label="타이틀 안내">?</span>
+                <Tip text="이 코너의 기본 타이틀. 미리보기·실서비스의 기준값입니다. (타겟별로 다른 타이틀은 CVM이 ‘문구만 따로’ 못 만들어, 어드민 타겟팅 룰 영역입니다.)" />
               </label>
               <Textarea name="mainTitle" value={mainTitle} onChange={(e) => setMainTitle(e.target.value)} placeholder="코너 타이틀" className="min-h-[44px] text-xs" />
             </div>
@@ -2314,6 +2324,8 @@ function CornerInfoForm({
                 ))}
               </Select>
             </div>
+            {/* 서브타이틀 화살표(클릭 이동)일 때만 랜딩 URL 입력(직접+불러오기). 2026-10-12 사용자 요청 */}
+            {subTitleIcon === '화살표' && <SubTitleLinkField templateId={templateId} corner={corner} links={library.links} />}
           </>
         )}
         {/* 코너 레이아웃 필드는 표시하지 않음 (값 보존 · 배치는 유형 상세로 추론) */}
@@ -2324,7 +2336,7 @@ function CornerInfoForm({
         <input type="hidden" name="maxItems" value={corner.maxItems ?? ''} />
 
         {/* 코너별 표시 항목 — 코너 유형 세부 항목의 코너 단위 오버라이드. 값은 항상 제출(round-trip), UI는 상품형에만. */}
-        <input type="hidden" name="showImage" value={showItems.showImage ? '1' : ''} />
+        <input type="hidden" name="showImage" value="1" /> {/* 상품 이미지는 카드 필수 — 항상 ON(2026-10-12) */}
         <input type="hidden" name="showPrice" value={showItems.showPrice ? '1' : ''} />
         <input type="hidden" name="showBadge" value={showItems.showBadge ? '1' : ''} />
         <input type="hidden" name="showDesc" value={showItems.showDesc ? '1' : ''} />
@@ -2332,7 +2344,7 @@ function CornerInfoForm({
           <div className="col-span-2 space-y-1.5 rounded-md border bg-slate-50/60 p-2.5">
             {/* 표시 항목 — 빌더에서 코너별 on/off(회의: 콘텐츠·표시는 빌더). */}
             <label className="flex items-center gap-1 text-[11px] font-semibold text-slate-700">표시 항목
-              <span title="이 코너 카드에 보일 요소. 끄면 미리보기에서 숨겨요(내용은 지우지 않음). 배지는 가격을 켜야 사용 가능." aria-label="표시 항목 안내" className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-slate-200 text-[9px] font-bold text-slate-500">?</span>
+              <Tip text="이 코너 카드에 보일 요소. 끄면 미리보기에서 숨겨요(내용은 지우지 않음). 상품 이미지는 필수라 끌 수 없고, 배지는 가격을 켜야 사용 가능." />
             </label>
             <div className="flex flex-wrap gap-x-4 gap-y-1.5">
               {([
@@ -2342,13 +2354,22 @@ function CornerInfoForm({
                 ['showDesc', '설명'],
               ] as const).map(([key, label]) => {
                 const badgeLocked = key === 'showBadge' && !showItems.showPrice;
+                const imageLocked = key === 'showImage'; // 상품 이미지는 카드 필수 — 끌 수 없음(2026-10-12 사용자)
                 return (
-                  <label key={key} className={cn('flex items-center gap-1.5 text-xs', badgeLocked && 'cursor-not-allowed text-muted-foreground/40')} title={badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
-                    <input type="checkbox" checked={showItems[key] && !badgeLocked} disabled={badgeLocked} onChange={(e) => toggleShow(key, e.target.checked)} className="accent-indigo-600 disabled:opacity-40" />
-                    {label}
+                  <label key={key} className={cn('flex items-center gap-1.5 text-xs', badgeLocked && 'cursor-not-allowed text-muted-foreground/40', imageLocked && 'cursor-not-allowed')}
+                    title={imageLocked ? '상품 이미지는 카드의 필수 요소라 끌 수 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
+                    <input type="checkbox" checked={imageLocked ? true : (showItems[key] && !badgeLocked)} disabled={badgeLocked || imageLocked} onChange={(e) => toggleShow(key, e.target.checked)} className="accent-indigo-600 disabled:opacity-60" />
+                    {label}{imageLocked && <Lock className="h-3 w-3 text-slate-400" />}
                   </label>
                 );
               })}
+              {/* 전체보기(하단 더보기 CTA) — 서브타이틀 화살표 링크와 중복될 수 있어 끌 수 있게(2026-10-12 사용자). 즉시 저장. */}
+              <label className="flex items-center gap-1.5 text-xs" title="코너 하단의 ‘전체보기’ 버튼. 서브타이틀 이동 URL과 중복되면 꺼도 됩니다.">
+                <input type="checkbox" checked={moreOn}
+                  onChange={(e) => { setMoreOn(e.target.checked); startMore(() => setCornerMoreButton(templateId, corner.id, e.target.checked, corner.moreButtonLabel ?? '전체보기', corner.moreButtonLink ?? '')); }}
+                  className="accent-indigo-600" />
+                전체보기
+              </label>
             </div>
           </div>
         )}
@@ -2370,17 +2391,8 @@ function CornerInfoForm({
             </Select>
           </div>
         )}
-        {/* 미 노출 조건 — 빌드 시점(코너별)에 정함(정책 TM-DSP-008). 빌더에서 편집. */}
-        {isRecCorner && (
-          <div className="space-y-1">
-            <label className="text-[11px] text-muted-foreground">미 노출 조건 <span className="text-muted-foreground/60">· 데이터 없음/조건 미충족 시 숨김</span></label>
-            <Select name="noDisplayCondition" defaultValue={corner.noDisplayCondition ?? '선택 없음'} className="h-8 text-xs">
-              {NO_DISPLAY_CONDITIONS.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </Select>
-          </div>
-        )}
+        {/* 미 노출 조건은 '운영자 편성' 콘텐츠 옵션으로 이동(2026-10-12 사용자 요청) — 여기선 폼 제출 시 값만 보존(즉시저장은 수급 패널의 NoDisplayControl). */}
+        <input type="hidden" name="noDisplayCondition" value={corner.noDisplayCondition ?? '선택 없음'} />
         {/* 하단 CTA(더보기/전체보기) 버튼은 '코너 구성'의 MoreButtonControl로 이동 — 코너 정보에서는 관리하지 않음. */}
 
         {/* 코너 설명 — 빌더에서 편집(업무 진입형 탭형은 숨김, 값은 보존). */}
@@ -3238,6 +3250,47 @@ function CornerLoadModal({
   );
 }
 
+// ── 운영자 폴백 미리보기 (디바이스 옆 보조 캔버스) ─────────────────────────
+//  CVM 수급 코너는 실서비스에서 CVM이 채우지만, 비면 폴백이 노출된다. 메인 폰은 'CVM이 채운 모습'(콘텐츠 연동=빈 구좌),
+//  이 보조 캔버스는 '폴백=운영자 편성일 때 실제로 뭐가 뜨는지'를 운영자가 바로 비교해 볼 수 있게 한다. (2026-10-12 사용자 요청: 기존 노출타입 캔버스 자리를 폴백용으로 재활용)
+function FallbackSpread({ corner, preview }: { corner: CornerNode; preview: PreviewCorner }) {
+  if (!isCvmSource(corner.recSource)) return null; // 운영자 편성 수급은 폴백 개념이 없다(메인이 곧 운영자 구성).
+  const effFallback = effectiveFallback(corner.cornerType, corner.cvmFallback);
+  const bodyCount = (corner.components ?? []).filter((x) => x.componentType !== '선택형').length;
+  const hasItems = bodyCount > 0 || !!corner.bannerImageUrl;
+  return (
+    <div className="w-[300px] shrink-0">
+      <div className="mb-1.5 flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700"><Layers className="h-3 w-3" /> 운영자 폴백</span>
+        <span className="text-[10px] text-muted-foreground">CVM이 비면 이게 노출</span>
+      </div>
+      {effFallback === '운영자 편성으로 대체' ? (
+        hasItems ? (
+          <>
+            <div className="relative overflow-hidden rounded-2xl border-2 border-amber-200 bg-slate-100 p-2">
+              <span className="absolute right-2 top-2 z-10 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-bold text-white shadow">폴백</span>
+              <CornerBlock corner={preview} />
+            </div>
+            <p className="mt-1 text-center text-[9px] text-amber-600">운영자가 등록한 대체 구성 · ‘④ 폴백 &gt; 폴백용 항목’에서 편집</p>
+          </>
+        ) : (
+          <div className="flex min-h-[132px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/50 p-5 text-center">
+            <Layers className="h-5 w-5 text-amber-300" />
+            <p className="text-[11px] font-medium text-amber-700">폴백용 항목이 비어 있어요</p>
+            <p className="text-[10px] leading-relaxed text-amber-500">우측 ‘④ 폴백 &gt; 폴백용 항목’에서<br />대체로 노출할 구성을 등록하세요</p>
+          </div>
+        )
+      ) : (
+        <div className="flex min-h-[132px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/60 p-5 text-center">
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-slate-200 text-slate-400"><X className="h-3.5 w-3.5" /></span>
+          <p className="text-[11px] font-medium text-slate-500">미노출 (폴백 없음)</p>
+          <p className="text-[10px] leading-relaxed text-slate-400">CVM이 비면 이 코너는 고객에게<br />노출되지 않아요. 바꾸려면 ‘④ 폴백’에서<br />‘운영자 편성으로 대체’를 고르세요.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BuilderEditor({
   meta,
   corners,
@@ -3595,7 +3648,11 @@ export function BuilderEditor({
                 ))
               )}
             </DeviceFrame>
-            {/* 노출 타입 '추가 변형(CVM 택1)' 캔버스 제거(2026-10-12): 노출 타입(레이아웃)은 CVM이 아니라 운영자가 단일 선택(코너 정보 → 코너 불러오기). 캔버스엔 선택된 코너 1벌만. */}
+            {/* 디바이스 옆 보조 캔버스 = 운영자 폴백 미리보기 (CVM 수급 코너에서만). 2026-10-12 사용자 요청으로 기존 노출타입 캔버스 자리를 재활용. */}
+            {selectedCorner && (() => {
+              const selPv = previewCorners.find((c) => c.id === selectedCorner.templateCornerId);
+              return selPv ? <FallbackSpread corner={selectedCorner} preview={selPv} /> : null;
+            })()}
           </div>
         </div>
       </div>
@@ -3650,9 +3707,12 @@ export function BuilderEditor({
                     cvmFallback: selectedCorner.cvmFallback,
                     itemCount: selectedCorner.components.filter((c) => c.componentType !== '선택형').length,
                   }}
-                  variantsSlot={<CopyOverview templateId={templateId} corner={selectedCorner} />}
                 >
-                  <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
+                  <>
+                    <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
+                    {/* 미 노출 조건 — '운영자 편성' 콘텐츠의 옵션(2026-10-12 사용자 요청). 운영자가 채운 콘텐츠가 조건 미충족 시 숨김. */}
+                    <NoDisplayControl templateId={templateId} corner={selectedCorner} />
+                  </>
                 </CornerSupplyPanel>
                 {/* 표시 옵션 카드 해체(2026-10-12): 빅배너 강조·문구 한눈에 보기는 ①코너 정보 카드로, 노출 타입 베리에이션은 CVM 수급 흐름(variantsSlot)으로 이동. */}
               </>
