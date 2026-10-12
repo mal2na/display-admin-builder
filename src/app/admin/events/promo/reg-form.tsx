@@ -12,6 +12,8 @@ import { CautionPicker, PagePicker } from './form-pickers';
 import { JoinActions } from './join-actions';
 import { TermsPicker, TermsMap, GuestBlock } from './terms';
 import { RefSections } from './ref-section';
+import { PromoDetail } from './detail-view';
+import { FoPreview } from './fo-preview';
 import { RewardSection } from './reward-blocks';
 import {
   Sect, Row, Hint, Note, Rd, Ck, RdPair, BTN, BTN_PRI, BTN_SM, BTN_PILL, INP, SEL, DT,
@@ -44,6 +46,9 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
   const [termsOpen, setTermsOpen] = React.useState(false);
   const [pagePick, setPagePick] = React.useState<number | null>(null);
   const [tagInput, setTagInput] = React.useState('');
+  /** 등록 폼 / 저장 후 상세 / FO 미리보기 */
+  const [view, setView] = React.useState<'form' | 'detail' | 'fo'>('form');
+  const backRef = React.useRef<'form' | 'detail'>('form');
 
   // 값이 바뀔 때마다 연동 규칙(룰렛·자동 CTA 등)을 한 번 통과시킨다
   const set = (p: Partial<PromoForm>) => setF((x) => normalize({ ...x, ...p }));
@@ -65,8 +70,22 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
       document.getElementById(`err-${first}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    setConfirmMsg({ msg: '입력한 내용을 저장하시겠습니까?', ok: () => { onToast('저장되었습니다.'); onSaved(); } });
+    setConfirmMsg({ msg: '입력한 내용을 저장하시겠습니까?', ok: () => { onToast('저장되었습니다.'); setView('detail'); window.scrollTo(0, 0); } });
   };
+
+  const openFo = () => { backRef.current = view === 'detail' ? 'detail' : 'form'; setView('fo'); window.scrollTo(0, 0); };
+
+  if (view === 'fo') return <FoPreview f={f} onBack={() => { setView(backRef.current); window.scrollTo(0, 0); }} />;
+  if (view === 'detail') {
+    return (
+      <PromoDetail
+        f={f}
+        onList={onSaved}
+        onEdit={() => { setView('form'); window.scrollTo(0, 0); }}
+        onFo={openFo}
+      />
+    );
+  }
 
   return (
     <div className="px-12 py-9 pb-28">
@@ -425,6 +444,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
           <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-6">
             <button type="button" className={BTN} onClick={onCancel}>취소</button>
             <div className="ml-auto flex gap-2">
+              <button type="button" className={BTN} onClick={openFo}>FO 미리보기</button>
               <button type="button" className={BTN} onClick={() => { onToast('임시저장 되었습니다.'); onSaved(); }}>임시저장</button>
               <button type="button" className={BTN_PRI} onClick={save}>저장</button>
             </div>

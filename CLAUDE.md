@@ -209,7 +209,7 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 | 등록 폼 — 참여 정보 · 리워드 | **완료(참여ㆍ리워드형)** | `join-actions.tsx` · `reward-blocks.tsx` · `src/lib/promotion/pr.ts` |
 | 등록 폼 — 약관 매핑 · 비회원 참여 | **완료** | `terms.tsx` · `src/lib/promotion/terms.ts` |
 | 등록 폼 — 추천형 | **완료** | `ref-section.tsx` (모델은 `pr.ts`) |
-| 상세 보기 · FO 미리보기 | **미착수** | 프로토타입 `buildDetail()` / `renderFo()` |
+| 상세 보기 · FO 미리보기 | **완료** | `detail-view.tsx` · `fo-preview.tsx` |
 
 > **등록 화면 분기** — `[등록]` → 유형 결정 팝업(React) → **이벤트 3종(안내형·참여ㆍ리워드형·추천형)은
 > 전부 React 폼**. 미션·기획전만 아직 프로토타입(`#form=<유형>&jm=<참여방식>`).
@@ -220,8 +220,12 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 >
 > 조건 빌더 확인용 임시 페이지: `/admin/events/promo/cond-check` (다 옮기면 지울 것)
 >
-> **다음에 이어서 할 때**: 상세 보기(`buildDetail`)와 FO 미리보기(`renderFo`)가 남았다.
-> 미션·기획전은 프로토타입에도 본문이 없다(SB 확정 후 추가 예정).
+> 등록 화면은 폼 / 상세 / FO 미리보기 세 가지를 `reg-form.tsx` 안의 `view` 로 전환한다.
+> 저장하면 상세로 넘어가고, 상세에서 [수정] 으로 폼에 돌아온다.
+>
+> **남은 것**: 미션·기획전(프로토타입에도 본문이 없다 — SB 확정 후 추가 예정),
+> 목록↔상세 연결(저장한 프로모션을 목록에서 다시 여는 길 · 저장소가 없어 세션 메모리뿐),
+> 프로모션 상태별 수정 제한(`applyLocks`).
 
 **아래는 BO 공통 반영 전 기준이다 — 위 토큰과 충돌하면 위가 이긴다.**
 
