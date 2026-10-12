@@ -2192,12 +2192,7 @@ function CornerInfoForm({
       />
 
       <form key={resetKey} action={updateCornerMeta.bind(null, templateId, corner.id)} className="grid grid-cols-2 gap-3">
-        {/* 수정 가능/불가 구분 범례 — 빌더에서 바꾸는 값 vs 코너 유형에서 정의(읽기 전용). 2026-10-01 사용자 요청 */}
-        <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-[#e8ecef] bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
-          <span className="inline-flex items-center gap-1"><Pencil className="h-3 w-3 text-indigo-500" /><b className="text-slate-600">빌더에서 수정</b> · 코너명 · 타이틀·서브 · 표시 항목 · 카테고리 탭 · 미 노출 조건 · 코너 설명 · 추천 수급(CVM) · 베리에이션 · 순서·위치 고정</span>
-          <span className="text-slate-300">|</span>
-          <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3 text-slate-400" /><b className="text-slate-600">코너 유형에서 정의(읽기 전용)</b> · 유형·배열 — ‘코너 불러오기’로 교체</span>
-        </div>
+        {/* 설명 범례 제거(2026-10-12 사용자 요청: 설명글 과다) — 각 필드가 🔒/수정으로 상태를 직접 표시하므로 중복. */}
         {/* 공통 */}
         <div className="col-span-2 space-y-1">
           <label className="text-[11px] text-muted-foreground">코너명 *</label>
@@ -2241,12 +2236,10 @@ function CornerInfoForm({
         {/* 수급 방식은 '코너 구성'의 ② 수급 단계 한 곳에서만 정한다(2026-10-08 CVM 협의).
             여기서는 폼 제출 시 기존 값이 날아가지 않도록 hidden 으로만 넘긴다. */}
         {isRecCorner && (
-          <div className="col-span-2 flex items-start gap-2 rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-2">
-            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-500" />
-            <span className="text-[10.5px] leading-relaxed text-violet-700">
-              이 코너를 <b>누가 채우는지</b>(운영자 편성 / CVM 데이터 연동 / CVM 콘텐츠 연동)는 아래 <b>‘② 수급’</b>에서 정합니다.
-              {recSource ? <> 현재: <b>{normalizeRecSource(recSource)}</b></> : <> 현재: <b>운영자 편성</b></>}
-            </span>
+          <div className="col-span-2 flex items-center gap-1.5 rounded-md bg-violet-50/50 px-2.5 py-1.5 text-[10.5px] text-violet-700">
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-violet-500" />
+            <span>수급 <b>{recSource ? normalizeRecSource(recSource) : '운영자 편성'}</b></span>
+            <span title="이 코너를 누가 채우는지(운영자 편성 / CVM 데이터 연동 / CVM 콘텐츠 연동)는 아래 ‘② 수급’에서 정합니다." className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-violet-100 text-[9px] font-bold text-violet-500" aria-label="수급 방식 안내">?</span>
           </div>
         )}
         <input type="hidden" name="recSource" value={recSource} />
@@ -2307,14 +2300,10 @@ function CornerInfoForm({
           </>
         ) : (
           <>
-            {/* 타이틀·서브타이틀은 빌더에서 직접 편집(회의 2026-10-06 재결정 — 코너 정보는 빌더에서 수정).
-                타겟별 대체 문구(CVM 택1)는 문구 베리에이션에서 추가하고, 여기 값은 기본(폴백·첫 후보)이 된다. */}
-            <div className="col-span-2 flex flex-wrap items-center justify-between gap-1 rounded-md bg-violet-50 px-2 py-1">
-              <span className="text-[10px] font-medium text-violet-700">타이틀·서브타이틀은 <b>여기서 직접 편집</b> · 이 값이 기본(폴백)</span>
-              <span className="text-[10px] font-medium text-violet-500">타겟별 대체(CVM 택1): 문구 베리에이션</span>
-            </div>
             <div className="col-span-2 space-y-1">
-              <label className="text-[11px] font-medium text-muted-foreground">타이틀</label>
+              <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">타이틀
+                <span title="여기 값이 기본(폴백·미리보기). 타겟별 대체(CVM 택1)는 CVM 흐름의 ‘코너 타이틀 베리에이션’에서 추가합니다." className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-400" aria-label="타이틀 안내">?</span>
+              </label>
               <Textarea name="mainTitle" value={mainTitle} onChange={(e) => setMainTitle(e.target.value)} placeholder="코너 타이틀" className="min-h-[44px] text-xs" />
             </div>
             <div className="space-y-1">
@@ -3605,7 +3594,15 @@ export function BuilderEditor({
                       selectedCorner?.templateCornerId === c.id ? 'outline outline-2 outline-primary' : '',
                     )}
                   >
-                    <CornerBlock corner={c} />
+                    {/* CVM 콘텐츠 연동 = 완성본을 CVM이 내려줌 → 어드민은 구좌(자리)만. 미리보기는 빈 셸(폼만). 2026-10-12 */}
+                    {normalizeRecSource(c.recSource) === 'CVM 콘텐츠 연동' ? (
+                      <div className="flex min-h-[132px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-violet-300 bg-violet-50/40 p-6 text-center">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-bold text-violet-600"><Sparkles className="h-3.5 w-3.5" /> CVM 완성본 자리</span>
+                        <span className="text-[10px] text-violet-400">구좌만 — 이미지·문구·랜딩은 CVM이 내려줘요</span>
+                      </div>
+                    ) : (
+                      <CornerBlock corner={c} />
+                    )}
                   </div>
                 ))
               )}
