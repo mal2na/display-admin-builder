@@ -79,6 +79,7 @@ import {
   setCornerBigBanner,
   setCornerNoDisplay,
   setCornerSubTitleLink,
+  setCornerMoreButton,
   refreshBannerComponent,
   addBssProduct,
 } from '../actions';
@@ -2045,6 +2046,10 @@ function CornerInfoForm({
   const [loadOpen, setLoadOpen] = useState(false); // '코너 불러오기' 피커 열림
   const [resetKey, setResetKey] = useState(0); // '취소'로 폼(비제어 필드) 초기화
   const [, startTab] = useTransition(); // 상단 카테고리 탭 토글
+  // 전체보기(하단 더보기 CTA) on/off — 서브타이틀 링크와 중복될 수 있어 운영자가 끈다(2026-10-12 사용자). 즉시 저장.
+  const [moreOn, setMoreOn] = useState(corner.moreButtonUse);
+  const [, startMore] = useTransition();
+  useEffect(() => { setMoreOn(corner.moreButtonUse); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [corner.moreButtonUse, corner.templateCornerId]);
   const family = cornerFamily(ct);
   const hasProductComp = corner.components.some((c) => c.componentType === '상품형'); // 표시 항목(상품 카드 요소) UI 노출 기준 — 혜택·오퍼형 2.5 등도 커버
 
@@ -2314,7 +2319,7 @@ function CornerInfoForm({
         <input type="hidden" name="maxItems" value={corner.maxItems ?? ''} />
 
         {/* 코너별 표시 항목 — 코너 유형 세부 항목의 코너 단위 오버라이드. 값은 항상 제출(round-trip), UI는 상품형에만. */}
-        <input type="hidden" name="showImage" value={showItems.showImage ? '1' : ''} />
+        <input type="hidden" name="showImage" value="1" /> {/* 상품 이미지는 카드 필수 — 항상 ON(2026-10-12) */}
         <input type="hidden" name="showPrice" value={showItems.showPrice ? '1' : ''} />
         <input type="hidden" name="showBadge" value={showItems.showBadge ? '1' : ''} />
         <input type="hidden" name="showDesc" value={showItems.showDesc ? '1' : ''} />
@@ -2332,13 +2337,22 @@ function CornerInfoForm({
                 ['showDesc', '설명'],
               ] as const).map(([key, label]) => {
                 const badgeLocked = key === 'showBadge' && !showItems.showPrice;
+                const imageLocked = key === 'showImage'; // 상품 이미지는 카드 필수 — 끌 수 없음(2026-10-12 사용자)
                 return (
-                  <label key={key} className={cn('flex items-center gap-1.5 text-xs', badgeLocked && 'cursor-not-allowed text-muted-foreground/40')} title={badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
-                    <input type="checkbox" checked={showItems[key] && !badgeLocked} disabled={badgeLocked} onChange={(e) => toggleShow(key, e.target.checked)} className="accent-indigo-600 disabled:opacity-40" />
-                    {label}
+                  <label key={key} className={cn('flex items-center gap-1.5 text-xs', badgeLocked && 'cursor-not-allowed text-muted-foreground/40', imageLocked && 'cursor-not-allowed')}
+                    title={imageLocked ? '상품 이미지는 카드의 필수 요소라 끌 수 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
+                    <input type="checkbox" checked={imageLocked ? true : (showItems[key] && !badgeLocked)} disabled={badgeLocked || imageLocked} onChange={(e) => toggleShow(key, e.target.checked)} className="accent-indigo-600 disabled:opacity-60" />
+                    {label}{imageLocked && <Lock className="h-3 w-3 text-slate-400" />}
                   </label>
                 );
               })}
+              {/* 전체보기(하단 더보기 CTA) — 서브타이틀 화살표 링크와 중복될 수 있어 끌 수 있게(2026-10-12 사용자). 즉시 저장. */}
+              <label className="flex items-center gap-1.5 text-xs" title="코너 하단의 ‘전체보기’ 버튼. 서브타이틀 이동 URL과 중복되면 꺼도 됩니다.">
+                <input type="checkbox" checked={moreOn}
+                  onChange={(e) => { setMoreOn(e.target.checked); startMore(() => setCornerMoreButton(templateId, corner.id, e.target.checked, corner.moreButtonLabel ?? '전체보기', corner.moreButtonLink ?? '')); }}
+                  className="accent-indigo-600" />
+                전체보기
+              </label>
             </div>
           </div>
         )}

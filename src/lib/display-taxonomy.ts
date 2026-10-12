@@ -362,7 +362,7 @@ export function fieldOwnerMap(recSource?: string | null): { field: string; owner
       layout,
       { field: '노출 아이템 · 순서', owner: 'CVM', note: '고객별 런타임 판정' },
       { field: '이미지 · 설명 문구', owner: 'CVM', note: '완성본을 그대로 노출(어드민 편집 불가)' },
-      { field: '랜딩', owner: 'CVM', note: '오퍼와 한 세트' },
+      { field: '아이템 랜딩', owner: 'CVM', note: '오퍼와 한 세트' },
       groupCopy,
     ];
   }
@@ -371,7 +371,7 @@ export function fieldOwnerMap(recSource?: string | null): { field: string; owner
       layout,
       { field: '노출 아이템 · 순서', owner: 'CVM', note: '아이템 ID와 순서만 내려받음' },
       { field: '이미지 · 설명 문구', owner: '상품 원장', note: '상품(EPC) 값 그대로 — 개인화 대상 아님' },
-      { field: '랜딩', owner: '상품 원장', note: '상품 상세 · 지정 URL' },
+      { field: '아이템 랜딩', owner: '상품 원장', note: '상품 상세 · 지정 URL' },
       groupCopy,
     ];
   }
@@ -379,7 +379,7 @@ export function fieldOwnerMap(recSource?: string | null): { field: string; owner
     layout,
     { field: '노출 아이템 · 순서', owner: '전시 어드민', note: '운영자가 직접 고르고 정렬' },
     { field: '이미지 · 설명 문구', owner: '상품 원장', note: '상품(EPC) 값 그대로' },
-    { field: '랜딩', owner: '상품 원장', note: '상품 상세 · 지정 URL' },
+    { field: '아이템 랜딩', owner: '상품 원장', note: '상품 상세 · 지정 URL' },
     groupCopy,
   ];
 }
