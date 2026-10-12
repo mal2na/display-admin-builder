@@ -3681,11 +3681,10 @@ export function BuilderEditor({
             <CornerInfoForm key={selectedCorner.templateCornerId} templateId={templateId} corner={selectedCorner} library={library} nameMap={nameMap} />
             {/* 상단 배너 선택 UI는 '코너 구성'의 BigBannerControl 카드 안에 임베드됨(별도 패널 제거). */}
             {/* 수급 파이프라인 — ①코너 정보(카드) → ②수급 → ③채우기/CVM 계약 → ④폴백 → ⑤출처 맵 (2026-10-12) */}
-            {/* 배너형도 동일 파이프라인을 탄다(TM-DSP-018 CVM 타겟 배너 + 대체 소재). 수급은 운영자 편성·CVM 콘텐츠 연동만(데이터 연동은 EPC 조립이라 배너에 안 맞음). ③/⑤ 채우기 자리엔 배너 레일을 끼운다. */}
+            {/* 배너형도 동일 파이프라인을 탄다(TM-DSP-018 CVM 타겟 배너 + 대체 소재). 수급 3종 전부 — 데이터 연동(CVM이 오퍼/카탈로그를 내려주면 해당 배너 노출)·콘텐츠 연동(CVM 구좌)·운영자 편성(배너 캠페인 관리에서 직접). ③/⑤ 채우기 자리엔 배너 레일을 끼운다. */}
             <CornerSupplyPanel
               key={selectedCorner.templateCornerId}
               templateId={templateId}
-              methods={selectedCorner.cornerType === '배너형' ? ['CVM 콘텐츠 연동', '운영자 편성'] : undefined}
               corner={{
                 id: selectedCorner.id,
                 name: selectedCorner.name,

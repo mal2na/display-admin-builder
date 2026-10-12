@@ -28,7 +28,6 @@ import {
   mustAlwaysShow,
   effectiveFallback,
   type FieldOwner,
-  type RecSourceMethod,
 } from '@/lib/display-taxonomy';
 import { setCornerSupply } from '@/app/admin/templates/actions';
 import { Layers, Sparkles, PackageSearch, ShieldAlert, ArrowRight, Info } from 'lucide-react';
@@ -88,13 +87,10 @@ function SupplyStep({
   mode,
   onPick,
   pending,
-  methods = REC_SOURCE_METHODS,
 }: {
   mode: string;
   onPick: (m: string) => void;
   pending: boolean;
-  /** 노출할 수급 방식(코너 유형별 제한). 배너형은 ['CVM 콘텐츠 연동','운영자 편성'] — 데이터 연동(EPC 조립)은 배너에 안 맞음. */
-  methods?: readonly string[];
 }) {
   return (
     <Step
@@ -103,8 +99,8 @@ function SupplyStep({
       desc="한 구좌는 한 방식만 씁니다. CVM 구좌로 넘기면 그 자리는 CVM이 통제합니다(겸용 불가)."
     >
       <div className="space-y-1.5">
-        {methods.map((m) => {
-          const info = REC_SOURCE_INFO[m as RecSourceMethod];
+        {REC_SOURCE_METHODS.map((m) => {
+          const info = REC_SOURCE_INFO[m];
           const on = mode === m;
           return (
             <button
@@ -123,7 +119,7 @@ function SupplyStep({
                   {on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                 </span>
                 <span className={cn('flex items-center gap-1 text-[12.5px] font-bold', on ? 'text-[var(--ac)]' : 'text-[var(--ink)]')}>
-                  {MODE_ICON[m as RecSourceMethod]} {m}
+                  {MODE_ICON[m]} {m}
                 </span>
               </span>
               <span className="mt-1 block pl-6 text-[12px] text-[var(--ink2)]">{info.how}</span>
@@ -341,14 +337,11 @@ export function CornerSupplyPanel({
   templateId,
   corner,
   children,
-  methods,
 }: {
   templateId: string;
   corner: SupplyCorner;
   /** ③에서 '운영자 편성'일 때 그대로 끼워 넣는 기존 상품 등록 UI */
   children?: React.ReactNode;
-  /** 수급 방식 제한(코너 유형별). 생략 시 3종 전부. 배너형은 ['CVM 콘텐츠 연동','운영자 편성']. */
-  methods?: readonly string[];
 }) {
   const [pending, start] = useTransition();
   const mode = corner.recSource ? normalizeRecSource(corner.recSource) : '운영자 편성';
@@ -373,7 +366,7 @@ export function CornerSupplyPanel({
   return (
     <div className="space-y-2.5">
       {/* ① 껍데기는 '코너 정보' 카드(위쪽 🔒 스펙 영역)로 흡수 — 중복 제거(2026-10-12). 여기선 수급부터. */}
-      <SupplyStep mode={mode} pending={pending} onPick={(m) => save({ recSource: m })} methods={methods} />
+      <SupplyStep mode={mode} pending={pending} onPick={(m) => save({ recSource: m })} />
 
       {cvm ? (
         <>
