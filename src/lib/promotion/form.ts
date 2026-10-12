@@ -13,6 +13,7 @@ import {
   newJaItem, newBlock, applyRules, validatePr, needJoinCta, needClaimCta,
   type JaItem, type RewardBlock, type PrState,
 } from './pr';
+import { GUEST_TERM_FIX, initialGuestFields, termById, initialReq, type TermMap, type GuestField } from './terms';
 
 export const CHANNELS = ['PC', 'MO', '에이닷'];
 export const CTA_MAX = 4;
@@ -97,6 +98,13 @@ export type PromoForm = {
   maxJoin: string;
   dup: '고객 기준(CI)' | '멤버십 카드 기준';
   blocks: RewardBlock[];
+  /** 이벤트 약관 매핑 (2-16) — 안내형 제외 */
+  terms: TermMap[];
+  /* ── 비회원 참여 ── */
+  guest: '허용' | '허용 안 함';
+  guestFields: GuestField[];
+  guestAuth: string;
+  guestTerms: TermMap[];
 };
 
 let ctaSeq = 0;
@@ -136,6 +144,12 @@ export function emptyForm(type: string, jm: JoinMode): PromoForm {
     cycle: '기간 전체', cycleUnit: '월', maxJoin: '',
     dup: '고객 기준(CI)',
     blocks: [newBlock()],
+    terms: [],
+    guest: '허용 안 함',
+    guestFields: initialGuestFields(),
+    guestAuth: '휴대폰 본인인증(CI)',
+    // 비회원 개인정보 수집·이용 동의는 고정으로 들어간다
+    guestTerms: [{ id: GUEST_TERM_FIX, req: initialReq(termById(GUEST_TERM_FIX)!) }],
   };
 }
 
@@ -255,6 +269,10 @@ export function validateForm(f: PromoForm): ValidateResult {
   // 제한 공개는 검색에 노출되지 않으므로 태그도 받지 않는다
   if (f.scope !== '제한 공개' && f.search === '노출' && !f.tags.length) {
     E.tags = '검색 태그를 등록하여 주시길 바랍니다';
+  }
+
+  if (f.type !== '안내형' && f.guest === '허용' && !f.guestFields.some((g) => g.use)) {
+    E.guestField = '개인정보 입력 항목을 1개 이상 사용으로 설정해주세요';
   }
 
   if (f.type === '참여ㆍ리워드형') {

@@ -207,6 +207,7 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 | **조건 빌더** (접근·참여·지급 공용) | **완료** | `cond-builder.tsx` · `master-picker.tsx` · `src/lib/promotion/cond.ts` |
 | 등록 폼 — 기본정보 / CTA / 검색·태그 | **완료(안내형)** | `reg-form.tsx` · `form-ui.tsx` · `form-pickers.tsx` · `src/lib/promotion/form.ts` |
 | 등록 폼 — 참여 정보 · 리워드 | **완료(참여ㆍ리워드형)** | `join-actions.tsx` · `reward-blocks.tsx` · `src/lib/promotion/pr.ts` |
+| 등록 폼 — 약관 매핑 · 비회원 참여 | **완료** | `terms.tsx` · `src/lib/promotion/terms.ts` |
 | 등록 폼 — 추천형(refSection) | **미착수** | 프로토타입 `refSection()` |
 | 상세 보기 · FO 미리보기 | **미착수** | 프로토타입 `buildDetail()` / `renderFo()` |
 
@@ -221,7 +222,7 @@ Atom  ──재료──▶  Component  ──올림──▶  Corner  ──배
 >
 > **다음에 이어서 할 때**: `refSection()`(추천형 — 초대자 단계별 혜택·피초대자 혜택)을 옮기고
 > `openReg()` 분기에서 추천형을 빼면 등록 폼은 이벤트 3종이 모두 React 가 된다.
-> 남은 것: 추천형 · 비회원 참여(guestRows) · 약관 매핑(2-16) · 상세 보기 · FO 미리보기.
+> 남은 것: 추천형 · 상세 보기 · FO 미리보기.
 
 **아래는 BO 공통 반영 전 기준이다 — 위 토큰과 충돌하면 위가 이긴다.**
 

@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { CondBuilder } from './cond-builder';
 import { CautionPicker, PagePicker } from './form-pickers';
 import { JoinActions } from './join-actions';
+import { TermsPicker, TermsMap, GuestBlock } from './terms';
 import { RewardSection } from './reward-blocks';
 import {
   Sect, Row, Hint, Note, Rd, Ck, RdPair, BTN, BTN_PRI, BTN_SM, BTN_PILL, INP, SEL, DT,
@@ -22,6 +23,7 @@ import {
   type PromoForm, type CtaBlock, type FormErrors,
 } from '@/lib/promotion/form';
 import { JM_GUIDE, JM_LABEL } from '@/lib/promotion/reg-start';
+import { termById, initialReq } from '@/lib/promotion/terms';
 
 export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: {
   type: string;
@@ -38,6 +40,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
   const [alertMsg, setAlertMsg] = React.useState<string | null>(null);
   const [confirmMsg, setConfirmMsg] = React.useState<null | { msg: string; ok: () => void }>(null);
   const [cauOpen, setCauOpen] = React.useState(false);
+  const [termsOpen, setTermsOpen] = React.useState(false);
   const [pagePick, setPagePick] = React.useState<number | null>(null);
   const [tagInput, setTagInput] = React.useState('');
 
@@ -218,6 +221,17 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
               </>
             )}
 
+            {!isGuide && (
+              <Row label="약관">
+                <div className="w-full">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" className={BTN_PILL} onClick={() => setTermsOpen(true)}>약관 조회</button>
+                    <Hint>필수 여부 변경은 약관 마스터의 &apos;필수 여부 변경&apos; 설정을 따라요 · 고지형은 항상 필수(변경 불가)</Hint>
+                  </div>
+                  <div className="mt-2"><TermsMap value={f.terms} onChange={(terms) => set({ terms })} /></div>
+                </div>
+              </Row>
+            )}
             <Row label="유의사항">
               <div className="w-full">
                 <div className="flex flex-wrap items-center gap-2">
@@ -286,6 +300,17 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
                 <Row label="중복 참여 판별 기준">
                   <RdPair value={f.dup} opts={['고객 기준(CI)', '멤버십 카드 기준'] as const} onChange={(v) => set({ dup: v })} />
                 </Row>
+                <GuestBlock
+                  isRef={false}
+                  guest={f.guest} fields={f.guestFields} auth={f.guestAuth} terms={f.guestTerms}
+                  err={E.guestField}
+                  onChange={(p) => set({
+                    ...(p.guest !== undefined ? { guest: p.guest } : {}),
+                    ...(p.fields !== undefined ? { guestFields: p.fields } : {}),
+                    ...(p.auth !== undefined ? { guestAuth: p.auth } : {}),
+                    ...(p.terms !== undefined ? { guestTerms: p.terms } : {}),
+                  })}
+                />
               </Sect>
 
               <Sect title="리워드 정보">
@@ -408,6 +433,17 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
           hasText={!!f.caution.trim()}
           onApply={(tpl) => { set({ caution: tpl.body, cauApplied: `${tpl.name} (${tpl.id})` }); setCauOpen(false); }}
           onClose={() => setCauOpen(false)}
+        />
+      )}
+      {termsOpen && (
+        <TermsPicker
+          mapped={f.terms.map((t) => t.id)}
+          onApply={(ids) => {
+            const add = ids.map((id) => ({ id, req: initialReq(termById(id)!) }));
+            set({ terms: f.terms.concat(add) });
+            setTermsOpen(false);
+          }}
+          onClose={() => setTermsOpen(false)}
         />
       )}
       {pagePick !== null && (
