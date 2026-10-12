@@ -325,11 +325,14 @@ export function CornerSupplyPanel({
   templateId,
   corner,
   children,
+  variantsSlot,
 }: {
   templateId: string;
   corner: SupplyCorner;
   /** ③에서 '운영자 편성'일 때 그대로 끼워 넣는 기존 상품 등록 UI */
   children?: React.ReactNode;
+  /** 노출 타입 베리에이션 — CVM이 변형 중 택1하므로 CVM 수급일 때만 ④폴백 옆에 끼운다(2026-10-12). */
+  variantsSlot?: React.ReactNode;
 }) {
   const [pending, start] = useTransition();
   const mode = corner.recSource ? normalizeRecSource(corner.recSource) : '운영자 편성';
@@ -356,6 +359,8 @@ export function CornerSupplyPanel({
         <>
           <CvmContractStep corner={corner} mode={mode} pending={pending} onSave={(p) => save(p)} />
           <FallbackStep corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
+          {/* 노출 타입 베리에이션 — CVM이 변형 중 고객마다 택1(못 고르면 ④폴백). CVM 수급일 때만 여기 노출(2026-10-12 사용자 요청). */}
+          {variantsSlot}
           {/* CVM 구좌라도 폴백이 '운영자 편성'이면 등록해 둔 항목이 필요하다 → 등록 UI를 계속 연다 */}
           {corner.cvmFallback === '운영자 편성으로 대체' && (
             <Step no={5} title="폴백용 항목" desc="CVM이 비었을 때 대신 나갈 항목입니다.">

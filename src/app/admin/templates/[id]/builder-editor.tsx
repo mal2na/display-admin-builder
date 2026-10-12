@@ -2645,6 +2645,12 @@ function CornerInfoForm({
       </p>
       </>
       )}
+
+      {/* 표시 — 빅배너 강조(상품형/혜택·오퍼형만, 자체 숨김) + 문구 한눈에 보기. CVM 전용 '노출 타입 베리에이션'은 수급 파이프라인(CVM 흐름)으로 이동(2026-10-12). */}
+      <div className="mt-3 space-y-2 border-t pt-3">
+        <BigBannerControl templateId={templateId} corner={corner} banners={library.banners} />
+        <CopyOverview templateId={templateId} corner={corner} />
+      </div>
     </div>
   );
 }
@@ -3872,18 +3878,11 @@ export function BuilderEditor({
                     cvmFallback: selectedCorner.cvmFallback,
                     itemCount: selectedCorner.components.filter((c) => c.componentType !== '선택형').length,
                   }}
+                  variantsSlot={<DisplayVariantsControl templateId={templateId} corner={selectedCorner} cornerTypes={library.cornerTypes} />}
                 >
                   <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
                 </CornerSupplyPanel>
-
-                {/* 표시 옵션 — 껍데기(노출 타입)와 문구 정리. 수급과 무관하게 항상 쓴다. */}
-                <div className="rounded-lg border bg-card p-4">
-                  <p className="mb-0.5 text-sm font-semibold">표시 옵션</p>
-                  <p className="mb-2 text-[11px] text-muted-foreground">빅배너 강조 · 노출 타입 후보 · 코너 문구를 정리합니다.</p>
-                  <BigBannerControl templateId={templateId} corner={selectedCorner} banners={library.banners} />
-                  <DisplayVariantsControl templateId={templateId} corner={selectedCorner} cornerTypes={library.cornerTypes} />
-                  <CopyOverview templateId={templateId} corner={selectedCorner} />
-                </div>
+                {/* 표시 옵션 카드 해체(2026-10-12): 빅배너 강조·문구 한눈에 보기는 ①코너 정보 카드로, 노출 타입 베리에이션은 CVM 수급 흐름(variantsSlot)으로 이동. */}
               </>
             )}
           </div>
