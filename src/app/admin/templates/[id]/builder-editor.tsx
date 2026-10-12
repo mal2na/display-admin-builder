@@ -251,6 +251,22 @@ function CornerTypeChip({ corner, className, compact }: { corner: CornerNode; cl
   );
 }
 
+// ? 호버 툴팁 — 네이티브 title 대신 즉시 뜨는 CSS 팝오버(호버하면 바로 노출). Figma 툴팁 토큰(bg #fcfcfd·text #454f59·r8·shadow) 사용. 2026-10-12.
+//  label을 주면 '{label} ?' 형태(라벨+아이콘), 없으면 ? 아이콘만. tone으로 아이콘 배경색만 바꾼다.
+function Tip({ text, label, tone, align = 'center' }: { text: string; label?: string; tone?: string; align?: 'center' | 'right' }) {
+  return (
+    <span className="group/tip relative inline-flex items-center gap-0.5 align-middle">
+      {label && <span className="cursor-help text-inherit">{label}</span>}
+      <span className={cn('grid h-3.5 w-3.5 shrink-0 cursor-help place-items-center rounded-full text-[9px] font-bold', tone ?? 'bg-slate-200 text-slate-500')} aria-label={text}>?</span>
+      <span role="tooltip"
+        className={cn('pointer-events-none absolute top-full z-[60] mt-1 hidden w-56 max-w-[16rem] whitespace-normal rounded-lg border border-[#e8ecef] bg-[#fcfcfd] px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-[#454f59] shadow-[0_0_8px_-2px_#0000001f] group-hover/tip:block',
+          align === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2')}>
+        {text}
+      </span>
+    </span>
+  );
+}
+
 // 코너 거버넌스 패널 — 이 코너의 목적 + 배열·레이아웃만. (담을 수 있는 컴포넌트 표시는 제외 — 제약은
 //  CORNER_COMPONENT_MAP으로 컴포넌트 추가 시 강제. 유형=컴포넌트 중복 표기가 어색해 숨김.)
 function CornerGovernance({ base, layoutDetail }: { base: string; layoutDetail?: string | null }) {
@@ -260,7 +276,7 @@ function CornerGovernance({ base, layoutDetail }: { base: string; layoutDetail?:
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
       {layoutDetail && <>배열·레이아웃 · <b className="text-slate-700">{layoutLabel(layoutDetail)}</b><DevLockBadge reason="레이아웃(배열)은 DS/개발 영역 — 어드민은 등록된 배열을 '코너 불러오기'로 교체만 가능" /></>}
-      {purpose && <span title={purpose} aria-label="코너 목적" className="inline-flex cursor-help items-center gap-0.5 text-slate-400">목적 <span className="grid h-3.5 w-3.5 place-items-center rounded-full bg-slate-200 text-[9px] font-bold text-slate-500">?</span></span>}
+      {purpose && <span className="text-slate-400"><Tip text={purpose} label="목적" /></span>}
     </div>
   );
 }
@@ -1743,7 +1759,7 @@ function SubTitleLinkField({ templateId, corner, links }: { templateId: string; 
   return (
     <div className="col-span-2 space-y-1">
       <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">서브타이틀 이동 URL
-        <span title="서브타이틀 화살표(›)를 누르면 이동할 주소. 직접 입력하거나 ‘불러오기’로 등록된 링크를 고릅니다." aria-label="서브타이틀 이동 URL 안내" className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-400">?</span>
+        <Tip text="서브타이틀 화살표(›)를 누르면 이동할 주소. 직접 입력하거나 ‘불러오기’로 등록된 링크를 고릅니다." />
       </label>
       <div className="flex items-center gap-1.5">
         <Input value={url} onChange={(e) => setUrl(e.target.value)} onBlur={() => url !== (corner.subTitleLink ?? '') && save(url)}
@@ -1766,7 +1782,7 @@ function NoDisplayControl({ templateId, corner }: { templateId: string; corner: 
   return (
     <div className="mt-2 flex items-center gap-2 rounded-md border bg-white px-2.5 py-2">
       <label className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-[var(--ink2)]">미 노출 조건
-        <span title="운영자가 채운 콘텐츠가 조건을 못 채우면 코너를 숨깁니다(데이터 없음·재고 소진·혜택 종료·개인화 제한 시)." aria-label="미 노출 조건 안내" className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-400">?</span>
+        <Tip text="운영자가 채운 콘텐츠가 조건을 못 채우면 코너를 숨깁니다(데이터 없음·재고 소진·혜택 종료·개인화 제한 시)." />
       </label>
       <Select value={val} onChange={(e) => change(e.target.value)} className="h-7 min-w-0 flex-1 text-xs">
         {NO_DISPLAY_CONDITIONS.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -2228,7 +2244,7 @@ function CornerInfoForm({
           <div className="col-span-2 flex items-center gap-1.5 rounded-md bg-violet-50/50 px-2.5 py-1.5 text-[10.5px] text-violet-700">
             <Sparkles className="h-3.5 w-3.5 shrink-0 text-violet-500" />
             <span>수급 <b>{recSource ? normalizeRecSource(recSource) : '운영자 편성'}</b></span>
-            <span title="이 코너를 누가 채우는지(운영자 편성 / CVM 데이터 연동 / CVM 콘텐츠 연동)는 아래 ‘② 수급’에서 정합니다." className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-violet-100 text-[9px] font-bold text-violet-500" aria-label="수급 방식 안내">?</span>
+            <Tip text="이 코너를 누가 채우는지(운영자 편성 / CVM 데이터 연동 / CVM 콘텐츠 연동)는 아래 ‘② 수급’에서 정합니다. CVM 데이터 연동=아이템·순서만 CVM, 문구·이미지는 상품 원장 / CVM 콘텐츠 연동=완성본까지 CVM / 운영자 편성=운영자가 직접 구성." tone="bg-violet-100 text-violet-500" />
           </div>
         )}
         <input type="hidden" name="recSource" value={recSource} />
@@ -2243,7 +2259,7 @@ function CornerInfoForm({
           <div className="col-span-2 space-y-2 rounded-md border border-sky-200 bg-sky-50/40 p-2.5">
             <label className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1 text-xs font-semibold text-sky-800">FO 사용자 설정 가능
-                <span title="켜면 고객이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정(🔒) 항목은 항상 포함되고 삭제 불가. 고객은 최소~최대 범위 안에서 노출/숨김합니다." aria-label="FO 사용자 설정 안내" className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-sky-100 text-[9px] font-bold text-sky-500">?</span>
+                <Tip text="켜면 고객이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정(🔒) 항목은 항상 포함되고 삭제 불가. 고객은 최소~최대 범위 안에서 노출/숨김합니다." tone="bg-sky-100 text-sky-500" />
               </span>
               <button
                 type="button"
@@ -2289,7 +2305,7 @@ function CornerInfoForm({
           <>
             <div className="col-span-2 space-y-1">
               <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">타이틀
-                <span title="여기 값이 기본(폴백·미리보기). 타겟별 대체(CVM 택1)는 CVM 흐름의 ‘코너 타이틀 베리에이션’에서 추가합니다." className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-400" aria-label="타이틀 안내">?</span>
+                <Tip text="이 코너의 기본 타이틀. 미리보기·실서비스의 기준값입니다. (타겟별로 다른 타이틀은 CVM이 ‘문구만 따로’ 못 만들어, 어드민 타겟팅 룰 영역입니다.)" />
               </label>
               <Textarea name="mainTitle" value={mainTitle} onChange={(e) => setMainTitle(e.target.value)} placeholder="코너 타이틀" className="min-h-[44px] text-xs" />
             </div>
@@ -2327,7 +2343,7 @@ function CornerInfoForm({
           <div className="col-span-2 space-y-1.5 rounded-md border bg-slate-50/60 p-2.5">
             {/* 표시 항목 — 빌더에서 코너별 on/off(회의: 콘텐츠·표시는 빌더). */}
             <label className="flex items-center gap-1 text-[11px] font-semibold text-slate-700">표시 항목
-              <span title="이 코너 카드에 보일 요소. 끄면 미리보기에서 숨겨요(내용은 지우지 않음). 배지는 가격을 켜야 사용 가능." aria-label="표시 항목 안내" className="grid h-3.5 w-3.5 cursor-help place-items-center rounded-full bg-slate-200 text-[9px] font-bold text-slate-500">?</span>
+              <Tip text="이 코너 카드에 보일 요소. 끄면 미리보기에서 숨겨요(내용은 지우지 않음). 상품 이미지는 필수라 끌 수 없고, 배지는 가격을 켜야 사용 가능." />
             </label>
             <div className="flex flex-wrap gap-x-4 gap-y-1.5">
               {([

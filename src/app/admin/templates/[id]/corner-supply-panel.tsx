@@ -56,12 +56,10 @@ function Step({ no, title, desc, children, tone }: { no: number; title: string; 
         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">{no}</span>
         <h3 className="min-w-0 flex-1 truncate text-[13px] font-bold text-[var(--ink)]">{title}</h3>
         {desc && (
-          <span
-            title={desc}
-            className="grid h-4 w-4 shrink-0 cursor-help place-items-center rounded-full bg-[var(--th)] text-[11px] font-bold text-[var(--ink3)]"
-            aria-label={desc}
-          >
-            ?
+          // 호버하면 즉시 뜨는 CSS 툴팁(네이티브 title 대신). Figma 툴팁 토큰(bg #fcfcfd·text #454f59·r8·shadow). 2026-10-12.
+          <span className="group/tip relative inline-flex shrink-0">
+            <span className="grid h-4 w-4 cursor-help place-items-center rounded-full bg-[var(--th)] text-[11px] font-bold text-[var(--ink3)]" aria-label={desc}>?</span>
+            <span role="tooltip" className="pointer-events-none absolute right-0 top-full z-[60] mt-1 hidden w-60 max-w-[16rem] whitespace-normal rounded-lg border border-[#e8ecef] bg-[#fcfcfd] px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-[#454f59] shadow-[0_0_8px_-2px_#0000001f] group-hover/tip:block">{desc}</span>
           </span>
         )}
       </div>
@@ -325,7 +323,8 @@ function FallbackStep({
 function OwnerMapStep({ recSource }: { recSource: string | null }) {
   const rows = fieldOwnerMap(recSource);
   return (
-    <Step no={5} title="출처 — 이 값이 어디서 오나" tone="muted">
+    <Step no={5} title="출처 — 이 값이 어디서 오나" tone="muted"
+      desc="이 코너의 각 표시 요소를 누가 소유·공급하는지(SSOT). 레이아웃은 코너 유형, 아이템·순서는 수급 방식에 따라 CVM/운영자, 이미지·문구·아이템 랜딩은 상품 원장(또는 CVM 완성본).">
       <div className="space-y-1.5">
         {rows.map((r) => (
           <div key={r.field} className="flex items-center gap-2" title={r.note}>
