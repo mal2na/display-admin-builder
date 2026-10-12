@@ -1732,13 +1732,42 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-// 코너 정보 읽기 전용 뷰 (디폴트)
+// 코너 정보 읽기 전용 뷰 (디폴트) — 한 카드에 ① 껍데기(🔒 코너 유형 관리에서 정의·읽기전용 스펙) + ② 콘텐츠(빌더 소유·편집).
+//  코너 = 껍데기(규격) + 콘텐츠. 둘은 같은 게 아니라 한 코너의 두 면이라, 한 카드 안에서 위/아래로 구분해 보여준다(2026-10-12). 수급 파이프라인의 ①껍데기는 이쪽으로 흡수.
 function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Record<string, string> }) {
   const fam = cornerFamily(corner.cornerType);
+  const { base, rest, bigBanner } = cornerTypeParts(corner);
+  const isBanner = base === '배너형';
+  const baseEn = isBanner ? 'Banner' : cornerTypeEn(base);
+  const restEn = rest ? layoutEn(rest) : '';
   return (
-    <div className="rounded-md border bg-muted/20 px-3">
+    <div className="overflow-hidden rounded-md border bg-card">
+      {/* ── 껍데기(스펙) — 코너 유형 관리에서 정의, 빌더에서 수정 불가 ── */}
+      <div className="border-b bg-slate-50/70 px-3 pb-1.5 pt-2">
+        <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+          <Lock className="h-3 w-3" /> 껍데기 · 코너 유형 관리에서 정의 · 수정 불가
+        </div>
+        <InfoRow label="코너 유형" value={
+          <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold', cornerTypeChipClass(base))}>
+            {isBanner ? '배너' : base}{baseEn && <span className="ml-1 font-normal opacity-70">{baseEn}</span>}
+          </span>
+        } />
+        {!isBanner && (rest || corner.cornerLayout) && (
+          <InfoRow label="배열·레이아웃" value={
+            <span className="inline-flex flex-wrap items-center gap-1.5">
+              <span className="font-medium">{rest ? `${rest}${restEn ? ` (${restEn})` : ''}` : (corner.cornerLayout || '—')}</span>
+              {rest && corner.cornerLayout && <span className="text-[11px] text-muted-foreground">· {corner.cornerLayout}</span>}
+              {bigBanner && <BigBannerBadge />}
+            </span>
+          } />
+        )}
+        {(corner.minItems != null || corner.maxItems != null) && (
+          <InfoRow label="노출 개수" value={`${corner.minItems ?? '-'} ~ ${corner.maxItems ?? '-'}`} />
+        )}
+      </div>
+      {/* ── 콘텐츠 — 빌더가 소유, 여기서 직접 수정 ── */}
+      <div className="px-3">
       <InfoRow label="코너명" value={corner.name} />
-      {/* 코너 유형·배열·레이아웃·노출 개수·추천 수급은 아래 수급 파이프라인(①껍데기·②수급)으로 일원화 — 코너 정보는 빌더가 소유한 콘텐츠만 둔다(중복 제거 2026-10-12). */}
       {corner.mainTitle && <InfoRow label="타이틀" value={corner.mainTitle} />}
       {corner.subTitle && <InfoRow label="서브타이틀" value={corner.subTitle} />}
       {corner.subTitleIcon && corner.subTitleIcon !== '사용안함' && <InfoRow label="서브타이틀 아이콘" value={corner.subTitleIcon} />}
@@ -1756,6 +1785,7 @@ function CornerInfoView({ corner, nameMap }: { corner: CornerNode; nameMap: Reco
       )}
       {corner.markupId && <InfoRow label="마크업 ID" value={corner.markupId} />}
       {corner.description && <InfoRow label="코너 설명" value={corner.description} />}
+      </div>
     </div>
   );
 }
@@ -3822,7 +3852,7 @@ export function BuilderEditor({
               </div>
             ) : (
               <>
-                {/* 수급 파이프라인 — 껍데기 → 수급 방식 → 채우기/CVM 계약 → 폴백 → 출처 맵 (2026-10-08 CVM 협의) */}
+                {/* 수급 파이프라인 — 수급 방식 → 채우기/CVM 계약 → 폴백 → 출처 맵 (껍데기 스펙은 '코너 정보' 카드로 흡수, 2026-10-12) */}
                 <CornerSupplyPanel
                   key={selectedCorner.templateCornerId}
                   templateId={templateId}
