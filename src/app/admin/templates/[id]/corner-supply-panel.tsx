@@ -259,15 +259,17 @@ function FallbackStep({
   corner,
   onSave,
   pending,
+  no = 4,
 }: {
   corner: SupplyCorner;
   onSave: (f: string) => void;
   pending: boolean;
+  no?: number;
 }) {
   const mustShow = mustAlwaysShow(corner.cornerType);
   const cur = effectiveFallback(corner.cornerType, corner.cvmFallback);
   return (
-    <Step no={4} title="폴백 — CVM 응답이 비었을 때"
+    <Step no={no} title="폴백 — CVM 응답이 비었을 때"
       desc={mustShow
         ? '네비게이션·필수 코너는 숨길 수 없어 운영자 편성이 기본 폴백입니다(대체 전시 필수 · 정책 PI-DSP-PER-002).'
         : '기본은 미노출입니다. 대체용 기본 배너를 상시 운영할 수는 없다는 전제(2026-10-08).'}>
@@ -314,10 +316,10 @@ function FallbackStep({
 
 /* ── ⑤ 출처 맵 ──────────────────────────────────────────────────── */
 
-function OwnerMapStep({ recSource }: { recSource: string | null }) {
+function OwnerMapStep({ recSource, no = 5 }: { recSource: string | null; no?: number }) {
   const rows = fieldOwnerMap(recSource);
   return (
-    <Step no={5} title="출처 — 이 값이 어디서 오나" tone="muted"
+    <Step no={no} title="출처 — 이 값이 어디서 오나" tone="muted"
       desc="이 코너의 각 표시 요소를 누가 소유·공급하는지(SSOT). 레이아웃은 코너 유형, 아이템·순서는 수급 방식에 따라 CVM/운영자, 이미지·문구·아이템 랜딩은 상품 원장(또는 CVM 완성본).">
       <div className="space-y-1.5">
         {rows.map((r) => (
@@ -346,6 +348,8 @@ export function CornerSupplyPanel({
   const [pending, start] = useTransition();
   const mode = corner.recSource ? normalizeRecSource(corner.recSource) : '운영자 편성';
   const cvm = isCvmSource(mode);
+  const isData = mode === 'CVM 데이터 연동';
+  const isContent = mode === 'CVM 콘텐츠 연동';
   // 배너형 = 콘텐츠(이미지·문구·랜딩)가 배너 캠페인/CVM 소재라 '채우기'·'폴백'을 배너 말로 바꾼다.
   const isBanner = corner.cornerType === '배너형';
   // 효과적 폴백 — 네비/필수형은 '미노출'/빈 값이어도 '운영자 편성'(미노출 금지). 저장·'폴백용 항목' 노출 판정에 공통 사용.
@@ -371,12 +375,24 @@ export function CornerSupplyPanel({
       {cvm ? (
         <>
           <CvmContractStep corner={corner} mode={mode} pending={pending} onSave={(p) => save(p)} />
-          <FallbackStep corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
-          {/* 문구(코너 타이틀) 베리에이션 제거(2026-10-12): CVM은 '문구만 따로 베리에이션'을 못 함(CLAUDE.md 못받는것 ⑤). 타겟별 타이틀은 어드민 타겟팅 룰(Template 분기) 소관. */}
-          {/* 폴백용 항목(등록 UI) 노출 조건:
-              · 폴백이 '운영자 편성으로 대체'면 대체 항목이 필요 → 연다(네비/필수형은 기본값으로 항상)
-              · CVM 콘텐츠 연동이면 완성본이 안 오는 경우를 대비해 운영자가 폴백 콘텐츠를 등록해둔다 → 항상 연다(2026-10-12 사용자 요청) */}
-          {(effFallback === '운영자 편성으로 대체' || mode === 'CVM 콘텐츠 연동') && (
+          {/* 데이터 연동 = 생김새(카드 틀)를 우리가 조립. CVM은 '어떤 아이템을 몇 번째로'만 주므로,
+              운영자가 대표 아이템을 EPC에서 통으로 불러와 표시 항목·카드 틀을 잡는다. 실서비스에선 CVM이 이 틀에 실제 아이템을 끼운다.
+              이 대표 구성은 폴백=운영자 편성일 때 그대로 대체되므로, 별도 '폴백용 항목' 단계를 두지 않고 한 벌로 통합한다(2026-10-12 사용자 결정). */}
+          {isData && (
+            <Step
+              no={4}
+              title={isBanner ? '조립 규격 — 대표 배너(생김새)' : '조립 규격 — 대표 아이템(생김새)'}
+              desc={isBanner
+                ? 'CVM은 어떤 배너를 줄지만 정합니다. 대표 배너를 배너 캠페인 관리에서 불러와 틀을 잡으면, 실서비스에선 CVM이 고객별 배너를 이 자리에 끼웁니다. 이 구성은 폴백=운영자 편성일 때 그대로 대체됩니다.'
+                : 'CVM은 어떤 아이템을 몇 번째로 줄지만 정합니다. 대표 아이템을 EPC에서 통으로 불러와 표시 항목·카드 틀을 잡으면, 실서비스에선 CVM이 고객별 아이템을 이 틀에 끼웁니다. 이 대표 구성은 폴백=운영자 편성일 때 그대로 대체됩니다.'}
+            >
+              {children}
+            </Step>
+          )}
+          <FallbackStep no={isData ? 5 : 4} corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
+          {/* 문구(코너 타이틀) 베리에이션 제거(2026-10-12): CVM은 '문구만 따로 베리에이션'을 못 함(CLAUDE.md 못받는것 ⑤). */}
+          {/* 콘텐츠 연동 = CVM이 완성본(이미지·문구·랜딩)을 소유 → 우리가 조립할 게 없다. 대신 완성본이 안 올 때 대비한 '대체 소재(폴백용 항목)'를 항상 등록해둔다(2026-10-12 사용자 요청). */}
+          {isContent && (
             <Step
               no={5}
               title={isBanner ? '대체 소재 — 배너 등록' : '폴백용 항목'}
@@ -400,7 +416,7 @@ export function CornerSupplyPanel({
         </Step>
       )}
 
-      <OwnerMapStep recSource={mode} />
+      <OwnerMapStep recSource={mode} no={cvm ? 6 : 5} />
 
       {cvm && (
         <p className="flex items-start gap-1.5 rounded-[8px] bg-[#FFE4C4] px-2.5 py-2 text-[11px] text-[#D66400]"
