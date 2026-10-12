@@ -28,6 +28,7 @@ import {
   mustAlwaysShow,
   effectiveFallback,
   type FieldOwner,
+  type RecSourceMethod,
 } from '@/lib/display-taxonomy';
 import { setCornerSupply } from '@/app/admin/templates/actions';
 import { Layers, Sparkles, PackageSearch, ShieldAlert, ArrowRight, Info } from 'lucide-react';
@@ -87,10 +88,13 @@ function SupplyStep({
   mode,
   onPick,
   pending,
+  methods = REC_SOURCE_METHODS,
 }: {
   mode: string;
   onPick: (m: string) => void;
   pending: boolean;
+  /** 노출할 수급 방식(코너 유형별 제한). 배너형은 ['CVM 콘텐츠 연동','운영자 편성'] — 데이터 연동(EPC 조립)은 배너에 안 맞음. */
+  methods?: readonly string[];
 }) {
   return (
     <Step
@@ -99,8 +103,8 @@ function SupplyStep({
       desc="한 구좌는 한 방식만 씁니다. CVM 구좌로 넘기면 그 자리는 CVM이 통제합니다(겸용 불가)."
     >
       <div className="space-y-1.5">
-        {REC_SOURCE_METHODS.map((m) => {
-          const info = REC_SOURCE_INFO[m];
+        {methods.map((m) => {
+          const info = REC_SOURCE_INFO[m as RecSourceMethod];
           const on = mode === m;
           return (
             <button
@@ -119,7 +123,7 @@ function SupplyStep({
                   {on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                 </span>
                 <span className={cn('flex items-center gap-1 text-[12.5px] font-bold', on ? 'text-[var(--ac)]' : 'text-[var(--ink)]')}>
-                  {MODE_ICON[m]} {m}
+                  {MODE_ICON[m as RecSourceMethod]} {m}
                 </span>
               </span>
               <span className="mt-1 block pl-6 text-[12px] text-[var(--ink2)]">{info.how}</span>
@@ -337,15 +341,20 @@ export function CornerSupplyPanel({
   templateId,
   corner,
   children,
+  methods,
 }: {
   templateId: string;
   corner: SupplyCorner;
   /** ③에서 '운영자 편성'일 때 그대로 끼워 넣는 기존 상품 등록 UI */
   children?: React.ReactNode;
+  /** 수급 방식 제한(코너 유형별). 생략 시 3종 전부. 배너형은 ['CVM 콘텐츠 연동','운영자 편성']. */
+  methods?: readonly string[];
 }) {
   const [pending, start] = useTransition();
   const mode = corner.recSource ? normalizeRecSource(corner.recSource) : '운영자 편성';
   const cvm = isCvmSource(mode);
+  // 배너형 = 콘텐츠(이미지·문구·랜딩)가 배너 캠페인/CVM 소재라 '채우기'·'폴백'을 배너 말로 바꾼다.
+  const isBanner = corner.cornerType === '배너형';
   // 효과적 폴백 — 네비/필수형은 '미노출'/빈 값이어도 '운영자 편성'(미노출 금지). 저장·'폴백용 항목' 노출 판정에 공통 사용.
   const effFallback = effectiveFallback(corner.cornerType, corner.cvmFallback);
 
@@ -364,7 +373,7 @@ export function CornerSupplyPanel({
   return (
     <div className="space-y-2.5">
       {/* ① 껍데기는 '코너 정보' 카드(위쪽 🔒 스펙 영역)로 흡수 — 중복 제거(2026-10-12). 여기선 수급부터. */}
-      <SupplyStep mode={mode} pending={pending} onPick={(m) => save({ recSource: m })} />
+      <SupplyStep mode={mode} pending={pending} onPick={(m) => save({ recSource: m })} methods={methods} />
 
       {cvm ? (
         <>
@@ -375,13 +384,25 @@ export function CornerSupplyPanel({
               · 폴백이 '운영자 편성으로 대체'면 대체 항목이 필요 → 연다(네비/필수형은 기본값으로 항상)
               · CVM 콘텐츠 연동이면 완성본이 안 오는 경우를 대비해 운영자가 폴백 콘텐츠를 등록해둔다 → 항상 연다(2026-10-12 사용자 요청) */}
           {(effFallback === '운영자 편성으로 대체' || mode === 'CVM 콘텐츠 연동') && (
-            <Step no={5} title="폴백용 항목" desc="CVM 완성본이 안 왔을 때 대신 나갈 항목을 운영자가 등록합니다.">
+            <Step
+              no={5}
+              title={isBanner ? '대체 소재 — 배너 등록' : '폴백용 항목'}
+              desc={isBanner
+                ? 'CVM 타겟 배너가 안 왔을 때 대신 노출할 배너를 배너 캠페인 관리에서 불러와 둡니다(TM-DSP-018 대체 소재).'
+                : 'CVM 완성본이 안 왔을 때 대신 나갈 항목을 운영자가 등록합니다.'}
+            >
               {children}
             </Step>
           )}
         </>
       ) : (
-        <Step no={3} title="채우기 — 상품 등록" desc="등록한 항목이 정한 순서 그대로 나갑니다. CVM 연동으로 바꾸면 이 구성은 폴백으로 쓰입니다.">
+        <Step
+          no={3}
+          title={isBanner ? '채우기 — 배너 등록' : '채우기 — 상품 등록'}
+          desc={isBanner
+            ? '배너 캠페인 관리에서 불러온 배너가 등록한 순서/방식대로 노출됩니다. CVM 콘텐츠 연동으로 바꾸면 이 배너들은 대체 소재(폴백)로 쓰입니다.'
+            : '등록한 항목이 정한 순서 그대로 나갑니다. CVM 연동으로 바꾸면 이 구성은 폴백으로 쓰입니다.'}
+        >
           {children}
         </Step>
       )}

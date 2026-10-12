@@ -3680,43 +3680,39 @@ export function BuilderEditor({
             {/* 기존 코너 끌어오기는 아래 '코너 정보'의 '코너 불러오기' 버튼으로 통합됨 */}
             <CornerInfoForm key={selectedCorner.templateCornerId} templateId={templateId} corner={selectedCorner} library={library} nameMap={nameMap} />
             {/* 상단 배너 선택 UI는 '코너 구성'의 BigBannerControl 카드 안에 임베드됨(별도 패널 제거). */}
-            {selectedCorner.cornerType === '배너형' ? (
-              <div className="rounded-lg border bg-card p-4">
-                <p className="mb-0.5 text-sm font-semibold">코너 구성</p>
-                <p className="mb-2 text-[11px] text-muted-foreground">이 코너에 담긴 배너 · 규격 · 노출 방식</p>
-                {/* 배너형 = 배너 레일(여러 배너 + 규격 + 스와이프/자동). */}
+            {/* 수급 파이프라인 — ①코너 정보(카드) → ②수급 → ③채우기/CVM 계약 → ④폴백 → ⑤출처 맵 (2026-10-12) */}
+            {/* 배너형도 동일 파이프라인을 탄다(TM-DSP-018 CVM 타겟 배너 + 대체 소재). 수급은 운영자 편성·CVM 콘텐츠 연동만(데이터 연동은 EPC 조립이라 배너에 안 맞음). ③/⑤ 채우기 자리엔 배너 레일을 끼운다. */}
+            <CornerSupplyPanel
+              key={selectedCorner.templateCornerId}
+              templateId={templateId}
+              methods={selectedCorner.cornerType === '배너형' ? ['CVM 콘텐츠 연동', '운영자 편성'] : undefined}
+              corner={{
+                id: selectedCorner.id,
+                name: selectedCorner.name,
+                cornerType: selectedCorner.cornerType,
+                layoutDetail: selectedCorner.layoutDetail,
+                cornerLayout: selectedCorner.cornerLayout,
+                maxItems: selectedCorner.maxItems,
+                recSource: selectedCorner.recSource,
+                cvmCatalog: selectedCorner.cvmCatalog,
+                cvmTopN: selectedCorner.cvmTopN,
+                cvmSlotId: selectedCorner.cvmSlotId,
+                cvmFallback: selectedCorner.cvmFallback,
+                itemCount: selectedCorner.components.filter((c) => c.componentType !== '선택형').length,
+              }}
+            >
+              {selectedCorner.cornerType === '배너형' ? (
+                // 배너형 = 배너 레일(여러 배너 + 규격 + 스와이프/자동). 운영자 편성이면 '채우기', CVM이면 '대체 소재(폴백)'로 들어간다.
                 <BannerRailControl templateId={templateId} corner={selectedCorner} campaigns={library.bannerCampaigns ?? []} />
-              </div>
-            ) : (
-              <>
-                {/* 수급 파이프라인 — ①코너 정보(카드) → ②수급 → ③채우기/CVM 계약 → ④폴백 → ⑤출처 맵 (2026-10-12) */}
-                <CornerSupplyPanel
-                  key={selectedCorner.templateCornerId}
-                  templateId={templateId}
-                  corner={{
-                    id: selectedCorner.id,
-                    name: selectedCorner.name,
-                    cornerType: selectedCorner.cornerType,
-                    layoutDetail: selectedCorner.layoutDetail,
-                    cornerLayout: selectedCorner.cornerLayout,
-                    maxItems: selectedCorner.maxItems,
-                    recSource: selectedCorner.recSource,
-                    cvmCatalog: selectedCorner.cvmCatalog,
-                    cvmTopN: selectedCorner.cvmTopN,
-                    cvmSlotId: selectedCorner.cvmSlotId,
-                    cvmFallback: selectedCorner.cvmFallback,
-                    itemCount: selectedCorner.components.filter((c) => c.componentType !== '선택형').length,
-                  }}
-                >
-                  <>
-                    <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
-                    {/* 미 노출 조건 — '운영자 편성' 콘텐츠의 옵션(2026-10-12 사용자 요청). 운영자가 채운 콘텐츠가 조건 미충족 시 숨김. */}
-                    <NoDisplayControl templateId={templateId} corner={selectedCorner} />
-                  </>
-                </CornerSupplyPanel>
-                {/* 표시 옵션 카드 해체(2026-10-12): 빅배너 강조·문구 한눈에 보기는 ①코너 정보 카드로, 노출 타입 베리에이션은 CVM 수급 흐름(variantsSlot)으로 이동. */}
-              </>
-            )}
+              ) : (
+                <>
+                  <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
+                  {/* 미 노출 조건 — '운영자 편성' 콘텐츠의 옵션(2026-10-12 사용자 요청). 운영자가 채운 콘텐츠가 조건 미충족 시 숨김. */}
+                  <NoDisplayControl templateId={templateId} corner={selectedCorner} />
+                </>
+              )}
+            </CornerSupplyPanel>
+            {/* 표시 옵션 카드 해체(2026-10-12): 빅배너 강조·문구 한눈에 보기는 ①코너 정보 카드로, 노출 타입 베리에이션은 CVM 수급 흐름(variantsSlot)으로 이동. */}
           </div>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
