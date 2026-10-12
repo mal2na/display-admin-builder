@@ -9,6 +9,8 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { CondBuilder } from './cond-builder';
 import { CautionPicker, PagePicker } from './form-pickers';
+import { JoinActions } from './join-actions';
+import { RewardSection } from './reward-blocks';
 import {
   Sect, Row, Hint, Note, Rd, Ck, RdPair, BTN, BTN_PRI, BTN_SM, BTN_PILL, INP, SEL, DT,
 } from './form-ui';
@@ -16,8 +18,10 @@ import { validate as validateCond } from '@/lib/promotion/cond';
 import { typeLabel } from '@/lib/promotion/reg-start';
 import {
   CHANNELS, CTA_MAX, CTA_AT_ONCE, ctaOpts, newCta, emptyForm, validateForm, hexOk, SVC_PAGES,
+  normalize, prOf,
   type PromoForm, type CtaBlock, type FormErrors,
 } from '@/lib/promotion/form';
+import { JM_GUIDE, JM_LABEL } from '@/lib/promotion/reg-start';
 
 export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: {
   type: string;
@@ -27,7 +31,8 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
   onToast: (m: string) => void;
   onChangeType: () => void;
 }) {
-  const [f, setF] = React.useState<PromoForm>(() => emptyForm(type, jm));
+  // 초기값에도 연동 규칙을 한 번 걸어 둔다 — 기본 참여 행동이 '버튼 참여'라 참여 CTA 가 바로 붙는다
+  const [f, setF] = React.useState<PromoForm>(() => normalize(emptyForm(type, jm)));
   const [E, setE] = React.useState<FormErrors>({});
   const [condE, setCondE] = React.useState<Record<string, string>>({});
   const [alertMsg, setAlertMsg] = React.useState<string | null>(null);
@@ -36,9 +41,10 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
   const [pagePick, setPagePick] = React.useState<number | null>(null);
   const [tagInput, setTagInput] = React.useState('');
 
-  const set = (p: Partial<PromoForm>) => setF((x) => ({ ...x, ...p }));
+  // 값이 바뀔 때마다 연동 규칙(룰렛·자동 CTA 등)을 한 번 통과시킨다
+  const set = (p: Partial<PromoForm>) => setF((x) => normalize({ ...x, ...p }));
   const setCta = (id: number, p: Partial<CtaBlock>) =>
-    setF((x) => ({ ...x, ctas: x.ctas.map((c) => (c.id === id ? { ...c, ...p } : c)) }));
+    setF((x) => normalize({ ...x, ctas: x.ctas.map((c) => (c.id === id ? { ...c, ...p } : c)) }));
 
   const isGuide = f.type === '안내형';
   const limited = f.scope === '제한 공개';
@@ -228,15 +234,80 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
             </Row>
           </Sect>
 
-          {/* ── 유형별 영역 (아직 프로토타입) ── */}
-          {!isGuide && (
-            <Sect title={f.type === '추천형' ? '초대자 · 피초대자 정보' : '참여 · 리워드 정보'}>
+          {/* ── 참여 정보 (참여ㆍ리워드형) ── */}
+          {f.type === '참여ㆍ리워드형' && (
+            <>
+              <Sect title="참여 정보">
+                <Row label="참여 방식">
+                  <div className="w-full">
+                    <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                      {(['직접', '행동'] as const).map((v) => (
+                        <Rd key={v} on={f.jm === v} onChange={() => set({ jm: v })}>{JM_LABEL[v]}</Rd>
+                      ))}
+                    </span>
+                    <Note>{JM_GUIDE[f.jm]}</Note>
+                  </div>
+                </Row>
+                {f.jm === '직접' && (
+                  <Row label="참여 행동" req err={E.ja}>
+                    <span id="err-ja" />
+                    <JoinActions items={f.ja} onChange={(ja) => set({ ja })} err={undefined} onToast={onToast} />
+                  </Row>
+                )}
+                <Row label="참여 조건" err={E.joinCond}>
+                  <span id="err-joinCond" />
+                  <CondBuilder
+                    ctx="join" value={f.joinCond}
+                    onChange={(nodes) => set({ joinCond: nodes })}
+                    errors={condE}
+                    joinRange={[f.joinS.slice(0, 10), f.joinE.slice(0, 10)]}
+                  />
+                </Row>
+                <Row label="참여 횟수 기준" req>
+                  <RdPair value={f.cycle} opts={['기간 전체', '주기별'] as const} onChange={(v) => set({ cycle: v })} />
+                  <select
+                    aria-label="참여 주기" value={f.cycleUnit} disabled={f.cycle !== '주기별'}
+                    onChange={(e) => set({ cycleUnit: e.target.value as PromoForm['cycleUnit'] })}
+                    className={cn(SEL, 'w-[100px]', f.cycle !== '주기별' && 'bg-[var(--th)] text-[var(--ink4)]')}
+                  >
+                    <option>일</option><option>주</option><option>월</option>
+                  </select>
+                </Row>
+                <Row label="최대 참여 횟수" req err={E.maxJoin}>
+                  <span id="err-maxJoin" />
+                  <input type="number" min={1} value={f.maxJoin} onChange={(e) => set({ maxJoin: e.target.value })} placeholder="숫자를 입력해주세요" className={cn(INP, 'w-[150px]')} /> 회
+                  <Hint>
+                    {f.cycle === '주기별'
+                      ? `${({ 일: '매일', 주: '매주', 월: '매월' } as const)[f.cycleUnit]} ${f.maxJoin || 'N'}회까지 참여할 수 있어요`
+                      : `이벤트 기간 동안 ${f.maxJoin || 'N'}회까지 참여할 수 있어요`}
+                  </Hint>
+                  {f.jm === '직접' && f.ja.length > 1 && <Note>참여 행동이 여러 개면 모두 완료한 1번을 1회로 세요</Note>}
+                </Row>
+                <Row label="중복 참여 판별 기준">
+                  <RdPair value={f.dup} opts={['고객 기준(CI)', '멤버십 카드 기준'] as const} onChange={(v) => set({ dup: v })} />
+                </Row>
+              </Sect>
+
+              <Sect title="리워드 정보">
+                <div className="border-b border-[var(--line)] p-4">
+                  <RewardSection
+                    pr={prOf(f)}
+                    onChange={(next) => set({ jm: next.jm, ja: next.ja, blocks: next.blocks })}
+                    E={E}
+                    onToast={onToast}
+                  />
+                </div>
+              </Sect>
+            </>
+          )}
+
+          {/* ── 추천형은 아직 프로토타입 ── */}
+          {f.type === '추천형' && (
+            <Sect title="초대자 · 피초대자 정보">
               <div className="border-b border-[var(--line)] bg-[var(--th)] px-4 py-6 text-[14px] leading-[20px] text-[var(--ink2)]">
                 <b className="block">{typeLabel(f.type)} 전용 영역</b>
                 <span className="mt-1 block text-[13px] text-[var(--ink3)]">
-                  {f.type === '추천형'
-                    ? '초대자/피초대자 전용 콘텐츠, 리워드 지급 조건, 추천 코드·초대 링크 발급은 아직 프로토타입에 있어요.'
-                    : '참여 조건·방식, 참여 횟수, 리워드 유형·지급 방식은 아직 프로토타입에 있어요.'}
+                  초대자/피초대자 전용 콘텐츠, 리워드 지급 조건, 추천 코드·초대 링크 발급은 아직 프로토타입에 있어요.
                 </span>
               </div>
             </Sect>

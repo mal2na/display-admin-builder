@@ -9,6 +9,10 @@
 import type { CondNode } from './cond';
 import { validate as validateCond } from './cond';
 import type { EventType, JoinMode } from './reg-start';
+import {
+  newJaItem, newBlock, applyRules, validatePr, needJoinCta, needClaimCta,
+  type JaItem, type RewardBlock, type PrState,
+} from './pr';
 
 export const CHANNELS = ['PC', 'MO', '에이닷'];
 export const CTA_MAX = 4;
@@ -85,6 +89,14 @@ export type PromoForm = {
   search: '노출' | '미노출';
   tags: string[];
   keywords: string; ogTitle: string; ogDesc: string;
+  /* ── 참여ㆍ리워드형 전용 ── */
+  ja: JaItem[];
+  joinCond: CondNode[];
+  cycle: '기간 전체' | '주기별';
+  cycleUnit: '일' | '주' | '월';
+  maxJoin: string;
+  dup: '고객 기준(CI)' | '멤버십 카드 기준';
+  blocks: RewardBlock[];
 };
 
 let ctaSeq = 0;
@@ -119,7 +131,48 @@ export function emptyForm(type: string, jm: JoinMode): PromoForm {
     search: '노출',
     tags: [],
     keywords: '', ogTitle: '', ogDesc: '',
+    ja: [newJaItem('버튼 참여')],
+    joinCond: [],
+    cycle: '기간 전체', cycleUnit: '월', maxJoin: '',
+    dup: '고객 기준(CI)',
+    blocks: [newBlock()],
   };
+}
+
+/** 참여·리워드 상태만 떼어 본다 */
+export const prOf = (f: PromoForm): PrState => ({ jm: f.jm, ja: f.ja, blocks: f.blocks });
+
+/**
+ * 값이 바뀔 때마다 한 번 통과시키는 정리 단계.
+ *  · 참여·리워드의 잠기는 값(룰렛·자동 참여 등)을 실제로 밀어넣고
+ *  · '버튼 참여' / '고객 수령' 에 맞춰 하단 CTA 를 자동으로 붙이거나 뗀다.
+ */
+export function normalize(f: PromoForm): PromoForm {
+  if (f.type !== '참여ㆍ리워드형') return f;
+  const pr = applyRules(prOf(f));
+  let ctas = f.ctas.slice();
+
+  const sync = (type: string, need: boolean, name: string) => {
+    const owned = ctas.filter((c) => c.auto && c.type === type);
+    if (!need && owned.length) {
+      ctas = ctas.length > owned.length
+        ? ctas.filter((c) => !owned.includes(c))
+        : ctas.map((c) => (owned.includes(c) ? { ...c, auto: false, type: '링크 버튼', name: c.name === name ? '' : c.name } : c));
+      return;
+    }
+    if (need && !owned.length) {
+      if (ctas.length >= CTA_MAX) return;
+      // 비어 있는 링크 버튼 한 칸이 있으면 그 자리를 쓴다
+      const blank = ctas.find((c) => !c.auto && c.type === '링크 버튼' && !c.name.trim() && !c.url.trim());
+      if (blank) ctas = ctas.map((c) => (c === blank ? { ...c, type, name, url: '', auto: true } : c));
+      else ctas = [{ ...newCta(f.type), type, name, auto: true }, ...ctas];
+    }
+  };
+  sync(CTA_JOIN, needJoinCta(pr), '응모하기');
+  sync(CTA_CLAIM, needClaimCta(pr), '혜택 받기');
+
+  const hasAuto = ctas.some((c) => c.auto);
+  return { ...f, ja: pr.ja, blocks: pr.blocks, ctas, cta: hasAuto ? '사용' : f.cta };
 }
 
 /* ── 검증 ──────────────────────────────────────────────────────── */
@@ -202,6 +255,19 @@ export function validateForm(f: PromoForm): ValidateResult {
   // 제한 공개는 검색에 노출되지 않으므로 태그도 받지 않는다
   if (f.scope !== '제한 공개' && f.search === '노출' && !f.tags.length) {
     E.tags = '검색 태그를 등록하여 주시길 바랍니다';
+  }
+
+  if (f.type === '참여ㆍ리워드형') {
+    const r = validatePr(prOf(f), f.maxJoin);
+    if (r.alert) return { errors: E, condErrors, alert: r.alert };
+    Object.assign(E, r.errors);
+    // 참여 조건 · 지급 조건은 선택 입력 — 값이 틀렸을 때만 막는다
+    const jc = validateCond(f.joinCond);
+    if (jc.top) { E.joinCond = jc.top; Object.assign(condErrors, jc.errors); }
+    f.blocks.forEach((b) => {
+      const pc = validateCond(b.payCond);
+      if (pc.top) { E[`payCond${b.id}`] = pc.top; Object.assign(condErrors, pc.errors); }
+    });
   }
 
   return { errors: E, condErrors, alert: null };
