@@ -35,6 +35,11 @@ import {
   normalizeRecSource,
   isCvmSource,
   effectiveFallback,
+  effectiveZone,
+  ZONE_RANK,
+  ZONE_META,
+  ZONES,
+  type Zone,
   CVM_TARGET_HINTS,
   defaultComposition,
   CHIP_BASE,
@@ -81,6 +86,7 @@ import {
   setCornerNoDisplay,
   setCornerSubTitleLink,
   setCornerMoreButton,
+  setCornerZone,
   refreshBannerComponent,
   addBssProduct,
 } from '../actions';
@@ -169,6 +175,7 @@ export type CornerNode = {
   reviewedAt: string | null;
   visible: boolean;
   pinned: boolean; // 위치 고정 — 상단 퀵메뉴처럼 자리를 잠가 드래그 재정렬·CVM 자동 재정렬에서 제외(2026-10-06)
+  zone: string | null; // 전시 존(밴드) — dynamic | semi | fixed. null이면 코너 성격에서 파생(effectiveZone)
   components: ComponentNode[];
 };
 export type LibraryData = {
@@ -2693,6 +2700,17 @@ function OrderVariationExamples({ pinned, free }: { pinned: CornerNode[]; free: 
   );
 }
 
+// ── 전시 존 밴드 헤더 (좌측 리스트에서 Dynamic/Semi/Fixed 구분) ─────────
+function ZoneBandHeader({ zone }: { zone: Zone }) {
+  const m = ZONE_META[zone];
+  return (
+    <div className="mb-1 mt-3 flex items-center gap-1.5 px-0.5">
+      <span className={cn('inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-bold', m.tone)}>{m.label}</span>
+      <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground" title={m.desc}>{m.desc}</span>
+    </div>
+  );
+}
+
 // ── 좌측 고정 리스트의 코너 행 (클릭 선택 + dnd 순서) ─────────
 function CornerListRow({
   templateId,
@@ -3339,9 +3357,12 @@ export function BuilderEditor({
   const byId = new Map(corners.map((c) => [c.templateCornerId, c]));
   const orderedRaw = ids.map((id) => byId.get(id)).filter(Boolean) as CornerNode[];
   for (const c of corners) if (!ids.includes(c.templateCornerId)) orderedRaw.push(c);
-  // 위치 고정 코너는 항상 상단(고정 존). 각 그룹 내부 순서는 저장 순서 유지. (2026-10-06)
-  const ordered = [...orderedRaw.filter((c) => c.pinned), ...orderedRaw.filter((c) => !c.pinned)];
-  const pinnedCount = ordered.filter((c) => c.pinned).length;
+  // 위치 고정 코너(퀵메뉴)는 항상 밴드 위. 나머지는 전시 존 밴드로: Dynamic→Semi→Fixed(연속 밴드 고정). 각 밴드 내부는 저장 순서 유지(V8 stable sort). (2026-10-13)
+  const czone = (c: CornerNode): Zone => effectiveZone(c.zone, c.cornerType, c.recSource);
+  const pinnedCorners = orderedRaw.filter((c) => c.pinned);
+  const bandSorted = [...orderedRaw.filter((c) => !c.pinned)].sort((a, b) => ZONE_RANK[czone(a)] - ZONE_RANK[czone(b)]);
+  const ordered = [...pinnedCorners, ...bandSorted];
+  const pinnedCount = pinnedCorners.length;
   const orderedIds = ordered.map((c) => c.templateCornerId);
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
@@ -3450,14 +3471,21 @@ export function BuilderEditor({
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
+    const activeCorner = byId.get(String(active.id));
+    const overCorner = byId.get(String(over.id));
+    if (!activeCorner || !overCorner || activeCorner.pinned) return; // 위치 고정 코너는 재정렬 불가
     const oldIndex = orderedIds.indexOf(String(active.id));
-    if (oldIndex < 0 || ordered[oldIndex]?.pinned) return; // 위치 고정 코너는 재정렬 불가
     let newIndex = orderedIds.indexOf(String(over.id));
-    if (newIndex < 0) return;
-    if (newIndex < pinnedCount) newIndex = pinnedCount; // 고정 존(상단) 위로는 못 들어감
+    if (oldIndex < 0 || newIndex < 0) return;
+    if (newIndex < pinnedCount) newIndex = pinnedCount; // 고정(퀵메뉴) 위로는 못 들어감
+    // 다른 밴드로 떨어뜨리면 그 밴드(존)로 이동 — over 코너의 존을 타깃으로.
+    const targetZone = overCorner.pinned ? 'dynamic' : czone(overCorner);
     const next = [...orderedIds];
     next.splice(newIndex, 0, next.splice(oldIndex, 1)[0]);
     setIds(next);
+    if (czone(activeCorner) !== targetZone) {
+      await setCornerZone(templateId, activeCorner.templateCornerId, activeCorner.id, targetZone);
+    }
     await reorderCorners(templateId, next);
   }
 
@@ -3513,22 +3541,28 @@ export function BuilderEditor({
         <div className="flex-1 space-y-1.5 overflow-y-auto p-2">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
-              {ordered.map((corner, i) => (
-                <div key={corner.templateCornerId}>
-                  {/* 고정 존 ↔ 자유 재정렬 존 경계 표시 */}
-                  {i === pinnedCount && pinnedCount > 0 && (
-                    <p className="mb-1 mt-1.5 px-1 text-[10px] font-medium text-muted-foreground">↓ 순서 변경 가능 · CVM이 세그먼트별 자동 재정렬</p>
-                  )}
-                  <CornerListRow
-                    templateId={templateId}
-                    corner={corner}
-                    nameMap={nameMap}
-                    selected={selectedCorner?.templateCornerId === corner.templateCornerId}
-                    onSelect={selectCorner}
-                    locked={corner.pinned}
-                  />
-                </div>
-              ))}
+              {ordered.map((corner, i) => {
+                const prev = ordered[i - 1];
+                const z = corner.pinned ? null : czone(corner);
+                const prevZ = prev && !prev.pinned ? czone(prev) : null;
+                // 위치 고정(퀵메뉴) 블록 바로 아래, 그리고 존이 바뀔 때마다 밴드 헤더.
+                return (
+                  <div key={corner.templateCornerId}>
+                    {corner.pinned && i === 0 && (
+                      <p className="mb-1 px-0.5 text-[10px] font-medium text-muted-foreground">📌 위치 고정 (항상 상단 · CVM 재정렬 제외)</p>
+                    )}
+                    {z && z !== prevZ && <ZoneBandHeader zone={z} />}
+                    <CornerListRow
+                      templateId={templateId}
+                      corner={corner}
+                      nameMap={nameMap}
+                      selected={selectedCorner?.templateCornerId === corner.templateCornerId}
+                      onSelect={selectCorner}
+                      locked={corner.pinned}
+                    />
+                  </div>
+                );
+              })}
             </SortableContext>
           </DndContext>
           {ordered.length === 0 && (

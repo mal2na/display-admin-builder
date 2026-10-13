@@ -353,6 +353,33 @@ export function effectiveFallback(cornerType: string, cvmFallback: string | null
   return (cvmFallback as CvmFallback) ?? '미노출';
 }
 
+// ── 전시 존(밴드) — 템플릿을 '얼마나 동적인가'로 3밴드로 나눈다(2026-10-13) ───────
+//  Dynamic : CVM이 실시간 재정렬·개인화(순위·콘텐츠 변경). 수급=CVM.
+//  Semi    : 운영자가 기간/캠페인 단위로 편성(시즌·프로모션·제휴). 수급=운영자 편성.
+//  Fixed   : 항상 그 자리, 거의 불변(메뉴성 진입). 업무 진입형·고정·필수 노출형.
+//  세로 순서는 연속 밴드 고정: Dynamic(상단) → Semi → Fixed(하단). 위치 고정(pinned·퀵메뉴)은 밴드 위에 둔다.
+export const ZONES = ['dynamic', 'semi', 'fixed'] as const;
+export type Zone = (typeof ZONES)[number];
+export const ZONE_RANK: Record<Zone, number> = { dynamic: 0, semi: 1, fixed: 2 };
+export const ZONE_META: Record<Zone, { label: string; en: string; desc: string; tone: string }> = {
+  dynamic: { label: 'Dynamic', en: '실시간 개인화', desc: 'CVM이 고객마다 순위·콘텐츠를 바꾸는 자리', tone: 'bg-[#EDE9FE] text-[#6D4AFF]' },
+  semi: { label: 'Semi-fixed', en: '기간 편성', desc: '운영자가 시즌·프로모션·제휴를 기간 단위로 편성', tone: 'bg-[#E8ECEF] text-[#454F59]' },
+  fixed: { label: 'Fixed', en: '항상 고정', desc: '항상 그 자리 · 거의 불변(메뉴성 진입)', tone: 'bg-[#F1F3F5] text-[#697582]' },
+};
+
+/** 존 미지정(null) 코너의 기본 존 — 코너 성격에서 파생. CVM 수급=Dynamic, 네비/필수형=Fixed, 그 외=Semi. */
+export function deriveZone(cornerType?: string | null, recSource?: string | null): Zone {
+  if (isCvmSource(recSource)) return 'dynamic';
+  if (cornerType && mustAlwaysShow(cornerType)) return 'fixed';
+  return 'semi';
+}
+
+/** 효과적 존 — 저장된 zone이 있으면 그대로, 없으면 파생. 밴드 그룹핑·순서의 SSOT. */
+export function effectiveZone(zone: string | null | undefined, cornerType?: string | null, recSource?: string | null): Zone {
+  if (zone === 'dynamic' || zone === 'semi' || zone === 'fixed') return zone;
+  return deriveZone(cornerType, recSource);
+}
+
 /** 표시 요소별 소유자(SSOT) — '이 값이 어디서 오나'를 빌더에서 그대로 보여준다. */
 export type FieldOwner = 'CVM' | '상품 원장' | '전시 어드민' | '코너 유형';
 export const FIELD_OWNER_TONE: Record<FieldOwner, string> = {

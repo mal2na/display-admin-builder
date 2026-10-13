@@ -215,6 +215,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
     reviewedAt: tc.corner.reviewedAt ? tc.corner.reviewedAt.toISOString() : null,
     visible: tc.visible,
     pinned: tc.pinned, // 위치 고정 — 상단 퀵메뉴처럼 자리를 잠근 배치(2026-10-06)
+    zone: tc.zone ?? null, // 전시 존(밴드) — null이면 빌더에서 코너 성격으로 파생(2026-10-13)
     components: tc.corner.cornerComponents.map((cc) => ({
       cornerComponentId: cc.id,
       id: cc.component.id,
