@@ -138,32 +138,34 @@ function SupplyStep({
 
 /* ── ③ CVM 계약 ─────────────────────────────────────────────────── */
 
+// ③ 요청(데이터 연동 전용) — CVM에 무엇을 달라고 할지. 요청 범위(중분류·개수)는 CVM팀과 협의 중이라
+//  '블러 처리'로 잠정 표시하고, 나머지(조립·폴백 등)는 그대로 진행한다(2026-10-12 회의 결정).
+//  콘텐츠 연동은 구좌 ID 입력을 두지 않는다 — 'CVM 콘텐츠 연동'을 켜는 것 자체가 구좌(회의 결정: 구좌 설정 삭제).
 function CvmContractStep({
   corner,
-  mode,
   onSave,
   pending,
+  no = 3,
 }: {
   corner: SupplyCorner;
-  mode: string;
-  onSave: (p: { cvmCatalog?: string | null; cvmTopN?: number | null; cvmSlotId?: string | null }) => void;
+  onSave: (p: { cvmCatalog?: string | null; cvmTopN?: number | null }) => void;
   pending: boolean;
+  no?: number;
 }) {
-  const isData = mode === 'CVM 데이터 연동';
-  const [slot, setSlot] = useState(corner.cvmSlotId ?? '');
   const topN = corner.cvmTopN ?? Math.min(corner.maxItems ?? 3, CVM_TOP_N_MAX);
 
   return (
     <Step
-      no={3}
-      title={isData ? '요청 — CVM에 무엇을 달라고 할지' : '구좌 — CVM에 넘길 자리'}
-      desc={
-        isData
-          ? 'CVM은 프로덕트 카탈로그 중분류 단위로, 고객별 Top 5까지 내려줍니다. 세그먼트가 아니라 개별 고객 단위입니다.'
-          : '이 자리는 CVM 캠페인 구좌가 됩니다. 이미지·문구·랜딩까지 받은 그대로 노출하고, 빌더 미리보기에는 폴백이 보입니다.'
-      }
+      no={no}
+      title="요청 — CVM에 무엇을 달라고 할지"
+      desc="CVM이 내려줄 요청 범위(중분류·개수)는 CVM팀과 협의 중입니다. 확정 전까지 잠정(블러) 표시합니다."
     >
-      {isData ? (
+      <div className="mb-2 flex items-start gap-1.5 rounded-[6px] bg-[#FFE4C4] px-2.5 py-2 text-[11px] text-[#D66400]">
+        <Info className="mt-0.5 h-3 w-3 shrink-0" />
+        <span><b>CVM 협의 중</b> · 요청 범위(중분류·개수)는 확정 후 활성화됩니다. 아래는 현재 안(案)이에요.</span>
+      </div>
+      {/* 협의 전이라 블러 + 비활성 — 확정되면 blur/pointer-events 해제 */}
+      <div className="pointer-events-none select-none opacity-60 blur-[1.3px]" aria-disabled>
         <div className="space-y-2.5">
           <div>
             <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink2)]">요청 중분류</p>
@@ -171,18 +173,7 @@ function CvmContractStep({
               {CVM_CATALOGS.map((c) => {
                 const on = corner.cvmCatalog === c;
                 return (
-                  <button
-                    key={c}
-                    type="button"
-                    disabled={pending}
-                    onClick={() => onSave({ cvmCatalog: on ? null : c, cvmTopN: topN })}
-                    className={cn(
-                      'rounded-[6px] px-2.5 py-1 text-[11.5px] font-semibold transition disabled:opacity-50',
-                      on ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)] hover:bg-[#eceef3]',
-                    )}
-                  >
-                    {c}
-                  </button>
+                  <span key={c} className={cn('rounded-[6px] px-2.5 py-1 text-[11.5px] font-semibold', on ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)]')}>{c}</span>
                 );
               })}
             </div>
@@ -191,49 +182,13 @@ function CvmContractStep({
             <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink2)]">요청 개수</p>
             <div className="flex items-center gap-1.5">
               {Array.from({ length: CVM_TOP_N_MAX }, (_, i) => i + 1).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  disabled={pending || !corner.cvmCatalog}
-                  onClick={() => onSave({ cvmCatalog: corner.cvmCatalog, cvmTopN: n })}
-                  className={cn(
-                    'h-7 w-7 rounded-[6px] text-[12px] font-semibold transition disabled:opacity-40',
-                    topN === n && corner.cvmCatalog ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)] hover:bg-[#eceef3]',
-                  )}
-                >
-                  {n}
-                </button>
+                <span key={n} className={cn('grid h-7 w-7 place-items-center rounded-[6px] text-[12px] font-semibold', topN === n && corner.cvmCatalog ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)]')}>{n}</span>
               ))}
               <span className="ml-1 text-[10.5px] text-[var(--ink3)]">CVM 상한 {CVM_TOP_N_MAX}</span>
             </div>
           </div>
-          {corner.cvmCatalog && (
-            <p className="rounded-[6px] bg-[#D9E9FF] px-2.5 py-2 text-[11px] text-[#2E7AFF]"
-               title="이미지·설명 문구는 CVM이 주지 않습니다. 상품(EPC) 원장 값을 전시 어드민이 붙입니다.">
-              요청: 이 고객에게 맞는 <b>{corner.cvmCatalog}</b> {topN}개 · 순서대로
-            </p>
-          )}
         </div>
-      ) : (
-        <div className="space-y-2">
-          <label className="block">
-            <span className="mb-1.5 block text-[11px] font-semibold text-[var(--ink2)]">CVM 구좌 ID</span>
-            <input
-              value={slot}
-              onChange={(e) => setSlot(e.target.value)}
-              onBlur={() => slot !== (corner.cvmSlotId ?? '') && onSave({ cvmSlotId: slot })}
-              placeholder="예: SLOT-MAIN-BNR-01"
-              disabled={pending}
-              className="h-8 w-full rounded-[6px] border border-[var(--line2)] px-2.5 text-[12px] outline-none focus:border-[var(--ac)] disabled:opacity-50"
-            />
-          </label>
-          <p className="flex items-start gap-1.5 rounded-[6px] bg-[#D9E9FF] px-2.5 py-2 text-[11px] text-[#2E7AFF]"
-             title="한 구좌는 한 방식만 씁니다. 전시 어드민에 같은 배너를 또 등록하면 이중 등록이 됩니다.">
-            <Info className="mt-0.5 h-3 w-3 shrink-0" />
-            <span>이 구좌의 배너는 <b>CVM에서 등록</b> · 어드민 중복 등록 금지</span>
-          </p>
-        </div>
-      )}
+      </div>
 
       {/* CVM이 못 주는 것 — 요청해도 안 되는 걸 미리 알려 헛돌지 않게 */}
       <details className="mt-3 rounded-[6px] bg-[var(--th)] px-2.5 py-2">
@@ -374,7 +329,8 @@ export function CornerSupplyPanel({
 
       {cvm ? (
         <>
-          <CvmContractStep corner={corner} mode={mode} pending={pending} onSave={(p) => save(p)} />
+          {/* 데이터 연동만 '요청' 단계(협의 중 블러). 콘텐츠 연동은 구좌 ID 설정을 두지 않는다 — 연동을 켜는 것 자체가 구좌(회의 결정). */}
+          {isData && <CvmContractStep corner={corner} pending={pending} onSave={(p) => save(p)} no={3} />}
           {/* 데이터 연동 = 생김새(카드 틀)를 우리가 조립. CVM은 '어떤 아이템을 몇 번째로'만 주므로,
               운영자가 대표 아이템을 EPC에서 통으로 불러와 표시 항목·카드 틀을 잡는다. 실서비스에선 CVM이 이 틀에 실제 아이템을 끼운다.
               이 대표 구성은 폴백=운영자 편성일 때 그대로 대체되므로, 별도 '폴백용 항목' 단계를 두지 않고 한 벌로 통합한다(2026-10-12 사용자 결정). */}
@@ -389,12 +345,12 @@ export function CornerSupplyPanel({
               {children}
             </Step>
           )}
-          <FallbackStep no={isData ? 5 : 4} corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
+          <FallbackStep no={isData ? 5 : 3} corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
           {/* 문구(코너 타이틀) 베리에이션 제거(2026-10-12): CVM은 '문구만 따로 베리에이션'을 못 함(CLAUDE.md 못받는것 ⑤). */}
           {/* 콘텐츠 연동 = CVM이 완성본(이미지·문구·랜딩)을 소유 → 우리가 조립할 게 없다. 대신 완성본이 안 올 때 대비한 '대체 소재(폴백용 항목)'를 항상 등록해둔다(2026-10-12 사용자 요청). */}
           {isContent && (
             <Step
-              no={5}
+              no={4}
               title={isBanner ? '대체 소재 — 배너 등록' : '폴백용 항목'}
               desc={isBanner
                 ? 'CVM 타겟 배너가 안 왔을 때 대신 노출할 배너를 배너 캠페인 관리에서 불러와 둡니다(TM-DSP-018 대체 소재).'
@@ -416,7 +372,7 @@ export function CornerSupplyPanel({
         </Step>
       )}
 
-      <OwnerMapStep recSource={mode} no={cvm ? 6 : 5} />
+      <OwnerMapStep recSource={mode} no={isData ? 6 : isContent ? 5 : 5} />
 
       {cvm && (
         <p className="flex items-start gap-1.5 rounded-[8px] bg-[#FFE4C4] px-2.5 py-2 text-[11px] text-[#D66400]"
