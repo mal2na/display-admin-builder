@@ -59,7 +59,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download, GalleryHorizontalEnd, RotateCcw } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Pin, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download, GalleryHorizontalEnd, RotateCcw } from 'lucide-react';
 import {
   createCorner,
   createCornerFromType,
@@ -3518,29 +3518,27 @@ export function BuilderEditor({
           title="드래그로 패널 너비 조절"
           className="absolute right-0 top-0 z-20 h-full w-1.5 translate-x-1/2 cursor-col-resize bg-transparent transition-colors hover:bg-primary/40"
         />
-        <div className="border-b px-3 py-3">
-          <p className="flex items-center gap-1.5 text-sm font-semibold">
-            템플릿 배치
+        <div className="border-b px-3 py-2.5">
+          {/* 한 줄 헤더 — 이름 · 조건 · 코너 수 · 전시 (2026-10-13 사용자 요청: 2줄→1줄) */}
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] text-muted-foreground">
+            <b className="text-[13px] text-foreground">{meta.name}</b>
+            <Badge variant="outline" className="h-[18px] px-1.5 text-[10px]">{meta.conditionGroup}</Badge>
+            <span>· 코너 {ordered.length}개 · {meta.displayOn ? '전시' : '미전시'}</span>
             {meta.isDefault && <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">기본</span>}
             {isDirty && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700" title="편집 중인 카드가 있습니다. 완료를 눌러 저장하세요.">● 미저장</span>}
-          </p>
-          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-            <b className="text-foreground">{meta.name}</b>
-            <Badge variant="outline">{meta.conditionGroup}</Badge>
-            <span>코너 {ordered.length}개</span>
-            <span>· {meta.displayOn ? '전시' : '미전시'}</span>
           </p>
         </div>
         <div className="flex-1 space-y-2 overflow-y-auto p-2">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
-              {/* 퀵메뉴(업무 진입형 탭 네비) — 유형상 항상 맨 위. '고정'과 별개. */}
+              {/* 퀵메뉴(업무 진입형 탭 네비) — 유형상 항상 맨 위. '고정'과 별개. 슬림 헤더 + 얇은 레일(2026-10-13 UI 경량화). */}
               {topNav.length > 0 && (
-                <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 p-1.5">
-                  <div className="mb-1.5 flex items-center gap-1.5 px-1 pt-0.5">
-                    <span className="rounded bg-indigo-500 px-1.5 py-0.5 text-[10px] font-bold text-white">퀵메뉴</span>
-                    <span className="text-[10px] font-medium text-slate-500">상단 탭 네비 · 항상 맨 위</span>
-                    <span className="ml-auto rounded-full bg-white px-1.5 text-[10px] font-semibold text-slate-400">{topNav.length}</span>
+                <div className="border-l-2 border-indigo-400 pl-2">
+                  <div className="mb-1 flex items-center gap-1.5 px-0.5">
+                    <Pin className="h-3 w-3 text-indigo-500" />
+                    <span className="text-[11px] font-bold text-indigo-600">퀵메뉴</span>
+                    <span className="truncate text-[10px] text-slate-400" title="상단 탭 네비 · 항상 맨 위">상단 탭 네비</span>
+                    <span className="ml-auto text-[10px] font-semibold text-slate-300">{topNav.length}</span>
                   </div>
                   <div className="space-y-1.5">
                     {topNav.map((corner) => (
@@ -3550,19 +3548,19 @@ export function BuilderEditor({
                   </div>
                 </div>
               )}
-              {/* 전시 존 3밴드 — 각 존을 색 레일·틴트 배경·헤더로 감싸 또렷이 구분(Dynamic→Semi→Fixed). 고정 코너는 밴드 '안'에서 제자리 잠금. */}
+              {/* 전시 존 3밴드 — 얇은 색 레일 + 슬림 헤더(점·라벨·개수)로 가볍게 구분(Dynamic→Semi→Fixed). 고정 코너는 밴드 '안'에서 제자리 잠금. */}
               {ZONES.map((z) => {
                 const rows = bandSorted.filter((c) => czone(c) === z);
                 if (rows.length === 0) return null;
                 const m = ZONE_META[z];
                 return (
-                  <div key={z} className={cn('rounded-xl border border-[#e8ecef] p-1.5', m.bg)} style={{ borderLeftWidth: 3, borderLeftColor: m.bar }}>
-                    <div className="flex items-center gap-1.5 px-1 pt-0.5">
-                      <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-bold', m.chipBg, m.chipText)}>{m.label}</span>
-                      <span className="text-[10px] font-semibold text-slate-500">{m.en}</span>
-                      <span className="ml-auto rounded-full bg-white px-1.5 text-[10px] font-semibold text-slate-400">{rows.length}</span>
+                  <div key={z} className="border-l-2 pl-2" style={{ borderColor: m.bar }}>
+                    <div className="mb-1 flex items-center gap-1.5 px-0.5">
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.hex }} />
+                      <span className="text-[11px] font-bold" style={{ color: m.hex }}>{m.label}</span>
+                      <span className="truncate text-[10px] text-slate-400" title={m.desc}>{m.en}</span>
+                      <span className="ml-auto text-[10px] font-semibold text-slate-300">{rows.length}</span>
                     </div>
-                    <p className="mb-1.5 mt-0.5 px-1 text-[10px] leading-snug text-slate-400">{m.desc}</p>
                     <div className="space-y-1.5">
                       {rows.map((corner) => (
                         <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
