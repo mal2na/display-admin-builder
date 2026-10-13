@@ -126,6 +126,12 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="938" y="268">규격별 배너 소재 Asset</text>
 <text class="tm t3" x="938" y="286">기간 · 랜딩 · 승인</text>
 
+<!-- 전체페이지 관리 → Container (페이지=화면 원장. 「빌더 화면」 유형이면 Container를 빌더가 1:1로 불러옴) -->
+<rect class="bx" x="36" y="212" width="150" height="96" rx="8"/>
+<text class="tx t2" x="50" y="244">전체페이지 관리</text>
+<text class="tm t3" x="50" y="268">페이지(Container) 원장</text>
+<text class="tm t4" x="50" y="288">URL · 메타 · 상태 · IA 트리</text>
+
 <!-- 3단: 전시/관리 -->
 <rect class="bx-main" x="40" y="342" width="1180" height="306" rx="12"/>
 <text class="ta t1" x="60" y="372">전시/관리</text>
@@ -136,7 +142,7 @@ const DIAGRAM_HTML = `
 <!-- Container(가장 큼) ← Template(중간) ← Corner(두 개로 쪼개짐). 왼쪽이 상위(큰 단위가 작은 단위를 담음) -->
 <rect class="bx-lv" x="72" y="422" width="204" height="104" rx="8"/>
 <text class="tx t2" x="96" y="456">Container</text>
-<text class="tm t3" x="96" y="480">전체페이지 관리에서 등록</text>
+<text class="tm t3" x="96" y="480">전체페이지 관리 · 1:1</text>
 <text class="tm t4" x="96" y="502">혜택 홈 · 쇼핑 홈</text>
 <!-- Template → Container (담김) -->
 <path class="ar-a" d="M296 476H280" marker-end="url(#ma)"/>
@@ -175,6 +181,9 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="170" y="703">프로모션 빌더를 전시/관리와 별개로 제공</text>
 
 <!-- ───── 화살표 ───── -->
+<!-- ⓟ 전체페이지 관리 → Container (페이지 등록 · 「빌더 화면」 1:1) -->
+<path class="ar-a" d="M111 320V422" marker-end="url(#ma)"/>
+<text class="ta t4" x="40" y="335">페이지 등록</text>
 <!-- ① 디자인 시스템 → 코너 유형 관리 (원천 템플릿 등록) — 직선 -->
 <path class="ar-a" d="M350 140V208" marker-end="url(#ma)"/>
 <circle class="num" cx="350" cy="174" r="10"/><text class="numt" x="350" y="178" text-anchor="middle">1</text>
