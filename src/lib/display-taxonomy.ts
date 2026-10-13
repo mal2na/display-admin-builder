@@ -361,10 +361,10 @@ export function effectiveFallback(cornerType: string, cvmFallback: string | null
 export const ZONES = ['dynamic', 'semi', 'fixed'] as const;
 export type Zone = (typeof ZONES)[number];
 export const ZONE_RANK: Record<Zone, number> = { dynamic: 0, semi: 1, fixed: 2 };
-export const ZONE_META: Record<Zone, { label: string; en: string; desc: string; tone: string }> = {
-  dynamic: { label: 'Dynamic', en: '실시간 개인화', desc: 'CVM이 고객마다 순위·콘텐츠를 바꾸는 자리', tone: 'bg-[#EDE9FE] text-[#6D4AFF]' },
-  semi: { label: 'Semi-fixed', en: '기간 편성', desc: '운영자가 시즌·프로모션·제휴를 기간 단위로 편성', tone: 'bg-[#E8ECEF] text-[#454F59]' },
-  fixed: { label: 'Fixed', en: '항상 고정', desc: '항상 그 자리 · 거의 불변(메뉴성 진입)', tone: 'bg-[#F1F3F5] text-[#697582]' },
+export const ZONE_META: Record<Zone, { label: string; en: string; desc: string; tone: string; bar: string; bg: string; chipBg: string; chipText: string }> = {
+  dynamic: { label: 'Dynamic', en: '실시간 개인화', desc: 'CVM이 고객마다 순위·콘텐츠를 바꾸는 자리', tone: 'bg-[#EDE9FE] text-[#6D4AFF]', bar: '#6D4AFF', bg: 'bg-[#F6F4FF]', chipBg: 'bg-[#6D4AFF]', chipText: 'text-white' },
+  semi: { label: 'Semi-fixed', en: '기간 편성', desc: '운영자가 시즌·프로모션·제휴를 기간 단위로 편성', tone: 'bg-[#E8ECEF] text-[#454F59]', bar: '#94A0AD', bg: 'bg-[#F8F9FB]', chipBg: 'bg-[#697582]', chipText: 'text-white' },
+  fixed: { label: 'Fixed', en: '항상 고정', desc: '항상 그 자리 · 거의 불변(메뉴성 진입)', tone: 'bg-[#F1F3F5] text-[#697582]', bar: '#B3B9C0', bg: 'bg-[#F1F3F5]', chipBg: 'bg-[#8B949E]', chipText: 'text-white' },
 };
 
 /** 존 미지정(null) 코너의 기본 존 — 코너 성격에서 파생. CVM 수급=Dynamic, 네비/필수형=Fixed, 그 외=Semi. */

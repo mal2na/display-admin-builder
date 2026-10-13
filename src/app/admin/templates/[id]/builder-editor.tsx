@@ -2700,17 +2700,6 @@ function OrderVariationExamples({ pinned, free }: { pinned: CornerNode[]; free: 
   );
 }
 
-// ── 전시 존 밴드 헤더 (좌측 리스트에서 Dynamic/Semi/Fixed 구분) ─────────
-function ZoneBandHeader({ zone }: { zone: Zone }) {
-  const m = ZONE_META[zone];
-  return (
-    <div className="mb-1 mt-3 flex items-center gap-1.5 px-0.5">
-      <span className={cn('inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-bold', m.tone)}>{m.label}</span>
-      <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground" title={m.desc}>{m.desc}</span>
-    </div>
-  );
-}
-
 // ── 좌측 고정 리스트의 코너 행 (클릭 선택 + dnd 순서) ─────────
 function CornerListRow({
   templateId,
@@ -3538,28 +3527,44 @@ export function BuilderEditor({
             <span>· {meta.displayOn ? '전시' : '미전시'}</span>
           </p>
         </div>
-        <div className="flex-1 space-y-1.5 overflow-y-auto p-2">
+        <div className="flex-1 space-y-2 overflow-y-auto p-2">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
-              {ordered.map((corner, i) => {
-                const prev = ordered[i - 1];
-                const z = corner.pinned ? null : czone(corner);
-                const prevZ = prev && !prev.pinned ? czone(prev) : null;
-                // 위치 고정(퀵메뉴) 블록 바로 아래, 그리고 존이 바뀔 때마다 밴드 헤더.
+              {/* 📌 위치 고정(퀵메뉴) — 밴드 위, 항상 상단 */}
+              {pinnedCorners.length > 0 && (
+                <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 p-1.5">
+                  <div className="mb-1.5 flex items-center gap-1.5 px-1 pt-0.5">
+                    <span className="rounded bg-indigo-500 px-1.5 py-0.5 text-[10px] font-bold text-white">📌 위치 고정</span>
+                    <span className="text-[10px] font-medium text-slate-500">항상 상단 · CVM 재정렬 제외</span>
+                    <span className="ml-auto rounded-full bg-white px-1.5 text-[10px] font-semibold text-slate-400">{pinnedCorners.length}</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {pinnedCorners.map((corner) => (
+                      <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
+                        selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* 전시 존 3밴드 — 각 존을 색 레일·틴트 배경·헤더로 감싸 또렷이 구분(Dynamic→Semi→Fixed). */}
+              {ZONES.map((z) => {
+                const rows = bandSorted.filter((c) => czone(c) === z);
+                if (rows.length === 0) return null;
+                const m = ZONE_META[z];
                 return (
-                  <div key={corner.templateCornerId}>
-                    {corner.pinned && i === 0 && (
-                      <p className="mb-1 px-0.5 text-[10px] font-medium text-muted-foreground">📌 위치 고정 (항상 상단 · CVM 재정렬 제외)</p>
-                    )}
-                    {z && z !== prevZ && <ZoneBandHeader zone={z} />}
-                    <CornerListRow
-                      templateId={templateId}
-                      corner={corner}
-                      nameMap={nameMap}
-                      selected={selectedCorner?.templateCornerId === corner.templateCornerId}
-                      onSelect={selectCorner}
-                      locked={corner.pinned}
-                    />
+                  <div key={z} className={cn('rounded-xl border border-[#e8ecef] p-1.5', m.bg)} style={{ borderLeftWidth: 3, borderLeftColor: m.bar }}>
+                    <div className="flex items-center gap-1.5 px-1 pt-0.5">
+                      <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-bold', m.chipBg, m.chipText)}>{m.label}</span>
+                      <span className="text-[10px] font-semibold text-slate-500">{m.en}</span>
+                      <span className="ml-auto rounded-full bg-white px-1.5 text-[10px] font-semibold text-slate-400">{rows.length}</span>
+                    </div>
+                    <p className="mb-1.5 mt-0.5 px-1 text-[10px] leading-snug text-slate-400">{m.desc}</p>
+                    <div className="space-y-1.5">
+                      {rows.map((corner) => (
+                        <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
+                          selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked={corner.pinned} />
+                      ))}
+                    </div>
                   </div>
                 );
               })}
