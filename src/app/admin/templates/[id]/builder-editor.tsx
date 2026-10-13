@@ -3531,11 +3531,11 @@ export function BuilderEditor({
         <div className="flex-1 space-y-2 overflow-y-auto p-2">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
-              {/* 퀵메뉴(업무 진입형 탭 네비) — 유형상 항상 맨 위. '고정'과 별개. 슬림 헤더 + 얇은 레일(2026-10-13 UI 경량화). */}
+              {/* 퀵메뉴(업무 진입형 탭 네비) — 유형상 항상 맨 위. '고정'과 별개. 흰 카드 + 색 좌측 레일로 밴드 구분(2026-10-13). */}
               {topNav.length > 0 && (
-                <div className="border-l-2 border-indigo-400 pl-2">
-                  <div className="mb-1 flex items-center gap-1.5 px-0.5">
-                    <Pin className="h-3 w-3 text-indigo-500" />
+                <div className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: '#6366f1' }}>
+                  <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+                    <Pin className="h-3 w-3 shrink-0 text-indigo-500" />
                     <span className="text-[11px] font-bold text-indigo-600">퀵메뉴</span>
                     <span className="truncate text-[10px] text-slate-400" title="상단 탭 네비 · 항상 맨 위">상단 탭 네비</span>
                     <span className="ml-auto text-[10px] font-semibold text-slate-300">{topNav.length}</span>
@@ -3548,14 +3548,14 @@ export function BuilderEditor({
                   </div>
                 </div>
               )}
-              {/* 전시 존 3밴드 — 얇은 색 레일 + 슬림 헤더(점·라벨·개수)로 가볍게 구분(Dynamic→Semi→Fixed). 고정 코너는 밴드 '안'에서 제자리 잠금. */}
+              {/* 전시 존 3밴드 — 흰 카드 + 얇은 보더 + 색 좌측 레일로 밴드 사이를 또렷이 구분(Dynamic→Semi→Fixed). 고정 코너는 밴드 '안'에서 제자리 잠금. */}
               {ZONES.map((z) => {
                 const rows = bandSorted.filter((c) => czone(c) === z);
                 if (rows.length === 0) return null;
                 const m = ZONE_META[z];
                 return (
-                  <div key={z} className="border-l-2 pl-2" style={{ borderColor: m.bar }}>
-                    <div className="mb-1 flex items-center gap-1.5 px-0.5">
+                  <div key={z} className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: m.hex }}>
+                    <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
                       <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.hex }} />
                       <span className="text-[11px] font-bold" style={{ color: m.hex }}>{m.label}</span>
                       <span className="truncate text-[10px] text-slate-400" title={m.desc}>{m.en}</span>
