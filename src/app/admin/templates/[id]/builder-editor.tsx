@@ -2799,12 +2799,12 @@ function CornerListRow({
           {!corner.visible && (
             <span className={cn(CHIP_BASE, 'h-[22px] bg-[#DCE0E5] text-[11px] text-[#454F59]')}>비노출</span>
           )}
-          {/* 위치 고정 — 상단 퀵메뉴처럼 자리를 잠근다(드래그·CVM 자동 재정렬 제외) */}
+          {/* 제자리 고정 — 이 코너를 지금 자리에 잠근다(위로 안 올림). 드래그·CVM 자동 재정렬에서 제외. (2026-10-13) */}
           <form action={toggleCornerPinned.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
             <button
               type="submit"
               aria-pressed={locked}
-              title={locked ? '위치 고정됨 (클릭 시 해제 — 순서 변경 가능)' : '위치 고정 (클릭 시 상단에 잠금)'}
+              title={locked ? '제자리 고정됨 (클릭 시 해제 — 순서 변경 가능)' : '제자리 고정 (클릭 시 이 자리에 잠금 · CVM 재정렬 제외)'}
               className={cn(
                 'inline-flex h-[22px] items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
                 locked ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink3)] hover:bg-white hover:text-[var(--ac)]',
@@ -3346,12 +3346,15 @@ export function BuilderEditor({
   const byId = new Map(corners.map((c) => [c.templateCornerId, c]));
   const orderedRaw = ids.map((id) => byId.get(id)).filter(Boolean) as CornerNode[];
   for (const c of corners) if (!ids.includes(c.templateCornerId)) orderedRaw.push(c);
-  // 위치 고정 코너(퀵메뉴)는 항상 밴드 위. 나머지는 전시 존 밴드로: Dynamic→Semi→Fixed(연속 밴드 고정). 각 밴드 내부는 저장 순서 유지(V8 stable sort). (2026-10-13)
+  // 퀵메뉴(업무 진입형 탭형 네비)는 유형상 항상 맨 위 — 존 밴드 밖. '고정(pinned)'과는 별개다.
   const czone = (c: CornerNode): Zone => effectiveZone(c.zone, c.cornerType, c.recSource);
-  const pinnedCorners = orderedRaw.filter((c) => c.pinned);
-  const bandSorted = [...orderedRaw.filter((c) => !c.pinned)].sort((a, b) => ZONE_RANK[czone(a)] - ZONE_RANK[czone(b)]);
-  const ordered = [...pinnedCorners, ...bandSorted];
-  const pinnedCount = pinnedCorners.length;
+  const isQuickNav = (c: CornerNode) => c.cornerType === '업무 진입형' && !/메뉴/.test(c.layoutDetail ?? '');
+  const topNav = orderedRaw.filter(isQuickNav);
+  // 나머지는 전시 존 밴드로: Dynamic→Semi→Fixed(연속 밴드 고정). '고정' 코너도 밴드 '안'에서 제자리 잠금(위로 안 올림).
+  //  각 밴드 내부는 저장 순서 유지(V8 stable sort). (2026-10-13 — 고정은 제자리 잠금, 중간 고정 허용)
+  const bandSorted = [...orderedRaw.filter((c) => !isQuickNav(c))].sort((a, b) => ZONE_RANK[czone(a)] - ZONE_RANK[czone(b)]);
+  const ordered = [...topNav, ...bandSorted];
+  const topCount = topNav.length;
   const orderedIds = ordered.map((c) => c.templateCornerId);
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
@@ -3462,13 +3465,14 @@ export function BuilderEditor({
     if (!over || active.id === over.id) return;
     const activeCorner = byId.get(String(active.id));
     const overCorner = byId.get(String(over.id));
-    if (!activeCorner || !overCorner || activeCorner.pinned) return; // 위치 고정 코너는 재정렬 불가
+    // 고정(pinned) 코너·퀵메뉴는 제자리 잠금 → 드래그 불가.
+    if (!activeCorner || !overCorner || activeCorner.pinned || isQuickNav(activeCorner)) return;
     const oldIndex = orderedIds.indexOf(String(active.id));
     let newIndex = orderedIds.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) return;
-    if (newIndex < pinnedCount) newIndex = pinnedCount; // 고정(퀵메뉴) 위로는 못 들어감
+    if (newIndex < topCount) newIndex = topCount; // 퀵메뉴(상단 네비) 위로는 못 들어감
     // 다른 밴드로 떨어뜨리면 그 밴드(존)로 이동 — over 코너의 존을 타깃으로.
-    const targetZone = overCorner.pinned ? 'dynamic' : czone(overCorner);
+    const targetZone = isQuickNav(overCorner) ? 'dynamic' : czone(overCorner);
     const next = [...orderedIds];
     next.splice(newIndex, 0, next.splice(oldIndex, 1)[0]);
     setIds(next);
@@ -3530,23 +3534,23 @@ export function BuilderEditor({
         <div className="flex-1 space-y-2 overflow-y-auto p-2">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
-              {/* 📌 위치 고정(퀵메뉴) — 밴드 위, 항상 상단 */}
-              {pinnedCorners.length > 0 && (
+              {/* 퀵메뉴(업무 진입형 탭 네비) — 유형상 항상 맨 위. '고정'과 별개. */}
+              {topNav.length > 0 && (
                 <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 p-1.5">
                   <div className="mb-1.5 flex items-center gap-1.5 px-1 pt-0.5">
-                    <span className="rounded bg-indigo-500 px-1.5 py-0.5 text-[10px] font-bold text-white">📌 위치 고정</span>
-                    <span className="text-[10px] font-medium text-slate-500">항상 상단 · CVM 재정렬 제외</span>
-                    <span className="ml-auto rounded-full bg-white px-1.5 text-[10px] font-semibold text-slate-400">{pinnedCorners.length}</span>
+                    <span className="rounded bg-indigo-500 px-1.5 py-0.5 text-[10px] font-bold text-white">퀵메뉴</span>
+                    <span className="text-[10px] font-medium text-slate-500">상단 탭 네비 · 항상 맨 위</span>
+                    <span className="ml-auto rounded-full bg-white px-1.5 text-[10px] font-semibold text-slate-400">{topNav.length}</span>
                   </div>
                   <div className="space-y-1.5">
-                    {pinnedCorners.map((corner) => (
+                    {topNav.map((corner) => (
                       <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
                         selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked />
                     ))}
                   </div>
                 </div>
               )}
-              {/* 전시 존 3밴드 — 각 존을 색 레일·틴트 배경·헤더로 감싸 또렷이 구분(Dynamic→Semi→Fixed). */}
+              {/* 전시 존 3밴드 — 각 존을 색 레일·틴트 배경·헤더로 감싸 또렷이 구분(Dynamic→Semi→Fixed). 고정 코너는 밴드 '안'에서 제자리 잠금. */}
               {ZONES.map((z) => {
                 const rows = bandSorted.filter((c) => czone(c) === z);
                 if (rows.length === 0) return null;
@@ -3575,9 +3579,9 @@ export function BuilderEditor({
               아래에서 Corner를 추가하세요.
             </p>
           )}
-          {/* 순서 베리에이션(가안) — 운영자는 기본 순서 1벌, CVM이 세그먼트별로 비고정 코너를 자동 재정렬. 아래는 예시. */}
-          {ordered.filter((c) => !c.pinned).length >= 2 && (
-            <OrderVariationExamples pinned={ordered.filter((c) => c.pinned)} free={ordered.filter((c) => !c.pinned)} />
+          {/* 순서 베리에이션(가안) — 운영자는 기본 순서 1벌, CVM이 세그먼트별로 '고정 아닌' 코너를 자동 재정렬. 고정·퀵메뉴는 제자리. 아래는 예시. */}
+          {ordered.filter((c) => !c.pinned && !isQuickNav(c)).length >= 2 && (
+            <OrderVariationExamples pinned={ordered.filter((c) => c.pinned || isQuickNav(c))} free={ordered.filter((c) => !c.pinned && !isQuickNav(c))} />
           )}
 
           {/* 배치 추가 — 코너 불러오기 / 배너 불러오기 */}
