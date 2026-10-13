@@ -48,25 +48,9 @@ export function ListView({ f, setF }: { f: ListFilter; setF: (f: ListFilter) => 
   return (
     <>
       <FilterPanel
+        // 한 행 배열 — 셀렉트(상태·사용여부·운영채널·등록유형) 먼저, 검색은 맨 뒤 고정 너비. 폭 넘으면 flex-wrap(2026-10-13 사용자 요청).
         rows={[
           [
-            ['검색 항목', (
-              <span key="q" className="flex items-center gap-2">
-                <select value={draft.field} onChange={(e) => set({ field: e.target.value })} className={cn(SEL, 'w-[140px]')}>
-                  <option value="name">메뉴명</option>
-                  <option value="id">페이지 ID</option>
-                  <option value="url">URL</option>
-                </select>
-                <input
-                  value={draft.q}
-                  onChange={(e) => set({ q: e.target.value })}
-                  onKeyDown={(e) => { if (e.key === 'Enter') apply(); }}
-                  placeholder="검색어를 입력해주세요"
-                  className={cn(INP, 'w-[300px] max-w-full')}
-                />
-              </span>
-            ), 3],
-            // 상태를 검색 항목 줄로 올려 두 줄 안에 다 넣는다 — 버튼이 혼자 한 줄을 쓰지 않게(2026-10-12)
             ['상태', (
               <select key="st" value={draft.state} onChange={(e) => set({ state: e.target.value })} className={cn(SEL, 'w-[150px]')}>
                 <option value="">전체</option>
@@ -77,8 +61,6 @@ export function ListView({ f, setF }: { f: ListFilter; setF: (f: ListFilter) => 
                 <option value="rejected">반려</option>
               </select>
             )],
-          ],
-          [
             ['사용 여부', (
               <select key="use" value={draft.use} onChange={(e) => set({ use: e.target.value })} className={cn(SEL, 'w-[120px]')}>
                 <option value="">전체</option>
@@ -98,6 +80,22 @@ export function ListView({ f, setF }: { f: ListFilter; setF: (f: ListFilter) => 
                 <option value="dev">개발 화면</option>
                 <option value="builder">전시 컨테이너</option>
               </select>
+            )],
+            ['검색 항목', (
+              <span key="q" className="flex items-center gap-2">
+                <select value={draft.field} onChange={(e) => set({ field: e.target.value })} className={cn(SEL, 'w-[130px]')}>
+                  <option value="name">메뉴명</option>
+                  <option value="id">페이지 ID</option>
+                  <option value="url">URL</option>
+                </select>
+                <input
+                  value={draft.q}
+                  onChange={(e) => set({ q: e.target.value })}
+                  onKeyDown={(e) => { if (e.key === 'Enter') apply(); }}
+                  placeholder="검색어를 입력해주세요"
+                  className={cn(INP, 'w-[220px]')}
+                />
+              </span>
             )],
           ],
         ]}

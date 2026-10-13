@@ -371,6 +371,15 @@ export function CornerSupplyPanel({
             </Step>
           )}
           <FallbackStep no={isData ? 5 : 3} corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
+          {/* 데이터 연동 + 폴백=운영자 편성 → 폴백 콘텐츠는 ④ 조립 규격의 대표 아이템을 그대로 쓴다(한 벌 통합). '폴백 세팅 칸이 어디냐'를 명시(2026-10-13 사용자 피드백). */}
+          {isData && effFallback === '운영자 편성으로 대체' && (
+            <p className="flex items-start gap-1.5 rounded-[8px] bg-[#C8F6E1] px-2.5 py-2 text-[11px] text-[#038E52]">
+              <Info className="mt-0.5 h-3 w-3 shrink-0" />
+              {corner.itemCount > 0
+                ? <span>폴백은 <b>④ 조립 규격의 대표 아이템 {corner.itemCount}개</b>가 그대로 노출돼요. 바꾸려면 ④에서 편집하세요.</span>
+                : <span>폴백으로 내보낼 <b>④ 조립 규격의 대표 아이템</b>을 먼저 등록하세요.</span>}
+            </p>
+          )}
           {/* 문구(코너 타이틀) 베리에이션 제거(2026-10-12): CVM은 '문구만 따로 베리에이션'을 못 함(CLAUDE.md 못받는것 ⑤). */}
           {/* 콘텐츠 연동 = CVM이 완성본(이미지·문구·랜딩)을 소유 → 우리가 조립할 게 없다. 대신 완성본이 안 올 때 대비한 '대체 소재(폴백용 항목)'를 항상 등록해둔다(2026-10-12 사용자 요청). */}
           {isContent && (

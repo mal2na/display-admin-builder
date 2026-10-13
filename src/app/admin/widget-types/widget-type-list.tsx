@@ -33,6 +33,7 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
       {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
+          // 한 줄로 — 위젯유형·사용여부·유형설명(남는 폭)을 한 행에(2026-10-13 사용자 요청).
           rows={[
             [
               ['위젯유형', <Input key="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="위젯유형" className="w-[220px]" />],
@@ -43,9 +44,7 @@ export function WidgetTypeList({ rows }: { rows: TypeRow[] }) {
                   <option value="false">미사용</option>
                 </Select>
               )],
-            ],
-            [
-              ['유형설명', <Input key="d" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="키워드를 입력하세요" className="w-[420px] max-w-full" />, 3],
+              ['유형설명', <Input key="d" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="키워드를 입력하세요" className="w-[260px]" />],
             ],
           ]}
           onReset={() => { setQ(''); setUse(''); setDesc(''); setApplied({ q: '', use: '', desc: '' }); }}
