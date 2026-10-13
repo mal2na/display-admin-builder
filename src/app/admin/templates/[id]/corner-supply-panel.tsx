@@ -138,8 +138,8 @@ function SupplyStep({
 
 /* ── ③ CVM 계약 ─────────────────────────────────────────────────── */
 
-// ③ 요청(데이터 연동 전용) — CVM에 무엇을 달라고 할지. 요청 범위(중분류·개수)는 CVM팀과 협의 중이라
-//  '블러 처리'로 잠정 표시하고, 나머지(조립·폴백 등)는 그대로 진행한다(2026-10-12 회의 결정).
+// ③ 요청(데이터 연동 전용) — CVM에 무엇을 달라고 할지. 요청 범위(중분류·개수)는 운영자가 '제안'으로 직접 지정한다.
+//  (2026-10-12 회의: 협의 대기로 비워두지 말고 우리가 먼저 안을 제안하기로 — CVM과 협의하며 조정될 수 있음.)
 //  콘텐츠 연동은 구좌 ID 입력을 두지 않는다 — 'CVM 콘텐츠 연동'을 켜는 것 자체가 구좌(회의 결정: 구좌 설정 삭제).
 function CvmContractStep({
   corner,
@@ -158,36 +158,61 @@ function CvmContractStep({
     <Step
       no={no}
       title="요청 — CVM에 무엇을 달라고 할지"
-      desc="CVM이 내려줄 요청 범위(중분류·개수)는 CVM팀과 협의 중입니다. 확정 전까지 잠정(블러) 표시합니다."
+      desc="이 코너에 CVM이 내려줄 범위를 운영자가 제안합니다. 중분류(1개)와 개수(Top-N)를 고르세요. CVM 협의에 따라 조정될 수 있어요."
     >
-      <div className="mb-2 flex items-start gap-1.5 rounded-[6px] bg-[#FFE4C4] px-2.5 py-2 text-[11px] text-[#D66400]">
+      <div className="mb-2 flex items-start gap-1.5 rounded-[6px] bg-[#D9E9FF] px-2.5 py-2 text-[11px] text-[#2E7AFF]">
         <Info className="mt-0.5 h-3 w-3 shrink-0" />
-        <span><b>CVM 협의 중</b> · 요청 범위(중분류·개수)는 확정 후 활성화됩니다. 아래는 현재 안(案)이에요.</span>
+        <span><b>우리가 제안하는 요청 안</b> · 아래에서 고른 범위로 CVM에 요청합니다(협의 중 조정 가능).</span>
       </div>
-      {/* 협의 전이라 블러 + 비활성 — 확정되면 blur/pointer-events 해제 */}
-      <div className="pointer-events-none select-none opacity-60 blur-[1.3px]" aria-disabled>
-        <div className="space-y-2.5">
-          <div>
-            <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink2)]">요청 중분류</p>
-            <div className="flex flex-wrap gap-1.5">
-              {CVM_CATALOGS.map((c) => {
-                const on = corner.cvmCatalog === c;
-                return (
-                  <span key={c} className={cn('rounded-[6px] px-2.5 py-1 text-[11.5px] font-semibold', on ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)]')}>{c}</span>
-                );
-              })}
-            </div>
-          </div>
-          <div>
-            <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink2)]">요청 개수</p>
-            <div className="flex items-center gap-1.5">
-              {Array.from({ length: CVM_TOP_N_MAX }, (_, i) => i + 1).map((n) => (
-                <span key={n} className={cn('grid h-7 w-7 place-items-center rounded-[6px] text-[12px] font-semibold', topN === n && corner.cvmCatalog ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)]')}>{n}</span>
-              ))}
-              <span className="ml-1 text-[10.5px] text-[var(--ink3)]">CVM 상한 {CVM_TOP_N_MAX}</span>
-            </div>
+      <div className="space-y-2.5">
+        <div>
+          <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink2)]">요청 중분류</p>
+          <div className="flex flex-wrap gap-1.5">
+            {CVM_CATALOGS.map((c) => {
+              const on = corner.cvmCatalog === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  disabled={pending}
+                  onClick={() => onSave({ cvmCatalog: on ? null : c, cvmTopN: topN })}
+                  className={cn(
+                    'rounded-[6px] px-2.5 py-1 text-[11.5px] font-semibold transition disabled:opacity-50',
+                    on ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)] hover:bg-[#eceef3]',
+                  )}
+                >
+                  {c}
+                </button>
+              );
+            })}
           </div>
         </div>
+        <div>
+          <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink2)]">요청 개수</p>
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: CVM_TOP_N_MAX }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                disabled={pending || !corner.cvmCatalog}
+                onClick={() => onSave({ cvmCatalog: corner.cvmCatalog, cvmTopN: n })}
+                className={cn(
+                  'h-7 w-7 rounded-[6px] text-[12px] font-semibold transition disabled:opacity-40',
+                  topN === n && corner.cvmCatalog ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)] hover:bg-[#eceef3]',
+                )}
+              >
+                {n}
+              </button>
+            ))}
+            <span className="ml-1 text-[10.5px] text-[var(--ink3)]">CVM 상한 {CVM_TOP_N_MAX}</span>
+          </div>
+        </div>
+        {corner.cvmCatalog && (
+          <p className="rounded-[6px] bg-[var(--th)] px-2.5 py-2 text-[11px] text-[var(--ink2)]"
+             title="이미지·설명 문구는 CVM이 주지 않습니다. 상품(EPC) 원장 값을 전시 어드민이 붙입니다.">
+            제안: 이 고객에게 맞는 <b className="text-[var(--ac)]">{corner.cvmCatalog}</b> {topN}개 · 순서대로 요청
+          </p>
+        )}
       </div>
 
       {/* CVM이 못 주는 것 — 요청해도 안 되는 걸 미리 알려 헛돌지 않게 */}

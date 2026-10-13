@@ -2669,8 +2669,7 @@ function OrderVariationExamples({ pinned, free }: { pinned: CornerNode[]; free: 
         <span className="ml-auto text-[10px] text-violet-400">{open ? '접기' : '펼치기'}</span>
       </button>
       <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-        운영자가 짠 <b>기본 순서</b>는 위 리스트예요. 실서비스에선 <b>CVM이 비고정 코너를 세그먼트별로 자동 재정렬</b>하고,
-        <b className="text-indigo-600"> 위치 고정</b> 코너는 항상 그 자리. 아래는 예시입니다.
+        기본 순서는 위 리스트. 실서비스는 <b>CVM이 세그먼트별로 재정렬</b>, <b className="text-indigo-600">고정</b>은 제자리.
       </p>
       {open && (
         <div className="mt-2 space-y-2">
@@ -3593,9 +3592,7 @@ export function BuilderEditor({
                     <Copy className="mr-1 h-3.5 w-3.5" /> 코너 불러오기
                   </Button>
                   <p className="text-[10px] leading-relaxed text-muted-foreground">
-                    <b>코너 유형 관리</b>에 등록된 유형에서 <b className="text-[var(--ac)]">껍데기(레이아웃 · 노출 타입)만</b> 가져옵니다 — 내용은 비어서 들어와요.
-                    담을 내용은 코너를 열어 <b>‘② 수급’</b>에서 직접 등록하거나 CVM에 요청합니다.
-                    <b>배너형</b>도 코너 유형이라 여기서 추가하고, <b>‘코너 구성’의 배너 레일</b>에서 배너 여러 장·규격·노출 방식(스와이프·자동)을 설정합니다.
+                    <b className="text-[var(--ac)]">껍데기(레이아웃·노출 타입)만</b> 들어와요. 내용은 코너를 열어 <b>‘② 수급’</b>에서 채웁니다. 배너형도 여기서 추가.
                   </p>
                 </>
               ) : (
