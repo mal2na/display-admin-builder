@@ -5,8 +5,8 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PencilRuler, Copy, MoreVertical, Archive } from 'lucide-react';
-import { archiveTemplate } from '@/app/admin/templates/actions';
+import { PencilRuler, Copy, MoreVertical, Archive, Trash2 } from 'lucide-react';
+import { archiveTemplate, deleteTemplate } from '@/app/admin/templates/actions';
 
 /**
  * 매핑 템플릿 정보 표의 "관리" 열 액션.
@@ -21,19 +21,22 @@ export function TemplateRowActions({
   builderHref,
   duplicateAction,
   archiveBlockReason,
+  deleteBlockReason,
 }: {
   templateId: string;
   builderHref: string;
   duplicateAction: () => void;
   archiveBlockReason: string | null;
+  /** 완전 삭제 불가 사유 — 있으면 삭제 대신 사유 표시. 미승인·비기본·비유일 템플릿만 삭제 가능. */
+  deleteBlockReason: string | null;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [confirm, setConfirm] = useState(false);
+  const [confirm, setConfirm] = useState<null | 'archive' | 'delete'>(null);
   const [pending, start] = useTransition();
   const btnRef = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
 
-  const close = () => { setMenuOpen(false); setConfirm(false); };
+  const close = () => { setMenuOpen(false); setConfirm(null); };
 
   // 버튼 위치 기준으로 팝오버 좌표 계산 (오른쪽 정렬)
   useLayoutEffect(() => {
@@ -71,7 +74,7 @@ export function TemplateRowActions({
       <button
         ref={btnRef}
         type="button"
-        onClick={() => { setMenuOpen((o) => !o); setConfirm(false); }}
+        onClick={() => { setMenuOpen((o) => !o); setConfirm(null); }}
         className={cn('inline-flex h-8 items-center rounded-md border px-1.5 hover:bg-secondary', menuOpen && 'bg-secondary')}
         title="더보기"
         aria-label="템플릿 관리 메뉴"
@@ -86,16 +89,7 @@ export function TemplateRowActions({
             className="fixed z-[81] w-72 rounded-md border bg-card p-1.5 text-left shadow-xl"
             style={{ top: pos.top, right: pos.right }}
           >
-            {archiveBlockReason ? (
-              <div className="px-2 py-2">
-                <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <Archive className="h-3.5 w-3.5 shrink-0" /> 이 템플릿(매핑) 보관
-                </p>
-                <p className="mt-1 whitespace-normal break-keep text-[11px] leading-relaxed text-destructive">
-                  {archiveBlockReason}
-                </p>
-              </div>
-            ) : confirm ? (
+            {confirm === 'archive' ? (
               <div className="px-2 py-2">
                 <p className="text-xs font-medium">이 템플릿을 보관할까요?</p>
                 <p className="mt-0.5 whitespace-normal break-keep text-[11px] leading-relaxed text-muted-foreground">
@@ -110,19 +104,68 @@ export function TemplateRowActions({
                   >
                     <Archive className="h-3 w-3" /> 보관
                   </button>
-                  <button type="button" onClick={() => setConfirm(false)} className="rounded-md border px-2 py-0.5 text-[11px]">
+                  <button type="button" onClick={() => setConfirm(null)} className="rounded-md border px-2 py-0.5 text-[11px]">
+                    취소
+                  </button>
+                </div>
+              </div>
+            ) : confirm === 'delete' ? (
+              <div className="px-2 py-2">
+                <p className="text-xs font-medium text-destructive">이 템플릿을 완전히 삭제할까요?</p>
+                <p className="mt-0.5 whitespace-normal break-keep text-[11px] leading-relaxed text-muted-foreground">
+                  코너 배치·버전이 함께 <b>영구 삭제</b>되며 복구할 수 없어요. (코너·컴포넌트 등 공용 자산은 보존)
+                </p>
+                <div className="mt-2 flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => { close(); start(() => deleteTemplate(templateId)); }}
+                    disabled={pending}
+                    className="inline-flex items-center gap-0.5 rounded-md border border-destructive bg-destructive px-2 py-0.5 text-[11px] font-medium text-destructive-foreground disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3 w-3" /> 삭제
+                  </button>
+                  <button type="button" onClick={() => setConfirm(null)} className="rounded-md border px-2 py-0.5 text-[11px]">
                     취소
                   </button>
                 </div>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => setConfirm(true)}
-                className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs font-medium text-destructive hover:bg-destructive/10"
-              >
-                <Archive className="h-3.5 w-3.5 shrink-0" /> 이 템플릿(매핑) 보관
-              </button>
+              <div className="flex flex-col">
+                {/* 보관(soft-delete) */}
+                {archiveBlockReason ? (
+                  <div className="px-2 py-2">
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <Archive className="h-3.5 w-3.5 shrink-0" /> 이 템플릿(매핑) 보관
+                    </p>
+                    <p className="mt-1 whitespace-normal break-keep text-[11px] leading-relaxed text-destructive">{archiveBlockReason}</p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirm('archive')}
+                    className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs font-medium text-foreground hover:bg-secondary"
+                  >
+                    <Archive className="h-3.5 w-3.5 shrink-0" /> 이 템플릿(매핑) 보관
+                  </button>
+                )}
+                {/* 완전 삭제(hard-delete) */}
+                {deleteBlockReason ? (
+                  <div className="border-t px-2 py-2">
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <Trash2 className="h-3.5 w-3.5 shrink-0" /> 템플릿 삭제
+                    </p>
+                    <p className="mt-1 whitespace-normal break-keep text-[11px] leading-relaxed text-destructive">{deleteBlockReason}</p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirm('delete')}
+                    className="mt-0.5 flex w-full items-center gap-1.5 rounded-md border-t px-2 py-1.5 text-left text-xs font-medium text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 shrink-0" /> 템플릿 삭제
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </>,

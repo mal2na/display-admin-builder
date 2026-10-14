@@ -137,8 +137,7 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
       {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
-          // 한 줄에 들어갈 만큼 가로로 채운다 — 게시상태·위젯유형·게시기간이 한 행, 배너명이 남는 폭을 쓴다.
-          //  (예전엔 2개씩 두 줄이라 오른쪽이 비었다. 2026-10-08 사용자 요청)
+          // 한 줄로 — 게시상태·위젯유형·게시기간·배너명(남는 폭)을 한 행에(2026-10-13 사용자 요청).
           rows={[
             [
               ['게시상태', (
@@ -160,11 +159,9 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
                   <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
                 </span>
               )],
-            ],
-            [
               ['배너명', (
-                <Input key="nm" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder="배너명을 입력하세요" />
-              ), 3],
+                <Input key="nm" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder="배너명을 입력하세요" className="w-[220px]" />
+              )],
             ],
           ]}
           onReset={doReset}

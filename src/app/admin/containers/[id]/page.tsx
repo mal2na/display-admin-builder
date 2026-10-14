@@ -215,6 +215,14 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
                               : activeTemplates.length <= 1
                                 ? '컨테이너의 유일한 템플릿은 보관할 수 없습니다.'
                                 : null;
+                          // 완전 삭제(hard-delete) 가능 여부 — 미승인(초안/검수대기/반려)·비기본·비유일만. 승인 이력이 있으면 폐기 요청으로.
+                          const deleteBlockReason = t.isDefault
+                            ? '기본 템플릿은 삭제할 수 없어요. 먼저 다른 템플릿을 기본으로 지정하세요.'
+                            : activeTemplates.length <= 1
+                              ? '컨테이너의 유일한 템플릿은 삭제할 수 없어요.'
+                              : !['DRAFT', 'REVIEW', 'REJECTED'].includes(t.status)
+                                ? '승인된 적 있는 템플릿은 삭제 대신 ‘보관’으로 숨기세요.'
+                                : null;
                           return (
                             <tr key={t.id} className={TBODY_TR_CLS}>
                               <td className="h-12 px-3">
@@ -252,6 +260,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
                                   builderHref={`/admin/templates/${t.id}/builder`}
                                   duplicateAction={duplicateTemplate.bind(null, container.id, t.id)}
                                   archiveBlockReason={archiveBlockReason}
+                                  deleteBlockReason={deleteBlockReason}
                                 />
                               </td>
                             </tr>

@@ -10,6 +10,8 @@ import {
   CORNER_TYPES,
   CORNER_COMPONENT_MAP,
   isComponentAllowedInCorner,
+  isCvmSource,
+  type Zone,
   type AtomType,
   type ComponentType,
   type CornerType,
@@ -999,6 +1001,34 @@ export async function reorderCorners(templateId: string, orderedIds: string[]) {
   await prisma.$transaction(
     orderedIds.map((id, i) => prisma.templateCorner.update({ where: { id }, data: { order: i } })),
   );
+  rp(templateId);
+}
+
+// 전시 존(밴드) 지정 — 코너를 Dynamic/Semi/Fixed 밴드로 이동(2026-10-13).
+//  존은 TemplateCorner에 저장(배치별). Dynamic으로 옮기면 수급이 운영자 편성이던 코너는 CVM 데이터 연동을 기본값으로,
+//  Semi로 옮기면 CVM 수급이던 코너는 운영자 편성으로 맞춘다(존=수급 성격 일치). Fixed는 수급을 건드리지 않는다(메뉴성).
+export async function setCornerZone(
+  templateId: string,
+  templateCornerId: string,
+  cornerId: string,
+  zone: Zone,
+) {
+  await prisma.templateCorner.update({ where: { id: templateCornerId }, data: { zone } });
+  const corner = await prisma.corner.findUnique({ where: { id: cornerId }, select: { recSource: true } });
+  const cvm = isCvmSource(corner?.recSource ?? null);
+  if (zone === 'dynamic' && !cvm) {
+    // Dynamic = CVM 구동 → 기본 수급을 CVM 데이터 연동으로(운영자가 ②수급에서 조정).
+    await prisma.corner.update({
+      where: { id: cornerId },
+      data: { recSource: 'CVM 데이터 연동', recSourcePlan: JSON.stringify(['CVM 데이터 연동', '운영자 편성']), cvmFallback: '미노출' },
+    });
+  } else if (zone === 'semi' && cvm) {
+    // Semi = 운영자 편성 → CVM 설정 정리.
+    await prisma.corner.update({
+      where: { id: cornerId },
+      data: { recSource: '운영자 편성', recSourcePlan: JSON.stringify(['운영자 편성']), cvmCatalog: null, cvmTopN: null, cvmSlotId: null, cvmFallback: null },
+    });
+  }
   rp(templateId);
 }
 

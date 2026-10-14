@@ -98,7 +98,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
       {/* 검색 영역 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
-          // 한 줄에 들어갈 만큼 가로로 채운다 — 오른쪽이 비지 않게(2026-10-12 사용자 요청)
+          // 한 줄로 — 전시여부·승인상태·전시기간·검색 항목(남는 폭)을 한 행에(2026-10-13 사용자 요청).
           rows={[
             [
               ['전시여부', <select key="ex" value={draft.expose} onChange={(e) => set({ expose: e.target.value })} className={selectCls}>{['전체', '전시', '미전시'].map((o) => <option key={o}>{o}</option>)}</select>],
@@ -110,14 +110,12 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
                   <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={inputCls} />
                 </span>
               )],
-            ],
-            [
               ['검색 항목', (
                 <span key="q" className="rng">
                   <select value={draft.field} onChange={(e) => set({ field: e.target.value, q: '' })} className={selectCls}>{['배너캠페인 ID', '배너캠페인명'].map((o) => <option key={o}>{o}</option>)}</select>
-                  <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && (setApplied(draft), setPage(1))} placeholder="검색 항목을 선택 후 검색하세요" className={inputCls} />
+                  <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && (setApplied(draft), setPage(1))} placeholder="검색어를 입력하세요" className={inputCls} />
                 </span>
-              ), 3],
+              )],
             ],
           ]}
           onReset={() => { setDraft(DEF); setApplied(DEF); setPage(1); }}

@@ -126,6 +126,12 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="938" y="268">규격별 배너 소재 Asset</text>
 <text class="tm t3" x="938" y="286">기간 · 랜딩 · 승인</text>
 
+<!-- 전체페이지 관리 → Container (페이지=화면 원장. 「빌더 화면」 유형이면 Container를 빌더가 1:1로 불러옴) -->
+<rect class="bx" x="36" y="212" width="150" height="96" rx="8"/>
+<text class="tx t2" x="50" y="244">전체페이지 관리</text>
+<text class="tm t3" x="50" y="268">페이지(Container) 원장</text>
+<text class="tm t4" x="50" y="288">URL · 메타 · 상태 · IA 트리</text>
+
 <!-- 3단: 전시/관리 -->
 <rect class="bx-main" x="40" y="342" width="1180" height="306" rx="12"/>
 <text class="ta t1" x="60" y="372">전시/관리</text>
@@ -136,7 +142,7 @@ const DIAGRAM_HTML = `
 <!-- Container(가장 큼) ← Template(중간) ← Corner(두 개로 쪼개짐). 왼쪽이 상위(큰 단위가 작은 단위를 담음) -->
 <rect class="bx-lv" x="72" y="422" width="204" height="104" rx="8"/>
 <text class="tx t2" x="96" y="456">Container</text>
-<text class="tm t3" x="96" y="480">전체페이지 관리에서 등록</text>
+<text class="tm t3" x="96" y="480">전체페이지 관리 · 1:1</text>
 <text class="tm t4" x="96" y="502">혜택 홈 · 쇼핑 홈</text>
 <!-- Template → Container (담김) -->
 <path class="ar-a" d="M296 476H280" marker-end="url(#ma)"/>
@@ -175,6 +181,9 @@ const DIAGRAM_HTML = `
 <text class="tm t3" x="170" y="703">프로모션 빌더를 전시/관리와 별개로 제공</text>
 
 <!-- ───── 화살표 ───── -->
+<!-- ⓟ 전체페이지 관리 → Container (페이지 등록 · 「빌더 화면」 1:1) -->
+<path class="ar-a" d="M111 320V422" marker-end="url(#ma)"/>
+<text class="ta t4" x="40" y="335">페이지 등록</text>
 <!-- ① 디자인 시스템 → 코너 유형 관리 (원천 템플릿 등록) — 직선 -->
 <path class="ar-a" d="M350 140V208" marker-end="url(#ma)"/>
 <circle class="num" cx="350" cy="174" r="10"/><text class="numt" x="350" y="178" text-anchor="middle">1</text>
@@ -236,11 +245,78 @@ const DIAGRAM_HTML = `
 <div aria-hidden="true" style="height:56px"></div>
 `;
 
+// 전체페이지 관리 ↔ 빌더 관계도 — 화면(페이지)은 전체페이지 관리가 만들고, 그 안을 빌더가 채운다(2026-10-13 사용자 요청).
+function PageBuilderRelation() {
+  return (
+    <section className="mt-7 rounded-2xl border border-[#e8ecef] bg-white p-6">
+      <div className="mb-1 flex items-center gap-2">
+        <span className="rounded bg-[#3617ce] px-2 py-0.5 text-[11px] font-bold text-white">관계도</span>
+        <h3 className="text-[18px] font-bold text-slate-900">전체페이지 관리 ↔ 빌더</h3>
+      </div>
+      <p className="mb-5 text-[13px] leading-relaxed text-slate-500">
+        화면(페이지)은 <b className="text-slate-700">전체페이지 관리</b>가 만들고, 그 <b className="text-slate-700">안을 빌더</b>가 채워요. 둘은 <b className="text-[#3617ce]">「빌더 화면」 유형 페이지에서 Container 1:1</b>로 연결돼요.
+      </p>
+
+      {/* 흐름: 전체페이지 관리 → (1:1) → 빌더 */}
+      <div className="flex flex-col items-stretch gap-3 md:flex-row md:items-stretch">
+        <div className="flex-1 rounded-xl border-2 border-[#dce0e5] bg-[#f8f9fb] p-4">
+          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            <span className="rounded bg-[#454f59] px-1.5 py-0.5 text-[10px] font-bold text-white">전체페이지 관리</span>
+            <span className="text-[12px] font-semibold text-slate-700">페이지 = Container 원장</span>
+          </div>
+          <ul className="space-y-1 text-[12px] leading-relaxed text-slate-500">
+            <li>· 페이지 <b className="text-slate-600">등록 · 상태 · 사용여부 · Front 노출</b></li>
+            <li>· <b className="text-slate-600">URL · 메타태그</b> (여기서만 입력)</li>
+            <li>· 운영 채널 · <b className="text-slate-600">상위-하위 IA 트리</b></li>
+            <li>· 페이지 <b className="text-slate-600">유형</b>: 빌더 화면 / 개발 / 외부</li>
+          </ul>
+        </div>
+
+        <div className="flex shrink-0 flex-row items-center justify-center gap-2 md:flex-col md:px-1">
+          <span className="rounded-full bg-[#EDE9FE] px-2.5 py-1 text-center text-[11px] font-bold text-[#6D4AFF]">「빌더 화면」 유형</span>
+          <span className="text-[20px] font-bold text-[#6D4AFF] md:my-0.5">→</span>
+          <span className="text-[10px] font-medium text-slate-400">Container 1:1</span>
+        </div>
+
+        <div className="flex-1 rounded-xl border-2 border-[#c7bdff] bg-[#EDE9FE]/40 p-4">
+          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            <span className="rounded bg-[#3617ce] px-1.5 py-0.5 text-[10px] font-bold text-white">빌더 (전시화면 관리)</span>
+            <span className="text-[12px] font-semibold text-slate-700">페이지 안을 구성</span>
+          </div>
+          <ul className="space-y-1 text-[12px] leading-relaxed text-slate-500">
+            <li>· 불러온 Container를 <b className="text-slate-600">Template · Corner</b>로 구성</li>
+            <li>· 로그인/세그먼트 <b className="text-slate-600">분기</b> · 전시 <b className="text-slate-600">기간</b></li>
+            <li>· 코너 <b className="text-slate-600">배치 · 순서(존)</b> · 표시 · 문구</li>
+            <li>· 코너별 <b className="text-slate-600">수급(CVM)</b> 개인화</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* 경계(소유) — 무엇을 어디서 */}
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-[#e8ecef] p-3.5">
+          <p className="mb-1.5 text-[12px] font-bold text-slate-700">전체페이지 관리가 소유</p>
+          <p className="text-[12px] leading-relaxed text-slate-500">URL · 메타태그 · 페이지 상태/사용여부/Front · 운영 채널 · IA 트리(상위-하위) · 페이지 유형</p>
+        </div>
+        <div className="rounded-xl border border-[#e8ecef] p-3.5">
+          <p className="mb-1.5 text-[12px] font-bold text-[#3617ce]">빌더가 소유</p>
+          <p className="text-[12px] leading-relaxed text-slate-500">Template · Corner · Component · 분기 · 기간 · 배치 · 순서(존) · 코너 수급(CVM) · 문구 · 표시</p>
+        </div>
+      </div>
+
+      <p className="mt-4 rounded-lg bg-[#f8f9fb] px-3.5 py-2.5 text-[11.5px] leading-relaxed text-slate-500">
+        ※ <b className="text-slate-700">개발 · 외부</b> 유형 페이지는 빌더와 연결하지 않아요(개발 구현 / 외부 URL). <b className="text-slate-700">빌더 화면</b> 유형만 Container를 1:1로 불러와 전시화면 관리에서 구성해요.
+      </p>
+    </section>
+  );
+}
+
 function StructureView() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: DIAGRAM_CSS }} />
       <div className="sdg" dangerouslySetInnerHTML={{ __html: DIAGRAM_HTML }} />
+      <PageBuilderRelation />
     </>
   );
 }

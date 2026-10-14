@@ -35,6 +35,11 @@ import {
   normalizeRecSource,
   isCvmSource,
   effectiveFallback,
+  effectiveZone,
+  ZONE_RANK,
+  ZONE_META,
+  ZONES,
+  type Zone,
   CVM_TARGET_HINTS,
   defaultComposition,
   CHIP_BASE,
@@ -54,7 +59,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download, GalleryHorizontalEnd, RotateCcw } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Copy, Image as ImageIcon, X, Pencil, Check, Link2, Search, Lock, Pin, Sparkles, Layers, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, List, Download, GalleryHorizontalEnd, RotateCcw } from 'lucide-react';
 import {
   createCorner,
   createCornerFromType,
@@ -81,6 +86,7 @@ import {
   setCornerNoDisplay,
   setCornerSubTitleLink,
   setCornerMoreButton,
+  setCornerZone,
   refreshBannerComponent,
   addBssProduct,
 } from '../actions';
@@ -169,6 +175,7 @@ export type CornerNode = {
   reviewedAt: string | null;
   visible: boolean;
   pinned: boolean; // 위치 고정 — 상단 퀵메뉴처럼 자리를 잠가 드래그 재정렬·CVM 자동 재정렬에서 제외(2026-10-06)
+  zone: string | null; // 전시 존(밴드) — dynamic | semi | fixed. null이면 코너 성격에서 파생(effectiveZone)
   components: ComponentNode[];
 };
 export type LibraryData = {
@@ -2662,8 +2669,7 @@ function OrderVariationExamples({ pinned, free }: { pinned: CornerNode[]; free: 
         <span className="ml-auto text-[10px] text-violet-400">{open ? '접기' : '펼치기'}</span>
       </button>
       <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-        운영자가 짠 <b>기본 순서</b>는 위 리스트예요. 실서비스에선 <b>CVM이 비고정 코너를 세그먼트별로 자동 재정렬</b>하고,
-        <b className="text-indigo-600"> 위치 고정</b> 코너는 항상 그 자리. 아래는 예시입니다.
+        기본 순서는 위 리스트. 실서비스는 <b>CVM이 세그먼트별로 재정렬</b>, <b className="text-indigo-600">고정</b>은 제자리.
       </p>
       {open && (
         <div className="mt-2 space-y-2">
@@ -2792,12 +2798,12 @@ function CornerListRow({
           {!corner.visible && (
             <span className={cn(CHIP_BASE, 'h-[22px] bg-[#DCE0E5] text-[11px] text-[#454F59]')}>비노출</span>
           )}
-          {/* 위치 고정 — 상단 퀵메뉴처럼 자리를 잠근다(드래그·CVM 자동 재정렬 제외) */}
+          {/* 제자리 고정 — 이 코너를 지금 자리에 잠근다(위로 안 올림). 드래그·CVM 자동 재정렬에서 제외. (2026-10-13) */}
           <form action={toggleCornerPinned.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
             <button
               type="submit"
               aria-pressed={locked}
-              title={locked ? '위치 고정됨 (클릭 시 해제 — 순서 변경 가능)' : '위치 고정 (클릭 시 상단에 잠금)'}
+              title={locked ? '제자리 고정됨 (클릭 시 해제 — 순서 변경 가능)' : '제자리 고정 (클릭 시 이 자리에 잠금 · CVM 재정렬 제외)'}
               className={cn(
                 'inline-flex h-[22px] items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
                 locked ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink3)] hover:bg-white hover:text-[var(--ac)]',
@@ -3339,9 +3345,15 @@ export function BuilderEditor({
   const byId = new Map(corners.map((c) => [c.templateCornerId, c]));
   const orderedRaw = ids.map((id) => byId.get(id)).filter(Boolean) as CornerNode[];
   for (const c of corners) if (!ids.includes(c.templateCornerId)) orderedRaw.push(c);
-  // 위치 고정 코너는 항상 상단(고정 존). 각 그룹 내부 순서는 저장 순서 유지. (2026-10-06)
-  const ordered = [...orderedRaw.filter((c) => c.pinned), ...orderedRaw.filter((c) => !c.pinned)];
-  const pinnedCount = ordered.filter((c) => c.pinned).length;
+  // 퀵메뉴(업무 진입형 탭형 네비)는 유형상 항상 맨 위 — 존 밴드 밖. '고정(pinned)'과는 별개다.
+  const czone = (c: CornerNode): Zone => effectiveZone(c.zone, c.cornerType, c.recSource);
+  const isQuickNav = (c: CornerNode) => c.cornerType === '업무 진입형' && !/메뉴/.test(c.layoutDetail ?? '');
+  const topNav = orderedRaw.filter(isQuickNav);
+  // 나머지는 전시 존 밴드로: Dynamic→Semi→Fixed(연속 밴드 고정). '고정' 코너도 밴드 '안'에서 제자리 잠금(위로 안 올림).
+  //  각 밴드 내부는 저장 순서 유지(V8 stable sort). (2026-10-13 — 고정은 제자리 잠금, 중간 고정 허용)
+  const bandSorted = [...orderedRaw.filter((c) => !isQuickNav(c))].sort((a, b) => ZONE_RANK[czone(a)] - ZONE_RANK[czone(b)]);
+  const ordered = [...topNav, ...bandSorted];
+  const topCount = topNav.length;
   const orderedIds = ordered.map((c) => c.templateCornerId);
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
@@ -3450,14 +3462,22 @@ export function BuilderEditor({
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
+    const activeCorner = byId.get(String(active.id));
+    const overCorner = byId.get(String(over.id));
+    // 고정(pinned) 코너·퀵메뉴는 제자리 잠금 → 드래그 불가.
+    if (!activeCorner || !overCorner || activeCorner.pinned || isQuickNav(activeCorner)) return;
     const oldIndex = orderedIds.indexOf(String(active.id));
-    if (oldIndex < 0 || ordered[oldIndex]?.pinned) return; // 위치 고정 코너는 재정렬 불가
     let newIndex = orderedIds.indexOf(String(over.id));
-    if (newIndex < 0) return;
-    if (newIndex < pinnedCount) newIndex = pinnedCount; // 고정 존(상단) 위로는 못 들어감
+    if (oldIndex < 0 || newIndex < 0) return;
+    if (newIndex < topCount) newIndex = topCount; // 퀵메뉴(상단 네비) 위로는 못 들어감
+    // 다른 밴드로 떨어뜨리면 그 밴드(존)로 이동 — over 코너의 존을 타깃으로.
+    const targetZone = isQuickNav(overCorner) ? 'dynamic' : czone(overCorner);
     const next = [...orderedIds];
     next.splice(newIndex, 0, next.splice(oldIndex, 1)[0]);
     setIds(next);
+    if (czone(activeCorner) !== targetZone) {
+      await setCornerZone(templateId, activeCorner.templateCornerId, activeCorner.id, targetZone);
+    }
     await reorderCorners(templateId, next);
   }
 
@@ -3497,38 +3517,58 @@ export function BuilderEditor({
           title="드래그로 패널 너비 조절"
           className="absolute right-0 top-0 z-20 h-full w-1.5 translate-x-1/2 cursor-col-resize bg-transparent transition-colors hover:bg-primary/40"
         />
-        <div className="border-b px-3 py-3">
-          <p className="flex items-center gap-1.5 text-sm font-semibold">
-            템플릿 배치
+        <div className="border-b px-3 py-2.5">
+          {/* 한 줄 헤더 — 이름 · 조건 · 코너 수 · 전시 (2026-10-13 사용자 요청: 2줄→1줄) */}
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] text-muted-foreground">
+            <b className="text-[13px] text-foreground">{meta.name}</b>
+            <Badge variant="outline" className="h-[18px] px-1.5 text-[10px]">{meta.conditionGroup}</Badge>
+            <span>· 코너 {ordered.length}개 · {meta.displayOn ? '전시' : '미전시'}</span>
             {meta.isDefault && <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">기본</span>}
             {isDirty && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700" title="편집 중인 카드가 있습니다. 완료를 눌러 저장하세요.">● 미저장</span>}
           </p>
-          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-            <b className="text-foreground">{meta.name}</b>
-            <Badge variant="outline">{meta.conditionGroup}</Badge>
-            <span>코너 {ordered.length}개</span>
-            <span>· {meta.displayOn ? '전시' : '미전시'}</span>
-          </p>
         </div>
-        <div className="flex-1 space-y-1.5 overflow-y-auto p-2">
+        <div className="flex-1 space-y-2 overflow-y-auto p-2">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
-              {ordered.map((corner, i) => (
-                <div key={corner.templateCornerId}>
-                  {/* 고정 존 ↔ 자유 재정렬 존 경계 표시 */}
-                  {i === pinnedCount && pinnedCount > 0 && (
-                    <p className="mb-1 mt-1.5 px-1 text-[10px] font-medium text-muted-foreground">↓ 순서 변경 가능 · CVM이 세그먼트별 자동 재정렬</p>
-                  )}
-                  <CornerListRow
-                    templateId={templateId}
-                    corner={corner}
-                    nameMap={nameMap}
-                    selected={selectedCorner?.templateCornerId === corner.templateCornerId}
-                    onSelect={selectCorner}
-                    locked={corner.pinned}
-                  />
+              {/* 퀵메뉴(업무 진입형 탭 네비) — 유형상 항상 맨 위. '고정'과 별개. 흰 카드 + 색 좌측 레일로 밴드 구분(2026-10-13). */}
+              {topNav.length > 0 && (
+                <div className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: '#6366f1' }}>
+                  <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+                    <Pin className="h-3 w-3 shrink-0 text-indigo-500" />
+                    <span className="text-[11px] font-bold text-indigo-600">퀵메뉴</span>
+                    <span className="truncate text-[10px] text-slate-400" title="상단 탭 네비 · 항상 맨 위">상단 탭 네비</span>
+                    <span className="ml-auto text-[10px] font-semibold text-slate-300">{topNav.length}</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {topNav.map((corner) => (
+                      <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
+                        selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked />
+                    ))}
+                  </div>
                 </div>
-              ))}
+              )}
+              {/* 전시 존 3밴드 — 흰 카드 + 얇은 보더 + 색 좌측 레일로 밴드 사이를 또렷이 구분(Dynamic→Semi→Fixed). 고정 코너는 밴드 '안'에서 제자리 잠금. */}
+              {ZONES.map((z) => {
+                const rows = bandSorted.filter((c) => czone(c) === z);
+                if (rows.length === 0) return null;
+                const m = ZONE_META[z];
+                return (
+                  <div key={z} className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: m.hex }}>
+                    <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.hex }} />
+                      <span className="text-[11px] font-bold" style={{ color: m.hex }}>{m.label}</span>
+                      <span className="truncate text-[10px] text-slate-400" title={m.desc}>{m.en}</span>
+                      <span className="ml-auto text-[10px] font-semibold text-slate-300">{rows.length}</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {rows.map((corner) => (
+                        <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
+                          selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked={corner.pinned} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </SortableContext>
           </DndContext>
           {ordered.length === 0 && (
@@ -3536,9 +3576,9 @@ export function BuilderEditor({
               아래에서 Corner를 추가하세요.
             </p>
           )}
-          {/* 순서 베리에이션(가안) — 운영자는 기본 순서 1벌, CVM이 세그먼트별로 비고정 코너를 자동 재정렬. 아래는 예시. */}
-          {ordered.filter((c) => !c.pinned).length >= 2 && (
-            <OrderVariationExamples pinned={ordered.filter((c) => c.pinned)} free={ordered.filter((c) => !c.pinned)} />
+          {/* 순서 베리에이션(가안) — 운영자는 기본 순서 1벌, CVM이 세그먼트별로 '고정 아닌' 코너를 자동 재정렬. 고정·퀵메뉴는 제자리. 아래는 예시. */}
+          {ordered.filter((c) => !c.pinned && !isQuickNav(c)).length >= 2 && (
+            <OrderVariationExamples pinned={ordered.filter((c) => c.pinned || isQuickNav(c))} free={ordered.filter((c) => !c.pinned && !isQuickNav(c))} />
           )}
 
           {/* 배치 추가 — 코너 불러오기 / 배너 불러오기 */}
@@ -3552,9 +3592,7 @@ export function BuilderEditor({
                     <Copy className="mr-1 h-3.5 w-3.5" /> 코너 불러오기
                   </Button>
                   <p className="text-[10px] leading-relaxed text-muted-foreground">
-                    <b>코너 유형 관리</b>에 등록된 유형에서 <b className="text-[var(--ac)]">껍데기(레이아웃 · 노출 타입)만</b> 가져옵니다 — 내용은 비어서 들어와요.
-                    담을 내용은 코너를 열어 <b>‘② 수급’</b>에서 직접 등록하거나 CVM에 요청합니다.
-                    <b>배너형</b>도 코너 유형이라 여기서 추가하고, <b>‘코너 구성’의 배너 레일</b>에서 배너 여러 장·규격·노출 방식(스와이프·자동)을 설정합니다.
+                    <b className="text-[var(--ac)]">껍데기(레이아웃·노출 타입)만</b> 들어와요. 내용은 코너를 열어 <b>‘② 수급’</b>에서 채웁니다. 배너형도 여기서 추가.
                   </p>
                 </>
               ) : (
@@ -3680,43 +3718,38 @@ export function BuilderEditor({
             {/* 기존 코너 끌어오기는 아래 '코너 정보'의 '코너 불러오기' 버튼으로 통합됨 */}
             <CornerInfoForm key={selectedCorner.templateCornerId} templateId={templateId} corner={selectedCorner} library={library} nameMap={nameMap} />
             {/* 상단 배너 선택 UI는 '코너 구성'의 BigBannerControl 카드 안에 임베드됨(별도 패널 제거). */}
-            {selectedCorner.cornerType === '배너형' ? (
-              <div className="rounded-lg border bg-card p-4">
-                <p className="mb-0.5 text-sm font-semibold">코너 구성</p>
-                <p className="mb-2 text-[11px] text-muted-foreground">이 코너에 담긴 배너 · 규격 · 노출 방식</p>
-                {/* 배너형 = 배너 레일(여러 배너 + 규격 + 스와이프/자동). */}
+            {/* 수급 파이프라인 — ①코너 정보(카드) → ②수급 → ③채우기/CVM 계약 → ④폴백 → ⑤출처 맵 (2026-10-12) */}
+            {/* 배너형도 동일 파이프라인을 탄다(TM-DSP-018 CVM 타겟 배너 + 대체 소재). 수급 3종 전부 — 데이터 연동(CVM이 오퍼/카탈로그를 내려주면 해당 배너 노출)·콘텐츠 연동(CVM 구좌)·운영자 편성(배너 캠페인 관리에서 직접). ③/⑤ 채우기 자리엔 배너 레일을 끼운다. */}
+            <CornerSupplyPanel
+              key={selectedCorner.templateCornerId}
+              templateId={templateId}
+              corner={{
+                id: selectedCorner.id,
+                name: selectedCorner.name,
+                cornerType: selectedCorner.cornerType,
+                layoutDetail: selectedCorner.layoutDetail,
+                cornerLayout: selectedCorner.cornerLayout,
+                maxItems: selectedCorner.maxItems,
+                recSource: selectedCorner.recSource,
+                cvmCatalog: selectedCorner.cvmCatalog,
+                cvmTopN: selectedCorner.cvmTopN,
+                cvmSlotId: selectedCorner.cvmSlotId,
+                cvmFallback: selectedCorner.cvmFallback,
+                itemCount: selectedCorner.components.filter((c) => c.componentType !== '선택형').length,
+              }}
+            >
+              {selectedCorner.cornerType === '배너형' ? (
+                // 배너형 = 배너 레일(여러 배너 + 규격 + 스와이프/자동). 운영자 편성이면 '채우기', CVM이면 '대체 소재(폴백)'로 들어간다.
                 <BannerRailControl templateId={templateId} corner={selectedCorner} campaigns={library.bannerCampaigns ?? []} />
-              </div>
-            ) : (
-              <>
-                {/* 수급 파이프라인 — ①코너 정보(카드) → ②수급 → ③채우기/CVM 계약 → ④폴백 → ⑤출처 맵 (2026-10-12) */}
-                <CornerSupplyPanel
-                  key={selectedCorner.templateCornerId}
-                  templateId={templateId}
-                  corner={{
-                    id: selectedCorner.id,
-                    name: selectedCorner.name,
-                    cornerType: selectedCorner.cornerType,
-                    layoutDetail: selectedCorner.layoutDetail,
-                    cornerLayout: selectedCorner.cornerLayout,
-                    maxItems: selectedCorner.maxItems,
-                    recSource: selectedCorner.recSource,
-                    cvmCatalog: selectedCorner.cvmCatalog,
-                    cvmTopN: selectedCorner.cvmTopN,
-                    cvmSlotId: selectedCorner.cvmSlotId,
-                    cvmFallback: selectedCorner.cvmFallback,
-                    itemCount: selectedCorner.components.filter((c) => c.componentType !== '선택형').length,
-                  }}
-                >
-                  <>
-                    <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
-                    {/* 미 노출 조건 — '운영자 편성' 콘텐츠의 옵션(2026-10-12 사용자 요청). 운영자가 채운 콘텐츠가 조건 미충족 시 숨김. */}
-                    <NoDisplayControl templateId={templateId} corner={selectedCorner} />
-                  </>
-                </CornerSupplyPanel>
-                {/* 표시 옵션 카드 해체(2026-10-12): 빅배너 강조·문구 한눈에 보기는 ①코너 정보 카드로, 노출 타입 베리에이션은 CVM 수급 흐름(variantsSlot)으로 이동. */}
-              </>
-            )}
+              ) : (
+                <>
+                  <ComponentList templateId={templateId} corner={selectedCorner} library={library} />
+                  {/* 미 노출 조건 — '운영자 편성' 콘텐츠의 옵션(2026-10-12 사용자 요청). 운영자가 채운 콘텐츠가 조건 미충족 시 숨김. */}
+                  <NoDisplayControl templateId={templateId} corner={selectedCorner} />
+                </>
+              )}
+            </CornerSupplyPanel>
+            {/* 표시 옵션 카드 해체(2026-10-12): 빅배너 강조·문구 한눈에 보기는 ①코너 정보 카드로, 노출 타입 베리에이션은 CVM 수급 흐름(variantsSlot)으로 이동. */}
           </div>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

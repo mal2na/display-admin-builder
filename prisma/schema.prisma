@@ -275,6 +275,7 @@ model TemplateCorner {
   order      Int // Template 안에서 Corner의 세로 배치 순서
   visible    Boolean @default(true) // 이 Template에서 노출/비노출 (전시 여부)
   pinned     Boolean @default(false) // 위치 고정 — 상단 퀵메뉴처럼 자리를 잠가 드래그 재정렬에서 제외(2026-10-06). 고정 코너는 항상 상단, CVM 자동 재정렬 대상에서 제외.
+  zone       String? // 전시 존(밴드): dynamic | semi | fixed. null이면 코너 성격에서 파생(effectiveZone). Dynamic=CVM 재정렬·개인화, Semi=기간 편성, Fixed=항상 고정(2026-10-13).
 
   template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
   corner   Corner   @relation(fields: [cornerId], references: [id])

@@ -90,16 +90,13 @@ export function VersionList({ rows }: { rows: VersionRow[] }) {
       {/* 검색 영역 (1) — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">
         <FilterPanel
-          // 한 줄에 들어갈 만큼 가로로 채운다 — 셀렉트 4개가 한 행, 기간 + 구분검색이 한 행.
-          //  (예전엔 2개씩 네 줄이라 오른쪽이 절반씩 비었다. 2026-10-08 사용자 요청)
+          // 한 행 배열로 합쳐 들어갈 만큼 한 줄에 채운다(flex-wrap) — 필터 6개라 폭에 따라 자동 줄바꿈(2026-10-13 사용자 요청: 올릴 수 있는 건 한 줄에).
           rows={[
             [
               ['대상 App 유형', <select key="app" value={draft.app} onChange={(e) => set({ app: e.target.value })} className={selectCls}>{['전체', '통합App', '구T월드'].map((o) => <option key={o}>{o}</option>)}</select>],
               ['OS 유형', <select key="os" value={draft.os} onChange={(e) => set({ os: e.target.value })} className={selectCls}>{['전체', 'Android', 'IOS'].map((o) => <option key={o}>{o}</option>)}</select>],
               ['적용상태', <select key="ap" value={draft.apply} onChange={(e) => set({ apply: e.target.value })} className={selectCls}>{['전체', '적용중', '적용예정', '적용종료'].map((o) => <option key={o}>{o}</option>)}</select>],
               ['승인상태', <select key="av" value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={selectCls}>{['전체', '승인완료', '승인요청', '임시저장', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>],
-            ],
-            [
               ['기간', (
                 <span key="dt" className="rng">
                   <select value={draft.dateField} onChange={(e) => set({ dateField: e.target.value })} className={selectCls}>{['등록일자', '최근수정일자', 'App업데이트일시'].map((o) => <option key={o}>{o}</option>)}</select>
@@ -113,9 +110,8 @@ export function VersionList({ rows }: { rows: VersionRow[] }) {
                   <select value={draft.searchField} onChange={(e) => set({ searchField: e.target.value, q: '' })} className={selectCls}>{['App 버전', '권장 버전', '강제 버전', '등록자', '최근수정자'].map((o) => <option key={o}>{o}</option>)}</select>
                   <input value={draft.q} onChange={(e) => set({ q: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder={SEARCH_PH[draft.searchField]} className={inputCls} />
                 </span>
-              ), 3],
+              )],
             ],
-            [],
           ]}
           onReset={doReset}
           onSearch={doSearch}
