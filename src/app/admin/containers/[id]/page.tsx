@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { Star, Columns, Archive, RotateCcw, Download, Pencil, Plus } from 'lucide-react';
 import { ContainerDetailTabs } from './container-detail-tabs';
 import { TemplateRowActions } from './template-row-actions';
+import { LoginGroupSelect } from './login-group-select';
 import { ContainerApprovalBar } from './container-approval-bar';
 import { ContainerRetireBar } from './container-retire-bar';
 
@@ -226,7 +227,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
                           return (
                             <tr key={t.id} className={TBODY_TR_CLS}>
                               <td className="h-12 px-3">
-                                <span className={cn(CHIP_BASE, 'bg-[#DCE0E5] text-[#454F59]')}>{t.conditionGroup}</span>
+                                <LoginGroupSelect templateId={t.id} value={t.conditionGroup} />
                               </td>
                               <td className="h-12 px-3 font-medium">
                                 <Link href={`/admin/templates/${t.id}/builder`} className="flex items-center gap-1 text-[var(--ac)] hover:underline">
@@ -236,11 +237,11 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
                               </td>
                               <td className="h-12 px-3">
                                 {t.isDefault ? (
-                                  <span className="font-semibold text-[var(--ac)]">Y</span>
+                                  <span className={cn(CHIP_BASE, 'bg-[var(--ac2)] font-semibold text-[var(--ac)]')} title="기본 템플릿">Y</span>
                                 ) : (
                                   <form action={setDefault}>
-                                    <button className="text-[var(--ink3)] underline-offset-2 hover:text-[var(--ac)] hover:underline" title="기본 템플릿으로 지정">
-                                      N
+                                    <button className="inline-flex h-7 items-center whitespace-nowrap rounded-md border border-[var(--line3)] bg-white px-2.5 text-[12px] font-medium text-[var(--ink3)] transition hover:border-[var(--ac)] hover:text-[var(--ac)]" title="클릭하면 이 템플릿을 기본으로 지정">
+                                      N · 기본으로
                                     </button>
                                   </form>
                                 )}
