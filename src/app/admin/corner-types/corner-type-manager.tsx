@@ -637,26 +637,18 @@ function ChipIconPicker({ value, onPick }: { value?: string; onPick: (icon: stri
   );
 }
 
-function SortableChipDefRow({ id, idx, chip, canRemove, onPatch, onRemove }: { id: string; idx: number; chip: ChipDef; canRemove: boolean; onPatch: (p: Partial<ChipDef>) => void; onRemove: () => void }) {
+// 껍데기(2026-10-14 사용자 요청): 코너 유형은 '슬롯 수'만 정의. 라벨·이동 링크·아이콘은 빌더에서 채운다.
+//  (이전엔 라벨·링크·아이콘을 유형이 소유 → 완전 껍데기로 전환.)
+function SortableChipDefRow({ id, idx, canRemove, onRemove }: { id: string; idx: number; chip?: ChipDef; canRemove: boolean; onPatch?: (p: Partial<ChipDef>) => void; onRemove: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
-  // 라벨 변경 시 아이콘만 자동 유추(수동 지정값은 보존). 이동 링크는 자동 채우지 않음 — 직접 입력.
-  const onLabel = (label: string) => {
-    const auto = autoMapChip(label);
-    const prevAuto = autoMapChip(chip.label);
-    const p: Partial<ChipDef> = { label };
-    if (!chip.icon || chip.icon === prevAuto.icon) p.icon = auto.icon;
-    onPatch(p);
-  };
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-1.5">
       <button type="button" className="cursor-grab text-slate-400 active:cursor-grabbing" {...attributes} {...listeners} aria-label="순서 변경 (드래그)" title="드래그하여 순서 변경">
         <GripVertical className="h-4 w-4" />
       </button>
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-50 text-[10px] font-bold tabular-nums text-indigo-500">{idx + 1}</span>
-      <ChipIconPicker value={chip.icon} onPick={(icon) => onPatch({ icon })} />
-      <input value={chip.label} onChange={(e) => onLabel(e.target.value)} placeholder="메뉴명" className="h-8 w-24 rounded-md border bg-white px-2 text-xs" />
-      <input value={chip.linkUrl ?? ''} onChange={(e) => onPatch({ linkUrl: e.target.value })} placeholder="URL을 입력하세요" className="h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
+      <span className="flex h-8 min-w-0 flex-1 items-center rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2 text-[11px] text-slate-400">메뉴 슬롯 {idx + 1} · 라벨·이동 링크·아이콘은 빌더에서</span>
       <button type="button" onClick={onRemove} disabled={!canRemove} className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive disabled:opacity-30">×</button>
     </div>
   );
@@ -666,9 +658,8 @@ function SortableChipDefRow({ id, idx, chip, canRemove, onPatch, onRemove }: { i
 function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: number; onCommit: (chips: ChipDef[], rows?: number) => void }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const rowId = (_c: ChipDef, i: number) => `chip-${i}`;
-  const patch = (idx: number, p: Partial<ChipDef>) => onCommit(chips.map((c, j) => (j === idx ? { ...c, ...p } : c)), rows);
-  // 탭 추가 — 이동 링크는 비워 두고(직접 입력) 라벨만 기본값. 아이콘은 라벨로 자동 유추.
-  const add = () => onCommit([...chips, { label: `메뉴 ${chips.length + 1}` }], rows);
+  // 껍데기: 라벨·링크·아이콘은 유형이 소유하지 않는다(빌더에서 채움). 슬롯만 추가.
+  const add = () => onCommit([...chips, { label: '' }], rows);
   const remove = (idx: number) => onCommit(chips.filter((_, j) => j !== idx), rows);
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
@@ -683,27 +674,27 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
   return (
     <div className="space-y-2 rounded-md border border-[#e8ecef] bg-white p-3">
       <div className="flex items-center gap-2">
-        <span className="text-[12px] font-semibold text-slate-700">탭·메뉴 정의</span>
-        <span className="rounded-full bg-[#f8f9fb] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{chips.length}개</span>
+        <span className="text-[12px] font-semibold text-slate-700">탭·메뉴 슬롯</span>
+        <span className="rounded-full bg-[#f8f9fb] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{chips.length}칸</span>
         <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={chips.map((c, i) => rowId(c, i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
             {chips.map((c, idx) => (
-              <SortableChipDefRow key={rowId(c, idx)} id={rowId(c, idx)} idx={idx} chip={c} canRemove={chips.length > 1} onPatch={(p) => patch(idx, p)} onRemove={() => remove(idx)} />
+              <SortableChipDefRow key={rowId(c, idx)} id={rowId(c, idx)} idx={idx} chip={c} canRemove={chips.length > 1} onRemove={() => remove(idx)} />
             ))}
           </div>
         </SortableContext>
       </DndContext>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-[#f8f9fb]"><Plus className="h-3.5 w-3.5" /> 탭 추가</button>
+        <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-[#f8f9fb]"><Plus className="h-3.5 w-3.5" /> 슬롯 추가</button>
         <span className="ml-auto text-[11px] text-slate-500">줄 수</span>
         {[1, 2].map((r) => (
           <button key={r} type="button" onClick={() => onCommit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-[#3617ce] text-white' : 'border bg-white text-slate-600 hover:bg-[#f8f9fb]')}>{r}줄</button>
         ))}
       </div>
-      <p className="text-[11px] leading-relaxed text-slate-400">탭·메뉴 항목(<b>아이콘·라벨·이동 링크</b>·줄 수·순서)을 코너 유형에서 정의합니다. 라벨을 정하면 <b>이동 링크 URL과 아이콘이 자동 매핑</b>되고(수동 편집 가능), 실서비스 코너는 이 정의를 상속하며 <b>전시화면 관리(빌더)</b>에서는 <b>순서만</b> 바꿀 수 있어요.</p>
+      <p className="text-[11px] leading-relaxed text-slate-400">코너 유형은 <b>껍데기</b> — 탭·메뉴의 <b>슬롯 수·줄 수·순서</b>만 정의합니다. <b>라벨·이동 링크·아이콘</b> 같은 실제 내용은 <b>전시화면 관리(빌더)</b>에서 코너별로 채웁니다.</p>
     </div>
   );
 }
@@ -1313,11 +1304,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const [bigBanner, setBigBanner] = useState(row.bigBanner ?? false); // ④ 빅배너 구분자
   const [active, setActive] = useState(row.active);
   const [moreLabel, setMoreLabel] = useState(row.defaultMoreButtonLabel ?? ''); // CTA 문구(controlled) — 표시 항목에서 관리 · 미리보기·빌더 상속
-  // 정의(거버넌스) 기본값 — 코너 유형이 문구·개수·형태까지 정의(2026-09-29 거버넌스 분리). 빌더는 쌓기+CVM만.
-  const [mainTitleText, setMainTitleText] = useState(row.defaultMainTitle ?? '');
-  // 타겟별 문구 세트 제거(2026-10-06 회의) — 실제 문구(콘텐츠)·타겟 베리에이션은 빌더(전시화면 관리)에서 등록. 코너 유형은 기본 타이틀만.
-  const [subTitleText, setSubTitleText] = useState(row.defaultSubTitle ?? '');
-  const [subTitleIcon, setSubTitleIcon] = useState(row.defaultSubTitleIcon ?? '화살표');
+  // 정의(거버넌스) 기본값 — 코너 유형은 개수·형태(규격)만 정의. 구체 문구(타이틀·서브)는 껍데기라 소유하지 않는다(2026-10-14 사용자 요청).
+  //  아래 문구 상태는 미리보기에서 '껍데기 플레이스홀더'로만 쓰이도록 항상 빈 값으로 둔다. 실제 문구는 빌더에서 채운다.
+  const [mainTitleText, setMainTitleText] = useState('');
+  const [subTitleText, setSubTitleText] = useState('');
+  const [subTitleIcon, setSubTitleIcon] = useState('');
   const [cardShape, setCardShape] = useState(row.defaultCardShape ?? '');
   const [minItems, setMinItems] = useState(row.defaultMinItems != null ? String(row.defaultMinItems) : '');
   const [maxItems, setMaxItems] = useState(row.defaultMaxItems != null ? String(row.defaultMaxItems) : '');
@@ -1913,24 +1904,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               )}
               <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
 
-              {/* 정의 기본값 — 문구·개수·형태 (거버넌스: 코너 유형이 확정 · 빌더는 쌓기+CVM만) */}
-              {useTitle && (
-                <TRow label="타이틀">
-                  <Input name="defaultMainTitle" value={mainTitleText} onChange={(e) => setMainTitleText(e.target.value)} placeholder="예: 이용 요약 / 추천 혜택" className="h-8 w-64 text-xs" />
-                  <p className="mt-1.5 text-[10.5px] text-slate-400">실제 문구·타겟별 베리에이션은 <b className="font-semibold text-[#3617ce]">빌더(전시화면 관리)</b>에서 등록해요. 여기선 기본 타이틀만.</p>
-                </TRow>
-              )}
-              {useSub && (
-                <TRow label="서브타이틀">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Input name="defaultSubTitle" value={subTitleText} onChange={(e) => setSubTitleText(e.target.value)} placeholder="서브타이틀 문구" className="h-8 w-56 text-xs" />
-                    <select name="defaultSubTitleIcon" value={subTitleIcon} onChange={(e) => setSubTitleIcon(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
-                      <option value="화살표">아이콘: 화살표</option>
-                      <option value="사용안함">아이콘: 없음</option>
-                    </select>
-                  </div>
-                </TRow>
-              )}
+              {/* 정의 기본값 — 개수·형태만(규격). 2026-10-14 사용자 요청: 코너 유형은 껍데기라 구체 문구(타이틀·서브)를 소유하지 않는다.
+                   타이틀·서브타이틀 문구는 빌더(전시화면 관리)에서 채운다. 저장 시 유형의 문구값은 빈 값으로 정규화한다. */}
+              <input type="hidden" name="defaultMainTitle" value="" />
+              <input type="hidden" name="defaultSubTitle" value="" />
+              <input type="hidden" name="defaultSubTitleIcon" value="" />
               {isListType && (
                 <TRow label="노출 개수">
                   <div className="flex flex-wrap items-center gap-2">
