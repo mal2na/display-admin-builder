@@ -7,7 +7,7 @@ import { DISPLAY_STATUS_LABEL, CONTAINER_APPROVAL_STATUS_LABEL, CHIP_BASE, type 
 import { PageHeader } from '@/components/page-header';
 import { ListHeader, THEAD_TR_CLS, TBODY_TR_CLS, TABLE_CLS, StatusPill, statusTone } from '@/components/ops-ui';
 import { cn } from '@/lib/utils';
-import { Star, Columns, Archive, RotateCcw, Download, Pencil, Plus, ExternalLink, Eye } from 'lucide-react';
+import { Star, Columns, Archive, RotateCcw, Download, Pencil, Plus, ExternalLink } from 'lucide-react';
 import { ContainerDetailTabs } from './container-detail-tabs';
 import { HistoryTable, type HistoryRow } from './history-table';
 import { TemplateRowActions } from './template-row-actions';
@@ -126,13 +126,6 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
         }
         action={
           <div className="flex flex-wrap items-center gap-2">
-            {/* CASE 공통 버튼 — 목록 · 미리보기 · (조건그룹 비교) · 수정(기본 정보). 상태별 상세 매트릭스는 SB [TBD] 재정립 대기. */}
-            <Link href="/admin/containers" className={BTN}>목록</Link>
-            {container.defaultTemplateId && (
-              <Link href={`/admin/templates/${container.defaultTemplateId}/builder`} className={BTN}>
-                <Eye className="h-3.5 w-3.5" /> 미리보기
-              </Link>
-            )}
             <Link href={`/admin/containers/${container.id}/compare`} className={BTN}>
               <Columns className="h-3.5 w-3.5" /> 조건그룹 비교
             </Link>

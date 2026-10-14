@@ -2650,54 +2650,6 @@ function BannerPanel({
   );
 }
 
-// ── 순서 베리에이션 예시(가안) ───────────────────────────────
-//  운영자는 '기본 순서' 1벌만 짠다(위 리스트). 실서비스에선 CVM이 '비고정' 코너를 세그먼트/고객마다 자동 재정렬하고,
-//  '위치 고정' 코너(퀵메뉴 등)는 항상 그 자리. 아래는 어떻게 달라질 수 있는지 보여주는 예시일 뿐(실제 순서는 CVM이 런타임 결정).
-//  문구·노출 타입 베리에이션과 같은 원칙: 기본=폴백(미리보기 기준), 변주는 CVM 몫. 2026-10-06 사용자 결정(1안).
-const ORDER_VAR_SEGMENTS = ['재방문 고객', '2030 신규', '혜택 보유'];
-function OrderVariationExamples({ pinned, free }: { pinned: CornerNode[]; free: CornerNode[] }) {
-  const [open, setOpen] = useState(false);
-  // 세그먼트별 예시 순서 — 비고정 코너를 세그먼트 index만큼 회전(결정적). 실제 알고리즘 아님, 예시용.
-  const rotate = (arr: CornerNode[], n: number) => arr.map((_, i) => arr[(i + n) % arr.length]);
-  const short = (c: CornerNode) => (c.mainTitle || c.title || c.name || '').split('\n')[0].slice(0, 10) || c.name;
-  return (
-    <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50/50 p-2.5">
-      <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-1.5 text-left">
-        <Sparkles className="h-3.5 w-3.5 shrink-0 text-violet-500" />
-        <span className="text-[11px] font-semibold text-violet-700">세그먼트별 예시 순서</span>
-        <span className="rounded bg-violet-600 px-1 py-0.5 text-[9px] font-bold text-white">가안</span>
-        <span className="ml-auto text-[10px] text-violet-400">{open ? '접기' : '펼치기'}</span>
-      </button>
-      <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-        기본 순서는 위 리스트. 실서비스는 <b>CVM이 세그먼트별로 재정렬</b>, <b className="text-indigo-600">고정</b>은 제자리.
-      </p>
-      {open && (
-        <div className="mt-2 space-y-2">
-          {ORDER_VAR_SEGMENTS.map((seg, si) => (
-            <div key={seg} className="rounded-md border border-[#e8ecef] bg-white p-2">
-              <p className="mb-1 flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-600">
-                <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[9.5px] text-violet-600">{seg}</span>
-              </p>
-              <div className="flex flex-wrap items-center gap-1">
-                {pinned.map((c) => (
-                  <span key={c.templateCornerId} className="inline-flex items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
-                    <Lock className="h-2.5 w-2.5" />{short(c)}
-                  </span>
-                ))}
-                {rotate(free, si).map((c, i) => (
-                  <span key={c.templateCornerId} className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600">
-                    <span className="text-slate-400 tabular-nums">{pinned.length + i + 1}</span>{short(c)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-          <p className="text-[9.5px] leading-relaxed text-slate-400">* 예시(가안)입니다. 실제 순서·매칭은 CVM이 런타임에 결정하며, 미리보기는 운영자 기본 순서(폴백)를 보여줍니다.</p>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── 좌측 고정 리스트의 코너 행 (클릭 선택 + dnd 순서) ─────────
 function CornerListRow({
@@ -2802,11 +2754,11 @@ function CornerListRow({
           <form action={toggleCornerPinned.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
             <button
               type="submit"
-              aria-pressed={locked}
-              title={locked ? '제자리 고정됨 (클릭 시 해제 — 순서 변경 가능)' : '제자리 고정 (클릭 시 이 자리에 잠금 · CVM 재정렬 제외)'}
+              aria-pressed={corner.pinned}
+              title={corner.pinned ? 'Fixed 고정됨 (클릭 시 해제) — CVM 재정렬 제외' : '고정 (클릭 시 Fixed 존으로 · CVM 재정렬 제외)'}
               className={cn(
                 'inline-flex h-[22px] items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
-                locked ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink3)] hover:bg-white hover:text-[var(--ac)]',
+                corner.pinned ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink3)] hover:bg-white hover:text-[var(--ac)]',
               )}
             >
               <Lock className="h-3 w-3" /> 고정
@@ -3345,16 +3297,17 @@ export function BuilderEditor({
   const byId = new Map(corners.map((c) => [c.templateCornerId, c]));
   const orderedRaw = ids.map((id) => byId.get(id)).filter(Boolean) as CornerNode[];
   for (const c of corners) if (!ids.includes(c.templateCornerId)) orderedRaw.push(c);
-  // 퀵메뉴(업무 진입형 탭형 네비)는 유형상 항상 맨 위 — 존 밴드 밖. '고정(pinned)'과는 별개다.
-  const czone = (c: CornerNode): Zone => effectiveZone(c.zone, c.cornerType, c.recSource);
-  const isQuickNav = (c: CornerNode) => c.cornerType === '업무 진입형' && !/메뉴/.test(c.layoutDetail ?? '');
-  const topNav = orderedRaw.filter(isQuickNav);
-  // 나머지는 전시 존 밴드로: Dynamic→Semi→Fixed(연속 밴드 고정). '고정' 코너도 밴드 '안'에서 제자리 잠금(위로 안 올림).
-  //  각 밴드 내부는 저장 순서 유지(V8 stable sort). (2026-10-13 — 고정은 제자리 잠금, 중간 고정 허용)
-  const bandSorted = [...orderedRaw.filter((c) => !isQuickNav(c))].sort((a, b) => ZONE_RANK[czone(a)] - ZONE_RANK[czone(b)]);
-  const ordered = [...topNav, ...bandSorted];
-  const topCount = topNav.length;
+  // 전시 존(밴드) — 파생: 고정(pinned)=Fixed · CVM 수급=Dynamic · 그 외=Semi-fixed. (2026-10-14 사용자 결정)
+  //  순서는 운영자 배치 그대로(플랫). 렌더에서 '연속 같은 존'을 한 밴드로 묶는다 → 고정 연속=한 묶음, 고정은 제자리.
+  const czone = (c: CornerNode): Zone => (c.pinned ? 'fixed' : isCvmSource(c.recSource) ? 'dynamic' : 'semi');
+  const ordered = orderedRaw;
   const orderedIds = ordered.map((c) => c.templateCornerId);
+  // 각 존을 '하나의 밴드'로 묶는다(정렬): Fixed(고정) → Dynamic(CVM) → Semi-fixed(그 외).
+  //  고정 칩을 누르면 그 코너가 Fixed 밴드로 모인다(연속이든 아니든 한 묶음). 밴드 내부는 운영자 배치 순서 유지. (2026-10-14 사용자 결정)
+  const ZONE_ORDER: Zone[] = ['fixed', 'dynamic', 'semi'];
+  const bands = ZONE_ORDER
+    .map((z) => ({ zone: z, rows: ordered.filter((c) => czone(c) === z) }))
+    .filter((b) => b.rows.length > 0);
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
   const nameMap = cornerTypeNameMap(library); // 기준분류 → 코너 유형 카탈로그 표시명
@@ -3462,22 +3415,13 @@ export function BuilderEditor({
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    const activeCorner = byId.get(String(active.id));
-    const overCorner = byId.get(String(over.id));
-    // 고정(pinned) 코너·퀵메뉴는 제자리 잠금 → 드래그 불가.
-    if (!activeCorner || !overCorner || activeCorner.pinned || isQuickNav(activeCorner)) return;
+    // 플랫 재정렬 — 존은 pinned·수급에서 파생되고, 밴드는 '연속 같은 존'으로 묶인다. 드래그는 순서만 바꾼다(고정 포함 자유 이동).
     const oldIndex = orderedIds.indexOf(String(active.id));
-    let newIndex = orderedIds.indexOf(String(over.id));
+    const newIndex = orderedIds.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) return;
-    if (newIndex < topCount) newIndex = topCount; // 퀵메뉴(상단 네비) 위로는 못 들어감
-    // 다른 밴드로 떨어뜨리면 그 밴드(존)로 이동 — over 코너의 존을 타깃으로.
-    const targetZone = isQuickNav(overCorner) ? 'dynamic' : czone(overCorner);
     const next = [...orderedIds];
     next.splice(newIndex, 0, next.splice(oldIndex, 1)[0]);
     setIds(next);
-    if (czone(activeCorner) !== targetZone) {
-      await setCornerZone(templateId, activeCorner.templateCornerId, activeCorner.id, targetZone);
-    }
     await reorderCorners(templateId, next);
   }
 
@@ -3531,39 +3475,21 @@ export function BuilderEditor({
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
               {/* 퀵메뉴(업무 진입형 탭 네비) — 유형상 항상 맨 위. '고정'과 별개. 흰 카드 + 색 좌측 레일로 밴드 구분(2026-10-13). */}
-              {topNav.length > 0 && (
-                <div className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: '#6366f1' }}>
-                  <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
-                    <Pin className="h-3 w-3 shrink-0 text-indigo-500" />
-                    <span className="text-[11px] font-bold text-indigo-600">퀵메뉴</span>
-                    <span className="truncate text-[10px] text-slate-400" title="상단 탭 네비 · 항상 맨 위">상단 탭 네비</span>
-                    <span className="ml-auto text-[10px] font-semibold text-slate-300">{topNav.length}</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {topNav.map((corner) => (
-                      <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
-                        selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {/* 전시 존 3밴드 — 흰 카드 + 얇은 보더 + 색 좌측 레일로 밴드 사이를 또렷이 구분(Dynamic→Semi→Fixed). 고정 코너는 밴드 '안'에서 제자리 잠금. */}
-              {ZONES.map((z) => {
-                const rows = bandSorted.filter((c) => czone(c) === z);
-                if (rows.length === 0) return null;
-                const m = ZONE_META[z];
+              {/* 전시 존 밴드 — 연속 같은 존을 흰 카드+색 레일로 묶는다. Fixed(고정)·Dynamic(CVM)·Semi-fixed(그 외). 고정은 제자리. */}
+              {bands.map((band, bi) => {
+                const m = ZONE_META[band.zone];
                 return (
-                  <div key={z} className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: m.hex }}>
+                  <div key={bi} className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: m.hex }}>
                     <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
                       <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.hex }} />
                       <span className="text-[11px] font-bold" style={{ color: m.hex }}>{m.label}</span>
                       <span className="truncate text-[10px] text-slate-400" title={m.desc}>{m.en}</span>
-                      <span className="ml-auto text-[10px] font-semibold text-slate-300">{rows.length}</span>
+                      <span className="ml-auto text-[10px] font-semibold text-slate-300">{band.rows.length}</span>
                     </div>
                     <div className="space-y-1.5">
-                      {rows.map((corner) => (
+                      {band.rows.map((corner) => (
                         <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
-                          selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked={corner.pinned} />
+                          selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked={false} />
                       ))}
                     </div>
                   </div>
@@ -3575,10 +3501,6 @@ export function BuilderEditor({
             <p className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
               아래에서 Corner를 추가하세요.
             </p>
-          )}
-          {/* 순서 베리에이션(가안) — 운영자는 기본 순서 1벌, CVM이 세그먼트별로 '고정 아닌' 코너를 자동 재정렬. 고정·퀵메뉴는 제자리. 아래는 예시. */}
-          {ordered.filter((c) => !c.pinned && !isQuickNav(c)).length >= 2 && (
-            <OrderVariationExamples pinned={ordered.filter((c) => c.pinned || isQuickNav(c))} free={ordered.filter((c) => !c.pinned && !isQuickNav(c))} />
           )}
 
           {/* 배치 추가 — 코너 불러오기 / 배너 불러오기 */}
