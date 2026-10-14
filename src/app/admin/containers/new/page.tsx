@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { ChevronRight } from 'lucide-react';
 import { OgImageField } from './og-image-field';
+import { MetaTagInput } from './meta-tag-input';
 
 export const dynamic = 'force-dynamic';
 
@@ -132,12 +133,12 @@ export default async function NewContainerPage() {
                 </label>
               </div>
             </Row>
-            <Row label="검색 태그" required>
-              <Input name="searchTags" placeholder="#키워드 형태로 등록해 주세요. (ex. #SKT #SK 텔레콤)" className="h-9 text-xs" />
+            <Row label="메타 태그" required>
+              <MetaTagInput name="searchTags" />
             </Row>
-            <Row label="메타 태그">
+            <Row label="메타 태그 설정">
               <div className="space-y-1.5">
-                <Input name="metaKeywords" placeholder="keywords — #키워드 형태로 등록해 주세요." className="h-9 text-xs" />
+                <Input name="metaKeywords" placeholder="keywords — 메타 태그로 자동 적용" className="h-9 text-xs" />
                 <Input name="metaDescription" placeholder="description" className="h-9 text-xs" />
                 <Input name="ogTitle" placeholder="og:title" className="h-9 text-xs" />
                 <Input name="ogDescription" placeholder="og:description" className="h-9 text-xs" />
