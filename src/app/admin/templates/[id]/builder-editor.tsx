@@ -3303,11 +3303,12 @@ export function BuilderEditor({
   const ordered = orderedRaw;
   const orderedIds = ordered.map((c) => c.templateCornerId);
   // 각 존을 '하나의 밴드'로 묶는다(정렬): Fixed(고정) → Dynamic(CVM) → Semi-fixed(그 외).
-  //  고정 칩을 누르면 그 코너가 Fixed 밴드로 모인다(연속이든 아니든 한 묶음). 밴드 내부는 운영자 배치 순서 유지. (2026-10-14 사용자 결정)
+  //  Dynamic·Semi-fixed 밴드는 비어 있어도 항상 노출(존 구조를 늘 보여줘 운영자가 배치/이해) — 2026-10-14 사용자 요청.
+  //  Fixed는 고정 코너가 있을 때만. 밴드 내부는 운영자 배치 순서 유지.
   const ZONE_ORDER: Zone[] = ['fixed', 'dynamic', 'semi'];
   const bands = ZONE_ORDER
     .map((z) => ({ zone: z, rows: ordered.filter((c) => czone(c) === z) }))
-    .filter((b) => b.rows.length > 0);
+    .filter((b) => b.zone !== 'fixed' || b.rows.length > 0);
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
   const nameMap = cornerTypeNameMap(library); // 기준분류 → 코너 유형 카탈로그 표시명
@@ -3487,7 +3488,13 @@ export function BuilderEditor({
                       <span className="ml-auto text-[10px] font-semibold text-slate-300">{band.rows.length}</span>
                     </div>
                     <div className="space-y-1.5">
-                      {band.rows.map((corner) => (
+                      {band.rows.length === 0 ? (
+                        <p className="rounded-md border border-dashed border-[#dce0e5] px-2 py-3 text-center text-[10px] leading-relaxed text-slate-400">
+                          {band.zone === 'dynamic'
+                            ? '코너 ② 수급을 CVM으로 하면 여기(Dynamic)로 와요'
+                            : '코너 ② 수급을 운영자 편성으로 하면 여기(Semi-fixed)로 와요'}
+                        </p>
+                      ) : band.rows.map((corner) => (
                         <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
                           selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked={false} />
                       ))}
