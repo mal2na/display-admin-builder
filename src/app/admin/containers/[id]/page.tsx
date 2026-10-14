@@ -7,8 +7,9 @@ import { DISPLAY_STATUS_LABEL, CONTAINER_APPROVAL_STATUS_LABEL, CHIP_BASE, type 
 import { PageHeader } from '@/components/page-header';
 import { ListHeader, THEAD_TR_CLS, TBODY_TR_CLS, TABLE_CLS, StatusPill, statusTone } from '@/components/ops-ui';
 import { cn } from '@/lib/utils';
-import { Star, Columns, Archive, RotateCcw, Download, Pencil, Plus } from 'lucide-react';
+import { Star, Columns, Archive, RotateCcw, Download, Pencil, Plus, ExternalLink } from 'lucide-react';
 import { ContainerDetailTabs } from './container-detail-tabs';
+import { HistoryTable, type HistoryRow } from './history-table';
 import { TemplateRowActions } from './template-row-actions';
 import { LoginGroupSelect } from './login-group-select';
 import { ContainerApprovalBar } from './container-approval-bar';
@@ -61,6 +62,46 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
   // 활성 / 보관(soft-delete) 템플릿 분리
   const activeTemplates = container.templates.filter((t) => !t.archivedAt);
   const archivedTemplates = container.templates.filter((t) => t.archivedAt);
+
+  // ── 변경·승인 이력 (SB PG499) — 이 컨테이너 + 소속 템플릿의 감사 로그를 회차 단위로 ──
+  const templateIds = container.templates.map((t) => t.id);
+  const logs = await prisma.auditLog.findMany({
+    where: {
+      OR: [
+        { targetType: 'Container', targetId: container.id },
+        { targetType: 'Template', targetId: { in: templateIds } },
+      ],
+    },
+    orderBy: { changedAt: 'desc' },
+  });
+  const RESULT_STATUS: Record<string, string> = {
+    CREATED: '저장', UPDATED: '수정', REVIEW_REQUESTED: '승인요청', APPROVED: '승인완료', REJECTED: '반려',
+    RETIRE_REQUESTED: '폐기요청', RETIRED: '폐기', RETIRE_CANCELED: '폐기취소', RETIRE_REJECTED: '폐기반려',
+    ROLLED_BACK: '롤백', PUBLISHED: '게시', SUSPENDED: '게시중지', RESTORED: '복구',
+  };
+  const PROCESSED = ['APPROVED', 'REJECTED', 'RETIRED', 'RETIRE_REJECTED', 'PUBLISHED', 'SUSPENDED', 'ROLLED_BACK'];
+  // 버전: 오래된→최신 순으로 APPROVED마다 +1 (FO 실제 반영 회차). desc 배열이라 역순으로 계산.
+  const verMap = new Map<string, number>();
+  let ver = 0;
+  for (const l of [...logs].reverse()) { if (l.result === 'APPROVED') { ver += 1; verMap.set(l.id, ver); } }
+  const fmtDt = (d: Date) => d.toISOString().slice(0, 16).replace('T', ' ');
+  const history: HistoryRow[] = logs.map((l) => ({
+    id: l.id,
+    version: verMap.get(l.id) ?? 0,
+    approvalId: l.id.slice(-8).toUpperCase(),
+    target: l.targetType === 'Container' ? '컨테이너 변경' : '템플릿 변경',
+    actor: l.actor,
+    status: RESULT_STATUS[l.result] ?? l.result,
+    result: l.result,
+    approver: l.approver,
+    requestedAt: fmtDt(l.changedAt),
+    processedAt: PROCESSED.includes(l.result) ? fmtDt(l.changedAt) : '',
+    before: null,
+    after: null,
+    beforeJson: l.beforeValue,
+    afterJson: l.afterValue,
+    reason: l.reason,
+  }));
 
   const nextStatus = container.status === 'active' ? 'inactive' : 'active';
   const toggleStatus = setContainerStatus.bind(null, container.id, nextStatus);
@@ -121,6 +162,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
       </div>
 
       <ContainerDetailTabs
+        history={<div className="mt-8"><HistoryTable rows={history} /></div>}
         info={
           <div className="mt-8 space-y-9">
             {/* 기본 정보 */}
@@ -149,6 +191,26 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
                 <Row label="등록일">{container.createdAt.toISOString().slice(0, 16).replace('T', ' ')}</Row>
                 <Row label="최근 수정">{container.updatedAt.toISOString().slice(0, 16).replace('T', ' ')}</Row>
               </div>
+            </section>
+
+            {/* 연결된 전체페이지 정보 (SB PG488 ⑥) — 이 컨테이너는 전체페이지 관리의 「빌더 화면」 페이지와 1:1 연결.
+                페이지 ID·메뉴 경로·FO 메뉴노출은 전체페이지 관리에서 시스템 연동으로 생성되며, 연동 시기는 협의 중(TBD). */}
+            <section>
+              <SectionTitle
+                right={<Link href="/admin/page-menu-b" className={BTN}><ExternalLink className="h-3.5 w-3.5" /> 전체페이지 관리</Link>}
+              >
+                연결된 전체페이지 정보
+              </SectionTitle>
+              <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
+                <Row label="페이지 ID"><span className="whitespace-nowrap text-[var(--ink3)]">연동 대기</span></Row>
+                <Row label="메뉴 경로"><span className="whitespace-nowrap text-[var(--ink3)]">연동 대기</span></Row>
+                <Row label="페이지 사용여부"><span className="whitespace-nowrap text-[var(--ink3)]">연동 대기</span></Row>
+                <Row label="FO 메뉴노출"><span className="whitespace-nowrap text-[var(--ink3)]">연동 대기</span></Row>
+                <Row label="URL">{container.previewUrl ?? <span className="text-[var(--ink3)]">—</span>}</Row>
+              </div>
+              <p className="mt-2 rounded-[8px] bg-[var(--th)] px-3 py-2 text-[11px] leading-relaxed text-[var(--ink3)]">
+                ※ 전체페이지 관리의 「빌더 화면」 유형 페이지와 <b className="text-[var(--ink2)]">1:1</b>로 연결됩니다. 페이지 ID·메뉴 경로·FO 메뉴노출은 <b className="text-[var(--ink2)]">시스템 연동</b>으로 생성되며, 연동 시기는 협의 중(TBD)입니다.
+              </p>
             </section>
 
             {/* 메타 정보 */}
