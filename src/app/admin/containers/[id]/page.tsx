@@ -195,7 +195,20 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
               </div>
             </section>
 
-            {/* 연결된 전체페이지 정보 (SB PG488 ⑥) — 이 컨테이너는 전체페이지 관리의 「빌더 화면」 페이지와 1:1 연결.
+            {/* 메타 정보 */}
+            <section>
+              <SectionTitle>메타 정보</SectionTitle>
+              <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
+                <Row label="사용 여부">{container.metaUse ? '사용' : '미사용'}</Row>
+                <Row label="검색 태그">{container.searchTags ?? '—'}</Row>
+                <Row label="og:title">{container.ogTitle ?? '—'}</Row>
+                <Row label="og:description">{container.ogDescription ?? '—'}</Row>
+                <Row label="og:site_name">{container.ogSiteName ?? '—'}</Row>
+                <Row label="og:image">{container.ogImage ?? '—'}</Row>
+              </div>
+            </section>
+
+            {/* 연결된 전체페이지 정보 (SB PG488 ⑥) — 메타 정보 아래(2026-10-16 사용자 요청). 전체페이지 관리의 「빌더 화면」 페이지와 1:1 연결.
                 페이지 ID·메뉴 경로·FO 메뉴노출은 전체페이지 관리에서 시스템 연동으로 생성되며, 연동 시기는 협의 중(TBD). */}
             <section>
               <SectionTitle
@@ -213,19 +226,6 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
               <p className="mt-2 rounded-[8px] bg-[var(--th)] px-3 py-2 text-[11px] leading-relaxed text-[var(--ink3)]">
                 ※ 전체페이지 관리의 「빌더 화면」 유형 페이지와 <b className="text-[var(--ink2)]">1:1</b>로 연결됩니다. 페이지 ID·메뉴 경로·FO 메뉴노출은 <b className="text-[var(--ink2)]">시스템 연동</b>으로 생성되며, 연동 시기는 협의 중(TBD)입니다.
               </p>
-            </section>
-
-            {/* 메타 정보 */}
-            <section>
-              <SectionTitle>메타 정보</SectionTitle>
-              <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
-                <Row label="사용 여부">{container.metaUse ? '사용' : '미사용'}</Row>
-                <Row label="검색 태그">{container.searchTags ?? '—'}</Row>
-                <Row label="og:title">{container.ogTitle ?? '—'}</Row>
-                <Row label="og:description">{container.ogDescription ?? '—'}</Row>
-                <Row label="og:site_name">{container.ogSiteName ?? '—'}</Row>
-                <Row label="og:image">{container.ogImage ?? '—'}</Row>
-              </div>
             </section>
 
             {/* 매핑 템플릿 정보 — 다른 목록 화면과 동일한 평면 테이블(테두리 박스 없음) */}

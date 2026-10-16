@@ -1594,6 +1594,7 @@ function ComponentList({
   const overLimit = corner.maxItems != null && corner.components.length > corner.maxItems;
   const [bssOpen, setBssOpen] = useState(false); // BSS 상품 불러오기 모달
   const [bssPending, startBss] = useTransition();
+  const [bodyEdit, setBodyEdit] = useState(false); // '수정'을 눌러야 '한 줄 불러오기'가 열린다(2026-10-16 사용자 요청 — 게이트 복원)
 
   // 좌측 코너 리스트와 동일한 드래그앤드롭 재정렬
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -1672,6 +1673,14 @@ function ComponentList({
                 <span className="rounded bg-violet-600 px-1 text-[8px] font-bold text-white">가안</span>
               </span>
             )}
+            {/* 수정 게이트 — 눌러야 '한 줄 불러오기'가 열린다(2026-10-16 사용자 요청) */}
+            <button
+              type="button"
+              onClick={() => setBodyEdit((v) => !v)}
+              className={cn('ml-auto inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10.5px] font-medium', bodyEdit ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50')}
+            >
+              {bodyEdit ? <><Check className="h-3 w-3" /> 완료</> : <><Pencil className="h-3 w-3" /> 수정</>}
+            </button>
           </div>
           {bodyOrdered.length > 0 ? (
             <SortableContext items={bodyIds} strategy={verticalListSortingStrategy}>
@@ -1682,9 +1691,12 @@ function ComponentList({
               </div>
             </SortableContext>
           ) : (
-            <p className="px-0.5 pb-1 text-[11px] text-muted-foreground">아직 콘텐츠가 없습니다. 아래 ‘한 줄 불러오기’로 상품을 1건씩 담으세요.</p>
+            <p className="px-0.5 pb-1 text-[11px] text-muted-foreground">
+              아직 콘텐츠가 없습니다. <b className="text-slate-600">수정</b>을 눌러 ‘한 줄 불러오기’로 상품을 1건씩 담으세요.
+            </p>
           )}
-          {/* 한 줄 불러오기 — 상품 카탈로그에서 1건씩 편성(2026-10-14). 자유 컴포넌트 생성은 정책상 불가(⛔) — 코드화된 상품만. */}
+          {/* 한 줄 불러오기 — '수정'을 눌렀을 때만 노출(2026-10-16 게이트 복원). 상품 카탈로그에서 1건씩 편성. 자유 컴포넌트 생성 불가(⛔). */}
+          {bodyEdit && (
           <div className="mt-2 space-y-1.5">
             <button
               type="button"
@@ -1698,6 +1710,7 @@ function ComponentList({
               <span>담을 수 있는 데이터셋 틀은 <b className="text-slate-600">코너 유형 관리</b>(DS Portal 코드화 기준)에서 정의합니다. 여기선 등록된 상품을 <b className="text-slate-600">한 줄씩 불러와 편성·수정</b>합니다.</span>
             </p>
           </div>
+          )}
         </div>
       </DndContext>
       <BssProductPickerModal
@@ -2786,7 +2799,7 @@ function CornerListRow({
             <button
               type="submit"
               aria-pressed={corner.pinned}
-              title={corner.pinned ? 'Fixed 고정됨 (클릭 시 해제) — CVM 재정렬 제외' : '고정 (클릭 시 Fixed 존으로 · CVM 재정렬 제외)'}
+              title={corner.pinned ? '이 자리에 고정됨 (클릭 시 해제) — 위로 가지 않고 CVM 재정렬 제외' : '고정 (클릭 시 지금 자리에서 Fixed · 위로 안 감 · CVM 재정렬 제외)'}
               className={cn(
                 'inline-flex h-[22px] items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
                 corner.pinned ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink3)] hover:bg-white hover:text-[var(--ac)]',
@@ -3330,16 +3343,22 @@ export function BuilderEditor({
   for (const c of corners) if (!ids.includes(c.templateCornerId)) orderedRaw.push(c);
   // 전시 존(밴드) — 파생: 고정(pinned)=Fixed · CVM 수급=Dynamic · 그 외=Semi-fixed. (2026-10-14 사용자 결정)
   //  순서는 운영자 배치 그대로(플랫). 렌더에서 '연속 같은 존'을 한 밴드로 묶는다 → 고정 연속=한 묶음, 고정은 제자리.
-  const czone = (c: CornerNode): Zone => (c.pinned ? 'fixed' : isCvmSource(c.recSource) ? 'dynamic' : 'semi');
+  // 고정(핀)=Fixed. 아니면 저장된 존(드래그로 지정) 우선, 없으면 수급 성격에서 파생(CVM=Dynamic · 그 외=Semi).
+  const czone = (c: CornerNode): Zone =>
+    c.pinned ? 'fixed'
+    : (c.zone === 'dynamic' || c.zone === 'semi') ? (c.zone as Zone)
+    : (isCvmSource(c.recSource) ? 'dynamic' : 'semi');
   const ordered = orderedRaw;
   const orderedIds = ordered.map((c) => c.templateCornerId);
-  // 각 존을 '하나의 밴드'로 묶는다(정렬): Fixed(고정) → Dynamic(CVM) → Semi-fixed(그 외).
-  //  Dynamic·Semi-fixed 밴드는 비어 있어도 항상 노출(존 구조를 늘 보여줘 운영자가 배치/이해) — 2026-10-14 사용자 요청.
-  //  Fixed는 고정 코너가 있을 때만. 밴드 내부는 운영자 배치 순서 유지.
-  const ZONE_ORDER: Zone[] = ['fixed', 'dynamic', 'semi'];
-  const bands = ZONE_ORDER
-    .map((z) => ({ zone: z, rows: ordered.filter((c) => czone(c) === z) }))
-    .filter((b) => b.zone !== 'fixed' || b.rows.length > 0);
+  // 연속 같은 존을 한 밴드로 묶는다(제자리) — 전역 정렬하지 않는다.
+  //  '고정'을 눌러도 위로 가지 않고, 그 자리에서 Fixed 밴드가 된다(2026-10-16 사용자 요청: "고정은 그 자리에서").
+  const bands: { zone: Zone; rows: CornerNode[] }[] = [];
+  for (const c of ordered) {
+    const z = czone(c);
+    const last = bands[bands.length - 1];
+    if (last && last.zone === z) last.rows.push(c);
+    else bands.push({ zone: z, rows: [c] });
+  }
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
   const nameMap = cornerTypeNameMap(library); // 기준분류 → 코너 유형 카탈로그 표시명
@@ -3447,7 +3466,7 @@ export function BuilderEditor({
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    // 플랫 재정렬 — 존은 pinned·수급에서 파생되고, 밴드는 '연속 같은 존'으로 묶인다. 드래그는 순서만 바꾼다(고정 포함 자유 이동).
+    // 플랫 재정렬 — 밴드는 '연속 같은 존'으로 묶인다. 드래그는 순서를 바꾸고, 떨어뜨린 밴드의 존으로 합류한다(2026-10-16).
     const oldIndex = orderedIds.indexOf(String(active.id));
     const newIndex = orderedIds.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) return;
@@ -3455,6 +3474,15 @@ export function BuilderEditor({
     next.splice(newIndex, 0, next.splice(oldIndex, 1)[0]);
     setIds(next);
     await reorderCorners(templateId, next);
+    // 드롭한 코너의 존으로 합류 — Dynamic↔Semi 이동(양방향). 고정(핀) 코너는 존을 바꾸지 않는다(핀 해제로만).
+    const moved = byId.get(String(active.id));
+    const target = byId.get(String(over.id));
+    if (moved && target && !moved.pinned) {
+      const tz = czone(target);
+      if ((tz === 'dynamic' || tz === 'semi') && czone(moved) !== tz) {
+        await setCornerZone(templateId, moved.templateCornerId, moved.id, tz);
+      }
+    }
   }
 
   // 이탈 경고 — 카드 편집/드래프트가 열려 있으면(미저장) 페이지 이탈 시 브라우저 경고 (로드맵 1차: 이탈 경고 얼럿)
@@ -3515,7 +3543,8 @@ export function BuilderEditor({
                     <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
                       <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.hex }} />
                       <span className="text-[11px] font-bold" style={{ color: m.hex }}>{m.label}</span>
-                      <span className="truncate text-[10px] text-slate-400" title={m.desc}>{m.en}</span>
+                      <Tip text={m.desc} />
+                      <span className="truncate text-[10px] text-slate-400">{m.en}</span>
                       <span className="ml-auto text-[10px] font-semibold text-slate-300">{band.rows.length}</span>
                     </div>
                     <div className="space-y-1.5">

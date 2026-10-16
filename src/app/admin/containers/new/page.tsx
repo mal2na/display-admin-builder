@@ -46,10 +46,13 @@ export default async function NewContainerPage() {
         </div>
 
         <form action={createContainer} className="space-y-6">
-        {/* 컨테이너 기본 정보 */}
+        {/* ① 컨테이너 기본 정보 */}
         <section className="rounded-lg border">
-          <h2 className="border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">컨테이너 기본 정보</h2>
-          <div className="grid grid-cols-2">
+          <h2 className="flex items-center gap-2 border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">1</span>
+            컨테이너 기본 정보
+          </h2>
+          <div>
             <Row label="컨테이너 ID">
               <Input value="(저장 시 자동 생성)" disabled className="h-9 bg-muted text-xs" />
             </Row>
@@ -121,7 +124,10 @@ export default async function NewContainerPage() {
 
         {/* 메타 정보 */}
         <section className="rounded-lg border">
-          <h2 className="border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">메타 정보</h2>
+          <h2 className="flex items-center gap-2 border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">2</span>
+            메타 정보
+          </h2>
           <div>
             <Row label="사용 여부" required>
               <div className="flex gap-4">
@@ -153,7 +159,10 @@ export default async function NewContainerPage() {
 
         {/* 매핑 템플릿 정보 안내 */}
         <section className="rounded-lg border">
-          <h2 className="border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">매핑 템플릿 정보</h2>
+          <h2 className="flex items-center gap-2 border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">3</span>
+            매핑 템플릿 정보
+          </h2>
           <p className="px-4 py-4 text-sm text-muted-foreground">
             컨테이너 정보 저장 후 상세 화면에서 템플릿을 등록해 주세요. (저장 시 기본 Template 1개가 자동 생성됩니다.)
           </p>

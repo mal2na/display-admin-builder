@@ -17,6 +17,7 @@ import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, us
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
+import { CarouselItemStudio } from './carousel-item/carousel-item-studio';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
 import { FilterPanel, ListHeader, THEAD_TR_CLS, TBODY_TR_CLS, StatusPill, YN } from '@/components/ops-ui';
@@ -1774,8 +1775,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
         {/* 미리보기(고정폭) + 설정 — 뷰포트 breakpoint가 아니라 실제 컨테이너 폭에 반응(flex-wrap). 좁으면 설정이 미리보기 아래로. */}
         <div className="flex flex-wrap gap-4">
-          {/* 왼쪽: 라이브 미리보기(sticky) — 기본 정보+컴포넌트 구성 통합, 미리보기 하나(2026-09-29 사용자 요청) */}
-          {livePreview}
+          {/* 왼쪽: 라이브 미리보기(sticky). 상품형은 '코너 속성(CarouselItem)' 스튜디오의 미리보기만 쓴다(2026-10-16 사용자 요청) → 숨김. */}
+          {base !== '상품형' && livePreview}
           {/* 오른쪽: 모든 설정 — (등록은 스텝별) 유형·배열 → 컴포넌트 구성 → 표시 항목 */}
           <div className="flex min-w-[320px] flex-1 flex-col gap-3">
             {/* 순서(order): 기본정보 → 세부 항목 → 상품·혜택 묶기(편집기). 세부 항목 아래에 묶기가 오도록(2026-09-30 사용자 요청). */}
@@ -1796,8 +1797,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 onCommit={(next) => { const n = isSingleBannerType ? next.slice(0, 1) : next; setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, n.length || 1), image: true, price: true, desc: true, banners: n }]); }}
               />
             )}
-            {/* 상품형·혜택형 — BSS 혜택 브랜드 카탈로그에서 상품·혜택을 담고 드래그로 순서 변경(랜딩 URL 자동 매핑 후 수동 편집). 2026-09-29 사용자 요청 */}
-            {isProductItemsType && (
+            {/* 상품·혜택 묶기 — 혜택형만. 상품형은 '코너 속성' 스튜디오로 대체(2026-10-16 사용자 요청) → 숨김. */}
+            {isProductItemsType && base !== '상품형' && (
               <ProductItemEditor
                 items={productItems as ProductItem[]}
                 productOptions={productOptions}
@@ -1854,12 +1855,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* 자동 구성(배열·레이아웃 요약) 카드는 제거 — 등록 결과·상품/혜택 묶기와 중복(2026-09-30 사용자 요청). */}
             <p className="text-[11px] leading-relaxed text-muted-foreground">
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
-              표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">세부 항목</b>에서 조정합니다.
+              표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">{base === '상품형' ? '코너 속성' : '세부 항목'}</b>에서 조정합니다.
             </p>
             {/* 타겟별 문구 세트 제거 — 회의 결론상 '문구(콘텐츠)'는 빌더(전시화면 관리)에서 등록. 코너 유형은 껍데기(규격)만. */}
             </div>
-            {/* 세부 항목 — 표시 항목·정의 기본값을 테이블(TRow)로. 업무 진입형(탭·메뉴)은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
-            {!bulk && base !== '업무 진입형' && base !== '배너형' && (
+            {/* 세부 항목 — 상품형은 '코너 속성' 스튜디오로 대체(2026-10-16) → 숨김. 값은 아래 hidden으로 보존. */}
+            {!bulk && base !== '업무 진입형' && base !== '배너형' && base !== '상품형' && (
             <div className={cn('order-2', !showStep(2) && 'hidden')}>
               <div className="mb-2.5 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />세부 항목 (항목별 사용여부)</div>
               <div className="border-t border-[#dce0e5]">
@@ -1945,9 +1946,38 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               </div>
             </div>
             )}
+            {/* 상품형 — 세부 항목 UI는 '코너 속성' 스튜디오로 대체(숨김)하되, 저장값(규격·플래그)은 그대로 보존(2026-10-16). */}
+            {!bulk && base === '상품형' && (
+              <div className="hidden">
+                {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
+                <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
+                {eff('useMoreButton') && <input type="hidden" name="defaultMoreButtonLabel" value={moreLabel} />}
+                <input type="hidden" name="defaultMainTitle" value="" />
+                <input type="hidden" name="defaultSubTitle" value="" />
+                <input type="hidden" name="defaultSubTitleIcon" value="" />
+                <input type="hidden" name="defaultMinItems" value={minItems} />
+                <input type="hidden" name="defaultMaxItems" value={maxItems} />
+                <input type="hidden" name="defaultCardShape" value={cardShape} />
+              </div>
+            )}
           </div>
         </div>
       </section>
+      )}
+
+      {/* 코너 속성 · CarouselItem — 상품형: 등록/수정 시 Figma CarouselItem 인스펙터(Show 토글+값). 접이식(공간 절약). 2026-10-16 사용자 요청. */}
+      {showStep(2) && base === '상품형' && (
+      <details className="min-w-0 rounded-lg border border-[#e8ecef] bg-white" open>
+        <summary className="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 text-[14.5px] font-bold text-slate-900">
+          <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />
+          코너 속성
+          <span className="ml-1 rounded-full bg-[#eef0f6] px-2 py-0.5 text-[11px] font-semibold text-[#697582]">Show 토글로 구성</span>
+          <ChevronRight className="ml-auto h-4 w-4 text-slate-400 transition group-open:rotate-90" />
+        </summary>
+        <div className="border-t border-[#eef0f3] p-3.5">
+          <CarouselItemStudio storageKey={`ct:${row.id || 'new'}`} />
+        </div>
+      </details>
       )}
 
       {/* 추천 수급 · 노출 구성 = 한 섹션. 콘텐츠 출처(수급 방식)를 먼저 정하고, 그에 따라 노출 구성(정렬·CTA)을 설정.

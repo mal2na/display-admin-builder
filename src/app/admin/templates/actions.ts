@@ -993,7 +993,12 @@ export async function toggleCornerVisible(templateId: string, templateCornerId: 
 export async function toggleCornerPinned(templateId: string, templateCornerId: string) {
   const tc = await prisma.templateCorner.findUnique({ where: { id: templateCornerId }, select: { pinned: true } });
   if (!tc) return;
-  await prisma.templateCorner.update({ where: { id: templateCornerId }, data: { pinned: !tc.pinned } });
+  // 고정 ON = 그 자리에서 Fixed(zone='fixed'). 고정 OFF = 다이나믹으로 보내지 않고 Semi-fixed로 내려놓는다(2026-10-16 사용자 요청).
+  const nextPinned = !tc.pinned;
+  await prisma.templateCorner.update({
+    where: { id: templateCornerId },
+    data: { pinned: nextPinned, zone: nextPinned ? 'fixed' : 'semi' },
+  });
   rp(templateId);
 }
 
