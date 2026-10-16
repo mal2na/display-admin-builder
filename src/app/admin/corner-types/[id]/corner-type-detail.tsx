@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Pencil, Check, Minus, ExternalLink } from 'lucide-react';
 import { CornerTypeForm, DevicePreview, cornerRowPreview, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo, type BannerCampaignOption, type ProductOption } from '../corner-type-manager';
 import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi } from '@/lib/display-taxonomy';
+import { CornerSpecPreview, loadCornerSpec } from '../carousel-item/carousel-item-studio';
 import { CornerTypeReviewBar, cornerTypeReviewIssues } from './corner-type-review-bar';
 import { ComposedBanner, type ComposeFields } from '../../banner-campaigns/composed-banner';
 import { type PreviewCorner } from '@/components/preview/blocks';
@@ -221,12 +222,31 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   const platforms = row.platforms.split(',').filter(Boolean);
   const hasDefaults = row.defaultMinItems != null || row.defaultMaxItems != null || row.defaultSortStrategy || row.defaultRecSource || row.defaultMoreButton;
   const isBanner = row.baseCategory === '배너형' && bannerPreviews.length > 0;
+  // 상품형 = 코너 속성 스튜디오 유형 → 상세 미리보기·기본 정보를 저장된 스펙(ct:<id>)으로 렌더(2026-10-16).
+  const isStudio = row.baseCategory === '상품형';
+  const specKey = `ct:${row.id}`;
+  const [studioSpec, setStudioSpec] = useState<ReturnType<typeof loadCornerSpec> | null>(null);
+  useEffect(() => { if (isStudio) setStudioSpec(loadCornerSpec(specKey)); }, [isStudio, specKey]);
   // 배너형 외: 실제 배치된 코너가 있으면 그 코너(들)를 미리보기로 보여준다(폰 프레임 없이 카드 그대로).
   //  케이스가 여러 개면 '코너별 타일'로 분리해 2단 그리드로 나란히 — 세로 무한 나열 대신 그리드로 감싼다(2026-09-28 사용자 피드백).
   //  미배치(사용처 없음)만 조합 샘플로 폴백(히어로 등 유형 대표 렌더 보존).
   // 코너 = 껍데기 → 상세 미리보기도 실데이터가 아니라 '껍데기 가이드'(cornerRowPreview)로 통일(2026-10-06 대공사 방향).
   const useReal = false;
   const multi = false;
+
+  // 상품형: 저장된 스펙의 실제 on/off 를 세부 항목으로 — 코너 유형 자체 플래그 대신 스펙 내용 반영(2026-10-16).
+  const it = studioSpec?.item;
+  const studioChips: { lbl: string; on: boolean }[] | null = (isStudio && studioSpec && it) ? [
+    { lbl: '배너', on: !!studioSpec.bannerSrc || true },
+    { lbl: 'CTA', on: studioSpec.buttonText.show },
+    { lbl: '상품 이미지', on: true },
+    { lbl: '서브타이틀', on: it.subTitle.show },
+    { lbl: '가격', on: it.priceGroup.show },
+    { lbl: '보조 텍스트', on: it.subText01.show || it.subText02.show },
+    { lbl: '캡션', on: it.caption.show },
+    { lbl: '개수', on: it.count.show },
+    { lbl: '배지', on: it.badgeGroup.show },
+  ] : null;
 
   // 정보(읽기 전용) 블록 — 단일/멀티 레이아웃에서 공용. 프로모션 상세 .fsec/.ftable 규격.
   const infoContent = (
@@ -249,18 +269,22 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {/* 기본 문구 제거(2026-10-14 사용자 요청) — 코너 유형은 껍데기(규격)만. 구체 문구(타이틀·서브)는 빌더에서 채운다. */}
       {row.defaultCardShape && <RORow label="카드 모양">{row.defaultCardShape}</RORow>}
       {row.description && <RORow label="설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description}</span></RORow>}
+      {/* 상품형 — 저장된 스펙의 실제 콘텐츠(타이틀·CTA) 노출 */}
+      {isStudio && studioSpec && (
+        <>
+          <RORow label="타이틀"><span className="whitespace-pre-line text-[12px] leading-relaxed text-slate-700">{studioSpec.title || '—'}</span></RORow>
+          <RORow label="CTA">{studioSpec.buttonText.show ? <span className="text-[12px] text-slate-700">{studioSpec.buttonText.label || '—'} ›</span> : <span className="text-[12px] text-slate-400">미사용</span>}</RORow>
+        </>
+      )}
       {/* 업무 진입형(탭·메뉴)·배너형은 표시 항목이 의미 없어 세부 항목 숨김(2026-09-30 사용자 요청). */}
       {row.baseCategory !== '업무 진입형' && row.baseCategory !== '배너형' && (
       <RORow label="세부 항목">
         <div className="flex flex-wrap gap-1.5">
-          {FEATURES.map(([k, lbl]) => {
-            const on = !!row[k];
-            return (
-              <span key={String(k)} className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]', on ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-400')}>
-                {on ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />}{lbl}
-              </span>
-            );
-          })}
+          {(studioChips ?? FEATURES.map(([k, lbl]) => ({ lbl, on: !!row[k] }))).map(({ lbl, on }) => (
+            <span key={lbl} className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]', on ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-400')}>
+              {on ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />}{lbl}
+            </span>
+          ))}
         </div>
       </RORow>
       )}
@@ -322,8 +346,11 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   // 단일 미리보기(배너형 / 단일 케이스 / 미배치 샘플) — 폰 프레임 없이 카드 그대로 축소.
   //  BG 영역은 모든 유형 동일 고정 높이(PREVIEW_H), 콘텐츠는 세로 중앙 정렬 → 배너처럼 짧은 유형도 가운데(2026-09-29 사용자 요청).
   const singlePreview = (
-    <div className={cn('overflow-hidden rounded-lg border border-[#e8ecef] bg-[#eef0f6] p-4', PREVIEW_H)}>
-      {isBanner ? (
+    <div className={cn('overflow-y-auto rounded-lg border border-[#e8ecef] bg-[#eef0f6] p-4', PREVIEW_H)}>
+      {isStudio ? (
+        // 상품형 — 스튜디오에서 저장한 코너 스펙(배너·타이틀·CTA·상품카드·배지)을 폰 프레임으로 렌더
+        <CornerSpecPreview storageKey={specKey} />
+      ) : isBanner ? (
         <div className="flex h-full flex-col items-center justify-center gap-3">
           {bannerPreviews.map((b) => (
             <ComposedBanner key={b.id} f={b.fields} width={412} height={132} preview />

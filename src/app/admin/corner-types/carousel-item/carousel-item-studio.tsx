@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown, Image as ImageIcon } from 'lucide-react';
+import { ChevronDown, Image as ImageIcon, RotateCcw } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
 // 코너 유형(상품형 가로형+배너) 속성 스튜디오. Figma DS CardHome + CarouselItem.
@@ -46,24 +46,25 @@ export type CardHomeSpec = {
   item: CarouselItemSpec;
 };
 
+// 초기 설정값(이미지 244) — 노출: 타이틀 · 가격(할인율+가격) · SubText02 만 ON, 나머지 OFF.
 const carousel = (title: string): CarouselItemSpec => ({
   variant: 'Small',
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: true, price: '99,999원', priceCaption: { show: true, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
+  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
   subText01: { show: false, value: 'SubText01' },
   subText02: { show: true, value: 'SubText02' },
-  caption: { show: true, value: '5.0', icon: { show: false }, caption02: { show: true, value: '예매율 99.9%' }, caption03: { show: true, value: 'Caption03' } },
-  count: { show: true, value: '+2' },
-  badgeGroup: { show: true, labelCount: 3, items: Array.from({ length: 5 }, (_, i) => ({ show: i < 3, tone: (i === 0 ? 'Positive' : 'Neutral') as Tone, hierarchy: 'Secondary' as Hierarchy, label: 'Label' })) },
+  caption: { show: false, value: '5.0', icon: { show: false }, caption02: { show: false, value: '예매율 99.9%' }, caption03: { show: false, value: 'Caption03' } },
+  count: { show: false, value: '+2' },
+  badgeGroup: { show: false, labelCount: 3, items: Array.from({ length: 5 }, (_, i) => ({ show: i < 3, tone: (i === 0 ? 'Positive' : 'Neutral') as Tone, hierarchy: 'Secondary' as Hierarchy, label: 'Label' })) },
 });
 
 const DEFAULT_SPEC: CardHomeSpec = {
-  title: '최근 본 아이폰을\n혜택으로 만나보세요.',
-  buttonText: { show: true, label: '단말기 추천' },
+  title: 'Title',
+  buttonText: { show: true, label: 'Label' },
   bannerSrc: '',
-  item: carousel('iPhone 20 Air'),
+  item: carousel('Title'),
 };
 
 const TONE: Record<Tone, { soft: string; solid: string }> = {
@@ -199,11 +200,12 @@ function ItemCard({ s, w = 118 }: { s: CarouselItemSpec; w?: number }) {
   );
 }
 
-// ── 미리보기: CardHome(전체 카드) — 배너 풀블리드 · 클릭으로 코너 정보/속성 전환 ──
-function CardPreview({ spec, sel, onCard, onItem }: { spec: CardHomeSpec; sel: 'card' | 'item'; onCard: () => void; onItem: () => void }) {
+// ── 미리보기: CardHome(전체 카드) — 배너 풀블리드 · 클릭으로 코너 정보/속성 전환(읽기 전용이면 비활성) ──
+function CardPreview({ spec, sel, onCard, onItem }: { spec: CardHomeSpec; sel?: 'card' | 'item'; onCard?: () => void; onItem?: () => void }) {
+  const ro = !onCard && !onItem; // 읽기 전용(상세 미리보기)
   return (
-    <div onClick={onCard} title="카드 전체 = 코너 정보"
-      className={cn('cursor-pointer overflow-hidden rounded-[16px] border-2 bg-white transition', sel === 'card' ? 'border-[#3617ce]' : 'border-[#e8ecef] hover:border-[#c4c9cf]')}>
+    <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
+      className={cn('overflow-hidden rounded-[16px] border-2 bg-white transition', ro ? 'border-[#e8ecef]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#e8ecef] hover:border-[#c4c9cf]'))}>
       {spec.bannerSrc ? (
         /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="h-[160px] w-full object-cover" />
       ) : (
@@ -213,12 +215,29 @@ function CardPreview({ spec, sel, onCard, onItem }: { spec: CardHomeSpec; sel: '
       {spec.buttonText.show && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
       <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-3">
         {[0, 1].map((i) => (
-          <button key={i} type="button" onClick={(e) => { e.stopPropagation(); onItem(); }} title="카드 안 컴포넌트 = 코너 속성"
-            className={cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]')}>
+          <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'}
+            className={cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'))}>
             <ItemCard s={spec.item} />
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+// 저장된 코너 스펙 로드(로컬) — 스튜디오가 저장한 ct:<id> 를 상세·빌더에서 재사용.
+export function loadCornerSpec(storageKey: string): CardHomeSpec {
+  try { const raw = localStorage.getItem(storageKey); if (raw) return { ...DEFAULT_SPEC, ...JSON.parse(raw) }; } catch { /* ignore */ }
+  return DEFAULT_SPEC;
+}
+
+// 상세 '미리보기·조합 결과'용 읽기 전용 프리뷰 — 저장된 스펙을 폰 프레임 안에 렌더.
+export function CornerSpecPreview({ storageKey }: { storageKey: string }) {
+  const [spec, setSpec] = useState<CardHomeSpec | null>(null);
+  useEffect(() => { setSpec(loadCornerSpec(storageKey)); }, [storageKey]);
+  return (
+    <div className="mx-auto w-full max-w-[300px] rounded-[26px] border-[7px] border-[#1a1a1a] bg-white p-2 shadow-sm">
+      {spec ? <CardPreview spec={spec} /> : <div className="h-[360px] animate-pulse rounded-[16px] bg-[#f1f3f5]" />}
     </div>
   );
 }
@@ -333,6 +352,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
     setSel('card');
   }, [storageKey]);
   const save = (next: CardHomeSpec) => { setSpec(next); try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignore */ } };
+  const reset = () => save(DEFAULT_SPEC); // 초기 설정값으로 되돌리기
 
   return (
     <div className="flex flex-wrap items-start gap-5">
@@ -342,6 +362,10 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
         <div className="rounded-[14px] border border-[#e8ecef] bg-[#f3f4f7] p-4">
           <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} />
         </div>
+        <button type="button" onClick={reset}
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#dce0e5] bg-white px-3 py-2 text-[12px] font-semibold text-[#454f59] transition hover:bg-[#f8f9fb]">
+          <RotateCcw className="h-3.5 w-3.5" /> 초기 설정값으로 돌리기
+        </button>
         <p className="mt-2 text-[10.5px] leading-relaxed text-[#8b949e]">코너 유형 = 껍데기 — <b className="text-[#697582]">어떤 요소를 쓸지(Show)·형태</b>를 정의합니다. 값은 샘플이고, 실제 문구·이미지는 빌더/CVM이 채웁니다.</p>
       </div>
 
