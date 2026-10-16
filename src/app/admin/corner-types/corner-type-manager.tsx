@@ -17,7 +17,7 @@ import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, us
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
-import { CarouselItemStudio } from './carousel-item/carousel-item-studio';
+import { CornerStudio } from './carousel-item/carousel-item-studio';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
 import { FilterPanel, ListHeader, THEAD_TR_CLS, TBODY_TR_CLS, StatusPill, YN } from '@/components/ops-ui';
@@ -1374,6 +1374,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     for (const d of cornerTypeDetails(base)) if (!seen.has(d)) { seen.add(d); out.push(d); } // 카탈로그 순서 우선(가로2.5·가로1.5·세로·그리드)
     for (const r of registered.filter((x) => x.baseCategory === base)) if (r.typeDetail && !seen.has(r.typeDetail)) { seen.add(r.typeDetail); out.push(r.typeDetail); } // 카탈로그 밖 등록분
     if (onOrigBase && row.typeDetail && !seen.has(row.typeDetail)) { seen.add(row.typeDetail); out.push(row.typeDetail); }
+    // 상품형은 '가로형+배너'를 1등으로(2026-10-16 사용자 요청) — 세로형과 위치 교체.
+    if (base === '상품형') out.sort((a, b) => (a === '가로형+배너' ? -1 : b === '가로형+배너' ? 1 : 0));
     return out;
   })();
   const allowEmptyDetail = typeShapes.length === 0;
@@ -1620,7 +1622,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       </TRow>
       {/* 컴포넌트 레이아웃(지정형/고정형)은 정의에서 제거 — 고정/택1은 빌더의 '노출 타입 베리에이션(CVM 택1)'이 placement 단위로 결정한다(2026-10-06). 저장값만 보존. */}
       <input type="hidden" name="componentLayoutMode" value={row.componentLayoutMode || '고정형'} />
-      <TRow label="등록 결과"><span className="text-[12px]">이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span></span></TRow>
+      {/* '등록 결과'는 상품형에선 '코너 정보' 옆으로 이동(2026-10-16) → 비상품형만 여기 표시. */}
+      {base !== '상품형' && <TRow label="등록 결과"><span className="text-[12px]">이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span></span></TRow>}
     </>
   );
 
@@ -1686,6 +1689,119 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       ))}
     </div>
   ) : null;
+
+  // 콘텐츠 출처(③) — 본문만. 상품형은 스튜디오 Panel(접기)에, 비상품형은 하단 standalone 섹션에 재사용(2026-10-16).
+  const contentSourceBody = (
+        <div className="space-y-3">
+          {/* ① 추천 수급 방식 (출처) */}
+          {isRecEligible && (
+            <div className="space-y-2">
+              <label className="text-[13px] font-semibold text-slate-800">① 콘텐츠 출처 <span className="font-normal text-slate-500">· 수급 방식</span></label>
+              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-9 w-full max-w-sm rounded-md border border-[#e8ecef] bg-background px-2.5 text-[13px]">
+                <option value="">기본값 미지정 (빌더에서 선택)</option>
+                {REC_SOURCE_METHODS.map((s) => (
+                  <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
+                ))}
+              </select>
+              <div className="overflow-hidden rounded-md border border-[#e8ecef]">
+                {REC_SOURCE_METHODS.map((k) => (
+                  <div key={k} className="grid grid-cols-[176px_minmax(0,1fr)] border-b border-[#e8ecef] last:border-b-0">
+                    <div className="bg-[#f8f9fb] px-3.5 py-3 text-[13px] leading-relaxed">
+                      <b className="font-semibold text-slate-800">{k}</b>
+                      <span className="block text-[11.5px] font-normal text-slate-500">· {REC_SOURCE_INFO[k].tag}</span>
+                    </div>
+                    <div className="min-w-0 px-3.5 py-3 text-[13px] leading-relaxed text-slate-600">{REC_SOURCE_INFO[k].how}</div>
+                  </div>
+                ))}
+              </div>
+              {cvmChosen && (
+                <div className="space-y-2 rounded-lg border border-[#e1e3ff] bg-[#f1f2ff] p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-[#3617ce] px-1.5 py-0.5 text-[9px] font-bold text-white">가안</span>
+                    <span className="text-[11.5px] font-semibold text-[#3617ce]">CVM 추천 연동 · 코너 확정 시 함께 승인</span>
+                    <span className="text-[10px] font-normal text-slate-400">POL-REC 슬롯 관리 기준 · 화요일 미팅 확정 전</span>
+                  </div>
+                  <div className="grid grid-cols-[132px_minmax(0,1fr)] overflow-hidden rounded-md border border-[#e8ecef] bg-white">
+                    <div className="flex items-center bg-[#f8f9fb] px-3 py-2 text-[11px] font-medium text-slate-600">후보 풀 → 노출</div>
+                    <div className="px-3 py-2 text-[11px] leading-relaxed text-slate-700">
+                      어드민은 <b>후보 풀</b>만 넉넉히 등록 · 고객별 <b>택M</b>은 CVM이 선별
+                      <span className="mt-1 block">
+                        <span className="inline-flex items-center rounded-md bg-[#f1f2ff] px-2 py-0.5 text-[11px] font-semibold text-[#3617ce]">
+                          CVM 기반 · 풀 {productItems.length || '—'}개 중 고객별 {minItems || '?'}{maxItems ? `~${maxItems}` : ''}개
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-[132px_minmax(0,1fr)] overflow-hidden rounded-md border border-[#e8ecef] bg-white">
+                    <div className="flex items-center bg-[#f8f9fb] px-3 py-2 text-[11px] font-medium text-slate-600">CVM이 채우는 것</div>
+                    <div className="flex flex-wrap gap-1 px-3 py-2">
+                      {['콘텐츠 묶음 (풀 중 택M)', '문구 베리에이션 (택1)', '노출 타입 베리에이션'].map((t) => (
+                        <span key={t} className="inline-flex items-center gap-1 rounded-md border border-[#e1e3ff] bg-white px-2 py-0.5 text-[10.5px] text-[#3617ce]">
+                          <Sparkles className="h-3 w-3" />{t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-[132px_minmax(0,1fr)] overflow-hidden rounded-md border border-[#e8ecef] bg-white">
+                    <div className="flex items-center bg-[#f8f9fb] px-3 py-2 text-[11px] font-medium text-slate-600">세그 참조 <span className="ml-1 font-normal text-slate-400">읽기전용</span></div>
+                    <div className="px-3 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {CVM_TARGET_HINTS.map((h) => (
+                          <span key={h.key} className="inline-flex items-center rounded-full border border-[#e8ecef] bg-white px-2 py-0.5 text-[10.5px] text-slate-500" title={`${h.axis} · ${h.note}`}>{h.key}</span>
+                        ))}
+                      </div>
+                      <p className="mt-1.5 text-[10.5px] leading-relaxed text-slate-400">세그·룰값은 <b className="text-slate-500">CVM/세일즈포스 소유</b> — 어드민은 입력하지 않고 표시만. 타겟별 레이아웃 차별화는 노출 타입 베리에이션으로.</p>
+                    </div>
+                  </div>
+                  <p className="text-[10.5px] leading-relaxed text-slate-500">
+                    · <b>폴백</b>: CVM 미매칭·신뢰도 낮을 때 <b>운영자 편성</b>으로 대체(최하단, PI-DSP-PER-002).<br />
+                    · <b>승인 동반</b>: 코너 확정(승인 요청) 시 “이 유형으로 CVM 추천 매핑 요청”을 함께 전송.<br />
+                    · <span className="font-semibold text-amber-600">조율 필요</span>: 코너 <b>순서</b> 개인화(세일즈포스 ‘불가’ vs 우리 ‘원함’) · 에셋 등록 위치(우리 안 = 어드민 등록 + CVM 데이터 수신).
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          {/* ② 노출 구성 (정렬·CTA) */}
+          {isListType && (
+            <div className={cn('space-y-2', isRecEligible && 'border-t border-[#e8ecef] pt-3')}>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-[13px] font-semibold text-slate-800">② 노출 구성 <span className="font-normal text-slate-500">· 정렬·CTA 기본값</span></label>
+                {cvmChosen && <span className="rounded bg-[#e8ecef] px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">CVM이 자동 결정 · 선택 불가</span>}
+              </div>
+              {cvmChosen && (
+                <p className="rounded-md border border-[#e8ecef] bg-[#f8f9fb] px-2.5 py-2 text-[12.5px] leading-relaxed text-slate-600">
+                <b>CVM이 고객마다 순서를 자동으로 정하므로</b>, 정렬·노출 구성은 <b>운영자 편성</b>일 때만 직접 설정할 수 있어요.
+                </p>
+              )}
+              <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2', cvmChosen && 'opacity-50')} aria-disabled={cvmChosen}>
+                <div className="space-y-1">
+                  <label className="text-[12.5px] text-slate-600">정렬 기준 기본값</label>
+                  <select name="defaultSortStrategy" defaultValue={row.defaultSortStrategy ?? ''} disabled={cvmChosen} className="h-9 w-full rounded-md border bg-background px-2.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-60">
+                    <option value="">미지정(수동)</option>
+                    {PRODUCT_SORT_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+  );
+  // 비상품형 하단 standalone — 자체 헤더 + 본문. (상품형은 스튜디오 Panel 이 헤더를 가짐)
+  const contentSourceSection = (
+    <section className="min-w-0">
+      <div className="mb-2.5">
+        <div className="flex items-center gap-2 text-[15px] font-bold text-slate-900">
+          <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />
+          콘텐츠 채우는 방식 · 노출 기본값
+        </div>
+        <p className="mt-1 text-[12px] leading-relaxed text-slate-500">출처와 정렬·CTA 기본값만 정해요. 실제 소재 선택·조정은 빌더에서 코너별로.</p>
+      </div>
+      <div className="border-t border-[#dce0e5] pt-3">{contentSourceBody}</div>
+    </section>
+  );
 
   return (
     <form
@@ -1780,6 +1896,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           {/* 오른쪽: 모든 설정 — (등록은 스텝별) 유형·배열 → 컴포넌트 구성 → 표시 항목 */}
           <div className="flex min-w-[320px] flex-1 flex-col gap-3">
             {/* 순서(order): 기본정보 → 세부 항목 → 상품·혜택 묶기(편집기). 세부 항목 아래에 묶기가 오도록(2026-09-30 사용자 요청). */}
+            {/* 기본 정보 — 상품형은 '코너 속성' 스튜디오의 1단계로 이동(미리보기 우측). 비상품형만 여기 표시(2026-10-16). */}
+            {base !== '상품형' && (
             <div className={cn('order-1', !showStep(0) && 'hidden')}>
               <div className="mb-2.5 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />기본 정보</div>
               <div className="border-t border-[#dce0e5]">
@@ -1787,6 +1905,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 {metaFields}
               </div>
             </div>
+            )}
             <div className={cn('order-3 space-y-3', !showStep(1) && 'hidden')}>
             {/* 배너형 — 무조건 배너 캠페인 관리에서 불러오기. 단일형=1개, 스와이프형=여러 개. 2026-09-30 사용자 확정 */}
             {isBannerLoader && (
@@ -1852,8 +1971,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 </div>
               </section>
             )}
-            {/* 자동 구성(배열·레이아웃 요약) 카드는 제거 — 등록 결과·상품/혜택 묶기와 중복(2026-09-30 사용자 요청). */}
-            <p className="text-[11px] leading-relaxed text-muted-foreground">
+            {/* 자동 구성(배열·레이아웃 요약) 카드는 제거 — 등록 결과·상품/혜택 묶기와 중복(2026-09-30 사용자 요청). 상품형은 '코너 속성' 스튜디오로 안내 대체 → 숨김(2026-10-16). */}
+            <p className={cn('text-[11px] leading-relaxed text-muted-foreground', base === '상품형' && 'hidden')}>
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
               표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">{base === '상품형' ? '코너 속성' : '세부 항목'}</b>에서 조정합니다.
             </p>
@@ -1965,146 +2084,24 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       </section>
       )}
 
-      {/* 코너 속성 · CarouselItem — 상품형: 등록/수정 시 Figma CarouselItem 인스펙터(Show 토글+값). 접이식(공간 절약). 2026-10-16 사용자 요청. */}
+      {/* 상품형 — 코너 속성 스튜디오: 1.기본 정보(미리보기+기본 정보+코너 정보) + 2.코너 속성(CarouselItem).
+           기본 정보 필드(basicPickers·metaFields)를 미리보기 우측으로, 등록 결과는 코너 정보 옆으로(2026-10-16 사용자 요청). */}
       {showStep(2) && base === '상품형' && (
-      <details className="min-w-0 rounded-lg border border-[#e8ecef] bg-white" open>
-        <summary className="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 text-[14.5px] font-bold text-slate-900">
-          <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />
-          코너 속성
-          <span className="ml-1 rounded-full bg-[#eef0f6] px-2 py-0.5 text-[11px] font-semibold text-[#697582]">Show 토글로 구성</span>
-          <ChevronRight className="ml-auto h-4 w-4 text-slate-400 transition group-open:rotate-90" />
-        </summary>
-        <div className="border-t border-[#eef0f3] p-3.5">
-          <CarouselItemStudio storageKey={`ct:${row.id || 'new'}`} />
-        </div>
-      </details>
+        <CornerStudio
+          storageKey={`ct:${row.id || 'new'}`}
+          basicInfo={<div>{basicPickers}{metaFields}</div>}
+          registerResult={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}
+        />
       )}
 
       {/* 추천 수급 · 노출 구성 = 한 섹션. 콘텐츠 출처(수급 방식)를 먼저 정하고, 그에 따라 노출 구성(정렬·CTA)을 설정.
           CVM 수급이면 정렬·구성을 CVM이 고객마다 결정하므로 노출 구성은 '선택 불가'(비활성)로 잠근다. */}
       {/* 추천 수급 섹션은 미리보기(좌측) 가로 영역을 침범하지 않도록 우측 컨트롤 열에 정렬(2026-09-30 사용자 요청). */}
-      {showStep(2) && (isRecEligible || isListType) && (
+      {/* ③ 콘텐츠 출처 — 비상품형: 하단 standalone(좌측 스페이서+섹션). 상품형은 '코너 속성' 스튜디오 우측 열로 이동. */}
+      {showStep(2) && base !== '상품형' && (isRecEligible || isListType) && (
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
         <div aria-hidden className="hidden lg:block" />
-        <section className="min-w-0">
-        <div className="mb-2.5">
-          <div className="flex items-center gap-2 text-[14.5px] font-bold text-slate-900">
-            <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />
-            콘텐츠 채우는 방식 · 노출 기본값
-          </div>
-          <p className="mt-1 text-[12px] leading-relaxed text-slate-500">출처와 정렬·CTA 기본값만 정해요. 실제 소재 선택·조정은 빌더에서 코너별로.</p>
-        </div>
-        <div className="space-y-3 border-t border-[#dce0e5] pt-3">
-          {/* ① 추천 수급 방식 (출처) — 상품형·혜택·오퍼형·콘텐츠 안내형에만 */}
-          {isRecEligible && (
-            <div className="space-y-2">
-              <label className="text-[13px] font-semibold text-slate-800">① 콘텐츠 출처 <span className="font-normal text-slate-500">· 수급 방식</span></label>
-              <select name="defaultRecSource" value={recSource} onChange={(e) => setRecSource(e.target.value)} className="h-9 w-full max-w-sm rounded-md border border-[#e8ecef] bg-background px-2.5 text-[13px]">
-                <option value="">기본값 미지정 (빌더에서 선택)</option>
-                {REC_SOURCE_METHODS.map((s) => (
-                  <option key={s} value={s}>{s} — {REC_SOURCE_INFO[s].tag}</option>
-                ))}
-              </select>
-              {/* 설명 — .frow 규격 미니 테이블(라벨 #f8f9fb). 폰트 키우고 패딩 넉넉하게 — 읽기 쉽게(2026-10-06). */}
-              <div className="overflow-hidden rounded-md border border-[#e8ecef]">
-                {REC_SOURCE_METHODS.map((k) => (
-                  <div key={k} className="grid grid-cols-[176px_minmax(0,1fr)] border-b border-[#e8ecef] last:border-b-0">
-                    <div className="bg-[#f8f9fb] px-3.5 py-3 text-[13px] leading-relaxed">
-                      <b className="font-semibold text-slate-800">{k}</b>
-                      <span className="block text-[11.5px] font-normal text-slate-500">· {REC_SOURCE_INFO[k].tag}</span>
-                    </div>
-                    <div className="min-w-0 px-3.5 py-3 text-[13px] leading-relaxed text-slate-600">{REC_SOURCE_INFO[k].how}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* CVM 추천 연동 (가안) — 스크럼 2026-10-01 + POL-REC '슬롯 관리 기준' 기반. 하이브리드:
-                  코너 유형 관리에서 수급·풀·노출개수·폴백·세그참조를 '정의'로 확정 → 승인 동반, 빌더는 세그 미세조정만.
-                  화요일(2026-10-07) CVM 미팅 확정 전 가안이라 '가안' 뱃지로 명시. */}
-              {cvmChosen && (
-                <div className="space-y-2 rounded-lg border border-[#e1e3ff] bg-[#f1f2ff] p-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-md bg-[#3617ce] px-1.5 py-0.5 text-[9px] font-bold text-white">가안</span>
-                    <span className="text-[11.5px] font-semibold text-[#3617ce]">CVM 추천 연동 · 코너 확정 시 함께 승인</span>
-                    <span className="text-[10px] font-normal text-slate-400">POL-REC 슬롯 관리 기준 · 화요일 미팅 확정 전</span>
-                  </div>
-
-                  {/* 후보 풀 → 노출 (N중 M) */}
-                  <div className="grid grid-cols-[132px_minmax(0,1fr)] overflow-hidden rounded-md border border-[#e8ecef] bg-white">
-                    <div className="flex items-center bg-[#f8f9fb] px-3 py-2 text-[11px] font-medium text-slate-600">후보 풀 → 노출</div>
-                    <div className="px-3 py-2 text-[11px] leading-relaxed text-slate-700">
-                      어드민은 <b>후보 풀</b>만 넉넉히 등록 · 고객별 <b>택M</b>은 CVM이 선별
-                      <span className="mt-1 block">
-                        <span className="inline-flex items-center rounded-md bg-[#f1f2ff] px-2 py-0.5 text-[11px] font-semibold text-[#3617ce]">
-                          CVM 기반 · 풀 {productItems.length || '—'}개 중 고객별 {minItems || '?'}{maxItems ? `~${maxItems}` : ''}개
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* CVM이 채우는 것 (눈금 표시) */}
-                  <div className="grid grid-cols-[132px_minmax(0,1fr)] overflow-hidden rounded-md border border-[#e8ecef] bg-white">
-                    <div className="flex items-center bg-[#f8f9fb] px-3 py-2 text-[11px] font-medium text-slate-600">CVM이 채우는 것</div>
-                    <div className="flex flex-wrap gap-1 px-3 py-2">
-                      {['콘텐츠 묶음 (풀 중 택M)', '문구 베리에이션 (택1)', '노출 타입 베리에이션'].map((t) => (
-                        <span key={t} className="inline-flex items-center gap-1 rounded-md border border-[#e1e3ff] bg-white px-2 py-0.5 text-[10.5px] text-[#3617ce]">
-                          <Sparkles className="h-3 w-3" />{t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 세그 참조 (읽기전용) */}
-                  <div className="grid grid-cols-[132px_minmax(0,1fr)] overflow-hidden rounded-md border border-[#e8ecef] bg-white">
-                    <div className="flex items-center bg-[#f8f9fb] px-3 py-2 text-[11px] font-medium text-slate-600">세그 참조 <span className="ml-1 font-normal text-slate-400">읽기전용</span></div>
-                    <div className="px-3 py-2">
-                      <div className="flex flex-wrap gap-1">
-                        {CVM_TARGET_HINTS.map((h) => (
-                          <span key={h.key} className="inline-flex items-center rounded-full border border-[#e8ecef] bg-white px-2 py-0.5 text-[10.5px] text-slate-500" title={`${h.axis} · ${h.note}`}>{h.key}</span>
-                        ))}
-                      </div>
-                      <p className="mt-1.5 text-[10.5px] leading-relaxed text-slate-400">세그·룰값은 <b className="text-slate-500">CVM/세일즈포스 소유</b> — 어드민은 입력하지 않고 표시만. 타겟별 레이아웃 차별화는 노출 타입 베리에이션으로.</p>
-                    </div>
-                  </div>
-
-                  {/* 폴백 · 승인 동반 · 미해결 쟁점 */}
-                  <p className="text-[10.5px] leading-relaxed text-slate-500">
-                    · <b>폴백</b>: CVM 미매칭·신뢰도 낮을 때 <b>운영자 편성</b>으로 대체(최하단, PI-DSP-PER-002).<br />
-                    · <b>승인 동반</b>: 코너 확정(승인 요청) 시 “이 유형으로 CVM 추천 매핑 요청”을 함께 전송.<br />
-                    · <span className="font-semibold text-amber-600">조율 필요</span>: 코너 <b>순서</b> 개인화(세일즈포스 ‘불가’ vs 우리 ‘원함’) · 에셋 등록 위치(우리 안 = 어드민 등록 + CVM 데이터 수신).
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-          {/* ② 노출 구성 (정렬·CTA) — CVM 수급이면 CVM이 결정하므로 비활성(선택 불가) */}
-          {isListType && (
-            <div className={cn('space-y-2', isRecEligible && 'border-t border-[#e8ecef] pt-3')}>
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="text-[13px] font-semibold text-slate-800">② 노출 구성 <span className="font-normal text-slate-500">· 정렬·CTA 기본값</span></label>
-                {cvmChosen && <span className="rounded bg-[#e8ecef] px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">CVM이 자동 결정 · 선택 불가</span>}
-              </div>
-              {cvmChosen && (
-                <p className="rounded-md border border-[#e8ecef] bg-[#f8f9fb] px-2.5 py-2 text-[12.5px] leading-relaxed text-slate-600">
-                <b>CVM이 고객마다 순서를 자동으로 정하므로</b>, 정렬·노출 구성은 <b>운영자 편성</b>일 때만 직접 설정할 수 있어요.
-                </p>
-              )}
-              <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2', cvmChosen && 'opacity-50')} aria-disabled={cvmChosen}>
-                <div className="space-y-1">
-                  <label className="text-[12.5px] text-slate-600">정렬 기준 기본값</label>
-                  <select name="defaultSortStrategy" defaultValue={row.defaultSortStrategy ?? ''} disabled={cvmChosen} className="h-9 w-full rounded-md border bg-background px-2.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-60">
-                    <option value="">미지정(수동)</option>
-                    {PRODUCT_SORT_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-                {/* CTA는 '표시 항목'(세부 항목)에서 관리 — 여기(노출 구성)엔 두지 않는다(중복 제거). */}
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
+        {contentSourceSection}
       </div>
       )}
 

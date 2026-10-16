@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronLeft, Image as ImageIcon } from 'lucide-react';
+import { ChevronDown, Image as ImageIcon } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
-// 코너 유형 관리(상품형 가로형+배너) 컴포넌트 속성 스튜디오 — Figma DS 2단 구조.
-//  · 카드 전체 클릭 = CardHome(PROPERTIES 18) + 슬롯 구성(스택·CarouselItem 리스트)
-//  · 카드 안 컴포넌트 클릭 = CarouselItem(PROPERTIES 51) 상세
+// 코너 유형(상품형 가로형+배너) 속성 스튜디오. Figma DS CardHome + CarouselItem.
+//  구성: 1. 기본 정보(미리보기 + 기본 정보 필드 + 코너 정보=CardHome) · 2. 코너 속성(CarouselItem 51).
 //  코너 유형 = 껍데기: 어떤 요소를 쓸지(Show)·형태를 정의. 값은 미리보기용 샘플(실데이터는 빌더/CVM).
 // ─────────────────────────────────────────────────────────────
 
@@ -15,7 +14,7 @@ type Variant = 'Small' | 'Medium' | 'Large';
 type Tone = 'Neutral' | 'Brand' | 'Danger' | 'Positive';
 type Hierarchy = 'Primary' | 'Secondary';
 type Toggle<T = Record<string, never>> = { show: boolean } & T;
-type BadgeItem = { tone: Tone; hierarchy: Hierarchy; label: string };
+type BadgeItem = { show: boolean; tone: Tone; hierarchy: Hierarchy; label: string };
 
 export type CarouselItemSpec = {
   variant: Variant;
@@ -40,14 +39,11 @@ export type CarouselItemSpec = {
   badgeGroup: Toggle<{ labelCount: number; items: BadgeItem[] }>;
 };
 
-type CardVariant = 'Task' | 'My' | 'Contents';
 export type CardHomeSpec = {
-  variant: CardVariant;
   title: string;
   buttonText: Toggle<{ label: string }>;
   bannerSrc: string;
-  slot: { direction: '세로' | '가로' | '그리드'; gap: string; scroll: boolean };
-  items: CarouselItemSpec[];
+  item: CarouselItemSpec;
 };
 
 const carousel = (title: string): CarouselItemSpec => ({
@@ -55,37 +51,19 @@ const carousel = (title: string): CarouselItemSpec => ({
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: {
-    show: true,
-    price: '99,999원',
-    priceCaption: { show: true, value: 'Caption01' },
-    discountRate: { show: true, value: '99%' },
-    pricePeriod: { show: false, value: '/Period' },
-  },
+  priceGroup: { show: true, price: '99,999원', priceCaption: { show: true, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
   subText01: { show: false, value: 'SubText01' },
   subText02: { show: true, value: 'SubText02' },
-  caption: {
-    show: true,
-    value: '5.0',
-    icon: { show: false },
-    caption02: { show: true, value: '예매율 99.9%' },
-    caption03: { show: true, value: 'Caption03' },
-  },
+  caption: { show: true, value: '5.0', icon: { show: false }, caption02: { show: true, value: '예매율 99.9%' }, caption03: { show: true, value: 'Caption03' } },
   count: { show: true, value: '+2' },
-  badgeGroup: {
-    show: true,
-    labelCount: 3,
-    items: Array.from({ length: 5 }, (_, i) => ({ tone: (i === 0 ? 'Positive' : 'Neutral') as Tone, hierarchy: 'Secondary' as Hierarchy, label: 'Label' })),
-  },
+  badgeGroup: { show: true, labelCount: 3, items: Array.from({ length: 5 }, (_, i) => ({ show: i < 3, tone: (i === 0 ? 'Positive' : 'Neutral') as Tone, hierarchy: 'Secondary' as Hierarchy, label: 'Label' })) },
 });
 
-const DEFAULT_CARDHOME: CardHomeSpec = {
-  variant: 'Contents',
+const DEFAULT_SPEC: CardHomeSpec = {
   title: '최근 본 아이폰을\n혜택으로 만나보세요.',
   buttonText: { show: true, label: '단말기 추천' },
   bannerSrc: '',
-  slot: { direction: '가로', gap: 'Gap 2 · 8px', scroll: true },
-  items: [carousel('iPhone 20 Air'), carousel('iPhone 17e'), carousel('iPhone 16')],
+  item: carousel('iPhone 20 Air'),
 };
 
 const TONE: Record<Tone, { soft: string; solid: string }> = {
@@ -124,14 +102,15 @@ function TextInput({ value, onChange, placeholder, multiline }: { value: string;
       className="h-[30px] w-full rounded-[6px] border border-[#dce0e5] bg-white px-2.5 text-[12px] text-[#1a1a1a] outline-none focus:border-[#3617ce]" />
   );
 }
+// 테이블 행 — 좌: 라벨(음영) · 우: 컨트롤 (기본 정보 테이블/Figma SEO 표 스타일)
 function Prop({ name, desc, sub, children }: { name: string; desc?: string; sub?: boolean; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 px-3 py-2.5">
-      <div className={cn('flex min-w-0 flex-1 flex-col', sub && 'pl-2')}>
-        <span className="truncate text-[12px] font-medium text-[#1a1a1a]">{name}</span>
+    <div className="grid grid-cols-[150px_minmax(0,1fr)] items-start border-b border-[#eef0f3] last:border-b-0">
+      <div className={cn('flex min-w-0 flex-col gap-0.5 bg-[#f8f9fb] px-3.5 py-3', sub && 'pl-5')}>
+        <span className="text-[12px] font-medium text-[#1a1a1a]">{name}</span>
         {desc && <span className="text-[10.5px] leading-tight text-[#8b949e]">{desc}</span>}
       </div>
-      <div className="flex shrink-0 items-center justify-end" style={{ minWidth: 150 }}>{children}</div>
+      <div className="flex min-w-0 items-center px-3.5 py-3">{children}</div>
     </div>
   );
 }
@@ -140,25 +119,56 @@ function Group({ title, sub, children, defaultOpen = true }: { title: string; su
   return (
     <div>
       <button type="button" onClick={() => setOpen((v) => !v)}
-        className={cn('flex w-full items-center gap-1.5 border-y border-[#eef0f3] bg-[#f8f9fb] px-3 py-2 text-[12px] font-semibold text-[#1a1a1a]', sub && 'pl-5')}>
+        className={cn('flex w-full items-center gap-1.5 border-b border-[#e8ecef] bg-[#f1f3f5] px-3.5 py-2 text-[12px] font-semibold text-[#1a1a1a]', sub && 'pl-5')}>
         {sub && <span className="text-[#b3b9c0]">└</span>}
         <span className="flex-1 text-left">{title}</span>
         <ChevronDown className={cn('h-3.5 w-3.5 text-[#8b949e] transition', !open && '-rotate-90')} />
       </button>
-      {open && <div className="divide-y divide-[#f1f3f5]">{children}</div>}
+      {open && <div>{children}</div>}
     </div>
+  );
+}
+// 번호 섹션 제목
+function SecH({ n, title, aside }: { n: number; title: string; aside?: React.ReactNode }) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3617ce] text-[12px] font-bold text-white">{n}</span>
+      <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
+      {aside}
+    </div>
+  );
+}
+// 접고 펼치는 섹션 패널 (SEO 설정 패널 스타일) — 헤더: 번호+제목+힌트 · 우측: aside+셰브런
+function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children }: {
+  n?: number; title: string; hint?: string; aside?: React.ReactNode; defaultOpen?: boolean; bodyClass?: string; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="overflow-hidden rounded-[16px] border border-[#e8ecef] bg-white">
+      <button type="button" onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 px-5 py-4 text-left transition hover:bg-[#fafbfc]">
+        {n != null && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3617ce] text-[12px] font-bold text-white">{n}</span>}
+        <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
+        {hint && <span className="text-[11px] text-[#8b949e]">{hint}</span>}
+        <span className="ml-auto flex items-center gap-3">
+          {aside}
+          <ChevronDown className={cn('h-4 w-4 shrink-0 text-[#8b949e] transition-transform', open ? 'rotate-180' : '')} />
+        </span>
+      </button>
+      {open && <div className={cn('border-t border-[#eef0f3]', bodyClass ?? 'px-5 py-4')}>{children}</div>}
+    </section>
   );
 }
 
 // ── 미리보기: CarouselItem 카드 ───────────────────────────────
-function ItemCard({ s, w = 132 }: { s: CarouselItemSpec; w?: number }) {
+function ItemCard({ s, w = 118 }: { s: CarouselItemSpec; w?: number }) {
   const pg = s.priceGroup; const cap = s.caption;
   const line1 = [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null].filter(Boolean);
   const line2 = [cap.caption03.show ? cap.caption03.value : null].filter(Boolean);
   return (
     <div className="flex shrink-0 flex-col gap-1.5" style={{ width: w }}>
       <div className="flex aspect-square w-full items-center justify-center rounded-[12px] bg-[#eceef1] text-[#b3b9c0]">
-        {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full rounded-[12px] object-cover" /> : <ImageIcon className="h-6 w-6" />}
+        {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full rounded-[12px] object-cover" /> : <ImageIcon className="h-5 w-5" />}
       </div>
       <div className="flex flex-col gap-0.5">
         {s.subTitle.show && <span className="text-[11px] text-[#8b949e]">{s.subTitle.value}</span>}
@@ -179,7 +189,7 @@ function ItemCard({ s, w = 132 }: { s: CarouselItemSpec; w?: number }) {
         )}
         {s.badgeGroup.show && (
           <span className="mt-0.5 flex flex-wrap gap-1">
-            {s.badgeGroup.items.slice(0, s.badgeGroup.labelCount).map((b, i) => (
+            {s.badgeGroup.items.filter((b) => b.show).map((b, i) => (
               <span key={i} className={cn('rounded-[4px] px-1.5 py-0.5 text-[10px] font-semibold', b.hierarchy === 'Primary' ? TONE[b.tone].solid : TONE[b.tone].soft)}>{b.label}</span>
             ))}
           </span>
@@ -189,23 +199,23 @@ function ItemCard({ s, w = 132 }: { s: CarouselItemSpec; w?: number }) {
   );
 }
 
-// ── 미리보기: CardHome(전체 카드) ─────────────────────────────
-function CardHomePreview({ spec, sel, onCard, onItem }: { spec: CardHomeSpec; sel: 'card' | number; onCard: () => void; onItem: (i: number) => void }) {
+// ── 미리보기: CardHome(전체 카드) — 배너 풀블리드 · 클릭으로 코너 정보/속성 전환 ──
+function CardPreview({ spec, sel, onCard, onItem }: { spec: CardHomeSpec; sel: 'card' | 'item'; onCard: () => void; onItem: () => void }) {
   return (
-    <div onClick={onCard} className={cn('cursor-pointer overflow-hidden rounded-[16px] border-2 bg-white transition', sel === 'card' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#dce0e5]')}>
-      {/* 배너 — 카드 가로폭에 꽉 차게(full-bleed), 패딩 없이 상단 전체 */}
+    <div onClick={onCard} title="카드 전체 = 코너 정보"
+      className={cn('cursor-pointer overflow-hidden rounded-[16px] border-2 bg-white transition', sel === 'card' ? 'border-[#3617ce]' : 'border-[#e8ecef] hover:border-[#c4c9cf]')}>
       {spec.bannerSrc ? (
-        /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="h-[120px] w-full object-cover" />
+        /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="h-[160px] w-full object-cover" />
       ) : (
-        <div className="flex h-[120px] w-full items-center justify-center bg-[#eceef1] text-[11px] text-[#b3b9c0]">Banner</div>
+        <div className="flex h-[160px] w-full items-center justify-center bg-[#eceef1] text-[11px] text-[#b3b9c0]">Banner</div>
       )}
       <p className="whitespace-pre-line px-3 pt-3 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
       {spec.buttonText.show && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
-      <div className={cn('mt-2 flex gap-2 px-3 pb-3', spec.slot.direction === '세로' ? 'flex-col' : spec.slot.direction === '그리드' ? 'flex-wrap' : 'overflow-x-auto')}>
-        {spec.items.map((it, i) => (
-          <button key={i} type="button" onClick={(e) => { e.stopPropagation(); onItem(i); }}
-            className={cn('rounded-[12px] border-2 p-0.5 text-left transition', sel === i ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]')}>
-            <ItemCard s={it} w={spec.slot.direction === '세로' ? 240 : 120} />
+      <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-3">
+        {[0, 1].map((i) => (
+          <button key={i} type="button" onClick={(e) => { e.stopPropagation(); onItem(); }} title="카드 안 컴포넌트 = 코너 속성"
+            className={cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]')}>
+            <ItemCard s={spec.item} />
           </button>
         ))}
       </div>
@@ -213,144 +223,148 @@ function CardHomePreview({ spec, sel, onCard, onItem }: { spec: CardHomeSpec; se
   );
 }
 
-// ── CardHome 인스펙터(18) ─────────────────────────────────────
-//  슬롯 구성은 제거(2026-10-16 사용자 요청). CarouselItem 편집은 미리보기에서 카드를 눌러 진입한다.
-function CardHomeInspector({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: CardHomeSpec) => void }) {
+// ── 코너 정보(CardHome) 본문 ──────────────────────────────────
+function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: CardHomeSpec) => void }) {
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
   return (
-    <div className="flex flex-col overflow-hidden rounded-[12px] border border-[#e8ecef] bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-[#eef0f3] px-3 py-2.5">
-        <span className="text-[13px] font-bold text-[#1a1a1a]">CardHome</span>
-        <span className="text-[10.5px] font-semibold tracking-wide text-[#8b949e]">PROPERTIES</span>
-      </div>
-      <div>
-        {/* Variants · ListSlot · BannerSlot 제거(2026-10-16 사용자 요청) */}
-        <Group title="Title">
-          <Prop name="Title" desc="타이틀 텍스트"><TextInput value={spec.title} onChange={(v) => set({ title: v })} multiline /></Prop>
-        </Group>
-        <Group title="ButtonText">
-          <Prop name="ShowButtonText" desc="ButtonText 표시 여부"><Switch on={spec.buttonText.show} onChange={(v) => set({ buttonText: { ...spec.buttonText, show: v } })} /></Prop>
-          <Prop name="Label" desc="라벨 텍스트"><TextInput value={spec.buttonText.label} onChange={(v) => set({ buttonText: { ...spec.buttonText, label: v } })} /></Prop>
-        </Group>
-        <Group title="BannerSrc">
-          <Prop name="BannerSrc" desc="Banner 이미지/미디어 경로"><TextInput value={spec.bannerSrc} onChange={(v) => set({ bannerSrc: v })} placeholder="이미지 주소 입력" /></Prop>
-        </Group>
-      </div>
+    <div>
+      <Group title="타이틀(Title)">
+        <Prop name="타이틀(Title)" desc="타이틀 텍스트"><TextInput value={spec.title} onChange={(v) => set({ title: v })} multiline /></Prop>
+      </Group>
+      <Group title="버튼 텍스트(ButtonText)">
+        <Prop name="버튼 표시(ShowButtonText)" desc="표시 여부"><Switch on={spec.buttonText.show} onChange={(v) => set({ buttonText: { ...spec.buttonText, show: v } })} /></Prop>
+        <Prop name="라벨(Label)" desc="라벨 텍스트"><TextInput value={spec.buttonText.label} onChange={(v) => set({ buttonText: { ...spec.buttonText, label: v } })} /></Prop>
+      </Group>
+      <Group title="배너(BannerSrc)">
+        <Prop name="배너 이미지(BannerSrc)" desc="이미지/미디어 경로"><TextInput value={spec.bannerSrc} onChange={(v) => set({ bannerSrc: v })} placeholder="이미지 주소 입력" /></Prop>
+      </Group>
     </div>
   );
 }
 
-// ── CarouselItem 인스펙터(51) ─────────────────────────────────
-function CarouselItemInspector({ s, index, onChange, onBack }: { s: CarouselItemSpec; index: number; onChange: (v: CarouselItemSpec) => void; onBack: () => void }) {
-  const set = <K extends keyof CarouselItemSpec>(k: K, v: CarouselItemSpec[K]) => onChange({ ...s, [k]: v });
+// ── 코너 속성(CarouselItem 51) 본문 ───────────────────────────
+function CarouselItemBody({ s, onChange }: { s: CarouselItemSpec; onChange: (v: CarouselItemSpec) => void }) {
+  const set = <K extends keyof CarouselItemSpec,>(k: K, v: CarouselItemSpec[K]) => onChange({ ...s, [k]: v });
   return (
-    <div className="flex flex-col overflow-hidden rounded-[12px] border border-[#e8ecef] bg-white shadow-sm">
-      <div className="flex items-center gap-2 border-b border-[#eef0f3] px-3 py-2.5">
-        <button type="button" onClick={onBack} className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-[#697582] hover:text-[#3617ce]"><ChevronLeft className="h-3.5 w-3.5" /> CardHome</button>
-        <span className="text-[#c4c9cf]">/</span>
-        <span className="text-[13px] font-bold text-[#1a1a1a]">CarouselItem {String(index + 1).padStart(2, '0')}</span>
-        <span className="ml-auto text-[10.5px] font-semibold tracking-wide text-[#8b949e]">PROPERTIES (51)</span>
-      </div>
-      <div className="max-h-[560px] overflow-y-auto">
-        <Prop name="Variants" desc="형태 변환"><Seg value={s.variant} options={['Small', 'Medium', 'Large'] as const} onChange={(v) => set('variant', v)} /></Prop>
-        <Group title="ImageSrc">
-          <Prop name="ImageSrc" desc="Image 이미지/미디어 경로"><TextInput value={s.imageSrc} onChange={(v) => set('imageSrc', v)} placeholder="이미지 주소 입력" /></Prop>
+    <div className="max-h-[520px] overflow-y-auto">
+        <Prop name="형태(Variants)" desc="카드 크기"><Seg value={s.variant} options={['Small', 'Medium', 'Large'] as const} onChange={(v) => set('variant', v)} /></Prop>
+        <Group title="이미지(ImageSrc)">
+          <Prop name="이미지 경로(ImageSrc)" desc="이미지/미디어 경로"><TextInput value={s.imageSrc} onChange={(v) => set('imageSrc', v)} placeholder="이미지 주소 입력" /></Prop>
         </Group>
-        <Group title="TextProductGroup">
-          <Prop name="Title" desc="타이틀 텍스트"><TextInput value={s.title} onChange={(v) => set('title', v)} /></Prop>
-          <Group title="SubTitle" sub>
-            <Prop name="ShowSubTitle" desc="SubTitle 표시 여부" sub><Switch on={s.subTitle.show} onChange={(v) => set('subTitle', { ...s.subTitle, show: v })} /></Prop>
-            <Prop name="SubTitle" desc="Sub 타이틀 텍스트" sub><TextInput value={s.subTitle.value} onChange={(v) => set('subTitle', { ...s.subTitle, value: v })} /></Prop>
+        <Group title="상품 텍스트(TextProductGroup)">
+          <Prop name="타이틀(Title)" desc="타이틀 텍스트"><TextInput value={s.title} onChange={(v) => set('title', v)} /></Prop>
+          <Group title="서브타이틀(SubTitle)" sub>
+            <Prop name="서브타이틀 표시(ShowSubTitle)" desc="표시 여부" sub><Switch on={s.subTitle.show} onChange={(v) => set('subTitle', { ...s.subTitle, show: v })} /></Prop>
+            <Prop name="서브타이틀(SubTitle)" desc="서브 타이틀 텍스트" sub><TextInput value={s.subTitle.value} onChange={(v) => set('subTitle', { ...s.subTitle, value: v })} /></Prop>
           </Group>
         </Group>
-        <Group title="TextPriceGroup" sub>
-          <Prop name="ShowTextPriceGroup" desc="TextPriceGroup 표시 여부" sub><Switch on={s.priceGroup.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, show: v })} /></Prop>
-          <Prop name="Price" sub><TextInput value={s.priceGroup.price} onChange={(v) => set('priceGroup', { ...s.priceGroup, price: v })} /></Prop>
-          <Group title="PriceCaption" sub>
-            <Prop name="ShowPriceCaption" desc="PriceCaption 표시 여부" sub><Switch on={s.priceGroup.priceCaption.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, priceCaption: { ...s.priceGroup.priceCaption, show: v } })} /></Prop>
-            <Prop name="PriceCaption" sub><TextInput value={s.priceGroup.priceCaption.value} onChange={(v) => set('priceGroup', { ...s.priceGroup, priceCaption: { ...s.priceGroup.priceCaption, value: v } })} /></Prop>
+        <Group title="가격 텍스트(TextPriceGroup)" sub>
+          <Prop name="가격 표시(ShowTextPriceGroup)" desc="표시 여부" sub><Switch on={s.priceGroup.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, show: v })} /></Prop>
+          <Prop name="가격(Price)" desc="가격 텍스트" sub><TextInput value={s.priceGroup.price} onChange={(v) => set('priceGroup', { ...s.priceGroup, price: v })} /></Prop>
+          <Group title="가격 설명(PriceCaption)" sub>
+            <Prop name="가격 설명 표시(ShowPriceCaption)" desc="표시 여부" sub><Switch on={s.priceGroup.priceCaption.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, priceCaption: { ...s.priceGroup.priceCaption, show: v } })} /></Prop>
+            <Prop name="가격 설명(PriceCaption)" desc="설명 텍스트" sub><TextInput value={s.priceGroup.priceCaption.value} onChange={(v) => set('priceGroup', { ...s.priceGroup, priceCaption: { ...s.priceGroup.priceCaption, value: v } })} /></Prop>
           </Group>
-          <Group title="DiscountRate" sub>
-            <Prop name="ShowDiscountRate" desc="DiscountRate 표시 여부" sub><Switch on={s.priceGroup.discountRate.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, discountRate: { ...s.priceGroup.discountRate, show: v } })} /></Prop>
-            <Prop name="DiscountRate" sub><TextInput value={s.priceGroup.discountRate.value} onChange={(v) => set('priceGroup', { ...s.priceGroup, discountRate: { ...s.priceGroup.discountRate, value: v } })} /></Prop>
+          <Group title="할인율(DiscountRate)" sub>
+            <Prop name="할인율 표시(ShowDiscountRate)" desc="표시 여부" sub><Switch on={s.priceGroup.discountRate.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, discountRate: { ...s.priceGroup.discountRate, show: v } })} /></Prop>
+            <Prop name="할인율(DiscountRate)" desc="할인율 텍스트" sub><TextInput value={s.priceGroup.discountRate.value} onChange={(v) => set('priceGroup', { ...s.priceGroup, discountRate: { ...s.priceGroup.discountRate, value: v } })} /></Prop>
           </Group>
-          <Group title="PricePeriod" sub>
-            <Prop name="ShowPricePeriod" desc="PricePeriod 표시 여부" sub><Switch on={s.priceGroup.pricePeriod.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, pricePeriod: { ...s.priceGroup.pricePeriod, show: v } })} /></Prop>
-            <Prop name="PricePeriod" sub><TextInput value={s.priceGroup.pricePeriod.value} onChange={(v) => set('priceGroup', { ...s.priceGroup, pricePeriod: { ...s.priceGroup.pricePeriod, value: v } })} /></Prop>
-          </Group>
-        </Group>
-        <Group title="SubText01" sub>
-          <Prop name="ShowSubText01" desc="SubText 표시 여부 (1번째)" sub><Switch on={s.subText01.show} onChange={(v) => set('subText01', { ...s.subText01, show: v })} /></Prop>
-          <Prop name="SubText01" desc="Sub 텍스트 (1번째)" sub><TextInput value={s.subText01.value} onChange={(v) => set('subText01', { ...s.subText01, value: v })} /></Prop>
-        </Group>
-        <Group title="SubText02" sub>
-          <Prop name="ShowSubText02" desc="SubText 표시 여부 (2번째)" sub><Switch on={s.subText02.show} onChange={(v) => set('subText02', { ...s.subText02, show: v })} /></Prop>
-          <Prop name="SubText02" desc="Sub 텍스트 (2번째)" sub><TextInput value={s.subText02.value} onChange={(v) => set('subText02', { ...s.subText02, value: v })} /></Prop>
-        </Group>
-        <Group title="Caption" sub>
-          <Prop name="ShowCaption" desc="Caption 표시 여부" sub><Switch on={s.caption.show} onChange={(v) => set('caption', { ...s.caption, show: v })} /></Prop>
-          <Prop name="Caption01" desc="캡션 텍스트 (1번째)" sub><TextInput value={s.caption.value} onChange={(v) => set('caption', { ...s.caption, value: v })} /></Prop>
-          <Group title="Caption01IconItem" sub>
-            <Prop name="ShowCaption01IconItem" desc="Caption01IconItem 표시 여부" sub><Switch on={s.caption.icon.show} onChange={(v) => set('caption', { ...s.caption, icon: { show: v } })} /></Prop>
-          </Group>
-          <Group title="Caption02" sub>
-            <Prop name="ShowCaption02" desc="Caption 표시 여부 (2번째)" sub><Switch on={s.caption.caption02.show} onChange={(v) => set('caption', { ...s.caption, caption02: { ...s.caption.caption02, show: v } })} /></Prop>
-            <Prop name="Caption02" desc="캡션 텍스트 (2번째)" sub><TextInput value={s.caption.caption02.value} onChange={(v) => set('caption', { ...s.caption, caption02: { ...s.caption.caption02, value: v } })} /></Prop>
-          </Group>
-          <Group title="Caption03" sub>
-            <Prop name="ShowCaption03" desc="Caption 표시 여부 (3번째)" sub><Switch on={s.caption.caption03.show} onChange={(v) => set('caption', { ...s.caption, caption03: { ...s.caption.caption03, show: v } })} /></Prop>
-            <Prop name="Caption03" desc="캡션 텍스트 (3번째)" sub><TextInput value={s.caption.caption03.value} onChange={(v) => set('caption', { ...s.caption, caption03: { ...s.caption.caption03, value: v } })} /></Prop>
+          <Group title="가격 기간(PricePeriod)" sub>
+            <Prop name="기간 표시(ShowPricePeriod)" desc="표시 여부" sub><Switch on={s.priceGroup.pricePeriod.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, pricePeriod: { ...s.priceGroup.pricePeriod, show: v } })} /></Prop>
+            <Prop name="가격 기간(PricePeriod)" desc="기간 텍스트" sub><TextInput value={s.priceGroup.pricePeriod.value} onChange={(v) => set('priceGroup', { ...s.priceGroup, pricePeriod: { ...s.priceGroup.pricePeriod, value: v } })} /></Prop>
           </Group>
         </Group>
-        <Group title="Count" sub>
-          <Prop name="ShowCount" desc="Count 표시 여부" sub><Switch on={s.count.show} onChange={(v) => set('count', { ...s.count, show: v })} /></Prop>
-          <Prop name="Count" desc="개수" sub><TextInput value={s.count.value} onChange={(v) => set('count', { ...s.count, value: v })} /></Prop>
+        <Group title="보조 텍스트1(SubText01)" sub>
+          <Prop name="표시(ShowSubText01)" desc="표시 여부" sub><Switch on={s.subText01.show} onChange={(v) => set('subText01', { ...s.subText01, show: v })} /></Prop>
+          <Prop name="보조 텍스트1(SubText01)" desc="보조 텍스트 (1번째)" sub><TextInput value={s.subText01.value} onChange={(v) => set('subText01', { ...s.subText01, value: v })} /></Prop>
         </Group>
-        <Group title="BadgeGroup" sub>
-          <Prop name="ShowBadgeGroup" desc="BadgeGroup 표시 여부" sub><Switch on={s.badgeGroup.show} onChange={(v) => set('badgeGroup', { ...s.badgeGroup, show: v })} /></Prop>
-          <Prop name="Label 개수" sub><Seg value={`${s.badgeGroup.labelCount}Label` as `${number}Label`} options={['1Label', '2Label', '3Label', '4Label', '5Label'] as const} onChange={(v) => set('badgeGroup', { ...s.badgeGroup, labelCount: Number(v[0]) })} /></Prop>
-          {s.badgeGroup.items.slice(0, s.badgeGroup.labelCount).map((b, i) => (
-            <Group key={i} title={`BadgeItem0${i + 1}`} sub>
-              <Prop name="Tone" sub><Seg value={b.tone} options={['Neutral', 'Brand', 'Danger', 'Positive'] as const} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, tone: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
-              <Prop name="Hierarchy" sub><Seg value={b.hierarchy} options={['Primary', 'Secondary'] as const} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, hierarchy: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
-              <Prop name="Label" desc={`BadgeItem0${i + 1} 라벨 텍스트`} sub><TextInput value={b.label} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, label: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
+        <Group title="보조 텍스트2(SubText02)" sub>
+          <Prop name="표시(ShowSubText02)" desc="표시 여부" sub><Switch on={s.subText02.show} onChange={(v) => set('subText02', { ...s.subText02, show: v })} /></Prop>
+          <Prop name="보조 텍스트2(SubText02)" desc="보조 텍스트 (2번째)" sub><TextInput value={s.subText02.value} onChange={(v) => set('subText02', { ...s.subText02, value: v })} /></Prop>
+        </Group>
+        <Group title="캡션(Caption)" sub>
+          <Prop name="캡션 표시(ShowCaption)" desc="표시 여부" sub><Switch on={s.caption.show} onChange={(v) => set('caption', { ...s.caption, show: v })} /></Prop>
+          <Prop name="캡션1(Caption01)" desc="캡션 텍스트 (1번째)" sub><TextInput value={s.caption.value} onChange={(v) => set('caption', { ...s.caption, value: v })} /></Prop>
+          <Group title="캡션 아이콘(Caption01IconItem)" sub>
+            <Prop name="아이콘 표시(ShowCaption01IconItem)" desc="표시 여부" sub><Switch on={s.caption.icon.show} onChange={(v) => set('caption', { ...s.caption, icon: { show: v } })} /></Prop>
+          </Group>
+          <Group title="캡션2(Caption02)" sub>
+            <Prop name="표시(ShowCaption02)" desc="표시 여부" sub><Switch on={s.caption.caption02.show} onChange={(v) => set('caption', { ...s.caption, caption02: { ...s.caption.caption02, show: v } })} /></Prop>
+            <Prop name="캡션2(Caption02)" desc="캡션 텍스트 (2번째)" sub><TextInput value={s.caption.caption02.value} onChange={(v) => set('caption', { ...s.caption, caption02: { ...s.caption.caption02, value: v } })} /></Prop>
+          </Group>
+          <Group title="캡션3(Caption03)" sub>
+            <Prop name="표시(ShowCaption03)" desc="표시 여부" sub><Switch on={s.caption.caption03.show} onChange={(v) => set('caption', { ...s.caption, caption03: { ...s.caption.caption03, show: v } })} /></Prop>
+            <Prop name="캡션3(Caption03)" desc="캡션 텍스트 (3번째)" sub><TextInput value={s.caption.caption03.value} onChange={(v) => set('caption', { ...s.caption, caption03: { ...s.caption.caption03, value: v } })} /></Prop>
+          </Group>
+        </Group>
+        <Group title="개수(Count)" sub>
+          <Prop name="개수 표시(ShowCount)" desc="표시 여부" sub><Switch on={s.count.show} onChange={(v) => set('count', { ...s.count, show: v })} /></Prop>
+          <Prop name="개수(Count)" desc="개수 텍스트" sub><TextInput value={s.count.value} onChange={(v) => set('count', { ...s.count, value: v })} /></Prop>
+        </Group>
+        <Group title="배지(BadgeGroup)" sub>
+          <Prop name="배지 표시(ShowBadgeGroup)" desc="표시 여부" sub><Switch on={s.badgeGroup.show} onChange={(v) => set('badgeGroup', { ...s.badgeGroup, show: v })} /></Prop>
+          {s.badgeGroup.items.map((b, i) => (
+            <Group key={i} title={`배지${i + 1}(BadgeItem0${i + 1})`} sub>
+              <Prop name={`배지${i + 1} 표시(ShowBadgeItem)`} desc="표시 여부" sub><Switch on={b.show} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, show: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
+              <Prop name="톤(Tone)" desc="색 톤" sub><Seg value={b.tone} options={['Neutral', 'Brand', 'Danger', 'Positive'] as const} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, tone: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
+              <Prop name="위계(Hierarchy)" desc="강조 단계" sub><Seg value={b.hierarchy} options={['Primary', 'Secondary'] as const} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, hierarchy: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
+              <Prop name="라벨(Label)" desc="라벨 텍스트" sub><TextInput value={b.label} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, label: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
             </Group>
           ))}
         </Group>
-      </div>
     </div>
   );
 }
 
-// ── 스튜디오(2단: CardHome ↔ CarouselItem) ────────────────────
-export function CarouselItemStudio({ storageKey = 'cardhome-spec-v1' }: { storageKey?: string }) {
-  const [spec, setSpec] = useState<CardHomeSpec>(DEFAULT_CARDHOME);
-  const [sel, setSel] = useState<'card' | number>('card');
+// ── 탭 버튼 ───────────────────────────────────────────────────
+function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={cn('-mb-px border-b-2 px-2.5 py-2 text-[13px] font-bold transition', active ? 'border-[#3617ce] text-[#3617ce]' : 'border-transparent text-[#8b949e] hover:text-[#454f59]')}>{children}</button>
+  );
+}
+
+// ── 스튜디오 — 좌: 고정 미리보기 · 우: 1.기본 정보 + 2.코너 정보/속성(클릭 전환) ──
+export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode }) {
+  const [spec, setSpec] = useState<CardHomeSpec>(DEFAULT_SPEC);
+  const [sel, setSel] = useState<'card' | 'item'>('card'); // 미리보기 클릭 → 코너 정보(card) / 코너 속성(item)
   useEffect(() => {
-    try { const raw = localStorage.getItem(storageKey); setSpec(raw ? { ...DEFAULT_CARDHOME, ...JSON.parse(raw) } : DEFAULT_CARDHOME); } catch { /* ignore */ }
+    try { const raw = localStorage.getItem(storageKey); setSpec(raw ? { ...DEFAULT_SPEC, ...JSON.parse(raw) } : DEFAULT_SPEC); } catch { /* ignore */ }
     setSel('card');
   }, [storageKey]);
   const save = (next: CardHomeSpec) => { setSpec(next); try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignore */ } };
-  const idx = typeof sel === 'number' && sel < spec.items.length ? sel : null;
 
   return (
     <div className="flex flex-wrap items-start gap-5">
-      {/* 미리보기 — 카드 전체 vs 내부 컴포넌트 선택 */}
-      <div className="w-[300px] max-w-full shrink-0">
-        <p className="mb-1.5 text-[11px] font-medium text-[#697582]">미리보기 · {idx !== null ? `CarouselItem ${idx + 1}` : 'CardHome'} <span className="text-[#b3b9c0]">· 카드=전체, 안쪽 카드=컴포넌트</span></p>
+      {/* 좌측: 미리보기 — 스크롤해도 따라오게 sticky 고정. 카드/컴포넌트 클릭으로 코너 정보↔속성 전환. */}
+      <div className="w-[300px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
+        <p className="mb-1.5 text-[11px] font-medium text-[#697582]">미리보기 · <b className="text-[#454f59]">카드=코너 정보 · 안쪽 카드=코너 속성</b></p>
         <div className="rounded-[14px] border border-[#e8ecef] bg-[#f3f4f7] p-4">
-          <CardHomePreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={(i) => setSel(i)} />
+          <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} />
         </div>
-        <p className="mt-2 text-[10.5px] leading-relaxed text-[#8b949e]">코너 유형 = 껍데기 — 여기선 <b className="text-[#697582]">어떤 요소를 쓸지(Show)·형태·구성</b>을 정의합니다. 값은 샘플이고, 실제 문구·이미지는 빌더/CVM이 채웁니다.</p>
+        <p className="mt-2 text-[10.5px] leading-relaxed text-[#8b949e]">코너 유형 = 껍데기 — <b className="text-[#697582]">어떤 요소를 쓸지(Show)·형태</b>를 정의합니다. 값은 샘플이고, 실제 문구·이미지는 빌더/CVM이 채웁니다.</p>
       </div>
 
-      {/* 인스펙터 — 선택에 따라 CardHome / CarouselItem */}
-      <div className="min-w-[320px] flex-1">
-        {idx !== null ? (
-          <CarouselItemInspector s={spec.items[idx]} index={idx} onBack={() => setSel('card')} onChange={(ni) => { const items = [...spec.items]; items[idx] = ni; save({ ...spec, items }); }} />
-        ) : (
-          <CardHomeInspector spec={spec} onChange={save} />
+      {/* 우측(스크롤): 각 섹션은 SEO 설정 패널처럼 접고 펼치는 Panel. 미리보기 sticky가 끝까지 따라옴 */}
+      <div className="min-w-[320px] flex-1 space-y-4">
+        {/* 1. 기본 정보 — 헤더 우측에 현재 선택 상태값(유형·레이아웃) 칩 · 본문 테이블 여백 */}
+        {basicInfo && (
+          <Panel n={1} title="기본 정보" aside={registerResult}>{basicInfo}</Panel>
         )}
+
+        {/* 2. 코너 정보 · 코너 속성 (미리보기 클릭으로 전환, 탭으로도 전환) */}
+        <Panel n={2} title="코너 정보 · 속성" hint="미리보기에서 카드/컴포넌트를 눌러 전환" bodyClass="">
+          <div className="flex flex-wrap items-center gap-1 border-b border-[#eef0f3] px-3">
+            <TabBtn active={sel === 'card'} onClick={() => setSel('card')}>코너 정보</TabBtn>
+            <TabBtn active={sel === 'item'} onClick={() => setSel('item')}>코너 속성</TabBtn>
+          </div>
+          {/* 탭바는 꽉차게, 표는 패널 안쪽으로 여백 + 테두리 */}
+          <div className="p-4">
+            <div className="overflow-hidden rounded-[10px] border border-[#e8ecef]">
+              {sel === 'card' ? <CornerInfoBody spec={spec} onChange={save} /> : <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} />}
+            </div>
+          </div>
+        </Panel>
       </div>
     </div>
   );
