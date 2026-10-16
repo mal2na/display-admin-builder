@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Plus, Search, Star, List } from 'lucide-react';
-import { ContainerListModal, type ContainerListRow } from '@/components/container-list-modal';
+import { Plus, Search, Star } from 'lucide-react';
+import { type ContainerListRow } from '@/components/container-list-modal';
 
 /**
  * 컨테이너 목록 — 참고 디자인(payment-merchant-product) 좌측 트리 규격.
@@ -37,7 +37,6 @@ export function ContainerTree({ containers, allRows = [] }: { containers: TreeCo
   const pathname = usePathname();
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [q, setQ] = useState('');
-  const [listOpen, setListOpen] = useState(false); // 전체목록 팝업(PG495)
 
   const toggle = (id: string) => setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
 
@@ -63,24 +62,13 @@ export function ContainerTree({ containers, allRows = [] }: { containers: TreeCo
     <div className="tree flex h-full w-72 shrink-0 flex-col overflow-hidden bg-white">
       <div className="tree-h justify-between gap-1.5">
         <span className="shrink-0 whitespace-nowrap text-[13px]">컨테이너 목록</span>
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setListOpen(true)}
-            className="inline-flex items-center gap-0.5 whitespace-nowrap rounded-[6px] border border-[var(--line3)] bg-white px-1.5 py-1 text-[11px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"
-            title="컨테이너 전체목록"
-          >
-            <List className="h-3.5 w-3.5" /> 전체
-          </button>
-          <Link
-            href="/admin/containers/new"
-            className="inline-flex items-center gap-0.5 whitespace-nowrap rounded-[6px] bg-[var(--ac)] px-2 py-1 text-[11px] font-semibold text-white hover:bg-[var(--ac-h)]"
-          >
-            <Plus className="h-3.5 w-3.5" /> 등록
-          </Link>
-        </div>
+        <Link
+          href="/admin/containers/new"
+          className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-[6px] bg-[var(--ac)] px-2 py-1 text-[11px] font-semibold text-white hover:bg-[var(--ac-h)]"
+        >
+          <Plus className="h-3.5 w-3.5" /> 새 Container
+        </Link>
       </div>
-      {listOpen && <ContainerListModal rows={allRows} onClose={() => setListOpen(false)} />}
 
       <div className="tree-s px-1.5">
         <div className="relative">
