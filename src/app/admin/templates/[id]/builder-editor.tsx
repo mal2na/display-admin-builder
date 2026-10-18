@@ -1613,6 +1613,9 @@ function ComponentList({
   // 선택형이라도 레이아웃이 '메뉴 리스트'면 칩이 아니라 세로 메뉴 묶음으로 표기
   const isMenuList = /메뉴\s*리스트/.test(corner.layoutDetail ?? '');
   const chipLabel = isMenuList ? '메뉴 묶음' : '칩 묶음';
+  // 메뉴/칩 코너 — 콘텐츠(본문) 묶음이 없어야 한다(2026-10-16 사용자 요청).
+  //  칩이 있고 본문이 비어 있으면 '콘텐츠 묶음' 빈 블록을 띄우지 않는다. 채우기는 칩 묶음 '수정'에서.
+  const showBody = bodyOrdered.length > 0 || chipOrdered.length === 0;
 
   // CVM 보충 — 노출 개수(max)보다 운영자 등록(M)이 적으면 나머지(max−M)를 CVM이 채운다(가안).
   //  콘텐츠 수급 코너 + 1순위 CVM + max > 등록 개수일 때만. (에셋 등록 위치는 미해결 쟁점 10/07 — '가안' 표기)
@@ -1663,7 +1666,9 @@ function ComponentList({
           </div>
         )}
         {/* 콘텐츠 묶음 — 본문(상품·혜택) 컴포넌트. 한 묶음에서 바로 보고·편성·수정(2026-10-14 사용자 요청: 정보/묶음 분리 제거).
-             각 행은 '수정'으로 콘텐츠 편집, 아래 '한 줄 불러오기'로 카탈로그에서 1건씩 담는다. */}
+             각 행은 '수정'으로 콘텐츠 편집, 아래 '한 줄 불러오기'로 카탈로그에서 1건씩 담는다.
+             메뉴/칩 코너(칩만 있고 본문 없음)에서는 띄우지 않는다(2026-10-16 사용자 요청). */}
+        {showBody && (
         <div className="rounded-lg border bg-muted/30 p-2">
           <div className="mb-1.5 flex flex-wrap items-center gap-1 px-0.5 text-[11px] font-semibold text-slate-600">
             {bodyLabel} <span className="rounded-full bg-white px-1.5 text-[10px] text-slate-500">{bodyOrdered.length}</span>
@@ -1712,6 +1717,7 @@ function ComponentList({
           </div>
           )}
         </div>
+        )}
       </DndContext>
       <BssProductPickerModal
         open={bssOpen}

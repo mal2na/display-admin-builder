@@ -329,11 +329,12 @@ export function CornerSupplyPanel({
   const mode = corner.recSource ? normalizeRecSource(corner.recSource) : '운영자 편성';
   const cvm = isCvmSource(mode);
   const isData = mode === 'CVM 데이터 연동';
-  const isContent = mode === 'CVM 콘텐츠 연동';
   // 배너형 = 콘텐츠(이미지·문구·랜딩)가 배너 캠페인/CVM 소재라 '채우기'·'폴백'을 배너 말로 바꾼다.
   const isBanner = corner.cornerType === '배너형';
   // 효과적 폴백 — 네비/필수형은 '미노출'/빈 값이어도 '운영자 편성'(미노출 금지). 저장·'폴백용 항목' 노출 판정에 공통 사용.
   const effFallback = effectiveFallback(corner.cornerType, corner.cvmFallback);
+  // 대체 소재(폴백 등록 자리)는 폴백=운영자 편성으로 대체일 때만 뜬다. 미노출이면 없음(2026-10-16 사용자 요청).
+  const showAlt = cvm && effFallback === '운영자 편성으로 대체';
 
   const save = (patch: Partial<Parameters<typeof setCornerSupply>[2]>) =>
     start(async () => {
@@ -354,41 +355,27 @@ export function CornerSupplyPanel({
 
       {cvm ? (
         <>
-          {/* 데이터 연동만 '요청' 단계(협의 중 블러). 콘텐츠 연동은 구좌 ID 설정을 두지 않는다 — 연동을 켜는 것 자체가 구좌(회의 결정). */}
+          {/* 데이터 연동만 '요청' 단계(협의 중). 콘텐츠 연동은 구좌 ID 설정을 두지 않는다 — 연동을 켜는 것 자체가 구좌(회의 결정). */}
           {isData && <CvmContractStep corner={corner} pending={pending} onSave={(p) => save(p)} no={3} />}
-          {/* 데이터 연동 = 생김새(카드 틀)를 우리가 조립. CVM은 '어떤 아이템을 몇 번째로'만 주므로,
-              운영자가 대표 아이템을 EPC에서 통으로 불러와 표시 항목·카드 틀을 잡는다. 실서비스에선 CVM이 이 틀에 실제 아이템을 끼운다.
-              이 대표 구성은 폴백=운영자 편성일 때 그대로 대체되므로, 별도 '폴백용 항목' 단계를 두지 않고 한 벌로 통합한다(2026-10-12 사용자 결정). */}
-          {isData && (
+
+          {/* 폴백 — 데이터·콘텐츠 연동 모두 항상 있음. 운영자 폴백(대체 소재)이 위로, 조립 규격이 그다음(2026-10-16 사용자 요청: 섹션 순서). */}
+          <FallbackStep no={isData ? 4 : 3} corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
+
+          {/* 대체 소재 — 폴백=운영자 편성으로 대체일 때만 '넣을 자리'가 뜬다. 미노출이면 대체 소재 없음(2026-10-16 사용자 요청).
+              데이터 연동: 대표 아이템(조립 규격)이 곧 폴백 콘텐츠(한 벌 통합). 콘텐츠 연동: 완성본 대신 나갈 폴백용 항목. */}
+          {showAlt && (
             <Step
-              no={4}
-              title={isBanner ? '조립 규격 — 대표 배너(생김새)' : '조립 규격 — 대표 아이템(생김새)'}
-              desc={isBanner
-                ? 'CVM은 어떤 배너를 줄지만 정합니다. 대표 배너를 배너 캠페인 관리에서 불러와 틀을 잡으면, 실서비스에선 CVM이 고객별 배너를 이 자리에 끼웁니다. 이 구성은 폴백=운영자 편성일 때 그대로 대체됩니다.'
-                : 'CVM은 어떤 아이템을 몇 번째로 줄지만 정합니다. 대표 아이템을 EPC에서 통으로 불러와 표시 항목·카드 틀을 잡으면, 실서비스에선 CVM이 고객별 아이템을 이 틀에 끼웁니다. 이 대표 구성은 폴백=운영자 편성일 때 그대로 대체됩니다.'}
-            >
-              {children}
-            </Step>
-          )}
-          <FallbackStep no={isData ? 5 : 3} corner={corner} pending={pending} onSave={(f) => save({ cvmFallback: f })} />
-          {/* 데이터 연동 + 폴백=운영자 편성 → 폴백 콘텐츠는 ④ 조립 규격의 대표 아이템을 그대로 쓴다(한 벌 통합). '폴백 세팅 칸이 어디냐'를 명시(2026-10-13 사용자 피드백). */}
-          {isData && effFallback === '운영자 편성으로 대체' && (
-            <p className="flex items-start gap-1.5 rounded-[8px] bg-[#C8F6E1] px-2.5 py-2 text-[11px] text-[#038E52]">
-              <Info className="mt-0.5 h-3 w-3 shrink-0" />
-              {corner.itemCount > 0
-                ? <span>폴백은 <b>④ 조립 규격의 대표 아이템 {corner.itemCount}개</b>가 그대로 노출돼요. 바꾸려면 ④에서 편집하세요.</span>
-                : <span>폴백으로 내보낼 <b>④ 조립 규격의 대표 아이템</b>을 먼저 등록하세요.</span>}
-            </p>
-          )}
-          {/* 문구(코너 타이틀) 베리에이션 제거(2026-10-12): CVM은 '문구만 따로 베리에이션'을 못 함(CLAUDE.md 못받는것 ⑤). */}
-          {/* 콘텐츠 연동 = CVM이 완성본(이미지·문구·랜딩)을 소유 → 우리가 조립할 게 없다. 대신 완성본이 안 올 때 대비한 '대체 소재(폴백용 항목)'를 항상 등록해둔다(2026-10-12 사용자 요청). */}
-          {isContent && (
-            <Step
-              no={4}
-              title={isBanner ? '대체 소재 — 배너 등록' : '폴백용 항목'}
-              desc={isBanner
-                ? 'CVM 타겟 배너가 안 왔을 때 대신 노출할 배너를 배너 캠페인 관리에서 불러와 둡니다(TM-DSP-018 대체 소재).'
-                : 'CVM 완성본이 안 왔을 때 대신 나갈 항목을 운영자가 등록합니다.'}
+              no={isData ? 5 : 4}
+              title={isData
+                ? (isBanner ? '대체 소재 — 대표 배너(조립 규격)' : '대체 소재 — 대표 아이템(조립 규격)')
+                : (isBanner ? '대체 소재 — 배너 등록' : '대체 소재 — 폴백용 항목')}
+              desc={isData
+                ? (isBanner
+                   ? 'CVM이 비면 이 대표 배너가 대신 노출됩니다. 배너 캠페인 관리에서 불러와 틀을 잡으세요(실서비스에선 CVM이 이 틀에 고객별 배너를 끼웁니다).'
+                   : 'CVM이 비면 이 대표 아이템이 대신 노출됩니다. EPC에서 불러와 표시 항목·카드 틀을 잡으세요(실서비스에선 CVM이 이 틀에 고객별 아이템을 끼웁니다).')
+                : (isBanner
+                   ? 'CVM 타겟 배너가 안 왔을 때 대신 노출할 배너를 배너 캠페인 관리에서 불러와 둡니다(TM-DSP-018 대체 소재).'
+                   : 'CVM 완성본이 안 왔을 때 대신 나갈 항목을 운영자가 등록합니다.')}
             >
               {children}
             </Step>
@@ -406,7 +393,7 @@ export function CornerSupplyPanel({
         </Step>
       )}
 
-      <OwnerMapStep recSource={mode} no={isData ? 6 : isContent ? 5 : 5} />
+      <OwnerMapStep recSource={mode} no={cvm ? (isData ? (showAlt ? 6 : 5) : (showAlt ? 5 : 4)) : 4} />
 
       {cvm && (
         <p className="flex items-start gap-1.5 rounded-[8px] bg-[#FFE4C4] px-2.5 py-2 text-[11px] text-[#D66400]"
