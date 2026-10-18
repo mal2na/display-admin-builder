@@ -17,7 +17,7 @@ import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, us
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ICON_CATEGORIES, IconGlyph, isIconRef } from '@/lib/icon-library';
-import { CornerStudio } from './carousel-item/carousel-item-studio';
+import { CornerStudio, CornerSpecThumb } from './carousel-item/carousel-item-studio';
 import { createCornerType, updateCornerType, duplicateCornerType, deleteCornerType } from './actions';
 import { requestCornerTypeReview, approveCornerType, rejectCornerType, publishCornerType } from './[id]/corner-type-review-actions';
 import { FilterPanel, ListHeader, THEAD_TR_CLS, TBODY_TR_CLS, StatusPill, YN } from '@/components/ops-ui';
@@ -1226,9 +1226,12 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                 <tr key={t.id} className={cn(TBODY_TR_CLS, 'cursor-pointer last:border-0')} onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
                   <td className="px-3 py-2.5 align-middle tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
                   <td className="px-3 py-2.5">
-                    {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함 */}
+                    {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함.
+                        상품형은 상세와 동일한 CardPreview 썸네일(저장 스펙), 그 외는 기존 조합 가이드. */}
                     <div className="pointer-events-none mx-auto h-24 w-40 overflow-hidden rounded-lg border border-[#e8ecef] bg-[#f8f9fb] p-1.5">
-                      <DevicePreview corner={cornerRowPreview(t)} fit="contain" align="center-middle" />
+                      {t.baseCategory === '상품형'
+                        ? <CornerSpecThumb storageKey={`ct:${t.id}`} layout={t.typeDetail ?? undefined} />
+                        : <DevicePreview corner={cornerRowPreview(t)} fit="contain" align="center-middle" />}
                     </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 align-middle"><span className={cornerTypeChipClass(t.baseCategory)}>{t.baseCategory}</span></td>
@@ -2089,6 +2092,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       {showStep(2) && base === '상품형' && (
         <CornerStudio
           storageKey={`ct:${row.id || 'new'}`}
+          layout={detail}
           basicInfo={<div>{basicPickers}{metaFields}</div>}
           registerResult={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}
         />

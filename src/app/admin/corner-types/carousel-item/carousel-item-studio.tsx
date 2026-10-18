@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronDown, Image as ImageIcon, RotateCcw } from 'lucide-react';
 
@@ -10,7 +10,12 @@ import { ChevronDown, Image as ImageIcon, RotateCcw } from 'lucide-react';
 //  코너 유형 = 껍데기: 어떤 요소를 쓸지(Show)·형태를 정의. 값은 미리보기용 샘플(실데이터는 빌더/CVM).
 // ─────────────────────────────────────────────────────────────
 
-type Variant = 'Small' | 'Medium' | 'Large';
+// 가로형(CarouselItem)=Small/Medium/Large · 세로형(CardHomeItem)=Profile/Data/Barcode
+type Variant = 'Small' | 'Medium' | 'Large' | 'Profile' | 'Data' | 'Barcode';
+const H_VARIANTS = ['Small', 'Medium', 'Large'] as const;
+const V_VARIANTS = ['Profile', 'Data', 'Barcode'] as const;
+// 레이아웃 문자열이 세로형이면 true (세로형 · 세로형+배너 · 세로형+칩 …)
+const isVertical = (layout?: string) => /세로/.test(layout ?? '');
 type Tone = 'Neutral' | 'Brand' | 'Danger' | 'Positive';
 type Hierarchy = 'Primary' | 'Secondary';
 type Toggle<T = Record<string, never>> = { show: boolean } & T;
@@ -94,9 +99,16 @@ function Seg<T extends string>({ value, options, onChange }: { value: T; options
   );
 }
 function TextInput({ value, onChange, placeholder, multiline }: { value: string; onChange: (v: string) => void; placeholder?: string; multiline?: boolean }) {
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  // 내용 높이에 맞춰 자동 리사이즈 — 한 줄이면 한 줄만, 빈 줄 공간 제거(2026-10-19 사용자 요청)
+  useLayoutEffect(() => {
+    if (!multiline || !taRef.current) return;
+    taRef.current.style.height = 'auto';
+    taRef.current.style.height = `${taRef.current.scrollHeight}px`;
+  }, [value, multiline]);
   if (multiline) return (
-    <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={2}
-      className="w-full resize-none rounded-[6px] border border-[#dce0e5] bg-white px-2.5 py-1.5 text-[12px] text-[#1a1a1a] outline-none focus:border-[#3617ce]" />
+    <textarea ref={taRef} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={1}
+      className="w-full resize-none overflow-hidden rounded-[6px] border border-[#dce0e5] bg-white px-2.5 py-1.5 text-[12px] leading-[20px] text-[#1a1a1a] outline-none focus:border-[#3617ce]" />
   );
   return (
     <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
@@ -200,9 +212,57 @@ function ItemCard({ s, w = 118 }: { s: CarouselItemSpec; w?: number }) {
   );
 }
 
-// ── 미리보기: CardHome(전체 카드) — 배너 풀블리드 · 클릭으로 코너 정보/속성 전환(읽기 전용이면 비활성) ──
-function CardPreview({ spec, sel, onCard, onItem }: { spec: CardHomeSpec; sel?: 'card' | 'item'; onCard?: () => void; onItem?: () => void }) {
+// ── 미리보기: 바코드(세로형 Barcode 베리에이션) ──────────────────
+function Barcode() {
+  const bars = Array.from({ length: 56 }, (_, i) => ((i * 53) % 7 < 3 ? 3 : 1));
+  return (
+    <div className="w-full px-1 py-1">
+      <div className="flex h-12 w-full items-stretch gap-[2px]">
+        {bars.map((w, i) => <span key={i} className="bg-[#1a1a1a]" style={{ width: w }} />)}
+      </div>
+      <div className="mt-1 flex justify-between text-[10px] tabular-nums text-[#697582]"><span>1234 4561 1506 4932</span><span className="font-semibold text-[#3617ce]">19:58</span></div>
+    </div>
+  );
+}
+
+// ── 미리보기: CardHomeItem 행(세로형) — 이미지 좌 + 텍스트 우, Barcode 베리에이션 지원 ──
+function ItemRow({ s }: { s: CarouselItemSpec }) {
+  const pg = s.priceGroup; const cap = s.caption;
+  const caps = [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null, cap.caption03.show ? cap.caption03.value : null].filter(Boolean);
+  if (s.variant === 'Barcode') return <Barcode />;
+  return (
+    <div className="flex w-full items-start gap-3">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#eceef1] text-[#b3b9c0]">
+        {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full object-cover" /> : <ImageIcon className="h-5 w-5" />}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {s.subTitle.show && <span className="truncate text-[11px] text-[#8b949e]">{s.subTitle.value}</span>}
+        <span className="truncate text-[14px] font-bold leading-tight text-[#1a1a1a]">{s.title}</span>
+        {pg.show && (
+          <span className="flex items-baseline gap-1">
+            {pg.discountRate.show && <span className="text-[14px] font-bold text-[#3617ce]">{pg.discountRate.value}</span>}
+            <span className="text-[14px] font-bold text-[#1a1a1a]">{pg.price}</span>
+            {pg.pricePeriod.show && <span className="text-[12px] font-medium text-[#697582]">{pg.pricePeriod.value}</span>}
+          </span>
+        )}
+        {(caps.length > 0 || s.count.show) && <span className="truncate text-[11px] text-[#8b949e]">{caps.join(' | ')}{s.count.show ? ` ${s.count.value}` : ''}</span>}
+        {s.badgeGroup.show && (
+          <span className="mt-0.5 flex flex-wrap gap-1">
+            {s.badgeGroup.items.filter((b) => b.show).map((b, i) => (
+              <span key={i} className={cn('rounded-[4px] px-1.5 py-0.5 text-[10px] font-semibold', b.hierarchy === 'Primary' ? TONE[b.tone].solid : TONE[b.tone].soft)}>{b.label}</span>
+            ))}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── 미리보기: CardHome(전체 카드) — 배너 풀블리드 · 가로형=캐러셀 / 세로형=세로 리스트. 클릭으로 코너 정보/속성 전환(읽기 전용이면 비활성) ──
+function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec; sel?: 'card' | 'item'; onCard?: () => void; onItem?: () => void; layout?: string }) {
   const ro = !onCard && !onItem; // 읽기 전용(상세 미리보기)
+  const vertical = isVertical(layout);
+  const itemBtnCls = (i: number) => cn('rounded-[12px] border-2 text-left transition', vertical ? 'w-full p-1.5' : 'shrink-0 p-0.5', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
   return (
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
       className={cn('overflow-hidden rounded-[16px] border-2 bg-white transition', ro ? 'border-[#e8ecef]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#e8ecef] hover:border-[#c4c9cf]'))}>
@@ -213,14 +273,23 @@ function CardPreview({ spec, sel, onCard, onItem }: { spec: CardHomeSpec; sel?: 
       )}
       <p className="whitespace-pre-line px-3 pt-3 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
       {spec.buttonText.show && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
+      {vertical ? (
+        <div className="mt-2 flex flex-col gap-2 px-3 pb-3">
+          {[0, 1].map((i) => (
+            <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls(i)}>
+              <ItemRow s={spec.item} />
+            </button>
+          ))}
+        </div>
+      ) : (
       <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-3">
         {[0, 1].map((i) => (
-          <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'}
-            className={cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'))}>
+          <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls(i)}>
             <ItemCard s={spec.item} />
           </button>
         ))}
       </div>
+      )}
     </div>
   );
 }
@@ -231,13 +300,36 @@ export function loadCornerSpec(storageKey: string): CardHomeSpec {
   return DEFAULT_SPEC;
 }
 
-// 상세 '미리보기·조합 결과'용 읽기 전용 프리뷰 — 저장된 스펙을 폰 프레임 안에 렌더.
-export function CornerSpecPreview({ storageKey }: { storageKey: string }) {
+// 상세/목록 '미리보기·조합 결과'용 읽기 전용 프리뷰 — 저장된 스펙을 폰 프레임 없이 카드 그대로 렌더(2026-10-19 사용자 요청).
+export function CornerSpecPreview({ storageKey, layout }: { storageKey: string; layout?: string }) {
   const [spec, setSpec] = useState<CardHomeSpec | null>(null);
   useEffect(() => { setSpec(loadCornerSpec(storageKey)); }, [storageKey]);
   return (
-    <div className="mx-auto w-full max-w-[300px] rounded-[26px] border-[7px] border-[#1a1a1a] bg-white p-2 shadow-sm">
-      {spec ? <CardPreview spec={spec} /> : <div className="h-[360px] animate-pulse rounded-[16px] bg-[#f1f3f5]" />}
+    <div className="mx-auto w-full max-w-[300px]">
+      {spec ? <CardPreview spec={spec} layout={layout} /> : <div className="h-[360px] animate-pulse rounded-[16px] bg-[#f1f3f5]" />}
+    </div>
+  );
+}
+
+// 목록 썸네일 — 상세와 '동일한' CardPreview 를 셀에 꽉 차게(contain) 축소해 넣는다(2026-10-19 사용자 요청).
+export function CornerSpecThumb({ storageKey, layout }: { storageKey: string; layout?: string }) {
+  const [spec, setSpec] = useState<CardHomeSpec | null>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.3);
+  useEffect(() => { setSpec(loadCornerSpec(storageKey)); }, [storageKey]);
+  useLayoutEffect(() => {
+    if (!spec || !outerRef.current || !innerRef.current) return;
+    const o = outerRef.current.getBoundingClientRect();
+    const h = innerRef.current.scrollHeight || 1; // transform은 scrollHeight에 영향 없음(원본 높이)
+    setScale(Math.min(o.width / 300, o.height / h));
+  }, [spec]);
+  if (!spec) return <div className="h-full w-full animate-pulse rounded bg-[#f1f3f5]" />;
+  return (
+    <div ref={outerRef} className="flex h-full w-full items-center justify-center overflow-hidden">
+      <div ref={innerRef} className="w-[300px] shrink-0 origin-center" style={{ transform: `scale(${scale})` }}>
+        <CardPreview spec={spec} layout={layout} />
+      </div>
     </div>
   );
 }
@@ -262,11 +354,15 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
 }
 
 // ── 코너 속성(CarouselItem 51) 본문 ───────────────────────────
-function CarouselItemBody({ s, onChange }: { s: CarouselItemSpec; onChange: (v: CarouselItemSpec) => void }) {
+function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChange: (v: CarouselItemSpec) => void; layout?: string }) {
   const set = <K extends keyof CarouselItemSpec,>(k: K, v: CarouselItemSpec[K]) => onChange({ ...s, [k]: v });
+  // 세로형(CardHomeItem)=Profile/Data/Barcode, 가로형(CarouselItem)=Small/Medium/Large
+  const vertical = isVertical(layout);
+  const variantOpts = vertical ? V_VARIANTS : H_VARIANTS;
+  const variantVal = (variantOpts as readonly Variant[]).includes(s.variant) ? s.variant : variantOpts[0];
   return (
     <div className="max-h-[520px] overflow-y-auto">
-        <Prop name="형태(Variants)" desc="카드 크기"><Seg value={s.variant} options={['Small', 'Medium', 'Large'] as const} onChange={(v) => set('variant', v)} /></Prop>
+        <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
         <Group title="이미지(ImageSrc)">
           <Prop name="이미지 경로(ImageSrc)" desc="이미지/미디어 경로"><TextInput value={s.imageSrc} onChange={(v) => set('imageSrc', v)} placeholder="이미지 주소 입력" /></Prop>
         </Group>
@@ -344,7 +440,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 }
 
 // ── 스튜디오 — 좌: 고정 미리보기 · 우: 1.기본 정보 + 2.코너 정보/속성(클릭 전환) ──
-export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode }) {
+export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource, layout }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode; layout?: string }) {
   const [spec, setSpec] = useState<CardHomeSpec>(DEFAULT_SPEC);
   const [sel, setSel] = useState<'card' | 'item'>('card'); // 미리보기 클릭 → 코너 정보(card) / 코너 속성(item)
   useEffect(() => {
@@ -360,7 +456,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
       <div className="w-[300px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
         <p className="mb-1.5 text-[11px] font-medium text-[#697582]">미리보기 · <b className="text-[#454f59]">카드=코너 정보 · 안쪽 카드=코너 속성</b></p>
         <div className="rounded-[14px] border border-[#e8ecef] bg-[#f3f4f7] p-4">
-          <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} />
+          <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} layout={layout} />
         </div>
         <button type="button" onClick={reset}
           className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#dce0e5] bg-white px-3 py-2 text-[12px] font-semibold text-[#454f59] transition hover:bg-[#f8f9fb]">
@@ -385,7 +481,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
           {/* 탭바는 꽉차게, 표는 패널 안쪽으로 여백 + 테두리 */}
           <div className="p-4">
             <div className="overflow-hidden rounded-[10px] border border-[#e8ecef]">
-              {sel === 'card' ? <CornerInfoBody spec={spec} onChange={save} /> : <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} />}
+              {sel === 'card' ? <CornerInfoBody spec={spec} onChange={save} /> : <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />}
             </div>
           </div>
         </Panel>

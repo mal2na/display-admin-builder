@@ -235,17 +235,25 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   const multi = false;
 
   // 상품형: 저장된 스펙의 실제 on/off 를 세부 항목으로 — 코너 유형 자체 플래그 대신 스펙 내용 반영(2026-10-16).
+  // 상품형: 타이틀·CTA·세부 항목을 한 블록으로 합쳐, 각 요소의 on/off + 내부에 세팅한 '값'까지 보여준다(2026-10-19 사용자 요청).
   const it = studioSpec?.item;
-  const studioChips: { lbl: string; on: boolean }[] | null = (isStudio && studioSpec && it) ? [
-    { lbl: '배너', on: !!studioSpec.bannerSrc || true },
-    { lbl: 'CTA', on: studioSpec.buttonText.show },
-    { lbl: '상품 이미지', on: true },
-    { lbl: '서브타이틀', on: it.subTitle.show },
-    { lbl: '가격', on: it.priceGroup.show },
-    { lbl: '보조 텍스트', on: it.subText01.show || it.subText02.show },
-    { lbl: '캡션', on: it.caption.show },
-    { lbl: '개수', on: it.count.show },
-    { lbl: '배지', on: it.badgeGroup.show },
+  const pg = it?.priceGroup;
+  const cap = it?.caption;
+  const priceVal = pg ? [pg.discountRate.show ? pg.discountRate.value : null, pg.price, pg.priceCaption.show ? pg.priceCaption.value : null, pg.pricePeriod.show ? pg.pricePeriod.value : null].filter(Boolean).join(' ') : '';
+  const subTextVal = it ? [it.subText01.show ? it.subText01.value : null, it.subText02.show ? it.subText02.value : null].filter(Boolean).join(' · ') : '';
+  const capVal = cap ? [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null, cap.caption03.show ? cap.caption03.value : null].filter(Boolean).join(' · ') : '';
+  const badgeN = it ? it.badgeGroup.items.filter((b) => b.show).length : 0;
+  const studioItems: { lbl: string; on: boolean; val?: string }[] | null = (isStudio && studioSpec && it) ? [
+    { lbl: '배너', on: true, val: studioSpec.bannerSrc || undefined },
+    { lbl: '타이틀', on: true, val: studioSpec.title },
+    { lbl: '버튼 텍스트', on: studioSpec.buttonText.show, val: studioSpec.buttonText.label },
+    { lbl: '상품 이미지', on: true, val: it.imageSrc || undefined },
+    { lbl: '서브타이틀', on: it.subTitle.show, val: it.subTitle.value },
+    { lbl: '가격', on: it.priceGroup.show, val: priceVal },
+    { lbl: '보조 텍스트', on: it.subText01.show || it.subText02.show, val: subTextVal },
+    { lbl: '캡션', on: it.caption.show, val: capVal },
+    { lbl: '개수', on: it.count.show, val: it.count.value },
+    { lbl: '배지', on: it.badgeGroup.show, val: badgeN ? `${badgeN}개` : undefined },
   ] : null;
 
   // 정보(읽기 전용) 블록 — 단일/멀티 레이아웃에서 공용. 프로모션 상세 .fsec/.ftable 규격.
@@ -269,25 +277,36 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {/* 기본 문구 제거(2026-10-14 사용자 요청) — 코너 유형은 껍데기(규격)만. 구체 문구(타이틀·서브)는 빌더에서 채운다. */}
       {row.defaultCardShape && <RORow label="카드 모양">{row.defaultCardShape}</RORow>}
       {row.description && <RORow label="설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description}</span></RORow>}
-      {/* 상품형 — 저장된 스펙의 실제 콘텐츠(타이틀·CTA) 노출 */}
-      {isStudio && studioSpec && (
-        <>
-          <RORow label="타이틀"><span className="whitespace-pre-line text-[12px] leading-relaxed text-slate-700">{studioSpec.title || '—'}</span></RORow>
-          <RORow label="CTA">{studioSpec.buttonText.show ? <span className="text-[12px] text-slate-700">{studioSpec.buttonText.label || '—'} ›</span> : <span className="text-[12px] text-slate-400">미사용</span>}</RORow>
-        </>
-      )}
-      {/* 업무 진입형(탭·메뉴)·배너형은 표시 항목이 의미 없어 세부 항목 숨김(2026-09-30 사용자 요청). */}
-      {row.baseCategory !== '업무 진입형' && row.baseCategory !== '배너형' && (
+      {/* 세부 항목 — 상품형은 타이틀·CTA 포함 전 요소를 on/off + 내부 설정값으로 한 블록에 보여준다.
+          업무 진입형(탭·메뉴)·배너형은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
+      {studioItems ? (
+        <RORow label="세부 항목">
+          <div className="space-y-1">
+            {/* 켜진(ON) 항목만 — 내부 설정값까지(2026-10-19 사용자 요청) */}
+            {studioItems.filter((i) => i.on).map(({ lbl, val }) => (
+              <div key={lbl} className="flex items-start gap-2 text-[12px]">
+                <span className="inline-flex w-[88px] shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">
+                  <Check className="h-3 w-3" />{lbl}
+                </span>
+                {val && <span className="whitespace-pre-line pt-0.5 text-slate-600">{val}</span>}
+              </div>
+            ))}
+          </div>
+        </RORow>
+      ) : row.baseCategory !== '업무 진입형' && row.baseCategory !== '배너형' ? (
       <RORow label="세부 항목">
         <div className="flex flex-wrap gap-1.5">
-          {(studioChips ?? FEATURES.map(([k, lbl]) => ({ lbl, on: !!row[k] }))).map(({ lbl, on }) => (
-            <span key={lbl} className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]', on ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-400')}>
-              {on ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />}{lbl}
-            </span>
-          ))}
+          {FEATURES.map(([k, lbl]) => {
+            const on = !!row[k];
+            return (
+              <span key={String(k)} className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]', on ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-400')}>
+                {on ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />}{lbl}
+              </span>
+            );
+          })}
         </div>
       </RORow>
-      )}
+      ) : null}
       {hasDefaults && (
         <RORow label="기본값">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
@@ -348,8 +367,8 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   const singlePreview = (
     <div className={cn('overflow-y-auto rounded-lg border border-[#e8ecef] bg-[#eef0f6] p-4', PREVIEW_H)}>
       {isStudio ? (
-        // 상품형 — 스튜디오에서 저장한 코너 스펙(배너·타이틀·CTA·상품카드·배지)을 폰 프레임으로 렌더
-        <CornerSpecPreview storageKey={specKey} />
+        // 상품형 — 스튜디오에서 저장한 코너 스펙(배너·타이틀·CTA·상품카드·배지)을 렌더. 세로형이면 세로 리스트.
+        <CornerSpecPreview storageKey={specKey} layout={row.typeDetail ?? undefined} />
       ) : isBanner ? (
         <div className="flex h-full flex-col items-center justify-center gap-3">
           {bannerPreviews.map((b) => (
