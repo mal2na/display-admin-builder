@@ -310,7 +310,8 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {hasDefaults && (
         <RORow label="기본값">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
-            {(row.defaultMinItems != null || row.defaultMaxItems != null) && <span>노출 개수 <b className="text-foreground">{row.defaultMinItems ?? '–'}~{row.defaultMaxItems ?? '–'}</b></span>}
+            {/* 상품형은 노출 개수를 코너 속성(스튜디오)에서 관리 → 기본값에서 숨김(2026-10-19 사용자 요청) */}
+            {!isStudio && (row.defaultMinItems != null || row.defaultMaxItems != null) && <span>노출 개수 <b className="text-foreground">{row.defaultMinItems ?? '–'}~{row.defaultMaxItems ?? '–'}</b></span>}
             {row.defaultSortStrategy && <span>정렬 <b className="text-foreground">{SORT_LABEL[row.defaultSortStrategy] ?? row.defaultSortStrategy}</b></span>}
             {row.defaultRecSource && <span>추천 수급 <b className="text-foreground">{row.defaultRecSource}</b></span>}
             {row.defaultMoreButton && <span>더보기 <b className="text-foreground">{row.defaultMoreButtonLabel || '사용'}</b></span>}
