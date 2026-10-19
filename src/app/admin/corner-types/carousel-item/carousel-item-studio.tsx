@@ -51,7 +51,9 @@ export type CardHomeSpec = {
   item: CarouselItemSpec;
 };
 
-// 초기 설정값(이미지 244) — 노출: 타이틀 · 가격(할인율+가격) · SubText02 만 ON, 나머지 OFF.
+const emptyBadges = () => Array.from({ length: 5 }, (_, i) => ({ show: i < 3, tone: (i === 0 ? 'Positive' : 'Neutral') as Tone, hierarchy: 'Secondary' as Hierarchy, label: 'Label' }));
+
+// 가로형(이미지 244) 초기값 — 노출: 타이틀 · 가격(할인율+가격) · SubText02.
 const carousel = (title: string): CarouselItemSpec => ({
   variant: 'Small',
   imageSrc: '',
@@ -62,15 +64,34 @@ const carousel = (title: string): CarouselItemSpec => ({
   subText02: { show: true, value: 'SubText02' },
   caption: { show: false, value: '5.0', icon: { show: false }, caption02: { show: false, value: '예매율 99.9%' }, caption03: { show: false, value: 'Caption03' } },
   count: { show: false, value: '+2' },
-  badgeGroup: { show: false, labelCount: 3, items: Array.from({ length: 5 }, (_, i) => ({ show: i < 3, tone: (i === 0 ? 'Positive' : 'Neutral') as Tone, hierarchy: 'Secondary' as Hierarchy, label: 'Label' })) },
+  badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
 });
 
-const DEFAULT_SPEC: CardHomeSpec = {
-  title: 'Title',
-  buttonText: { show: true, label: 'Label' },
-  bannerSrc: '',
-  item: carousel('Title'),
-};
+// 세로형(이미지 265/266 CardHomeItem) 초기값 — TextPriceGroup OFF, Caption ON(무제한 · 69,000원 부터). 가격 미노출.
+const cardHomeItem = (title: string): CarouselItemSpec => ({
+  variant: 'Profile',
+  imageSrc: '',
+  title,
+  subTitle: { show: false, value: 'SubTitle' },
+  priceGroup: { show: false, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
+  subText01: { show: false, value: 'SubText01' },
+  subText02: { show: false, value: 'SubText02' },
+  caption: { show: true, value: '무제한', icon: { show: false }, caption02: { show: true, value: '69,000원 부터' }, caption03: { show: false, value: 'Caption03' } },
+  count: { show: false, value: '+2' },
+  badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
+});
+
+// 레이아웃별 초기 스펙 — 세로형은 CardHomeItem(가격 OFF·캡션), 그 외는 CarouselItem(가격).
+function defaultSpec(layout?: string): CardHomeSpec {
+  return {
+    title: 'Title',
+    buttonText: { show: true, label: 'Label' },
+    bannerSrc: '',
+    item: isVertical(layout) ? cardHomeItem('Title') : carousel('Title'),
+  };
+}
+
+const DEFAULT_SPEC: CardHomeSpec = defaultSpec();
 
 const TONE: Record<Tone, { soft: string; solid: string }> = {
   Neutral: { soft: 'bg-[#eef0f3] text-[#697582]', solid: 'bg-[#697582] text-white' },
@@ -232,8 +253,8 @@ function ItemRow({ s }: { s: CarouselItemSpec }) {
   if (s.variant === 'Barcode') return <Barcode />;
   return (
     <div className="flex w-full items-start gap-3">
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#eceef1] text-[#b3b9c0]">
-        {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full object-cover" /> : <ImageIcon className="h-5 w-5" />}
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#eceef1] text-[#b3b9c0]">
+        {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         {s.subTitle.show && <span className="truncate text-[11px] text-[#8b949e]">{s.subTitle.value}</span>}
@@ -264,7 +285,11 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
   const vertical = isVertical(layout);
   // 배너는 '+배너' 레이아웃(가로형+배너·세로형+배너)만. 그냥 세로형/가로형은 배너 없음(2026-10-19 사용자 요청). layout 미지정(단독 스튜디오)은 배너 유지.
   const hasBanner = layout == null || /배너/.test(layout);
-  const itemBtnCls = (i: number) => cn('rounded-[12px] border-2 text-left transition', vertical ? 'w-full p-1.5' : 'shrink-0 p-0.5', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
+  // 세로형 = 행 구분선(divide-y)만 · 박스 테두리 없음(2026-10-19 사용자 요청). 선택 표시는 ring/bg로(테두리는 divide 색과 충돌).
+  //  가로형 = 캐러셀 카드 → 선택 테두리 박스 유지.
+  const itemBtnCls = () => vertical
+    ? cn('w-full p-2 text-left transition', ro ? '' : cn('cursor-pointer rounded-[10px]', sel === 'item' ? 'bg-[#f1f2ff] ring-1 ring-inset ring-[#3617ce]' : 'hover:bg-[#f8f9fb]'))
+    : cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
   return (
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
       className={cn('overflow-hidden rounded-[16px] border-2 bg-white transition', ro ? 'border-[#e8ecef]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#e8ecef] hover:border-[#c4c9cf]'))}>
@@ -276,9 +301,10 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       <p className="whitespace-pre-line px-3 pt-3 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
       {spec.buttonText.show && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
       {vertical ? (
-        <div className="mt-2 flex flex-col gap-2 px-3 pb-3">
-          {[0, 1].map((i) => (
-            <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls(i)}>
+        // 세로형 = 세로 리스트(레퍼런스 4건·행 구분선). 실제 노출 개수는 빌더/노출 개수에서 결정, 미리보기는 대표 4건.
+        <div className="mt-1 flex flex-col divide-y divide-[#f1f3f5] px-3 pb-2">
+          {[0, 1, 2, 3].map((i) => (
+            <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
               <ItemRow s={spec.item} />
             </button>
           ))}
@@ -286,7 +312,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       ) : (
       <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-3">
         {[0, 1].map((i) => (
-          <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls(i)}>
+          <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
             <ItemCard s={spec.item} />
           </button>
         ))}
@@ -296,16 +322,17 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
   );
 }
 
-// 저장된 코너 스펙 로드(로컬) — 스튜디오가 저장한 ct:<id> 를 상세·빌더에서 재사용.
-export function loadCornerSpec(storageKey: string): CardHomeSpec {
-  try { const raw = localStorage.getItem(storageKey); if (raw) return { ...DEFAULT_SPEC, ...JSON.parse(raw) }; } catch { /* ignore */ }
-  return DEFAULT_SPEC;
+// 저장된 코너 스펙 로드(로컬) — 스튜디오가 저장한 ct:<id> 를 상세·빌더에서 재사용. 미저장이면 레이아웃별 초기값.
+export function loadCornerSpec(storageKey: string, layout?: string): CardHomeSpec {
+  const base = defaultSpec(layout);
+  try { const raw = localStorage.getItem(storageKey); if (raw) return { ...base, ...JSON.parse(raw) }; } catch { /* ignore */ }
+  return base;
 }
 
 // 상세/목록 '미리보기·조합 결과'용 읽기 전용 프리뷰 — 저장된 스펙을 폰 프레임 없이 카드 그대로 렌더(2026-10-19 사용자 요청).
 export function CornerSpecPreview({ storageKey, layout }: { storageKey: string; layout?: string }) {
   const [spec, setSpec] = useState<CardHomeSpec | null>(null);
-  useEffect(() => { setSpec(loadCornerSpec(storageKey)); }, [storageKey]);
+  useEffect(() => { setSpec(loadCornerSpec(storageKey, layout)); }, [storageKey, layout]);
   return (
     <div className="mx-auto w-full max-w-[300px]">
       {spec ? <CardPreview spec={spec} layout={layout} /> : <div className="h-[360px] animate-pulse rounded-[16px] bg-[#f1f3f5]" />}
@@ -319,7 +346,7 @@ export function CornerSpecThumb({ storageKey, layout }: { storageKey: string; la
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.3);
-  useEffect(() => { setSpec(loadCornerSpec(storageKey)); }, [storageKey]);
+  useEffect(() => { setSpec(loadCornerSpec(storageKey, layout)); }, [storageKey, layout]);
   useLayoutEffect(() => {
     if (!spec || !outerRef.current || !innerRef.current) return;
     const o = outerRef.current.getBoundingClientRect();
@@ -446,14 +473,15 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 
 // ── 스튜디오 — 좌: 고정 미리보기 · 우: 1.기본 정보 + 2.코너 정보/속성(클릭 전환) ──
 export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource, layout }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode; layout?: string }) {
-  const [spec, setSpec] = useState<CardHomeSpec>(DEFAULT_SPEC);
+  const [spec, setSpec] = useState<CardHomeSpec>(() => defaultSpec(layout));
   const [sel, setSel] = useState<'card' | 'item'>('card'); // 미리보기 클릭 → 코너 정보(card) / 코너 속성(item)
   useEffect(() => {
-    try { const raw = localStorage.getItem(storageKey); setSpec(raw ? { ...DEFAULT_SPEC, ...JSON.parse(raw) } : DEFAULT_SPEC); } catch { /* ignore */ }
+    const base = defaultSpec(layout);
+    try { const raw = localStorage.getItem(storageKey); setSpec(raw ? { ...base, ...JSON.parse(raw) } : base); } catch { setSpec(base); }
     setSel('card');
-  }, [storageKey]);
+  }, [storageKey, layout]);
   const save = (next: CardHomeSpec) => { setSpec(next); try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignore */ } };
-  const reset = () => save(DEFAULT_SPEC); // 초기 설정값으로 되돌리기
+  const reset = () => save(defaultSpec(layout)); // 레이아웃별 초기 설정값으로 되돌리기
 
   return (
     <div className="flex flex-wrap items-start gap-5">
