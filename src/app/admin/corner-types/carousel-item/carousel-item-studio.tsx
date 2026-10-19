@@ -262,15 +262,17 @@ function ItemRow({ s }: { s: CarouselItemSpec }) {
 function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec; sel?: 'card' | 'item'; onCard?: () => void; onItem?: () => void; layout?: string }) {
   const ro = !onCard && !onItem; // 읽기 전용(상세 미리보기)
   const vertical = isVertical(layout);
+  // 배너는 '+배너' 레이아웃(가로형+배너·세로형+배너)만. 그냥 세로형/가로형은 배너 없음(2026-10-19 사용자 요청). layout 미지정(단독 스튜디오)은 배너 유지.
+  const hasBanner = layout == null || /배너/.test(layout);
   const itemBtnCls = (i: number) => cn('rounded-[12px] border-2 text-left transition', vertical ? 'w-full p-1.5' : 'shrink-0 p-0.5', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
   return (
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
       className={cn('overflow-hidden rounded-[16px] border-2 bg-white transition', ro ? 'border-[#e8ecef]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#e8ecef] hover:border-[#c4c9cf]'))}>
-      {spec.bannerSrc ? (
+      {hasBanner && (spec.bannerSrc ? (
         /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="h-[160px] w-full object-cover" />
       ) : (
         <div className="flex h-[160px] w-full items-center justify-center bg-[#eceef1] text-[11px] text-[#b3b9c0]">Banner</div>
-      )}
+      ))}
       <p className="whitespace-pre-line px-3 pt-3 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
       {spec.buttonText.show && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
       {vertical ? (
@@ -335,8 +337,9 @@ export function CornerSpecThumb({ storageKey, layout }: { storageKey: string; la
 }
 
 // ── 코너 정보(CardHome) 본문 ──────────────────────────────────
-function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: CardHomeSpec) => void }) {
+function CornerInfoBody({ spec, onChange, layout }: { spec: CardHomeSpec; onChange: (s: CardHomeSpec) => void; layout?: string }) {
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
+  const hasBanner = layout == null || /배너/.test(layout); // '+배너' 레이아웃만 배너 필드 노출
   return (
     <div>
       <Group title="타이틀(Title)">
@@ -346,9 +349,11 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
         <Prop name="버튼 표시(ShowButtonText)" desc="표시 여부"><Switch on={spec.buttonText.show} onChange={(v) => set({ buttonText: { ...spec.buttonText, show: v } })} /></Prop>
         <Prop name="라벨(Label)" desc="라벨 텍스트"><TextInput value={spec.buttonText.label} onChange={(v) => set({ buttonText: { ...spec.buttonText, label: v } })} /></Prop>
       </Group>
-      <Group title="배너(BannerSrc)">
-        <Prop name="배너 이미지(BannerSrc)" desc="이미지/미디어 경로"><TextInput value={spec.bannerSrc} onChange={(v) => set({ bannerSrc: v })} placeholder="이미지 주소 입력" /></Prop>
-      </Group>
+      {hasBanner && (
+        <Group title="배너(BannerSrc)">
+          <Prop name="배너 이미지(BannerSrc)" desc="이미지/미디어 경로"><TextInput value={spec.bannerSrc} onChange={(v) => set({ bannerSrc: v })} placeholder="이미지 주소 입력" /></Prop>
+        </Group>
+      )}
     </div>
   );
 }
@@ -481,7 +486,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
           {/* 탭바는 꽉차게, 표는 패널 안쪽으로 여백 + 테두리 */}
           <div className="p-4">
             <div className="overflow-hidden rounded-[10px] border border-[#e8ecef]">
-              {sel === 'card' ? <CornerInfoBody spec={spec} onChange={save} /> : <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />}
+              {sel === 'card' ? <CornerInfoBody spec={spec} onChange={save} layout={layout} /> : <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />}
             </div>
           </div>
         </Panel>

@@ -485,7 +485,7 @@ function DisclosureButton({ children }: { children: React.ReactNode }) {
 }
 
 // 정렬 가능한 칩 한 줄 (드래그앤드롭 · 그립 핸들) — 좌측 코너 리스트와 동일한 방식
-function SortableChipRow({ i, chip, onPatch, onRemove, canRemove }: { i: number; chip: ChipItem; onPatch: (p: Partial<ChipItem>) => void; onRemove: () => void; canRemove: boolean }) {
+function SortableChipRow({ i, chip, links, onPatch, onRemove, canRemove }: { i: number; chip: ChipItem; links: LibraryData['links']; onPatch: (p: Partial<ChipItem>) => void; onRemove: () => void; canRemove: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(i) });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
@@ -525,13 +525,16 @@ function SortableChipRow({ i, chip, onPatch, onRemove, canRemove }: { i: number;
         aria-label={`메뉴 ${i + 1} 라벨`}
         className="min-w-0 flex-1 rounded-md border bg-white px-2 py-1.5 text-xs outline-none focus:border-primary"
       />
-      <input
-        value={chip.linkUrl}
-        onChange={(e) => onPatch({ linkUrl: e.target.value })}
-        placeholder="이동 링크 (예: tworld://…)"
-        aria-label={`메뉴 ${i + 1} 이동 링크`}
-        className="min-w-0 flex-1 rounded-md border bg-white px-2 py-1.5 text-[11px] text-slate-500 outline-none focus:border-primary"
-      />
+      {/* 이동 링크 — 직접 입력 또는 '불러오기'로 링크 카탈로그에서 선택(기존 로우 변경, 2026-10-19 사용자 요청).
+          링크를 고르면 라벨이 비어 있을 때 링크 이름으로 자동 채움. */}
+      <div className="min-w-0 flex-1">
+        <LinkPickField
+          value={chip.linkUrl || null}
+          links={links}
+          onPick={(v) => { const found = links.find((l) => l.url === v.url); onPatch({ linkUrl: v.url, ...(chip.content.trim() ? {} : { content: found?.label ?? chip.content }) }); }}
+          onClear={() => onPatch({ linkUrl: '' })}
+        />
+      </div>
       <button
         type="button"
         onClick={onRemove}
@@ -547,7 +550,7 @@ function SortableChipRow({ i, chip, onPatch, onRemove, canRemove }: { i: number;
 
 // ── 선택형(칩/탭) 편집기 = ChipPage (업무진입형.png) ─────────
 // 완전 제어형: 개별 저장 없이 로컬 draft만 수정 → 미리보기 즉시 반영, 저장은 카드의 "완료"가 일괄 처리.
-function ChipEditor({ draft, onChange }: { draft: ChipDraft; onChange: (next: ChipDraft) => void }) {
+function ChipEditor({ draft, onChange, links }: { draft: ChipDraft; onChange: (next: ChipDraft) => void; links: LibraryData['links'] }) {
   const { chips, selectedIndex, chipRows } = draft;
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -586,7 +589,7 @@ function ChipEditor({ draft, onChange }: { draft: ChipDraft; onChange: (next: Ch
         <SortableContext items={chips.map((_, i) => String(i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {chips.map((c, i) => (
-              <SortableChipRow key={i} i={i} chip={c} onPatch={(p) => patch(i, p)} onRemove={() => removeChip(i)} canRemove={chips.length > 1} />
+              <SortableChipRow key={i} i={i} chip={c} links={links} onPatch={(p) => patch(i, p)} onRemove={() => removeChip(i)} canRemove={chips.length > 1} />
             ))}
           </div>
         </SortableContext>
@@ -1420,7 +1423,7 @@ function ComponentCard({
 
       {edit ? (
         isChip ? (
-          <ChipEditor draft={draft} onChange={updateDraft} />
+          <ChipEditor draft={draft} onChange={updateDraft} links={library.links} />
         ) : (
           <AtomManager
             key={cc.atoms.map((a) => a.componentAtomId).join(',')}

@@ -307,7 +307,8 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
         </div>
       </RORow>
       ) : null}
-      {hasDefaults && (
+      {/* 상품형은 기본값(정렬·더보기 등)을 코너 속성/버튼 텍스트로 관리 → 기본값 행 숨김(2026-10-19 사용자 요청) */}
+      {!isStudio && hasDefaults && (
         <RORow label="기본값">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
             {/* 상품형은 노출 개수를 코너 속성(스튜디오)에서 관리 → 기본값에서 숨김(2026-10-19 사용자 요청) */}
