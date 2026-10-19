@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { ChevronRight } from 'lucide-react';
 import { OgImageField } from './og-image-field';
+import { MetaTagInput } from './meta-tag-input';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,10 +46,13 @@ export default async function NewContainerPage() {
         </div>
 
         <form action={createContainer} className="space-y-6">
-        {/* 컨테이너 기본 정보 */}
+        {/* ① 컨테이너 기본 정보 */}
         <section className="rounded-lg border">
-          <h2 className="border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">컨테이너 기본 정보</h2>
-          <div className="grid grid-cols-2">
+          <h2 className="flex items-center gap-2 border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">1</span>
+            컨테이너 기본 정보
+          </h2>
+          <div>
             <Row label="컨테이너 ID">
               <Input value="(저장 시 자동 생성)" disabled className="h-9 bg-muted text-xs" />
             </Row>
@@ -120,7 +124,10 @@ export default async function NewContainerPage() {
 
         {/* 메타 정보 */}
         <section className="rounded-lg border">
-          <h2 className="border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">메타 정보</h2>
+          <h2 className="flex items-center gap-2 border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">2</span>
+            메타 정보
+          </h2>
           <div>
             <Row label="사용 여부" required>
               <div className="flex gap-4">
@@ -132,12 +139,12 @@ export default async function NewContainerPage() {
                 </label>
               </div>
             </Row>
-            <Row label="검색 태그" required>
-              <Input name="searchTags" placeholder="#키워드 형태로 등록해 주세요. (ex. #SKT #SK 텔레콤)" className="h-9 text-xs" />
+            <Row label="메타 태그" required>
+              <MetaTagInput name="searchTags" />
             </Row>
-            <Row label="메타 태그">
+            <Row label="메타 태그 설정">
               <div className="space-y-1.5">
-                <Input name="metaKeywords" placeholder="keywords — #키워드 형태로 등록해 주세요." className="h-9 text-xs" />
+                <Input name="metaKeywords" placeholder="keywords — 메타 태그로 자동 적용" className="h-9 text-xs" />
                 <Input name="metaDescription" placeholder="description" className="h-9 text-xs" />
                 <Input name="ogTitle" placeholder="og:title" className="h-9 text-xs" />
                 <Input name="ogDescription" placeholder="og:description" className="h-9 text-xs" />
@@ -152,7 +159,10 @@ export default async function NewContainerPage() {
 
         {/* 매핑 템플릿 정보 안내 */}
         <section className="rounded-lg border">
-          <h2 className="border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">매핑 템플릿 정보</h2>
+          <h2 className="flex items-center gap-2 border-b bg-muted/50 px-4 py-2.5 text-sm font-semibold">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">3</span>
+            매핑 템플릿 정보
+          </h2>
           <p className="px-4 py-4 text-sm text-muted-foreground">
             컨테이너 정보 저장 후 상세 화면에서 템플릿을 등록해 주세요. (저장 시 기본 Template 1개가 자동 생성됩니다.)
           </p>

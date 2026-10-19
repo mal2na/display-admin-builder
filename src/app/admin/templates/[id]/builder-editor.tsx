@@ -90,7 +90,7 @@ import {
   refreshBannerComponent,
   addBssProduct,
 } from '../actions';
-import { BSS_PRODUCTS, BSS_CATEGORY_LABELS, BSS_SUBCATEGORIES, BSS_DEVICES, DEVICE_MAKERS, DEVICE_TYPES, pickerItemByKey, type BssCategory, type PickerItem } from '@/lib/bss-products';
+import { BSS_PRODUCTS, BSS_CATEGORY_LABELS, BSS_SUBCATEGORIES, PRODUCT_CATALOG, PRODUCT_AREAS, pickerItemByKey, type BssCategory, type PickerItem } from '@/lib/bss-products';
 import { parseBannerOptions, type BannerOptions } from '@/lib/banner-options';
 import { isChipAllowed } from '@/lib/chip-types';
 import { DevImpactGuide, DevLockBadge } from '@/components/dev-impact-guide';
@@ -485,7 +485,7 @@ function DisclosureButton({ children }: { children: React.ReactNode }) {
 }
 
 // 정렬 가능한 칩 한 줄 (드래그앤드롭 · 그립 핸들) — 좌측 코너 리스트와 동일한 방식
-function SortableChipRow({ i, chip }: { i: number; chip: ChipItem }) {
+function SortableChipRow({ i, chip, links, onPatch, onRemove, canRemove }: { i: number; chip: ChipItem; links: LibraryData['links']; onPatch: (p: Partial<ChipItem>) => void; onRemove: () => void; canRemove: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(i) });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
@@ -501,7 +501,7 @@ function SortableChipRow({ i, chip }: { i: number; chip: ChipItem }) {
         <GripVertical className="h-4 w-4" />
       </button>
 
-      {/* 아이콘(읽기 전용) — 정의는 코너 유형에서 */}
+      {/* 아이콘 — 코너 유형은 껍데기(슬롯만), 아이콘도 빌더 소유. 지금은 자동/기본 노출(별도 아이콘 피커는 추후). */}
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-slate-50">
         {chip.iconUrl ? (
           isIconRef(chip.iconUrl) ? (
@@ -517,22 +517,50 @@ function SortableChipRow({ i, chip }: { i: number; chip: ChipItem }) {
         )}
       </div>
 
-      {/* 라벨·링크는 읽기 전용(코너 유형에서 정의) — 빌더에선 순서만 변경 */}
-      <span className="min-w-0 flex-1 truncate rounded-md bg-slate-50 px-2 py-1.5 text-xs text-slate-600">{chip.content || `ChipLabel${String(i + 1).padStart(2, '0')}`}</span>
-      <span className="min-w-0 flex-1 truncate rounded-md bg-slate-50 px-2 py-1.5 text-[11px] text-slate-400">{chip.linkUrl || '이동 링크 —'}</span>
+      {/* 라벨·이동 링크 편집(2026-10-14): 코너 유형이 껍데기가 되며 실제 내용은 빌더에서 채운다. */}
+      <input
+        value={chip.content}
+        onChange={(e) => onPatch({ content: e.target.value })}
+        placeholder={`메뉴 ${i + 1}`}
+        aria-label={`메뉴 ${i + 1} 라벨`}
+        className="min-w-0 flex-1 rounded-md border bg-white px-2 py-1.5 text-xs outline-none focus:border-primary"
+      />
+      {/* 이동 링크 — 직접 입력 또는 '불러오기'로 링크 카탈로그에서 선택(기존 로우 변경, 2026-10-19 사용자 요청).
+          링크를 고르면 라벨이 비어 있을 때 링크 이름으로 자동 채움. */}
+      <div className="min-w-0 flex-1">
+        <LinkPickField
+          value={chip.linkUrl || null}
+          links={links}
+          onPick={(v) => { const found = links.find((l) => l.url === v.url); onPatch({ linkUrl: v.url, ...(chip.content.trim() ? {} : { content: found?.label ?? chip.content }) }); }}
+          onClear={() => onPatch({ linkUrl: '' })}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={!canRemove}
+        aria-label={`메뉴 ${i + 1} 삭제`}
+        className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive disabled:opacity-30"
+      >
+        ×
+      </button>
     </div>
   );
 }
 
 // ── 선택형(칩/탭) 편집기 = ChipPage (업무진입형.png) ─────────
 // 완전 제어형: 개별 저장 없이 로컬 draft만 수정 → 미리보기 즉시 반영, 저장은 카드의 "완료"가 일괄 처리.
-function ChipEditor({ draft, onChange }: { draft: ChipDraft; onChange: (next: ChipDraft) => void }) {
+function ChipEditor({ draft, onChange, links }: { draft: ChipDraft; onChange: (next: ChipDraft) => void; links: LibraryData['links'] }) {
   const { chips, selectedIndex, chipRows } = draft;
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const setChips = (next: ChipItem[], sel = selectedIndex) =>
     onChange({ chips: next, selectedIndex: Math.max(0, Math.min(sel, Math.max(0, next.length - 1))), chipRows });
-  // 드래그로 순서만 변경 (선택된 칩도 함께 따라가도록 selectedIndex 보정). 라벨·링크·줄수는 코너 유형에서 정의.
+  // 라벨·이동 링크 편집 + 추가/삭제(2026-10-14): 코너 유형은 껍데기(슬롯·줄 수만) → 빌더가 내용을 채운다.
+  const patch = (idx: number, p: Partial<ChipItem>) => setChips(chips.map((c, j) => (j === idx ? { ...c, ...p } : c)));
+  const addChip = () => setChips([...chips, { content: '', linkUrl: '', iconUrl: '', iconAlt: '', menuRole: 'EDITABLE' }], chips.length);
+  const removeChip = (idx: number) => setChips(chips.filter((_, j) => j !== idx), Math.max(0, selectedIndex > idx ? selectedIndex - 1 : selectedIndex));
+  // 드래그로 순서 변경 (선택된 칩도 함께 따라가도록 selectedIndex 보정).
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
@@ -552,20 +580,29 @@ function ChipEditor({ draft, onChange }: { draft: ChipDraft; onChange: (next: Ch
   return (
     <div className="mt-1 space-y-2 rounded-md bg-muted/40 p-2">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium text-muted-foreground">드래그로 <b className="text-slate-600">순서만</b> 변경 · 상단 “완료”로 저장</span>
+        <span className="text-[11px] font-medium text-muted-foreground">라벨·이동 링크를 입력하고 드래그로 <b className="text-slate-600">순서</b> 변경 · 상단 “완료”로 저장</span>
         <span className="rounded bg-white px-1.5 py-0.5 text-[11px] font-semibold">{chips.length}</span>
       </div>
 
-      {/* 각 칩 = 드래그 핸들 · 아이콘(읽기) · 라벨(읽기) · 이동 링크(읽기). 순서만 변경. */}
+      {/* 각 칩 = 드래그 핸들 · 아이콘 · 라벨(입력) · 이동 링크(입력) · 삭제. */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={chips.map((_, i) => String(i))} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {chips.map((c, i) => (
-              <SortableChipRow key={i} i={i} chip={c} />
+              <SortableChipRow key={i} i={i} chip={c} links={links} onPatch={(p) => patch(i, p)} onRemove={() => removeChip(i)} canRemove={chips.length > 1} />
             ))}
           </div>
         </SortableContext>
       </DndContext>
+
+      {/* 메뉴 추가 — 껍데기(코너 유형)엔 슬롯만, 실제 메뉴는 빌더에서 추가·편집(2026-10-14). */}
+      <button
+        type="button"
+        onClick={addChip}
+        className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white/70 py-1.5 text-[11px] font-medium text-slate-600 hover:border-primary hover:bg-primary/5"
+      >
+        <Plus className="h-3.5 w-3.5" /> 메뉴 추가
+      </button>
 
       {/* Selection: 기본 활성 칩 */}
       {chips.length > 0 && (
@@ -593,10 +630,10 @@ function ChipEditor({ draft, onChange }: { draft: ChipDraft; onChange: (next: Ch
         <span className="text-[10px] text-slate-400">· 코너 유형에서 정의</span>
       </div>
 
-      {/* 거버넌스 안내 — 정의는 코너 유형, 빌더는 순서만 */}
+      {/* 거버넌스 안내(2026-10-14) — 코너 유형은 껍데기(슬롯·줄 수)만, 라벨·이동 링크는 빌더에서 채운다. */}
       <p className="flex items-start gap-1.5 rounded-md bg-white/70 px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
         <Lock className="mt-[1px] h-3 w-3 shrink-0 text-slate-400" />
-        <span>탭·메뉴의 <b className="text-slate-600">라벨·이동 링크·줄 수·아이콘</b>은 <b className="text-slate-600">코너 유형</b>에서 정의합니다. 빌더에선 <b className="text-emerald-700">순서만</b> 바꿀 수 있어요.</span>
+        <span><b className="text-slate-600">슬롯 수·줄 수</b>는 <b className="text-slate-600">코너 유형</b>(껍데기)에서 정의합니다. <b className="text-emerald-700">라벨·이동 링크·순서</b>는 빌더에서 채워요.</span>
       </p>
     </div>
   );
@@ -1386,7 +1423,7 @@ function ComponentCard({
 
       {edit ? (
         isChip ? (
-          <ChipEditor draft={draft} onChange={updateDraft} />
+          <ChipEditor draft={draft} onChange={updateDraft} links={library.links} />
         ) : (
           <AtomManager
             key={cc.atoms.map((a) => a.componentAtomId).join(',')}
@@ -1416,7 +1453,7 @@ const BSS_BADGE_TONE: Record<string, string> = {
   사용: 'bg-blue-100 text-blue-700',
   'VIP PICK': 'bg-violet-600 text-white',
 };
-function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'benefit', single = false }: { open: boolean; onClose: () => void; onPickMany: (keys: string[]) => void; pending: boolean; mode?: 'benefit' | 'device'; single?: boolean }) {
+function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'benefit', single = false, keepOpen = false, pickTitle }: { open: boolean; onClose: () => void; onPickMany: (keys: string[]) => void; pending: boolean; mode?: 'benefit' | 'device'; single?: boolean; keepOpen?: boolean; pickTitle?: string }) {
   const [cat, setCat] = useState<string>('ALL');
   const [sub, setSub] = useState<string>('전체');
   const [q, setQ] = useState(''); // 디바이스 102종 — 이름 검색 없이는 못 찾는다(2026-10-08)
@@ -1429,18 +1466,20 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
     setSelected((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
   };
   const close = () => { setSelected(new Set()); setQ(''); onClose(); };
-  // 카테고리/세부 — 디바이스는 제조사(DEVICE_MAKERS)×유형(DEVICE_TYPES), 혜택은 EAT/BUY/PLAY×BSS_SUBCATEGORIES.
-  const cats: string[] = device ? ['ALL', ...DEVICE_MAKERS] : ['ALL', 'EAT', 'BUY', 'PLAY'];
+  // 상품(device) = 상품 카탈로그 — 1차 영역(디바이스·요금제·부가서비스·로밍·T우주) × 2차 상품유형(category).
+  //  혜택(benefit) = 혜택 브랜드 — EAT/BUY/PLAY × BSS_SUBCATEGORIES. (혜택=무료, 상품=SKT 판매 공식)
+  const source: PickerItem[] = device ? PRODUCT_CATALOG : BSS_PRODUCTS;
+  const cats: string[] = device ? ['ALL', ...PRODUCT_AREAS] : ['ALL', 'EAT', 'BUY', 'PLAY'];
   const catLabel = (c: string) => c === 'ALL' ? '전체' : (device ? c : BSS_CATEGORY_LABELS[c as BssCategory]);
+  // 선택한 영역(디바이스=제조사, 그 외=상품유형)에서 실제 존재하는 2차 분류만 노출
   const subs = cat === 'ALL' ? [] : device
-    ? ['전체', ...DEVICE_TYPES.filter((t) => BSS_DEVICES.some((d) => d.category === cat && d.sub === t))]
+    ? ['전체', ...Array.from(new Set(source.filter((p) => p.area === cat).map((p) => p.category)))]
     : ['전체', ...BSS_SUBCATEGORIES[cat as BssCategory]];
-  const source: PickerItem[] = device ? BSS_DEVICES : BSS_PRODUCTS;
   const kw = q.trim().toLowerCase();
   const list = source.filter(
     (p) =>
-      (cat === 'ALL' || p.category === cat) &&
-      (cat === 'ALL' || sub === '전체' || p.sub === sub) &&
+      (cat === 'ALL' || (device ? p.area === cat : p.category === cat)) &&
+      (cat === 'ALL' || sub === '전체' || (device ? p.category === sub : p.sub === sub)) &&
       (!kw || p.name.toLowerCase().includes(kw) || p.sub.toLowerCase().includes(kw) || p.category.toLowerCase().includes(kw)),
   );
   return (
@@ -1448,12 +1487,14 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
       {/* 고정 높이(h-[80vh]) — 카테고리 전환 시에도 모달 크기 불변, 리스트만 내부 스크롤 */}
       <div className="flex h-[80vh] w-full max-w-xl flex-col overflow-hidden dlg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b px-5 py-3">
-          <h2 className="text-sm font-semibold">{single ? '세트로 불러오기' : device ? '디바이스 불러오기' : '상품 불러오기'}</h2>
+          <h2 className="text-sm font-semibold">{single ? (pickTitle ?? '세트로 불러오기') : '상품 불러오기'}</h2>
           <span className="text-xs text-muted-foreground">
             {single
-              ? '항목을 고르면 텍스트 · 설명 · 이미지가 한 번에 채워집니다'
+              ? (keepOpen
+                  ? '고르면 한 줄씩 담깁니다 — 계속 골라 여러 줄을 추가하고 ✕로 닫으세요'
+                  : '항목을 고르면 텍스트 · 설명 · 이미지가 한 번에 채워집니다')
               : device
-                ? 'T에서 판매하는 디바이스를 선택해 코너에 추가'
+                ? 'SKT에서 판매하는 상품(디바이스·요금제·부가서비스·로밍·T우주)을 선택해 코너에 추가'
                 : '여러 개 선택해 한 번에 코너에 추가'}
           </span>
           <button type="button" onClick={close} className="ml-auto text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
@@ -1474,7 +1515,7 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder={device ? '모델명으로 검색 (예: iPhone 17, 갤럭시 Z 플립)' : '브랜드명으로 검색'}
+              placeholder={device ? '상품명으로 검색 (예: iPhone 17, 라이트 59, Netflix 이용권)' : '브랜드명으로 검색'}
               className="h-8 w-full rounded-md border bg-white pl-8 pr-2 text-xs outline-none focus:border-primary"
             />
           </div>
@@ -1496,7 +1537,7 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
         <div className="grid min-h-0 flex-1 content-start grid-cols-1 gap-2 overflow-y-auto p-4 sm:grid-cols-2">
           {list.length === 0 && (
             <p className="col-span-full py-10 text-center text-xs text-muted-foreground">
-              조건에 맞는 {device ? '디바이스' : '브랜드'}가 없습니다.
+              조건에 맞는 {device ? '상품' : '브랜드'}이 없습니다.
             </p>
           )}
           {list.map((p) => {
@@ -1526,7 +1567,7 @@ function BssProductPickerModal({ open, onClose, onPickMany, pending, mode = 'ben
             </button>
             );
           })}
-          {list.length === 0 && <p className="col-span-full py-10 text-center text-xs text-muted-foreground">해당 카테고리에 {device ? '디바이스' : '브랜드'}가 없습니다.</p>}
+          {list.length === 0 && <p className="col-span-full py-10 text-center text-xs text-muted-foreground">해당 카테고리에 {device ? '상품' : '브랜드'}이 없습니다.</p>}
         </div>
         {/* 하단 — 선택 개수 + 한 번에 추가. single(세트 불러오기)은 클릭 즉시 적용되므로 생략. */}
         {!single && (
@@ -1556,7 +1597,7 @@ function ComponentList({
   const overLimit = corner.maxItems != null && corner.components.length > corner.maxItems;
   const [bssOpen, setBssOpen] = useState(false); // BSS 상품 불러오기 모달
   const [bssPending, startBss] = useTransition();
-  const [bodyEdit, setBodyEdit] = useState(false); // 콘텐츠 묶음 편집 토글 — '수정'을 눌러야 상품 불러오기가 열린다(2026-10-06 회의)
+  const [bodyEdit, setBodyEdit] = useState(false); // '수정'을 눌러야 '한 줄 불러오기'가 열린다(2026-10-16 사용자 요청 — 게이트 복원)
 
   // 좌측 코너 리스트와 동일한 드래그앤드롭 재정렬
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -1575,6 +1616,9 @@ function ComponentList({
   // 선택형이라도 레이아웃이 '메뉴 리스트'면 칩이 아니라 세로 메뉴 묶음으로 표기
   const isMenuList = /메뉴\s*리스트/.test(corner.layoutDetail ?? '');
   const chipLabel = isMenuList ? '메뉴 묶음' : '칩 묶음';
+  // 메뉴/칩 코너 — 콘텐츠(본문) 묶음이 없어야 한다(2026-10-16 사용자 요청).
+  //  칩이 있고 본문이 비어 있으면 '콘텐츠 묶음' 빈 블록을 띄우지 않는다. 채우기는 칩 묶음 '수정'에서.
+  const showBody = bodyOrdered.length > 0 || chipOrdered.length === 0;
 
   // CVM 보충 — 노출 개수(max)보다 운영자 등록(M)이 적으면 나머지(max−M)를 CVM이 채운다(가안).
   //  콘텐츠 수급 코너 + 1순위 CVM + max > 등록 개수일 때만. (에셋 등록 위치는 미해결 쟁점 10/07 — '가안' 표기)
@@ -1624,7 +1668,10 @@ function ComponentList({
             </SortableContext>
           </div>
         )}
-        {/* 콘텐츠 묶음 — 본문(상품·혜택 등) 컴포넌트 + 추가 버튼. 비어도 항상 노출(추가 진입점). */}
+        {/* 콘텐츠 묶음 — 본문(상품·혜택) 컴포넌트. 한 묶음에서 바로 보고·편성·수정(2026-10-14 사용자 요청: 정보/묶음 분리 제거).
+             각 행은 '수정'으로 콘텐츠 편집, 아래 '한 줄 불러오기'로 카탈로그에서 1건씩 담는다.
+             메뉴/칩 코너(칩만 있고 본문 없음)에서는 띄우지 않는다(2026-10-16 사용자 요청). */}
+        {showBody && (
         <div className="rounded-lg border bg-muted/30 p-2">
           <div className="mb-1.5 flex flex-wrap items-center gap-1 px-0.5 text-[11px] font-semibold text-slate-600">
             {bodyLabel} <span className="rounded-full bg-white px-1.5 text-[10px] text-slate-500">{bodyOrdered.length}</span>
@@ -1634,7 +1681,7 @@ function ComponentList({
                 <span className="rounded bg-violet-600 px-1 text-[8px] font-bold text-white">가안</span>
               </span>
             )}
-            {/* 상품 불러오기는 '수정'을 눌러야 열린다(칩 묶음과 동일한 편집 게이트). */}
+            {/* 수정 게이트 — 눌러야 '한 줄 불러오기'가 열린다(2026-10-16 사용자 요청) */}
             <button
               type="button"
               onClick={() => setBodyEdit((v) => !v)}
@@ -1652,9 +1699,11 @@ function ComponentList({
               </div>
             </SortableContext>
           ) : (
-            <p className="px-0.5 pb-1 text-[11px] text-muted-foreground">아직 콘텐츠가 없습니다. 아래에서 추가하세요.</p>
+            <p className="px-0.5 pb-1 text-[11px] text-muted-foreground">
+              아직 콘텐츠가 없습니다. <b className="text-slate-600">수정</b>을 눌러 ‘한 줄 불러오기’로 상품을 1건씩 담으세요.
+            </p>
           )}
-          {/* 추가 — '수정'을 눌렀을 때만 노출. 자유 컴포넌트 생성은 정책상 불가(⛔ 새 구조 생성). 코드화된 상품(BSS)만 불러와 편성(🔶). */}
+          {/* 한 줄 불러오기 — '수정'을 눌렀을 때만 노출(2026-10-16 게이트 복원). 상품 카탈로그에서 1건씩 편성. 자유 컴포넌트 생성 불가(⛔). */}
           {bodyEdit && (
           <div className="mt-2 space-y-1.5">
             <button
@@ -1662,22 +1711,26 @@ function ComponentList({
               onClick={() => setBssOpen(true)}
               className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-sky-300 bg-white/70 py-2 text-xs font-medium text-sky-700 hover:border-sky-500 hover:bg-sky-50"
             >
-              <Search className="h-3.5 w-3.5" /> 상품 불러오기 (코드화된 데이터셋 편성)
+              <Plus className="h-3.5 w-3.5" /> 한 줄 불러오기 <span className="text-[10px] font-normal text-sky-600">· 상품 카탈로그에서 1건씩</span>
             </button>
             <p className="flex items-start gap-1 rounded-md bg-slate-50 px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
               <Lock className="mt-0.5 h-3 w-3 shrink-0" />
-              <span>새 데이터셋 자유 추가는 여기서 하지 않아요. 담을 수 있는 데이터셋 정보는 <b className="text-slate-600">코너 유형 관리</b>(DS Portal 코드화 기준)에서 정의합니다.</span>
+              <span>담을 수 있는 데이터셋 틀은 <b className="text-slate-600">코너 유형 관리</b>(DS Portal 코드화 기준)에서 정의합니다. 여기선 등록된 상품을 <b className="text-slate-600">한 줄씩 불러와 편성·수정</b>합니다.</span>
             </p>
           </div>
           )}
         </div>
+        )}
       </DndContext>
       <BssProductPickerModal
         open={bssOpen}
         pending={bssPending}
+        single
+        keepOpen
+        pickTitle="상품 한 줄 불러오기"
         mode={corner.cornerType === '상품형' ? 'device' : 'benefit'}
         onClose={() => setBssOpen(false)}
-        onPickMany={(keys) => startBss(async () => { for (const k of keys) await addBssProduct(templateId, corner.id, k); setBssOpen(false); })}
+        onPickMany={(keys) => startBss(async () => { for (const k of keys) await addBssProduct(templateId, corner.id, k); /* 한 줄씩 — 모달 유지, ✕로 닫기 */ })}
       />
     </div>
   );
@@ -2650,54 +2703,6 @@ function BannerPanel({
   );
 }
 
-// ── 순서 베리에이션 예시(가안) ───────────────────────────────
-//  운영자는 '기본 순서' 1벌만 짠다(위 리스트). 실서비스에선 CVM이 '비고정' 코너를 세그먼트/고객마다 자동 재정렬하고,
-//  '위치 고정' 코너(퀵메뉴 등)는 항상 그 자리. 아래는 어떻게 달라질 수 있는지 보여주는 예시일 뿐(실제 순서는 CVM이 런타임 결정).
-//  문구·노출 타입 베리에이션과 같은 원칙: 기본=폴백(미리보기 기준), 변주는 CVM 몫. 2026-10-06 사용자 결정(1안).
-const ORDER_VAR_SEGMENTS = ['재방문 고객', '2030 신규', '혜택 보유'];
-function OrderVariationExamples({ pinned, free }: { pinned: CornerNode[]; free: CornerNode[] }) {
-  const [open, setOpen] = useState(false);
-  // 세그먼트별 예시 순서 — 비고정 코너를 세그먼트 index만큼 회전(결정적). 실제 알고리즘 아님, 예시용.
-  const rotate = (arr: CornerNode[], n: number) => arr.map((_, i) => arr[(i + n) % arr.length]);
-  const short = (c: CornerNode) => (c.mainTitle || c.title || c.name || '').split('\n')[0].slice(0, 10) || c.name;
-  return (
-    <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50/50 p-2.5">
-      <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-1.5 text-left">
-        <Sparkles className="h-3.5 w-3.5 shrink-0 text-violet-500" />
-        <span className="text-[11px] font-semibold text-violet-700">세그먼트별 예시 순서</span>
-        <span className="rounded bg-violet-600 px-1 py-0.5 text-[9px] font-bold text-white">가안</span>
-        <span className="ml-auto text-[10px] text-violet-400">{open ? '접기' : '펼치기'}</span>
-      </button>
-      <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-        기본 순서는 위 리스트. 실서비스는 <b>CVM이 세그먼트별로 재정렬</b>, <b className="text-indigo-600">고정</b>은 제자리.
-      </p>
-      {open && (
-        <div className="mt-2 space-y-2">
-          {ORDER_VAR_SEGMENTS.map((seg, si) => (
-            <div key={seg} className="rounded-md border border-[#e8ecef] bg-white p-2">
-              <p className="mb-1 flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-600">
-                <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[9.5px] text-violet-600">{seg}</span>
-              </p>
-              <div className="flex flex-wrap items-center gap-1">
-                {pinned.map((c) => (
-                  <span key={c.templateCornerId} className="inline-flex items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
-                    <Lock className="h-2.5 w-2.5" />{short(c)}
-                  </span>
-                ))}
-                {rotate(free, si).map((c, i) => (
-                  <span key={c.templateCornerId} className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600">
-                    <span className="text-slate-400 tabular-nums">{pinned.length + i + 1}</span>{short(c)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-          <p className="text-[9.5px] leading-relaxed text-slate-400">* 예시(가안)입니다. 실제 순서·매칭은 CVM이 런타임에 결정하며, 미리보기는 운영자 기본 순서(폴백)를 보여줍니다.</p>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── 좌측 고정 리스트의 코너 행 (클릭 선택 + dnd 순서) ─────────
 function CornerListRow({
@@ -2802,11 +2807,11 @@ function CornerListRow({
           <form action={toggleCornerPinned.bind(null, templateId, corner.templateCornerId)} onClick={(e) => e.stopPropagation()}>
             <button
               type="submit"
-              aria-pressed={locked}
-              title={locked ? '제자리 고정됨 (클릭 시 해제 — 순서 변경 가능)' : '제자리 고정 (클릭 시 이 자리에 잠금 · CVM 재정렬 제외)'}
+              aria-pressed={corner.pinned}
+              title={corner.pinned ? '이 자리에 고정됨 (클릭 시 해제) — 위로 가지 않고 CVM 재정렬 제외' : '고정 (클릭 시 지금 자리에서 Fixed · 위로 안 감 · CVM 재정렬 제외)'}
               className={cn(
                 'inline-flex h-[22px] items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
-                locked ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink3)] hover:bg-white hover:text-[var(--ac)]',
+                corner.pinned ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink3)] hover:bg-white hover:text-[var(--ac)]',
               )}
             >
               <Lock className="h-3 w-3" /> 고정
@@ -3345,16 +3350,24 @@ export function BuilderEditor({
   const byId = new Map(corners.map((c) => [c.templateCornerId, c]));
   const orderedRaw = ids.map((id) => byId.get(id)).filter(Boolean) as CornerNode[];
   for (const c of corners) if (!ids.includes(c.templateCornerId)) orderedRaw.push(c);
-  // 퀵메뉴(업무 진입형 탭형 네비)는 유형상 항상 맨 위 — 존 밴드 밖. '고정(pinned)'과는 별개다.
-  const czone = (c: CornerNode): Zone => effectiveZone(c.zone, c.cornerType, c.recSource);
-  const isQuickNav = (c: CornerNode) => c.cornerType === '업무 진입형' && !/메뉴/.test(c.layoutDetail ?? '');
-  const topNav = orderedRaw.filter(isQuickNav);
-  // 나머지는 전시 존 밴드로: Dynamic→Semi→Fixed(연속 밴드 고정). '고정' 코너도 밴드 '안'에서 제자리 잠금(위로 안 올림).
-  //  각 밴드 내부는 저장 순서 유지(V8 stable sort). (2026-10-13 — 고정은 제자리 잠금, 중간 고정 허용)
-  const bandSorted = [...orderedRaw.filter((c) => !isQuickNav(c))].sort((a, b) => ZONE_RANK[czone(a)] - ZONE_RANK[czone(b)]);
-  const ordered = [...topNav, ...bandSorted];
-  const topCount = topNav.length;
+  // 전시 존(밴드) — 파생: 고정(pinned)=Fixed · CVM 수급=Dynamic · 그 외=Semi-fixed. (2026-10-14 사용자 결정)
+  //  순서는 운영자 배치 그대로(플랫). 렌더에서 '연속 같은 존'을 한 밴드로 묶는다 → 고정 연속=한 묶음, 고정은 제자리.
+  // 고정(핀)=Fixed. 아니면 저장된 존(드래그로 지정) 우선, 없으면 수급 성격에서 파생(CVM=Dynamic · 그 외=Semi).
+  const czone = (c: CornerNode): Zone =>
+    c.pinned ? 'fixed'
+    : (c.zone === 'dynamic' || c.zone === 'semi') ? (c.zone as Zone)
+    : (isCvmSource(c.recSource) ? 'dynamic' : 'semi');
+  const ordered = orderedRaw;
   const orderedIds = ordered.map((c) => c.templateCornerId);
+  // 연속 같은 존을 한 밴드로 묶는다(제자리) — 전역 정렬하지 않는다.
+  //  '고정'을 눌러도 위로 가지 않고, 그 자리에서 Fixed 밴드가 된다(2026-10-16 사용자 요청: "고정은 그 자리에서").
+  const bands: { zone: Zone; rows: CornerNode[] }[] = [];
+  for (const c of ordered) {
+    const z = czone(c);
+    const last = bands[bands.length - 1];
+    if (last && last.zone === z) last.rows.push(c);
+    else bands.push({ zone: z, rows: [c] });
+  }
 
   const selectedCorner = (sel ? byId.get(sel) : undefined) ?? ordered[0] ?? null;
   const nameMap = cornerTypeNameMap(library); // 기준분류 → 코너 유형 카탈로그 표시명
@@ -3462,23 +3475,23 @@ export function BuilderEditor({
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    const activeCorner = byId.get(String(active.id));
-    const overCorner = byId.get(String(over.id));
-    // 고정(pinned) 코너·퀵메뉴는 제자리 잠금 → 드래그 불가.
-    if (!activeCorner || !overCorner || activeCorner.pinned || isQuickNav(activeCorner)) return;
+    // 플랫 재정렬 — 밴드는 '연속 같은 존'으로 묶인다. 드래그는 순서를 바꾸고, 떨어뜨린 밴드의 존으로 합류한다(2026-10-16).
     const oldIndex = orderedIds.indexOf(String(active.id));
-    let newIndex = orderedIds.indexOf(String(over.id));
+    const newIndex = orderedIds.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) return;
-    if (newIndex < topCount) newIndex = topCount; // 퀵메뉴(상단 네비) 위로는 못 들어감
-    // 다른 밴드로 떨어뜨리면 그 밴드(존)로 이동 — over 코너의 존을 타깃으로.
-    const targetZone = isQuickNav(overCorner) ? 'dynamic' : czone(overCorner);
     const next = [...orderedIds];
     next.splice(newIndex, 0, next.splice(oldIndex, 1)[0]);
     setIds(next);
-    if (czone(activeCorner) !== targetZone) {
-      await setCornerZone(templateId, activeCorner.templateCornerId, activeCorner.id, targetZone);
-    }
     await reorderCorners(templateId, next);
+    // 드롭한 코너의 존으로 합류 — Dynamic↔Semi 이동(양방향). 고정(핀) 코너는 존을 바꾸지 않는다(핀 해제로만).
+    const moved = byId.get(String(active.id));
+    const target = byId.get(String(over.id));
+    if (moved && target && !moved.pinned) {
+      const tz = czone(target);
+      if ((tz === 'dynamic' || tz === 'semi') && czone(moved) !== tz) {
+        await setCornerZone(templateId, moved.templateCornerId, moved.id, tz);
+      }
+    }
   }
 
   // 이탈 경고 — 카드 편집/드래프트가 열려 있으면(미저장) 페이지 이탈 시 브라우저 경고 (로드맵 1차: 이탈 경고 얼럿)
@@ -3531,39 +3544,28 @@ export function BuilderEditor({
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
               {/* 퀵메뉴(업무 진입형 탭 네비) — 유형상 항상 맨 위. '고정'과 별개. 흰 카드 + 색 좌측 레일로 밴드 구분(2026-10-13). */}
-              {topNav.length > 0 && (
-                <div className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: '#6366f1' }}>
-                  <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
-                    <Pin className="h-3 w-3 shrink-0 text-indigo-500" />
-                    <span className="text-[11px] font-bold text-indigo-600">퀵메뉴</span>
-                    <span className="truncate text-[10px] text-slate-400" title="상단 탭 네비 · 항상 맨 위">상단 탭 네비</span>
-                    <span className="ml-auto text-[10px] font-semibold text-slate-300">{topNav.length}</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {topNav.map((corner) => (
-                      <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
-                        selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {/* 전시 존 3밴드 — 흰 카드 + 얇은 보더 + 색 좌측 레일로 밴드 사이를 또렷이 구분(Dynamic→Semi→Fixed). 고정 코너는 밴드 '안'에서 제자리 잠금. */}
-              {ZONES.map((z) => {
-                const rows = bandSorted.filter((c) => czone(c) === z);
-                if (rows.length === 0) return null;
-                const m = ZONE_META[z];
+              {/* 전시 존 밴드 — 연속 같은 존을 흰 카드+색 레일로 묶는다. Fixed(고정)·Dynamic(CVM)·Semi-fixed(그 외). 고정은 제자리. */}
+              {bands.map((band, bi) => {
+                const m = ZONE_META[band.zone];
                 return (
-                  <div key={z} className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: m.hex }}>
+                  <div key={bi} className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: m.hex }}>
                     <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
                       <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.hex }} />
                       <span className="text-[11px] font-bold" style={{ color: m.hex }}>{m.label}</span>
-                      <span className="truncate text-[10px] text-slate-400" title={m.desc}>{m.en}</span>
-                      <span className="ml-auto text-[10px] font-semibold text-slate-300">{rows.length}</span>
+                      <Tip text={m.desc} />
+                      <span className="truncate text-[10px] text-slate-400">{m.en}</span>
+                      <span className="ml-auto text-[10px] font-semibold text-slate-300">{band.rows.length}</span>
                     </div>
                     <div className="space-y-1.5">
-                      {rows.map((corner) => (
+                      {band.rows.length === 0 ? (
+                        <p className="rounded-md border border-dashed border-[#dce0e5] px-2 py-3 text-center text-[10px] leading-relaxed text-slate-400">
+                          {band.zone === 'dynamic'
+                            ? '코너 ② 수급을 CVM으로 하면 여기(Dynamic)로 와요'
+                            : '코너 ② 수급을 운영자 편성으로 하면 여기(Semi-fixed)로 와요'}
+                        </p>
+                      ) : band.rows.map((corner) => (
                         <CornerListRow key={corner.templateCornerId} templateId={templateId} corner={corner} nameMap={nameMap}
-                          selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked={corner.pinned} />
+                          selected={selectedCorner?.templateCornerId === corner.templateCornerId} onSelect={selectCorner} locked={false} />
                       ))}
                     </div>
                   </div>
@@ -3575,10 +3577,6 @@ export function BuilderEditor({
             <p className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
               아래에서 Corner를 추가하세요.
             </p>
-          )}
-          {/* 순서 베리에이션(가안) — 운영자는 기본 순서 1벌, CVM이 세그먼트별로 '고정 아닌' 코너를 자동 재정렬. 고정·퀵메뉴는 제자리. 아래는 예시. */}
-          {ordered.filter((c) => !c.pinned && !isQuickNav(c)).length >= 2 && (
-            <OrderVariationExamples pinned={ordered.filter((c) => c.pinned || isQuickNav(c))} free={ordered.filter((c) => !c.pinned && !isQuickNav(c))} />
           )}
 
           {/* 배치 추가 — 코너 불러오기 / 배너 불러오기 */}
@@ -3716,12 +3714,12 @@ export function BuilderEditor({
             {/* 코너 승인은 코너 유형 관리에서 처리한다. 빌더는 템플릿 전체를 승인 요청(상단 스트립). */}
 
             {/* 기존 코너 끌어오기는 아래 '코너 정보'의 '코너 불러오기' 버튼으로 통합됨 */}
-            <CornerInfoForm key={selectedCorner.templateCornerId} templateId={templateId} corner={selectedCorner} library={library} nameMap={nameMap} />
+            <CornerInfoForm key={`info-${selectedCorner.templateCornerId}`} templateId={templateId} corner={selectedCorner} library={library} nameMap={nameMap} />
             {/* 상단 배너 선택 UI는 '코너 구성'의 BigBannerControl 카드 안에 임베드됨(별도 패널 제거). */}
             {/* 수급 파이프라인 — ①코너 정보(카드) → ②수급 → ③채우기/CVM 계약 → ④폴백 → ⑤출처 맵 (2026-10-12) */}
             {/* 배너형도 동일 파이프라인을 탄다(TM-DSP-018 CVM 타겟 배너 + 대체 소재). 수급 3종 전부 — 데이터 연동(CVM이 오퍼/카탈로그를 내려주면 해당 배너 노출)·콘텐츠 연동(CVM 구좌)·운영자 편성(배너 캠페인 관리에서 직접). ③/⑤ 채우기 자리엔 배너 레일을 끼운다. */}
             <CornerSupplyPanel
-              key={selectedCorner.templateCornerId}
+              key={`supply-${selectedCorner.templateCornerId}`}
               templateId={templateId}
               corner={{
                 id: selectedCorner.id,

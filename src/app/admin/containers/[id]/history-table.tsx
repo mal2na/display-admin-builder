@@ -83,36 +83,40 @@ export function HistoryTable({ rows }: { rows: HistoryRow[] }) {
     <section>
       <h2 className="mb-2 text-sm font-semibold">이력 관리</h2>
       <p className="mb-2 text-xs text-muted-foreground">
-        이 전시화면과 소속 Template의 승인·상태 변경 이력입니다. <b>승인ID</b>를 클릭하면 상세를 볼 수 있습니다. (PI-DSP-AUD-002)
+        이 전시화면과 소속 Template의 승인·상태 변경 이력입니다. <b>변경사항</b>을 클릭하면 상세(이전→이후)를 볼 수 있습니다. (PI-DSP-AUD-002)
       </p>
+      {/* SB PG499 컬럼: No · 상태 · Ver · 승인 요청자 · 요청 일시 · 요청 사유 · 승인 담당자 · 처리 일시 · 처리 사유 · 변경사항 */}
       <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-sm">
           <thead className="bg-surface-subtle text-xs text-muted-foreground">
             <tr>
-              {['버전', '승인ID', '승인요청자', '승인요청일시', '승인상태', '승인 담당자', '처리 일시'].map((h) => (
+              {['No.', '상태', 'Ver', '승인 요청자', '요청 일시', '요청 사유', '승인 담당자', '처리 일시', '처리 사유', '변경사항'].map((h) => (
                 <th key={h} className="whitespace-nowrap px-3 py-2.5 text-left font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y">
             {rows.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">이력이 없습니다.</td></tr>
+              <tr><td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">이력이 없습니다.</td></tr>
             )}
-            {rows.map((r) => (
+            {rows.map((r, i) => (
               <tr key={r.id} className="hover:bg-muted/30">
-                <td className="whitespace-nowrap px-3 py-2.5 font-medium text-slate-700">{r.version}</td>
-                <td className="whitespace-nowrap px-3 py-2.5">
-                  <button onClick={() => setSel(r)} className="font-mono text-xs text-primary underline underline-offset-2 hover:opacity-80">
-                    {r.approvalId}
-                  </button>
-                </td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-700">{r.actor}</td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500">{r.requestedAt}</td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500 tabular-nums">{rows.length - i}</td>
                 <td className="whitespace-nowrap px-3 py-2.5">
                   <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', RESULT_COLOR[r.result] ?? 'bg-muted')}>{r.status}</span>
                 </td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-xs font-medium text-slate-700">{r.version ? `V.${r.version}` : '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-700">{r.actor}</td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500">{r.requestedAt || '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-600">{r.target || '-'}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-700">{r.approver ?? '-'}</td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500">{r.processedAt}</td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500">{r.processedAt || '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-600">{r.reason || '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2.5">
+                  <button onClick={() => setSel(r)} className="rounded-md border px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/5">
+                    변경사항
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
