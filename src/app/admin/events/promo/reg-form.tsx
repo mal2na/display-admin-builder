@@ -152,6 +152,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
                       onChange={(nodes) => { set({ accessCond: nodes }); setCondE(validateCond(nodes, true).errors); }}
                       errors={condE}
                       joinRange={[f.joinS.slice(0, 10), f.joinE.slice(0, 10)]}
+                      guest={f.guest === '허용'}
                     />
                   </Row>
                 ) : (
@@ -285,7 +286,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
                 {f.jm === '직접' && (
                   <Row label="참여 행동" req err={E.ja}>
                     <span id="err-ja" />
-                    <JoinActions items={f.ja} onChange={(ja) => set({ ja })} err={undefined} onToast={onToast} />
+                    <JoinActions items={f.ja} onChange={(ja) => set({ ja })} err={undefined} onToast={onToast} guest={f.guest === '허용'} />
                   </Row>
                 )}
                 <Row label="참여 조건" err={E.joinCond}>
@@ -295,6 +296,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
                     onChange={(nodes) => set({ joinCond: nodes })}
                     errors={condE}
                     joinRange={[f.joinS.slice(0, 10), f.joinE.slice(0, 10)]}
+                    guest={f.guest === '허용'}
                   />
                 </Row>
                 <Row label="참여 횟수 기준" req>

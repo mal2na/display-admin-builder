@@ -142,7 +142,7 @@ export function emptyForm(type: string, jm: JoinMode): PromoForm {
     search: '노출',
     tags: [],
     keywords: '', ogTitle: '', ogDesc: '',
-    ja: [newJaItem('버튼 참여')],
+    ja: [newJaItem()],
     joinCond: [],
     cycle: '기간 전체', cycleUnit: '월', maxJoin: '',
     dup: '고객 기준(CI)',

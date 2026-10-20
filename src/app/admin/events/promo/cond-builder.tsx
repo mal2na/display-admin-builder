@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 import { MasterPicker, type PickerMode } from './master-picker';
 import {
-  CB_ITEMS, CB_CATS, CB_CTX, CB_WHEN, CB_KEY, CIRC, PERS, ROUTES, SERVICES, PROD_TYPES, MO_TITLE,
+  CB_ITEMS, CB_CATS, CB_CTX, CB_WHEN, CB_KEY, CIRC, PERS, ROUTES, SERVICES, PROD_TYPES, MO_TITLE, GUEST_MO_MSG,
   isGroup, newRow, newGroup, gType, gIsSvc, gSvc, gFits, gLabel, actOk, hasCard, pickWhy, sentence,
   type CondCtx, type CondNode, type CondRow, type CondGroup, type CondVals, type Picked,
 } from '@/lib/promotion/cond';
@@ -137,9 +137,11 @@ export type CondBuilderProps = {
   error?: string;
   /** 인정 기간 '직접 지정' 기본값으로 쓸 참여 기간 */
   joinRange?: [string, string];
+  /** 비회원 참여 Y — 회원 전용(memberOnly) 조건을 금지(2026-10-20 프로토타입 개정) */
+  guest?: boolean;
 };
 
-export function CondBuilder({ ctx, value, onChange, required, errors = {}, error, joinRange }: CondBuilderProps) {
+export function CondBuilder({ ctx, value, onChange, required, errors = {}, error, joinRange, guest }: CondBuilderProps) {
   const [open, setOpen] = React.useState(false);
   const [q, setQ] = React.useState('');
   const [cat, setCat] = React.useState('');
@@ -236,6 +238,13 @@ export function CondBuilder({ ctx, value, onChange, required, errors = {}, error
         {!required && <Hint>선택 입력 · 조건이 없으면 제한 없음</Hint>}
       </div>
 
+      {/* 비회원 참여 Y인데 회원 전용 조건이 남아 있으면 경고 (2026-10-20 프로토타입 개정) */}
+      {guest && value.some((n) => (isGroup(n) ? [n.key, ...n.acts.map((a) => a.key)] : [n.key]).some((k) => CB_ITEMS[k]?.memberOnly)) && (
+        <p className="mt-2 rounded-[6px] bg-[var(--warn-bg,#ffe4c4)] px-2.5 py-1.5 text-[12px] text-[var(--warn,#d66400)]">
+          {GUEST_MO_MSG} · 회원 전용 조건을 삭제해주세요
+        </p>
+      )}
+
       {/* 조건 목록 */}
       <div className="mt-3 space-y-2">
         {value.map((n) => (isGroup(n) ? (
@@ -285,7 +294,8 @@ export function CondBuilder({ ctx, value, onChange, required, errors = {}, error
             {list.length === 0 ? (
               <p className="col-span-full py-6 text-center text-[14px] text-[var(--ink3)]">검색 결과가 없어요. 등록된 판정 항목만 선택할 수 있어요.</p>
             ) : list.map(([k, v]) => {
-              const why = pickWhy(value, k);
+              // 비회원 참여 Y면 회원 전용 조건은 선택 불가(사유 우선 노출)
+              const why = (guest && v.memberOnly) ? GUEST_MO_MSG : pickWhy(value, k);
               const usable = v.use.includes(CB_KEY[ctx]);
               const off = !!why || !usable;
               return (

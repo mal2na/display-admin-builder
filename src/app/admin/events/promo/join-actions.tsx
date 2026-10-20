@@ -19,10 +19,19 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
   </div>
 );
 
-export function JoinActions({ items, onChange, err, onToast }: {
+export function JoinActions({ items, onChange, err, onToast, guest }: {
   items: JaItem[]; onChange: (v: JaItem[]) => void; err?: string; onToast: (m: string) => void;
+  /** 비회원 참여 Y — '기존 입력 구성요소' 사용 불가(2026-10-20 프로토타입 개정) */
+  guest?: boolean;
 }) {
   const [pick, setPick] = React.useState<null | { kind: 'survey' | 'page'; id: number }>(null);
+  // 비회원 참여 Y로 바뀌면 '기존 입력 구성요소'로 설정된 정보 입력은 '코드 입력'으로 자동 전환
+  React.useEffect(() => {
+    if (!guest) return;
+    const needs = items.some((it) => it.type === '정보 입력' && it.inKind === '기존 입력 구성요소');
+    if (needs) onChange(items.map((it) => (it.type === '정보 입력' && it.inKind === '기존 입력 구성요소' ? { ...it, inKind: '코드 입력' } : it)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guest]);
   const set = (id: number, p: Partial<JaItem>) => onChange(items.map((x) => (x.id === id ? { ...x, ...p } : x)));
   const multi = items.length > 1;
   const used = items.map((i) => i.type);
@@ -36,8 +45,9 @@ export function JoinActions({ items, onChange, err, onToast }: {
               {multi && <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ac2)] text-[12px] font-bold text-[var(--ac)]">{k + 1}</span>}
               <select
                 aria-label="참여 행동 유형" value={it.type} className={cn(SEL, 'w-[200px]')}
-                onChange={(e) => set(it.id, { type: e.target.value as JaType })}
+                onChange={(e) => set(it.id, { type: e.target.value as JaType | '' })}
               >
+                <option value="">선택해주세요</option>
                 {JA_TYPES.map((o) => <option key={o} value={o} disabled={o !== it.type && used.includes(o)}>{o}</option>)}
               </select>
               <Hint>{jaHint(it)}</Hint>
@@ -57,8 +67,9 @@ export function JoinActions({ items, onChange, err, onToast }: {
             {it.type === '정보 입력' && (
               <>
                 <F label="입력 유형">
-                  <select aria-label="입력 유형" value={it.inKind} onChange={(e) => set(it.id, { inKind: e.target.value as JaItem['inKind'] })} className={cn(SEL, 'w-[200px]')}>
-                    <option>기존 입력 구성요소</option><option>코드 입력</option>
+                  <select aria-label="입력 유형" value={it.inKind} onChange={(e) => set(it.id, { inKind: e.target.value as JaItem['inKind'] })} className={cn(SEL, 'w-[240px]')}>
+                    <option value="기존 입력 구성요소" disabled={guest}>{guest ? '기존 입력 구성요소 (비회원 참여 Y 시 사용 불가)' : '기존 입력 구성요소'}</option>
+                    <option>코드 입력</option>
                   </select>
                 </F>
                 {it.inKind === '기존 입력 구성요소' ? (
