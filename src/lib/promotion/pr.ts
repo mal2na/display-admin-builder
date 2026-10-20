@@ -32,7 +32,8 @@ export const RV_PAGES = [
 export type RoulResult = { id: number; name: string; pay: 'Y' | 'N' };
 export type JaItem = {
   id: number;
-  type: JaType;
+  /** '' = 선택해주세요(미선택) — 2026-10-20 프로토타입 개정 */
+  type: JaType | '';
   /** 설문 */ selId: string;
   /** 정보 입력 */ inKind: '기존 입력 구성요소' | '코드 입력';
   comp: '이벤트 댓글' | '상품 리뷰';
@@ -45,7 +46,7 @@ export type JaItem = {
 
 let jaSeq = 0; let rrSeq = 0;
 export const newRoulResult = (name = '', pay: 'Y' | 'N' = 'Y'): RoulResult => ({ id: (rrSeq += 1), name, pay });
-export function newJaItem(type: JaType = '버튼 참여'): JaItem {
+export function newJaItem(type: JaType | '' = ''): JaItem {
   jaSeq += 1;
   return {
     id: jaSeq, type,
@@ -282,6 +283,7 @@ export function validatePr(s: PrState, maxJoin: string): { errors: Record<string
     s.ja.forEach((it, k) => {
       const pre = multi ? `참여 행동 ${k + 1}: ` : '';
       let m = '';
+      if (!it.type) m = '참여 행동 유형을 선택해주세요';
       if (it.type === '설문' && !it.selId) m = '설문을 조회해 선택해주세요';
       if (it.type === '정보 입력' && it.inKind === '코드 입력' && it.codeKind === '공통 코드 1개' && !it.codeVal.trim()) m = '참여 코드를 입력하거나 자동 생성해주세요';
       if (it.type === '정보 입력' && it.inKind === '기존 입력 구성요소' && it.comp === '상품 리뷰' && !it.pgId) m = '리뷰 페이지를 조회해 선택해주세요';

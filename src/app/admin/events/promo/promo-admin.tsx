@@ -7,15 +7,22 @@
  *  누르면 그 화면만 딥링크(#reg · #ex=<key>)로 띄운다.
  */
 import * as React from 'react';
+import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { PromoList } from './promo-list';
+import { ResultList } from './result-list';
+import { ResultDetail } from './result-detail';
 import { RegStartModal } from './reg-start-modal';
 import { RegForm } from './reg-form';
 import type { PromoRow } from '@/lib/promotion/model';
+import type { ResultRow } from '@/lib/promotion/result';
 
 export function PromoAdmin() {
   const [proto, setProto] = React.useState<string | null>(null);
   const [regOpen, setRegOpen] = React.useState(false);
+  /** 프로모션 관리 하위 탭: 프로모션 목록 / 결과 관리 */
+  const [tab, setTab] = React.useState<'promo' | 'result'>('promo');
+  const [rsDetail, setRsDetail] = React.useState<ResultRow | null>(null);
   /** React 로 옮긴 등록 폼 (지금은 안내형만) */
   const [form, setForm] = React.useState<null | { type: string; jm: '직접' | '행동' }>(null);
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
@@ -89,15 +96,46 @@ export function PromoAdmin() {
     );
   }
 
+  // 결과 관리 상세 — 전체 페이지
+  if (tab === 'result' && rsDetail) {
+    return (
+      <>
+        <ResultDetail x={rsDetail} onBack={() => setRsDetail(null)} onToast={toast} />
+        {toastMsg && (
+          <div className="pointer-events-none fixed bottom-10 left-1/2 z-[90] -translate-x-1/2">
+            <div className="rounded-[8px] bg-[var(--toast-bg)] px-4 py-2.5 text-[14px] leading-[20px] text-white shadow-[var(--dlg-shadow)]">{toastMsg}</div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  const TabBtn = ({ id, children }: { id: 'promo' | 'result'; children: React.ReactNode }) => (
+    <button type="button" onClick={() => { setTab(id); setRsDetail(null); }}
+      className={cn('-mb-px border-b-2 px-3.5 py-2.5 text-[14px] font-bold transition',
+        tab === id ? 'border-[var(--ac)] text-[var(--ac)]' : 'border-transparent text-[var(--ink4)] hover:text-[var(--ink2)]')}>
+      {children}
+    </button>
+  );
+
   return (
     <div className="px-12 py-9 pb-28">
-      <PageHeader trail={['프로모션 관리']} title="프로모션 관리" />
+      <PageHeader trail={['프로모션 관리', tab === 'promo' ? '프로모션' : '결과 관리']} title={tab === 'promo' ? '프로모션' : '결과 관리'} />
+      {/* 하위 탭 — 프로토타입 LNB(프로모션 / 결과 관리) 이식 */}
+      <div className="mt-4 flex gap-1 border-b border-[var(--line2)]">
+        <TabBtn id="promo">프로모션</TabBtn>
+        <TabBtn id="result">결과 관리</TabBtn>
+      </div>
       <div className="mt-6">
-        <PromoList
-          onToast={toast}
-          onRegister={() => setRegOpen(true)}
-          onOpenExample={(r: PromoRow) => setProto(`#ex=${encodeURIComponent(r.ex ?? '')}`)}
-        />
+        {tab === 'promo' ? (
+          <PromoList
+            onToast={toast}
+            onRegister={() => setRegOpen(true)}
+            onOpenExample={(r: PromoRow) => setProto(`#ex=${encodeURIComponent(r.ex ?? '')}`)}
+          />
+        ) : (
+          <ResultList onToast={toast} onOpen={(r) => setRsDetail(r)} />
+        )}
       </div>
 
       {regOpen && (

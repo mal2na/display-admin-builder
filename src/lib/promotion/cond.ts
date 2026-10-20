@@ -88,6 +88,8 @@ const GUEST_OK = ['age', 'evhist'];
 Object.entries(CB_ITEMS).forEach(([k, v]) => { v.memberOnly = !GUEST_OK.includes(k); });
 
 export const MO_TITLE = '비회원은 판정할 수 없는 조건이에요. 비회원이 진입하면 FO에서 로그인·회원가입으로 안내해요';
+/** 비회원 참여 Y 일 때 회원 전용 조건 금지 안내 (2026-10-20 프로토타입 개정) */
+export const GUEST_MO_MSG = '비회원 참여가 Y면 회원 전용 조건은 설정할 수 없어요';
 export const CIRC = '①②③④⑤⑥⑦⑧⑨⑩';
 
 /* ── 한국어 조사 ────────────────────────────────────────────────── */

@@ -22,12 +22,21 @@ export const CTA_AT_ONCE = 2;
 export const CTA_JOIN = '이벤트 참여 버튼';
 export const CTA_CLAIM = '혜택 지급 버튼';
 
-/** 유형별 고를 수 있는 하단 CTA 유형 */
+/** 유형별 고를 수 있는 하단 CTA 유형 (추천형에도 혜택 지급 버튼 추가 — 2026-10-20 프로토타입 개정) */
 export function ctaOpts(type: string): string[] {
   if (type === '안내형') return ['링크 버튼'];
-  if (type === '추천형') return ['링크 버튼', '추천 코드 발급 버튼', '추천 코드 입력 버튼'];
+  if (type === '추천형') return ['링크 버튼', '추천 코드 발급 버튼', '추천 코드 입력 버튼', CTA_CLAIM];
   return ['링크 버튼', CTA_CLAIM, CTA_JOIN];
 }
+
+/** 하단 CTA · 완료 후 변경 (2026-10-20 프로토타입 개정) — 버튼 유형별로 완료 시점·FO 기본·변경 방식·변경 가능 유형 */
+export type CtaDone = { when: string; fo: string; how: ('숨김' | '버튼 변경')[]; to: string[] };
+export const CTA_DONE: Record<string, CtaDone> = {
+  '이벤트 참여 버튼': { when: '참여 완료(참여 횟수를 모두 사용한 시점)', fo: '결과 확인하기 (활성 · 결과 팝업)', how: ['숨김', '버튼 변경'], to: ['링크 버튼', CTA_CLAIM] },
+  '혜택 지급 버튼': { when: '혜택 수령 완료', fo: '수령 완료 (비활성)', how: ['숨김', '버튼 변경'], to: ['링크 버튼'] },
+  '추천 코드 발급 버튼': { when: '추천 코드 발급 완료', fo: '링크 공유하기 (활성 · 공유 팝업)', how: ['버튼 변경'], to: ['링크 버튼', CTA_CLAIM] },
+  '추천 코드 입력 버튼': { when: '피초대자 참여 완료', fo: '참여 완료 (비활성)', how: ['숨김', '버튼 변경'], to: ['링크 버튼', CTA_CLAIM, '추천 코드 발급 버튼'] },
+};
 
 /** 유의사항 템플릿 (예시 데이터) */
 export const CAU_TPL = [
@@ -63,9 +72,33 @@ export type CtaBlock = {
   fg: string; fgDef: boolean;
   /** 참여 행동·리워드에 맞춰 자동으로 붙은 CTA — 유형을 바꿀 수 없다 */
   auto?: boolean;
+  /* ── 완료 후 변경 (CTA_DONE 대상 유형만) ── */
+  chg: 'Y' | 'N';
+  how: '숨김' | '버튼 변경';
+  toType: string; toName: string;
+  toLink: 'URL' | '서비스 내부 페이지'; toUrl: string; toPg: string; toOpen: '현재 창' | '새 창';
+  toBg: string; toBgDef: boolean; toFg: string; toFgDef: boolean;
 };
 
 export type TargetFile = { name: string; total: number; ok: number; ng: number };
+
+/* ── FO 상세 영역 빌더 블록 (2026-10-20 사용자 요청: 빌더 구성영역 → 간단 빌더) ── */
+export type DetailBlockKind = '이미지' | '텍스트' | '버튼' | '구분선' | '여백';
+export type DetailBlock = {
+  id: number; kind: DetailBlockKind;
+  text: string;                       // 텍스트/버튼 라벨
+  url: string;                        // 버튼 링크
+  align: '왼쪽' | '가운데' | '오른쪽';   // 텍스트/버튼 정렬
+  size: '작게' | '보통' | '크게';        // 텍스트 크기 · 여백 높이
+};
+let _dbSeq = 0;
+export function newDetailBlock(kind: DetailBlockKind): DetailBlock {
+  _dbSeq += 1;
+  const base = { id: _dbSeq, kind, text: '', url: '', align: '가운데' as const, size: '보통' as const };
+  if (kind === '텍스트') return { ...base, text: '내용을 입력하세요', align: '왼쪽' };
+  if (kind === '버튼') return { ...base, text: '버튼', url: '' };
+  return base;
+}
 
 export type PromoForm = {
   type: EventType | string;
@@ -88,6 +121,8 @@ export type PromoForm = {
   caution: string; cauApplied: string;
   cta: '사용' | '미사용';
   ctas: CtaBlock[];
+  /** FO 상세 영역 빌더 블록 */
+  detailBlocks: DetailBlock[];
   search: '노출' | '미노출';
   tags: string[];
   keywords: string; ogTitle: string; ogDesc: string;
@@ -118,6 +153,9 @@ export function newCta(type: string): CtaBlock {
     per: '상시 노출', ps: '', pe: '',
     link: 'URL', url: '', pg: '', open: '현재 창',
     bg: '#000000', bgDef: true, fg: '#FFFFFF', fgDef: true,
+    chg: 'N', how: '숨김', toType: '링크 버튼', toName: '',
+    toLink: 'URL', toUrl: '', toPg: '', toOpen: '현재 창',
+    toBg: '#000000', toBgDef: true, toFg: '#FFFFFF', toFgDef: true,
   };
 }
 
@@ -138,11 +176,11 @@ export function emptyForm(type: string, jm: JoinMode): PromoForm {
     cmt: '사용',
     block: '사용', blockS: '', blockE: '',
     caution: '', cauApplied: '',
-    cta: '사용', ctas: [newCta(type)],
+    cta: '사용', ctas: [newCta(type)], detailBlocks: [],
     search: '노출',
     tags: [],
     keywords: '', ogTitle: '', ogDesc: '',
-    ja: [newJaItem('버튼 참여')],
+    ja: [newJaItem()],
     joinCond: [],
     cycle: '기간 전체', cycleUnit: '월', maxJoin: '',
     dup: '고객 기준(CI)',
@@ -267,6 +305,19 @@ export function validateForm(f: PromoForm): ValidateResult {
       }
       if (!hexOk(c.bg)) E[`ctaBg${c.id}`] = '#을 포함한 6자리 HEX 코드로 입력해 주세요 (예: #3A2EE6)';
       if (!hexOk(c.fg)) E[`ctaFg${c.id}`] = '#을 포함한 6자리 HEX 코드로 입력해 주세요 (예: #3A2EE6)';
+      // 완료 후 변경 — 버튼 변경이면 변경 CTA 명·링크 검증 (2026-10-20 프로토타입 개정)
+      const D = CTA_DONE[c.type];
+      if (D && c.chg === 'Y') {
+        const how = D.how.includes(c.how) ? c.how : D.how[0];
+        const toType = D.to.includes(c.toType) ? c.toType : D.to[0];
+        if (how === '버튼 변경') {
+          if (!c.toName.trim()) E[`ctaNmC${c.id}`] = '변경 CTA 명을 입력해주세요';
+          if (toType === '링크 버튼') {
+            if (c.toLink === 'URL') { if (!c.toUrl.trim()) E[`ctaUrlC${c.id}`] = '변경 CTA URL을 입력해주세요'; }
+            else if (!c.toPg) E[`ctaPgC${c.id}`] = '변경 CTA 연결 페이지를 조회해 선택해주세요';
+          }
+        }
+      }
     });
   }
 

@@ -14,6 +14,7 @@ import { TermsPicker, TermsMap, GuestBlock } from './terms';
 import { RefSections } from './ref-section';
 import { PromoDetail } from './detail-view';
 import { FoPreview } from './fo-preview';
+import { PromoBuilder } from './promo-builder';
 import { RewardSection } from './reward-blocks';
 import {
   Sect, Row, Hint, Note, Rd, Ck, RdPair, BTN, BTN_PRI, BTN_SM, BTN_PILL, INP, SEL, DT,
@@ -21,9 +22,9 @@ import {
 import { validate as validateCond } from '@/lib/promotion/cond';
 import { typeLabel } from '@/lib/promotion/reg-start';
 import {
-  CHANNELS, CTA_MAX, CTA_AT_ONCE, ctaOpts, newCta, emptyForm, validateForm, hexOk, SVC_PAGES,
+  CHANNELS, CTA_MAX, CTA_AT_ONCE, ctaOpts, CTA_DONE, newCta, emptyForm, validateForm, hexOk, SVC_PAGES,
   normalize, prOf,
-  type PromoForm, type CtaBlock, type FormErrors,
+  type PromoForm, type CtaBlock, type DetailBlock, type FormErrors,
 } from '@/lib/promotion/form';
 import { JM_GUIDE, JM_LABEL } from '@/lib/promotion/reg-start';
 import { termById, initialReq } from '@/lib/promotion/terms';
@@ -44,10 +45,10 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
   const [confirmMsg, setConfirmMsg] = React.useState<null | { msg: string; ok: () => void }>(null);
   const [cauOpen, setCauOpen] = React.useState(false);
   const [termsOpen, setTermsOpen] = React.useState(false);
-  const [pagePick, setPagePick] = React.useState<number | null>(null);
+  const [pagePick, setPagePick] = React.useState<{ id: number; to?: boolean } | null>(null);
   const [tagInput, setTagInput] = React.useState('');
   /** 등록 폼 / 저장 후 상세 / FO 미리보기 */
-  const [view, setView] = React.useState<'form' | 'detail' | 'fo'>('form');
+  const [view, setView] = React.useState<'form' | 'detail' | 'fo' | 'builder'>('form');
   const backRef = React.useRef<'form' | 'detail'>('form');
 
   // 값이 바뀔 때마다 연동 규칙(룰렛·자동 CTA 등)을 한 번 통과시킨다
@@ -74,8 +75,10 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
   };
 
   const openFo = () => { backRef.current = view === 'detail' ? 'detail' : 'form'; setView('fo'); window.scrollTo(0, 0); };
+  const openBuilder = () => { backRef.current = view === 'detail' ? 'detail' : 'form'; setView('builder'); window.scrollTo(0, 0); };
 
   if (view === 'fo') return <FoPreview f={f} onBack={() => { setView(backRef.current); window.scrollTo(0, 0); }} />;
+  if (view === 'builder') return <PromoBuilder f={f} onChange={(blocks) => set({ detailBlocks: blocks })} onBack={() => { setView(backRef.current); window.scrollTo(0, 0); }} />;
   if (view === 'detail') {
     return (
       <PromoDetail
@@ -97,7 +100,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
       <h1 className="mt-2 text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[var(--ink)]">프로모션 등록</h1>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[300px_1fr]">
-        <Preview f={f} />
+        <Preview f={f} onBuilder={openBuilder} />
 
         <div className="min-w-0">
           {/* ── 기본정보 ── */}
@@ -152,6 +155,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
                       onChange={(nodes) => { set({ accessCond: nodes }); setCondE(validateCond(nodes, true).errors); }}
                       errors={condE}
                       joinRange={[f.joinS.slice(0, 10), f.joinE.slice(0, 10)]}
+                      guest={f.guest === '허용'}
                     />
                   </Row>
                 ) : (
@@ -285,7 +289,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
                 {f.jm === '직접' && (
                   <Row label="참여 행동" req err={E.ja}>
                     <span id="err-ja" />
-                    <JoinActions items={f.ja} onChange={(ja) => set({ ja })} err={undefined} onToast={onToast} />
+                    <JoinActions items={f.ja} onChange={(ja) => set({ ja })} err={undefined} onToast={onToast} guest={f.guest === '허용'} />
                   </Row>
                 )}
                 <Row label="참여 조건" err={E.joinCond}>
@@ -295,6 +299,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
                     onChange={(nodes) => set({ joinCond: nodes })}
                     errors={condE}
                     joinRange={[f.joinS.slice(0, 10), f.joinE.slice(0, 10)]}
+                    guest={f.guest === '허용'}
                   />
                 </Row>
                 <Row label="참여 횟수 기준" req>
@@ -372,7 +377,8 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
                     key={c.id} c={c} idx={i} total={f.ctas.length} type={f.type} E={E}
                     onSet={(p) => setCta(c.id, p)}
                     onDel={() => set({ ctas: f.ctas.filter((x) => x.id !== c.id) })}
-                    onPickPage={() => setPagePick(c.id)}
+                    onPickPage={() => setPagePick({ id: c.id })}
+                    onPickPageTo={() => setPagePick({ id: c.id, to: true })}
                   />
                 ))}
                 <div className="flex items-center justify-end gap-2 border-b border-[var(--line)] px-4 py-2.5">
@@ -473,8 +479,8 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
       )}
       {pagePick !== null && (
         <PagePicker
-          value={f.ctas.find((c) => c.id === pagePick)?.pg ?? ''}
-          onApply={(id) => { setCta(pagePick, { pg: id }); setPagePick(null); }}
+          value={(() => { const c = f.ctas.find((x) => x.id === pagePick.id); return (pagePick.to ? c?.toPg : c?.pg) ?? ''; })()}
+          onApply={(id) => { setCta(pagePick.id, pagePick.to ? { toPg: id } : { pg: id }); setPagePick(null); }}
           onClose={() => setPagePick(null)}
         />
       )}
@@ -499,14 +505,20 @@ function MsgBox({ msg, onOk, onCancel }: { msg: string; onOk: () => void; onCanc
 }
 
 /* ── 하단 CTA 블록 ─────────────────────────────────────────────── */
-function CtaRows({ c, idx, total, type, E, onSet, onDel, onPickPage }: {
+function CtaRows({ c, idx, total, type, E, onSet, onDel, onPickPage, onPickPageTo }: {
   c: CtaBlock; idx: number; total: number; type: string; E: FormErrors;
-  onSet: (p: Partial<CtaBlock>) => void; onDel: () => void; onPickPage: () => void;
+  onSet: (p: Partial<CtaBlock>) => void; onDel: () => void; onPickPage: () => void; onPickPageTo: () => void;
 }) {
   const fixed = type === '안내형';
   const opts = ctaOpts(type);
   const isLink = c.type === '링크 버튼';
   const page = SVC_PAGES.find((p) => p.id === c.pg);
+  const toPage = SVC_PAGES.find((p) => p.id === c.toPg);
+  // 완료 후 변경 — 이 CTA 유형이 '완료 가능' 버튼일 때만 (CTA_DONE)
+  const D = CTA_DONE[c.type];
+  const how = D && D.how.includes(c.how) ? c.how : D?.how[0];
+  const toType = D && D.to.includes(c.toType) ? c.toType : D?.to[0] ?? '링크 버튼';
+  const toIsLink = toType === '링크 버튼';
   return (
     <>
       {total > 1 && (
@@ -570,6 +582,73 @@ function CtaRows({ c, idx, total, type, E, onSet, onDel, onPickPage }: {
         <Ck on={c.fgDef} onChange={() => onSet({ fgDef: !c.fgDef, ...(c.fgDef ? {} : { fg: '#FFFFFF' }) })}>기본 컬러 : white</Ck>
         {c.auto && <Hint>자동으로 추가된 CTA예요</Hint>}
       </Row>
+
+      {/* ── 완료 후 변경 (CTA_DONE 대상 유형만 · 2026-10-20 프로토타입 개정) ── */}
+      {D && (
+        <>
+          <Row label="하단 CTA 변경">
+            <RdPair value={c.chg} opts={['Y', 'N'] as const} onChange={(v) => onSet({ chg: v })} />
+            {c.chg === 'N' && <Hint>N이면 FO 기본 : {D.fo}</Hint>}
+            <Hint>{D.when} 후 버튼을 바꿀지 정해요. 그 전 상태(진행 예정 · 결과 발표 전 · 일시 중지 · 종료 등)는 FO 기본으로 처리돼요.</Hint>
+          </Row>
+          {c.chg === 'Y' && (
+            <>
+              <Row label="└ 변경 방식">
+                <RdPair value={how!} opts={D.how} onChange={(v) => onSet({ how: v })} />
+                {D.how.length === 1 && <Hint>코드 발급 후에는 공유가 필요해 버튼 변경만 가능해요</Hint>}
+              </Row>
+              {how === '버튼 변경' && (
+                <>
+                  <Row label="└ 변경 CTA 유형" req>
+                    <select value={toType} onChange={(e) => onSet({ toType: e.target.value })} className={cn(SEL, 'w-[220px]')}>
+                      {D.to.map((o) => <option key={o}>{o}</option>)}
+                    </select>
+                    {toType === '혜택 지급 버튼' && <Hint>수령 동작 · 수령 완료 처리는 FO 기본 · 하단에 혜택 지급 버튼을 추가할 수 없어요</Hint>}
+                  </Row>
+                  <Row label="└ 변경 CTA 명" req err={E[`ctaNmC${c.id}`]}>
+                    <span id={`err-ctaNmC${c.id}`} />
+                    <input value={c.toName} maxLength={20} onChange={(e) => onSet({ toName: e.target.value })} placeholder="변경 버튼 명을 입력해주세요" className={cn(INP, 'w-[320px] max-w-full')} />
+                  </Row>
+                  {toIsLink && (
+                    <>
+                      <Row label="└ 변경 CTA 연결 방식">
+                        <RdPair value={c.toLink} opts={['URL', '서비스 내부 페이지'] as const} onChange={(v) => onSet({ toLink: v })} />
+                      </Row>
+                      {c.toLink === 'URL' ? (
+                        <Row label="└ 변경 CTA URL" req err={E[`ctaUrlC${c.id}`]}>
+                          <span id={`err-ctaUrlC${c.id}`} />
+                          <input value={c.toUrl} onChange={(e) => onSet({ toUrl: e.target.value })} placeholder="URL을 입력해주세요" className={cn(INP, 'w-full max-w-[520px]')} />
+                        </Row>
+                      ) : (
+                        <Row label="└ 변경 CTA 연결 페이지" req err={E[`ctaPgC${c.id}`]}>
+                          <span id={`err-ctaPgC${c.id}`} />
+                          {c.toPg
+                            ? <span className="rounded-[4px] bg-[var(--ac2)] px-2 py-0.5 font-mono text-[13px] text-[var(--ac)]" title={toPage?.name}>{c.toPg}</span>
+                            : <Hint>선택된 페이지가 없어요</Hint>}
+                          <button type="button" className={BTN_PILL} onClick={onPickPageTo}>페이지 조회</button>
+                        </Row>
+                      )}
+                      <Row label="└ 변경 CTA 열기 방식">
+                        <RdPair value={c.toOpen} opts={['현재 창', '새 창'] as const} onChange={(v) => onSet({ toOpen: v })} />
+                      </Row>
+                      <Row label="└ 변경 CTA 색상">
+                        <span className="h-6 w-6 rounded border border-[var(--line2)]" style={{ background: hexOk(c.toBg) ?? 'transparent' }} />
+                        <input value={c.toBg} maxLength={7} disabled={c.toBgDef} onChange={(e) => onSet({ toBg: e.target.value.startsWith('#') || !e.target.value ? e.target.value : `#${e.target.value}` })} className={cn(INP, 'w-[120px]', c.toBgDef && 'bg-[var(--th)] text-[var(--ink3)]')} />
+                        <Ck on={c.toBgDef} onChange={() => onSet({ toBgDef: !c.toBgDef, ...(c.toBgDef ? {} : { toBg: '#000000' }) })}>기본 컬러 : black</Ck>
+                      </Row>
+                      <Row label="└ 변경 CTA 명 색상">
+                        <span className="h-6 w-6 rounded border border-[var(--line2)]" style={{ background: hexOk(c.toFg) ?? 'transparent' }} />
+                        <input value={c.toFg} maxLength={7} disabled={c.toFgDef} onChange={(e) => onSet({ toFg: e.target.value.startsWith('#') || !e.target.value ? e.target.value : `#${e.target.value}` })} className={cn(INP, 'w-[120px]', c.toFgDef && 'bg-[var(--th)] text-[var(--ink3)]')} />
+                        <Ck on={c.toFgDef} onChange={() => onSet({ toFgDef: !c.toFgDef, ...(c.toFgDef ? {} : { toFg: '#FFFFFF' }) })}>기본 컬러 : white</Ck>
+                      </Row>
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </>
+      )}
     </>
   );
 }
@@ -577,7 +656,20 @@ function CtaRows({ c, idx, total, type, E, onSet, onDel, onPickPage }: {
 /* ── FO 미리보기 ───────────────────────────────────────────────── */
 const fmtDT = (v: string) => (v ? v.replace('T', ' ').replace(/-/g, '.') : '');
 
-function Preview({ f }: { f: PromoForm }) {
+/** 미리보기용 상세 블록 1개 렌더(컴팩트) */
+function BlockPreview({ b }: { b: DetailBlock }) {
+  const al: Record<string, string> = { 왼쪽: 'text-left', 가운데: 'text-center', 오른쪽: 'text-right' };
+  const ju: Record<string, string> = { 왼쪽: 'justify-start', 가운데: 'justify-center', 오른쪽: 'justify-end' };
+  const sz: Record<string, string> = { 작게: 'text-[11px]', 보통: 'text-[12px]', 크게: 'text-[14px] font-bold' };
+  const gp: Record<string, number> = { 작게: 6, 보통: 12, 크게: 24 };
+  if (b.kind === '이미지') return <div className="grid h-[70px] place-items-center rounded-[6px] bg-white text-[var(--ink4)]">이미지</div>;
+  if (b.kind === '텍스트') return <p className={cn('whitespace-pre-line leading-[16px] text-[var(--ink)]', al[b.align], sz[b.size])}>{b.text || '내용'}</p>;
+  if (b.kind === '버튼') return <div className={cn('flex', ju[b.align])}><span className="rounded-[6px] bg-[var(--ac)] px-3 py-1 text-[11px] font-semibold text-white">{b.text || '버튼'}</span></div>;
+  if (b.kind === '구분선') return <hr className="border-t border-[var(--line2)]" />;
+  return <div style={{ height: gp[b.size] }} />;
+}
+
+function Preview({ f, onBuilder }: { f: PromoForm; onBuilder?: () => void }) {
   const s = fmtDT(f.dispS);
   const e = f.dispNoEnd ? '종료일 없음' : fmtDT(f.dispE);
   const js = fmtDT(f.joinS); const je = fmtDT(f.joinE);
@@ -599,9 +691,26 @@ function Preview({ f }: { f: PromoForm }) {
           <div className="mt-1 flex gap-2"><span className="w-10 shrink-0 text-[var(--ink3)]">기간</span><span className="min-w-0 break-words">{periodText}</span></div>
           {f.scope === '제한 공개' && <div className="mt-0.5 flex gap-2"><span className="w-10 shrink-0 text-[var(--ink3)]">대상</span><span>공개 대상 고객 한정</span></div>}
         </div>
-        <div className="grid h-[140px] place-items-center rounded-[8px] border border-dashed border-[var(--line3)] bg-[var(--th)] text-center text-[12px] leading-[16px] text-[var(--ink3)]">
-          <span><b className="block text-[var(--ink2)]">빌더 구성영역</b>상세 영역은 빌더에서 구성합니다.</span>
-        </div>
+        {/* 상세 영역 — 빌더 구성영역. 클릭하면 상세 영역 빌더로 이동(2026-10-20 사용자 요청). */}
+        <button type="button" onClick={onBuilder} disabled={!onBuilder}
+          className={cn('block w-full rounded-[8px] border border-dashed border-[var(--line3)] bg-[var(--th)] p-2 text-left transition',
+            onBuilder && 'cursor-pointer hover:border-[var(--ac)] hover:bg-[var(--ac2)]')}>
+          {f.detailBlocks.length === 0 ? (
+            <span className="grid h-[120px] place-items-center text-center text-[12px] leading-[16px] text-[var(--ink3)]">
+              <span><b className="block text-[var(--ink2)]">빌더 구성영역</b>상세 영역은 빌더에서 구성합니다.{onBuilder && <span className="mt-0.5 block text-[var(--ac)]">클릭해 빌더 열기 ›</span>}</span>
+            </span>
+          ) : (
+            <>
+              <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-[var(--ink3)]">
+                <span>상세 영역 · {f.detailBlocks.length}개 블록</span>
+                {onBuilder && <span className="text-[var(--ac)]">빌더 열기 ›</span>}
+              </div>
+              <div className="space-y-1.5">
+                {f.detailBlocks.map((b) => <BlockPreview key={b.id} b={b} />)}
+              </div>
+            </>
+          )}
+        </button>
         <div className="rounded-[8px] border border-[var(--line)] p-2.5">
           <b className="text-[12px] text-[var(--ink2)]">유의사항</b>
           <p className={cn('mt-1 whitespace-pre-line text-[12px] leading-[18px]', f.caution ? 'text-[var(--ink2)]' : 'text-[var(--ink4)]')}>

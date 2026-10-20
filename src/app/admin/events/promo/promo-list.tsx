@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * 프로모션 관리 › 목록 — public/promotion-prototype.html 의 조회 화면 React 이식본.
- *  필터는 체크박스 그룹 3개(이벤트 유형 · 미션 유형 · 프로모션 상태)와
- *  기간/전시상태/댓글 · 검색어로 이뤄진다. 이벤트·미션 유형은 서로 OR.
+ * 프로모션 관리 › 목록 — 프로토타입 조회 화면 React 이식본.
+ *  필터: 이벤트 유형 · 미션 유형 · 프로모션 상태는 멀티셀렉트 드롭다운(2026-10-20 프로토타입 개정),
+ *  기간/전시상태/댓글 · 검색어. 이벤트·미션 유형은 서로 OR.
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
@@ -24,23 +24,40 @@ const BTN = 'h-[38px] shrink-0 rounded-[var(--r-field)] border border-[var(--lin
 const BTN_PRI = 'h-[38px] shrink-0 rounded-[var(--r-field)] bg-[var(--ac)] px-6 text-[14px] font-semibold text-white hover:bg-[var(--ac-h)]';
 const PER = 10;
 
-/** 전체 ↔ 하위 연동 체크박스 그룹 */
-function ChkGroup({ opts, value, onChange }: { opts: string[]; value: string[]; onChange: (v: string[]) => void }) {
+/** 전체 ↔ 하위 연동 멀티셀렉트 드롭다운 (프로토타입 .msel 이식, 어드민 SEL 규격) */
+export function MultiSelect({ opts, value, onChange, width = 170 }: { opts: string[]; value: string[]; onChange: (v: string[]) => void; width?: number }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDoc); document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
+  }, [open]);
   const all = opts.every((o) => value.includes(o));
-  const Box = ({ checked, onToggle, children }: { checked: boolean; onToggle: () => void; children: React.ReactNode }) => (
-    <label className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-[14px] leading-[20px]">
-      <input type="checkbox" checked={checked} onChange={onToggle} className="h-4 w-4" />
-      {children}
-    </label>
-  );
+  const first = opts.find((o) => value.includes(o));
+  const label = all ? '전체' : value.length === 0 ? '선택해주세요' : value.length === 1 ? (first ?? value[0]) : `${first} 외 ${value.length - 1}`;
+  // 순서는 opts 기준으로 유지
+  const toggle = (o: string) => onChange(opts.filter((x) => (x === o ? !value.includes(o) : value.includes(x))));
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-      <Box checked={all} onToggle={() => onChange(all ? [] : opts.slice())}>전체</Box>
-      {opts.map((o) => (
-        <Box key={o} checked={value.includes(o)} onToggle={() => onChange(value.includes(o) ? value.filter((x) => x !== o) : value.concat(o))}>
-          {o}
-        </Box>
-      ))}
+    <div ref={ref} className="relative inline-block" style={{ width }}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}
+        className={cn(SEL, 'w-full overflow-hidden text-ellipsis whitespace-nowrap text-left', open && 'border-[var(--ac)] ring-2 ring-[var(--ac2)]')}>
+        {label}
+      </button>
+      {open && (
+        <div role="listbox" aria-multiselectable className="absolute left-0 top-[calc(100%+4px)] z-40 min-w-full rounded-[8px] border border-[var(--line2)] bg-white p-1.5 shadow-[0_6px_18px_rgba(0,0,0,.12)]">
+          <label className="mb-1 flex h-[34px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-[6px] border-b border-[var(--line2)] px-2.5 text-[14px] font-semibold hover:bg-[var(--th)]">
+            <input type="checkbox" checked={all} onChange={() => onChange(all ? [] : opts.slice())} className="h-[15px] w-[15px]" /> 전체
+          </label>
+          {opts.map((o) => (
+            <label key={o} className="flex h-[34px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-[6px] px-2.5 text-[14px] hover:bg-[var(--th)]">
+              <input type="checkbox" checked={value.includes(o)} onChange={() => toggle(o)} className="h-[15px] w-[15px]" /> {o}
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -77,9 +94,11 @@ export function PromoList({ onToast, onOpenExample, onRegister }: {
     <>
       <FilterPanel
         rows={[
-          [['이벤트 유형', <ChkGroup key="ev" opts={EVENT_TYPES} value={draft.ev} onChange={(v) => set({ ev: v })} />, 3]],
-          [['미션 유형', <ChkGroup key="ms" opts={MISSION_TYPES} value={draft.ms} onChange={(v) => set({ ms: v })} />, 3]],
-          [['프로모션 상태', <ChkGroup key="st" opts={STATUSES} value={draft.st} onChange={(v) => set({ st: v })} />, 3]],
+          [
+            ['이벤트 유형', <MultiSelect key="ev" opts={EVENT_TYPES} value={draft.ev} onChange={(v) => set({ ev: v })} />],
+            ['미션 유형', <MultiSelect key="ms" opts={MISSION_TYPES} value={draft.ms} onChange={(v) => set({ ms: v })} />],
+            ['프로모션 상태', <MultiSelect key="st" opts={STATUSES} value={draft.st} onChange={(v) => set({ st: v })} />],
+          ],
           [
             ['기간', (
               <span key="pd" className="flex items-center gap-2">
@@ -125,7 +144,7 @@ export function PromoList({ onToast, onOpenExample, onRegister }: {
       />
       {dateWarn && <p className="mt-2 text-[13px] text-[var(--bad)]">시작일이 종료일보다 늦어요. 기간을 다시 선택해 주세요.</p>}
 
-      <ListHeader title="조회결과" count={result.length.toLocaleString('ko-KR')} />
+      <ListHeader title="검색 결과" count={result.length.toLocaleString('ko-KR')} />
 
       <div className="overflow-x-auto border-t border-[var(--line2)]">
         <table className={cn(TABLE_CLS, 'min-w-[1600px] whitespace-nowrap')}>
@@ -161,7 +180,8 @@ export function PromoList({ onToast, onOpenExample, onRegister }: {
                   {r.name.replace('[예시] ', '')}
                 </td>
                 <td><YN yes={r.dispSt === '전시'} label={r.dispSt} /></td>
-                <td><YN yes={r.cmt === '사용'} label={r.cmt} /></td>
+                {/* 댓글 사용여부 — 사용=blue, 미사용=red (2026-10-20 프로토타입 개정) */}
+                <td><StatusPill label={r.cmt} tone={r.cmt === '사용' ? 'info' : 'negative'} /></td>
                 <td className="tabular-nums">{r.cmtCnt}</td>
                 <td className="text-[var(--ink2)]">{r.reg}</td>
                 <td className="tabular-nums text-[var(--ink2)]">{r.regAt}</td>
