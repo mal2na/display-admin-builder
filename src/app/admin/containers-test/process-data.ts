@@ -2,10 +2,13 @@
 //  혜택 홈 등 실제 Container + Template + 배치 코너를 가져와 ProcessBuilder 에 주입(2026-10-20).
 import { prisma } from '@/lib/prisma';
 import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE } from '../corner-types/preview-corner';
+import { normalizeRecSource, isCvmSource, effectiveFallback } from '@/lib/display-taxonomy';
 import type { PreviewCorner } from '@/components/preview/blocks';
 
 export type PCorner = {
   id: string; name: string; cornerType: string; layout: string | null; maxItems: number | null; preview: PreviewCorner;
+  /** 수급 방식(정규화) · CVM 연동 여부 · CVM 비었을 때 폴백 — 폴백 UI용(2026-10-20) */
+  recSource: string | null; isCvm: boolean; fallback: '미노출' | '운영자 편성으로 대체';
 };
 export type PTemplate = {
   id: string; name: string; conditionGroup: string | null; isDefault: boolean; status: string; corners: PCorner[];
@@ -48,6 +51,9 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       layout: tc.corner.cornerLayout,
       maxItems: tc.corner.maxItems,
       preview: cornerToPreviewCorner(tc.corner),
+      recSource: tc.corner.recSource ? normalizeRecSource(tc.corner.recSource) : null,
+      isCvm: isCvmSource(tc.corner.recSource),
+      fallback: effectiveFallback(tc.corner.cornerType, tc.corner.cvmFallback),
     })),
   }));
 

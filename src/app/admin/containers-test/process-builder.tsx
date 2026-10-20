@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
 import { cornerTypeChipClass, layoutLabel } from '@/lib/display-taxonomy';
-import { ChevronLeft, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff } from 'lucide-react';
 import type { ProcessData, PTemplate, PCorner } from './process-data';
 
 const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '비로그인 시 노출', '미노출'];
@@ -106,6 +106,27 @@ function CornerDetail({ template, corner, index, expose, onExpose, onToast }: {
           </div>
         </div>
       )}
+
+      {/* 폴백 — CVM 수급 코너에서만. CVM 응답이 비면 어떻게 할지(2026-10-20) */}
+      {corner.isCvm && (
+        <div className="mt-4 rounded-[10px] border border-[#ffe4bf] bg-[#fff8ef] p-3">
+          <p className="mb-1.5 flex items-center gap-1 text-[13px] font-bold text-[#b67a12]"><Layers className="h-3.5 w-3.5" /> 폴백 — CVM 응답이 비었을 때</p>
+          <div className="space-y-1.5">
+            {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
+              const on = corner.fallback === f;
+              return (
+                <div key={f} className={cn('flex items-start gap-2 rounded-[8px] border px-2.5 py-2 text-[12px]', on ? 'border-[#f2c47a] bg-white' : 'border-transparent opacity-60')}>
+                  <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#e59a2a] bg-[#e59a2a]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
+                  <span className="min-w-0 flex-1">
+                    <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
+                    <span className="block text-[var(--ink4)]">{f === '미노출' ? 'CVM이 비면 이 코너는 노출되지 않아요.' : '등록된 운영자 편성 항목으로 대체 노출해요.'}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -195,6 +216,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
   const [selCorner, setSelCorner] = React.useState<Record<string, string>>(() =>
     Object.fromEntries(data.templates.map((t) => [t.id, t.corners[0]?.id ?? ''])));
   const [exposeMap, setExposeMap] = React.useState<Record<string, string>>({});
+  const [fbMode, setFbMode] = React.useState(false); // 미리보기 정상 ↔ 폴백(CVM 비었을 때)
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const toast = React.useCallback((m: string) => {
@@ -251,15 +273,36 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                 <h2 className="text-[14px] font-bold text-[var(--ink)]">미리보기</h2>
                 <span className="text-[12px] text-[var(--ink3)]">{activeIdx + 1}/{data.templates.length} · {activeTemplate?.name}</span>
               </div>
+              {/* 정상 ↔ 폴백(CVM 비었을 때) 토글 */}
+              <div className="mb-3 inline-flex rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
+                <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-3 py-1', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>정상</button>
+                <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3 py-1', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
+              </div>
+              {fbMode && <p className="mb-2 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3" /> CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)</p>}
               <div className="rounded-[12px] bg-[var(--th)] py-5">
                 <DeviceFrame width={300} bodyHeight={470} headerLabel={data.containerName}>
                   {activeTemplate && activeTemplate.corners.length > 0 ? (
-                    activeTemplate.corners.map((c) => (
-                      <div key={c.id} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
-                        className={cn('cursor-pointer rounded-xl ring-offset-2 transition', c.id === activeSel && 'ring-2 ring-[var(--ac)]')}>
-                        <CornerBlock corner={c.preview} />
-                      </div>
-                    ))
+                    activeTemplate.corners.map((c) => {
+                      const hidden = fbMode && c.isCvm && c.fallback === '미노출';
+                      const replaced = fbMode && c.isCvm && c.fallback === '운영자 편성으로 대체';
+                      if (hidden) {
+                        return (
+                          <div key={c.id} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
+                            className={cn('cursor-pointer rounded-xl border border-dashed border-[#f2c47a] bg-[#fff8ef] px-3 py-4 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
+                            <EyeOff className="mx-auto mb-1 h-4 w-4 text-[#b67a12]" />
+                            <p className="text-[11px] font-semibold text-[#b67a12]">{c.name} · 미노출</p>
+                            <p className="text-[10px] text-[#c99a4e]">CVM이 비어 노출되지 않아요</p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={c.id} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
+                          className={cn('relative cursor-pointer rounded-xl ring-offset-2 transition', c.id === activeSel && 'ring-2 ring-[var(--ac)]')}>
+                          {replaced && <span className="absolute right-1 top-1 z-10 rounded-[4px] bg-[#e59a2a] px-1.5 py-0.5 text-[9px] font-bold text-white">운영자 편성 대체</span>}
+                          <CornerBlock corner={c.preview} />
+                        </div>
+                      );
+                    })
                   ) : (
                     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
                   )}
