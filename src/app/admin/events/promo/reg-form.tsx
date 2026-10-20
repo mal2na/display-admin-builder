@@ -21,7 +21,7 @@ import {
 import { validate as validateCond } from '@/lib/promotion/cond';
 import { typeLabel } from '@/lib/promotion/reg-start';
 import {
-  CHANNELS, CTA_MAX, CTA_AT_ONCE, ctaOpts, newCta, emptyForm, validateForm, hexOk, SVC_PAGES,
+  CHANNELS, CTA_MAX, CTA_AT_ONCE, ctaOpts, CTA_DONE, newCta, emptyForm, validateForm, hexOk, SVC_PAGES,
   normalize, prOf,
   type PromoForm, type CtaBlock, type FormErrors,
 } from '@/lib/promotion/form';
@@ -44,7 +44,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
   const [confirmMsg, setConfirmMsg] = React.useState<null | { msg: string; ok: () => void }>(null);
   const [cauOpen, setCauOpen] = React.useState(false);
   const [termsOpen, setTermsOpen] = React.useState(false);
-  const [pagePick, setPagePick] = React.useState<number | null>(null);
+  const [pagePick, setPagePick] = React.useState<{ id: number; to?: boolean } | null>(null);
   const [tagInput, setTagInput] = React.useState('');
   /** 등록 폼 / 저장 후 상세 / FO 미리보기 */
   const [view, setView] = React.useState<'form' | 'detail' | 'fo'>('form');
@@ -374,7 +374,8 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
                     key={c.id} c={c} idx={i} total={f.ctas.length} type={f.type} E={E}
                     onSet={(p) => setCta(c.id, p)}
                     onDel={() => set({ ctas: f.ctas.filter((x) => x.id !== c.id) })}
-                    onPickPage={() => setPagePick(c.id)}
+                    onPickPage={() => setPagePick({ id: c.id })}
+                    onPickPageTo={() => setPagePick({ id: c.id, to: true })}
                   />
                 ))}
                 <div className="flex items-center justify-end gap-2 border-b border-[var(--line)] px-4 py-2.5">
@@ -475,8 +476,8 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
       )}
       {pagePick !== null && (
         <PagePicker
-          value={f.ctas.find((c) => c.id === pagePick)?.pg ?? ''}
-          onApply={(id) => { setCta(pagePick, { pg: id }); setPagePick(null); }}
+          value={(() => { const c = f.ctas.find((x) => x.id === pagePick.id); return (pagePick.to ? c?.toPg : c?.pg) ?? ''; })()}
+          onApply={(id) => { setCta(pagePick.id, pagePick.to ? { toPg: id } : { pg: id }); setPagePick(null); }}
           onClose={() => setPagePick(null)}
         />
       )}
@@ -501,14 +502,20 @@ function MsgBox({ msg, onOk, onCancel }: { msg: string; onOk: () => void; onCanc
 }
 
 /* ── 하단 CTA 블록 ─────────────────────────────────────────────── */
-function CtaRows({ c, idx, total, type, E, onSet, onDel, onPickPage }: {
+function CtaRows({ c, idx, total, type, E, onSet, onDel, onPickPage, onPickPageTo }: {
   c: CtaBlock; idx: number; total: number; type: string; E: FormErrors;
-  onSet: (p: Partial<CtaBlock>) => void; onDel: () => void; onPickPage: () => void;
+  onSet: (p: Partial<CtaBlock>) => void; onDel: () => void; onPickPage: () => void; onPickPageTo: () => void;
 }) {
   const fixed = type === '안내형';
   const opts = ctaOpts(type);
   const isLink = c.type === '링크 버튼';
   const page = SVC_PAGES.find((p) => p.id === c.pg);
+  const toPage = SVC_PAGES.find((p) => p.id === c.toPg);
+  // 완료 후 변경 — 이 CTA 유형이 '완료 가능' 버튼일 때만 (CTA_DONE)
+  const D = CTA_DONE[c.type];
+  const how = D && D.how.includes(c.how) ? c.how : D?.how[0];
+  const toType = D && D.to.includes(c.toType) ? c.toType : D?.to[0] ?? '링크 버튼';
+  const toIsLink = toType === '링크 버튼';
   return (
     <>
       {total > 1 && (
@@ -572,6 +579,73 @@ function CtaRows({ c, idx, total, type, E, onSet, onDel, onPickPage }: {
         <Ck on={c.fgDef} onChange={() => onSet({ fgDef: !c.fgDef, ...(c.fgDef ? {} : { fg: '#FFFFFF' }) })}>기본 컬러 : white</Ck>
         {c.auto && <Hint>자동으로 추가된 CTA예요</Hint>}
       </Row>
+
+      {/* ── 완료 후 변경 (CTA_DONE 대상 유형만 · 2026-10-20 프로토타입 개정) ── */}
+      {D && (
+        <>
+          <Row label="하단 CTA 변경">
+            <RdPair value={c.chg} opts={['Y', 'N'] as const} onChange={(v) => onSet({ chg: v })} />
+            {c.chg === 'N' && <Hint>N이면 FO 기본 : {D.fo}</Hint>}
+            <Hint>{D.when} 후 버튼을 바꿀지 정해요. 그 전 상태(진행 예정 · 결과 발표 전 · 일시 중지 · 종료 등)는 FO 기본으로 처리돼요.</Hint>
+          </Row>
+          {c.chg === 'Y' && (
+            <>
+              <Row label="└ 변경 방식">
+                <RdPair value={how!} opts={D.how} onChange={(v) => onSet({ how: v })} />
+                {D.how.length === 1 && <Hint>코드 발급 후에는 공유가 필요해 버튼 변경만 가능해요</Hint>}
+              </Row>
+              {how === '버튼 변경' && (
+                <>
+                  <Row label="└ 변경 CTA 유형" req>
+                    <select value={toType} onChange={(e) => onSet({ toType: e.target.value })} className={cn(SEL, 'w-[220px]')}>
+                      {D.to.map((o) => <option key={o}>{o}</option>)}
+                    </select>
+                    {toType === '혜택 지급 버튼' && <Hint>수령 동작 · 수령 완료 처리는 FO 기본 · 하단에 혜택 지급 버튼을 추가할 수 없어요</Hint>}
+                  </Row>
+                  <Row label="└ 변경 CTA 명" req err={E[`ctaNmC${c.id}`]}>
+                    <span id={`err-ctaNmC${c.id}`} />
+                    <input value={c.toName} maxLength={20} onChange={(e) => onSet({ toName: e.target.value })} placeholder="변경 버튼 명을 입력해주세요" className={cn(INP, 'w-[320px] max-w-full')} />
+                  </Row>
+                  {toIsLink && (
+                    <>
+                      <Row label="└ 변경 CTA 연결 방식">
+                        <RdPair value={c.toLink} opts={['URL', '서비스 내부 페이지'] as const} onChange={(v) => onSet({ toLink: v })} />
+                      </Row>
+                      {c.toLink === 'URL' ? (
+                        <Row label="└ 변경 CTA URL" req err={E[`ctaUrlC${c.id}`]}>
+                          <span id={`err-ctaUrlC${c.id}`} />
+                          <input value={c.toUrl} onChange={(e) => onSet({ toUrl: e.target.value })} placeholder="URL을 입력해주세요" className={cn(INP, 'w-full max-w-[520px]')} />
+                        </Row>
+                      ) : (
+                        <Row label="└ 변경 CTA 연결 페이지" req err={E[`ctaPgC${c.id}`]}>
+                          <span id={`err-ctaPgC${c.id}`} />
+                          {c.toPg
+                            ? <span className="rounded-[4px] bg-[var(--ac2)] px-2 py-0.5 font-mono text-[13px] text-[var(--ac)]" title={toPage?.name}>{c.toPg}</span>
+                            : <Hint>선택된 페이지가 없어요</Hint>}
+                          <button type="button" className={BTN_PILL} onClick={onPickPageTo}>페이지 조회</button>
+                        </Row>
+                      )}
+                      <Row label="└ 변경 CTA 열기 방식">
+                        <RdPair value={c.toOpen} opts={['현재 창', '새 창'] as const} onChange={(v) => onSet({ toOpen: v })} />
+                      </Row>
+                      <Row label="└ 변경 CTA 색상">
+                        <span className="h-6 w-6 rounded border border-[var(--line2)]" style={{ background: hexOk(c.toBg) ?? 'transparent' }} />
+                        <input value={c.toBg} maxLength={7} disabled={c.toBgDef} onChange={(e) => onSet({ toBg: e.target.value.startsWith('#') || !e.target.value ? e.target.value : `#${e.target.value}` })} className={cn(INP, 'w-[120px]', c.toBgDef && 'bg-[var(--th)] text-[var(--ink3)]')} />
+                        <Ck on={c.toBgDef} onChange={() => onSet({ toBgDef: !c.toBgDef, ...(c.toBgDef ? {} : { toBg: '#000000' }) })}>기본 컬러 : black</Ck>
+                      </Row>
+                      <Row label="└ 변경 CTA 명 색상">
+                        <span className="h-6 w-6 rounded border border-[var(--line2)]" style={{ background: hexOk(c.toFg) ?? 'transparent' }} />
+                        <input value={c.toFg} maxLength={7} disabled={c.toFgDef} onChange={(e) => onSet({ toFg: e.target.value.startsWith('#') || !e.target.value ? e.target.value : `#${e.target.value}` })} className={cn(INP, 'w-[120px]', c.toFgDef && 'bg-[var(--th)] text-[var(--ink3)]')} />
+                        <Ck on={c.toFgDef} onChange={() => onSet({ toFgDef: !c.toFgDef, ...(c.toFgDef ? {} : { toFg: '#FFFFFF' }) })}>기본 컬러 : white</Ck>
+                      </Row>
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </>
+      )}
     </>
   );
 }
