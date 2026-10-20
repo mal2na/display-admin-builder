@@ -7,23 +7,22 @@
  *  누르면 그 화면만 딥링크(#reg · #ex=<key>)로 띄운다.
  *  결과 관리는 별도 LNB 메뉴(/admin/events/result · result-admin.tsx)로 분리했다(2026-10-20).
  *  프로토타입 상세의 '빌더 구성영역'을 누르면 iframe 이 postMessage(open-builder)를 보내고,
- *  여기서 React PromoBuilder 를 띄운다(2026-10-20).
+ *  기존 전시화면 관리 빌더(혜택 홈)로 이동한다(/admin/events/promo/benefit-builder 리졸버 경유, 2026-10-20).
  */
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { PromoList } from './promo-list';
 import { RegStartModal } from './reg-start-modal';
 import { RegForm } from './reg-form';
-import { ScreenBuilderTest } from '../../containers-test/screen-builder-test';
 import type { PromoRow } from '@/lib/promotion/model';
 
 export function PromoAdmin() {
+  const router = useRouter();
   const [proto, setProto] = React.useState<string | null>(null);
   const [regOpen, setRegOpen] = React.useState(false);
   /** React 로 옮긴 등록 폼 (지금은 안내형만) */
   const [form, setForm] = React.useState<null | { type: string; jm: '직접' | '행동' }>(null);
-  /** 프로토타입 상세에서 '빌더 구성영역' 클릭 시 띄우는 전시 빌더(테스트) */
-  const [builder, setBuilder] = React.useState<null | { area: string }>(null);
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -34,17 +33,16 @@ export function PromoAdmin() {
   }, []);
   React.useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  /** 프로토타입 iframe → 부모: 빌더 구성영역 클릭 신호 받기 */
+  /** 프로토타입 iframe → 부모: 빌더 구성영역 클릭 시 기존 전시화면 관리 빌더(혜택 홈)로 이동 */
   React.useEffect(() => {
     function onMsg(e: MessageEvent) {
       if (e.data && e.data.type === 'open-builder') {
-        setBuilder({ area: String(e.data.area ?? '상세 영역') });
-        window.scrollTo(0, 0);
+        router.push('/admin/events/promo/benefit-builder');
       }
     }
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
-  }, []);
+  }, [router]);
 
   /** 유형이 정해지면 등록 화면으로 — 안내형은 React 폼, 나머지는 아직 프로토타입 */
   function openReg(type: string, jm: string | null) {
@@ -62,16 +60,6 @@ export function PromoAdmin() {
       </div>
     </div>
   ) : null;
-
-  // 프로토타입 상세에서 연 빌더 — 전시 빌더(테스트)로 맵핑, 전체 페이지
-  if (builder) {
-    return (
-      <>
-        <ScreenBuilderTest onBack={() => { setBuilder(null); window.scrollTo(0, 0); }} />
-        {Toast}
-      </>
-    );
-  }
 
   if (form) {
     return (
