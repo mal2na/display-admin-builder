@@ -20,5 +20,5 @@ export default async function BenefitBuilderRedirect() {
     // 혜택 홈/템플릿을 못 찾으면 전시화면 관리 목록으로.
     redirect('/admin/containers');
   }
-  redirect(`/admin/templates/${templateId}/builder`);
+  redirect(`/admin/templates/${templateId}/builder?ctx=promo`);
 }

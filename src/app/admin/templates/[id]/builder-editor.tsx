@@ -3306,18 +3306,21 @@ export function BuilderEditor({
   meta,
   corners,
   library,
+  deviceLeft = false,
 }: {
   meta: TemplateMeta;
   corners: CornerNode[];
   library: LibraryData;
+  /** 디바이스 미리보기를 좌측에 두는 레이아웃(전시화면 관리 테스트). 코너 리스트·수급 패널은 그 우측으로, 조금 좁게. */
+  deviceLeft?: boolean;
 }) {
   const templateId = meta.id;
   const [ids, setIds] = useState(corners.map((c) => c.templateCornerId));
   const [sel, setSel] = useState<string | null>(corners[0]?.templateCornerId ?? null);
   const [device, setDevice] = useState(DEVICES[0]);
   const [zoom, setZoom] = useState(0.8); // 미리보기 배율(비율 유지) — 기본 80%로 디바이스 전체가 보이게
-  const [rightW, setRightW] = useState(440); // 우측 상세 패널 너비(px), 드래그로 조절
-  const [leftW, setLeftW] = useState(300); // 좌측 코너 리스트 너비(px), 드래그로 조절
+  const [rightW, setRightW] = useState(deviceLeft ? 380 : 440); // 우측 상세 패널 너비(px), 드래그로 조절
+  const [leftW, setLeftW] = useState(deviceLeft ? 280 : 300); // 좌측 코너 리스트 너비(px), 드래그로 조절
   const [leftOpen, setLeftOpen] = useState(true); // 좌측 패널 펼침/접힘
   const [rightOpen, setRightOpen] = useState(true); // 우측 패널 펼침/접힘
   // 캔버스 빈 영역 클릭 = 둘 다 토글(하나라도 열려 있으면 둘 다 접고, 둘 다 접혀 있으면 둘 다 펼침)
@@ -3521,10 +3524,12 @@ export function BuilderEditor({
     />
     <div
       className="grid flex-1 overflow-hidden transition-[grid-template-columns] duration-200"
-      style={{ gridTemplateColumns: `${leftOpen ? leftW : 0}px minmax(0,1fr) ${rightOpen ? rightW : 0}px` }}
+      style={{ gridTemplateColumns: deviceLeft
+        ? `minmax(0,1fr) ${leftOpen ? leftW : 0}px ${rightOpen ? rightW : 0}px`
+        : `${leftOpen ? leftW : 0}px minmax(0,1fr) ${rightOpen ? rightW : 0}px` }}
     >
-      {/* 좌측: 고정 코너 리스트 + 유형 추가 (드래그로 너비 조절). 접히면 폭 0. */}
-      <div className={cn('relative flex flex-col overflow-hidden border-r bg-card', !leftOpen && 'pointer-events-none opacity-0')}>
+      {/* 좌측(기본) / 가운데(디바이스-좌측 모드): 고정 코너 리스트 + 유형 추가 (드래그로 너비 조절). 접히면 폭 0. */}
+      <div className={cn('relative flex flex-col overflow-hidden border-r bg-card', deviceLeft && 'order-2 border-l', !leftOpen && 'pointer-events-none opacity-0')}>
         <div
           onPointerDown={(e) => startResize('left', e)}
           title="드래그로 패널 너비 조절"
@@ -3617,8 +3622,8 @@ export function BuilderEditor({
             「매핑 템플릿 정보」에서 다룬다(2026-10-08 사용자 요청). 빌더는 코너 배치에만 집중. */}
       </div>
 
-      {/* 가운데: 실시간 디바이스 미리보기 */}
-      <div className="flex flex-col overflow-hidden bg-background">
+      {/* 가운데(기본) / 좌측(디바이스-좌측 모드): 실시간 디바이스 미리보기 */}
+      <div className={cn('flex flex-col overflow-hidden bg-background', deviceLeft && 'order-1')}>
         <div className="flex items-center justify-between gap-2 px-3 py-2">
           {/* 좌측 패널 접기/펼치기 */}
           <button type="button" onClick={() => setLeftOpen((v) => !v)} title={leftOpen ? '좌측 패널 접기' : '좌측 패널 펼치기'}
@@ -3694,7 +3699,7 @@ export function BuilderEditor({
       </div>
 
       {/* 우측: 선택 코너 상세 (드래그로 너비 조절). 접히면 폭 0. */}
-      <div className={cn('bpanel relative overflow-y-auto border-l bg-muted/40 p-4', !rightOpen && 'pointer-events-none opacity-0')}>
+      <div className={cn('bpanel relative overflow-y-auto border-l bg-muted/40 p-4', deviceLeft && 'order-3', !rightOpen && 'pointer-events-none opacity-0')}>
         <div
           onPointerDown={(e) => startResize('right', e)}
           title="드래그로 패널 너비 조절"

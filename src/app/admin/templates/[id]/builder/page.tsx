@@ -12,7 +12,11 @@ import type { PreviewCorner } from '@/components/preview/blocks';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BuilderPage({ params }: { params: { id: string } }) {
+export default async function BuilderPage({ params, searchParams }: { params: { id: string }; searchParams?: { device?: string; ctx?: string; from?: string } }) {
+  // 전시화면 관리(테스트)에서 진입하면 디바이스를 좌측에. 프로모션에서 진입하면 상단 타이틀만 '프로모션 관리'로.
+  const deviceLeft = searchParams?.device === 'left';
+  const ctxPromo = searchParams?.ctx === 'promo';
+  const fromTest = searchParams?.from === 'test';
   const template = await prisma.template.findUnique({
     where: { id: params.id },
     include: {
@@ -296,8 +300,11 @@ export default async function BuilderPage({ params }: { params: { id: string } }
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl bg-[var(--panel)]">
       <div className="flex items-center gap-3 border-b bg-card px-6 py-3">
-        <Link href={`/admin/containers/${template.containerId}`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline">
-          <ChevronLeft className="h-4 w-4" /> {template.container.name}
+        <Link
+          href={ctxPromo ? '/admin/events' : fromTest ? `/admin/containers-test/c/${template.containerId}` : `/admin/containers/${template.containerId}`}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline"
+        >
+          <ChevronLeft className="h-4 w-4" /> {ctxPromo ? '프로모션 관리' : template.container.name}
         </Link>
         <div className="h-4 w-px bg-border" />
         <TemplateHeaderBar
@@ -327,7 +334,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
           conditionGroup: template.conditionGroup,
           startAt: template.startAt ? template.startAt.toISOString().slice(0, 16) : null,
           endAt: template.endAt ? template.endAt.toISOString().slice(0, 16) : null,
-          containerName: template.container.name,
+          containerName: ctxPromo ? '프로모션 관리' : template.container.name,
           containerType: template.container.containerType, // 홈=MAIN 등 — 칩 사용 제어 컨텍스트
           isDefault: template.isDefault,
           memo: template.memo,
@@ -336,6 +343,7 @@ export default async function BuilderPage({ params }: { params: { id: string } }
         }}
         corners={corners}
         library={library}
+        deviceLeft={deviceLeft}
       />
     </div>
   );
