@@ -32,8 +32,8 @@ const period = (a: string, b: string, noEnd?: boolean) =>
 const itemLines = (it: { lines: RewardLine[] }) =>
   it.lines.map((l) => [l.type, l.detail, l.pick.join('·'), l.method].filter(Boolean).join(' · ')).filter(Boolean);
 
-export function PromoDetail({ f, onList, onEdit, onFo }: {
-  f: PromoForm; onList: () => void; onEdit: () => void; onFo: () => void;
+export function PromoDetail({ f, onList, onEdit, onFo, onBuilder }: {
+  f: PromoForm; onList: () => void; onEdit: () => void; onFo: () => void; onBuilder?: () => void;
 }) {
   const isGuide = f.type === '안내형';
   const limited = f.scope === '제한 공개';
@@ -223,6 +223,21 @@ export function PromoDetail({ f, onList, onEdit, onFo }: {
           )}
         </Sect>
 
+        <Sect title="상세 영역 구성">
+          <button type="button" onClick={onBuilder} disabled={!onBuilder}
+            className={cn('flex w-full items-center gap-3 rounded-[8px] border border-dashed border-[var(--line2)] px-4 py-3.5 text-left text-[14px] leading-[20px]',
+              onBuilder && 'cursor-pointer hover:border-[var(--ac)] hover:bg-[var(--ac2)]')}>
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[6px] bg-[var(--th)] text-[var(--ink3)]">▦</span>
+            <span className="min-w-0 flex-1">
+              <b className="block text-[var(--ink2)]">
+                {f.detailBlocks && f.detailBlocks.length > 0 ? `상세 영역 · 블록 ${f.detailBlocks.length}개` : '상세 영역 미구성'}
+              </b>
+              <span className="text-[var(--ink3)]">상세 영역은 빌더에서 구성합니다.</span>
+            </span>
+            {onBuilder && <span className="shrink-0 text-[var(--ac)]">빌더 열기 ›</span>}
+          </button>
+        </Sect>
+
         <Sect title="프로모션 담당자 정보">
           <Row label="등록자"><V>홍길동(P123456)</V></Row>
           <Row label="등록일시"><V>{''}</V></Row>
@@ -233,6 +248,7 @@ export function PromoDetail({ f, onList, onEdit, onFo }: {
         <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-6">
           <button type="button" className={BTN} onClick={onList}>목록</button>
           <div className="ml-auto flex gap-2">
+            {onBuilder && <button type="button" className={BTN} onClick={onBuilder}>상세 영역 빌더</button>}
             <button type="button" className={BTN} onClick={onFo}>FO 미리보기</button>
             <button type="button" className={BTN_PRI} onClick={onEdit}>수정</button>
           </div>

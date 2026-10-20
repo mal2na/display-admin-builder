@@ -86,6 +86,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
         onList={onSaved}
         onEdit={() => { setView('form'); window.scrollTo(0, 0); }}
         onFo={openFo}
+        onBuilder={openBuilder}
       />
     );
   }

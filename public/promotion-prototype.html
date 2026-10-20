@@ -2730,7 +2730,7 @@ function syncPreview(){
     const nm=$("ctaName"+i).value.trim(),bg=hexOk($("ctaBg"+i).value)||"#000000",fg=hexOk($("ctaFg"+i).value)||"#FFFFFF";
     return `<div class="pv-btn${nm?"":" empty"}" style="background:${bg};color:${fg}">${nm?esc(nm):"버튼명이 노출됩니다"}</div>`}).join("");
 }
-document.querySelector(".pv").addEventListener("click",e=>{const pc=e.target.closest(".pk-card");if(pc){if(pc.dataset.pkMulti!=="true")pc.parentElement.querySelectorAll(".on").forEach(x=>x!==pc&&x.classList.remove("on"));pc.classList.toggle("on");return}const b=e.target.closest("[data-builder]");if(b)toast(`빌더가 새 창으로 열려요. (${b.dataset.builder} 편집 · 별도 SB)`)});
+document.querySelector(".pv").addEventListener("click",e=>{const pc=e.target.closest(".pk-card");if(pc){if(pc.dataset.pkMulti!=="true")pc.parentElement.querySelectorAll(".on").forEach(x=>x!==pc&&x.classList.remove("on"));pc.classList.toggle("on");return}const b=e.target.closest("[data-builder]");if(b){if(window.parent!==window){window.parent.postMessage({type:"open-builder",area:b.dataset.builder},"*")}else{toast(`빌더가 새 창으로 열려요. (${b.dataset.builder} 편집 · 별도 SB)`)}}});
 function hexOk(v){v=(v||"").trim();return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)?v:null}
 function hexCheck(inp){const ok=hexOk(inp.value);const i=inp.id.replace(/^cta(Bg|Fg)/,""),k=inp.id.startsWith("ctaBg")?"eCtaBg":"eCtaFg";
   $("sw"+inp.id).style.background=ok||"transparent";$(k+i).textContent=ok||!inp.value?"":"#을 포함한 6자리 HEX 코드로 입력해 주세요 (예: #3A2EE6)"}
@@ -2794,7 +2794,7 @@ $("regForm").addEventListener("click",e=>{
   if(t.dataset.rbDel!==undefined){t.closest(".rw-block").remove();syncRewards();syncPreview();dirty=true;return}
   if(t.dataset.refcardAdd){t.closest("[data-refbox]").querySelector(".ref-cards").insertAdjacentHTML("beforeend",refCard(t.dataset.refcardAdd));syncRef();syncPreview();dirty=true;return}
   if(t.dataset.refcardDel!==undefined){t.closest(".ref-card").remove();syncRef();syncPreview();dirty=true;return}
-  if(t.dataset.builderOpen){toast(`빌더가 새 창으로 열려요. (${t.dataset.builderOpen} 편집 · 별도 SB)`);return}
+  if(t.dataset.builderOpen){if(window.parent!==window){window.parent.postMessage({type:"open-builder",area:t.dataset.builderOpen},"*")}else{toast(`빌더가 새 창으로 열려요. (${t.dataset.builderOpen} 편집 · 별도 SB)`)}return}
   if(t.dataset.itAdd!==undefined){const st=blkState(t.closest(".rw-block"));
     if(st.one&&st.all){alertBox("여러 리워드를 함께 지급하려면 리워드를 추가해 주세요.");return}
     t.closest(".rw-block").querySelector(".it-list").insertAdjacentHTML("beforeend",itemCard());syncRewards();syncPreview();dirty=true;return}
