@@ -299,32 +299,33 @@ export default async function BuilderPage({ params, searchParams }: { params: { 
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl bg-[var(--panel)]">
-      <div className="flex items-center gap-3 border-b bg-card px-6 py-3">
-        <Link
-          href={ctxPromo ? '/admin/events' : fromTest ? `/admin/containers-test/c/${template.containerId}` : `/admin/containers/${template.containerId}`}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline"
-        >
-          <ChevronLeft className="h-4 w-4" /> {ctxPromo ? '프로모션 관리' : template.container.name}
-        </Link>
-        <div className="h-4 w-px bg-border" />
-        <TemplateHeaderBar
-          templateId={template.id}
-          name={template.name}
-          conditionGroup={template.conditionGroup}
-          isDefault={template.isDefault}
-          status={template.status}
-          retireStatus={template.retireStatus}
-          versions={versions}
-          archiveBlockReason={archiveBlockReason}
-        />
-        <div className="ml-auto" />
-      </div>
-
+      {/* 상단 헤더 + 검수 바를 한 줄로 합침 — 뒤로가기/템플릿명/칩/임시저장/버전을 검수 바의 leading 으로. */}
       <TemplateReviewBar
         templateId={template.id}
         status={template.status}
         rejectReason={template.rejectReason}
         issues={reviewIssues}
+        leading={
+          <>
+            <Link
+              href={ctxPromo ? '/admin/events' : fromTest ? `/admin/containers-test/c/${template.containerId}` : `/admin/containers/${template.containerId}`}
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline"
+            >
+              <ChevronLeft className="h-4 w-4" /> {ctxPromo ? '프로모션 관리' : template.container.name}
+            </Link>
+            <div className="mx-1 h-4 w-px bg-border" />
+            <TemplateHeaderBar
+              templateId={template.id}
+              name={template.name}
+              conditionGroup={template.conditionGroup}
+              isDefault={template.isDefault}
+              status={template.status}
+              retireStatus={template.retireStatus}
+              versions={versions}
+              archiveBlockReason={archiveBlockReason}
+            />
+          </>
+        }
       />
 
       <BuilderEditor

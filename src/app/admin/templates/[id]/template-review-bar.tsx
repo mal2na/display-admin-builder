@@ -36,6 +36,8 @@ export type TemplateReviewData = {
   status: string;
   rejectReason: string | null;
   issues: ReviewIssue[];
+  /** 상단 행 맨 앞에 끼워 한 줄로 합칠 헤더(뒤로가기 + 템플릿명/칩/임시저장/버전 등). 주면 별도 헤더 바 없이 한 줄. */
+  leading?: React.ReactNode;
 };
 
 export function TemplateReviewBar(props: TemplateReviewData) {
@@ -68,8 +70,10 @@ export function TemplateReviewBar(props: TemplateReviewData) {
   const canGoLive = status === 'APPROVED' || status === 'SCHEDULED' || status === 'PUBLISHED';
 
   return (
-    <div className="border-b bg-card px-6 py-2">
+    <div className="border-b bg-card px-6 py-2.5">
       <div className="flex flex-wrap items-center gap-2">
+        {props.leading}
+        {props.leading && <div className="mx-1 h-4 w-px bg-border" />}
         <span className="text-xs font-semibold text-muted-foreground">템플릿 승인</span>
         <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-semibold', STATUS_COLOR[status] ?? 'bg-muted')}>
           {statusText(status)}
