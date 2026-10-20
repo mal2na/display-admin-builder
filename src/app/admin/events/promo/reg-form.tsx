@@ -14,6 +14,7 @@ import { TermsPicker, TermsMap, GuestBlock } from './terms';
 import { RefSections } from './ref-section';
 import { PromoDetail } from './detail-view';
 import { FoPreview } from './fo-preview';
+import { PromoBuilder } from './promo-builder';
 import { RewardSection } from './reward-blocks';
 import {
   Sect, Row, Hint, Note, Rd, Ck, RdPair, BTN, BTN_PRI, BTN_SM, BTN_PILL, INP, SEL, DT,
@@ -23,7 +24,7 @@ import { typeLabel } from '@/lib/promotion/reg-start';
 import {
   CHANNELS, CTA_MAX, CTA_AT_ONCE, ctaOpts, CTA_DONE, newCta, emptyForm, validateForm, hexOk, SVC_PAGES,
   normalize, prOf,
-  type PromoForm, type CtaBlock, type FormErrors,
+  type PromoForm, type CtaBlock, type DetailBlock, type FormErrors,
 } from '@/lib/promotion/form';
 import { JM_GUIDE, JM_LABEL } from '@/lib/promotion/reg-start';
 import { termById, initialReq } from '@/lib/promotion/terms';
@@ -47,7 +48,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
   const [pagePick, setPagePick] = React.useState<{ id: number; to?: boolean } | null>(null);
   const [tagInput, setTagInput] = React.useState('');
   /** 등록 폼 / 저장 후 상세 / FO 미리보기 */
-  const [view, setView] = React.useState<'form' | 'detail' | 'fo'>('form');
+  const [view, setView] = React.useState<'form' | 'detail' | 'fo' | 'builder'>('form');
   const backRef = React.useRef<'form' | 'detail'>('form');
 
   // 값이 바뀔 때마다 연동 규칙(룰렛·자동 CTA 등)을 한 번 통과시킨다
@@ -74,8 +75,10 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
   };
 
   const openFo = () => { backRef.current = view === 'detail' ? 'detail' : 'form'; setView('fo'); window.scrollTo(0, 0); };
+  const openBuilder = () => { backRef.current = view === 'detail' ? 'detail' : 'form'; setView('builder'); window.scrollTo(0, 0); };
 
   if (view === 'fo') return <FoPreview f={f} onBack={() => { setView(backRef.current); window.scrollTo(0, 0); }} />;
+  if (view === 'builder') return <PromoBuilder f={f} onChange={(blocks) => set({ detailBlocks: blocks })} onBack={() => { setView(backRef.current); window.scrollTo(0, 0); }} />;
   if (view === 'detail') {
     return (
       <PromoDetail
@@ -97,7 +100,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
       <h1 className="mt-2 text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[var(--ink)]">프로모션 등록</h1>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[300px_1fr]">
-        <Preview f={f} />
+        <Preview f={f} onBuilder={openBuilder} />
 
         <div className="min-w-0">
           {/* ── 기본정보 ── */}
@@ -653,7 +656,20 @@ function CtaRows({ c, idx, total, type, E, onSet, onDel, onPickPage, onPickPageT
 /* ── FO 미리보기 ───────────────────────────────────────────────── */
 const fmtDT = (v: string) => (v ? v.replace('T', ' ').replace(/-/g, '.') : '');
 
-function Preview({ f }: { f: PromoForm }) {
+/** 미리보기용 상세 블록 1개 렌더(컴팩트) */
+function BlockPreview({ b }: { b: DetailBlock }) {
+  const al: Record<string, string> = { 왼쪽: 'text-left', 가운데: 'text-center', 오른쪽: 'text-right' };
+  const ju: Record<string, string> = { 왼쪽: 'justify-start', 가운데: 'justify-center', 오른쪽: 'justify-end' };
+  const sz: Record<string, string> = { 작게: 'text-[11px]', 보통: 'text-[12px]', 크게: 'text-[14px] font-bold' };
+  const gp: Record<string, number> = { 작게: 6, 보통: 12, 크게: 24 };
+  if (b.kind === '이미지') return <div className="grid h-[70px] place-items-center rounded-[6px] bg-white text-[var(--ink4)]">이미지</div>;
+  if (b.kind === '텍스트') return <p className={cn('whitespace-pre-line leading-[16px] text-[var(--ink)]', al[b.align], sz[b.size])}>{b.text || '내용'}</p>;
+  if (b.kind === '버튼') return <div className={cn('flex', ju[b.align])}><span className="rounded-[6px] bg-[var(--ac)] px-3 py-1 text-[11px] font-semibold text-white">{b.text || '버튼'}</span></div>;
+  if (b.kind === '구분선') return <hr className="border-t border-[var(--line2)]" />;
+  return <div style={{ height: gp[b.size] }} />;
+}
+
+function Preview({ f, onBuilder }: { f: PromoForm; onBuilder?: () => void }) {
   const s = fmtDT(f.dispS);
   const e = f.dispNoEnd ? '종료일 없음' : fmtDT(f.dispE);
   const js = fmtDT(f.joinS); const je = fmtDT(f.joinE);
@@ -675,9 +691,26 @@ function Preview({ f }: { f: PromoForm }) {
           <div className="mt-1 flex gap-2"><span className="w-10 shrink-0 text-[var(--ink3)]">기간</span><span className="min-w-0 break-words">{periodText}</span></div>
           {f.scope === '제한 공개' && <div className="mt-0.5 flex gap-2"><span className="w-10 shrink-0 text-[var(--ink3)]">대상</span><span>공개 대상 고객 한정</span></div>}
         </div>
-        <div className="grid h-[140px] place-items-center rounded-[8px] border border-dashed border-[var(--line3)] bg-[var(--th)] text-center text-[12px] leading-[16px] text-[var(--ink3)]">
-          <span><b className="block text-[var(--ink2)]">빌더 구성영역</b>상세 영역은 빌더에서 구성합니다.</span>
-        </div>
+        {/* 상세 영역 — 빌더 구성영역. 클릭하면 상세 영역 빌더로 이동(2026-10-20 사용자 요청). */}
+        <button type="button" onClick={onBuilder} disabled={!onBuilder}
+          className={cn('block w-full rounded-[8px] border border-dashed border-[var(--line3)] bg-[var(--th)] p-2 text-left transition',
+            onBuilder && 'cursor-pointer hover:border-[var(--ac)] hover:bg-[var(--ac2)]')}>
+          {f.detailBlocks.length === 0 ? (
+            <span className="grid h-[120px] place-items-center text-center text-[12px] leading-[16px] text-[var(--ink3)]">
+              <span><b className="block text-[var(--ink2)]">빌더 구성영역</b>상세 영역은 빌더에서 구성합니다.{onBuilder && <span className="mt-0.5 block text-[var(--ac)]">클릭해 빌더 열기 ›</span>}</span>
+            </span>
+          ) : (
+            <>
+              <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-[var(--ink3)]">
+                <span>상세 영역 · {f.detailBlocks.length}개 블록</span>
+                {onBuilder && <span className="text-[var(--ac)]">빌더 열기 ›</span>}
+              </div>
+              <div className="space-y-1.5">
+                {f.detailBlocks.map((b) => <BlockPreview key={b.id} b={b} />)}
+              </div>
+            </>
+          )}
+        </button>
         <div className="rounded-[8px] border border-[var(--line)] p-2.5">
           <b className="text-[12px] text-[var(--ink2)]">유의사항</b>
           <p className={cn('mt-1 whitespace-pre-line text-[12px] leading-[18px]', f.caution ? 'text-[var(--ink2)]' : 'text-[var(--ink4)]')}>

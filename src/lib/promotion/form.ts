@@ -82,6 +82,24 @@ export type CtaBlock = {
 
 export type TargetFile = { name: string; total: number; ok: number; ng: number };
 
+/* ── FO 상세 영역 빌더 블록 (2026-10-20 사용자 요청: 빌더 구성영역 → 간단 빌더) ── */
+export type DetailBlockKind = '이미지' | '텍스트' | '버튼' | '구분선' | '여백';
+export type DetailBlock = {
+  id: number; kind: DetailBlockKind;
+  text: string;                       // 텍스트/버튼 라벨
+  url: string;                        // 버튼 링크
+  align: '왼쪽' | '가운데' | '오른쪽';   // 텍스트/버튼 정렬
+  size: '작게' | '보통' | '크게';        // 텍스트 크기 · 여백 높이
+};
+let _dbSeq = 0;
+export function newDetailBlock(kind: DetailBlockKind): DetailBlock {
+  _dbSeq += 1;
+  const base = { id: _dbSeq, kind, text: '', url: '', align: '가운데' as const, size: '보통' as const };
+  if (kind === '텍스트') return { ...base, text: '내용을 입력하세요', align: '왼쪽' };
+  if (kind === '버튼') return { ...base, text: '버튼', url: '' };
+  return base;
+}
+
 export type PromoForm = {
   type: EventType | string;
   jm: JoinMode;
@@ -103,6 +121,8 @@ export type PromoForm = {
   caution: string; cauApplied: string;
   cta: '사용' | '미사용';
   ctas: CtaBlock[];
+  /** FO 상세 영역 빌더 블록 */
+  detailBlocks: DetailBlock[];
   search: '노출' | '미노출';
   tags: string[];
   keywords: string; ogTitle: string; ogDesc: string;
@@ -156,7 +176,7 @@ export function emptyForm(type: string, jm: JoinMode): PromoForm {
     cmt: '사용',
     block: '사용', blockS: '', blockE: '',
     caution: '', cauApplied: '',
-    cta: '사용', ctas: [newCta(type)],
+    cta: '사용', ctas: [newCta(type)], detailBlocks: [],
     search: '노출',
     tags: [],
     keywords: '', ogTitle: '', ogDesc: '',
