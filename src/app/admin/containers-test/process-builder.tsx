@@ -31,6 +31,21 @@ function validate(data: ProcessData): Issue[] {
   return issues;
 }
 
+/* 코너의 '선택지'(선택형 컴포넌트의 아톰 라벨)를 노출 옵션 체크박스로 — 없으면 옵션 설정 대상 아님 */
+function cornerOptions(preview: PCorner['preview']): string[] {
+  const out: string[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const c of ((preview as any)?.components ?? [])) {
+    if (c?.componentType !== '선택형') continue;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const a of (c.atoms ?? [])) {
+      const t = String(a?.content ?? a?.name ?? '').trim();
+      if (t && !t.startsWith('@cvm') && !out.includes(t)) out.push(t);
+    }
+  }
+  return out.slice(0, 6);
+}
+
 /* ───────── 코너 상세(카드 내부 우측) ───────── */
 function CornerDetail({ template, corner, index, expose, onExpose, onToast }: {
   template: PTemplate; corner: PCorner | null; index: number; expose: string; onExpose: (v: string) => void; onToast: (m: string) => void;
@@ -42,6 +57,7 @@ function CornerDetail({ template, corner, index, expose, onExpose, onToast }: {
       </div>
     );
   }
+  const options = cornerOptions(corner.preview);
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
       <span className="w-[72px] shrink-0 text-[var(--ink3)]">{label}</span>
@@ -66,13 +82,30 @@ function CornerDetail({ template, corner, index, expose, onExpose, onToast }: {
       </div>
 
       <p className="mb-1.5 text-[13px] font-bold text-[var(--ink)]">노출 옵션 설정</p>
-      <div className="relative">
-        <select value={expose} onChange={(e) => onExpose(e.target.value)}
-          className="h-[38px] w-full appearance-none rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-3 pr-9 text-[13px] text-[var(--ink)] focus:border-[var(--ac)] focus:outline-none">
-          {EXPOSE_OPTS.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink4)]" />
-      </div>
+      {options.length === 0 ? (
+        <p className="rounded-[8px] bg-[var(--th)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink4)]">
+          옵션 설정 대상이 아닙니다. 고객이 고르는 선택지가 없는 코너입니다.
+        </p>
+      ) : (
+        <div>
+          <div className="flex items-center gap-5 text-[13px] text-[var(--ink)]">
+            <label className="flex items-center gap-1.5">
+              <input type="radio" checked={expose !== '조건 설정 후 노출'} onChange={() => onExpose('항상 노출')} className="accent-[var(--ac)]" /> 항상 노출
+            </label>
+            <label className={cn('flex items-center gap-1.5', index === 0 && 'text-[var(--ink4)]')}>
+              <input type="radio" disabled={index === 0} checked={expose === '조건 설정 후 노출'} onChange={() => onExpose('조건 설정 후 노출')} className="accent-[var(--ac)]" /> 조건 설정 후 노출
+            </label>
+          </div>
+          {index === 0 && <p className="mt-1.5 text-[12px] text-[var(--ink4)]">앞에 선택값이 있는 코너가 없어 조건을 설정할 수 없습니다.</p>}
+          <div className="mt-2.5 space-y-1.5">
+            {options.map((o) => (
+              <label key={o} className="flex items-center gap-2 text-[13px] text-[var(--ink)]">
+                <input type="checkbox" defaultChecked className="h-4 w-4 accent-[var(--ac)]" /> {o}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
