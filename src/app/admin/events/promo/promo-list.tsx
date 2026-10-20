@@ -25,7 +25,7 @@ const BTN_PRI = 'h-[38px] shrink-0 rounded-[var(--r-field)] bg-[var(--ac)] px-6 
 const PER = 10;
 
 /** 전체 ↔ 하위 연동 멀티셀렉트 드롭다운 (프로토타입 .msel 이식, 어드민 SEL 규격) */
-function MultiSelect({ opts, value, onChange, width = 170 }: { opts: string[]; value: string[]; onChange: (v: string[]) => void; width?: number }) {
+export function MultiSelect({ opts, value, onChange, width = 170 }: { opts: string[]; value: string[]; onChange: (v: string[]) => void; width?: number }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
