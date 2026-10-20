@@ -14,9 +14,7 @@ import { PageHeader } from '@/components/page-header';
 import { PromoList } from './promo-list';
 import { RegStartModal } from './reg-start-modal';
 import { RegForm } from './reg-form';
-import { PromoBuilder } from './promo-builder';
-import { emptyForm, type PromoForm } from '@/lib/promotion/form';
-import type { DetailBlock } from '@/lib/promotion/form';
+import { ScreenBuilderTest } from '../../containers-test/screen-builder-test';
 import type { PromoRow } from '@/lib/promotion/model';
 
 export function PromoAdmin() {
@@ -24,8 +22,8 @@ export function PromoAdmin() {
   const [regOpen, setRegOpen] = React.useState(false);
   /** React 로 옮긴 등록 폼 (지금은 안내형만) */
   const [form, setForm] = React.useState<null | { type: string; jm: '직접' | '행동' }>(null);
-  /** 프로토타입 상세에서 '빌더 구성영역' 클릭 시 띄우는 React 빌더 */
-  const [builder, setBuilder] = React.useState<null | { area: string; f: PromoForm }>(null);
+  /** 프로토타입 상세에서 '빌더 구성영역' 클릭 시 띄우는 전시 빌더(테스트) */
+  const [builder, setBuilder] = React.useState<null | { area: string }>(null);
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -40,7 +38,7 @@ export function PromoAdmin() {
   React.useEffect(() => {
     function onMsg(e: MessageEvent) {
       if (e.data && e.data.type === 'open-builder') {
-        setBuilder({ area: String(e.data.area ?? '상세 영역'), f: emptyForm('안내형', '직접') });
+        setBuilder({ area: String(e.data.area ?? '상세 영역') });
         window.scrollTo(0, 0);
       }
     }
@@ -65,15 +63,11 @@ export function PromoAdmin() {
     </div>
   ) : null;
 
-  // 프로토타입 상세에서 연 빌더 — 전체 페이지
+  // 프로토타입 상세에서 연 빌더 — 전시 빌더(테스트)로 맵핑, 전체 페이지
   if (builder) {
     return (
       <>
-        <PromoBuilder
-          f={builder.f}
-          onChange={(blocks: DetailBlock[]) => setBuilder((b) => (b ? { ...b, f: { ...b.f, detailBlocks: blocks } } : b))}
-          onBack={() => { setBuilder(null); window.scrollTo(0, 0); }}
-        />
+        <ScreenBuilderTest onBack={() => { setBuilder(null); window.scrollTo(0, 0); }} />
         {Toast}
       </>
     );
