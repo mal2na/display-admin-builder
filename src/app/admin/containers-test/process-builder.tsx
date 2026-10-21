@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { addCornersToTemplate } from './actions';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
+import { FieldRow } from '@/components/ops-ui';
 import { cornerTypeChipClass, layoutLabel, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, type Zone } from '@/lib/display-taxonomy';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon } from 'lucide-react';
 import type { ProcessData, PTemplate, PCorner, LibCorner } from './process-data';
@@ -508,13 +509,8 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
   const activeSel = activeTemplate ? selCorner[activeTemplate.id] : null;
   const totalCorners = activeTemplate?.corners.length ?? 0;
 
-  const Field = ({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) => (
-    <div className="flex items-center gap-3 py-2">
-      <span className="flex w-[88px] shrink-0 items-center gap-1 text-[13px] text-[var(--ink3)]">{label}{required && <span className="text-[var(--bad)]">*</span>}</span>
-      <span className="min-w-0 flex-1">{children}</span>
-    </div>
-  );
-  const inputCls = 'h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink4)] focus:border-[var(--ac)] focus:outline-none';
+  // Figma BO 공통 textfield 토큰 — h38·r6·inset-x 14·본문 14·border #c4c9cf·포커스 border #b3b9c0+ring 2 #dce0e5
+  const inputCls = 'h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-[14px] text-[14px] text-[var(--ink)] placeholder:text-[var(--ink5)] focus:border-[var(--focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]';
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[#e8eaf2] bg-white">
@@ -591,36 +587,36 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                 <ChevronDown className={cn('ml-auto h-4 w-4 text-[var(--ink3)] transition', !basicOpen && '-rotate-90')} />
               </button>
               {basicOpen && activeTemplate && (
-                <div className="border-t border-[var(--line)] px-5 py-3">
-                  <Field label="템플릿명" required>
+                <div className="border-t border-[var(--line)]">
+                  <FieldRow label="템플릿명" required>
                     <input defaultValue={activeTemplate.name} placeholder="예: 혜택 VIP" className={inputCls} />
-                  </Field>
-                  <Field label="메모">
+                  </FieldRow>
+                  <FieldRow label="메모">
                     <input defaultValue={activeTemplate.memo ?? ''} maxLength={30} placeholder="한글/영문/숫자/특수문자 30자 이내" className={inputCls} />
-                  </Field>
-                  <Field label="로그인 구분" required>
-                    <div className="flex items-center gap-5 text-[13px] text-[var(--ink)]">
+                  </FieldRow>
+                  <FieldRow label="로그인 구분" required>
+                    <div className="flex h-[38px] items-center gap-5 text-[14px] text-[var(--ink)]">
                       <label className="flex items-center gap-1.5"><input type="radio" name="tplLogin" defaultChecked={activeTemplate.conditionGroup !== '비로그인'} className="accent-[var(--ac)]" /> 로그인</label>
                       <label className="flex items-center gap-1.5"><input type="radio" name="tplLogin" defaultChecked={activeTemplate.conditionGroup === '비로그인'} className="accent-[var(--ac)]" /> 비로그인</label>
                     </div>
-                  </Field>
-                  <Field label="기본 템플릿 여부" required>
-                    <div>
-                      <div className="flex items-center gap-5 text-[13px] text-[var(--ink)]">
+                  </FieldRow>
+                  <FieldRow label="기본 템플릿 여부" required>
+                    <div className="py-1">
+                      <div className="flex items-center gap-5 text-[14px] text-[var(--ink)]">
                         <label className="flex items-center gap-1.5"><input type="radio" name="tplDefault" defaultChecked={!activeTemplate.isDefault} className="accent-[var(--ac)]" /> N</label>
                         <label className="flex items-center gap-1.5"><input type="radio" name="tplDefault" defaultChecked={activeTemplate.isDefault} className="accent-[var(--ac)]" /> Y</label>
                       </div>
                       <p className="mt-1.5 text-[12px] text-[var(--ink4)]">Y로 지정하면 기존 기본 템플릿은 해제됩니다.</p>
                     </div>
-                  </Field>
-                  <Field label="전시 여부" required>
-                    <div className="flex items-center gap-5 text-[13px] text-[var(--ink)]">
+                  </FieldRow>
+                  <FieldRow label="전시 여부" required>
+                    <div className="flex h-[38px] items-center gap-5 text-[14px] text-[var(--ink)]">
                       <label className="flex items-center gap-1.5"><input type="radio" name="tplDisplay" defaultChecked={activeTemplate.displayOn} className="accent-[var(--ac)]" /> 전시</label>
                       <label className="flex items-center gap-1.5"><input type="radio" name="tplDisplay" defaultChecked={!activeTemplate.displayOn} className="accent-[var(--ac)]" /> 미전시</label>
                     </div>
-                  </Field>
-                  <Field label="전시 기간">
-                    <div>
+                  </FieldRow>
+                  <FieldRow label="전시 기간">
+                    <div className="py-1">
                       <div className="flex items-center gap-2">
                         <input type="datetime-local" defaultValue={toLocalInput(activeTemplate.startAt)} disabled={activeTemplate.startAtOnApproval} className={cn(inputCls, 'flex-1', activeTemplate.startAtOnApproval && 'bg-[var(--th)] text-[var(--ink4)]')} />
                         <span className="text-[13px] text-[var(--ink4)]">~</span>
@@ -630,7 +626,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                         <input type="checkbox" defaultChecked={activeTemplate.startAtOnApproval} className="accent-[var(--ac)]" /> 시작일을 승인일시로 설정
                       </label>
                     </div>
-                  </Field>
+                  </FieldRow>
                 </div>
               )}
             </section>
