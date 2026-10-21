@@ -25,6 +25,20 @@ export async function addTestTemplate(containerId: string, formData: FormData) {
   redirect(`/admin/containers-test/t/${template.id}`);
 }
 
+// 코너 추가 — 코너 유형 관리의 코너(들)를 TemplateCorner 로 템플릿에 배치(실제 DB).
+export async function addCornersToTemplate(templateId: string, cornerIds: string[]) {
+  if (!cornerIds.length) return;
+  const agg = await prisma.templateCorner.aggregate({ where: { templateId }, _max: { order: true } });
+  let order = (agg._max.order ?? -1) + 1;
+  for (const cornerId of cornerIds) {
+    const exists = await prisma.templateCorner.findUnique({ where: { templateId_cornerId: { templateId, cornerId } } });
+    if (exists) continue;
+    await prisma.templateCorner.create({ data: { templateId, cornerId, order } });
+    order += 1;
+  }
+  revalidatePath(`/admin/containers-test/t/${templateId}`);
+}
+
 // 템플릿 복사 — 코너 배치까지 통째로 복사해 같은 Container 에 생성(테스트 경로 revalidate).
 export async function duplicateTestTemplate(containerId: string, templateId: string) {
   const src = await prisma.template.findUnique({
