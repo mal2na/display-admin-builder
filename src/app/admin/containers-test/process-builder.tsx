@@ -316,40 +316,42 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete,
   const [on, setOn] = React.useState(true); // 노출 on/off 토글
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.templateCornerId });
   const style = { transform: CSS.Transform.toString(transform), transition };
+  const layoutText = cornerLayoutText(c.layout, c.layoutDetail);
   return (
     <div ref={setNodeRef} style={style} onClick={onSelect}
-      className={cn('flex cursor-pointer items-start gap-2 rounded-[10px] border bg-white px-2.5 py-2 transition',
+      className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-2 transition',
         isDragging && 'z-10 opacity-80 shadow-lg',
         selected ? 'border-[var(--ac)] bg-[var(--ac2)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
-      {/* 그립·번호는 타이틀(첫 줄) 높이에 맞춰 상단 정렬 */}
-      <button type="button" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} title="드래그로 순서·밴드 이동"
-        className="flex h-5 shrink-0 cursor-grab touch-none items-center rounded p-0.5 text-[var(--ink4)] hover:bg-[var(--th)] active:cursor-grabbing">
-        <GripVertical className="h-3.5 w-3.5" />
-      </button>
-      <span className="flex h-5 w-4 shrink-0 items-center justify-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
-      <span className="min-w-0 flex-1">
-        <span className={cn('flex h-5 items-center truncate text-[13px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{c.name}</span>
-        <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
-          <span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span>
-          {cornerLayoutText(c.layout, c.layoutDetail) && <span className="truncate whitespace-nowrap text-[11px] text-[var(--ink4)]">{cornerLayoutText(c.layout, c.layoutDetail)}</span>}
-        </span>
-      </span>
-      {/* 고정(Fixed) 토글 — 타이틀 줄에 맞춰 상단 정렬 */}
-      <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFixed(); }} title={fixed ? 'Fixed 고정됨 — 눌러서 해제' : '눌러서 Fixed로 고정'}
-        className={cn('inline-flex h-5 shrink-0 items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
-          fixed ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink3)]')}>
-        {fixed ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />} 고정
-      </button>
-      {/* 노출 on/off 토글 — 타이틀 줄에 맞춤 */}
-      <button type="button" onClick={(e) => { e.stopPropagation(); setOn((v) => !v); }} title={on ? '노출 켜짐' : '노출 꺼짐'}
-        className={cn('relative h-[20px] w-[34px] shrink-0 rounded-full transition-colors', on ? 'bg-[var(--ac)]' : 'bg-[var(--line3)]')}>
-        <span className={cn('absolute top-[2px] h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-all', on ? 'left-[16px]' : 'left-[2px]')} />
-      </button>
-      {/* 코너 삭제 — 템플릿에서 코너 빼기(원본 코너는 유지) */}
-      <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="이 템플릿에서 코너 빼기"
-        className="grid h-5 w-5 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] transition hover:bg-[#fff0f1] hover:text-[var(--bad)]">
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      {/* 상단 행 — 그립·번호·이름·고정·토글·삭제 */}
+      <div className="flex items-center gap-2">
+        <button type="button" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} title="드래그로 순서·밴드 이동"
+          className="flex shrink-0 cursor-grab touch-none items-center rounded p-0.5 text-[var(--ink4)] hover:bg-[var(--th)] active:cursor-grabbing">
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
+        <span className="w-4 shrink-0 text-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
+        <span className={cn('min-w-0 flex-1 truncate text-[13px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{c.name}</span>
+        {/* 고정(Fixed) 토글 */}
+        <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFixed(); }} title={fixed ? 'Fixed 고정됨 — 눌러서 해제' : '눌러서 Fixed로 고정'}
+          className={cn('inline-flex h-5 shrink-0 items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
+            fixed ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink3)]')}>
+          {fixed ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />} 고정
+        </button>
+        {/* 노출 on/off 토글 */}
+        <button type="button" onClick={(e) => { e.stopPropagation(); setOn((v) => !v); }} title={on ? '노출 켜짐' : '노출 꺼짐'}
+          className={cn('relative h-[20px] w-[34px] shrink-0 rounded-full transition-colors', on ? 'bg-[var(--ac)]' : 'bg-[var(--line3)]')}>
+          <span className={cn('absolute top-[2px] h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-all', on ? 'left-[16px]' : 'left-[2px]')} />
+        </button>
+        {/* 코너 삭제 — 템플릿에서 코너 빼기(원본 코너는 유지) */}
+        <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="이 템플릿에서 코너 빼기"
+          className="grid h-5 w-5 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] transition hover:bg-[#fff0f1] hover:text-[var(--bad)]">
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      {/* 하단 행 — 유형 칩 · 레이아웃(전체 폭, 안 잘림) */}
+      <div className="mt-1 flex items-center gap-1.5 pl-[30px]">
+        <span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span>
+        {layoutText && <span className="whitespace-nowrap text-[11px] text-[var(--ink4)]">{layoutText}</span>}
+      </div>
     </div>
   );
 }
