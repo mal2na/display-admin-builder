@@ -17,7 +17,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
 import { FieldRow } from '@/components/ops-ui';
 import { cornerTypeChipClass, layoutLabel, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, type Zone } from '@/lib/display-taxonomy';
-import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon } from 'lucide-react';
 import type { ProcessData, PTemplate, PCorner, LibCorner } from './process-data';
 
 const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '비로그인 시 노출', '미노출'];
@@ -296,12 +296,9 @@ function CornerDetailBody({ template, corner, onToast }: { template: PTemplate; 
   );
 }
 
-/* 존 밴드 순서 — Fixed(상단) → Dynamic → Semi (실제 빌더 리스트 기준) */
-const BAND_ORDER: Zone[] = ['fixed', 'dynamic', 'semi'];
-
 /* 코너 칩 카드(존 밴드 내부) — 이미지2: 드래그·이름·복사/삭제·유형/레이아웃·고정 토글 */
 /* 코너 순서 변경 행(order3 레퍼런스) — 드래그·번호·이름·유형칩 + 노출 토글 + 삭제. */
-function CornerChip({ c, no, selected, onSelect, onToast }: { c: PCorner; no: number; selected: boolean; onSelect: () => void; onToast: (m: string) => void }) {
+function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onToast }: { c: PCorner; no: number; selected: boolean; fixed: boolean; onSelect: () => void; onToggleFixed: () => void; onToast: (m: string) => void }) {
   const [on, setOn] = React.useState(true); // 노출 on/off 토글
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.templateCornerId });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -322,6 +319,12 @@ function CornerChip({ c, no, selected, onSelect, onToast }: { c: PCorner; no: nu
           {c.layout && <span className="text-[11px] text-[var(--ink4)]">{layoutLabel(c.layout) || c.layout}</span>}
         </span>
       </span>
+      {/* 고정(Fixed) 토글 — 켜면 Fixed 밴드로 잠금, 끄면 코너 성격의 밴드로 복귀 */}
+      <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFixed(); }} title={fixed ? 'Fixed 고정됨 — 눌러서 해제' : '눌러서 Fixed로 고정'}
+        className={cn('inline-flex shrink-0 items-center gap-1 rounded-[6px] px-1.5 py-1 text-[11px] font-semibold transition',
+          fixed ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink3)]')}>
+        {fixed ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />} 고정
+      </button>
       {/* 노출 on/off 토글 */}
       <button type="button" onClick={(e) => { e.stopPropagation(); setOn((v) => !v); }} title={on ? '노출 켜짐' : '노출 꺼짐'}
         className={cn('relative h-[20px] w-[34px] shrink-0 rounded-full transition-colors', on ? 'bg-[var(--ac)]' : 'bg-[var(--line3)]')}>
@@ -331,14 +334,17 @@ function CornerChip({ c, no, selected, onSelect, onToast }: { c: PCorner; no: nu
   );
 }
 
-/* ───────── 코너 리스트 — Fixed / Dynamic / Semi-fixed 밴드 + 밴드 간 드래그앤드롭 ─────────
-   세 밴드는 항상 보이고(빈 밴드도 드롭 가능), 코너를 다른 밴드로 끌어다 놓으면 그 존으로 바뀐다.
-   밴드 안에서는 순서 변경. 멀티컨테이너 dnd-kit 패턴(onDragOver로 밴드 이동, onDragEnd로 순서 확정). */
-const ZONE_ORDER: Zone[] = ['fixed', 'dynamic', 'semi']; // 화면 위→아래: 고정 → 개인화 → 기간
+/* ───────── 코너 리스트 — Fixed / Dynamic 2밴드 + 밴드 간 드래그앤드롭 ─────────
+   두 밴드는 항상 보이고(빈 밴드도 드롭·추가 가능), 코너를 다른 밴드로 끌어다 놓으면 그 존으로 바뀐다.
+   밴드 안에서는 순서 변경. 멀티컨테이너 dnd-kit 패턴(onDragOver로 밴드 이동, onDragEnd로 순서 확정).
+   존은 Fixed / Dynamic 둘뿐 — 레거시 semi 값은 Dynamic으로 취급(2026-10-21 사용자 결정). */
+const BAND_ORDER = ['fixed', 'dynamic'] as const;
+type Band = (typeof BAND_ORDER)[number];
+const bandOf = (c: PCorner): Band => (c.zone === 'fixed' ? 'fixed' : 'dynamic');
 
-function BandDroppable({ zone, children }: { zone: Zone; children: React.ReactNode }) {
-  const meta = ZONE_META[zone];
-  const { setNodeRef, isOver } = useDroppable({ id: `band:${zone}` });
+function BandDroppable({ band, children }: { band: Band; children: React.ReactNode }) {
+  const meta = ZONE_META[band];
+  const { setNodeRef, isOver } = useDroppable({ id: `band:${band}` });
   return (
     <div ref={setNodeRef}
       className={cn('min-h-[44px] space-y-1.5 rounded-r-[8px] border-l-[2px] pl-2.5 pr-1 py-1 transition-colors', isOver && 'bg-[var(--th)]')}
@@ -348,42 +354,44 @@ function BandDroppable({ zone, children }: { zone: Zone; children: React.ReactNo
   );
 }
 
-function BandedCorners({ corners, templateId, selCorner, onSelect, onToast }: {
-  corners: PCorner[]; templateId: string; selCorner: string | null; onSelect: (id: string) => void; onToast: (m: string) => void;
+function BandedCorners({ corners, templateId, selCorner, onSelect, onAddCorner, onToast }: {
+  corners: PCorner[]; templateId: string; selCorner: string | null; onSelect: (id: string) => void; onAddCorner: () => void; onToast: (m: string) => void;
 }) {
   const router = useRouter();
   // 낙관적 로컬 상태 — 드래그 즉시 반영, 서버 저장 후 refresh로 동기화
   const [rows, setRows] = React.useState<PCorner[]>(corners);
   React.useEffect(() => { setRows(corners); }, [corners]);
   const rowsRef = React.useRef(rows); rowsRef.current = rows;
-  const startZone = React.useRef<Zone | null>(null);
+  const startBand = React.useRef<Band | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const bandItems = (z: Zone) => rows.filter((r) => r.zone === z);
-  const zoneOfOver = (overId: string): Zone | null =>
-    overId.startsWith('band:') ? (overId.slice(5) as Zone) : (rows.find((r) => r.templateCornerId === overId)?.zone ?? null);
+  const bandItems = (b: Band) => rows.filter((r) => bandOf(r) === b);
+  const bandOfOver = (overId: string): Band | null =>
+    overId.startsWith('band:') ? (overId.slice(5) as Band) : (() => { const r = rows.find((x) => x.templateCornerId === overId); return r ? bandOf(r) : null; })();
 
   function onDragStart(e: DragStartEvent) {
-    startZone.current = rows.find((r) => r.templateCornerId === String(e.active.id))?.zone ?? null;
+    const r = rows.find((x) => x.templateCornerId === String(e.active.id));
+    startBand.current = r ? bandOf(r) : null;
   }
 
-  // 드래그 중 다른 밴드 위로 오면 즉시 그 존으로 옮긴다(위치도 함께).
+  // 드래그 중 다른 밴드 위로 오면 즉시 그 밴드로 옮긴다(위치도 함께).
   function onDragOver(e: DragOverEvent) {
     const { active, over } = e;
     if (!over) return;
     const activeId = String(active.id);
     const overId = String(over.id);
-    const az = rows.find((r) => r.templateCornerId === activeId)?.zone;
-    const oz = zoneOfOver(overId);
-    if (!az || !oz || az === oz) return;
+    const cur = rows.find((r) => r.templateCornerId === activeId);
+    const ab = cur ? bandOf(cur) : null;
+    const ob = bandOfOver(overId);
+    if (!ab || !ob || ab === ob) return;
     setRows((prev) => {
       const moved = prev.find((r) => r.templateCornerId === activeId);
       if (!moved) return prev;
       const without = prev.filter((r) => r.templateCornerId !== activeId);
-      const updated = { ...moved, zone: oz };
+      const updated = { ...moved, zone: ob }; // 'fixed' | 'dynamic'
       let idx: number;
       if (overId.startsWith('band:')) {
-        const idxs = without.map((r, i) => (r.zone === oz ? i : -1)).filter((i) => i >= 0);
+        const idxs = without.map((r, i) => (bandOf(r) === ob ? i : -1)).filter((i) => i >= 0);
         idx = idxs.length ? idxs[idxs.length - 1] + 1 : without.length;
       } else {
         idx = without.findIndex((r) => r.templateCornerId === overId);
@@ -409,12 +417,13 @@ function BandedCorners({ corners, templateId, selCorner, onSelect, onToast }: {
     setTimeout(async () => {
       const fr = rowsRef.current;
       const moved = fr.find((r) => r.templateCornerId === activeId);
-      const zoneChanged = !!moved && startZone.current != null && moved.zone !== startZone.current;
+      const newBand = moved ? bandOf(moved) : null;
+      const bandChanged = !!newBand && startBand.current != null && newBand !== startBand.current;
       try {
         await reorderTestCorners(templateId, fr.map((r) => r.templateCornerId));
-        if (moved && zoneChanged) {
-          await setTestCornerZone(templateId, moved.templateCornerId, moved.zone);
-          onToast(`‘${moved.name}’ → ${ZONE_META[moved.zone].label} 밴드로 이동했습니다.`);
+        if (moved && bandChanged && newBand) {
+          await setTestCornerZone(templateId, moved.templateCornerId, newBand);
+          onToast(`‘${moved.name}’ → ${ZONE_META[newBand].label} 밴드로 이동했습니다.`);
         }
         router.refresh();
       } catch {
@@ -424,19 +433,33 @@ function BandedCorners({ corners, templateId, selCorner, onSelect, onToast }: {
     }, 0);
   }
 
-  // 연속 번호 — 화면 표시 순서(존 밴드 순)대로 1..N
-  const displayOrder = ZONE_ORDER.flatMap((z) => bandItems(z).map((c) => c.templateCornerId));
+  // 고정 토글 — 켜면 Fixed로 잠금, 끄면 Dynamic으로 복귀
+  async function toggleFixed(c: PCorner) {
+    const target: Band = c.zone === 'fixed' ? 'dynamic' : 'fixed';
+    setRows((prev) => prev.map((r) => (r.templateCornerId === c.templateCornerId ? { ...r, zone: target } : r))); // 낙관적
+    try {
+      await setTestCornerZone(templateId, c.templateCornerId, target);
+      router.refresh();
+      onToast(target === 'fixed' ? `‘${c.name}’ Fixed로 고정했습니다.` : `‘${c.name}’ 고정을 해제했습니다.`);
+    } catch {
+      setRows(corners);
+      onToast('변경을 저장하지 못했습니다.');
+    }
+  }
+
+  // 연속 번호 — 화면 표시 순서(밴드 순)대로 1..N
+  const displayOrder = BAND_ORDER.flatMap((b) => bandItems(b).map((c) => c.templateCornerId));
   const noOf = (tcid: string) => displayOrder.indexOf(tcid) + 1;
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners}
       onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
       <div className="space-y-3">
-        {ZONE_ORDER.map((z) => {
-          const meta = ZONE_META[z];
-          const items = bandItems(z);
+        {BAND_ORDER.map((b) => {
+          const meta = ZONE_META[b];
+          const items = bandItems(b);
           return (
-            <div key={z}>
+            <div key={b}>
               {/* 밴드 헤더 — 점·영문 라벨(존 색)·한글 설명 + 개수 */}
               <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
                 <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: meta.hex }} />
@@ -444,14 +467,17 @@ function BandedCorners({ corners, templateId, selCorner, onSelect, onToast }: {
                 <span className="truncate text-[11px] text-[var(--ink4)]">{meta.en}</span>
                 <span className="ml-auto grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full border border-[var(--line2)] bg-white px-1.5 text-[11px] font-bold text-[var(--ink3)]">{items.length}</span>
               </div>
-              {/* 밴드 본문 — 존 색 좌측 액센트 바, 빈 밴드도 드롭 가능 */}
-              <BandDroppable zone={z}>
+              {/* 밴드 본문 — 존 색 좌측 액센트 바, 빈 밴드도 드롭·추가 가능 */}
+              <BandDroppable band={b}>
                 <SortableContext items={items.map((c) => c.templateCornerId)} strategy={verticalListSortingStrategy}>
                   {items.length === 0 ? (
-                    <p className="px-1 py-2 text-[11px] leading-relaxed text-[var(--ink4)]">여기로 코너를 끌어다 놓으면 <b style={{ color: meta.hex }}>{meta.label}</b>로 바뀝니다.</p>
+                    <button type="button" onClick={onAddCorner}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-[var(--line3)] bg-white/50 px-2 py-3 text-[11px] font-medium text-[var(--ink4)] transition hover:border-[var(--ac)] hover:bg-[var(--ac2)] hover:text-[var(--ac)]">
+                      <Plus className="h-3.5 w-3.5" /> <b style={{ color: meta.hex }}>{meta.label}</b>에 코너 추가 · 끌어다 놓아도 됩니다
+                    </button>
                   ) : items.map((c) => (
                     <CornerChip key={c.templateCornerId} c={c} no={noOf(c.templateCornerId)} selected={c.id === selCorner}
-                      onSelect={() => onSelect(c.id)} onToast={onToast} />
+                      fixed={c.zone === 'fixed'} onSelect={() => onSelect(c.id)} onToggleFixed={() => toggleFixed(c)} onToast={onToast} />
                   ))}
                 </SortableContext>
               </BandDroppable>
@@ -501,30 +527,25 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
         <div className="space-y-4 p-4">
           <div>
             <p className="mb-2 text-[13px] font-semibold text-[var(--ink2)]">코너 구성 <span className="text-[var(--ink4)]">{t.corners.length}개</span></p>
-            {t.corners.length === 0 ? (
-              <div className="rounded-[12px] border border-dashed border-[var(--line2)] bg-[var(--th)] p-6 text-center text-[13px] leading-relaxed text-[var(--ink4)]">
-                이 템플릿에 배치된 코너가 없습니다.<br />「코너 추가」로 코너 관리의 코너를 가져오세요.
-              </div>
-            ) : (
-              /* order3 레퍼런스: 좌측 순서변경 박스만 그레이 배경 + 해상도 기준 고정 높이(내부 스크롤) + 코너 추가 하단 고정 */
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-[320px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
-                {/* 코너 순서변경 박스 — 그레이 배경, 리스트 스크롤 + 코너 추가 하단 고정 */}
-                <div className="flex min-h-0 flex-col rounded-[12px] border border-[var(--line)] bg-[var(--th)] p-2.5">
-                  <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
-                    <BandedCorners corners={t.corners} templateId={t.id} selCorner={selCorner}
-                      onSelect={(id) => { onActivate(); onSelCorner(id); }} onToast={onToast} />
-                  </div>
-                  <button type="button" onClick={onAddCorner}
-                    className="mt-2 flex w-full shrink-0 items-center justify-center gap-1 rounded-[10px] border border-[#cfd2ff] bg-[var(--ac2)] py-2.5 text-[13px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]">
-                    <Plus className="h-4 w-4" /> 코너 추가
-                  </button>
+            {/* order3 레퍼런스: 좌측 순서변경 박스만 그레이 배경 + 해상도 기준 고정 높이(내부 스크롤) + 코너 추가 하단 고정.
+               코너가 0개여도 밴드(Fixed·Dynamic)는 항상 표시 — 각 밴드에 '추가 가능' 노출(2026-10-21). */}
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[320px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
+              {/* 코너 순서변경 박스 — 그레이 배경, 리스트 스크롤 + 코너 추가 하단 고정 */}
+              <div className="flex min-h-0 flex-col rounded-[12px] border border-[var(--line)] bg-[var(--th)] p-2.5">
+                <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
+                  <BandedCorners corners={t.corners} templateId={t.id} selCorner={selCorner}
+                    onSelect={(id) => { onActivate(); onSelCorner(id); }} onAddCorner={onAddCorner} onToast={onToast} />
                 </div>
-                {/* 코너 상세 — 독립 스크롤 */}
-                <div className="min-h-0 overflow-y-auto pr-0.5">
-                  <CornerDetail template={t} corner={selected} index={selIndex} onToast={onToast} />
-                </div>
+                <button type="button" onClick={onAddCorner}
+                  className="mt-2 flex w-full shrink-0 items-center justify-center gap-1 rounded-[10px] border border-[#cfd2ff] bg-[var(--ac2)] py-2.5 text-[13px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]">
+                  <Plus className="h-4 w-4" /> 코너 추가
+                </button>
               </div>
-            )}
+              {/* 코너 상세 — 독립 스크롤 */}
+              <div className="min-h-0 overflow-y-auto pr-0.5">
+                <CornerDetail template={t} corner={selected} index={selIndex} onToast={onToast} />
+              </div>
+            </div>
           </div>
         </div>
       )}
