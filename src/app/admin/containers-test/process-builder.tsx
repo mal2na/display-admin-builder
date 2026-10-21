@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
 import { cornerTypeChipClass, layoutLabel, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, type Zone } from '@/lib/display-taxonomy';
-import { ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, Trash2, Sparkles, UserCog, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, Trash2, Sparkles, UserCog, Search } from 'lucide-react';
 import type { ProcessData, PTemplate, PCorner, LibCorner } from './process-data';
 
 const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '비로그인 시 노출', '미노출'];
@@ -387,6 +387,10 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
   return (
     <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[#e8eaf2] bg-white">
       <div className="flex-1 overflow-y-auto px-6 py-5 pb-24">
+        {/* 뒤로가기 */}
+        <Link href={`/admin/containers-test/c/${data.containerId}`} className="mb-2 inline-flex h-[32px] items-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white px-3 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">
+          <ChevronLeft className="h-4 w-4" /> 뒤로
+        </Link>
         {/* 헤더 — 브레드크럼 + 타이틀 */}
         <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
           <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
@@ -399,7 +403,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
           <span className="rounded-full border border-[var(--warnln)] bg-[var(--warnbg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--warn)]">테스트</span>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(340px,380px)_minmax(0,1fr)]">
+        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
           {/* 좌: 미리보기(고정) */}
           <div className="xl:sticky xl:top-2 xl:self-start">
             <div className="rounded-[16px] border border-[var(--line)] bg-white p-4">
@@ -413,8 +417,8 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                 <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3 py-1', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
               </div>
               {fbMode && <p className="mb-2 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3" /> CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)</p>}
-              <div className="rounded-[12px] bg-[var(--th)] py-5">
-                <DeviceFrame width={352} bodyHeight={430} headerLabel={data.containerName} slim>
+              <div className="rounded-[12px] bg-[var(--th)] px-2 py-5">
+                <DeviceFrame width={288} bodyHeight={408} headerLabel={data.containerName} slim>
                   {activeTemplate && activeTemplate.corners.length > 0 ? (
                     activeTemplate.corners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
