@@ -77,9 +77,9 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
   // 코너 불러오기 모달용 — 활성 코너를 이름 기준 중복 제거, 미리보기 포함
   const rawLib = await prisma.corner.findMany({
     where: { status: 'active' },
-    orderBy: { updatedAt: 'desc' },
+    orderBy: [{ cornerType: 'asc' }, { updatedAt: 'desc' }],
     include: PLACED_CORNER_INCLUDE,
-    take: 48,
+    take: 300,
   });
   const seen = new Set<string>();
   const libCorners: LibCorner[] = [];

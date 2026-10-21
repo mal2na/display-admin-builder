@@ -281,7 +281,7 @@ export function OpsSection({ title, children }: { no?: number | string; title: s
       <div className="mb-2 flex items-center gap-2">
         <h3 className="text-[15px] font-bold text-[#1a1a1a]">{title}</h3>
       </div>
-      <div className="border-t border-[#e8ecef]">{children}</div>
+      <div className="border-t border-[#dce0e5]">{children}</div>
     </section>
   );
 }
@@ -289,7 +289,7 @@ export function OpsSection({ title, children }: { no?: number | string; title: s
 // 라벨/값 2열 그리드 행 (상세·수정 공용). 보더·라벨 bg는 '전체 페이지·메뉴 관리' 기준(line #e8ecef · head #f8f9fb).
 export function FieldRow({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] items-stretch border-b border-[#e8ecef]">
+    <div className="grid grid-cols-[140px_1fr] items-stretch border-b border-[#dce0e5]">
       <div className="flex items-center bg-[var(--th)] px-4 py-3 text-[14px] font-medium text-[var(--ink2)]">
         {label}
         {required && <span className="ml-0.5 text-[#cf2a3c]">*</span>}
