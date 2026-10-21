@@ -39,6 +39,21 @@ export async function addCornersToTemplate(templateId: string, cornerIds: string
   revalidatePath(`/admin/containers-test/t/${templateId}`);
 }
 
+// 코너 순서 변경 — 밴드 간 드래그앤드롭의 순서 저장(TemplateCorner.order, 테스트 경로 revalidate).
+export async function reorderTestCorners(templateId: string, orderedTemplateCornerIds: string[]) {
+  if (!orderedTemplateCornerIds.length) return;
+  await prisma.$transaction(
+    orderedTemplateCornerIds.map((id, i) => prisma.templateCorner.update({ where: { id }, data: { order: i } })),
+  );
+  revalidatePath(`/admin/containers-test/t/${templateId}`);
+}
+
+// 전시 존(밴드) 지정 — Fixed/Dynamic/Semi-fixed 밴드 사이로 드래그했을 때 이동한 밴드의 존으로 저장.
+export async function setTestCornerZone(templateId: string, templateCornerId: string, zone: 'dynamic' | 'semi' | 'fixed') {
+  await prisma.templateCorner.update({ where: { id: templateCornerId }, data: { zone } });
+  revalidatePath(`/admin/containers-test/t/${templateId}`);
+}
+
 // 템플릿 복사 — 코너 배치까지 통째로 복사해 같은 Container 에 생성(테스트 경로 revalidate).
 export async function duplicateTestTemplate(containerId: string, templateId: string) {
   const src = await prisma.template.findUnique({

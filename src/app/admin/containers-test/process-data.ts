@@ -6,7 +6,7 @@ import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, type Zo
 import type { PreviewCorner } from '@/components/preview/blocks';
 
 export type PCorner = {
-  id: string; name: string; cornerType: string; layout: string | null; maxItems: number | null; preview: PreviewCorner;
+  id: string; templateCornerId: string; name: string; cornerType: string; layout: string | null; maxItems: number | null; preview: PreviewCorner;
   /** 수급 방식(정규화) · CVM 연동 여부 · CVM 비었을 때 폴백 — 폴백 UI용(2026-10-20) */
   recSource: string | null; isCvm: boolean; fallback: '미노출' | '운영자 편성으로 대체';
   /** 전시 존(Fixed/Dynamic/Semi) — 코너 리스트 밴드용(2026-10-21) */
@@ -57,6 +57,7 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     startAtOnApproval: t.startAtOnApproval ?? false,
     corners: t.templateCorners.map((tc) => ({
       id: tc.corner.id,
+      templateCornerId: tc.id,
       name: tc.corner.name,
       cornerType: tc.corner.cornerType,
       layout: tc.corner.cornerLayout,
