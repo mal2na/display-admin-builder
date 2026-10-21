@@ -71,7 +71,7 @@ const CVM_CATALOGS = ['요금제', '단말', '멤버십', '혜택', '마케팅 �
 function Sec({ n, title, help, children }: { n: number; title: string; help?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = React.useState(true);
   return (
-    <div className="rounded-[12px] border border-[var(--line)] bg-white p-4">
+    <div className="rounded-[12px] border border-[var(--line2)] bg-white p-4">
       <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2">
         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">{n}</span>
         <h4 className="flex-1 text-left text-[14px] font-bold text-[var(--ink)]">{title}</h4>
@@ -147,7 +147,7 @@ function CornerDetailBody({ template, corner, onToast }: { template: PTemplate; 
           {REC_SOURCE_METHODS.map((m) => {
             const info = REC_SOURCE_INFO[m]; const on = m === src; const Icon = REC_ICON[m] ?? Sparkles;
             return (
-              <button key={m} type="button" onClick={() => setSrc(m)} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line2)] bg-white hover:border-[var(--line3)]')}>
+              <button key={m} type="button" onClick={() => setSrc(m)} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]')}>
                 <div className="flex items-center gap-2">
                   <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
                   <Icon className={cn('h-3.5 w-3.5', on ? 'text-[var(--ac)]' : 'text-[var(--ink4)]')} />
@@ -169,7 +169,7 @@ function CornerDetailBody({ template, corner, onToast }: { template: PTemplate; 
       {src === '운영자 편성' ? (
         <Sec n={3} title="채우기 — 항목 등록">
           <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">칩 묶음 <span className="text-[var(--ac)]">1</span></p>
-          <div className="rounded-[10px] border border-[var(--line)] p-2.5">
+          <div className="rounded-[10px] border border-[var(--line2)] p-2.5">
             <div className="mb-2 flex items-center gap-1.5">
               <GripVertical className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
               <span className="w-4 shrink-0 text-center text-[12px] text-[var(--ink3)]">1</span>
@@ -180,7 +180,7 @@ function CornerDetailBody({ template, corner, onToast }: { template: PTemplate; 
             <p className="mb-2 flex items-center justify-between text-[11px] text-[var(--ink4)]"><span>라벨·이동 링크를 입력하고 드래그로 <b className="text-[var(--ink3)]">순서 변경</b> · 상단 “완료”로 저장</span><span className="font-semibold">{items.length}</span></p>
             <div className="space-y-1.5">
               {items.map((o) => (
-                <div key={o.id} className="flex items-center gap-1.5 rounded-[8px] border border-[var(--line2)] bg-white px-2 py-1.5">
+                <div key={o.id} className="flex items-center gap-1.5 rounded-[8px] border border-[var(--line3)] bg-white px-2 py-1.5">
                   <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--ink4)]" />
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]"><ImageIcon className="h-3.5 w-3.5" /></span>
                   <input defaultValue={o.label} placeholder="라벨 입력" className="h-[30px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
@@ -257,7 +257,7 @@ function CornerDetailBody({ template, corner, onToast }: { template: PTemplate; 
           </div>
           <div className="space-y-1.5">
             {items.slice(0, 3).map((o, i) => (
-              <div key={o.id} className="rounded-[8px] border border-[var(--line2)] bg-white p-2.5">
+              <div key={o.id} className="rounded-[8px] border border-[var(--line3)] bg-white p-2.5">
                 <div className="flex items-center gap-2">
                   <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--ink4)]" />
                   <span className="w-4 shrink-0 text-center text-[12px] text-[var(--ink3)]">{i + 1}</span>
@@ -278,14 +278,14 @@ function CornerDetailBody({ template, corner, onToast }: { template: PTemplate; 
 
       {/* ⑥ 출처 — 이 값이 어디서 오나 */}
       <Sec n={6} title="출처 — 이 값이 어디서 오나" help>
-        <div className="overflow-hidden rounded-[8px] border border-[var(--line)] text-[12px]">
+        <div className="overflow-hidden rounded-[8px] border border-[var(--line2)] text-[12px]">
           {[
             ['아이템 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
             ['이미지', '상품(EPC) 원장'],
             ['문구', src === 'CVM 콘텐츠 연동' ? 'CVM 완성본' : '빌더 · 상품 원장'],
             ['이동 링크', '빌더'],
           ].map(([k, v], i) => (
-            <div key={k} className={cn('flex items-center gap-3 px-3 py-2', i > 0 && 'border-t border-[var(--line)]')}>
+            <div key={k} className={cn('flex items-center gap-3 px-3 py-2', i > 0 && 'border-t border-[var(--line2)]')}>
               <span className="w-[72px] shrink-0 text-[var(--ink3)]">{k}</span>
               <span className={cn('rounded-[4px] px-1.5 py-0.5 font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'bg-[#e6efff] text-[#2e6ff2]' : 'bg-[#fff0d6] text-[#b67a12]')}>{v}</span>
             </div>
@@ -529,7 +529,7 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
             <p className="mb-2 text-[13px] font-semibold text-[var(--ink2)]">코너 구성 <span className="text-[var(--ink4)]">{t.corners.length}개</span></p>
             {/* order3 레퍼런스: 좌측 순서변경 박스만 그레이 배경 + 해상도 기준 고정 높이(내부 스크롤) + 코너 추가 하단 고정.
                코너가 0개여도 밴드(Fixed·Dynamic)는 항상 표시 — 각 밴드에 '추가 가능' 노출(2026-10-21). */}
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[320px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[360px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
               {/* 코너 순서변경 박스 — 그레이 배경, 리스트 스크롤 + 코너 추가 하단 고정 */}
               <div className="flex min-h-0 flex-col rounded-[12px] border border-[var(--line)] bg-[var(--th)] p-2.5">
                 <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
