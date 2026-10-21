@@ -280,21 +280,20 @@ function CornerDetailBody({ template, corner, onToast }: { template: PTemplate; 
 const BAND_ORDER: Zone[] = ['fixed', 'dynamic', 'semi'];
 
 /* 코너 칩 카드(존 밴드 내부) — 이미지2: 드래그·이름·복사/삭제·유형/레이아웃·고정 토글 */
-function CornerChip({ c, selected, onSelect, onToast }: { c: PCorner; selected: boolean; onSelect: () => void; onToast: (m: string) => void }) {
+/* 코너 순서 변경 행(order3 레퍼런스) — 드래그·번호·이름·유형칩·삭제. 토글/복사 없음. */
+function CornerChip({ c, no, selected, onSelect, onToast }: { c: PCorner; no: number; selected: boolean; onSelect: () => void; onToast: (m: string) => void }) {
   return (
-    <div onClick={onSelect} className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-2 transition', selected ? 'border-[var(--ac)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
-      <div className="flex items-center gap-1.5">
-        <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--ink4)]" />
-        <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-[var(--ink)]">{c.name}</span>
-        <button type="button" onClick={(e) => { e.stopPropagation(); onToast('복제는 실제 빌더에서 처리됩니다.'); }} className="text-[var(--ink4)] hover:text-[var(--ink2)]"><Copy className="h-3.5 w-3.5" /></button>
-        <button type="button" onClick={(e) => { e.stopPropagation(); onToast('코너 삭제는 실제 빌더에서 처리됩니다.'); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><Trash2 className="h-3.5 w-3.5" /></button>
-      </div>
-      <div className="mt-1.5 flex items-center gap-1.5">
-        <span className={cornerTypeChipClass(c.cornerType)}>{c.cornerType}</span>
-        {c.layout && <span className="text-[11px] text-[var(--ink4)]">{layoutLabel(c.layout) || c.layout}</span>}
-        <span className="ml-auto flex items-center gap-1 text-[11px] text-[var(--ink3)]"><Lock className="h-3 w-3" /> 고정</span>
-        <span className="relative h-[18px] w-[32px] shrink-0 rounded-full bg-[var(--ac)]"><span className="absolute right-0.5 top-0.5 h-[14px] w-[14px] rounded-full bg-white" /></span>
-      </div>
+    <div onClick={onSelect} className={cn('flex cursor-pointer items-center gap-2 rounded-[10px] border bg-white px-2.5 py-2 transition', selected ? 'border-[var(--ac)] bg-[var(--ac2)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
+      <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--ink4)]" />
+      <span className="w-4 shrink-0 text-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13px] font-bold text-[var(--ink)]">{c.name}</span>
+        <span className="mt-0.5 flex items-center gap-1.5">
+          <span className={cornerTypeChipClass(c.cornerType)}>{c.cornerType}</span>
+          {c.layout && <span className="text-[11px] text-[var(--ink4)]">{layoutLabel(c.layout) || c.layout}</span>}
+        </span>
+      </span>
+      <button type="button" onClick={(e) => { e.stopPropagation(); onToast('코너 삭제는 실제 빌더에서 처리됩니다.'); }} className="shrink-0 text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-4 w-4" /></button>
     </div>
   );
 }
@@ -308,7 +307,6 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
 }) {
   const selIndex = t.corners.findIndex((c) => c.id === selCorner);
   const selected = selIndex >= 0 ? t.corners[selIndex] : null;
-  const bands = BAND_ORDER.map((z) => ({ z, items: t.corners.filter((c) => c.zone === z) })).filter((b) => b.items.length > 0);
   return (
     <div className={cn('rounded-[12px] border bg-white', active ? 'border-[var(--ac)]' : 'border-[var(--line2)]')}>
       {/* 카드 헤더 */}
@@ -347,25 +345,10 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
               <div className="grid grid-cols-1 gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--th)] p-3 lg:grid-cols-[320px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
                 {/* 코너 리스트 — 리스트 스크롤 + 코너 불러오기 하단 고정 */}
                 <div className="flex min-h-0 flex-col rounded-[10px] border border-[var(--line)] bg-white p-2">
-                  <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-0.5">
-                    {bands.map(({ z, items }) => {
-                      const m = ZONE_META[z];
-                      return (
-                        <div key={z} className="rounded-[10px] border border-[var(--line)] p-2" style={{ borderLeft: `3px solid ${m.hex}` }}>
-                          <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
-                            <span className="h-2 w-2 rounded-full" style={{ background: m.hex }} />
-                            <b className="text-[12px]" style={{ color: m.hex }}>{m.label}</b>
-                            <span className="text-[11px] text-[var(--ink4)]">{m.en}</span>
-                            <span className="ml-auto text-[11px] font-semibold text-[var(--ink4)]">{items.length}</span>
-                          </div>
-                          <div className="space-y-1.5">
-                            {items.map((c) => (
-                              <CornerChip key={c.id} c={c} selected={c.id === selCorner} onSelect={() => { onActivate(); onSelCorner(c.id); }} onToast={onToast} />
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-0.5">
+                    {t.corners.map((c, i) => (
+                      <CornerChip key={c.id} c={c} no={i + 1} selected={c.id === selCorner} onSelect={() => { onActivate(); onSelCorner(c.id); }} onToast={onToast} />
+                    ))}
                   </div>
                   <button type="button" onClick={onAddCorner}
                     className="mt-2 flex w-full shrink-0 items-center justify-center gap-1 rounded-[10px] border border-dashed border-[var(--line3)] bg-white py-2.5 text-[13px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
@@ -385,59 +368,69 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
   );
 }
 
-/* ───────── 코너 불러오기 모달(실제 빌더 '코너 불러오기' 이식) ───────── */
+/* ───────── 코너 불러오기 모달(order3 레퍼런스 + 우리 코너 유형 탭) ───────── */
 function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; onClose: () => void; onAdd: (c: LibCorner) => void }) {
   const [q, setQ] = React.useState('');
-  const list = corners.filter((c) => !q || c.name.includes(q) || c.cornerType.includes(q));
-  const [sel, setSel] = React.useState<LibCorner | null>(corners[0] ?? null);
+  const [tab, setTab] = React.useState('전체');
+  // 우리 코너 유형으로 탭 분류 — 존재하는 유형만
+  const types = React.useMemo(() => ['전체', ...Array.from(new Set(corners.map((c) => c.cornerType)))], [corners]);
+  const list = corners.filter((c) => (tab === '전체' || c.cornerType === tab) && (!q || c.name.includes(q) || c.cornerType.includes(q)));
+  const [selId, setSelId] = React.useState<string | null>(corners[0]?.id ?? null);
+  const sel = corners.find((c) => c.id === selId) ?? null;
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex max-h-[80vh] w-full max-w-[860px] overflow-hidden rounded-[16px] bg-white shadow-[var(--dlg-shadow)]" onClick={(e) => e.stopPropagation()}>
-        {/* 좌: 코너 목록 */}
-        <div className="flex w-[320px] shrink-0 flex-col border-r border-[var(--line)]">
-          <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
-            <h3 className="text-[16px] font-bold text-[var(--ink)]">코너 불러오기</h3>
+      <div className="flex h-[82vh] w-full max-w-[1040px] overflow-hidden rounded-[16px] bg-white shadow-[var(--dlg-shadow)]" onClick={(e) => e.stopPropagation()}>
+        {/* 좌: 유형 탭 + 검색 + 코너 목록 */}
+        <div className="flex w-[360px] shrink-0 flex-col border-r border-[var(--line)]">
+          <div className="flex items-center justify-between px-5 pt-4">
+            <h3 className="text-[17px] font-bold text-[var(--ink)]">코너 추가</h3>
           </div>
-          <div className="border-b border-[var(--line)] p-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink4)]" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="코너명·유형 검색" className="h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white pl-9 pr-3 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+          <div className="flex items-center gap-2 px-5 pb-3 pt-3">
+            {/* 유형 탭(드롭다운) */}
+            <div className="relative shrink-0">
+              <select value={tab} onChange={(e) => setTab(e.target.value)} className="h-[38px] appearance-none rounded-[var(--r-field)] border border-[var(--line3)] bg-white pl-3 pr-8 text-[13px] focus:border-[var(--ac)] focus:outline-none">
+                {types.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink4)]" />
             </div>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="입력하세요" className="h-[38px] min-w-0 flex-1 rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-3 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
           </div>
-          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
+          <div className="px-5 pb-1 text-[12px] font-semibold text-[var(--ink3)]">{tab === '전체' ? '전체' : tab} <span className="text-[var(--ink4)]">{list.length}</span></div>
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3">
             {list.length === 0 ? <p className="py-8 text-center text-[13px] text-[var(--ink4)]">검색 결과가 없습니다.</p> : list.map((c) => (
-              <button key={c.id} type="button" onClick={() => setSel(c)}
-                className={cn('flex w-full flex-col items-start gap-0.5 rounded-[8px] px-3 py-2 text-left', sel?.id === c.id ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
-                <span className="text-[13px] font-semibold text-[var(--ink)]">{c.name}</span>
-                <span className="text-[11px] text-[var(--ink4)]">{c.cornerType}{c.layout ? ` · ${layoutLabel(c.layout) || c.layout}` : ''}</span>
+              <button key={c.id} type="button" onClick={() => setSelId(c.id)}
+                className={cn('flex w-full flex-col items-start gap-1 rounded-[10px] border px-3.5 py-3 text-left transition', sel?.id === c.id ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
+                <span className="text-[14px] font-bold text-[var(--ink)]">{c.name}</span>
+                <span className="text-[12px] text-[var(--ink4)]">{c.cornerType}{c.layout ? ` · ${layoutLabel(c.layout) || c.layout}` : ''} · v1.0.0</span>
               </button>
             ))}
           </div>
         </div>
-        {/* 우: 선택 코너 정보 + 추가 */}
+        {/* 우: 선택 코너 — 화면 구성 미리보기 + 기본 노출 조건 + 추가 */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
-            <span className="truncate text-[14px] font-bold text-[var(--ink)]">{sel?.name ?? '코너를 선택하세요'}</span>
-            <button type="button" onClick={onClose} className="rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]"><X className="h-4 w-4" /></button>
+          <div className="flex items-center gap-2 px-6 pt-5">
+            {sel && <span className="rounded-[6px] bg-[var(--th)] px-2 py-1 text-[12px] font-semibold text-[var(--ink3)]">{sel.id.slice(-8).toUpperCase()}</span>}
+            <span className="truncate text-[16px] font-bold text-[var(--ink)]">{sel?.name ?? '코너를 선택하세요'}</span>
+            {sel && <><span className="text-[12px] text-[var(--ink4)]">v1.0.0</span><span className="rounded-[6px] bg-[#eefaf1] px-2 py-0.5 text-[11px] font-semibold text-[#00a058]">운영</span></>}
+            <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]"><X className="h-4.5 w-4.5" /></button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
             {sel ? (
-              <div className="space-y-3">
-                <div className="rounded-[12px] border border-[var(--line)] p-4">
-                  <p className="mb-2 text-[13px] font-bold text-[var(--ink)]">코너 정보</p>
-                  <div className="flex items-center gap-3 py-1 text-[13px]"><span className="w-[72px] text-[var(--ink3)]">코너 유형</span><span className={cornerTypeChipClass(sel.cornerType)}>{sel.cornerType}</span></div>
-                  <div className="flex items-center gap-3 py-1 text-[13px]"><span className="w-[72px] text-[var(--ink3)]">레이아웃</span><span>{layoutLabel(sel.layout) || sel.layout || '—'}</span></div>
-                  <div className="flex items-center gap-3 py-1 text-[13px]"><span className="w-[72px] text-[var(--ink3)]">코너 ID</span><span className="text-[12px] text-[var(--ink3)]">{sel.id}</span></div>
+              <>
+                <p className="mb-2 text-[14px] font-bold text-[var(--ink)]">화면 구성</p>
+                <div className="rounded-[14px] border border-[var(--line)] bg-[var(--th)] p-4">
+                  <CornerBlock corner={sel.preview} />
                 </div>
-                <p className="rounded-[10px] bg-[var(--th)] px-3 py-3 text-[12px] leading-relaxed text-[var(--ink4)]">
-                  껍데기(레이아웃·노출 타입)만 들어옵니다. 내용은 코너를 열어 ‘② 수급’에서 채웁니다.
-                </p>
-              </div>
+                <p className="mb-2 mt-5 text-[14px] font-bold text-[var(--ink)]">기본 노출 조건</p>
+                <div className="rounded-[10px] bg-[var(--th)] px-4 py-3 text-[13px] leading-relaxed text-[var(--ink2)]">
+                  <b className="text-[var(--ink3)]">WHEN</b> 코너 유형 = <b className="text-[var(--ac)]">{sel.cornerType}</b> · 껍데기(레이아웃·노출 타입)만 들어옵니다. 내용은 추가 후 <b>② 수급</b>에서 채웁니다.
+                </div>
+              </>
             ) : <p className="py-10 text-center text-[13px] text-[var(--ink4)]">왼쪽에서 코너를 선택하세요.</p>}
           </div>
           <div className="border-t border-[var(--line)] p-4">
             <button type="button" disabled={!sel} onClick={() => sel && onAdd(sel)}
-              className="h-[42px] w-full rounded-[var(--r-field)] bg-[var(--ac)] text-[14px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">이 코너로 추가</button>
+              className="h-[48px] w-full rounded-[10px] bg-[var(--ac)] text-[15px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">이 코너로 추가</button>
           </div>
         </div>
       </div>

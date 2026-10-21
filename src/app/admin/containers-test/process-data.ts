@@ -12,8 +12,8 @@ export type PCorner = {
   /** 전시 존(Fixed/Dynamic/Semi) — 코너 리스트 밴드용(2026-10-21) */
   zone: Zone;
 };
-/** 코너 불러오기 모달용 — 코너 유형 관리의 선택 가능한 코너 */
-export type LibCorner = { id: string; name: string; cornerType: string; layout: string | null };
+/** 코너 불러오기 모달용 — 코너 유형 관리의 선택 가능한 코너(+미리보기) */
+export type LibCorner = { id: string; name: string; cornerType: string; layout: string | null; maxItems: number | null; preview: PreviewCorner };
 export type PTemplate = {
   id: string; name: string; conditionGroup: string | null; isDefault: boolean; status: string; corners: PCorner[];
 };
@@ -66,19 +66,19 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     ? activeTemplateId
     : (templates.find((t) => t.isDefault)?.id ?? templates[0]?.id ?? '');
 
-  // 코너 불러오기 모달용 — 활성 코너를 이름 기준 중복 제거해 간단 목록으로
+  // 코너 불러오기 모달용 — 활성 코너를 이름 기준 중복 제거, 미리보기 포함
   const rawLib = await prisma.corner.findMany({
     where: { status: 'active' },
     orderBy: { updatedAt: 'desc' },
-    select: { id: true, name: true, cornerType: true, cornerLayout: true },
-    take: 60,
+    include: PLACED_CORNER_INCLUDE,
+    take: 48,
   });
   const seen = new Set<string>();
   const libCorners: LibCorner[] = [];
   for (const c of rawLib) {
     if (seen.has(c.name)) continue;
     seen.add(c.name);
-    libCorners.push({ id: c.id, name: c.name, cornerType: c.cornerType, layout: c.cornerLayout });
+    libCorners.push({ id: c.id, name: c.name, cornerType: c.cornerType, layout: c.cornerLayout, maxItems: c.maxItems, preview: cornerToPreviewCorner(c) });
   }
 
   return {
