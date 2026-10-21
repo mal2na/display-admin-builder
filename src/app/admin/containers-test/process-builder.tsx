@@ -320,6 +320,46 @@ function CornerChip({ c, no, selected, onSelect, onToast }: { c: PCorner; no: nu
   );
 }
 
+/* ───────── 코너 리스트 — Fixed / Dynamic / Semi-fixed 밴드 묶음(세련된 버전) ───────── */
+const ZONE_ORDER: Zone[] = ['fixed', 'dynamic', 'semi']; // 화면 위→아래: 고정 → 개인화 → 기간
+
+function BandedCorners({ corners, selCorner, onSelect, onToast }: {
+  corners: PCorner[]; selCorner: string | null; onSelect: (id: string) => void; onToast: (m: string) => void;
+}) {
+  const groups = ZONE_ORDER
+    .map((z) => ({ z, items: corners.filter((c) => c.zone === z) }))
+    .filter((g) => g.items.length > 0);
+  let running = 0;
+  return (
+    <div className="space-y-3">
+      {groups.map(({ z, items }) => {
+        const meta = ZONE_META[z];
+        return (
+          <div key={z}>
+            {/* 밴드 헤더 — 점·영문 라벨(존 색)·한글 설명 + 개수 */}
+            <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+              <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: meta.hex }} />
+              <span className="text-[12px] font-extrabold tracking-tight" style={{ color: meta.hex }}>{meta.label}</span>
+              <span className="truncate text-[11px] text-[var(--ink4)]">{meta.en}</span>
+              <span className="ml-auto grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full border border-[var(--line2)] bg-white px-1.5 text-[11px] font-bold text-[var(--ink3)]">{items.length}</span>
+            </div>
+            {/* 밴드 본문 — 존 색 좌측 액센트 바 */}
+            <div className="space-y-1.5 border-l-[2px] pl-2.5" style={{ borderColor: meta.hex }}>
+              {items.map((c) => {
+                running += 1;
+                return (
+                  <CornerChip key={c.id} c={c} no={running} selected={c.id === selCorner}
+                    onSelect={() => onSelect(c.id)} onToast={onToast} />
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ───────── 템플릿 카드(= order3 '컨테이너' 카드) ───────── */
 function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, onSelCorner, onAddCorner, onToast }: {
   t: PTemplate; idx: number; open: boolean; active: boolean;
@@ -367,10 +407,9 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-[320px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
                 {/* 코너 순서변경 박스 — 그레이 배경, 리스트 스크롤 + 코너 추가 하단 고정 */}
                 <div className="flex min-h-0 flex-col rounded-[12px] border border-[var(--line)] bg-[var(--th)] p-2.5">
-                  <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-0.5">
-                    {t.corners.map((c, i) => (
-                      <CornerChip key={c.id} c={c} no={i + 1} selected={c.id === selCorner} onSelect={() => { onActivate(); onSelCorner(c.id); }} onToast={onToast} />
-                    ))}
+                  <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
+                    <BandedCorners corners={t.corners} selCorner={selCorner}
+                      onSelect={(id) => { onActivate(); onSelCorner(id); }} onToast={onToast} />
                   </div>
                   <button type="button" onClick={onAddCorner}
                     className="mt-2 flex w-full shrink-0 items-center justify-center gap-1 rounded-[10px] border border-[#cfd2ff] bg-[var(--ac2)] py-2.5 text-[13px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]">
@@ -587,7 +626,8 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                 <ChevronDown className={cn('ml-auto h-4 w-4 text-[var(--ink3)] transition', !basicOpen && '-rotate-90')} />
               </button>
               {basicOpen && activeTemplate && (
-                <div className="border-t border-[var(--line)]">
+                <div className="border-t border-[var(--line)] px-6 py-5">
+                  <div className="border-t border-[var(--line)]">
                   <FieldRow label="템플릿명" required>
                     <input defaultValue={activeTemplate.name} placeholder="예: 혜택 VIP" className={inputCls} />
                   </FieldRow>
@@ -627,6 +667,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                       </label>
                     </div>
                   </FieldRow>
+                  </div>
                 </div>
               )}
             </section>
