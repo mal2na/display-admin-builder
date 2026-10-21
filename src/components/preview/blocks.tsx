@@ -796,7 +796,7 @@ export function DeviceFrame({
   slim = false,
 }: {
   width: number;
-  bodyHeight: number;
+  bodyHeight: number | string;
   headerLabel: string;
   children: React.ReactNode;
   /** 얇은 테두리(3px·radius30) + 좌우 8px 콘텐츠 패딩 — order3-create 레퍼런스(2026-10-21). 기본(실제 빌더)은 두꺼운 프레임 유지. */
@@ -804,8 +804,8 @@ export function DeviceFrame({
 }) {
   return (
     <div style={{ width }} className="mx-auto max-w-full">
-      <div className={cn('overflow-hidden bg-slate-100 shadow-xl', slim ? 'rounded-[30px] border-[3px] border-[#1d1e2c]' : 'rounded-[2.2rem] border-[10px] border-slate-900')}>
-        <div className={cn('flex items-center justify-between bg-slate-100 font-semibold text-slate-900', slim ? 'px-4 py-1.5 text-[11px]' : 'px-5 py-2 text-xs')}>
+      <div className={cn('overflow-hidden shadow-xl', slim ? 'rounded-[30px] border-[3px] border-[#1d1e2c] bg-white' : 'rounded-[2.2rem] border-[10px] border-slate-900 bg-slate-100')}>
+        <div className={cn('flex items-center justify-between font-semibold text-slate-900', slim ? 'bg-white px-4 py-1.5 text-[11px]' : 'bg-slate-100 px-5 py-2 text-xs')}>
           <span>9:41</span>
           <div className="flex items-center gap-1">
             <Signal className="h-3.5 w-3.5" />
