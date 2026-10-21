@@ -4,10 +4,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { CONTAINER_APPROVAL_STATUS_LABEL } from '@/lib/display-taxonomy';
+import { CONTAINER_APPROVAL_STATUS_LABEL, DISPLAY_STATUS_LABEL, type DisplayStatusKey } from '@/lib/display-taxonomy';
 import { StatusPill, statusTone } from '@/components/ops-ui';
-import { Columns, Pencil, Trash2, Check, X, Download, Plus, ExternalLink, ChevronRight } from 'lucide-react';
+import { Columns, Pencil, Trash2, Check, X, Download, ChevronRight, ChevronDown, Star, Copy, MoreVertical, ExternalLink } from 'lucide-react';
 import { ContainersTestShell } from '../../tree-shell';
+import { AddTemplateButton } from '../../add-template-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,19 +143,57 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
 
           {/* 매핑 템플릿 정보 — 행 클릭 시 order3 빌더 */}
           <section>
-            <SectionTitle right={<><span className={BTN}><Download className="h-3.5 w-3.5" /> 템플릿 불러오기</span><span className="inline-flex h-[36px] items-center gap-1.5 rounded-[8px] bg-[var(--ac)] px-4 text-[13px] font-semibold text-white"><Plus className="h-3.5 w-3.5" /> 템플릿 추가</span></>}>
+            <SectionTitle right={<><span className={BTN}><Download className="h-3.5 w-3.5" /> 템플릿 불러오기</span><AddTemplateButton containerId={container.id} /></>}>
               매핑 템플릿 정보 <span className="text-[14px] font-normal text-[var(--ink3)]">총 {activeTemplates.length}개</span>
             </SectionTitle>
-            <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
-              {activeTemplates.map((t) => (
-                <Link key={t.id} href={`/admin/containers-test/t/${t.id}`} className="group flex items-center gap-3 px-3 py-3.5 hover:bg-[var(--ac2)]">
-                  <span className="text-[14px] font-semibold text-[var(--ink)]">{t.name}</span>
-                  {t.conditionGroup && <span className="text-[13px] text-[var(--ink4)]">· {t.conditionGroup}</span>}
-                  {t.isDefault && <span className="rounded-[4px] bg-[var(--ac2)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ac)]">기본</span>}
-                  <span className="text-[13px] text-[var(--ink3)]">코너 {t._count.templateCorners}개</span>
-                  <span className="ml-auto inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--ac)]"><Pencil className="h-3.5 w-3.5" /> 빌더 열기 <ChevronRight className="h-4 w-4 opacity-0 transition group-hover:opacity-100" /></span>
-                </Link>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-[13px]">
+                <thead>
+                  <tr className="border-y border-[var(--line)] bg-[var(--th)] text-left text-[13px] font-semibold text-[var(--ink2)]">
+                    <th className="px-3 py-2.5 font-semibold">로그인 구분</th>
+                    <th className="px-3 py-2.5 font-semibold">템플릿명</th>
+                    <th className="px-3 py-2.5 font-semibold">기본</th>
+                    <th className="px-3 py-2.5 font-semibold">Corner</th>
+                    <th className="px-3 py-2.5 font-semibold">전시 상태</th>
+                    <th className="px-3 py-2.5 font-semibold">전시 기간</th>
+                    <th className="px-3 py-2.5 text-right font-semibold">관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeTemplates.map((t) => (
+                    <tr key={t.id} className="border-b border-[var(--line)] hover:bg-[var(--th)]">
+                      <td className="px-3 py-2.5">
+                        <div className="relative inline-block">
+                          <select defaultValue={t.conditionGroup ?? '로그인'} className="h-[30px] appearance-none rounded-[6px] border border-[var(--line3)] bg-white pl-2.5 pr-7 text-[13px] focus:border-[var(--ac)] focus:outline-none">
+                            <option>로그인</option><option>비로그인</option><option>기본</option>
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink4)]" />
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <Link href={`/admin/containers-test/t/${t.id}`} className="inline-flex items-center gap-1 font-semibold text-[var(--ac)] hover:underline">
+                          {t.isDefault && <Star className="h-3.5 w-3.5 fill-[var(--ac)] text-[var(--ac)]" />}{t.name}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {t.isDefault
+                          ? <span className="rounded-[6px] bg-[var(--ac2)] px-2 py-1 text-[12px] font-semibold text-[var(--ac)]">Y</span>
+                          : <span className="inline-flex items-center rounded-[6px] border border-[var(--line2)] bg-white px-2 py-1 text-[12px] text-[var(--ink3)]">N · 기본으로</span>}
+                      </td>
+                      <td className="px-3 py-2.5 text-[var(--ink)]">{t._count.templateCorners}</td>
+                      <td className="px-3 py-2.5"><span className="rounded-[6px] bg-[var(--th)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)]">{DISPLAY_STATUS_LABEL[t.status as DisplayStatusKey] ?? '초안 작성중'}</span></td>
+                      <td className="px-3 py-2.5 text-[var(--ink3)]">상시</td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Link href={`/admin/containers-test/t/${t.id}`} className="inline-flex h-[30px] items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 text-[12px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]"><Pencil className="h-3.5 w-3.5" /> 빌더</Link>
+                          <span className="inline-flex h-[30px] items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 text-[12px] font-semibold text-[var(--ink2)]"><Copy className="h-3.5 w-3.5" /> 복사</span>
+                          <span className="grid h-[30px] w-[30px] place-items-center rounded-[6px] border border-[var(--line2)] bg-white text-[var(--ink3)]"><MoreVertical className="h-4 w-4" /></span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         </div>
