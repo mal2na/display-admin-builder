@@ -12,6 +12,7 @@ export function NavLink({
   label,
   collapsed,
   alsoActiveFor,
+  excludeFor,
   badge,
 }: {
   href: string;
@@ -19,13 +20,16 @@ export function NavLink({
   label: string;
   collapsed?: boolean;
   alsoActiveFor?: string[];
+  excludeFor?: string[];
   badge?: string;
 }) {
   const pathname = usePathname();
+  const excluded = (excludeFor ?? []).some((p) => pathname === p || pathname.startsWith(p + '/'));
   const active =
-    pathname === href ||
-    pathname.startsWith(href + '/') ||
-    (alsoActiveFor ?? []).some((p) => pathname === p || pathname.startsWith(p + '/'));
+    !excluded &&
+    (pathname === href ||
+      pathname.startsWith(href + '/') ||
+      (alsoActiveFor ?? []).some((p) => pathname === p || pathname.startsWith(p + '/')));
   return (
     <Link
       href={href}

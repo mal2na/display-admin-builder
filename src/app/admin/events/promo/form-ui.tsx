@@ -26,7 +26,7 @@ export function Row({ label, req, err, children }: {
   label: string; req?: boolean; err?: string; children: React.ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-[160px_1fr] border-b border-[var(--line)]">
+    <div className="grid grid-cols-[160px_1fr] border-b border-[var(--line2)]">
       <div className="flex items-start bg-[var(--th)] px-4 py-3 text-[14px] font-semibold leading-[20px] text-[var(--ink2)]">
         {label}{req && <span className="ml-0.5 text-[var(--bad)]">*</span>}
       </div>

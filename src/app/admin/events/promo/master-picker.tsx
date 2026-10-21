@@ -117,7 +117,7 @@ export function MasterPicker({ mode, types, value, onApply, onClose }: {
           {rows.length === 0 ? (
             <p className="py-12 text-center text-[14px] text-[var(--ink3)]">검색 결과가 없어요.</p>
           ) : (
-            <ul className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
+            <ul className="divide-y divide-[var(--line2)] border-y border-[var(--line2)]">
               {rows.map((row) => {
                 const on = picked.some((p) => p.name === row.name);
                 return (

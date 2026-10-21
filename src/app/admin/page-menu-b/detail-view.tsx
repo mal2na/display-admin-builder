@@ -191,7 +191,7 @@ export function DetailView({ id }: { id: string }) {
         </FormActions>
       ) : (
         // 하단 바 — [목록] · 반영/수정 메타 · 오른쪽 승인 액션. 좁은 폭에서는 줄바꿈된다.
-        <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-[var(--line)] pt-6">
+        <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-[var(--line2)] pt-6">
           <button type="button" className={BTN} onClick={() => pm.go('list')}>목록</button>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-[var(--ink3)]">
             <span>최종 반영일 <b className="text-[var(--ink)]">{p.liveAt || '—'}</b></span>
@@ -318,7 +318,7 @@ function MTable({ rows }: { rows: [string, React.ReactNode][] }) {
     <table className="w-full border-collapse text-[14px]">
       <tbody>
         {rows.map(([k, v]) => (
-          <tr key={k} className="border-b border-[var(--line)] last:border-b-0">
+          <tr key={k} className="border-b border-[var(--line2)] last:border-b-0">
             <th className="w-[160px] bg-[var(--th)] px-3 py-2.5 text-left font-semibold text-[var(--ink2)]">{k}</th>
             <td className="px-3 py-2.5">{v}</td>
           </tr>
@@ -406,7 +406,7 @@ function BffTab({ p }: { p: Page }) {
           </tbody>
         </table>
       </div>
-      <p className="mt-3 border-t border-[var(--line)] pt-3 text-[13px] font-semibold text-[var(--ink2)]">
+      <p className="mt-3 border-t border-[var(--line2)] pt-3 text-[13px] font-semibold text-[var(--ink2)]">
         - 고객 상태값에 따라 정지/SMS수신불가 단말기인 경우 우선순위에 따른 적용 : 1순위) S, 2순위) R
       </p>
     </Sect>

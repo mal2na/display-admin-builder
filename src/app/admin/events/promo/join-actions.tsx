@@ -118,13 +118,13 @@ export function JoinActions({ items, onChange, err, onToast, guest }: {
             {it.type === '즉시 결과형(룰렛)' && (
               <F label="결과 항목">
                 <div className="w-full">
-                  <div className="grid grid-cols-[48px_1fr_160px_32px] items-center gap-2 border-b border-[var(--line)] pb-1.5 text-[12px] font-semibold text-[var(--ink3)]">
+                  <div className="grid grid-cols-[48px_1fr_160px_32px] items-center gap-2 border-b border-[var(--line2)] pb-1.5 text-[12px] font-semibold text-[var(--ink3)]">
                     <span>번호</span><span>결과명</span><span>리워드 지급 여부</span><span />
                   </div>
                   {(() => { let n = 0; return it.results.map((r) => {
                     const no = r.pay === 'Y' ? (n += 1) : null;
                     return (
-                      <div key={r.id} className="grid grid-cols-[48px_1fr_160px_32px] items-center gap-2 border-b border-[var(--line)] py-1.5">
+                      <div key={r.id} className="grid grid-cols-[48px_1fr_160px_32px] items-center gap-2 border-b border-[var(--line2)] py-1.5">
                         <span className={cn('text-[13px] font-semibold tabular-nums', no ? 'text-[var(--ac)]' : 'text-[var(--ink4)]')}>{no ?? '–'}</span>
                         <input value={r.name} placeholder="결과 항목명" className={cn(INP, 'h-[34px] w-full')}
                           onChange={(e) => set(it.id, { results: it.results.map((x) => (x.id === r.id ? { ...x, name: e.target.value } : x)) })} />
@@ -204,10 +204,10 @@ export function ListPicker({ title, sub, rows, value, onApply, onClose }: {
       </>}
     >
       <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="ID 또는 내용 검색" className={cn(INP, 'w-full')} />
-      <ul className="mt-3 max-h-[300px] overflow-y-auto rounded-[var(--r-field)] border border-[var(--line)]">
+      <ul className="mt-3 max-h-[300px] overflow-y-auto rounded-[var(--r-field)] border border-[var(--line2)]">
         {list.length === 0 ? <li className="p-6 text-center text-[14px] text-[var(--ink3)]">조회 결과가 없어요</li> : list.map((r) => (
           <li key={r.id}>
-            <label className={cn('flex cursor-pointer items-center gap-3 border-b border-[var(--line)] p-3 text-[14px] last:border-b-0', sel === r.id && 'bg-[var(--ac2)]')}>
+            <label className={cn('flex cursor-pointer items-center gap-3 border-b border-[var(--line2)] p-3 text-[14px] last:border-b-0', sel === r.id && 'bg-[var(--ac2)]')}>
               <input type="radio" checked={sel === r.id} onChange={() => setSel(r.id)} className="h-4 w-4" />
               <span className="w-[80px] shrink-0 font-mono text-[13px] text-[var(--ink3)]">{r.id}</span>
               <b className="min-w-0 flex-1 font-semibold">{r.name}</b>

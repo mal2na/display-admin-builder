@@ -409,7 +409,7 @@ export function FormView({ isCreate }: { isCreate: boolean }) {
                           ['og:description', <input key="ogd" value={e.ogDesc} onChange={(ev) => set({ ogDesc: ev.target.value })} className={`${INP} ${W_LG}`} />],
                           ['og:site_name', <span key="site" className="flex flex-wrap items-center gap-2"><input value="TOO" readOnly className={`${INP} ${W_MD} bg-[var(--th)] text-[var(--ink3)]`} /><Hint>고정</Hint></span>],
                         ] as [string, React.ReactNode][]).map(([k, v]) => (
-                          <tr key={k} className="border-b border-[var(--line)] last:border-b-0">
+                          <tr key={k} className="border-b border-[var(--line2)] last:border-b-0">
                             <th className="w-[160px] bg-[var(--th)] px-3 py-2.5 text-left font-semibold text-[var(--ink2)]">{k}</th>
                             <td className="px-3 py-2.5">{v}</td>
                           </tr>

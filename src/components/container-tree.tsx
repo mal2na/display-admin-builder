@@ -26,8 +26,25 @@ export type TreeContainer = {
   templates: TreeTemplate[];
 };
 
-export function ContainerTree({ containers, allRows = [] }: { containers: TreeContainer[]; allRows?: ContainerListRow[] }) {
+export function ContainerTree({
+  containers,
+  allRows = [],
+  linkContainerTpl = '/admin/containers/{id}',
+  linkTemplateTpl = '/admin/templates/{id}/builder',
+  newHref = '/admin/containers/new',
+}: {
+  containers: TreeContainer[];
+  allRows?: ContainerListRow[];
+  /** 컨테이너/템플릿/등록 링크 템플릿({id} 치환) — 전시화면 관리(테스트)가 자기 라우트로 재사용하기 위해 오버라이드. 서버→클라이언트 전달이라 함수 대신 문자열. */
+  linkContainerTpl?: string;
+  linkTemplateTpl?: string;
+  newHref?: string;
+}) {
   const pathname = usePathname();
+  const linkContainer = (id: string) => linkContainerTpl.replace('{id}', id);
+  const linkTemplate = (id: string) => linkTemplateTpl.replace('{id}', id);
+  // 활성 비교는 쿼리스트링을 떼고 경로만으로 — '?device=left' 같은 파라미터 무시
+  const templatePathOf = (id: string) => linkTemplate(id).split('?')[0];
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [listOpen, setListOpen] = useState(false); // 전체목록 팝업(PG495)
 
@@ -39,7 +56,7 @@ export function ContainerTree({ containers, allRows = [] }: { containers: TreeCo
   return (
     <div className="tree flex h-full w-72 shrink-0 flex-col overflow-hidden bg-white">
       {/* 헤더 — 제목 + 총 건수 · 전체 목록 / 등록 */}
-      <div className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-3">
+      <div className="flex items-center gap-2 border-b border-[var(--line2)] px-3 py-3">
         <span className="whitespace-nowrap text-[14px] font-bold text-[var(--ink)]">컨테이너 목록</span>
         <span className="whitespace-nowrap text-[12px] text-[var(--ink3)]">총 <b className="text-[var(--ink2)]">{totalTemplates}</b>건</span>
         <div className="ml-auto flex shrink-0 items-center gap-1">
@@ -52,7 +69,7 @@ export function ContainerTree({ containers, allRows = [] }: { containers: TreeCo
             전체 목록
           </button>
           <Link
-            href="/admin/containers/new"
+            href={newHref}
             className="inline-flex items-center gap-0.5 whitespace-nowrap rounded-[6px] bg-[var(--ac)] px-2.5 py-1.5 text-[12px] font-semibold text-white hover:bg-[var(--ac-h)]"
           >
             <Plus className="h-3.5 w-3.5" /> 등록
@@ -65,10 +82,10 @@ export function ContainerTree({ containers, allRows = [] }: { containers: TreeCo
         {containers.length === 0 ? (
           <p className="px-2 py-6 text-center text-[12px] text-[var(--ink3)]">등록된 Container가 없습니다.</p>
         ) : (
-          <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
+          <div className="divide-y divide-[var(--line2)] border-y border-[var(--line2)]">
             {containers.flatMap((c) => {
               const expanded = open[c.id] ?? true;
-              const activeContainer = pathname === `/admin/containers/${c.id}`;
+              const activeContainer = pathname === linkContainer(c.id);
               const rows: React.ReactNode[] = [
                 // 그룹 헤더 — 행 전체를 누르면 접기/펼치기(큰 히트 영역). 이름만 상세로 이동(클릭 전파 차단). 색 하이라이트 없음(2026-10-16 사용자 요청).
                 <div
@@ -84,7 +101,7 @@ export function ContainerTree({ containers, allRows = [] }: { containers: TreeCo
                     {expanded ? '▾' : '▸'}
                   </span>
                   <Link
-                    href={`/admin/containers/${c.id}`}
+                    href={linkContainer(c.id)}
                     onClick={(e) => e.stopPropagation()}
                     className={cn('min-w-0 flex-1 truncate text-[13.5px] font-bold text-[var(--ink)] hover:text-[var(--ac)] hover:underline', activeContainer && 'text-[var(--ac)]')}
                   >
@@ -104,13 +121,13 @@ export function ContainerTree({ containers, allRows = [] }: { containers: TreeCo
                   );
                 }
                 c.templates.forEach((t, ti) => {
-                  const active = pathname.startsWith(`/admin/templates/${t.id}`);
+                  const active = pathname.startsWith(templatePathOf(t.id));
                   const lastLeaf = ti === c.templates.length - 1;
                   rows.push(
                     // 잎(템플릿) — 컨테이너 아래로 들여쓰기(트리) + 분기 가이드. 기본은 북마크. 클릭 시 빌더.
                     <Link
                       key={`t-${t.id}`}
-                      href={`/admin/templates/${t.id}/builder`}
+                      href={linkTemplate(t.id)}
                       className={cn(
                         'flex items-center gap-1.5 py-2.5 pl-4 pr-3 text-[13px] text-[var(--ink2)] hover:bg-[#f8f9fb]',
                         active && 'bg-[#f1f2ff] font-semibold text-[var(--ac)]',

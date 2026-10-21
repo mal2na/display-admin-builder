@@ -102,7 +102,7 @@ export function PathPicker({ spec, onClose }: { spec: PickerSpec; onClose: () =>
         </div>
 
         <div className="grid min-h-0 flex-1 grid-cols-[1fr_320px] gap-4 px-6 pt-4">
-          <div className="min-h-[320px] overflow-y-auto rounded-[var(--r-field)] border border-[var(--line)] p-2">
+          <div className="min-h-[320px] overflow-y-auto rounded-[var(--r-field)] border border-[var(--line2)] p-2">
             {roots.map((x) => node(x, 1))}
           </div>
           <aside className="overflow-y-auto rounded-[var(--r-field)] bg-[var(--th)] p-4">

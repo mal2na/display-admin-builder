@@ -201,7 +201,7 @@ const FEATURES: [keyof CornerTypeRow, string][] = [
 // 프로모션 상세 .frow 규격에 맞춤 — 라벨 셀 #f8f9fb·150px, 값 셀, 1px 하단 보더(2026-10-01 사용자 요청).
 function RORow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#e8ecef]">
+    <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
       <div className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[12.5px] font-medium text-slate-600">{label}</div>
       <div className="min-w-0 px-3.5 py-2.5 text-[13px] text-foreground">{children}</div>
     </div>
@@ -335,10 +335,10 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
         <div className="rounded-lg border border-dashed border-[#dce0e5] bg-muted/20 p-5 text-center text-[12px] text-muted-foreground">아직 이 코너 유형을 쓰는 전시화면이 없습니다.</div>
       ) : (
         // 컴팩트 리스트 — 작은 썸네일 + 코너명 + 화면 칩(빌더 링크). 큰 미리보기 블록을 없애 공간 절약(2026-10-16 사용자 요청).
-        <div className="divide-y divide-[#e8ecef] border-t border-[#dce0e5]">
+        <div className="divide-y divide-[#dce0e5] border-t border-[#dce0e5]">
           {usageByCorner.map((u, i) => (
             <div key={i} className="flex items-center gap-3 py-2.5">
-              <div className="pointer-events-none h-[72px] w-[58px] shrink-0 overflow-hidden rounded-md border border-[#e8ecef] bg-[#eef0f6]">
+              <div className="pointer-events-none h-[72px] w-[58px] shrink-0 overflow-hidden rounded-md border border-[#dce0e5] bg-[#eef0f6]">
                 <DevicePreview corner={u.preview} fit="contain" align="center-middle" />
               </div>
               <div className="min-w-0 flex-1">
@@ -367,7 +367,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   // 단일 미리보기(배너형 / 단일 케이스 / 미배치 샘플) — 폰 프레임 없이 카드 그대로 축소.
   //  BG 영역은 모든 유형 동일 고정 높이(PREVIEW_H), 콘텐츠는 세로 중앙 정렬 → 배너처럼 짧은 유형도 가운데(2026-09-29 사용자 요청).
   const singlePreview = (
-    <div className={cn('overflow-y-auto rounded-lg border border-[#e8ecef] bg-[#eef0f6] p-4', PREVIEW_H)}>
+    <div className={cn('overflow-y-auto rounded-lg border border-[#dce0e5] bg-[#eef0f6] p-4', PREVIEW_H)}>
       {isStudio ? (
         // 상품형 — 스튜디오에서 저장한 코너 스펙(배너·타이틀·CTA·상품카드·배지)을 렌더. 세로형이면 세로 리스트.
         <CornerSpecPreview storageKey={specKey} layout={row.typeDetail ?? undefined} />
@@ -406,7 +406,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {usagePreviews.map((c, i) => (
-                <figure key={c.id} className="rounded-lg border border-[#e8ecef] bg-[#eef0f6] p-3">
+                <figure key={c.id} className="rounded-lg border border-[#dce0e5] bg-[#eef0f6] p-3">
                   <figcaption className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
                     <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-white text-[10px] font-bold tabular-nums text-slate-500 ring-1 ring-slate-200">{i + 1}</span>
                     <span className="truncate">{c.name}</span>
@@ -440,7 +440,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
         </div>
       )}
       {/* 상세 정보 — 기본 정보 아래. 실제 코너 + 전시화면 맵핑(클릭 시 빌더). */}
-      <div className="border-t border-[#e8ecef] pt-5">{usageContent}</div>
+      <div className="border-t border-[#dce0e5] pt-5">{usageContent}</div>
     </div>
   );
 }

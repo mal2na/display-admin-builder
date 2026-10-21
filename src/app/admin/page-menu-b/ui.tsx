@@ -31,7 +31,7 @@ const V_CLS = 'flex min-w-0 flex-wrap items-center gap-2 px-4 py-2.5 text-[14px]
 
 export function FRow({ k, children, required }: { k: string; children: React.ReactNode; required?: boolean }) {
   return (
-    <div className="grid grid-cols-[180px_1fr] border-b border-[var(--line)]">
+    <div className="grid grid-cols-[180px_1fr] border-b border-[var(--line2)]">
       <div className={K_CLS}>{k}{required && <span className="ml-0.5 text-[var(--bad)]">*</span>}</div>
       <div className={V_CLS}>{children}</div>
     </div>
@@ -40,7 +40,7 @@ export function FRow({ k, children, required }: { k: string; children: React.Rea
 
 export function FRow2({ k1, v1, k2, v2 }: { k1: string; v1: React.ReactNode; k2: string; v2: React.ReactNode }) {
   return (
-    <div className="grid border-b border-[var(--line)] md:grid-cols-[180px_1fr_180px_1fr]">
+    <div className="grid border-b border-[var(--line2)] md:grid-cols-[180px_1fr_180px_1fr]">
       <div className={K_CLS}>{k1}</div>
       <div className={V_CLS}>{v1}</div>
       <div className={K_CLS}>{k2}</div>
@@ -192,7 +192,7 @@ export function Toast({ msg }: { msg: string }) {
 /* ── 하단 액션 바 ───────────────────────────────────────────────── */
 export function FormActions({ left, children }: { left?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-6">
+    <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-[var(--line2)] pt-6">
       {left}
       <div className="ml-auto flex flex-wrap items-center gap-2">{children}</div>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { NavLink } from '@/components/nav-link';
-import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, Archive } from 'lucide-react';
+import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, Archive, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 좌측 사이드바 — NC-Channel Product Admin LNB 규격. 폭 236px, 라벤더 var(--bg) 배경.
@@ -15,14 +15,16 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
 
         {/* 전시 관리 */}
         {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">전시 관리</p>}
-        <NavLink href="/admin/containers" icon={<MonitorSmartphone className="h-4 w-4" />} label="전시화면 관리" collapsed={collapsed} />
+        <NavLink href="/admin/containers" icon={<MonitorSmartphone className="h-4 w-4" />} label="전시화면 관리" collapsed={collapsed} excludeFor={['/admin/containers-test']} />
+        <NavLink href="/admin/containers-test" icon={<MonitorSmartphone className="h-4 w-4" />} label="전시화면 관리 (테스트)" collapsed={collapsed} badge="테스트" />
         <NavLink href="/admin/corner-types" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리" collapsed={collapsed} />
         <NavLink href="/admin/banner-campaigns" icon={<GalleryHorizontalEnd className="h-4 w-4" />} label="배너 캠페인 관리" collapsed={collapsed} />
         <NavLink href="/admin/messages" icon={<MessageSquareText className="h-4 w-4" />} label="문구 관리" collapsed={collapsed} badge="테스트" />
 
         {/* 프로모션 관리 */}
         {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">프로모션 관리</p>}
-        <NavLink href="/admin/events" icon={<Ticket className="h-4 w-4" />} label="프로모션 관리" collapsed={collapsed} />
+        <NavLink href="/admin/events" icon={<Ticket className="h-4 w-4" />} label="프로모션 관리" collapsed={collapsed} excludeFor={['/admin/events/result']} />
+        <NavLink href="/admin/events/result" icon={<ClipboardList className="h-4 w-4" />} label="결과 관리" collapsed={collapsed} />
 
         {/* 운영 관리 */}
         {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">운영 관리</p>}

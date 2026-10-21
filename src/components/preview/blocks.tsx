@@ -793,16 +793,19 @@ export function DeviceFrame({
   bodyHeight,
   headerLabel,
   children,
+  slim = false,
 }: {
   width: number;
-  bodyHeight: number;
+  bodyHeight: number | string;
   headerLabel: string;
   children: React.ReactNode;
+  /** 얇은 테두리(3px·radius30) + 좌우 8px 콘텐츠 패딩 — order3-create 레퍼런스(2026-10-21). 기본(실제 빌더)은 두꺼운 프레임 유지. */
+  slim?: boolean;
 }) {
   return (
-    <div style={{ width }} className="max-w-full">
-      <div className="overflow-hidden rounded-[2.2rem] border-[10px] border-slate-900 bg-slate-100 shadow-xl">
-        <div className="flex items-center justify-between bg-slate-100 px-5 py-2 text-xs font-semibold text-slate-900">
+    <div style={{ width }} className="mx-auto max-w-full">
+      <div className={cn('overflow-hidden shadow-xl', slim ? 'rounded-[30px] border-[3px] border-[#1d1e2c] bg-white' : 'rounded-[2.2rem] border-[10px] border-slate-900 bg-slate-100')}>
+        <div className={cn('flex items-center justify-between font-semibold text-slate-900', slim ? 'bg-white px-4 py-1.5 text-[11px]' : 'bg-slate-100 px-5 py-2 text-xs')}>
           <span>9:41</span>
           <div className="flex items-center gap-1">
             <Signal className="h-3.5 w-3.5" />
@@ -810,20 +813,20 @@ export function DeviceFrame({
             <BatteryFull className="h-3.5 w-3.5" />
           </div>
         </div>
-        <div className="border-b bg-white px-4 py-2 text-sm font-semibold text-slate-700">{headerLabel}</div>
-        <div style={{ height: bodyHeight }} className="space-y-4 overflow-y-auto bg-slate-200 px-5 py-4">
+        <div className={cn('border-b bg-white font-semibold text-slate-700', slim ? 'px-3 py-2 text-[13px]' : 'px-4 py-2 text-sm')}>{headerLabel}</div>
+        <div style={{ height: bodyHeight }} className={cn('overflow-y-auto', slim ? 'space-y-3 bg-[#e9ebf4] px-2 py-2.5' : 'space-y-4 bg-slate-200 px-5 py-4')}>
           {children}
         </div>
-        {/* 하단 네비 — 좌측 플로팅 컴포즈 버튼(T+) + 혜택(활성·채운 배지)·쇼핑·마이. T우주 앱 기준. */}
+        {/* 하단 네비 — 좌측 플로팅 컴포즈 버튼(T+) + 혜택(활성·채운 배지)·쇼핑·마이. T우주 앱 기준. slim=teal. */}
         <div className="flex items-center border-t bg-white px-3 py-1.5 text-[11px]">
-          <div className="-translate-y-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-b from-indigo-100 to-indigo-50 shadow-sm ring-1 ring-indigo-100">
-            <span className="relative text-[15px] font-bold leading-none text-indigo-600">
+          <div className={cn('-translate-y-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-b shadow-sm ring-1', slim ? 'from-teal-100 to-teal-50 ring-teal-100' : 'from-indigo-100 to-indigo-50 ring-indigo-100')}>
+            <span className={cn('relative text-[15px] font-bold leading-none', slim ? 'text-teal-600' : 'text-indigo-600')}>
               T<span className="absolute -right-2 -top-0.5 text-[9px] font-bold">+</span>
             </span>
           </div>
           <div className="flex flex-1 items-center justify-around">
-            <span className="flex flex-col items-center gap-1 font-semibold text-indigo-600">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white shadow-sm">
+            <span className={cn('flex flex-col items-center gap-1 font-semibold', slim ? 'text-teal-600' : 'text-indigo-600')}>
+              <span className={cn('flex h-6 w-6 items-center justify-center rounded-full text-white shadow-sm', slim ? 'bg-teal-500' : 'bg-indigo-600')}>
                 <Percent className="h-3.5 w-3.5" />
               </span>
               혜택

@@ -13,7 +13,7 @@ export function AdminTopbar({ collapsed, onToggleSidebar }: { collapsed: boolean
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 bg-[var(--bg)] pr-3 text-sm text-[var(--ink)]">
       {/* 브랜드 + 사이드바 토글 — LNB 영역과 동일 폭 */}
-      <div className={cn('flex h-full shrink-0 items-center border-r border-[var(--line)]', collapsed ? 'w-14 justify-center' : 'w-[236px] gap-2 px-3')}>
+      <div className={cn('flex h-full shrink-0 items-center border-r border-[var(--line2)]', collapsed ? 'w-14 justify-center' : 'w-[236px] gap-2 px-3')}>
         {!collapsed && (
           <Link href="/admin/containers" className="flex min-w-0 items-center gap-2 font-semibold">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
