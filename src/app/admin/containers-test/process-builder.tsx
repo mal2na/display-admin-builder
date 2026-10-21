@@ -342,9 +342,9 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete,
       <span className="flex h-5 w-4 shrink-0 items-center justify-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
       <span className="min-w-0 flex-1">
         <span className={cn('flex h-5 items-center truncate text-[13px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{c.name}</span>
-        <span className="mt-0.5 flex items-center gap-1.5">
-          <span className={cornerTypeChipClass(c.cornerType)}>{c.cornerType}</span>
-          {cornerLayoutText(c.layout, c.layoutDetail) && <span className="text-[11px] text-[var(--ink4)]">{cornerLayoutText(c.layout, c.layoutDetail)}</span>}
+        <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
+          <span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span>
+          {cornerLayoutText(c.layout, c.layoutDetail) && <span className="truncate whitespace-nowrap text-[11px] text-[var(--ink4)]">{cornerLayoutText(c.layout, c.layoutDetail)}</span>}
         </span>
       </span>
       {/* 고정(Fixed) 토글 — 타이틀 줄에 맞춰 상단 정렬 */}
