@@ -16,6 +16,8 @@ export type PCorner = {
 export type LibCorner = { id: string; name: string; cornerType: string; layout: string | null; maxItems: number | null; preview: PreviewCorner };
 export type PTemplate = {
   id: string; name: string; conditionGroup: string | null; isDefault: boolean; status: string; corners: PCorner[];
+  /** 템플릿 기본 정보 필드 */
+  memo: string | null; displayOn: boolean; startAt: string | null; endAt: string | null; startAtOnApproval: boolean;
 };
 export type ProcessData = {
   containerId: string; containerName: string; containerType: string; platform: string;
@@ -48,6 +50,11 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     conditionGroup: t.conditionGroup,
     isDefault: t.isDefault,
     status: t.status,
+    memo: t.memo ?? null,
+    displayOn: t.displayOn ?? true,
+    startAt: t.startAt ? t.startAt.toISOString() : null,
+    endAt: t.endAt ? t.endAt.toISOString() : null,
+    startAtOnApproval: t.startAtOnApproval ?? false,
     corners: t.templateCorners.map((tc) => ({
       id: tc.corner.id,
       name: tc.corner.name,

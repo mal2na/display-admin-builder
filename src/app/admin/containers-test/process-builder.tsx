@@ -17,7 +17,15 @@ import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pe
 import type { ProcessData, PTemplate, PCorner, LibCorner } from './process-data';
 
 const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '비로그인 시 노출', '미노출'];
-const TYPE_OPTS = ['메인화면', '메뉴', '기획전', '혜택 영역'];
+
+/** ISO 문자열 → datetime-local 입력값(YYYY-MM-DDTHH:mm, 로컬). 값 없으면 빈 문자열 */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 /* ───────── 구성 검증 ───────── */
 type Issue = { level: '오류' | '경고'; area: string; detail: string; templateId?: string };
@@ -582,32 +590,45 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                 <span className="rounded-full border border-[var(--line2)] bg-white px-2 py-0.5 text-[11px] font-medium text-[var(--ink3)]">조회</span>
                 <ChevronDown className={cn('ml-auto h-4 w-4 text-[var(--ink3)] transition', !basicOpen && '-rotate-90')} />
               </button>
-              {basicOpen && (
+              {basicOpen && activeTemplate && (
                 <div className="border-t border-[var(--line)] px-5 py-3">
-                  <Field label="유형" required>
-                    <div className="relative">
-                      <select defaultValue={data.containerType} className={cn(inputCls, 'appearance-none pr-9')}>
-                        {TYPE_OPTS.map((o) => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink4)]" />
+                  <Field label="템플릿명" required>
+                    <input defaultValue={activeTemplate.name} placeholder="예: 혜택 VIP" className={inputCls} />
+                  </Field>
+                  <Field label="메모">
+                    <input defaultValue={activeTemplate.memo ?? ''} maxLength={30} placeholder="한글/영문/숫자/특수문자 30자 이내" className={inputCls} />
+                  </Field>
+                  <Field label="로그인 구분" required>
+                    <div className="flex items-center gap-5 text-[13px] text-[var(--ink)]">
+                      <label className="flex items-center gap-1.5"><input type="radio" name="tplLogin" defaultChecked={activeTemplate.conditionGroup !== '비로그인'} className="accent-[var(--ac)]" /> 로그인</label>
+                      <label className="flex items-center gap-1.5"><input type="radio" name="tplLogin" defaultChecked={activeTemplate.conditionGroup === '비로그인'} className="accent-[var(--ac)]" /> 비로그인</label>
                     </div>
                   </Field>
-                  <Field label="플랫폼">
-                    <div className="flex h-[38px] items-center rounded-[var(--r-field)] border border-[var(--line)] bg-[var(--th)] px-3 text-[13px] text-[var(--ink2)]">{data.platform}</div>
+                  <Field label="기본 템플릿 여부" required>
+                    <div>
+                      <div className="flex items-center gap-5 text-[13px] text-[var(--ink)]">
+                        <label className="flex items-center gap-1.5"><input type="radio" name="tplDefault" defaultChecked={!activeTemplate.isDefault} className="accent-[var(--ac)]" /> N</label>
+                        <label className="flex items-center gap-1.5"><input type="radio" name="tplDefault" defaultChecked={activeTemplate.isDefault} className="accent-[var(--ac)]" /> Y</label>
+                      </div>
+                      <p className="mt-1.5 text-[12px] text-[var(--ink4)]">Y로 지정하면 기존 기본 템플릿은 해제됩니다.</p>
+                    </div>
                   </Field>
-                  <Field label="컨테이너 ID">
-                    <div className="flex h-[38px] items-center rounded-[var(--r-field)] border border-[var(--line)] bg-[var(--th)] px-3 text-[13px] text-[var(--ink3)]">{data.containerId.slice(-10)}</div>
-                  </Field>
-                  <Field label="컨테이너명" required>
-                    <input defaultValue={data.containerName} className={inputCls} />
-                  </Field>
-                  <Field label="설명">
-                    <input defaultValue={data.description ?? ''} placeholder="어떤 화면 구성인지 입력하세요." className={inputCls} />
-                  </Field>
-                  <Field label="전시 여부">
+                  <Field label="전시 여부" required>
                     <div className="flex items-center gap-5 text-[13px] text-[var(--ink)]">
-                      <label className="flex items-center gap-1.5"><input type="radio" name="displayOn" defaultChecked={data.status === 'active'} className="accent-[var(--ac)]" /> Y</label>
-                      <label className="flex items-center gap-1.5"><input type="radio" name="displayOn" defaultChecked={data.status !== 'active'} className="accent-[var(--ac)]" /> N</label>
+                      <label className="flex items-center gap-1.5"><input type="radio" name="tplDisplay" defaultChecked={activeTemplate.displayOn} className="accent-[var(--ac)]" /> 전시</label>
+                      <label className="flex items-center gap-1.5"><input type="radio" name="tplDisplay" defaultChecked={!activeTemplate.displayOn} className="accent-[var(--ac)]" /> 미전시</label>
+                    </div>
+                  </Field>
+                  <Field label="전시 기간">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <input type="datetime-local" defaultValue={toLocalInput(activeTemplate.startAt)} disabled={activeTemplate.startAtOnApproval} className={cn(inputCls, 'flex-1', activeTemplate.startAtOnApproval && 'bg-[var(--th)] text-[var(--ink4)]')} />
+                        <span className="text-[13px] text-[var(--ink4)]">~</span>
+                        <input type="datetime-local" defaultValue={toLocalInput(activeTemplate.endAt)} className={cn(inputCls, 'flex-1')} />
+                      </div>
+                      <label className="mt-2 flex items-center gap-1.5 text-[12px] text-[var(--ink2)]">
+                        <input type="checkbox" defaultChecked={activeTemplate.startAtOnApproval} className="accent-[var(--ac)]" /> 시작일을 승인일시로 설정
+                      </label>
                     </div>
                   </Field>
                 </div>
