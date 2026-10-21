@@ -2,21 +2,25 @@
 //  혜택 홈 등 실제 Container + Template + 배치 코너를 가져와 ProcessBuilder 에 주입(2026-10-20).
 import { prisma } from '@/lib/prisma';
 import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE } from '../corner-types/preview-corner';
-import { normalizeRecSource, isCvmSource, effectiveFallback } from '@/lib/display-taxonomy';
+import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, type Zone } from '@/lib/display-taxonomy';
 import type { PreviewCorner } from '@/components/preview/blocks';
 
 export type PCorner = {
   id: string; name: string; cornerType: string; layout: string | null; maxItems: number | null; preview: PreviewCorner;
   /** 수급 방식(정규화) · CVM 연동 여부 · CVM 비었을 때 폴백 — 폴백 UI용(2026-10-20) */
   recSource: string | null; isCvm: boolean; fallback: '미노출' | '운영자 편성으로 대체';
+  /** 전시 존(Fixed/Dynamic/Semi) — 코너 리스트 밴드용(2026-10-21) */
+  zone: Zone;
 };
+/** 코너 불러오기 모달용 — 코너 유형 관리의 선택 가능한 코너 */
+export type LibCorner = { id: string; name: string; cornerType: string; layout: string | null };
 export type PTemplate = {
   id: string; name: string; conditionGroup: string | null; isDefault: boolean; status: string; corners: PCorner[];
 };
 export type ProcessData = {
   containerId: string; containerName: string; containerType: string; platform: string;
   status: string; description: string | null; previewUrl: string | null; activeTemplateId: string;
-  templates: PTemplate[];
+  templates: PTemplate[]; libCorners: LibCorner[];
 };
 
 const TYPE_LABELS: Record<string, string> = { MAIN: '메인화면', MENU: '메뉴', CURATION: '기획전', BENEFIT: '혜택 영역' };
@@ -54,12 +58,28 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       recSource: tc.corner.recSource ? normalizeRecSource(tc.corner.recSource) : null,
       isCvm: isCvmSource(tc.corner.recSource),
       fallback: effectiveFallback(tc.corner.cornerType, tc.corner.cvmFallback),
+      zone: (tc.zone as Zone) ?? deriveZone(tc.corner.cornerType, tc.corner.recSource),
     })),
   }));
 
   const active = (activeTemplateId && templates.some((t) => t.id === activeTemplateId))
     ? activeTemplateId
     : (templates.find((t) => t.isDefault)?.id ?? templates[0]?.id ?? '');
+
+  // 코너 불러오기 모달용 — 활성 코너를 이름 기준 중복 제거해 간단 목록으로
+  const rawLib = await prisma.corner.findMany({
+    where: { status: 'active' },
+    orderBy: { updatedAt: 'desc' },
+    select: { id: true, name: true, cornerType: true, cornerLayout: true },
+    take: 60,
+  });
+  const seen = new Set<string>();
+  const libCorners: LibCorner[] = [];
+  for (const c of rawLib) {
+    if (seen.has(c.name)) continue;
+    seen.add(c.name);
+    libCorners.push({ id: c.id, name: c.name, cornerType: c.cornerType, layout: c.cornerLayout });
+  }
 
   return {
     containerId: container.id,
@@ -71,6 +91,7 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     previewUrl: container.previewUrl,
     activeTemplateId: active,
     templates,
+    libCorners,
   };
 }
 

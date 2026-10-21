@@ -10,9 +10,9 @@ import * as React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
-import { cornerTypeChipClass, layoutLabel } from '@/lib/display-taxonomy';
-import { ChevronLeft, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff } from 'lucide-react';
-import type { ProcessData, PTemplate, PCorner } from './process-data';
+import { cornerTypeChipClass, layoutLabel, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, type Zone } from '@/lib/display-taxonomy';
+import { ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, Trash2, Sparkles, UserCog, Search } from 'lucide-react';
+import type { ProcessData, PTemplate, PCorner, LibCorner } from './process-data';
 
 const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '비로그인 시 노출', '미노출'];
 const TYPE_OPTS = ['메인화면', '메뉴', '기획전', '혜택 영역'];
@@ -47,8 +47,12 @@ function cornerOptions(preview: PCorner['preview']): string[] {
 }
 
 /* ───────── 코너 상세(카드 내부 우측) ───────── */
-function CornerDetail({ template, corner, index, expose, onExpose, onToast }: {
-  template: PTemplate; corner: PCorner | null; index: number; expose: string; onExpose: (v: string) => void; onToast: (m: string) => void;
+const REC_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  'CVM 데이터 연동': Sparkles, 'CVM 콘텐츠 연동': Sparkles, '운영자 편성': UserCog,
+};
+
+function CornerDetail({ template, corner, index, onToast }: {
+  template: PTemplate; corner: PCorner | null; index: number; onToast: (m: string) => void;
 }) {
   if (!corner) {
     return (
@@ -58,59 +62,96 @@ function CornerDetail({ template, corner, index, expose, onExpose, onToast }: {
     );
   }
   const options = cornerOptions(corner.preview);
+  const cur = corner.recSource ?? '운영자 편성';
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
-      <span className="w-[72px] shrink-0 text-[var(--ink3)]">{label}</span>
+      <span className="w-[76px] shrink-0 text-[var(--ink3)]">{label}</span>
       <span className="min-w-0 flex-1 text-[var(--ink)]">{children}</span>
     </div>
   );
-  return (
+  const Sec = ({ n, title, children }: { n: number; title: string; children: React.ReactNode }) => (
     <div className="rounded-[12px] border border-[var(--line)] bg-white p-4">
       <div className="mb-3 flex items-center gap-2">
-        <span className="grid h-5 w-5 place-items-center rounded-[6px] bg-[var(--ac)] text-[11px] font-bold text-white">{index + 1}</span>
-        <h4 className="min-w-0 flex-1 truncate text-[14px] font-bold text-[var(--ink)]">{corner.name}</h4>
-        <button type="button" onClick={() => onToast('코너 삭제는 실제 빌더에서 처리됩니다.')} className="rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink3)] hover:border-[var(--bad)] hover:text-[var(--bad)]">코너 삭제</button>
+        <span className="grid h-5 w-5 place-items-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">{n}</span>
+        <h4 className="text-[14px] font-bold text-[var(--ink)]">{title}</h4>
+      </div>
+      {children}
+    </div>
+  );
+  return (
+    <div className="space-y-3">
+      {/* 헤더 */}
+      <div className="flex items-center gap-2">
+        <h4 className="min-w-0 flex-1 truncate text-[15px] font-bold text-[var(--ink)]">{corner.name}</h4>
+        <button type="button" onClick={() => onToast('코너 삭제는 실제 빌더에서 처리됩니다.')} className="rounded-[6px] border border-[var(--line2)] px-2.5 py-1 text-[12px] font-medium text-[var(--ink3)] hover:border-[var(--bad)] hover:text-[var(--bad)]">코너 삭제</button>
       </div>
 
-      <p className="mb-1 text-[13px] font-bold text-[var(--ink)]">코너 정보</p>
-      <div className="mb-3">
+      {/* ① 코너 정보 */}
+      <Sec n={1} title="코너 정보">
+        <div className="mb-2 flex items-center gap-1 rounded-[8px] bg-[var(--th)] px-2.5 py-2 text-[12px] text-[var(--ink3)]"><Lock className="h-3 w-3" /> 껍데기 · 코너 유형 관리에서 정의 · 수정 불가</div>
         <Row label="코너 유형"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></Row>
-        <Row label="레이아웃">{layoutLabel(corner.layout) || corner.layout || '—'}</Row>
+        <Row label="배열·레이아웃">{layoutLabel(corner.layout) || corner.layout || '—'}</Row>
         <Row label="노출 개수">{corner.maxItems != null ? `~ ${corner.maxItems}개` : '제한 없음'}</Row>
-        <Row label="코너 ID"><span className="text-[12px] text-[var(--ink3)]">{corner.id}</span></Row>
-        <Row label="화면 내 순서">{index + 1}번째 · 코너 {template.corners.length}개</Row>
-      </div>
+        <Row label="코너명">{corner.name}</Row>
+      </Sec>
 
-      <p className="mb-1.5 text-[13px] font-bold text-[var(--ink)]">노출 옵션 설정</p>
-      {options.length === 0 ? (
-        <p className="rounded-[8px] bg-[var(--th)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink4)]">
-          옵션 설정 대상이 아닙니다. 고객이 고르는 선택지가 없는 코너입니다.
-        </p>
-      ) : (
-        <div>
-          <div className="flex items-center gap-5 text-[13px] text-[var(--ink)]">
-            <label className="flex items-center gap-1.5">
-              <input type="radio" checked={expose !== '조건 설정 후 노출'} onChange={() => onExpose('항상 노출')} className="accent-[var(--ac)]" /> 항상 노출
-            </label>
-            <label className={cn('flex items-center gap-1.5', index === 0 && 'text-[var(--ink4)]')}>
-              <input type="radio" disabled={index === 0} checked={expose === '조건 설정 후 노출'} onChange={() => onExpose('조건 설정 후 노출')} className="accent-[var(--ac)]" /> 조건 설정 후 노출
-            </label>
-          </div>
-          {index === 0 && <p className="mt-1.5 text-[12px] text-[var(--ink4)]">앞에 선택값이 있는 코너가 없어 조건을 설정할 수 없습니다.</p>}
-          <div className="mt-2.5 space-y-1.5">
-            {options.map((o) => (
-              <label key={o} className="flex items-center gap-2 text-[13px] text-[var(--ink)]">
-                <input type="checkbox" defaultChecked className="h-4 w-4 accent-[var(--ac)]" /> {o}
-              </label>
-            ))}
+      {/* ② 수급 — 이 자리를 누가 채우나 */}
+      <Sec n={2} title="수급 — 이 자리를 누가 채우나">
+        <div className="space-y-2">
+          {REC_SOURCE_METHODS.map((m) => {
+            const info = REC_SOURCE_INFO[m]; const on = m === cur; const Icon = REC_ICON[m] ?? Sparkles;
+            return (
+              <div key={m} className={cn('rounded-[10px] border px-3 py-2.5', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line2)] bg-white opacity-80')}>
+                <div className="flex items-center gap-2">
+                  <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
+                  <Icon className={cn('h-3.5 w-3.5', on ? 'text-[var(--ac)]' : 'text-[var(--ink4)]')} />
+                  <b className="text-[13px] text-[var(--ink)]">{m}</b>
+                </div>
+                <p className="ml-6 mt-0.5 text-[12px] text-[var(--ink3)]">{info.how}</p>
+                <div className="ml-6 mt-1 flex items-center gap-1 text-[11px]">
+                  <span className="rounded-[4px] bg-[#e6efff] px-1.5 py-0.5 font-semibold text-[#2e6ff2]">{info.cvmGives}</span>
+                  <ChevronRight className="h-3 w-3 text-[var(--ink4)]" />
+                  <span className="rounded-[4px] bg-[#fff0d6] px-1.5 py-0.5 font-semibold text-[#b67a12]">{info.weBuild}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Sec>
+
+      {/* ③ 채우기 — 항목/선택지 */}
+      <Sec n={3} title={cur.startsWith('CVM') ? '채우기 — CVM 계약' : '채우기 — 항목 등록'}>
+        {options.length > 0 ? (
+          <>
+            <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">칩 묶음 <span className="text-[var(--ink4)]">{options.length}</span></p>
+            <div className="rounded-[10px] border border-[var(--line)] p-2.5">
+              <ul className="space-y-1 text-[13px] text-[var(--ink)]">
+                {options.map((o, i) => (
+                  <li key={o} className="flex items-center gap-2"><span className="w-4 text-center text-[12px] text-[var(--ink4)]">{i + 1}</span>{o}</li>
+                ))}
+              </ul>
+            </div>
+          </>
+        ) : (
+          <p className="rounded-[8px] bg-[var(--th)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink4)]">
+            {cur.startsWith('CVM') ? 'CVM이 아이템·순서를 내려주면 상품(EPC) 원장으로 채웁니다.' : '고객이 고르는 선택지가 없는 코너입니다. 운영자가 항목을 등록합니다.'}
+          </p>
+        )}
+        <div className="mt-3">
+          <label className="mb-1 flex items-center gap-1 text-[12px] font-semibold text-[var(--ink3)]">미 노출 조건</label>
+          <div className="relative">
+            <select defaultValue="선택 없음" className="h-[38px] w-full appearance-none rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-3 pr-9 text-[13px] text-[var(--ink)] focus:border-[var(--ac)] focus:outline-none">
+              <option>선택 없음</option><option>비로그인 시 미노출</option><option>보유 고객 미노출</option><option>기간 외 미노출</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink4)]" />
           </div>
         </div>
-      )}
+      </Sec>
 
-      {/* 폴백 — CVM 수급 코너에서만. CVM 응답이 비면 어떻게 할지(2026-10-20) */}
+      {/* 폴백 — CVM 수급 코너에서만 */}
       {corner.isCvm && (
-        <div className="mt-4 rounded-[10px] border border-[#ffe4bf] bg-[#fff8ef] p-3">
-          <p className="mb-1.5 flex items-center gap-1 text-[13px] font-bold text-[#b67a12]"><Layers className="h-3.5 w-3.5" /> 폴백 — CVM 응답이 비었을 때</p>
+        <div className="rounded-[12px] border border-[#ffe4bf] bg-[#fff8ef] p-4">
+          <p className="mb-2 flex items-center gap-1 text-[13px] font-bold text-[#b67a12]"><Layers className="h-3.5 w-3.5" /> 폴백 — CVM 응답이 비었을 때</p>
           <div className="space-y-1.5">
             {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
               const on = corner.fallback === f;
@@ -131,15 +172,39 @@ function CornerDetail({ template, corner, index, expose, onExpose, onToast }: {
   );
 }
 
+/* 존 밴드 순서 — Fixed(상단) → Dynamic → Semi (실제 빌더 리스트 기준) */
+const BAND_ORDER: Zone[] = ['fixed', 'dynamic', 'semi'];
+
+/* 코너 칩 카드(존 밴드 내부) — 이미지2: 드래그·이름·복사/삭제·유형/레이아웃·고정 토글 */
+function CornerChip({ c, selected, onSelect, onToast }: { c: PCorner; selected: boolean; onSelect: () => void; onToast: (m: string) => void }) {
+  return (
+    <div onClick={onSelect} className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-2 transition', selected ? 'border-[var(--ac)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
+      <div className="flex items-center gap-1.5">
+        <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--ink4)]" />
+        <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-[var(--ink)]">{c.name}</span>
+        <button type="button" onClick={(e) => { e.stopPropagation(); onToast('복제는 실제 빌더에서 처리됩니다.'); }} className="text-[var(--ink4)] hover:text-[var(--ink2)]"><Copy className="h-3.5 w-3.5" /></button>
+        <button type="button" onClick={(e) => { e.stopPropagation(); onToast('코너 삭제는 실제 빌더에서 처리됩니다.'); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><Trash2 className="h-3.5 w-3.5" /></button>
+      </div>
+      <div className="mt-1.5 flex items-center gap-1.5">
+        <span className={cornerTypeChipClass(c.cornerType)}>{c.cornerType}</span>
+        {c.layout && <span className="text-[11px] text-[var(--ink4)]">{layoutLabel(c.layout) || c.layout}</span>}
+        <span className="ml-auto flex items-center gap-1 text-[11px] text-[var(--ink3)]"><Lock className="h-3 w-3" /> 고정</span>
+        <span className="relative h-[18px] w-[32px] shrink-0 rounded-full bg-[var(--ac)]"><span className="absolute right-0.5 top-0.5 h-[14px] w-[14px] rounded-full bg-white" /></span>
+      </div>
+    </div>
+  );
+}
+
 /* ───────── 템플릿 카드(= order3 '컨테이너' 카드) ───────── */
-function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, onSelCorner, expose, onExpose, onToast }: {
+function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, onSelCorner, onAddCorner, onToast }: {
   t: PTemplate; idx: number; open: boolean; active: boolean;
   onToggle: () => void; onActivate: () => void;
   selCorner: string | null; onSelCorner: (id: string) => void;
-  expose: string; onExpose: (v: string) => void; onToast: (m: string) => void;
+  onAddCorner: () => void; onToast: (m: string) => void;
 }) {
   const selIndex = t.corners.findIndex((c) => c.id === selCorner);
   const selected = selIndex >= 0 ? t.corners[selIndex] : null;
+  const bands = BAND_ORDER.map((z) => ({ z, items: t.corners.filter((c) => c.zone === z) })).filter((b) => b.items.length > 0);
   return (
     <div className={cn('overflow-hidden rounded-[12px] border bg-white', active ? 'border-[var(--ac)]' : 'border-[var(--line2)]')}>
       {/* 카드 헤더 */}
@@ -174,35 +239,101 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
                 이 템플릿에 배치된 코너가 없습니다.<br />「코너 추가」로 코너 관리의 코너를 가져오세요.
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,230px)_minmax(0,1fr)]">
-                {/* 코너 칩 리스트 */}
-                <div className="space-y-2">
-                  <div className="max-h-[360px] space-y-1.5 overflow-y-auto">
-                    {t.corners.map((c) => (
-                      <button key={c.id} type="button" onClick={() => { onActivate(); onSelCorner(c.id); }}
-                        className={cn('flex w-full items-center gap-2 rounded-[10px] border px-2.5 py-2 text-left transition',
-                          c.id === selCorner ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line2)] bg-white hover:border-[var(--line3)]')}>
-                        <GripVertical className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[13px] font-semibold text-[var(--ink)]">{c.name}</span>
-                          <span className="block truncate text-[11px] text-[var(--ink4)]">{c.cornerType}{c.layout ? ` · ${layoutLabel(c.layout) || c.layout}` : ''}</span>
-                        </span>
-                        <X className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)] opacity-50 hover:text-[var(--bad)] hover:opacity-100" onClick={(e) => { e.stopPropagation(); onToast('코너 삭제는 실제 빌더에서 처리됩니다.'); }} />
-                      </button>
-                    ))}
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
+                {/* 코너 리스트 — 존(Fixed/Dynamic/Semi) 밴드 */}
+                <div className="space-y-2.5">
+                  <div className="max-h-[520px] space-y-2.5 overflow-y-auto pr-0.5">
+                    {bands.map(({ z, items }) => {
+                      const m = ZONE_META[z];
+                      return (
+                        <div key={z} className="rounded-[10px] border border-[var(--line)] p-2" style={{ borderLeft: `3px solid ${m.hex}` }}>
+                          <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+                            <span className="h-2 w-2 rounded-full" style={{ background: m.hex }} />
+                            <b className="text-[12px]" style={{ color: m.hex }}>{m.label}</b>
+                            <span className="text-[11px] text-[var(--ink4)]">{m.en}</span>
+                            <span className="ml-auto text-[11px] font-semibold text-[var(--ink4)]">{items.length}</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {items.map((c) => (
+                              <CornerChip key={c.id} c={c} selected={c.id === selCorner} onSelect={() => { onActivate(); onSelCorner(c.id); }} onToast={onToast} />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <button type="button" onClick={() => onToast('코너 추가(코너 관리 불러오기)는 실제 빌더에서 처리됩니다.')}
-                    className="flex w-full items-center justify-center gap-1 rounded-[10px] border border-dashed border-[var(--ac)] bg-[var(--ac2)] py-2.5 text-[13px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]">
-                    <Plus className="h-4 w-4" /> 코너 추가
+                  <button type="button" onClick={onAddCorner}
+                    className="flex w-full items-center justify-center gap-1 rounded-[10px] border border-dashed border-[var(--line3)] bg-white py-2.5 text-[13px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
+                    <Copy className="h-4 w-4" /> 코너 불러오기
                   </button>
                 </div>
                 {/* 코너 상세 */}
-                <CornerDetail template={t} corner={selected} index={selIndex} expose={expose} onExpose={onExpose} onToast={onToast} />
+                <CornerDetail template={t} corner={selected} index={selIndex} onToast={onToast} />
               </div>
             )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ───────── 코너 불러오기 모달(실제 빌더 '코너 불러오기' 이식) ───────── */
+function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; onClose: () => void; onAdd: (c: LibCorner) => void }) {
+  const [q, setQ] = React.useState('');
+  const list = corners.filter((c) => !q || c.name.includes(q) || c.cornerType.includes(q));
+  const [sel, setSel] = React.useState<LibCorner | null>(corners[0] ?? null);
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="flex max-h-[80vh] w-full max-w-[860px] overflow-hidden rounded-[16px] bg-white shadow-[var(--dlg-shadow)]" onClick={(e) => e.stopPropagation()}>
+        {/* 좌: 코너 목록 */}
+        <div className="flex w-[320px] shrink-0 flex-col border-r border-[var(--line)]">
+          <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
+            <h3 className="text-[16px] font-bold text-[var(--ink)]">코너 불러오기</h3>
+          </div>
+          <div className="border-b border-[var(--line)] p-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink4)]" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="코너명·유형 검색" className="h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white pl-9 pr-3 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
+            {list.length === 0 ? <p className="py-8 text-center text-[13px] text-[var(--ink4)]">검색 결과가 없습니다.</p> : list.map((c) => (
+              <button key={c.id} type="button" onClick={() => setSel(c)}
+                className={cn('flex w-full flex-col items-start gap-0.5 rounded-[8px] px-3 py-2 text-left', sel?.id === c.id ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
+                <span className="text-[13px] font-semibold text-[var(--ink)]">{c.name}</span>
+                <span className="text-[11px] text-[var(--ink4)]">{c.cornerType}{c.layout ? ` · ${layoutLabel(c.layout) || c.layout}` : ''}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* 우: 선택 코너 정보 + 추가 */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
+            <span className="truncate text-[14px] font-bold text-[var(--ink)]">{sel?.name ?? '코너를 선택하세요'}</span>
+            <button type="button" onClick={onClose} className="rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]"><X className="h-4 w-4" /></button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+            {sel ? (
+              <div className="space-y-3">
+                <div className="rounded-[12px] border border-[var(--line)] p-4">
+                  <p className="mb-2 text-[13px] font-bold text-[var(--ink)]">코너 정보</p>
+                  <div className="flex items-center gap-3 py-1 text-[13px]"><span className="w-[72px] text-[var(--ink3)]">코너 유형</span><span className={cornerTypeChipClass(sel.cornerType)}>{sel.cornerType}</span></div>
+                  <div className="flex items-center gap-3 py-1 text-[13px]"><span className="w-[72px] text-[var(--ink3)]">레이아웃</span><span>{layoutLabel(sel.layout) || sel.layout || '—'}</span></div>
+                  <div className="flex items-center gap-3 py-1 text-[13px]"><span className="w-[72px] text-[var(--ink3)]">코너 ID</span><span className="text-[12px] text-[var(--ink3)]">{sel.id}</span></div>
+                </div>
+                <p className="rounded-[10px] bg-[var(--th)] px-3 py-3 text-[12px] leading-relaxed text-[var(--ink4)]">
+                  껍데기(레이아웃·노출 타입)만 들어옵니다. 내용은 코너를 열어 ‘② 수급’에서 채웁니다.
+                </p>
+              </div>
+            ) : <p className="py-10 text-center text-[13px] text-[var(--ink4)]">왼쪽에서 코너를 선택하세요.</p>}
+          </div>
+          <div className="border-t border-[var(--line)] p-4">
+            <button type="button" disabled={!sel} onClick={() => sel && onAdd(sel)}
+              className="h-[42px] w-full rounded-[var(--r-field)] bg-[var(--ac)] text-[14px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">이 코너로 추가</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -215,7 +346,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
     Object.fromEntries(data.templates.map((t) => [t.id, t.id === data.activeTemplateId])));
   const [selCorner, setSelCorner] = React.useState<Record<string, string>>(() =>
     Object.fromEntries(data.templates.map((t) => [t.id, t.corners[0]?.id ?? ''])));
-  const [exposeMap, setExposeMap] = React.useState<Record<string, string>>({});
+  const [loadModal, setLoadModal] = React.useState<string | null>(null); // 코너 불러오기 모달(대상 템플릿 id)
   const [fbMode, setFbMode] = React.useState(false); // 미리보기 정상 ↔ 폴백(CVM 비었을 때)
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -254,18 +385,21 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
   const inputCls = 'h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink4)] focus:border-[var(--ac)] focus:outline-none';
 
   return (
-    <div className="relative flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto px-8 py-7 pb-24">
-        {/* 헤더 */}
-        <Link href="/admin/containers-test" className="inline-flex items-center gap-1 text-[13px] text-[var(--ink3)] hover:text-[var(--ink)]">
-          <ChevronLeft className="h-4 w-4" /> 목록으로
-        </Link>
-        <div className="mt-2 flex items-center gap-2">
-          <h1 className="text-[22px] font-bold leading-[30px] tracking-[-0.4px] text-[var(--ink)]">{data.containerName}</h1>
+    <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[#e8eaf2] bg-white">
+      <div className="flex-1 overflow-y-auto px-6 py-5 pb-24">
+        {/* 헤더 — 브레드크럼 + 타이틀 */}
+        <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
+          <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
+          <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
+          <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시화면 관리 (테스트)</Link>
+          <ChevronRight className="h-3.5 w-3.5 opacity-50" /><b className="font-semibold text-[var(--ink)]">{data.containerName}</b>
+        </nav>
+        <div className="mt-1.5 flex items-center gap-2">
+          <h1 className="text-[20px] font-bold leading-[28px] tracking-[-0.3px] text-[var(--ink)]">{data.containerName}</h1>
           <span className="rounded-full border border-[var(--warnln)] bg-[var(--warnbg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--warn)]">테스트</span>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)]">
+        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(340px,380px)_minmax(0,1fr)]">
           {/* 좌: 미리보기(고정) */}
           <div className="xl:sticky xl:top-2 xl:self-start">
             <div className="rounded-[16px] border border-[var(--line)] bg-white p-4">
@@ -280,7 +414,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
               </div>
               {fbMode && <p className="mb-2 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3" /> CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)</p>}
               <div className="rounded-[12px] bg-[var(--th)] py-5">
-                <DeviceFrame width={300} bodyHeight={470} headerLabel={data.containerName}>
+                <DeviceFrame width={352} bodyHeight={430} headerLabel={data.containerName} slim>
                   {activeTemplate && activeTemplate.corners.length > 0 ? (
                     activeTemplate.corners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
@@ -377,8 +511,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                     onActivate={() => { setActiveId(t.id); setExpanded((m) => ({ ...m, [t.id]: true })); }}
                     selCorner={selCorner[t.id] ?? null}
                     onSelCorner={(id) => setSelCorner((m) => ({ ...m, [t.id]: id }))}
-                    expose={(selCorner[t.id] && exposeMap[`${t.id}:${selCorner[t.id]}`]) || '항상 노출'}
-                    onExpose={(v) => setExposeMap((m) => ({ ...m, [`${t.id}:${selCorner[t.id]}`]: v }))}
+                    onAddCorner={() => setLoadModal(t.id)}
                     onToast={toast}
                   />
                 ))}
@@ -447,8 +580,8 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
         </div>
       )}
 
-      {/* 하단 고정 액션 바 */}
-      <div className="sticky bottom-0 z-30 flex items-center gap-3 border-t border-[var(--line)] bg-white/95 px-8 py-3 backdrop-blur">
+      {/* 하단 고정 액션 바 — 흰색 · 상단 라운드16 · 위로 뜨는 그림자(order3-create) */}
+      <div className="sticky bottom-0 z-30 flex items-center gap-3 rounded-t-[16px] bg-white px-6 py-3 shadow-[0_-6px_24px_rgba(41,52,89,0.1)]">
         <span className="text-[13px] text-[var(--ink3)]">템플릿 <b className="text-[var(--ink)]">{data.templates.length}</b>개 · 코너 <b className="text-[var(--ink)]">{totalCorners}</b>개</span>
         <button type="button" onClick={() => validation ? setPanelOpen((v) => !v) : runValidate()}
           className={cn('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium',
@@ -462,6 +595,14 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
           <button type="button" onClick={() => toast('저장되었습니다. (데모)')} className="h-[38px] rounded-[var(--r-field)] bg-[var(--ac)] px-5 text-[13px] font-bold text-white hover:bg-[var(--ac-h)]"><Pencil className="mr-1 inline h-3.5 w-3.5" />저장</button>
         </div>
       </div>
+
+      {loadModal && (
+        <LoadCornerModal
+          corners={data.libCorners}
+          onClose={() => setLoadModal(null)}
+          onAdd={(c) => { setLoadModal(null); toast(`'${c.name}' 코너를 담았습니다. (데모 — 저장 시 반영)`); }}
+        />
+      )}
 
       {toastMsg && (
         <div className="pointer-events-none fixed bottom-20 left-1/2 z-[90] -translate-x-1/2">

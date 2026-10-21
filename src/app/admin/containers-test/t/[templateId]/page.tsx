@@ -9,7 +9,7 @@ export default async function ContainersTestTemplatePage({ params }: { params: {
   const data = await loadProcessDataByTemplate(params.templateId);
   if (!data) notFound();
   return (
-    <div className="h-full bg-[#eef0f6]">
+    <div className="h-full bg-[#ebeef6] p-3">
       <ProcessBuilder data={data} />
     </div>
   );
