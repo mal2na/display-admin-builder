@@ -522,7 +522,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
               </div>
               {fbMode && <p className="mb-2 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3" /> CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)</p>}
               <div className="py-2">
-                <DeviceFrame width={360} bodyHeight="clamp(340px, calc(100dvh - 360px), 540px)" headerLabel={data.containerName} slim>
+                <DeviceFrame width={360} bodyHeight="clamp(340px, calc(100dvh - 330px), 620px)" headerLabel={data.containerName} slim>
                   {activeTemplate && activeTemplate.corners.length > 0 ? (
                     activeTemplate.corners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
