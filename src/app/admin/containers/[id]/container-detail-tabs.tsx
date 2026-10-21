@@ -12,7 +12,7 @@ export function ContainerDetailTabs({ info, history }: { info: React.ReactNode; 
   ] as const;
   return (
     <div className="space-y-4">
-      <div className="flex gap-4 border-b border-[var(--line)]">
+      <div className="flex gap-4 border-b border-[var(--line2)]">
         {TABS.map(([k, label]) => (
           <button
             key={k}

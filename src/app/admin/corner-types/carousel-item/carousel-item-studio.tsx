@@ -153,7 +153,7 @@ function Group({ title, sub, children, defaultOpen = true }: { title: string; su
   return (
     <div>
       <button type="button" onClick={() => setOpen((v) => !v)}
-        className={cn('flex w-full items-center gap-1.5 border-b border-[#e8ecef] bg-[#f1f3f5] px-3.5 py-2 text-[12px] font-semibold text-[#1a1a1a]', sub && 'pl-5')}>
+        className={cn('flex w-full items-center gap-1.5 border-b border-[#dce0e5] bg-[#f1f3f5] px-3.5 py-2 text-[12px] font-semibold text-[#1a1a1a]', sub && 'pl-5')}>
         {sub && <span className="text-[#b3b9c0]">└</span>}
         <span className="flex-1 text-left">{title}</span>
         <ChevronDown className={cn('h-3.5 w-3.5 text-[#8b949e] transition', !open && '-rotate-90')} />
@@ -178,7 +178,7 @@ function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children 
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="overflow-hidden rounded-[16px] border border-[#e8ecef] bg-white">
+    <section className="overflow-hidden rounded-[16px] border border-[#dce0e5] bg-white">
       <button type="button" onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center gap-2 px-5 py-4 text-left transition hover:bg-[#fafbfc]">
         {n != null && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3617ce] text-[12px] font-bold text-white">{n}</span>}
@@ -292,7 +292,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
     : cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
   return (
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
-      className={cn('overflow-hidden rounded-[16px] border-2 bg-white transition', ro ? 'border-[#e8ecef]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#e8ecef] hover:border-[#c4c9cf]'))}>
+      className={cn('overflow-hidden rounded-[16px] border-2 bg-white transition', ro ? 'border-[#dce0e5]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#dce0e5] hover:border-[#c4c9cf]'))}>
       {hasBanner && (spec.bannerSrc ? (
         /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="h-[160px] w-full object-cover" />
       ) : (
@@ -488,7 +488,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
       {/* 좌측: 미리보기 — 스크롤해도 따라오게 sticky 고정. 카드/컴포넌트 클릭으로 코너 정보↔속성 전환. */}
       <div className="w-[300px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
         <p className="mb-1.5 text-[11px] font-medium text-[#697582]">미리보기 · <b className="text-[#454f59]">카드=코너 정보 · 안쪽 카드=코너 속성</b></p>
-        <div className="rounded-[14px] border border-[#e8ecef] bg-[#f3f4f7] p-4">
+        <div className="rounded-[14px] border border-[#dce0e5] bg-[#f3f4f7] p-4">
           <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} layout={layout} />
         </div>
         <button type="button" onClick={reset}
@@ -513,7 +513,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
           </div>
           {/* 탭바는 꽉차게, 표는 패널 안쪽으로 여백 + 테두리 */}
           <div className="p-4">
-            <div className="overflow-hidden rounded-[10px] border border-[#e8ecef]">
+            <div className="overflow-hidden rounded-[10px] border border-[#dce0e5]">
               {sel === 'card' ? <CornerInfoBody spec={spec} onChange={save} layout={layout} /> : <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />}
             </div>
           </div>

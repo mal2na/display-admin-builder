@@ -145,7 +145,7 @@ export function IaView({ ia, setIa }: { ia: IaState; setIa: (s: IaState) => void
 
       <div className="flex min-h-0 items-start gap-4">
         <div className="min-w-0 flex-1 overflow-x-auto border-t border-[var(--line2)]">
-          <div className="grid min-w-[760px] grid-cols-[1fr_120px_140px_140px] border-b border-[var(--line)] bg-[var(--th)] text-[13px] font-semibold text-[var(--ink2)]">
+          <div className="grid min-w-[760px] grid-cols-[1fr_120px_140px_140px] border-b border-[var(--line2)] bg-[var(--th)] text-[13px] font-semibold text-[var(--ink2)]">
             <div className="px-3 py-2.5">메뉴명</div>
             <div className="px-3 py-2.5 text-center">사용 여부</div>
             <div className="px-3 py-2.5 text-center">FO 메뉴 노출</div>
@@ -166,7 +166,7 @@ export function IaView({ ia, setIa }: { ia: IaState; setIa: (s: IaState) => void
                   onDrop(p, e.clientY < r.top + r.height / 2);
                 }}
                 onClick={() => set({ sel: p.id })}
-                className={cn('grid min-w-[760px] cursor-pointer grid-cols-[1fr_120px_140px_140px] items-center border-b border-[var(--line)] text-[14px] hover:bg-[var(--th)]',
+                className={cn('grid min-w-[760px] cursor-pointer grid-cols-[1fr_120px_140px_140px] items-center border-b border-[var(--line2)] text-[14px] hover:bg-[var(--th)]',
                   ia.sel === p.id && 'bg-[var(--ac2)]')}
               >
                 <div className="flex min-w-0 items-center gap-1.5 py-2.5 pr-3" style={{ paddingLeft: 12 + (d - 1) * 20 }}>
@@ -247,7 +247,7 @@ function SidePanel({ p, edit, onClose, onPicker }: {
   };
 
   const KV = ({ k, children: c }: { k: string; children: React.ReactNode }) => (
-    <div className="grid grid-cols-[92px_1fr] gap-2 border-b border-[var(--line)] py-2.5 text-[14px]">
+    <div className="grid grid-cols-[92px_1fr] gap-2 border-b border-[var(--line2)] py-2.5 text-[14px]">
       <span className="whitespace-nowrap text-[var(--ink3)]">{k}</span>
       <span className="min-w-0">{c}</span>
     </div>
@@ -359,14 +359,14 @@ function AddDepth({ parentId, onClose, onAdded }: {
         </h3>
         <div className="px-6 pt-4">
           <div className="border-t border-[var(--line2)]">
-            <div className="grid grid-cols-[140px_1fr] border-b border-[var(--line)]">
+            <div className="grid grid-cols-[140px_1fr] border-b border-[var(--line2)]">
               <div className="flex items-center bg-[var(--th)] px-4 py-3 text-[14px] font-semibold text-[var(--ink2)]">상위 경로</div>
               <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 text-[14px]">
                 {par ? crumb(par) : '없음 (최상위)'}
                 <Hint>D{nd}{nd > 3 ? ' · FO 메뉴 대상 아님' : ''}</Hint>
               </div>
             </div>
-            <div className="grid grid-cols-[140px_1fr] border-b border-[var(--line)]">
+            <div className="grid grid-cols-[140px_1fr] border-b border-[var(--line2)]">
               <div className="flex items-center bg-[var(--th)] px-4 py-3 text-[14px] font-semibold text-[var(--ink2)]">등록 유형</div>
               <div className="flex flex-wrap items-center gap-5 px-4 py-2.5 text-[14px]">
                 {Object.keys(PTYPE).map((k) => (
@@ -377,7 +377,7 @@ function AddDepth({ parentId, onClose, onAdded }: {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-[140px_1fr] border-b border-[var(--line)]">
+            <div className="grid grid-cols-[140px_1fr] border-b border-[var(--line2)]">
               <div className="flex items-center bg-[var(--th)] px-4 py-3 text-[14px] font-semibold text-[var(--ink2)]">메뉴명</div>
               <div className="px-4 py-2.5">
                 <input autoFocus value={name} onChange={(e) => setName(e.target.value)}

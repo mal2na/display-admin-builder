@@ -22,7 +22,7 @@ const BTN = 'inline-flex h-[36px] items-center gap-1.5 rounded-[8px] border bord
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex border-b border-[var(--line)]">
+    <div className="flex border-b border-[var(--line2)]">
       <div className="flex w-[148px] shrink-0 items-center bg-[var(--th)] px-3.5 py-3 text-[13px] font-medium text-[var(--ink2)]">{label}</div>
       <div className="flex-1 bg-white px-3.5 py-3 text-[13px] text-[var(--ink)]">{children}</div>
     </div>
@@ -78,7 +78,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
         </div>
 
         {/* 승인 상태 바 */}
-        <div className="mt-6 flex items-center gap-3 rounded-[12px] border border-[var(--line)] bg-white px-5 py-4">
+        <div className="mt-6 flex items-center gap-3 rounded-[12px] border border-[var(--line2)] bg-white px-5 py-4">
           <span className="text-[13px] text-[var(--ink3)]">승인 상태</span>
           <StatusPill label={CONTAINER_APPROVAL_STATUS_LABEL[container.approvalStatus] ?? '초안 작성중'} tone={statusTone(CONTAINER_APPROVAL_STATUS_LABEL[container.approvalStatus] ?? '')} />
           <span className="text-[13px] text-[var(--ink4)]">요청: {fmt(container.approvalRequestedAt) || '2026-10-07 00:00'}</span>
@@ -95,7 +95,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
         </div>
 
         {/* 탭 */}
-        <div className="mt-5 flex gap-1 border-b border-[var(--line)]">
+        <div className="mt-5 flex gap-1 border-b border-[var(--line2)]">
           <span className="-mb-px border-b-2 border-[var(--ac)] px-3.5 py-2.5 text-[14px] font-bold text-[var(--ac)]">상세정보</span>
           <span className="-mb-px border-b-2 border-transparent px-3.5 py-2.5 text-[14px] font-bold text-[var(--ink4)]">변경·승인 이력</span>
         </div>
@@ -104,7 +104,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
           {/* 기본 정보 */}
           <section>
             <SectionTitle right={<span className={BTN}><Pencil className="h-3.5 w-3.5" /> 정보 수정</span>}>기본 정보</SectionTitle>
-            <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
+            <div className="grid grid-cols-1 border-t border-[var(--line2)] sm:grid-cols-2">
               <Row label="컨테이너 ID">{container.id.slice(-10)}</Row>
               <Row label="컨테이너 경로">{container.parent?.name ? `${container.parent.name} > ${container.name}` : `${container.name} (최상위)`}</Row>
               <Row label="컨테이너 타입">{container.kind ?? TYPE_LABELS[container.containerType ?? ''] ?? '일반'}</Row>
@@ -121,7 +121,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
           {/* 메타 정보 */}
           <section>
             <SectionTitle>메타 정보</SectionTitle>
-            <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
+            <div className="grid grid-cols-1 border-t border-[var(--line2)] sm:grid-cols-2">
               <Row label="사용 여부">{container.metaUse ? '사용' : '미사용'}</Row>
               <Row label="검색 태그">{container.searchTags ?? '—'}</Row>
               <Row label="og:title">{container.ogTitle ?? '—'}</Row>
@@ -134,7 +134,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
           {/* 연결된 전체페이지 정보 */}
           <section>
             <SectionTitle right={<span className={BTN}><ExternalLink className="h-3.5 w-3.5" /> 전체페이지 관리</span>}>연결된 전체페이지 정보</SectionTitle>
-            <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
+            <div className="grid grid-cols-1 border-t border-[var(--line2)] sm:grid-cols-2">
               <Row label="페이지 ID"><span className="text-[var(--ink3)]">연동 대기</span></Row>
               <Row label="메뉴 경로"><span className="text-[var(--ink3)]">연동 대기</span></Row>
               <Row label="페이지 사용여부"><span className="text-[var(--ink3)]">연동 대기</span></Row>
@@ -148,10 +148,10 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
 
           {/* 매핑 템플릿 정보 — 행 클릭 시 order3 빌더 */}
           <section>
-            <SectionTitle right={<><span className={BTN}><Download className="h-3.5 w-3.5" /> 템플릿 불러오기</span><AddTemplateButton containerId={container.id} /></>}>
+            <SectionTitle right={<div className="flex items-center gap-2"><span className={BTN}><Download className="h-3.5 w-3.5" /> 템플릿 불러오기</span><AddTemplateButton containerId={container.id} /></div>}>
               매핑 템플릿 정보 <span className="text-[14px] font-normal text-[var(--ink3)]">총 {activeTemplates.length}개</span>
             </SectionTitle>
-            <div className="overflow-x-auto border-t border-[var(--line)]">
+            <div className="overflow-x-auto border-t border-[var(--line2)]">
               <table className={TABLE_CLS}>
                 <thead>
                   <tr className={THEAD_TR_CLS}>

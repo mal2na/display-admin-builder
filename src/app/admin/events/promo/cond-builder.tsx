@@ -302,7 +302,7 @@ export function CondBuilder({ ctx, value, onChange, required, errors = {}, error
                 <button
                   key={k} type="button" disabled={off} onClick={() => addItem(k)}
                   className={cn('rounded-[8px] border bg-white p-3 text-left transition',
-                    off ? 'cursor-not-allowed border-[var(--line)] opacity-55' : 'border-[var(--line2)] hover:border-[var(--ac)] hover:bg-[var(--ac2)]')}
+                    off ? 'cursor-not-allowed border-[var(--line2)] opacity-55' : 'border-[var(--line2)] hover:border-[var(--ac)] hover:bg-[var(--ac2)]')}
                 >
                   <span className="flex items-center gap-1.5">
                     <span className="rounded-[4px] bg-[var(--th)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ink3)]">{v.cat}</span>
@@ -409,7 +409,7 @@ function GroupView({ g, ctx, no, groups, errors, setVals, setGroup, remove, move
 
   return (
     <div className="rounded-[10px] border border-[var(--line2)]">
-      <div className="border-b border-[var(--line)] p-3">
+      <div className="border-b border-[var(--line2)] p-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[14px] font-bold text-[var(--ac)]">{no}</span>
           <span className="rounded-[4px] bg-[var(--th)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ink3)]">{svc ? '서비스' : '상품'}</span>
@@ -484,7 +484,7 @@ function RowView({ r, ctx, group, groups, no, err, setVals, remove, moveAct, ope
   };
 
   return (
-    <div className={cn('rounded-[8px] border p-3', nested ? 'border-[var(--line)] bg-[var(--th)]' : 'border-[var(--line2)]')}>
+    <div className={cn('rounded-[8px] border p-3', nested ? 'border-[var(--line2)] bg-[var(--th)]' : 'border-[var(--line2)]')}>
       <div className="flex flex-wrap items-center gap-2">
         {isAct && <span className="text-[14px] font-bold text-[var(--ink4)]">+</span>}
         <span className="rounded-[4px] bg-white px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ink3)]">{item.cat}</span>

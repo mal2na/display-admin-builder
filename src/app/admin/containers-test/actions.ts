@@ -54,6 +54,12 @@ export async function setTestCornerZone(templateId: string, templateCornerId: st
   revalidatePath(`/admin/containers-test/t/${templateId}`);
 }
 
+// 코너 삭제 — 템플릿에서 코너 배치(TemplateCorner)만 제거. 코너 유형 관리의 원본 코너는 남는다.
+export async function removeCornerFromTemplate(templateId: string, templateCornerId: string) {
+  await prisma.templateCorner.delete({ where: { id: templateCornerId } });
+  revalidatePath(`/admin/containers-test/t/${templateId}`);
+}
+
 // 템플릿 복사 — 코너 배치까지 통째로 복사해 같은 Container 에 생성(테스트 경로 revalidate).
 export async function duplicateTestTemplate(containerId: string, templateId: string) {
   const src = await prisma.template.findUnique({

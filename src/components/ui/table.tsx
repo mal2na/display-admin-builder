@@ -27,7 +27,7 @@ export function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTabl
 export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
-      className={cn('border-b border-[var(--line)] transition-colors hover:bg-[#f8f9fb]', className)}
+      className={cn('border-b border-[var(--line2)] transition-colors hover:bg-[#f8f9fb]', className)}
       {...props}
     />
   );
@@ -37,7 +37,7 @@ export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTa
   return (
     <th
       className={cn(
-        'whitespace-nowrap border-b border-[var(--line)] bg-[var(--th)] px-[10px] py-3 text-center align-middle font-semibold text-[var(--ink2)]',
+        'whitespace-nowrap border-b border-[var(--line2)] bg-[var(--th)] px-[10px] py-3 text-center align-middle font-semibold text-[var(--ink2)]',
         className,
       )}
       {...props}

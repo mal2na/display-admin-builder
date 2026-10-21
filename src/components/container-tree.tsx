@@ -56,7 +56,7 @@ export function ContainerTree({
   return (
     <div className="tree flex h-full w-72 shrink-0 flex-col overflow-hidden bg-white">
       {/* 헤더 — 제목 + 총 건수 · 전체 목록 / 등록 */}
-      <div className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-3">
+      <div className="flex items-center gap-2 border-b border-[var(--line2)] px-3 py-3">
         <span className="whitespace-nowrap text-[14px] font-bold text-[var(--ink)]">컨테이너 목록</span>
         <span className="whitespace-nowrap text-[12px] text-[var(--ink3)]">총 <b className="text-[var(--ink2)]">{totalTemplates}</b>건</span>
         <div className="ml-auto flex shrink-0 items-center gap-1">
@@ -82,7 +82,7 @@ export function ContainerTree({
         {containers.length === 0 ? (
           <p className="px-2 py-6 text-center text-[12px] text-[var(--ink3)]">등록된 Container가 없습니다.</p>
         ) : (
-          <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
+          <div className="divide-y divide-[var(--line2)] border-y border-[var(--line2)]">
             {containers.flatMap((c) => {
               const expanded = open[c.id] ?? true;
               const activeContainer = pathname === linkContainer(c.id);

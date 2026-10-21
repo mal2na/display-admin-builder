@@ -204,7 +204,7 @@ function Matrix({ groups, targetCols, onOpen }: { groups: [string, MsgItem[]][];
       <div className="min-h-0 flex-1 overflow-auto rounded-xl border bg-card">
         <table className="w-full border-separate border-spacing-0 text-[13px] font-normal" style={{ minWidth: 400 + targetCols.length * 150 }}>
           <thead className="sticky top-0 z-10">
-            <tr className="[&>th]:border-b-2 [&>th]:border-[#e8ecef] [&>th]:bg-[#f8f9fb] [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-semibold [&>th]:text-[#454f59]">
+            <tr className="[&>th]:border-b-2 [&>th]:border-[#dce0e5] [&>th]:bg-[#f8f9fb] [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-semibold [&>th]:text-[#454f59]">
               <th className="sticky left-0 z-20 min-w-[240px]">문구</th>
               <th className="min-w-[160px]">기본 <span className="font-normal text-slate-400">· 폴백</span></th>
               {targetCols.map((c) => <th key={c} className="min-w-[150px]">{c}</th>)}
@@ -268,7 +268,7 @@ function Detail({ item, onToggle, library }: { item: MsgItem; onToggle: (it: Msg
       <div className="min-h-0 flex-1 overflow-y-auto p-5">
         {ro ? (
           /* 배너 문구 — 현황만. 텍스트·세그 베리에이션 편집은 배너 캠페인/빌더. */
-          <div className="mb-4 space-y-2 rounded-lg border border-[#e8ecef] bg-white p-3">
+          <div className="mb-4 space-y-2 rounded-lg border border-[#dce0e5] bg-white p-3">
             <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">배너 문구 <span className="font-normal normal-case text-slate-400">· 배너 캠페인 소유 · 읽기전용</span></p>
             <p className="whitespace-pre-line text-[14px] font-semibold text-slate-800">{item.base || <span className="text-slate-400">(제목 없음)</span>}</p>
             {item.subtitle && <p className="whitespace-pre-line text-[12.5px] text-slate-500">{item.subtitle}</p>}

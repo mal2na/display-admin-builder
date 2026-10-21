@@ -29,18 +29,18 @@ const THUMB_H = Math.round(NAT_H * THUMB_SCALE);
 function BannerThumb({ preview }: { preview: BannerRow['preview'] }) {
   if (preview?.imageUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={preview.imageUrl} alt="" style={{ width: THUMB_W, height: THUMB_H }} className="rounded-md border border-[#e8ecef] object-cover" />;
+    return <img src={preview.imageUrl} alt="" style={{ width: THUMB_W, height: THUMB_H }} className="rounded-md border border-[#dce0e5] object-cover" />;
   }
   if (preview?.f) {
     return (
-      <div style={{ width: THUMB_W, height: THUMB_H }} className="overflow-hidden rounded-md border border-[#e8ecef]">
+      <div style={{ width: THUMB_W, height: THUMB_H }} className="overflow-hidden rounded-md border border-[#dce0e5]">
         <div style={{ width: NAT_W, height: NAT_H, transform: `scale(${THUMB_SCALE})`, transformOrigin: 'top left' }}>
           <ComposedBanner f={preview.f} width={NAT_W} height={NAT_H} preview />
         </div>
       </div>
     );
   }
-  return <div style={{ width: THUMB_W, height: THUMB_H }} className="flex items-center justify-center rounded-md border border-dashed border-[#e8ecef] bg-[#f8f9fb] text-[11px] text-slate-300">미등록</div>;
+  return <div style={{ width: THUMB_W, height: THUMB_H }} className="flex items-center justify-center rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] text-[11px] text-slate-300">미등록</div>;
 }
 
 const APPROVAL_TONE: Record<string, string> = {
@@ -124,7 +124,7 @@ export function BannerList({ rows }: { rows: BannerRow[] }) {
       </div>
 
       <ListHeader title="조회결과" count={filtered.length} />
-      <div className="overflow-x-auto border-t border-[#e8ecef]">
+      <div className="overflow-x-auto border-t border-[#dce0e5]">
         <table className="w-full min-w-[1200px] text-[13px] font-normal whitespace-nowrap">
           <thead>
             <tr className={THEAD_TR_CLS}>

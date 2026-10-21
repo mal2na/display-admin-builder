@@ -141,7 +141,7 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
 
       <ListHeader title="조회결과" count={filtered.length} />
       {/* 목록 (2) */}
-      <div className="overflow-x-auto border-t border-[#e8ecef]">
+      <div className="overflow-x-auto border-t border-[#dce0e5]">
         <table className="w-full min-w-[1200px] text-[13px] font-normal">
           <thead>
             <tr className={THEAD_TR_CLS}>

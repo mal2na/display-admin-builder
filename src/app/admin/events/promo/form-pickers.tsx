@@ -60,12 +60,12 @@ export function CautionPicker({ type, hasText, onApply, onClose }: {
       </div>
 
       <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr]">
-        <ul className="max-h-[300px] overflow-y-auto rounded-[var(--r-field)] border border-[var(--line)]">
+        <ul className="max-h-[300px] overflow-y-auto rounded-[var(--r-field)] border border-[var(--line2)]">
           {list.length === 0 ? (
             <li className="p-6 text-center text-[14px] text-[var(--ink3)]">조회 결과가 없어요</li>
           ) : list.map((t) => (
             <li key={t.id}>
-              <label className={cn('flex cursor-pointer items-start gap-2 border-b border-[var(--line)] p-3 text-[14px] last:border-b-0',
+              <label className={cn('flex cursor-pointer items-start gap-2 border-b border-[var(--line2)] p-3 text-[14px] last:border-b-0',
                 sel === t.id && 'bg-[var(--ac2)]')}>
                 <input type="radio" name="cau" checked={sel === t.id} onChange={() => setSel(t.id)} className="mt-0.5 h-4 w-4" />
                 <span className="min-w-0">
@@ -104,12 +104,12 @@ export function PagePicker({ value, onApply, onClose }: {
       </>}
     >
       <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="페이지 ID 또는 페이지명 검색" className={cn(INP, 'w-full')} />
-      <ul className="mt-3 max-h-[320px] overflow-y-auto rounded-[var(--r-field)] border border-[var(--line)]">
+      <ul className="mt-3 max-h-[320px] overflow-y-auto rounded-[var(--r-field)] border border-[var(--line2)]">
         {list.length === 0 ? (
           <li className="p-6 text-center text-[14px] text-[var(--ink3)]">조회 결과가 없어요</li>
         ) : list.map((p) => (
           <li key={p.id}>
-            <label className={cn('flex cursor-pointer items-center gap-3 border-b border-[var(--line)] p-3 text-[14px] last:border-b-0',
+            <label className={cn('flex cursor-pointer items-center gap-3 border-b border-[var(--line2)] p-3 text-[14px] last:border-b-0',
               sel === p.id && 'bg-[var(--ac2)]')}>
               <input type="radio" name="pg" checked={sel === p.id} onChange={() => setSel(p.id)} className="h-4 w-4" />
               <span className="w-[100px] shrink-0 font-mono text-[13px] text-[var(--ink3)]">{p.id}</span>

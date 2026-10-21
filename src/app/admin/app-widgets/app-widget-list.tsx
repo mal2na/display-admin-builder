@@ -181,7 +181,7 @@ export function AppWidgetList({ rows, widgetTypes }: { rows: WidgetRow[]; widget
       />
 
       {/* 목록 — 드래그앤드롭 순서 변경 */}
-      <div className="overflow-x-auto border-t border-[#e8ecef]">
+      <div className="overflow-x-auto border-t border-[#dce0e5]">
         <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
             <tr className={THEAD_TR_CLS}>

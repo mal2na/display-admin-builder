@@ -10,7 +10,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { addCornersToTemplate, reorderTestCorners, setTestCornerZone } from './actions';
+import { addCornersToTemplate, reorderTestCorners, setTestCornerZone, removeCornerFromTemplate } from './actions';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, useDroppable, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -90,8 +90,8 @@ function Sec({ n, title, help, children }: { n: number; title: string; help?: bo
   );
 }
 
-function CornerDetail({ template, corner, index, onPreviewFallback, onToast }: {
-  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onToast: (m: string) => void;
+function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceChange, onToast }: {
+  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onToast: (m: string) => void;
 }) {
   if (!corner) {
     return (
@@ -100,10 +100,10 @@ function CornerDetail({ template, corner, index, onPreviewFallback, onToast }: {
       </div>
     );
   }
-  return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onToast={onToast} />;
+  return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onRecSourceChange={onRecSourceChange} onToast={onToast} />;
 }
 
-function CornerDetailBody({ template, corner, onPreviewFallback, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onToast: (m: string) => void }) {
+function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChange, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onToast: (m: string) => void }) {
   const [src, setSrc] = React.useState<string>(corner.recSource ?? '운영자 편성');
   const [fb, setFb] = React.useState<'미노출' | '운영자 편성으로 대체'>(corner.fallback);
   const [cat, setCat] = React.useState('혜택');
@@ -174,7 +174,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onToast }: { te
           {REC_SOURCE_METHODS.map((m) => {
             const info = REC_SOURCE_INFO[m]; const on = m === src; const Icon = REC_ICON[m] ?? Sparkles;
             return (
-              <button key={m} type="button" onClick={() => setSrc(m)} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]')}>
+              <button key={m} type="button" onClick={() => { setSrc(m); onRecSourceChange(m); }} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]')}>
                 <div className="flex items-center gap-2">
                   <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
                   <Icon className={cn('h-3.5 w-3.5', on ? 'text-[var(--ac)]' : 'text-[var(--ink4)]')} />
@@ -325,7 +325,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onToast }: { te
 
 /* 코너 칩 카드(존 밴드 내부) — 이미지2: 드래그·이름·복사/삭제·유형/레이아웃·고정 토글 */
 /* 코너 순서 변경 행(order3 레퍼런스) — 드래그·번호·이름·유형칩 + 노출 토글 + 삭제. */
-function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onToast }: { c: PCorner; no: number; selected: boolean; fixed: boolean; onSelect: () => void; onToggleFixed: () => void; onToast: (m: string) => void }) {
+function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete, onToast }: { c: PCorner; no: number; selected: boolean; fixed: boolean; onSelect: () => void; onToggleFixed: () => void; onDelete: () => void; onToast: (m: string) => void }) {
   const [on, setOn] = React.useState(true); // 노출 on/off 토글
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.templateCornerId });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -357,6 +357,11 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onToast }
       <button type="button" onClick={(e) => { e.stopPropagation(); setOn((v) => !v); }} title={on ? '노출 켜짐' : '노출 꺼짐'}
         className={cn('relative h-[20px] w-[34px] shrink-0 rounded-full transition-colors', on ? 'bg-[var(--ac)]' : 'bg-[var(--line3)]')}>
         <span className={cn('absolute top-[2px] h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-all', on ? 'left-[16px]' : 'left-[2px]')} />
+      </button>
+      {/* 코너 삭제 — 템플릿에서 코너 빼기(원본 코너는 유지) */}
+      <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="이 템플릿에서 코너 빼기"
+        className="grid h-5 w-5 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] transition hover:bg-[#fff0f1] hover:text-[var(--bad)]">
+        <Trash2 className="h-3.5 w-3.5" />
       </button>
     </div>
   );
@@ -477,6 +482,20 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
     }
   }
 
+  // 코너 삭제 — 템플릿에서 코너 배치 제거(원본 코너는 유지). 낙관적 반영 후 저장.
+  async function removeCorner(c: PCorner) {
+    if (typeof window !== 'undefined' && !window.confirm(`‘${c.name}’ 코너를 이 템플릿에서 뺄까요?\n(코너 유형 관리의 원본 코너는 남습니다)`)) return;
+    setRows((prev) => prev.filter((r) => r.templateCornerId !== c.templateCornerId));
+    try {
+      await removeCornerFromTemplate(templateId, c.templateCornerId);
+      router.refresh();
+      onToast(`‘${c.name}’ 코너를 뺐습니다.`);
+    } catch {
+      setRows(corners);
+      onToast('삭제하지 못했습니다.');
+    }
+  }
+
   // 연속 번호 — 화면 표시 순서(밴드 순)대로 1..N
   const displayOrder = BAND_ORDER.flatMap((b) => bandItems(b).map((c) => c.templateCornerId));
   const noOf = (tcid: string) => displayOrder.indexOf(tcid) + 1;
@@ -507,7 +526,7 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
                     </button>
                   ) : items.map((c) => (
                     <CornerChip key={c.templateCornerId} c={c} no={noOf(c.templateCornerId)} selected={c.id === selCorner}
-                      fixed={c.zone === 'fixed'} onSelect={() => onSelect(c.id)} onToggleFixed={() => toggleFixed(c)} onToast={onToast} />
+                      fixed={c.zone === 'fixed'} onSelect={() => onSelect(c.id)} onToggleFixed={() => toggleFixed(c)} onDelete={() => removeCorner(c)} onToast={onToast} />
                   ))}
                 </SortableContext>
               </BandDroppable>
@@ -573,7 +592,9 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
               </div>
               {/* 코너 상세 — 독립 스크롤 */}
               <div className="min-h-0 overflow-y-auto pr-0.5">
-                <CornerDetail template={t} corner={selected} index={selIndex} onPreviewFallback={onPreviewFallback} onToast={onToast} />
+                <CornerDetail template={t} corner={selected} index={selIndex} onPreviewFallback={onPreviewFallback}
+                  onRecSourceChange={(src) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, recSource: src, isCvm: src.startsWith('CVM') } : c)); }}
+                  onToast={onToast} />
               </div>
             </div>
           </div>
@@ -765,6 +786,18 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                     liveCorners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
                       const replaced = fbMode && c.isCvm && c.fallback === '운영자 편성으로 대체';
+                      // CVM 콘텐츠 연동 = 구좌만 넘기고 완성본은 CVM이 내려줌 → 미리보기는 '완성본 자리' 구좌로 표시
+                      const cvmContent = c.recSource === 'CVM 콘텐츠 연동' && !hidden && !replaced;
+                      if (cvmContent) {
+                        return (
+                          <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
+                            className={cn('cursor-pointer scroll-mt-4 rounded-xl border border-dashed border-[#b9a7ff] bg-[#f3f0ff] px-3 py-5 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
+                            <Sparkles className="mx-auto mb-1 h-4 w-4 text-[var(--ac)]" />
+                            <p className="text-[12px] font-bold text-[var(--ac)]">CVM 완성본 자리</p>
+                            <p className="text-[11px] text-[var(--ink4)]">구좌만 — 이미지·문구·랜딩은 CVM이 내려줘요</p>
+                          </div>
+                        );
+                      }
                       if (hidden) {
                         return (
                           <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}

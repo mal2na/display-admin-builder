@@ -75,7 +75,7 @@ export function ContainerListModal({ rows, onClose }: { rows: ContainerListRow[]
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="relative z-[91] flex max-h-[86vh] w-full max-w-[920px] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_24px_22px_#2222220d,0_0_2px_#2222221a]">
         {/* 머리 */}
-        <div className="flex items-center justify-between border-b border-[var(--line)] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[var(--line2)] px-6 py-4">
           <h2 className="text-[16px] font-bold text-[var(--ink)]">컨테이너 전체목록</h2>
           <button type="button" onClick={onClose} className="rounded-md p-1 text-[var(--ink3)] hover:bg-[var(--th)]" aria-label="닫기"><X className="h-4 w-4" /></button>
         </div>
@@ -122,10 +122,10 @@ export function ContainerListModal({ rows, onClose }: { rows: ContainerListRow[]
 
           {/* 조회 결과 */}
           <p className="mb-2 mt-4 text-[13px] font-semibold text-[var(--ink)]">조회결과 <span className="text-[var(--ac)]">{filtered.length}건</span></p>
-          <div className="overflow-hidden rounded-[10px] border border-[var(--line)]">
+          <div className="overflow-hidden rounded-[10px] border border-[var(--line2)]">
             <table className="w-full text-[12px]">
               <thead>
-                <tr className="border-b border-[var(--line)] bg-[var(--th)] text-left text-[var(--ink2)]">
+                <tr className="border-b border-[var(--line2)] bg-[var(--th)] text-left text-[var(--ink2)]">
                   <th className="w-12 px-3 py-2.5 text-center font-semibold">NO</th>
                   <th className="px-3 py-2.5 font-semibold">컨테이너 ID</th>
                   <th className="px-3 py-2.5 font-semibold">컨테이너명</th>
@@ -138,7 +138,7 @@ export function ContainerListModal({ rows, onClose }: { rows: ContainerListRow[]
                 {pageRows.length === 0 ? (
                   <tr><td colSpan={6} className="px-3 py-10 text-center text-[var(--ink3)]">조회 결과가 없습니다.</td></tr>
                 ) : pageRows.map((r, i) => (
-                  <tr key={r.id} onClick={() => go(r.id)} className="cursor-pointer border-b border-[var(--line)] last:border-0 hover:bg-[var(--ac2)]">
+                  <tr key={r.id} onClick={() => go(r.id)} className="cursor-pointer border-b border-[var(--line2)] last:border-0 hover:bg-[var(--ac2)]">
                     <td className="px-3 py-2.5 text-center text-[var(--ink3)] tabular-nums">{filtered.length - ((page - 1) * PAGE_SIZE + i)}</td>
                     <td className="px-3 py-2.5 font-mono text-[11px] text-[var(--ink2)]">{r.id.slice(0, 12)}</td>
                     <td className="px-3 py-2.5 font-medium text-[var(--ac)]">{r.name}</td>
@@ -163,7 +163,7 @@ export function ContainerListModal({ rows, onClose }: { rows: ContainerListRow[]
           )}
         </div>
 
-        <div className="flex justify-end border-t border-[var(--line)] px-6 py-3">
+        <div className="flex justify-end border-t border-[var(--line2)] px-6 py-3">
           <button type="button" onClick={onClose} className="h-9 rounded-md border border-[var(--line3)] bg-white px-5 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">닫기</button>
         </div>
       </div>

@@ -67,7 +67,7 @@ export function FoPreview({ f, onBack }: { f: PromoForm; onBack: () => void }) {
               <h3 className="m-0 text-[20px] font-bold leading-[28px]">{f.name || '프로모션 명이 노출됩니다'}</h3>
               <p className="mt-1.5 text-[14px] leading-[20px] opacity-90">{f.sub || '서브 타이틀이 노출됩니다'}</p>
             </div>
-            <div className="border-b border-[var(--line)] bg-[var(--th)] px-5 py-2.5 text-[13px] text-[var(--ink2)]">
+            <div className="border-b border-[var(--line2)] bg-[var(--th)] px-5 py-2.5 text-[13px] text-[var(--ink2)]">
               {f.type === '안내형' ? '기간' : '참여 기간'} · {period[0] || '-'} ~ {period[1] || (f.dispNoEnd ? '종료일 없음' : '-')}
             </div>
 
@@ -184,7 +184,7 @@ export function FoPreview({ f, onBack }: { f: PromoForm; onBack: () => void }) {
 
           {/* 하단 CTA */}
           {f.cta === '사용' && f.ctas.length > 0 && (
-            <div className="shrink-0 space-y-1.5 border-t border-[var(--line)] bg-white p-3">
+            <div className="shrink-0 space-y-1.5 border-t border-[var(--line2)] bg-white p-3">
               {f.ctas.map((c) => {
                 let label = c.name || '버튼명이 노출됩니다';
                 if (c.type === CTA_JOIN && done) label = '응모 완료';

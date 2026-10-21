@@ -70,7 +70,7 @@ export function RefSections({ r, onChange, E, onToast, guest }: {
       </Sect>
 
       <Sect title="리워드 정보">
-        <div className="border-b border-[var(--line)] p-4">
+        <div className="border-b border-[var(--line2)] p-4">
           <div className="flex flex-wrap items-center gap-2">
             <b className="text-[14px]">초대자 리워드</b>
             <Hint>단계 = 누적 초대 성공 인원 · n단계는 n-1단계보다 큰 인원 · 달성한 단계는 모두 지급(누적)</Hint>

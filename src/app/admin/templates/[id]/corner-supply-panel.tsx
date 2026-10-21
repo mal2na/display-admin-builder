@@ -53,7 +53,7 @@ export type SupplyCorner = {
 function Step({ no, title, desc, children, tone }: { no: number; title: string; desc?: string; children: React.ReactNode; tone?: 'muted' }) {
   // 설명(desc)은 제목 옆 '?'의 툴팁으로 — 좁은 패널에 긴 문장을 깔면 글이 부서져 읽히지 않는다.
   return (
-    <section className={cn('rounded-[10px] border border-[var(--line)] bg-white p-3.5', tone === 'muted' && 'bg-[var(--th)]')}>
+    <section className={cn('rounded-[10px] border border-[var(--line2)] bg-white p-3.5', tone === 'muted' && 'bg-[var(--th)]')}>
       <div className="mb-3 flex items-center gap-2">
         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">{no}</span>
         <h3 className="min-w-0 flex-1 truncate text-[13px] font-bold text-[var(--ink)]">{title}</h3>
@@ -61,7 +61,7 @@ function Step({ no, title, desc, children, tone }: { no: number; title: string; 
           // 호버하면 즉시 뜨는 CSS 툴팁(네이티브 title 대신). Figma 툴팁 토큰(bg #fcfcfd·text #454f59·r8·shadow). 2026-10-12.
           <span className="group/tip relative inline-flex shrink-0">
             <span className="grid h-4 w-4 cursor-help place-items-center rounded-full bg-[var(--th)] text-[11px] font-bold text-[var(--ink3)]" aria-label={desc}>?</span>
-            <span role="tooltip" className="pointer-events-none absolute right-0 top-full z-[60] mt-1 hidden w-60 max-w-[16rem] whitespace-normal rounded-lg border border-[#e8ecef] bg-[#fcfcfd] px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-[#454f59] shadow-[0_0_8px_-2px_#0000001f] group-hover/tip:block">{desc}</span>
+            <span role="tooltip" className="pointer-events-none absolute right-0 top-full z-[60] mt-1 hidden w-60 max-w-[16rem] whitespace-normal rounded-lg border border-[#dce0e5] bg-[#fcfcfd] px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-[#454f59] shadow-[0_0_8px_-2px_#0000001f] group-hover/tip:block">{desc}</span>
           </span>
         )}
       </div>
@@ -111,7 +111,7 @@ function SupplyStep({
               onClick={() => onPick(m)}
               className={cn(
                 'w-full rounded-[8px] border p-2.5 text-left transition disabled:opacity-50',
-                on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line)] bg-white hover:border-[var(--line2)]',
+                on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line2)] bg-white hover:border-[var(--line2)]',
               )}
             >
               <span className="flex items-center gap-1.5">
@@ -268,7 +268,7 @@ function FallbackStep({
               onClick={() => onSave(f)}
               className={cn(
                 'flex w-full items-center gap-2 rounded-[8px] border p-2.5 text-left transition disabled:opacity-50',
-                on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line)] bg-white hover:border-[var(--line2)]',
+                on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line2)] bg-white hover:border-[var(--line2)]',
               )}
             >
               <span className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[#c9ccd6] bg-white')}>

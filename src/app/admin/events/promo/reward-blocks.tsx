@@ -225,7 +225,7 @@ export function LineView({ l, idx, total, E, onSet, onDel, onToast }: {
   const rp = RPICK[l.type];
 
   return (
-    <div className="rounded-[8px] border border-[var(--line)] bg-white p-3">
+    <div className="rounded-[8px] border border-[var(--line2)] bg-white p-3">
       <div className="flex items-center gap-2">
         <b className="text-[13px] text-[var(--ink2)]">리워드 {idx + 1}</b>
         {total > 1 && <button type="button" className={cn(BTN_SM, 'ml-auto')} onClick={onDel}>삭제</button>}

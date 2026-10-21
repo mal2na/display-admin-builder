@@ -229,7 +229,7 @@ export function RegStartModal({ change, curJoinMode, onPick, onClose }: {
           )}
         </div>
 
-        <div className="flex items-center gap-2 border-t border-[var(--line)] px-6 py-4">
+        <div className="flex items-center gap-2 border-t border-[var(--line2)] px-6 py-4">
           {mode === 'qa' && step > 0 && (
             <button type="button" className={BTN} onClick={() => setStep((s) => s - 1)}>이전</button>
           )}

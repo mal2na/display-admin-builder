@@ -111,7 +111,7 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
       </div>
 
       <ListHeader title="조회결과" count={filtered.length} />
-      <div className="overflow-x-auto border-t border-[#e8ecef]">
+      <div className="overflow-x-auto border-t border-[#dce0e5]">
         <table className="w-full min-w-[1120px] text-[13px] font-normal whitespace-nowrap">
           <thead>
             <tr className={THEAD_TR_CLS}>
@@ -135,7 +135,7 @@ function SearchTab({ rows }: { rows: FPRow[] }) {
                 <td className="h-11 px-3 text-left">
                   <div className="flex flex-wrap gap-1">
                     {r.channels.length === 0 ? <span className="text-slate-400">-</span> : r.channels.map((c) => (
-                      <span key={c} className="inline-flex items-center rounded border border-[#e8ecef] bg-white px-1.5 py-0.5 text-[11px] text-slate-600">{c}</span>
+                      <span key={c} className="inline-flex items-center rounded border border-[#dce0e5] bg-white px-1.5 py-0.5 text-[11px] text-slate-600">{c}</span>
                     ))}
                   </div>
                 </td>
@@ -176,7 +176,7 @@ function IaTab({ rows }: { rows: FPRow[] }) {
       const hasChildren = children.length > 0;
       const open = expanded.has(r.id);
       const row = (
-        <tr key={r.id} className="border-b border-[#e8ecef] hover:bg-[#f8f9fb]">
+        <tr key={r.id} className="border-b border-[#dce0e5] hover:bg-[#f8f9fb]">
           <td className="h-11 px-3">
             <div className="flex items-center" style={{ paddingLeft: (depth - 1) * 22 }}>
               {hasChildren ? (
@@ -211,12 +211,12 @@ function IaTab({ rows }: { rows: FPRow[] }) {
       <div className="mb-3 flex flex-wrap gap-2">
         {categories.map((c) => (
           <button key={c} type="button" onClick={() => setCat(c)}
-            className={cn('rounded-full border px-3.5 py-1.5 text-[12.5px] font-medium', cat === c ? 'border-[#3617ce] bg-[#3617ce] text-white' : 'border-[#e8ecef] bg-white text-slate-600 hover:border-[#3617ce]')}>{c}</button>
+            className={cn('rounded-full border px-3.5 py-1.5 text-[12.5px] font-medium', cat === c ? 'border-[#3617ce] bg-[#3617ce] text-white' : 'border-[#dce0e5] bg-white text-slate-600 hover:border-[#3617ce]')}>{c}</button>
         ))}
       </div>
 
       <ListHeader title="조회결과" count={rows.length} />
-      <div className="overflow-x-auto border-t border-[#e8ecef]">
+      <div className="overflow-x-auto border-t border-[#dce0e5]">
         <table className="w-full text-[13px] font-normal">
           <thead>
             <tr className={THEAD_TR_CLS}>

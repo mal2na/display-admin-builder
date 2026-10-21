@@ -14,7 +14,7 @@ export function WidgetDetailTabs({ id }: { id: string }) {
     </Link>
   );
   return (
-    <div className="mb-5 flex gap-5 border-b border-[#e8ecef]">
+    <div className="mb-5 flex gap-5 border-b border-[#dce0e5]">
       {tab(`/admin/app-widgets/${id}`, '상세정보', !onHistory)}
       {tab(`/admin/app-widgets/${id}/history`, '변경/승인이력', onHistory)}
     </div>

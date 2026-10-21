@@ -115,7 +115,7 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
 
       <ListHeader title="조회결과" count={COMMENTS.length} />
       {/* 목록 — 디자인 시스템(전체페이지 관리 테이블): 헤더 #f8f9fb·보더 #e8ecef·13px 레귤러 */}
-      <div className="overflow-x-auto border-t border-[#e8ecef]">
+      <div className="overflow-x-auto border-t border-[#dce0e5]">
         <table className="w-full min-w-[1140px] text-[13px] font-normal">
           <thead>
             <tr className={cn(THEAD_TR_CLS)}>
@@ -286,7 +286,7 @@ function ReviewsTab() {
       </div>
 
       <ListHeader title="조회결과" count={REVIEWS.length} />
-      <div className="overflow-x-auto border-t border-[#e8ecef]">
+      <div className="overflow-x-auto border-t border-[#dce0e5]">
         <table className="w-full min-w-[1000px] text-[13px] font-normal">
           <thead>
               <tr className={cn(THEAD_TR_CLS, '[&>th]:text-left')}>
@@ -342,7 +342,7 @@ function BlockTab() {
       </div>
 
       {sub === 'report' ? (
-        <div className="overflow-x-auto border-t border-[#e8ecef]">
+        <div className="overflow-x-auto border-t border-[#dce0e5]">
           <table className="w-full min-w-[900px] text-[13px] font-normal">
             <thead>
               <tr className={cn(THEAD_TR_CLS, '[&>th]:text-left')}>
@@ -367,7 +367,7 @@ function BlockTab() {
           </table>
         </div>
       ) : (
-        <div className="overflow-x-auto border-t border-[#e8ecef]">
+        <div className="overflow-x-auto border-t border-[#dce0e5]">
           <table className="w-full min-w-[800px] text-[13px] font-normal">
             <thead>
               <tr className={cn(THEAD_TR_CLS, '[&>th]:text-left')}>

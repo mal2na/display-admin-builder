@@ -31,7 +31,7 @@ const BTN_AC = 'inline-flex h-[38px] items-center gap-1.5 rounded-[8px] bg-[var(
 // 정보 행 — 공식 폼 테이블(.ft) 규격: 라벨 칸 회색 148px, 값 칸 흰색, 가로선만.
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex border-b border-[var(--line)]">
+    <div className="flex border-b border-[var(--line2)]">
       <div className="flex w-[148px] shrink-0 items-center bg-[var(--th)] px-3.5 py-3 text-[13px] font-medium text-[var(--ink2)]">{label}</div>
       <div className="flex-1 bg-white px-3.5 py-3 text-[13px] text-[var(--ink)]">{children}</div>
     </div>
@@ -177,7 +177,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
               >
                 기본 정보
               </SectionTitle>
-              <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
+              <div className="grid grid-cols-1 border-t border-[var(--line2)] sm:grid-cols-2">
                 <Row label="컨테이너 ID">{container.id.slice(-10)}</Row>
                 <Row label="컨테이너 경로">{container.parent?.name ? `${container.parent.name} > ${container.name}` : `${container.name} (최상위)`}</Row>
                 <Row label="컨테이너 타입">{container.kind ?? TYPE_LABELS[container.containerType ?? ''] ?? '—'}</Row>
@@ -198,7 +198,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
             {/* 메타 정보 */}
             <section>
               <SectionTitle>메타 정보</SectionTitle>
-              <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
+              <div className="grid grid-cols-1 border-t border-[var(--line2)] sm:grid-cols-2">
                 <Row label="사용 여부">{container.metaUse ? '사용' : '미사용'}</Row>
                 <Row label="검색 태그">{container.searchTags ?? '—'}</Row>
                 <Row label="og:title">{container.ogTitle ?? '—'}</Row>
@@ -216,7 +216,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
               >
                 연결된 전체페이지 정보
               </SectionTitle>
-              <div className="grid grid-cols-1 border-t border-[var(--line)] sm:grid-cols-2">
+              <div className="grid grid-cols-1 border-t border-[var(--line2)] sm:grid-cols-2">
                 <Row label="페이지 ID"><span className="whitespace-nowrap text-[var(--ink3)]">연동 대기</span></Row>
                 <Row label="메뉴 경로"><span className="whitespace-nowrap text-[var(--ink3)]">연동 대기</span></Row>
                 <Row label="페이지 사용여부"><span className="whitespace-nowrap text-[var(--ink3)]">연동 대기</span></Row>
@@ -247,7 +247,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
                   </>
                 }
               />
-              <div className="overflow-x-auto border-t border-[var(--line)]">
+              <div className="overflow-x-auto border-t border-[var(--line2)]">
                 <table className={TABLE_CLS}>
                   <thead>
                     <tr className={THEAD_TR_CLS}>
@@ -346,9 +346,9 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
                     <span className="text-[13px] font-normal text-[var(--ink3)]">{archivedTemplates.length}개</span>
                   </span>
                 </SectionTitle>
-                <div className="border-t border-[var(--line)]">
+                <div className="border-t border-[var(--line2)]">
                   {archivedTemplates.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--th)] px-4 py-3">
+                    <div key={t.id} className="flex items-center justify-between gap-2 border-b border-[var(--line2)] bg-[var(--th)] px-4 py-3">
                       <div className="min-w-0">
                         <p className="flex items-center gap-1.5 truncate text-[13px] font-medium text-[var(--ink2)]">
                           {t.name}

@@ -340,7 +340,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
               </Sect>
 
               <Sect title="리워드 정보">
-                <div className="border-b border-[var(--line)] p-4">
+                <div className="border-b border-[var(--line2)] p-4">
                   <RewardSection
                     pr={prOf(f)}
                     onChange={(next) => set({ jm: next.jm, ja: next.ja, blocks: next.blocks })}
@@ -382,7 +382,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
                     onPickPageTo={() => setPagePick({ id: c.id, to: true })}
                   />
                 ))}
-                <div className="flex items-center justify-end gap-2 border-b border-[var(--line)] px-4 py-2.5">
+                <div className="flex items-center justify-end gap-2 border-b border-[var(--line2)] px-4 py-2.5">
                   <Hint>같은 시점에 노출되는 하단 CTA는 최대 {CTA_AT_ONCE}개 · 전체 최대 {CTA_MAX}개</Hint>
                   <button
                     type="button" className={BTN_SM} disabled={f.ctas.length >= CTA_MAX}
@@ -448,7 +448,7 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
             )}
           </Sect>
 
-          <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-6">
+          <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-[var(--line2)] pt-6">
             <button type="button" className={BTN} onClick={onCancel}>취소</button>
             <div className="ml-auto flex gap-2">
               <button type="button" className={BTN} onClick={openFo}>FO 미리보기</button>
@@ -523,7 +523,7 @@ function CtaRows({ c, idx, total, type, E, onSet, onDel, onPickPage, onPickPageT
   return (
     <>
       {total > 1 && (
-        <div className="flex items-center gap-2 border-b border-[var(--line)] bg-[var(--th)] px-4 py-2">
+        <div className="flex items-center gap-2 border-b border-[var(--line2)] bg-[var(--th)] px-4 py-2">
           <b className="text-[13px] text-[var(--ink2)]">하단 CTA {idx + 1}</b>
           {!c.auto && <button type="button" className={cn(BTN_SM, 'ml-auto')} onClick={onDel}>삭제</button>}
         </div>
@@ -680,7 +680,7 @@ function Preview({ f, onBuilder }: { f: PromoForm; onBuilder?: () => void }) {
 
   return (
     <aside aria-label="미리보기" className="h-fit overflow-hidden rounded-[12px] border border-[var(--line2)] bg-white">
-      <div className="border-b border-[var(--line)] bg-[var(--th)] px-3 py-2 text-[13px] font-semibold text-[var(--ink2)]">미리보기</div>
+      <div className="border-b border-[var(--line2)] bg-[var(--th)] px-3 py-2 text-[13px] font-semibold text-[var(--ink2)]">미리보기</div>
       <div className="space-y-2 p-3">
         <div className="grid h-[110px] place-items-center rounded-[8px] border border-dashed border-[var(--line3)] bg-[var(--th)] text-center text-[12px] leading-[16px] text-[var(--ink3)]">
           <span><b className="block text-[var(--ink2)]">빌더 구성영역</b>메인 이미지는 빌더에서 설정합니다.</span>
@@ -712,7 +712,7 @@ function Preview({ f, onBuilder }: { f: PromoForm; onBuilder?: () => void }) {
             </>
           )}
         </button>
-        <div className="rounded-[8px] border border-[var(--line)] p-2.5">
+        <div className="rounded-[8px] border border-[var(--line2)] p-2.5">
           <b className="text-[12px] text-[var(--ink2)]">유의사항</b>
           <p className={cn('mt-1 whitespace-pre-line text-[12px] leading-[18px]', f.caution ? 'text-[var(--ink2)]' : 'text-[var(--ink4)]')}>
             {f.caution || '유의사항이 노출됩니다'}
@@ -720,7 +720,7 @@ function Preview({ f, onBuilder }: { f: PromoForm; onBuilder?: () => void }) {
         </div>
       </div>
       {f.cta === '사용' && (
-        <div className="space-y-1.5 border-t border-[var(--line)] p-3">
+        <div className="space-y-1.5 border-t border-[var(--line2)] p-3">
           {f.ctas.map((c) => (
             <div key={c.id} className="grid h-9 place-items-center rounded-[8px] text-[13px] font-semibold"
               style={{ background: hexOk(c.bg) ?? '#000000', color: hexOk(c.fg) ?? '#FFFFFF' }}>

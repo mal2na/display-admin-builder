@@ -267,7 +267,7 @@ function Tip({ text, label, tone, align = 'center' }: { text: string; label?: st
       {label && <span className="cursor-help text-inherit">{label}</span>}
       <span className={cn('grid h-3.5 w-3.5 shrink-0 cursor-help place-items-center rounded-full text-[9px] font-bold', tone ?? 'bg-slate-200 text-slate-500')} aria-label={text}>?</span>
       <span role="tooltip"
-        className={cn('pointer-events-none absolute top-full z-[60] mt-1 hidden w-56 max-w-[16rem] whitespace-normal rounded-lg border border-[#e8ecef] bg-[#fcfcfd] px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-[#454f59] shadow-[0_0_8px_-2px_#0000001f] group-hover/tip:block',
+        className={cn('pointer-events-none absolute top-full z-[60] mt-1 hidden w-56 max-w-[16rem] whitespace-normal rounded-lg border border-[#dce0e5] bg-[#fcfcfd] px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-[#454f59] shadow-[0_0_8px_-2px_#0000001f] group-hover/tip:block',
           align === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2')}>
         {text}
       </span>
@@ -2738,7 +2738,7 @@ function CornerListRow({
         'cursor-pointer rounded-[10px] border p-2.5 transition scroll-mt-2',
         selected
           ? 'border-[var(--ac)] bg-[var(--ac2)]'
-          : 'border-[var(--line)] bg-white hover:border-[var(--line2)] hover:bg-[var(--th)]',
+          : 'border-[var(--line2)] bg-white hover:border-[var(--line2)] hover:bg-[var(--th)]',
         locked && !selected && 'border-[var(--ac3)] bg-[#f8f7ff]',
         !corner.visible && 'opacity-55',
       )}
@@ -3209,7 +3209,7 @@ function CornerLoadModal({
                   return (
                     <div>
                       <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">미리보기 · {sel.base} › {layoutLabel(sel.detail) || '기본'} <span className="text-slate-400">· 껍데기 가이드(콘텐츠는 불러온 뒤 빌더에서 매핑)</span></p>
-                      <div className="h-[440px] rounded-xl border border-[#e8ecef] bg-[#eef0f6] p-3">
+                      <div className="h-[440px] rounded-xl border border-[#dce0e5] bg-[#eef0f6] p-3">
                         <DevicePreview corner={guide} fit="contain" align="center-middle" />
                       </div>
                     </div>
@@ -3529,8 +3529,8 @@ export function BuilderEditor({
         : `${leftOpen ? leftW : 0}px minmax(0,1fr) ${rightOpen ? rightW : 0}px` }}
     >
       {/* 좌측(기본) / 가운데(디바이스-좌측 모드): 고정 코너 리스트 + 유형 추가 (드래그로 너비 조절). 접히면 폭 0. */}
-      <div className={cn('relative flex flex-col overflow-hidden border-r bg-card', deviceLeft && 'order-2 rounded-2xl border border-[var(--line)] bg-white shadow-sm', !leftOpen && 'pointer-events-none opacity-0')}>
-        {deviceLeft && <div className="border-b border-[var(--line)] px-4 pb-3 pt-4 text-[16px] font-bold text-[var(--ink)]">코너 설정</div>}
+      <div className={cn('relative flex flex-col overflow-hidden border-r bg-card', deviceLeft && 'order-2 rounded-2xl border border-[var(--line2)] bg-white shadow-sm', !leftOpen && 'pointer-events-none opacity-0')}>
+        {deviceLeft && <div className="border-b border-[var(--line2)] px-4 pb-3 pt-4 text-[16px] font-bold text-[var(--ink)]">코너 설정</div>}
         <div
           onPointerDown={(e) => startResize('left', e)}
           title="드래그로 패널 너비 조절"
@@ -3554,7 +3554,7 @@ export function BuilderEditor({
               {bands.map((band, bi) => {
                 const m = ZONE_META[band.zone];
                 return (
-                  <div key={bi} className="rounded-lg border border-[#e8ecef] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: m.hex }}>
+                  <div key={bi} className="rounded-lg border border-[#dce0e5] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]" style={{ borderLeftWidth: 3, borderLeftColor: m.hex }}>
                     <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
                       <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: m.hex }} />
                       <span className="text-[11px] font-bold" style={{ color: m.hex }}>{m.label}</span>
@@ -3624,8 +3624,8 @@ export function BuilderEditor({
       </div>
 
       {/* 가운데(기본) / 좌측(디바이스-좌측 모드): 실시간 디바이스 미리보기 */}
-      <div className={cn('flex flex-col overflow-hidden bg-background', deviceLeft && 'order-1 rounded-2xl border border-[var(--line)] bg-white shadow-sm')}>
-        {deviceLeft && <div className="border-b border-[var(--line)] px-4 pb-3 pt-4 text-[16px] font-bold text-[var(--ink)]">미리보기</div>}
+      <div className={cn('flex flex-col overflow-hidden bg-background', deviceLeft && 'order-1 rounded-2xl border border-[var(--line2)] bg-white shadow-sm')}>
+        {deviceLeft && <div className="border-b border-[var(--line2)] px-4 pb-3 pt-4 text-[16px] font-bold text-[var(--ink)]">미리보기</div>}
         <div className="flex items-center justify-between gap-2 px-3 py-2">
           {/* 좌측 패널 접기/펼치기 */}
           <button type="button" onClick={() => setLeftOpen((v) => !v)} title={leftOpen ? '좌측 패널 접기' : '좌측 패널 펼치기'}
@@ -3701,13 +3701,13 @@ export function BuilderEditor({
       </div>
 
       {/* 우측: 선택 코너 상세 (드래그로 너비 조절). 접히면 폭 0. */}
-      <div className={cn('bpanel relative overflow-y-auto border-l bg-muted/40 p-4', deviceLeft && 'order-3 rounded-2xl border border-[var(--line)] bg-white shadow-sm', !rightOpen && 'pointer-events-none opacity-0')}>
+      <div className={cn('bpanel relative overflow-y-auto border-l bg-muted/40 p-4', deviceLeft && 'order-3 rounded-2xl border border-[var(--line2)] bg-white shadow-sm', !rightOpen && 'pointer-events-none opacity-0')}>
         <div
           onPointerDown={(e) => startResize('right', e)}
           title="드래그로 패널 너비 조절"
           className="absolute left-0 top-0 z-20 h-full w-1.5 -translate-x-1/2 cursor-col-resize bg-transparent transition-colors hover:bg-primary/40"
         />
-        {deviceLeft && <div className="-mx-4 -mt-4 mb-4 border-b border-[var(--line)] px-4 pb-3 pt-4 text-[16px] font-bold text-[var(--ink)]">코너 상세 설정</div>}
+        {deviceLeft && <div className="-mx-4 -mt-4 mb-4 border-b border-[var(--line2)] px-4 pb-3 pt-4 text-[16px] font-bold text-[var(--ink)]">코너 상세 설정</div>}
         {selectedCorner ? (
           <div className="space-y-4">
             {/* 패널 머리 — 좁혀도 안 터지게 제목이 한 줄, 유형 칩은 아랫줄로 떨어진다 */}

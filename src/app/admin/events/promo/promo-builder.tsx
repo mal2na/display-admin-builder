@@ -53,7 +53,7 @@ export function PromoBuilder({ f, onChange, onBack }: { f: PromoForm; onChange: 
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-[var(--line)] px-12 py-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-[var(--line2)] px-12 py-3">
         <button type="button" onClick={onBack} className={BTN}>← 돌아가기</button>
         <div>
           <div className="text-[12px] text-[var(--ink4)]">홈 &gt; 프로모션 관리 &gt; 상세 영역 빌더</div>

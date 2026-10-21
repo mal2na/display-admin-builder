@@ -27,7 +27,7 @@ const G2 = ({ children }: { children: React.ReactNode }) => (
   <div className="grid grid-cols-1 gap-x-8 gap-y-0 md:grid-cols-2">{children}</div>
 );
 const FR = ({ l, children, full }: { l?: string; children?: React.ReactNode; full?: boolean }) => (
-  <div className={cn('grid grid-cols-[120px_1fr] items-start gap-3 border-b border-[var(--line)] py-2.5 text-[14px]', full && 'md:col-span-2')}>
+  <div className={cn('grid grid-cols-[120px_1fr] items-start gap-3 border-b border-[var(--line2)] py-2.5 text-[14px]', full && 'md:col-span-2')}>
     <div className="text-[var(--ink3)]">{l}</div>
     <div className="min-w-0 text-[var(--ink)]">{children}</div>
   </div>
@@ -41,7 +41,7 @@ function MT({ cols, rows }: { cols: string[]; rows: React.ReactNode }) {
     <div className="overflow-x-auto rounded-[8px] border border-[var(--line2)]">
       <table className="w-full border-collapse text-[13px]">
         <thead>
-          <tr>{cols.map((c) => <th key={c} className="whitespace-nowrap border-b border-[var(--line)] bg-[var(--th)] px-2.5 py-2 text-center font-medium text-[var(--ink3)]">{c}</th>)}</tr>
+          <tr>{cols.map((c) => <th key={c} className="whitespace-nowrap border-b border-[var(--line2)] bg-[var(--th)] px-2.5 py-2 text-center font-medium text-[var(--ink3)]">{c}</th>)}</tr>
         </thead>
         <tbody>{rows}</tbody>
       </table>
@@ -49,7 +49,7 @@ function MT({ cols, rows }: { cols: string[]; rows: React.ReactNode }) {
   );
 }
 const Td = ({ l, rs, children }: { l?: boolean; rs?: number; children: React.ReactNode }) => (
-  <td rowSpan={rs} className={cn('border-b border-[var(--line)] px-2.5 py-2 align-middle', l ? 'text-left' : 'text-center')}>{children}</td>
+  <td rowSpan={rs} className={cn('border-b border-[var(--line2)] px-2.5 py-2 align-middle', l ? 'text-left' : 'text-center')}>{children}</td>
 );
 
 const CondBox = ({ s, label = '참여 가능' }: { s: string; label?: string }) => (

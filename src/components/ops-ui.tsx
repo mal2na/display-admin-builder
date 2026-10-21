@@ -271,9 +271,9 @@ export const TABLE_CLS = 'w-full border-collapse text-[14px]';
 export const THEAD_TR_CLS =
   // Figma table — th: th-row-bg #f8f9fb · th-row-text #454f59 · th-row-inset-y 10 → 높이 40
   //  td: inset-y-xl 14 → 높이 48 · inset-x 12 · border-default #e8ecef
-  'border-b border-[var(--line)] bg-[var(--th)] text-[var(--ink2)] [&>th]:!h-10 [&>th]:whitespace-nowrap [&>th]:!px-3 [&>th]:!py-2.5 [&>th]:font-semibold';
+  'border-b border-[var(--line2)] bg-[var(--th)] text-[var(--ink2)] [&>th]:!h-10 [&>th]:whitespace-nowrap [&>th]:!px-3 [&>th]:!py-2.5 [&>th]:font-semibold';
 export const TBODY_TR_CLS =
-  'border-b border-[var(--line)] text-[var(--ink)] hover:bg-[var(--th)] [&>td]:!h-12 [&>td]:!px-3 [&>td]:!py-2 [&>td]:align-middle';
+  'border-b border-[var(--line2)] text-[var(--ink)] hover:bg-[var(--th)] [&>td]:!h-12 [&>td]:!px-3 [&>td]:!py-2 [&>td]:align-middle';
 
 export function OpsSection({ title, children }: { no?: number | string; title: string; children: React.ReactNode }) {
   return (

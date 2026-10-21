@@ -132,7 +132,7 @@ export function PromoDetail({ f, onList, onEdit, onFo, onBuilder }: {
         {f.type === '참여ㆍ리워드형' && (
           <Sect title="리워드 정보">
             {f.blocks.map((b, i) => (
-              <div key={b.id} className="border-b border-[var(--line)] p-4">
+              <div key={b.id} className="border-b border-[var(--line2)] p-4">
                 {f.blocks.length > 1 && <b className="mb-2 block text-[14px]">리워드 정보 {i + 1}</b>}
                 <div className="border-t border-[var(--line2)]">
                   <Row label="리워드 구성 유형"><V>{b.selM}{isPick(b) && b.selN ? ` · 선택 가능 ${b.selN}개` : ''}</V></Row>
@@ -158,7 +158,7 @@ export function PromoDetail({ f, onList, onEdit, onFo, onBuilder }: {
 
         {f.type === '추천형' && (
           <Sect title="리워드 정보">
-            <div className="border-b border-[var(--line)] p-4">
+            <div className="border-b border-[var(--line2)] p-4">
               <b className="block text-[14px]">초대자 리워드</b>
               <div className="mt-2 border-t border-[var(--line2)]">
                 <Row label="초대자 지급 조건"><Cond nodes={f.ref.invPayCond} /></Row>
@@ -245,7 +245,7 @@ export function PromoDetail({ f, onList, onEdit, onFo, onBuilder }: {
           <Row label="최종수정일시"><V>{''}</V></Row>
         </Sect>
 
-        <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-6">
+        <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-[var(--line2)] pt-6">
           <button type="button" className={BTN} onClick={onList}>목록</button>
           <div className="ml-auto flex gap-2">
             {onBuilder && <button type="button" className={BTN} onClick={onBuilder}>상세 영역 빌더</button>}

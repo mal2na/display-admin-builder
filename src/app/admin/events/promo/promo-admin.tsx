@@ -87,7 +87,7 @@ export function PromoAdmin() {
   if (proto) {
     return (
       <div className="flex h-full min-h-0 flex-col">
-        <div className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] px-12 py-3">
+        <div className="flex shrink-0 items-center gap-3 border-b border-[var(--line2)] px-12 py-3">
           <button
             type="button"
             onClick={() => setProto(null)}

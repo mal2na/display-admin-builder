@@ -86,7 +86,7 @@ export function TermsPicker({ mapped, onApply, onClose }: {
       <p className="mt-3 text-[13px] text-[var(--ink2)]">검색 결과 <b>{list.length}건</b></p>
       {warn && <p className="mt-1 text-[13px] text-[var(--bad)]">{warn}</p>}
 
-      <div className="mt-2 max-h-[320px] overflow-auto border-y border-[var(--line)]">
+      <div className="mt-2 max-h-[320px] overflow-auto border-y border-[var(--line2)]">
         <table className="w-full border-collapse text-[13px]">
           <thead>
             <tr className="sticky top-0 bg-[var(--th)] text-[var(--ink2)]">
@@ -102,7 +102,7 @@ export function TermsPicker({ mapped, onApply, onClose }: {
               const done = mapped.includes(t.id);
               const on = done || pick.includes(t.id);
               return (
-                <tr key={t.id} className={cn('border-b border-[var(--line)]', on && 'bg-[var(--ac2)]', done && 'opacity-60')}>
+                <tr key={t.id} className={cn('border-b border-[var(--line2)]', on && 'bg-[var(--ac2)]', done && 'opacity-60')}>
                   <td className="px-3 py-2">
                     <input
                       type="checkbox" aria-label={`${t.name} 선택`} checked={on} disabled={done} className="h-4 w-4"
@@ -151,7 +151,7 @@ export function TermsMap({ value, onChange }: { value: TermMap[]; onChange: (v: 
             const t = termById(m.id); if (!t) return null;
             const ok = canChange(t);
             return (
-              <tr key={m.id} className="border-b border-[var(--line)]">
+              <tr key={m.id} className="border-b border-[var(--line2)]">
                 <td className="px-3 py-2">{t.name}<br /><span className="font-mono text-[12px] text-[var(--ink3)]">{t.id}</span></td>
                 <td className="whitespace-nowrap px-3 py-2">{t.type}</td>
                 <td className="px-3 py-2">
@@ -225,7 +225,7 @@ export function GuestBlock({ isRef, guest, fields, auth, terms, onChange, err }:
                   {fields.map((g) => {
                     const locked = guestFieldLocked(g);
                     return (
-                      <tr key={g.name} className="border-b border-[var(--line)]">
+                      <tr key={g.name} className="border-b border-[var(--line2)]">
                         <td className="whitespace-nowrap px-3 py-2">
                           <span className="flex items-center gap-3">
                             {(['사용', '미사용'] as const).map((o) => (
@@ -302,7 +302,7 @@ export function GuestBlock({ isRef, guest, fields, auth, terms, onChange, err }:
                         const t = termById(m.id); if (!t) return null;
                         const fx = t.id === GUEST_TERM_FIX;
                         return (
-                          <tr key={m.id} className="border-b border-[var(--line)]">
+                          <tr key={m.id} className="border-b border-[var(--line2)]">
                             <td className="px-3 py-2">{t.name}<br /><span className="font-mono text-[12px] text-[var(--ink3)]">{t.id}</span></td>
                             <td className="whitespace-nowrap px-3 py-2">{t.type}</td>
                             <td className="whitespace-nowrap px-3 py-2">{t.cons}</td>
@@ -328,7 +328,7 @@ export function GuestBlock({ isRef, guest, fields, auth, terms, onChange, err }:
             </div>
           </Row>
 
-          <div className="border-b border-[var(--line)] bg-[var(--warnbg)] px-4 py-3 text-[13px] leading-[18px] text-[var(--warn)]">
+          <div className="border-b border-[var(--line2)] bg-[var(--warnbg)] px-4 py-3 text-[13px] leading-[18px] text-[var(--warn)]">
             조건에 <b>회원 전용</b> 표시가 있는 조건(멤버십 등급·회선·상품·서비스·행동 등)은 비회원이 판정할 수 없어요.
             이런 조건이 있으면 비회원은 FO에서 로그인·회원가입으로 안내돼요. 연령·이벤트 참여 이력은 비회원도 판정할 수 있어요.
           </div>
