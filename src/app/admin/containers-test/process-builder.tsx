@@ -195,32 +195,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
       {/* ③ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
       {src === '운영자 편성' ? (
         <Sec n={3} title="채우기 — 항목 등록">
-          <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">칩 묶음 <span className="text-[var(--ac)]">1</span></p>
-          <div className="rounded-[10px] border border-[var(--line2)] p-2.5">
-            <div className="mb-2 flex items-center gap-1.5">
-              <GripVertical className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-              <span className="w-4 shrink-0 text-center text-[12px] text-[var(--ink3)]">1</span>
-              <input defaultValue={corner.name} className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line3)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-              <button type="button" onClick={() => onToast('취소')} className="inline-flex h-[30px] items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[12px] text-[var(--ink3)] hover:bg-[var(--th)]"><X className="h-3 w-3" /> 취소</button>
-              <button type="button" onClick={() => onToast('저장되었습니다. (데모)')} className="inline-flex h-[30px] items-center gap-1 rounded-[6px] bg-[var(--ac)] px-2 text-[12px] font-semibold text-white hover:bg-[var(--ac-h)]"><Check className="h-3 w-3" /> 완료</button>
-            </div>
-            <p className="mb-2 flex items-center justify-between text-[11px] text-[var(--ink4)]"><span>라벨·이동 링크를 입력하고 드래그로 <b className="text-[var(--ink3)]">순서 변경</b> · 상단 “완료”로 저장</span><span className="font-semibold">{items.length}</span></p>
-            <div className="space-y-1.5">
-              {items.map((o) => (
-                <div key={o.id} className="flex items-center gap-1.5 rounded-[8px] border border-[var(--line3)] bg-white px-2 py-1.5">
-                  <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--ink4)]" />
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]"><ImageIcon className="h-3.5 w-3.5" /></span>
-                  <input defaultValue={o.label} placeholder="라벨 입력" className="h-[30px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                  <button type="button" onClick={() => onToast('이동 링크 설정 (데모)')} className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-[var(--line2)] text-[var(--ink3)] hover:bg-[var(--th)]"><Link2 className="h-3.5 w-3.5" /></button>
-                  <button type="button" onClick={() => onToast('불러오기 (데모)')} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-[var(--th)]">불러오기</button>
-                  <button type="button" onClick={() => removeItem(o.id)} className="grid h-6 w-6 shrink-0 place-items-center text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
-                </div>
-              ))}
-            </div>
-            <button type="button" onClick={addItem} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 메뉴 추가</button>
-            <p className="mt-2 flex items-start gap-1 rounded-[8px] bg-[var(--th)] px-2.5 py-2 text-[11px] leading-relaxed text-[var(--ink4)]"><Lock className="mt-0.5 h-3 w-3 shrink-0" /> 슬롯 수·줄 수는 <b className="text-[var(--ink3)]">코너 유형(껍데기)</b>에서 정의합니다. <b className="text-[var(--ink3)]">라벨·이동 링크·순서</b>는 빌더에서 채워요.</p>
+          <div className="space-y-1.5">
+            {items.map((o) => (
+              <div key={o.id} className="flex items-center gap-1.5 rounded-[8px] border border-[var(--line3)] bg-white px-2 py-1.5">
+                <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--ink4)]" />
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]"><ImageIcon className="h-3.5 w-3.5" /></span>
+                <input defaultValue={o.label} placeholder="라벨 입력" className="h-[30px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                <button type="button" onClick={() => onToast('이동 링크 설정 (데모)')} className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-[var(--line2)] text-[var(--ink3)] hover:bg-[var(--th)]"><Link2 className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={() => onToast('불러오기 (데모)')} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-[var(--th)]">불러오기</button>
+                <button type="button" onClick={() => removeItem(o.id)} className="grid h-6 w-6 shrink-0 place-items-center text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+              </div>
+            ))}
           </div>
-          {MiNoChul}
+          <button type="button" onClick={addItem} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 메뉴 추가</button>
         </Sec>
       ) : isData ? (
         <Sec n={3} title="요청 — CVM에 무엇을 달라고 할지" help>
