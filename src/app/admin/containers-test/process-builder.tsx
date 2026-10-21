@@ -310,9 +310,9 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
   const selected = selIndex >= 0 ? t.corners[selIndex] : null;
   const bands = BAND_ORDER.map((z) => ({ z, items: t.corners.filter((c) => c.zone === z) })).filter((b) => b.items.length > 0);
   return (
-    <div className={cn('overflow-hidden rounded-[12px] border bg-white', active ? 'border-[var(--ac)]' : 'border-[var(--line2)]')}>
+    <div className={cn('rounded-[12px] border bg-white', active ? 'border-[var(--ac)]' : 'border-[var(--line2)]')}>
       {/* 카드 헤더 */}
-      <div className={cn('flex items-center gap-2.5 px-4 py-3', active ? 'bg-[var(--ac2)]' : 'bg-[var(--th)]')}>
+      <div className={cn('flex items-center gap-2.5 rounded-t-[11px] px-4 py-3', active ? 'bg-[var(--ac2)]' : 'bg-[var(--th)]')}>
         <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]" />
         <span className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] bg-[var(--ac)] text-[12px] font-bold text-white">{idx + 1}</span>
         <button type="button" onClick={onActivate} className="min-w-0 flex-1 text-left">
@@ -343,10 +343,10 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
                 이 템플릿에 배치된 코너가 없습니다.<br />「코너 추가」로 코너 관리의 코너를 가져오세요.
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-[320px_minmax(0,1fr)]">
-                {/* 코너 리스트 — 존(Fixed/Dynamic/Semi) 밴드 */}
-                <div className="space-y-2.5">
-                  <div className="max-h-[520px] space-y-2.5 overflow-y-auto pr-0.5">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
+                {/* 코너 리스트 — 존(Fixed/Dynamic/Semi) 밴드. 우측이 길어도 선택 가능하게 sticky 고정 */}
+                <div className="space-y-2.5 lg:sticky lg:top-4 lg:self-start">
+                  <div className="space-y-2.5 overflow-y-auto pr-0.5 lg:max-h-[calc(100vh-180px)]">
                     {bands.map(({ z, items }) => {
                       const m = ZONE_META[z];
                       return (
