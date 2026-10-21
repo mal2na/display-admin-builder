@@ -22,6 +22,13 @@ import type { ProcessData, PTemplate, PCorner, LibCorner } from './process-data'
 
 const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '비로그인 시 노출', '미노출'];
 
+/** 코너 레이아웃 표시 텍스트 — cornerLayout이 있으면 그 라벨, 없으면 layoutDetail(배너형: 빅배너·스몰배너·띠배너 등, 치수 괄호 제거) */
+function cornerLayoutText(layout: string | null, layoutDetail: string | null): string {
+  if (layout) return layoutLabel(layout) || layout;
+  if (layoutDetail) return layoutDetail.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  return '';
+}
+
 /** ISO 문자열 → datetime-local 입력값(YYYY-MM-DDTHH:mm, 로컬). 값 없으면 빈 문자열 */
 function toLocalInput(iso: string | null): string {
   if (!iso) return '';
@@ -101,6 +108,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onToast }: { te
   const [fb, setFb] = React.useState<'미노출' | '운영자 편성으로 대체'>(corner.fallback);
   const [cat, setCat] = React.useState('혜택');
   const [topN, setTopN] = React.useState(5);
+  // ① 코너 정보 — 코너명만 편집 가능(유형·레이아웃·개수는 코너 유형 관리에서 불러오는 껍데기)
+  const [editName, setEditName] = React.useState(false);
+  const [nameVal, setNameVal] = React.useState(corner.name);
   const options = cornerOptions(corner.preview);
   // ③ 채우기 항목 — 실제 코너 선택지에서 시작, 메뉴 추가/삭제로 편집(클라이언트 상태)
   const [items, setItems] = React.useState<{ id: string; label: string }[]>(
@@ -132,13 +142,30 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onToast }: { te
   return (
     <div className="space-y-3">
 
-      {/* ① 코너 정보 */}
+      {/* ① 코너 정보 — 코너명만 편집, 유형·레이아웃·개수는 코너 유형 관리에서 불러온 껍데기 */}
       <Sec n={1} title="코너 정보">
-        <div className="mb-2 flex items-center gap-1 rounded-[8px] bg-[var(--th)] px-2.5 py-2 text-[12px] text-[var(--ink3)]"><Lock className="h-3 w-3" /> 껍데기 · 코너 유형 관리에서 정의 · 수정 불가</div>
+        <div className="mb-2 flex items-center gap-1 rounded-[8px] bg-[var(--th)] px-2.5 py-2 text-[12px] text-[var(--ink3)]"><Lock className="h-3 w-3" /> 유형·레이아웃·개수는 코너 유형 관리에서 정의 · 수정 불가 · <b className="text-[var(--ink2)]">코너명만 편집</b></div>
         <Row label="코너 유형"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></Row>
-        <Row label="배열·레이아웃">{layoutLabel(corner.layout) || corner.layout || '—'}</Row>
+        <Row label="배열·레이아웃">{cornerLayoutText(corner.layout, corner.layoutDetail) || '—'}</Row>
         <Row label="노출 개수">{corner.maxItems != null ? `~ ${corner.maxItems}개` : '제한 없음'}</Row>
-        <Row label="코너명">{corner.name}</Row>
+        <Row label="코너명">
+          {editName ? (
+            <div className="flex items-center gap-1.5">
+              <input value={nameVal} onChange={(e) => setNameVal(e.target.value)} autoFocus
+                className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line3)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+              <button type="button" onClick={() => { setEditName(false); onToast('코너명을 수정했습니다. (데모)'); }}
+                className="inline-flex h-[30px] shrink-0 items-center gap-1 rounded-[6px] bg-[var(--ac)] px-2 text-[12px] font-semibold text-white hover:bg-[var(--ac-h)]"><Check className="h-3 w-3" /> 완료</button>
+              <button type="button" onClick={() => { setNameVal(corner.name); setEditName(false); }}
+                className="inline-flex h-[30px] shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[12px] text-[var(--ink3)] hover:bg-[var(--th)]"><X className="h-3 w-3" /> 취소</button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <span className="min-w-0 flex-1 truncate font-medium">{nameVal}</span>
+              <button type="button" onClick={() => setEditName(true)}
+                className="inline-flex shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2 py-0.5 text-[12px] font-medium text-[var(--ink3)] hover:border-[var(--line3)] hover:bg-[var(--th)]"><Pencil className="h-3 w-3" /> 수정</button>
+            </div>
+          )}
+        </Row>
       </Sec>
 
       {/* ② 수급 — 클릭해 전환 */}
@@ -317,7 +344,7 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onToast }
         <span className={cn('flex h-5 items-center truncate text-[13px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{c.name}</span>
         <span className="mt-0.5 flex items-center gap-1.5">
           <span className={cornerTypeChipClass(c.cornerType)}>{c.cornerType}</span>
-          {c.layout && <span className="text-[11px] text-[var(--ink4)]">{layoutLabel(c.layout) || c.layout}</span>}
+          {cornerLayoutText(c.layout, c.layoutDetail) && <span className="text-[11px] text-[var(--ink4)]">{cornerLayoutText(c.layout, c.layoutDetail)}</span>}
         </span>
       </span>
       {/* 고정(Fixed) 토글 — 타이틀 줄에 맞춰 상단 정렬 */}
@@ -355,13 +382,15 @@ function BandDroppable({ band, children }: { band: Band; children: React.ReactNo
   );
 }
 
-function BandedCorners({ corners, templateId, selCorner, onSelect, onAddCorner, onToast }: {
-  corners: PCorner[]; templateId: string; selCorner: string | null; onSelect: (id: string) => void; onAddCorner: () => void; onToast: (m: string) => void;
+function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSelect, onAddCorner, onToast }: {
+  corners: PCorner[]; onCornersChange: (rows: PCorner[]) => void; templateId: string; selCorner: string | null; onSelect: (id: string) => void; onAddCorner: () => void; onToast: (m: string) => void;
 }) {
   const router = useRouter();
   // 낙관적 로컬 상태 — 드래그 즉시 반영, 서버 저장 후 refresh로 동기화
   const [rows, setRows] = React.useState<PCorner[]>(corners);
   React.useEffect(() => { setRows(corners); }, [corners]);
+  // 리스트의 순서·존 변화를 부모(미리보기 공유 상태)로 즉시 올려 미리보기가 바로 반영되게 한다.
+  React.useEffect(() => { onCornersChange(rows); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
   const rowsRef = React.useRef(rows); rowsRef.current = rows;
   const startBand = React.useRef<Band | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -491,14 +520,15 @@ function BandedCorners({ corners, templateId, selCorner, onSelect, onAddCorner, 
 }
 
 /* ───────── 템플릿 카드(= order3 '컨테이너' 카드) ───────── */
-function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, onSelCorner, onAddCorner, onPreviewFallback, onToast }: {
-  t: PTemplate; idx: number; open: boolean; active: boolean;
+function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle, onActivate, selCorner, onSelCorner, onAddCorner, onPreviewFallback, onToast }: {
+  t: PTemplate; corners: PCorner[]; onCornersChange: React.Dispatch<React.SetStateAction<PCorner[]>>;
+  idx: number; open: boolean; active: boolean;
   onToggle: () => void; onActivate: () => void;
   selCorner: string | null; onSelCorner: (id: string) => void;
   onAddCorner: () => void; onPreviewFallback: (on: boolean) => void; onToast: (m: string) => void;
 }) {
-  const selIndex = t.corners.findIndex((c) => c.id === selCorner);
-  const selected = selIndex >= 0 ? t.corners[selIndex] : null;
+  const selIndex = corners.findIndex((c) => c.id === selCorner);
+  const selected = selIndex >= 0 ? corners[selIndex] : null;
   return (
     <div className={cn('rounded-[12px] border bg-white', active ? 'border-[var(--ac)]' : 'border-[var(--line2)]')}>
       {/* 카드 헤더 */}
@@ -509,12 +539,12 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
           <span className="ml-1.5 text-[12px] text-[var(--ink4)]">· {t.name}{t.conditionGroup ? ` · ${t.conditionGroup}` : ''}</span>
         </button>
         {/* 코너 수 바 그래프 — 코너별 존 색으로(이미지 레퍼런스) */}
-        <span className="hidden items-end gap-[2px] md:flex" title={`코너 ${t.corners.length}개`}>
-          {t.corners.slice(0, 24).map((c, i) => (
+        <span className="hidden items-end gap-[2px] md:flex" title={`코너 ${corners.length}개`}>
+          {corners.slice(0, 24).map((c, i) => (
             <span key={i} className="w-[3px] rounded-[1px]" style={{ height: 14, background: ZONE_META[c.zone]?.hex ?? 'var(--ac)' }} />
           ))}
         </span>
-        <span className="shrink-0 text-[12px] font-medium text-[var(--ink3)]">코너 {t.corners.length}개</span>
+        <span className="shrink-0 text-[12px] font-medium text-[var(--ink3)]">코너 {corners.length}개</span>
         {t.status !== 'PUBLISHED' && <span className="shrink-0 rounded-[4px] border border-[#ffd8a8] bg-[#fff4e6] px-1.5 py-0.5 text-[11px] font-semibold text-[#e8820c]">확인 필요</span>}
         {t.isDefault && <span className="shrink-0 rounded-[4px] bg-[var(--ac2)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ac)]">기본</span>}
         <button type="button" onClick={onToggle} className="shrink-0 rounded-[6px] p-1 text-[var(--ink3)] hover:bg-white/60" title={open ? '접기' : '펼치기'}>
@@ -526,14 +556,14 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
       {open && (
         <div className="space-y-4 p-4">
           <div>
-            <p className="mb-2 text-[13px] font-semibold text-[var(--ink2)]">코너 구성 <span className="text-[var(--ink4)]">{t.corners.length}개</span></p>
+            <p className="mb-2 text-[13px] font-semibold text-[var(--ink2)]">코너 구성 <span className="text-[var(--ink4)]">{corners.length}개</span></p>
             {/* order3 레퍼런스: 좌측 순서변경 박스만 그레이 배경 + 해상도 기준 고정 높이(내부 스크롤) + 코너 추가 하단 고정.
                코너가 0개여도 밴드(Fixed·Dynamic)는 항상 표시 — 각 밴드에 '추가 가능' 노출(2026-10-21). */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[360px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
               {/* 코너 순서변경 박스 — 그레이 배경, 리스트 스크롤 + 코너 추가 하단 고정 */}
               <div className="flex min-h-0 flex-col rounded-[12px] border border-[var(--line2)] bg-[var(--th)] p-2.5">
                 <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
-                  <BandedCorners corners={t.corners} templateId={t.id} selCorner={selCorner}
+                  <BandedCorners corners={corners} onCornersChange={onCornersChange} templateId={t.id} selCorner={selCorner}
                     onSelect={(id) => { onActivate(); onSelCorner(id); }} onAddCorner={onAddCorner} onToast={onToast} />
                 </div>
                 <button type="button" onClick={onAddCorner}
@@ -602,7 +632,7 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
                   <span className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[14px] font-bold text-[var(--ink)]">{c.name}</span>
-                    <span className="block text-[12px] text-[var(--ink4)]">{c.cornerType}{c.layout ? ` · ${layoutLabel(c.layout) || c.layout}` : ''} · v1.0.0</span>
+                    <span className="block text-[12px] text-[var(--ink4)]">{c.cornerType}{cornerLayoutText(c.layout, c.layoutDetail) ? ` · ${cornerLayoutText(c.layout, c.layoutDetail)}` : ''} · v1.0.0</span>
                   </span>
                 </button>
               );
@@ -679,7 +709,12 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
   // 단일 템플릿 뷰 — 클릭해 들어온 그 템플릿 하나만 보여준다(2026-10-21)
   const templates = activeTemplate ? [activeTemplate] : [];
   const activeSel = activeTemplate ? selCorner[activeTemplate.id] : null;
-  const totalCorners = activeTemplate?.corners.length ?? 0;
+
+  // 코너 순서·존의 공유 상태 — 리스트(BandedCorners)와 미리보기가 같은 state를 본다.
+  //  드래그/고정으로 즉시 미리보기 반영, 서버 refresh 시 활성 템플릿 코너로 재동기화(2026-10-21).
+  const [liveCorners, setLiveCorners] = React.useState<PCorner[]>(activeTemplate?.corners ?? []);
+  React.useEffect(() => { setLiveCorners(activeTemplate?.corners ?? []); }, [activeTemplate?.corners]);
+  const totalCorners = liveCorners.length;
 
   // 코너 리스트/상세에서 선택한 코너를 미리보기(디바이스)에서도 그 위치로 스크롤
   React.useEffect(() => {
@@ -726,8 +761,8 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
               {fbMode && <p className="mb-2 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3" /> CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)</p>}
               <div className="py-2">
                 <DeviceFrame width={360} bodyHeight="clamp(340px, calc(100dvh - 330px), 620px)" headerLabel={data.containerName} slim>
-                  {activeTemplate && activeTemplate.corners.length > 0 ? (
-                    activeTemplate.corners.map((c) => {
+                  {activeTemplate && liveCorners.length > 0 ? (
+                    liveCorners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
                       const replaced = fbMode && c.isCvm && c.fallback === '운영자 편성으로 대체';
                       if (hidden) {
@@ -818,6 +853,8 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                   <TemplateCard
                     key={t.id}
                     t={t}
+                    corners={liveCorners}
+                    onCornersChange={setLiveCorners}
                     idx={0}
                     open
                     active

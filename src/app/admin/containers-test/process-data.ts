@@ -6,14 +6,14 @@ import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, type Zo
 import type { PreviewCorner } from '@/components/preview/blocks';
 
 export type PCorner = {
-  id: string; templateCornerId: string; name: string; cornerType: string; layout: string | null; maxItems: number | null; preview: PreviewCorner;
+  id: string; templateCornerId: string; name: string; cornerType: string; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner;
   /** 수급 방식(정규화) · CVM 연동 여부 · CVM 비었을 때 폴백 — 폴백 UI용(2026-10-20) */
   recSource: string | null; isCvm: boolean; fallback: '미노출' | '운영자 편성으로 대체';
   /** 전시 존(Fixed/Dynamic/Semi) — 코너 리스트 밴드용(2026-10-21) */
   zone: Zone;
 };
 /** 코너 불러오기 모달용 — 코너 유형 관리의 선택 가능한 코너(+미리보기) */
-export type LibCorner = { id: string; name: string; cornerType: string; layout: string | null; maxItems: number | null; preview: PreviewCorner };
+export type LibCorner = { id: string; name: string; cornerType: string; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner };
 export type PTemplate = {
   id: string; name: string; conditionGroup: string | null; isDefault: boolean; status: string; corners: PCorner[];
   /** 템플릿 기본 정보 필드 */
@@ -61,6 +61,7 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       name: tc.corner.name,
       cornerType: tc.corner.cornerType,
       layout: tc.corner.cornerLayout,
+      layoutDetail: tc.corner.layoutDetail,
       maxItems: tc.corner.maxItems,
       preview: cornerToPreviewCorner(tc.corner),
       recSource: tc.corner.recSource ? normalizeRecSource(tc.corner.recSource) : null,
@@ -86,7 +87,7 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
   for (const c of rawLib) {
     if (seen.has(c.name)) continue;
     seen.add(c.name);
-    libCorners.push({ id: c.id, name: c.name, cornerType: c.cornerType, layout: c.cornerLayout, maxItems: c.maxItems, preview: cornerToPreviewCorner(c) });
+    libCorners.push({ id: c.id, name: c.name, cornerType: c.cornerType, layout: c.cornerLayout, layoutDetail: c.layoutDetail, maxItems: c.maxItems, preview: cornerToPreviewCorner(c) });
   }
 
   return {
