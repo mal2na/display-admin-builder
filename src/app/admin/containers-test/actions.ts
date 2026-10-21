@@ -24,3 +24,29 @@ export async function addTestTemplate(containerId: string, formData: FormData) {
   revalidatePath(`/admin/containers-test/c/${containerId}`);
   redirect(`/admin/containers-test/t/${template.id}`);
 }
+
+// 템플릿 복사 — 코너 배치까지 통째로 복사해 같은 Container 에 생성(테스트 경로 revalidate).
+export async function duplicateTestTemplate(containerId: string, templateId: string) {
+  const src = await prisma.template.findUnique({
+    where: { id: templateId },
+    include: { templateCorners: { orderBy: { order: 'asc' } } },
+  });
+  if (!src) throw new Error('복사할 템플릿을 찾을 수 없습니다.');
+  await prisma.template.create({
+    data: {
+      containerId,
+      name: `${src.name} (복사본)`,
+      conditionGroup: src.conditionGroup,
+      isDefault: false,
+      memo: src.memo,
+      displayOn: src.displayOn,
+      startAtOnApproval: src.startAtOnApproval,
+      startAt: src.startAt,
+      endAt: src.endAt,
+      status: 'DRAFT',
+      version: 1,
+      templateCorners: { create: src.templateCorners.map((tc) => ({ cornerId: tc.cornerId, order: tc.order, visible: tc.visible })) },
+    },
+  });
+  revalidatePath(`/admin/containers-test/c/${containerId}`);
+}

@@ -4,11 +4,16 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { CONTAINER_APPROVAL_STATUS_LABEL, DISPLAY_STATUS_LABEL, type DisplayStatusKey } from '@/lib/display-taxonomy';
-import { StatusPill, statusTone } from '@/components/ops-ui';
-import { Columns, Pencil, Trash2, Check, X, Download, ChevronRight, ChevronDown, Star, Copy, MoreVertical, ExternalLink } from 'lucide-react';
+import { CONTAINER_APPROVAL_STATUS_LABEL, DISPLAY_STATUS_LABEL, type DisplayStatusKey, CHIP_BASE } from '@/lib/display-taxonomy';
+import { StatusPill, statusTone, TABLE_CLS, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
+import { cn } from '@/lib/utils';
+import { Columns, Pencil, Trash2, Check, X, Download, ChevronRight, Star, ExternalLink } from 'lucide-react';
 import { ContainersTestShell } from '../../tree-shell';
 import { AddTemplateButton } from '../../add-template-button';
+import { LoginGroupSelect } from '../../../containers/[id]/login-group-select';
+import { TemplateRowActions } from '../../../containers/[id]/template-row-actions';
+import { setDefaultTemplate } from '../../../containers/actions';
+import { duplicateTestTemplate } from '../../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -146,52 +151,64 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
             <SectionTitle right={<><span className={BTN}><Download className="h-3.5 w-3.5" /> 템플릿 불러오기</span><AddTemplateButton containerId={container.id} /></>}>
               매핑 템플릿 정보 <span className="text-[14px] font-normal text-[var(--ink3)]">총 {activeTemplates.length}개</span>
             </SectionTitle>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-[13px]">
+            <div className="overflow-x-auto border-t border-[var(--line)]">
+              <table className={TABLE_CLS}>
                 <thead>
-                  <tr className="border-y border-[var(--line)] bg-[var(--th)] text-left text-[13px] font-semibold text-[var(--ink2)]">
-                    <th className="px-3 py-2.5 font-semibold">로그인 구분</th>
-                    <th className="px-3 py-2.5 font-semibold">템플릿명</th>
-                    <th className="px-3 py-2.5 font-semibold">기본</th>
-                    <th className="px-3 py-2.5 font-semibold">Corner</th>
-                    <th className="px-3 py-2.5 font-semibold">전시 상태</th>
-                    <th className="px-3 py-2.5 font-semibold">전시 기간</th>
-                    <th className="px-3 py-2.5 text-right font-semibold">관리</th>
+                  <tr className={THEAD_TR_CLS}>
+                    <th className="text-left">로그인 구분</th>
+                    <th className="text-left">템플릿명</th>
+                    <th className="text-left">기본</th>
+                    <th className="text-left">Corner</th>
+                    <th className="text-left">전시 상태</th>
+                    <th className="text-left">전시 기간</th>
+                    <th className="text-right">관리</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {activeTemplates.map((t) => (
-                    <tr key={t.id} className="border-b border-[var(--line)] hover:bg-[var(--th)]">
-                      <td className="px-3 py-2.5">
-                        <div className="relative inline-block">
-                          <select defaultValue={t.conditionGroup ?? '로그인'} className="h-[30px] appearance-none rounded-[6px] border border-[var(--line3)] bg-white pl-2.5 pr-7 text-[13px] focus:border-[var(--ac)] focus:outline-none">
-                            <option>로그인</option><option>비로그인</option><option>기본</option>
-                          </select>
-                          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink4)]" />
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <Link href={`/admin/containers-test/t/${t.id}`} className="inline-flex items-center gap-1 font-semibold text-[var(--ac)] hover:underline">
-                          {t.isDefault && <Star className="h-3.5 w-3.5 fill-[var(--ac)] text-[var(--ac)]" />}{t.name}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        {t.isDefault
-                          ? <span className="rounded-[6px] bg-[var(--ac2)] px-2 py-1 text-[12px] font-semibold text-[var(--ac)]">Y</span>
-                          : <span className="inline-flex items-center rounded-[6px] border border-[var(--line2)] bg-white px-2 py-1 text-[12px] text-[var(--ink3)]">N · 기본으로</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-[var(--ink)]">{t._count.templateCorners}</td>
-                      <td className="px-3 py-2.5"><span className="rounded-[6px] bg-[var(--th)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)]">{DISPLAY_STATUS_LABEL[t.status as DisplayStatusKey] ?? '초안 작성중'}</span></td>
-                      <td className="px-3 py-2.5 text-[var(--ink3)]">상시</td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Link href={`/admin/containers-test/t/${t.id}`} className="inline-flex h-[30px] items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 text-[12px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]"><Pencil className="h-3.5 w-3.5" /> 빌더</Link>
-                          <span className="inline-flex h-[30px] items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 text-[12px] font-semibold text-[var(--ink2)]"><Copy className="h-3.5 w-3.5" /> 복사</span>
-                          <span className="grid h-[30px] w-[30px] place-items-center rounded-[6px] border border-[var(--line2)] bg-white text-[var(--ink3)]"><MoreVertical className="h-4 w-4" /></span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {[...activeTemplates]
+                    .sort((a, b) => a.conditionGroup.localeCompare(b.conditionGroup) || Number(b.isDefault) - Number(a.isDefault))
+                    .map((t) => {
+                      const archiveBlockReason = t.isDefault
+                        ? '기본 템플릿은 보관할 수 없습니다. 먼저 다른 템플릿을 기본으로 지정하세요.'
+                        : activeTemplates.length <= 1 ? '컨테이너의 유일한 템플릿은 보관할 수 없습니다.' : null;
+                      const deleteBlockReason = t.isDefault
+                        ? '기본 템플릿은 삭제할 수 없어요. 먼저 다른 템플릿을 기본으로 지정하세요.'
+                        : activeTemplates.length <= 1 ? '컨테이너의 유일한 템플릿은 삭제할 수 없어요.'
+                          : !['DRAFT', 'REVIEW', 'REJECTED'].includes(t.status) ? '승인된 적 있는 템플릿은 삭제 대신 ‘보관’으로 숨기세요.' : null;
+                      return (
+                        <tr key={t.id} className={TBODY_TR_CLS}>
+                          <td className="h-12 px-3"><LoginGroupSelect templateId={t.id} value={t.conditionGroup} /></td>
+                          <td className="h-12 px-3 font-medium">
+                            <Link href={`/admin/containers-test/t/${t.id}`} className="flex items-center gap-1 text-[var(--ac)] hover:underline">
+                              {t.isDefault && <Star className="h-3.5 w-3.5 fill-[var(--ac)] text-[var(--ac)]" />}{t.name}
+                            </Link>
+                          </td>
+                          <td className="h-12 px-3">
+                            {t.isDefault ? (
+                              <span className={cn(CHIP_BASE, 'bg-[var(--ac2)] font-semibold text-[var(--ac)]')} title="기본 템플릿">Y</span>
+                            ) : (
+                              <form action={setDefaultTemplate.bind(null, container.id, t.id)}>
+                                <button className="inline-flex h-7 items-center whitespace-nowrap rounded-md border border-[var(--line3)] bg-white px-2.5 text-[12px] font-medium text-[var(--ink3)] transition hover:border-[var(--ac)] hover:text-[var(--ac)]" title="클릭하면 이 템플릿을 기본으로 지정">N · 기본으로</button>
+                              </form>
+                            )}
+                          </td>
+                          <td className="h-12 px-3 tabular-nums text-[var(--ink2)]">{t._count.templateCorners}</td>
+                          <td className="h-12 px-3">
+                            <StatusPill label={DISPLAY_STATUS_LABEL[t.status as DisplayStatusKey] ?? t.status} tone={statusTone(DISPLAY_STATUS_LABEL[t.status as DisplayStatusKey] ?? '')} />
+                          </td>
+                          <td className="h-12 px-3 text-[var(--ink3)]">{t.startAt ? `${t.startAt.toISOString().slice(0, 10)} ~` : '상시'}</td>
+                          <td className="h-12 px-3 text-right">
+                            <TemplateRowActions
+                              templateId={t.id}
+                              builderHref={`/admin/containers-test/t/${t.id}`}
+                              duplicateAction={duplicateTestTemplate.bind(null, container.id, t.id)}
+                              archiveBlockReason={archiveBlockReason}
+                              deleteBlockReason={deleteBlockReason}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>

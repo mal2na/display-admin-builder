@@ -343,10 +343,11 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
                 이 템플릿에 배치된 코너가 없습니다.<br />「코너 추가」로 코너 관리의 코너를 가져오세요.
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
-                {/* 코너 리스트 — 존(Fixed/Dynamic/Semi) 밴드. 우측이 길어도 선택 가능하게 sticky 고정 */}
-                <div className="space-y-2.5 lg:sticky lg:top-4 lg:self-start">
-                  <div className="space-y-2.5 overflow-y-auto pr-0.5 lg:max-h-[calc(100vh-180px)]">
+              /* order3 레퍼런스: 배경으로 구별 + 해상도 기준 고정 높이(내부 스크롤) + 코너 추가 하단 고정 */
+              <div className="grid grid-cols-1 gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--th)] p-3 lg:grid-cols-[320px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
+                {/* 코너 리스트 — 리스트 스크롤 + 코너 불러오기 하단 고정 */}
+                <div className="flex min-h-0 flex-col rounded-[10px] border border-[var(--line)] bg-white p-2">
+                  <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-0.5">
                     {bands.map(({ z, items }) => {
                       const m = ZONE_META[z];
                       return (
@@ -367,12 +368,14 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
                     })}
                   </div>
                   <button type="button" onClick={onAddCorner}
-                    className="flex w-full items-center justify-center gap-1 rounded-[10px] border border-dashed border-[var(--line3)] bg-white py-2.5 text-[13px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
+                    className="mt-2 flex w-full shrink-0 items-center justify-center gap-1 rounded-[10px] border border-dashed border-[var(--line3)] bg-white py-2.5 text-[13px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
                     <Copy className="h-4 w-4" /> 코너 불러오기
                   </button>
                 </div>
-                {/* 코너 상세 */}
-                <CornerDetail template={t} corner={selected} index={selIndex} onToast={onToast} />
+                {/* 코너 상세 — 독립 스크롤 */}
+                <div className="min-h-0 overflow-y-auto pr-0.5">
+                  <CornerDetail template={t} corner={selected} index={selIndex} onToast={onToast} />
+                </div>
               </div>
             )}
           </div>
@@ -446,8 +449,8 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
 export function ProcessBuilder({ data }: { data: ProcessData }) {
   const [basicOpen, setBasicOpen] = React.useState(true);
   const [activeId, setActiveId] = React.useState(data.activeTemplateId);
-  const [expanded, setExpanded] = React.useState<Record<string, boolean>>(() =>
-    Object.fromEntries(data.templates.map((t) => [t.id, t.id === data.activeTemplateId])));
+  // 아코디언 — 한 번에 하나의 템플릿만 펼침
+  const [openId, setOpenId] = React.useState<string | null>(data.activeTemplateId);
   const [selCorner, setSelCorner] = React.useState<Record<string, string>>(() =>
     Object.fromEntries(data.templates.map((t) => [t.id, t.corners[0]?.id ?? ''])));
   const [loadModal, setLoadModal] = React.useState<string | null>(null); // 코너 불러오기 모달(대상 템플릿 id)
@@ -469,7 +472,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
     setPanelOpen(true);
   }, [data]);
   const gotoIssue = (tid?: string) => {
-    if (tid) { setActiveId(tid); setExpanded((m) => ({ ...m, [tid]: true })); }
+    if (tid) { setActiveId(tid); setOpenId(tid); }
     setPanelOpen(false);
   };
   const errCount = validation?.issues.filter((i) => i.level === '오류').length ?? 0;
@@ -602,7 +605,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                 <h2 className="text-[15px] font-bold text-[var(--ink)]">템플릿 구성</h2>
                 <span className="text-[13px] text-[var(--ink3)]">총 {data.templates.length}개</span>
                 <div className="ml-auto flex gap-1.5">
-                  <button type="button" onClick={() => setExpanded({})} className="inline-flex items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">모두 접기</button>
+                  <button type="button" onClick={() => setOpenId(null)} className="inline-flex items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">모두 접기</button>
                   <button type="button" onClick={() => toast('복제는 실제 빌더에서 처리됩니다.')} className="inline-flex items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]"><Copy className="h-3.5 w-3.5" /> 복제하기</button>
                 </div>
               </div>
@@ -613,10 +616,10 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                     key={t.id}
                     t={t}
                     idx={i}
-                    open={expanded[t.id] ?? false}
+                    open={openId === t.id}
                     active={t.id === activeId}
-                    onToggle={() => setExpanded((m) => ({ ...m, [t.id]: !(m[t.id] ?? false) }))}
-                    onActivate={() => { setActiveId(t.id); setExpanded((m) => ({ ...m, [t.id]: true })); }}
+                    onToggle={() => setOpenId((cur) => (cur === t.id ? null : t.id))}
+                    onActivate={() => { setActiveId(t.id); setOpenId(t.id); }}
                     selCorner={selCorner[t.id] ?? null}
                     onSelCorner={(id) => setSelCorner((m) => ({ ...m, [t.id]: id }))}
                     onAddCorner={() => setLoadModal(t.id)}
