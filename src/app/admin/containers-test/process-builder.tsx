@@ -215,7 +215,14 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
           <span className="text-[14px] font-bold text-[var(--ink)]">{t.name}</span>
           {t.conditionGroup && <span className="ml-1.5 text-[12px] text-[var(--ink4)]">· {t.conditionGroup}</span>}
         </button>
-        <span className="shrink-0 text-[12px] text-[var(--ink3)]">코너 {t.corners.length}개</span>
+        {/* 코너 수 바 그래프 — 코너별 존 색으로(이미지 레퍼런스) */}
+        <span className="hidden items-end gap-[2px] md:flex" title={`코너 ${t.corners.length}개`}>
+          {t.corners.slice(0, 24).map((c, i) => (
+            <span key={i} className="w-[3px] rounded-[1px]" style={{ height: 14, background: ZONE_META[c.zone]?.hex ?? 'var(--ac)' }} />
+          ))}
+        </span>
+        <span className="shrink-0 text-[12px] font-medium text-[var(--ink3)]">코너 {t.corners.length}개</span>
+        {t.status !== 'PUBLISHED' && <span className="shrink-0 rounded-[4px] border border-[#ffd8a8] bg-[#fff4e6] px-1.5 py-0.5 text-[11px] font-semibold text-[#e8820c]">확인 필요</span>}
         {t.isDefault && <span className="shrink-0 rounded-[4px] bg-[var(--ac2)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ac)]">기본</span>}
         <button type="button" onClick={onToggle} className="shrink-0 rounded-[6px] p-1 text-[var(--ink3)] hover:bg-white/60" title={open ? '접기' : '펼치기'}>
           <ChevronDown className={cn('h-4 w-4 transition', !open && '-rotate-90')} />
@@ -225,13 +232,6 @@ function TemplateCard({ t, idx, open, active, onToggle, onActivate, selCorner, o
       {/* 카드 본문 */}
       {open && (
         <div className="space-y-4 p-4">
-          <div>
-            <label className="text-[13px] font-semibold text-[var(--ink2)]">템플릿명</label>
-            <div className="mt-1.5 flex h-[38px] items-center rounded-[var(--r-field)] border border-[var(--line)] bg-[var(--th)] px-3 text-[13px] text-[var(--ink2)]">
-              {t.name}{t.conditionGroup ? ` · ${t.conditionGroup}` : ''}
-            </div>
-          </div>
-
           <div>
             <p className="mb-2 text-[13px] font-semibold text-[var(--ink2)]">코너 구성 <span className="text-[var(--ink4)]">{t.corners.length}개</span></p>
             {t.corners.length === 0 ? (
@@ -403,7 +403,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
           <span className="rounded-full border border-[var(--warnln)] bg-[var(--warnbg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--warn)]">테스트</span>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[384px_minmax(0,1fr)]">
           {/* 좌: 미리보기(고정) */}
           <div className="xl:sticky xl:top-2 xl:self-start">
             <div className="rounded-[16px] border border-[var(--line)] bg-white p-4">
@@ -417,8 +417,8 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                 <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3 py-1', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
               </div>
               {fbMode && <p className="mb-2 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3" /> CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)</p>}
-              <div className="rounded-[12px] bg-[var(--th)] px-2 py-5">
-                <DeviceFrame width={288} bodyHeight={408} headerLabel={data.containerName} slim>
+              <div className="rounded-[12px] bg-[var(--th)] py-6">
+                <DeviceFrame width={344} bodyHeight={480} headerLabel={data.containerName} slim>
                   {activeTemplate && activeTemplate.corners.length > 0 ? (
                     activeTemplate.corners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
