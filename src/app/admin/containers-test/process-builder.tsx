@@ -738,11 +738,29 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
-      {/* 바디 — 좌 디바이스(바디 전체 높이 채움) · 우 콘텐츠(헤더 포함·독립 스크롤).
-         헤더를 우측 스크롤 영역에 두어 스크롤 시 사라지고, 디바이스는 항상 전체 높이를 씀(order3 레퍼런스) */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-y-auto px-6 pb-4 pt-4 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)] xl:overflow-hidden xl:pb-0">
-        {/* 좌: 미리보기 — 보더 없는 패널, 컬럼 높이를 디바이스가 flex로 채움 */}
-        <div className="flex min-h-0 flex-col xl:pb-4">
+      {/* 스크롤 영역 — 헤더(스크롤 시 함께 올라감) + 2열(좌 디바이스 스티키 · 우 콘텐츠) */}
+      <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5">
+        {/* 헤더 — 전체 폭, 고정 아님(스크롤하면 같이 올라감). 폰트는 다른 화면과 동일 */}
+        <div className="mb-5">
+          <Link href={`/admin/containers-test/c/${data.containerId}`} className="mb-2 inline-flex h-[32px] items-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white px-3 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">
+            <ChevronLeft className="h-4 w-4" /> 뒤로
+          </Link>
+          <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
+            <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
+            <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
+            <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시화면 관리 (테스트)</Link>
+            <ChevronRight className="h-3.5 w-3.5 opacity-50" /><b className="font-semibold text-[var(--ink)]">{data.containerName}</b>
+          </nav>
+          <div className="mt-1.5 flex items-center gap-2">
+            <h1 className="text-[20px] font-bold leading-[28px] tracking-[-0.3px] text-[var(--ink)]">{data.containerName}</h1>
+            <span className="rounded-full border border-[var(--warnln)] bg-[var(--warnbg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--warn)]">테스트</span>
+          </div>
+        </div>
+
+        {/* 2열 — 좌 디바이스(스티키·뷰포트 높이, 스크롤해도 제자리에 딱 붙음) · 우 콘텐츠 */}
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)] xl:items-start">
+          {/* 좌: 미리보기 — 스티키, 디바이스가 뷰포트 높이를 flex로 채움 */}
+          <div className="flex flex-col xl:sticky xl:top-0 xl:h-[calc(100dvh-150px)]">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="text-[14px] font-bold text-[var(--ink)]">미리보기</h2>
             <span className="text-[12px] text-[var(--ink3)]">{activeTemplate?.name}{activeTemplate?.conditionGroup ? ` · ${activeTemplate.conditionGroup}` : ''}</span>
@@ -794,24 +812,8 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
           </DeviceFrame>
         </div>
 
-        {/* 우: 헤더 + 기본 정보 + 템플릿 구성 + 구성 검증 — 독립 스크롤(헤더는 스크롤 시 사라짐) */}
-        <div className="min-h-0 space-y-6 xl:overflow-y-auto xl:pb-4 xl:pr-1">
-          {/* 헤더 — 브레드크럼 + 타이틀(표준 폰트, 다른 화면과 동일) */}
-          <div>
-            <Link href={`/admin/containers-test/c/${data.containerId}`} className="mb-2 inline-flex h-[32px] items-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white px-3 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">
-              <ChevronLeft className="h-4 w-4" /> 뒤로
-            </Link>
-            <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
-              <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
-              <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
-              <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시화면 관리 (테스트)</Link>
-              <ChevronRight className="h-3.5 w-3.5 opacity-50" /><b className="font-semibold text-[var(--ink)]">{data.containerName}</b>
-            </nav>
-            <div className="mt-1.5 flex items-center gap-2">
-              <h1 className="text-[20px] font-bold leading-[28px] tracking-[-0.3px] text-[var(--ink)]">{data.containerName}</h1>
-              <span className="rounded-full border border-[var(--warnln)] bg-[var(--warnbg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--warn)]">테스트</span>
-            </div>
-          </div>
+        {/* 우: 기본 정보 + 템플릿 구성 + 구성 검증 — 페이지와 함께 스크롤 */}
+        <div className="space-y-6">
 
             {/* 템플릿 기본 정보 */}
             <section className="overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
@@ -909,6 +911,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
             </section>
           </div>
         </div>
+      </div>
 
       {/* 구성 검증 결과 — 하단 시트(order3-create 레퍼런스) */}
       {panelOpen && validation && (
