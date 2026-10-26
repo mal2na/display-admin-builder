@@ -756,7 +756,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
       </div>
 
       {/* 바디 — 남은 높이 채움: 좌 디바이스(화면 꽉 채움·내부 스크롤) · 우 콘텐츠(독립 스크롤). order3-create 레퍼런스 */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-y-auto px-6 pb-4 pt-4 xl:grid-cols-[384px_minmax(0,1fr)] xl:overflow-hidden xl:pb-0">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-y-auto px-6 pb-4 pt-4 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)] xl:overflow-hidden xl:pb-0">
         {/* 좌: 미리보기 — 보더 없는 패널, 컬럼 높이를 디바이스가 flex로 채움 */}
         <div className="flex min-h-0 flex-col xl:pb-4">
           <div className="mb-3 flex items-baseline justify-between">
