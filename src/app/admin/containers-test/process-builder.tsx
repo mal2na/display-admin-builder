@@ -738,12 +738,11 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
-      <div className="flex-1 overflow-y-auto px-6 py-5 pb-24">
-        {/* 뒤로가기 */}
+      {/* 헤더 — 고정(뒤로·브레드크럼·타이틀). order3-create처럼 페이지 스크롤 없이 상단 고정 */}
+      <div className="shrink-0 px-6 pt-5">
         <Link href={`/admin/containers-test/c/${data.containerId}`} className="mb-2 inline-flex h-[32px] items-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white px-3 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">
           <ChevronLeft className="h-4 w-4" /> 뒤로
         </Link>
-        {/* 헤더 — 브레드크럼 + 타이틀 */}
         <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
           <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
           <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
@@ -754,23 +753,23 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
           <h1 className="text-[20px] font-bold leading-[28px] tracking-[-0.3px] text-[var(--ink)]">{data.containerName}</h1>
           <span className="rounded-full border border-[var(--warnln)] bg-[var(--warnbg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--warn)]">테스트</span>
         </div>
+      </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[384px_minmax(0,1fr)]">
-          {/* 좌: 미리보기(고정) */}
-          <div className="xl:sticky xl:top-2 xl:self-start">
-            <div className="rounded-[16px] border border-[var(--line2)] bg-white p-4">
-              <div className="mb-3 flex items-baseline justify-between">
-                <h2 className="text-[14px] font-bold text-[var(--ink)]">미리보기</h2>
-                <span className="text-[12px] text-[var(--ink3)]">{activeTemplate?.name}{activeTemplate?.conditionGroup ? ` · ${activeTemplate.conditionGroup}` : ''}</span>
-              </div>
-              {/* 정상 ↔ 폴백(CVM 비었을 때) 토글 */}
-              <div className="mb-3 inline-flex rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
-                <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-3 py-1', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>정상</button>
-                <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3 py-1', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
-              </div>
-              {fbMode && <p className="mb-2 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3" /> CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)</p>}
-              <div className="py-2">
-                <DeviceFrame width={360} bodyHeight="clamp(340px, calc(100dvh - 330px), 620px)" headerLabel={data.containerName} slim>
+      {/* 바디 — 남은 높이 채움: 좌 디바이스(화면 꽉 채움·내부 스크롤) · 우 콘텐츠(독립 스크롤). order3-create 레퍼런스 */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-y-auto px-6 pb-4 pt-4 xl:grid-cols-[384px_minmax(0,1fr)] xl:overflow-hidden xl:pb-0">
+        {/* 좌: 미리보기 — 보더 없는 패널, 컬럼 높이를 디바이스가 flex로 채움 */}
+        <div className="flex min-h-0 flex-col xl:pb-4">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-[14px] font-bold text-[var(--ink)]">미리보기</h2>
+            <span className="text-[12px] text-[var(--ink3)]">{activeTemplate?.name}{activeTemplate?.conditionGroup ? ` · ${activeTemplate.conditionGroup}` : ''}</span>
+          </div>
+          {/* 정상 ↔ 폴백(CVM 비었을 때) 토글 */}
+          <div className="mb-3 inline-flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
+            <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-3 py-1', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>정상</button>
+            <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3 py-1', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
+          </div>
+          {fbMode && <p className="mb-2 flex shrink-0 items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3" /> CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)</p>}
+          <DeviceFrame width={360} bodyHeight={520} fill headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     liveCorners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
@@ -808,13 +807,11 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                   ) : (
                     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
                   )}
-                </DeviceFrame>
-              </div>
-            </div>
-          </div>
+          </DeviceFrame>
+        </div>
 
-          {/* 우: 기본 정보 + 템플릿 구성 + 구성 검증 */}
-          <div className="space-y-6">
+        {/* 우: 기본 정보 + 템플릿 구성 + 구성 검증 — 독립 스크롤 */}
+        <div className="min-h-0 space-y-6 xl:overflow-y-auto xl:pb-4 xl:pr-1">
             {/* 템플릿 기본 정보 */}
             <section className="overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
               <button type="button" onClick={() => setBasicOpen((v) => !v)} className="flex w-full items-center gap-2 bg-[var(--ac2)] px-5 py-4">
@@ -911,7 +908,6 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
             </section>
           </div>
         </div>
-      </div>
 
       {/* 구성 검증 결과 — 하단 시트(order3-create 레퍼런스) */}
       {panelOpen && validation && (
@@ -949,8 +945,8 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
         </div>
       )}
 
-      {/* 하단 고정 액션 바 — 흰색 · 상단 라운드16 · 위로 뜨는 그림자(order3-create) */}
-      <div className="sticky bottom-0 z-30 flex items-center gap-3 rounded-t-[16px] bg-white px-6 py-3 shadow-[0_-6px_24px_rgba(41,52,89,0.1)]">
+      {/* 하단 고정 액션 바 — 고정 높이 flex 레이아웃의 바닥 고정 자식(order3 .sticky-acts) */}
+      <div className="z-30 flex shrink-0 items-center gap-3 border-t border-[var(--line2)] bg-white px-6 py-3">
         <span className="text-[13px] text-[var(--ink3)]">{activeTemplate?.name} · 코너 <b className="text-[var(--ink)]">{totalCorners}</b>개</span>
         <button type="button" onClick={() => validation ? setPanelOpen((v) => !v) : runValidate()}
           className={cn('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium',
