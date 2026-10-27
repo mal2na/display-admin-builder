@@ -360,32 +360,39 @@ function SwipeBannerEditor({ banners, bannerCampaigns, onCommit, single = false 
     next.splice(to, 0, moved);
     onCommit(next);
   };
+  // 껍데기(2026-10-27 사용자 요청): 배너 캠페인 불러오기 제거. 단일=1장, 스와이프=장 수만 정의.
+  const MIN = single ? 1 : 2, MAX = single ? 1 : 10;
+  const count = single ? 1 : Math.max(banners.length, MIN);
+  const setCount = (n: number) => {
+    const next = Math.max(MIN, Math.min(MAX, Math.floor(n) || MIN));
+    onCommit(Array.from({ length: next }, (_, i) => banners[i] ?? { title: '' }));
+  };
+  // 정규화 — 단일=1장, 스와이프=최소 2장
+  useEffect(() => {
+    if (single && banners.length !== 1) onCommit([banners[0] ?? { title: '' }]);
+    else if (!single && banners.length < 2) onCommit(Array.from({ length: 2 }, (_, i) => banners[i] ?? { title: '' }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [single]);
   return (
-    <div className="space-y-2 rounded-md border border-[#dce0e5] bg-white p-3">
+    <div className="space-y-3 rounded-md border border-[#dce0e5] bg-white p-3">
       <div className="flex items-center gap-2">
-        <span className="text-[12px] font-semibold text-slate-700">{single ? '배너 불러오기 (단일)' : '스와이프 배너 묶기'}</span>
-        <span className="rounded-full bg-[#f8f9fb] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{banners.length}{single ? '개' : '장'}</span>
-        {!single && <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>}
+        <span className="text-[12px] font-semibold text-slate-700">{single ? '배너 (단일형)' : '배너 (스와이프형)'}</span>
+        <span className="rounded-full bg-[#f8f9fb] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{count}장</span>
       </div>
-      {banners.length === 0 && <p className="rounded-md border border-dashed border-[#dce0e5] bg-white px-2 py-2 text-[11px] text-slate-400">{single ? '배너 캠페인 관리에서 배너 1개를 불러오세요. 소재·문구·랜딩 URL은 캠페인 값을 그대로 씁니다.' : '아래에서 배너 캠페인을 골라 담으세요. 랜딩 URL은 배너 캠페인 관리에서 그대로 이어져요.'}</p>}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={banners.map((b, i) => rowId(b, i))} strategy={verticalListSortingStrategy}>
-          <div className="space-y-1.5">
-            {banners.map((b, idx) => (
-              <SortableBannerRow key={rowId(b, idx)} id={rowId(b, idx)} idx={idx} banner={b} onRemove={() => remove(idx)} onLinkChange={(url) => patchLink(idx, url)} />
-            ))}
+      {single ? (
+        <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-2 text-[11px] text-slate-500">배너 <b className="text-slate-700">1장</b>을 노출하는 껍데기입니다.</p>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-[11px] font-medium text-slate-600">배너 수</span>
+          <div className="inline-flex items-center gap-1">
+            <button type="button" onClick={() => setCount(count - 1)} disabled={count <= MIN} className="grid h-8 w-8 place-items-center rounded-md border border-[#dce0e5] bg-white text-[15px] text-slate-600 hover:bg-[#f8f9fb] disabled:opacity-30">−</button>
+            <input type="number" min={MIN} max={MAX} value={count} onChange={(e) => setCount(Number(e.target.value))} className="h-8 w-14 rounded-md border border-[#c4c9cf] text-center text-[13px] font-semibold tabular-nums text-slate-800 focus:border-[#3617ce] focus:outline-none" />
+            <button type="button" onClick={() => setCount(count + 1)} disabled={count >= MAX} className="grid h-8 w-8 place-items-center rounded-md border border-[#dce0e5] bg-white text-[15px] text-slate-600 hover:bg-[#f8f9fb] disabled:opacity-30">+</button>
           </div>
-        </SortableContext>
-      </DndContext>
-      {(!single || banners.length === 0) && (
-        <button type="button" onClick={() => setPickerOpen(true)} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-2 text-[12px] font-medium text-slate-600 hover:bg-[#f8f9fb]">
-          <Plus className="h-3.5 w-3.5" /> {single ? '배너 캠페인에서 불러오기 (1개)' : '배너 캠페인에서 담기 (여러 개 선택)'}
-        </button>
+          <span className="text-[11px] text-slate-400">장 · 최대 {MAX}</span>
+        </div>
       )}
-      <p className="text-[11px] leading-relaxed text-slate-400">{single
-        ? <>배너형 · <b>단일형</b>은 <b>배너 캠페인 관리</b>에서 <b>배너 1개</b>를 불러옵니다. 소재·문구·<b>랜딩 URL</b>은 캠페인 값을 그대로 쓰고, 코너에서는 배치·규격·노출 방식만 정해요. 여러 장을 돌리려면 <b>스와이프형</b>으로 등록하세요.</>
-        : <>배너형 · <b>스와이프형</b>은 <b>배너 캠페인 관리</b>에서 <b>2개 이상</b>을 불러와 묶습니다. 빌더에선 <b>하나하나 불러올 필요 없이</b> 이 묶음이 그대로 생성돼요. 각 배너의 <b>랜딩 URL</b>은 캠페인 값을 그대로 쓰고, 순서는 <b>드래그</b>로 조정.</>}</p>
-      <BannerPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} campaigns={bannerCampaigns} usedIds={usedIds} onAdd={addMany} />
+      <p className="text-[11px] leading-relaxed text-slate-400">코너 유형은 <b>껍데기</b> — 배너 {single ? '1장' : '장 수'}만 정의합니다. 배너 소재·문구·<b>랜딩 URL</b>은 <b>전시화면 관리(빌더)</b>에서 배너 캠페인을 연결해 채웁니다.</p>
     </div>
   );
 }
@@ -638,64 +645,37 @@ function ChipIconPicker({ value, onPick }: { value?: string; onPick: (icon: stri
   );
 }
 
-// 껍데기(2026-10-14 사용자 요청): 코너 유형은 '슬롯 수'만 정의. 라벨·이동 링크·아이콘은 빌더에서 채운다.
-//  (이전엔 라벨·링크·아이콘을 유형이 소유 → 완전 껍데기로 전환.)
-function SortableChipDefRow({ id, idx, canRemove, onRemove }: { id: string; idx: number; chip?: ChipDef; canRemove: boolean; onPatch?: (p: Partial<ChipDef>) => void; onRemove: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
-  return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-1.5">
-      <button type="button" className="cursor-grab text-slate-400 active:cursor-grabbing" {...attributes} {...listeners} aria-label="순서 변경 (드래그)" title="드래그하여 순서 변경">
-        <GripVertical className="h-4 w-4" />
-      </button>
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-indigo-50 text-[10px] font-bold tabular-nums text-indigo-500">{idx + 1}</span>
-      <span className="flex h-8 min-w-0 flex-1 items-center rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2 text-[11px] text-slate-400">메뉴 슬롯 {idx + 1} · 라벨·이동 링크·아이콘은 빌더에서</span>
-      <button type="button" onClick={onRemove} disabled={!canRemove} className="flex h-7 w-6 shrink-0 items-center justify-center rounded border bg-white text-slate-400 hover:text-destructive disabled:opacity-30">×</button>
-    </div>
-  );
-}
-
-// 탭·메뉴 정의 편집기 — 라벨·링크·줄수·순서(드래그앤드롭)를 코너 유형에서 정의. 빌더는 순서만(2026-09-29 사용자 요청).
+// 탭·메뉴 정의 편집기 — 껍데기(2026-10-27 사용자 요청): 개별 슬롯 행 없이 '슬롯 수'만 정의.
+//  라벨·이동 링크·아이콘·순서 같은 실제 내용은 전시화면 관리(빌더)에서 코너별로 채운다.
 function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: number; onCommit: (chips: ChipDef[], rows?: number) => void }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
-  const rowId = (_c: ChipDef, i: number) => `chip-${i}`;
-  // 껍데기: 라벨·링크·아이콘은 유형이 소유하지 않는다(빌더에서 채움). 슬롯만 추가.
-  const add = () => onCommit([...chips, { label: '' }], rows);
-  const remove = (idx: number) => onCommit(chips.filter((_, j) => j !== idx), rows);
-  const onDragEnd = (e: DragEndEvent) => {
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const from = chips.findIndex((c, i) => rowId(c, i) === active.id);
-    const to = chips.findIndex((c, i) => rowId(c, i) === over.id);
-    if (from < 0 || to < 0) return;
-    const next = [...chips];
-    next.splice(to, 0, next.splice(from, 1)[0]);
-    onCommit(next, rows);
+  const MIN = 1, MAX = 12;
+  const count = chips.length;
+  // 개수만 바꾼다 — 기존 슬롯은 유지, 늘면 빈 슬롯 추가.
+  const setCount = (n: number) => {
+    const next = Math.max(MIN, Math.min(MAX, Math.floor(n) || MIN));
+    onCommit(Array.from({ length: next }, (_, i) => chips[i] ?? { label: '' }), rows);
   };
   return (
-    <div className="space-y-2 rounded-md border border-[#dce0e5] bg-white p-3">
+    <div className="space-y-3 rounded-md border border-[#dce0e5] bg-white p-3">
       <div className="flex items-center gap-2">
         <span className="text-[12px] font-semibold text-slate-700">탭·메뉴 슬롯</span>
-        <span className="rounded-full bg-[#f8f9fb] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{chips.length}칸</span>
-        <span className="ml-auto text-[11px] text-slate-400">드래그로 순서 변경</span>
+        <span className="rounded-full bg-[#f8f9fb] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-slate-500 ring-1 ring-slate-200">{count}칸</span>
       </div>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={chips.map((c, i) => rowId(c, i))} strategy={verticalListSortingStrategy}>
-          <div className="space-y-1.5">
-            {chips.map((c, idx) => (
-              <SortableChipDefRow key={rowId(c, idx)} id={rowId(c, idx)} idx={idx} chip={c} canRemove={chips.length > 1} onRemove={() => remove(idx)} />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={add} className="inline-flex items-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-[#f8f9fb]"><Plus className="h-3.5 w-3.5" /> 슬롯 추가</button>
+      {/* 슬롯 수 스테퍼 — 껍데기라 개수만 정의 */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-[11px] font-medium text-slate-600">슬롯 수</span>
+        <div className="inline-flex items-center gap-1">
+          <button type="button" onClick={() => setCount(count - 1)} disabled={count <= MIN} className="grid h-8 w-8 place-items-center rounded-md border border-[#dce0e5] bg-white text-[15px] text-slate-600 hover:bg-[#f8f9fb] disabled:opacity-30">−</button>
+          <input type="number" min={MIN} max={MAX} value={count} onChange={(e) => setCount(Number(e.target.value))} className="h-8 w-14 rounded-md border border-[#c4c9cf] text-center text-[13px] font-semibold tabular-nums text-slate-800 focus:border-[#3617ce] focus:outline-none" />
+          <button type="button" onClick={() => setCount(count + 1)} disabled={count >= MAX} className="grid h-8 w-8 place-items-center rounded-md border border-[#dce0e5] bg-white text-[15px] text-slate-600 hover:bg-[#f8f9fb] disabled:opacity-30">+</button>
+        </div>
+        <span className="text-[11px] text-slate-400">칸 · 최대 {MAX}</span>
         <span className="ml-auto text-[11px] text-slate-500">줄 수</span>
         {[1, 2].map((r) => (
           <button key={r} type="button" onClick={() => onCommit(chips, r)} className={cn('rounded px-2 py-0.5 text-[11px] font-medium', rows === r ? 'bg-[#3617ce] text-white' : 'border bg-white text-slate-600 hover:bg-[#f8f9fb]')}>{r}줄</button>
         ))}
       </div>
-      <p className="text-[11px] leading-relaxed text-slate-400">코너 유형은 <b>껍데기</b> — 탭·메뉴의 <b>슬롯 수·줄 수·순서</b>만 정의합니다. <b>라벨·이동 링크·아이콘</b> 같은 실제 내용은 <b>전시화면 관리(빌더)</b>에서 코너별로 채웁니다.</p>
+      <p className="text-[11px] leading-relaxed text-slate-400">코너 유형은 <b>껍데기</b> — 탭·메뉴의 <b>슬롯 수·줄 수</b>만 정의합니다. <b>라벨·이동 링크·아이콘·순서</b> 같은 실제 내용은 <b>전시화면 관리(빌더)</b>에서 코너별로 채웁니다.</p>
     </div>
   );
 }
