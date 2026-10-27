@@ -367,15 +367,17 @@ export function CornerSpecThumb({ storageKey, layout }: { storageKey: string; la
 function CornerInfoBody({ spec, onChange, layout }: { spec: CardHomeSpec; onChange: (s: CardHomeSpec) => void; layout?: string }) {
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
   const hasBanner = layout == null || /배너/.test(layout); // '+배너' 레이아웃만 배너 필드 노출
+  // 레이아웃이 쓰는 항목만 고정 노출(2026-10-27 사용자 요청): 표시 토글 제거, show=true 필드만 렌더.
   return (
     <div>
       <Group title="타이틀(Title)">
         <Prop name="타이틀(Title)" desc="타이틀 텍스트"><TextInput value={spec.title} onChange={(v) => set({ title: v })} multiline /></Prop>
       </Group>
-      <Group title="버튼 텍스트(ButtonText)">
-        <Prop name="버튼 표시(ShowButtonText)" desc="표시 여부"><Switch on={spec.buttonText.show} onChange={(v) => set({ buttonText: { ...spec.buttonText, show: v } })} /></Prop>
-        <Prop name="라벨(Label)" desc="라벨 텍스트"><TextInput value={spec.buttonText.label} onChange={(v) => set({ buttonText: { ...spec.buttonText, label: v } })} /></Prop>
-      </Group>
+      {spec.buttonText.show && (
+        <Group title="버튼 텍스트(ButtonText)">
+          <Prop name="라벨(Label)" desc="라벨 텍스트"><TextInput value={spec.buttonText.label} onChange={(v) => set({ buttonText: { ...spec.buttonText, label: v } })} /></Prop>
+        </Group>
+      )}
       {hasBanner && (
         <Group title="배너(BannerSrc)">
           <Prop name="배너 이미지(BannerSrc)" desc="이미지/미디어 경로"><TextInput value={spec.bannerSrc} onChange={(v) => set({ bannerSrc: v })} placeholder="이미지 주소 입력" /></Prop>
@@ -392,6 +394,8 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
   const vertical = isVertical(layout);
   const variantOpts = vertical ? V_VARIANTS : H_VARIANTS;
   const variantVal = (variantOpts as readonly Variant[]).includes(s.variant) ? s.variant : variantOpts[0];
+  // 레이아웃이 쓰는 항목만 고정 노출(2026-10-27 사용자 요청): 표시 토글 제거, show=true 필드만 렌더.
+  const pg = s.priceGroup; const cap = s.caption;
   return (
     <div className="max-h-[520px] overflow-y-auto">
         <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
@@ -400,65 +404,73 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
         </Group>
         <Group title="상품 텍스트(TextProductGroup)">
           <Prop name="타이틀(Title)" desc="타이틀 텍스트"><TextInput value={s.title} onChange={(v) => set('title', v)} /></Prop>
-          <Group title="서브타이틀(SubTitle)" sub>
-            <Prop name="서브타이틀 표시(ShowSubTitle)" desc="표시 여부" sub><Switch on={s.subTitle.show} onChange={(v) => set('subTitle', { ...s.subTitle, show: v })} /></Prop>
-            <Prop name="서브타이틀(SubTitle)" desc="서브 타이틀 텍스트" sub><TextInput value={s.subTitle.value} onChange={(v) => set('subTitle', { ...s.subTitle, value: v })} /></Prop>
-          </Group>
-        </Group>
-        <Group title="가격 텍스트(TextPriceGroup)" sub>
-          <Prop name="가격 표시(ShowTextPriceGroup)" desc="표시 여부" sub><Switch on={s.priceGroup.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, show: v })} /></Prop>
-          <Prop name="가격(Price)" desc="가격 텍스트" sub><TextInput value={s.priceGroup.price} onChange={(v) => set('priceGroup', { ...s.priceGroup, price: v })} /></Prop>
-          <Group title="가격 설명(PriceCaption)" sub>
-            <Prop name="가격 설명 표시(ShowPriceCaption)" desc="표시 여부" sub><Switch on={s.priceGroup.priceCaption.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, priceCaption: { ...s.priceGroup.priceCaption, show: v } })} /></Prop>
-            <Prop name="가격 설명(PriceCaption)" desc="설명 텍스트" sub><TextInput value={s.priceGroup.priceCaption.value} onChange={(v) => set('priceGroup', { ...s.priceGroup, priceCaption: { ...s.priceGroup.priceCaption, value: v } })} /></Prop>
-          </Group>
-          <Group title="할인율(DiscountRate)" sub>
-            <Prop name="할인율 표시(ShowDiscountRate)" desc="표시 여부" sub><Switch on={s.priceGroup.discountRate.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, discountRate: { ...s.priceGroup.discountRate, show: v } })} /></Prop>
-            <Prop name="할인율(DiscountRate)" desc="할인율 텍스트" sub><TextInput value={s.priceGroup.discountRate.value} onChange={(v) => set('priceGroup', { ...s.priceGroup, discountRate: { ...s.priceGroup.discountRate, value: v } })} /></Prop>
-          </Group>
-          <Group title="가격 기간(PricePeriod)" sub>
-            <Prop name="기간 표시(ShowPricePeriod)" desc="표시 여부" sub><Switch on={s.priceGroup.pricePeriod.show} onChange={(v) => set('priceGroup', { ...s.priceGroup, pricePeriod: { ...s.priceGroup.pricePeriod, show: v } })} /></Prop>
-            <Prop name="가격 기간(PricePeriod)" desc="기간 텍스트" sub><TextInput value={s.priceGroup.pricePeriod.value} onChange={(v) => set('priceGroup', { ...s.priceGroup, pricePeriod: { ...s.priceGroup.pricePeriod, value: v } })} /></Prop>
-          </Group>
-        </Group>
-        <Group title="보조 텍스트1(SubText01)" sub>
-          <Prop name="표시(ShowSubText01)" desc="표시 여부" sub><Switch on={s.subText01.show} onChange={(v) => set('subText01', { ...s.subText01, show: v })} /></Prop>
-          <Prop name="보조 텍스트1(SubText01)" desc="보조 텍스트 (1번째)" sub><TextInput value={s.subText01.value} onChange={(v) => set('subText01', { ...s.subText01, value: v })} /></Prop>
-        </Group>
-        <Group title="보조 텍스트2(SubText02)" sub>
-          <Prop name="표시(ShowSubText02)" desc="표시 여부" sub><Switch on={s.subText02.show} onChange={(v) => set('subText02', { ...s.subText02, show: v })} /></Prop>
-          <Prop name="보조 텍스트2(SubText02)" desc="보조 텍스트 (2번째)" sub><TextInput value={s.subText02.value} onChange={(v) => set('subText02', { ...s.subText02, value: v })} /></Prop>
-        </Group>
-        <Group title="캡션(Caption)" sub>
-          <Prop name="캡션 표시(ShowCaption)" desc="표시 여부" sub><Switch on={s.caption.show} onChange={(v) => set('caption', { ...s.caption, show: v })} /></Prop>
-          <Prop name="캡션1(Caption01)" desc="캡션 텍스트 (1번째)" sub><TextInput value={s.caption.value} onChange={(v) => set('caption', { ...s.caption, value: v })} /></Prop>
-          <Group title="캡션 아이콘(Caption01IconItem)" sub>
-            <Prop name="아이콘 표시(ShowCaption01IconItem)" desc="표시 여부" sub><Switch on={s.caption.icon.show} onChange={(v) => set('caption', { ...s.caption, icon: { show: v } })} /></Prop>
-          </Group>
-          <Group title="캡션2(Caption02)" sub>
-            <Prop name="표시(ShowCaption02)" desc="표시 여부" sub><Switch on={s.caption.caption02.show} onChange={(v) => set('caption', { ...s.caption, caption02: { ...s.caption.caption02, show: v } })} /></Prop>
-            <Prop name="캡션2(Caption02)" desc="캡션 텍스트 (2번째)" sub><TextInput value={s.caption.caption02.value} onChange={(v) => set('caption', { ...s.caption, caption02: { ...s.caption.caption02, value: v } })} /></Prop>
-          </Group>
-          <Group title="캡션3(Caption03)" sub>
-            <Prop name="표시(ShowCaption03)" desc="표시 여부" sub><Switch on={s.caption.caption03.show} onChange={(v) => set('caption', { ...s.caption, caption03: { ...s.caption.caption03, show: v } })} /></Prop>
-            <Prop name="캡션3(Caption03)" desc="캡션 텍스트 (3번째)" sub><TextInput value={s.caption.caption03.value} onChange={(v) => set('caption', { ...s.caption, caption03: { ...s.caption.caption03, value: v } })} /></Prop>
-          </Group>
-        </Group>
-        <Group title="개수(Count)" sub>
-          <Prop name="개수 표시(ShowCount)" desc="표시 여부" sub><Switch on={s.count.show} onChange={(v) => set('count', { ...s.count, show: v })} /></Prop>
-          <Prop name="개수(Count)" desc="개수 텍스트" sub><TextInput value={s.count.value} onChange={(v) => set('count', { ...s.count, value: v })} /></Prop>
-        </Group>
-        <Group title="배지(BadgeGroup)" sub>
-          <Prop name="배지 표시(ShowBadgeGroup)" desc="표시 여부" sub><Switch on={s.badgeGroup.show} onChange={(v) => set('badgeGroup', { ...s.badgeGroup, show: v })} /></Prop>
-          {s.badgeGroup.items.map((b, i) => (
-            <Group key={i} title={`배지${i + 1}(BadgeItem0${i + 1})`} sub>
-              <Prop name={`배지${i + 1} 표시(ShowBadgeItem)`} desc="표시 여부" sub><Switch on={b.show} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, show: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
-              <Prop name="톤(Tone)" desc="색 톤" sub><Seg value={b.tone} options={['Neutral', 'Brand', 'Danger', 'Positive'] as const} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, tone: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
-              <Prop name="위계(Hierarchy)" desc="강조 단계" sub><Seg value={b.hierarchy} options={['Primary', 'Secondary'] as const} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, hierarchy: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
-              <Prop name="라벨(Label)" desc="라벨 텍스트" sub><TextInput value={b.label} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, label: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
+          {s.subTitle.show && (
+            <Group title="서브타이틀(SubTitle)" sub>
+              <Prop name="서브타이틀(SubTitle)" desc="서브 타이틀 텍스트" sub><TextInput value={s.subTitle.value} onChange={(v) => set('subTitle', { ...s.subTitle, value: v })} /></Prop>
             </Group>
-          ))}
+          )}
         </Group>
+        {pg.show && (
+          <Group title="가격 텍스트(TextPriceGroup)" sub>
+            <Prop name="가격(Price)" desc="가격 텍스트" sub><TextInput value={pg.price} onChange={(v) => set('priceGroup', { ...pg, price: v })} /></Prop>
+            {pg.priceCaption.show && (
+              <Group title="가격 설명(PriceCaption)" sub>
+                <Prop name="가격 설명(PriceCaption)" desc="설명 텍스트" sub><TextInput value={pg.priceCaption.value} onChange={(v) => set('priceGroup', { ...pg, priceCaption: { ...pg.priceCaption, value: v } })} /></Prop>
+              </Group>
+            )}
+            {pg.discountRate.show && (
+              <Group title="할인율(DiscountRate)" sub>
+                <Prop name="할인율(DiscountRate)" desc="할인율 텍스트" sub><TextInput value={pg.discountRate.value} onChange={(v) => set('priceGroup', { ...pg, discountRate: { ...pg.discountRate, value: v } })} /></Prop>
+              </Group>
+            )}
+            {pg.pricePeriod.show && (
+              <Group title="가격 기간(PricePeriod)" sub>
+                <Prop name="가격 기간(PricePeriod)" desc="기간 텍스트" sub><TextInput value={pg.pricePeriod.value} onChange={(v) => set('priceGroup', { ...pg, pricePeriod: { ...pg.pricePeriod, value: v } })} /></Prop>
+              </Group>
+            )}
+          </Group>
+        )}
+        {s.subText01.show && (
+          <Group title="보조 텍스트1(SubText01)" sub>
+            <Prop name="보조 텍스트1(SubText01)" desc="보조 텍스트 (1번째)" sub><TextInput value={s.subText01.value} onChange={(v) => set('subText01', { ...s.subText01, value: v })} /></Prop>
+          </Group>
+        )}
+        {s.subText02.show && (
+          <Group title="보조 텍스트2(SubText02)" sub>
+            <Prop name="보조 텍스트2(SubText02)" desc="보조 텍스트 (2번째)" sub><TextInput value={s.subText02.value} onChange={(v) => set('subText02', { ...s.subText02, value: v })} /></Prop>
+          </Group>
+        )}
+        {cap.show && (
+          <Group title="캡션(Caption)" sub>
+            <Prop name="캡션1(Caption01)" desc="캡션 텍스트 (1번째)" sub><TextInput value={cap.value} onChange={(v) => set('caption', { ...cap, value: v })} /></Prop>
+            {cap.caption02.show && (
+              <Group title="캡션2(Caption02)" sub>
+                <Prop name="캡션2(Caption02)" desc="캡션 텍스트 (2번째)" sub><TextInput value={cap.caption02.value} onChange={(v) => set('caption', { ...cap, caption02: { ...cap.caption02, value: v } })} /></Prop>
+              </Group>
+            )}
+            {cap.caption03.show && (
+              <Group title="캡션3(Caption03)" sub>
+                <Prop name="캡션3(Caption03)" desc="캡션 텍스트 (3번째)" sub><TextInput value={cap.caption03.value} onChange={(v) => set('caption', { ...cap, caption03: { ...cap.caption03, value: v } })} /></Prop>
+              </Group>
+            )}
+          </Group>
+        )}
+        {s.count.show && (
+          <Group title="개수(Count)" sub>
+            <Prop name="개수(Count)" desc="개수 텍스트" sub><TextInput value={s.count.value} onChange={(v) => set('count', { ...s.count, value: v })} /></Prop>
+          </Group>
+        )}
+        {s.badgeGroup.show && (
+          <Group title="배지(BadgeGroup)" sub>
+            {s.badgeGroup.items.map((b, i) => (b.show ? (
+              <Group key={i} title={`배지${i + 1}(BadgeItem0${i + 1})`} sub>
+                <Prop name="톤(Tone)" desc="색 톤" sub><Seg value={b.tone} options={['Neutral', 'Brand', 'Danger', 'Positive'] as const} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, tone: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
+                <Prop name="위계(Hierarchy)" desc="강조 단계" sub><Seg value={b.hierarchy} options={['Primary', 'Secondary'] as const} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, hierarchy: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
+                <Prop name="라벨(Label)" desc="라벨 텍스트" sub><TextInput value={b.label} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, label: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
+              </Group>
+            ) : null))}
+          </Group>
+        )}
     </div>
   );
 }
