@@ -334,14 +334,14 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {usageByCorner.length === 0 ? (
         <div className="rounded-lg border border-dashed border-[#dce0e5] bg-muted/20 p-5 text-center text-[12px] text-muted-foreground">아직 이 코너 유형을 쓰는 전시화면이 없습니다.</div>
       ) : (
-        // 컴팩트 리스트 — 작은 썸네일 + 코너명 + 화면 칩(빌더 링크). 큰 미리보기 블록을 없애 공간 절약(2026-10-16 사용자 요청).
+        // 리스트 — 큰 썸네일 + 코너명 + 화면 칩(빌더 링크). 미리보기 크게(2026-10-27 사용자 요청).
         <div className="divide-y divide-[#dce0e5] border-t border-[#dce0e5]">
           {usageByCorner.map((u, i) => (
-            <div key={i} className="flex items-center gap-3 py-2.5">
-              <div className="pointer-events-none h-[72px] w-[58px] shrink-0 overflow-hidden rounded-md border border-[#dce0e5] bg-[#eef0f6]">
+            <div key={i} className="flex items-start gap-4 py-4">
+              <div className="pointer-events-none flex h-[220px] w-[220px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#dce0e5] bg-[#eef0f6]">
                 <DevicePreview corner={u.preview} fit="contain" align="center-middle" />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 pt-1">
                 <p className="mb-1 truncate text-[12.5px] font-semibold text-slate-800">{u.cornerName}</p>
                 <div className="flex flex-wrap gap-1">
                   {u.screens.length === 0 ? (
