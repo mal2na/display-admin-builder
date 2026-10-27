@@ -1899,14 +1899,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 onCommit={(next) => { const n = isSingleBannerType ? next.slice(0, 1) : next; setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, n.length || 1), image: true, price: true, desc: true, banners: n }]); }}
               />
             )}
-            {/* 상품·혜택 묶기 — 혜택형만. 상품형은 '코너 속성' 스튜디오로 대체(2026-10-16 사용자 요청) → 숨김. */}
-            {isProductItemsType && base !== '상품형' && (
-              <ProductItemEditor
-                items={productItems as ProductItem[]}
-                productOptions={productOptions}
-                onCommit={commitProductItems}
-              />
-            )}
+            {/* 상품·혜택 묶기 — 제거(2026-10-27 사용자 요청): 코너 유형은 껍데기. 실제 상품/혜택 묶음은 빌더에서 채운다. */}
             {/* 선택형(탭·메뉴) — 칩 정의는 코너 유형이 소유(2026-09-29 사용자 결정). 빌더는 순서만 변경. */}
             {(compValid === '선택형' || base === '업무 진입형') && (() => {
               const block = shownBlocks.find((b) => b.componentType === '선택형') ?? shownBlocks[0];
@@ -2081,13 +2074,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       {/* 추천 수급 · 노출 구성 = 한 섹션. 콘텐츠 출처(수급 방식)를 먼저 정하고, 그에 따라 노출 구성(정렬·CTA)을 설정.
           CVM 수급이면 정렬·구성을 CVM이 고객마다 결정하므로 노출 구성은 '선택 불가'(비활성)로 잠근다. */}
       {/* 추천 수급 섹션은 미리보기(좌측) 가로 영역을 침범하지 않도록 우측 컨트롤 열에 정렬(2026-09-30 사용자 요청). */}
-      {/* ③ 콘텐츠 출처 — 비상품형: 하단 standalone(좌측 스페이서+섹션). 상품형은 '코너 속성' 스튜디오 우측 열로 이동. */}
-      {showStep(2) && base !== '상품형' && (isRecEligible || isListType) && (
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
-        <div aria-hidden className="hidden lg:block" />
-        {contentSourceSection}
-      </div>
-      )}
+      {/* 콘텐츠 채우는 방식(수급 방식·노출 기본값) — 제거(2026-10-27 사용자 요청): 수급·정렬·CTA는 빌더에서 코너별로 정한다.
+          저장값(수급 방식·정렬 기본값)은 기존 값 유지를 위해 hidden으로만 보존. */}
+      <input type="hidden" name="defaultRecSource" value={recSource} />
+      <input type="hidden" name="defaultSortStrategy" value={row.defaultSortStrategy ?? ''} />
 
       {/* (제거됨) 고객정보 연동 필드 — 코너 유형 단계에선 실제 바인딩을 하지 않아 삭제.
           실제 고객정보 연동은 빌더의 아톰 단계('고객정보 가져오기' = @cvm:key)에서 처리한다. */}
