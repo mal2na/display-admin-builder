@@ -16,7 +16,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
 import { FieldRow } from '@/components/ops-ui';
-import { cornerTypeChipClass, layoutLabel, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
+import { cornerTypeChipClass, layoutLabel, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon } from 'lucide-react';
 import type { ProcessData, PTemplate, PCorner, LibCorner } from './process-data';
 
@@ -598,7 +598,7 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
   const [q, setQ] = React.useState('');
   const [tab, setTab] = React.useState('전체');
   // 상단 탭 = 코너 유형 관리의 전체 유형(7종) + 전체. 유형별 개수 표기.
-  const TABS = React.useMemo(() => ['전체', ...CORNER_TYPES] as const, []);
+  const TABS = React.useMemo(() => ['전체', ...VISIBLE_CORNER_TYPES] as const, []);
   const countOf = (t: string) => (t === '전체' ? corners.length : corners.filter((c) => c.cornerType === t).length);
   const list = corners.filter((c) => (tab === '전체' || c.cornerType === tab) && (!q || c.name.includes(q) || c.cornerType.includes(q)));
   // 멀티셀렉 — 체크된 코너 집합 + 우측 미리보기용 포커스

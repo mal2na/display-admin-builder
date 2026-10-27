@@ -438,6 +438,9 @@ export const CORNER_TYPES = [
 ] as const;
 export type CornerType = (typeof CORNER_TYPES)[number];
 
+// UI 노출용 코너 유형 — 콘텐츠 안내형 제외(2026-10-27 사용자 요청: 6종만). 타입/매핑은 CORNER_TYPES 유지(기존 데이터 호환).
+export const VISIBLE_CORNER_TYPES: CornerType[] = CORNER_TYPES.filter((t) => t !== '콘텐츠 안내형');
+
 // 코너 유형별 '목적' — 정책서 코너 유형 표(목적 컬럼)의 문구를 그대로 사용(임의 변경 금지).
 export const CORNER_TYPE_PURPOSE: Record<CornerType, string> = {
   상품형: '상품, 요금제, 단말, 부가서비스 후보를 탐색하게 한다.',

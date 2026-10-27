@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource } from '@/lib/display-taxonomy';
+import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, VISIBLE_CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource } from '@/lib/display-taxonomy';
 import { CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
 import { compositionToPreviewCorner, chipIconForLabel } from '@/components/preview/composition-preview';
 import { isEventCornerFamily } from '@/lib/event-taxonomy';
@@ -160,7 +160,7 @@ const DOMAIN_GUIDE: Record<Domain, string> = {
 };
 // 도메인별 거버넌스(유형) 칩 목록 — 전시는 7거버넌스(배너형 포함) 고정, 그 외는 도메인에 존재하는 유형.
 function domainGovernances(domain: Domain, present: string[]): string[] {
-  if (domain === '전시') return (CORNER_TYPES as readonly string[]).filter((bc) => domainOf(bc) === '전시');
+  if (domain === '전시') return (VISIBLE_CORNER_TYPES as readonly string[]).filter((bc) => domainOf(bc) === '전시');
   return present;
 }
 
@@ -602,7 +602,8 @@ function autoMapChip(label: string): { url: string; icon: string } {
   return { url: `tworld://quickmenu/${encodeURIComponent(slug)}`, icon };
 }
 // 선택형(탭·메뉴) 기본 칩 — 아이콘+라벨+자동 링크. 편집기·미리보기 공용.
-const CHIP_DEFAULTS: ChipDef[] = ['혜택', '카테고리', '이벤트'].map((l) => ({ label: l, ...autoMapChip(l) }));
+// 껍데기 기본 — 탭·메뉴 슬롯 8칸, 라벨은 '메뉴1·메뉴2…'(실제 라벨은 빌더에서 채움). 2026-10-27 사용자 요청.
+const CHIP_DEFAULTS: ChipDef[] = Array.from({ length: 8 }, (_, i) => ({ label: `메뉴${i + 1}` }));
 // 불러온 칩의 빈 아이콘·이동 링크를 라벨에서 자동 채움 — 등록 정의를 그대로 '불러오기'(수정 시 데이터가 쌓여 보이게). 추가는 직접 입력. 2026-09-30
 const hydrateChips = (chips: ChipDef[]): ChipDef[] => chips.map((c) => { const a = autoMapChip(c.label); return { ...c, icon: c.icon ?? a.icon, linkUrl: c.linkUrl || a.url }; });
 
@@ -653,7 +654,7 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
   // 개수만 바꾼다 — 기존 슬롯은 유지, 늘면 빈 슬롯 추가.
   const setCount = (n: number) => {
     const next = Math.max(MIN, Math.min(MAX, Math.floor(n) || MIN));
-    onCommit(Array.from({ length: next }, (_, i) => chips[i] ?? { label: '' }), rows);
+    onCommit(Array.from({ length: next }, (_, i) => chips[i] ?? { label: `메뉴${i + 1}` }), rows);
   };
   return (
     <div className="space-y-3 rounded-md border border-[#dce0e5] bg-white p-3">
@@ -1337,8 +1338,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   //   배너형도 정식 코너 유형(배너 단일형/스와이프형)으로 신규 등록 가능. 배너 소재·문구는 배너 캠페인 관리가 소유.
   const baseOptions = Array.from(
     new Set<string>([
-      ...(CORNER_TYPES as readonly string[]),
-      ...registered.map((r) => r.baseCategory).filter((b) => b && domainOf(b) === domainOf(base)), // 현재 등록된 케이스의 유형(같은 도메인)
+      ...(VISIBLE_CORNER_TYPES as readonly string[]),
+      ...registered.map((r) => r.baseCategory).filter((b) => b && b !== '콘텐츠 안내형' && domainOf(b) === domainOf(base)), // 현재 등록된 케이스의 유형(같은 도메인)
       ...(!isNew && row.baseCategory ? [row.baseCategory] : []),
     ]),
   );
