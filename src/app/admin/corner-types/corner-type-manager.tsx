@@ -1038,20 +1038,15 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         <FilterPanel
           rows={[
             [['코너 유형', (
-              <span key="chips" className="chipline">
-                {baseOptions.map((b) => {
-                  const active = base === b;
+              // 사용여부·승인상태 필터와 동일한 체크박스 UI. 동작은 단일 선택(전체 or 한 유형) 유지.
+              <span key="chips" className="ck-g">
+                {baseOptions.filter((b) => b !== '콘텐츠 안내형').map((b) => {
                   const count = b === '전체' ? domainTypes.length : domainTypes.filter((t) => t.baseCategory === b).length;
-                  const color = b === '전체' ? `${CHIP_BASE} bg-[#eef0f3] text-[var(--ink2)]` : cornerTypeChipClass(b);
                   return (
-                    <button
-                      key={b}
-                      type="button"
-                      onClick={() => { setBase(b); setPage(1); }}
-                      className={cn('gap-1.5 transition', active ? `${CHIP_BASE} bg-[#D9E9FF] text-[#2E7AFF]` : cn(color, 'opacity-60 hover:opacity-100'))}
-                    >
-                      {b}<span className="rounded bg-black/5 px-1.5 text-[11px] tabular-nums">{count}</span>
-                    </button>
+                    <label key={b} className={chkCls}>
+                      <input type="checkbox" className={chkInput} checked={base === b} onChange={() => { setBase(b); setPage(1); }} />
+                      {b}<span className="ml-0.5 rounded bg-black/5 px-1.5 text-[11px] tabular-nums">{count}</span>
+                    </label>
                   );
                 })}
               </span>
