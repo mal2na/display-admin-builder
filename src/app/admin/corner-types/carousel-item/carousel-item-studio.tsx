@@ -363,26 +363,27 @@ export function CornerSpecThumb({ storageKey, layout }: { storageKey: string; la
   );
 }
 
-// ── 코너 정보(CardHome) 본문 ──────────────────────────────────
+// 표시 항목 체크박스 한 줄 — 껐다 켜기만(2026-10-27 사용자 요청: 코너 정보/속성을 체크박스 on/off로).
+//  고정(disabled)=항상 노출되는 구조 항목. indent=하위 항목.
+function ChkRow({ label, checked, onChange, disabled, indent }: { label: string; checked: boolean; onChange?: (v: boolean) => void; disabled?: boolean; indent?: boolean }) {
+  return (
+    <label className={cn('flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px]', indent && 'ml-5', disabled ? 'cursor-default' : 'cursor-pointer hover:bg-[#f8f9fb]')}>
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange?.(e.target.checked)} className="h-4 w-4 accent-[#3617ce]" />
+      <span className={cn(checked ? 'font-medium text-slate-800' : 'text-slate-400')}>{label}</span>
+      {disabled && <span className="text-[11px] text-slate-400">· 고정</span>}
+    </label>
+  );
+}
+
+// ── 코너 정보(CardHome) 본문 — 체크박스 on/off 목록 ──────────────
 function CornerInfoBody({ spec, onChange, layout }: { spec: CardHomeSpec; onChange: (s: CardHomeSpec) => void; layout?: string }) {
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
   const hasBanner = layout == null || /배너/.test(layout); // '+배너' 레이아웃만 배너 필드 노출
-  // 레이아웃이 쓰는 항목만 고정 노출(2026-10-27 사용자 요청): 표시 토글 제거, show=true 필드만 렌더.
   return (
-    <div>
-      <Group title="타이틀(Title)">
-        <Prop name="타이틀(Title)" desc="타이틀 텍스트"><TextInput value={spec.title} onChange={(v) => set({ title: v })} multiline /></Prop>
-      </Group>
-      {spec.buttonText.show && (
-        <Group title="버튼 텍스트(ButtonText)">
-          <Prop name="라벨(Label)" desc="라벨 텍스트"><TextInput value={spec.buttonText.label} onChange={(v) => set({ buttonText: { ...spec.buttonText, label: v } })} /></Prop>
-        </Group>
-      )}
-      {hasBanner && (
-        <Group title="배너(BannerSrc)">
-          <Prop name="배너 이미지(BannerSrc)" desc="이미지/미디어 경로"><TextInput value={spec.bannerSrc} onChange={(v) => set({ bannerSrc: v })} placeholder="이미지 주소 입력" /></Prop>
-        </Group>
-      )}
+    <div className="space-y-0.5">
+      <ChkRow label="타이틀(Title)" checked disabled />
+      <ChkRow label="버튼 텍스트(ButtonText)" checked={spec.buttonText.show} onChange={(v) => set({ buttonText: { ...spec.buttonText, show: v } })} />
+      {hasBanner && <ChkRow label="배너(BannerSrc)" checked disabled />}
     </div>
   );
 }
@@ -394,83 +395,28 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
   const vertical = isVertical(layout);
   const variantOpts = vertical ? V_VARIANTS : H_VARIANTS;
   const variantVal = (variantOpts as readonly Variant[]).includes(s.variant) ? s.variant : variantOpts[0];
-  // 레이아웃이 쓰는 항목만 고정 노출(2026-10-27 사용자 요청): 표시 토글 제거, show=true 필드만 렌더.
+  // 코너 속성 = 표시 항목 체크박스 on/off(2026-10-27 사용자 요청). 형태(Variants)만 선택, 나머지는 켰다 껐다.
   const pg = s.priceGroup; const cap = s.caption;
+  const setPg = (p: Partial<typeof pg>) => set('priceGroup', { ...pg, ...p });
+  const setCap = (p: Partial<typeof cap>) => set('caption', { ...cap, ...p });
   return (
-    <div className="max-h-[520px] overflow-y-auto">
+    <div className="max-h-[520px] space-y-0.5 overflow-y-auto pr-1">
         <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
-        <Group title="이미지(ImageSrc)">
-          <Prop name="이미지 경로(ImageSrc)" desc="이미지/미디어 경로"><TextInput value={s.imageSrc} onChange={(v) => set('imageSrc', v)} placeholder="이미지 주소 입력" /></Prop>
-        </Group>
-        <Group title="상품 텍스트(TextProductGroup)">
-          <Prop name="타이틀(Title)" desc="타이틀 텍스트"><TextInput value={s.title} onChange={(v) => set('title', v)} /></Prop>
-          {s.subTitle.show && (
-            <Group title="서브타이틀(SubTitle)" sub>
-              <Prop name="서브타이틀(SubTitle)" desc="서브 타이틀 텍스트" sub><TextInput value={s.subTitle.value} onChange={(v) => set('subTitle', { ...s.subTitle, value: v })} /></Prop>
-            </Group>
-          )}
-        </Group>
-        {pg.show && (
-          <Group title="가격 텍스트(TextPriceGroup)" sub>
-            <Prop name="가격(Price)" desc="가격 텍스트" sub><TextInput value={pg.price} onChange={(v) => set('priceGroup', { ...pg, price: v })} /></Prop>
-            {pg.priceCaption.show && (
-              <Group title="가격 설명(PriceCaption)" sub>
-                <Prop name="가격 설명(PriceCaption)" desc="설명 텍스트" sub><TextInput value={pg.priceCaption.value} onChange={(v) => set('priceGroup', { ...pg, priceCaption: { ...pg.priceCaption, value: v } })} /></Prop>
-              </Group>
-            )}
-            {pg.discountRate.show && (
-              <Group title="할인율(DiscountRate)" sub>
-                <Prop name="할인율(DiscountRate)" desc="할인율 텍스트" sub><TextInput value={pg.discountRate.value} onChange={(v) => set('priceGroup', { ...pg, discountRate: { ...pg.discountRate, value: v } })} /></Prop>
-              </Group>
-            )}
-            {pg.pricePeriod.show && (
-              <Group title="가격 기간(PricePeriod)" sub>
-                <Prop name="가격 기간(PricePeriod)" desc="기간 텍스트" sub><TextInput value={pg.pricePeriod.value} onChange={(v) => set('priceGroup', { ...pg, pricePeriod: { ...pg.pricePeriod, value: v } })} /></Prop>
-              </Group>
-            )}
-          </Group>
-        )}
-        {s.subText01.show && (
-          <Group title="보조 텍스트1(SubText01)" sub>
-            <Prop name="보조 텍스트1(SubText01)" desc="보조 텍스트 (1번째)" sub><TextInput value={s.subText01.value} onChange={(v) => set('subText01', { ...s.subText01, value: v })} /></Prop>
-          </Group>
-        )}
-        {s.subText02.show && (
-          <Group title="보조 텍스트2(SubText02)" sub>
-            <Prop name="보조 텍스트2(SubText02)" desc="보조 텍스트 (2번째)" sub><TextInput value={s.subText02.value} onChange={(v) => set('subText02', { ...s.subText02, value: v })} /></Prop>
-          </Group>
-        )}
-        {cap.show && (
-          <Group title="캡션(Caption)" sub>
-            <Prop name="캡션1(Caption01)" desc="캡션 텍스트 (1번째)" sub><TextInput value={cap.value} onChange={(v) => set('caption', { ...cap, value: v })} /></Prop>
-            {cap.caption02.show && (
-              <Group title="캡션2(Caption02)" sub>
-                <Prop name="캡션2(Caption02)" desc="캡션 텍스트 (2번째)" sub><TextInput value={cap.caption02.value} onChange={(v) => set('caption', { ...cap, caption02: { ...cap.caption02, value: v } })} /></Prop>
-              </Group>
-            )}
-            {cap.caption03.show && (
-              <Group title="캡션3(Caption03)" sub>
-                <Prop name="캡션3(Caption03)" desc="캡션 텍스트 (3번째)" sub><TextInput value={cap.caption03.value} onChange={(v) => set('caption', { ...cap, caption03: { ...cap.caption03, value: v } })} /></Prop>
-              </Group>
-            )}
-          </Group>
-        )}
-        {s.count.show && (
-          <Group title="개수(Count)" sub>
-            <Prop name="개수(Count)" desc="개수 텍스트" sub><TextInput value={s.count.value} onChange={(v) => set('count', { ...s.count, value: v })} /></Prop>
-          </Group>
-        )}
-        {s.badgeGroup.show && (
-          <Group title="배지(BadgeGroup)" sub>
-            {s.badgeGroup.items.map((b, i) => (b.show ? (
-              <Group key={i} title={`배지${i + 1}(BadgeItem0${i + 1})`} sub>
-                <Prop name="톤(Tone)" desc="색 톤" sub><Seg value={b.tone} options={['Neutral', 'Brand', 'Danger', 'Positive'] as const} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, tone: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
-                <Prop name="위계(Hierarchy)" desc="강조 단계" sub><Seg value={b.hierarchy} options={['Primary', 'Secondary'] as const} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, hierarchy: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
-                <Prop name="라벨(Label)" desc="라벨 텍스트" sub><TextInput value={b.label} onChange={(v) => { const items = [...s.badgeGroup.items]; items[i] = { ...b, label: v }; set('badgeGroup', { ...s.badgeGroup, items }); }} /></Prop>
-              </Group>
-            ) : null))}
-          </Group>
-        )}
+        <ChkRow label="이미지(ImageSrc)" checked disabled />
+        <ChkRow label="타이틀(Title)" checked disabled />
+        <ChkRow label="서브타이틀(SubTitle)" checked={s.subTitle.show} onChange={(v) => set('subTitle', { ...s.subTitle, show: v })} />
+        <ChkRow label="가격(TextPriceGroup)" checked={pg.show} onChange={(v) => setPg({ show: v })} />
+        <ChkRow label="가격 설명(PriceCaption)" checked={pg.priceCaption.show} onChange={(v) => setPg({ priceCaption: { ...pg.priceCaption, show: v } })} indent />
+        <ChkRow label="할인율(DiscountRate)" checked={pg.discountRate.show} onChange={(v) => setPg({ discountRate: { ...pg.discountRate, show: v } })} indent />
+        <ChkRow label="가격 기간(PricePeriod)" checked={pg.pricePeriod.show} onChange={(v) => setPg({ pricePeriod: { ...pg.pricePeriod, show: v } })} indent />
+        <ChkRow label="보조 텍스트1(SubText01)" checked={s.subText01.show} onChange={(v) => set('subText01', { ...s.subText01, show: v })} />
+        <ChkRow label="보조 텍스트2(SubText02)" checked={s.subText02.show} onChange={(v) => set('subText02', { ...s.subText02, show: v })} />
+        <ChkRow label="캡션(Caption)" checked={cap.show} onChange={(v) => setCap({ show: v })} />
+        <ChkRow label="캡션 아이콘(Caption01IconItem)" checked={cap.icon.show} onChange={(v) => setCap({ icon: { show: v } as typeof cap.icon })} indent />
+        <ChkRow label="캡션2(Caption02)" checked={cap.caption02.show} onChange={(v) => setCap({ caption02: { ...cap.caption02, show: v } })} indent />
+        <ChkRow label="캡션3(Caption03)" checked={cap.caption03.show} onChange={(v) => setCap({ caption03: { ...cap.caption03, show: v } })} indent />
+        <ChkRow label="개수(Count)" checked={s.count.show} onChange={(v) => set('count', { ...s.count, show: v })} />
+        <ChkRow label="배지(BadgeGroup)" checked={s.badgeGroup.show} onChange={(v) => set('badgeGroup', { ...s.badgeGroup, show: v })} />
     </div>
   );
 }
