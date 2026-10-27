@@ -2016,8 +2016,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   </div>
                 </TRow>
               )}
-              {(base === '상품형' || compValid === '상품형') && (
-                <TRow label="카드 모양">
+              {(base === '상품형' || compValid === '상품형' || (base === '혜택·오퍼형' && /가로/.test(dStr))) && (
+                <TRow label="이미지 모양">
                   <select name="defaultCardShape" value={cardShape} onChange={(e) => setCardShape(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
                     <option value="">기본 (정사각형 1:1)</option>
                     <option value="1:1">정사각형 (1:1)</option>
