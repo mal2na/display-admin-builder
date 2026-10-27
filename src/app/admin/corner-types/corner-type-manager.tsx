@@ -1185,10 +1185,10 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             <thead>
               <tr className={THEAD_TR_CLS}>
                 <th className="w-14 px-3 py-2.5 text-left font-semibold">NO</th>
+                <th className="px-3 py-2.5 text-left font-semibold">코너 유형 ID</th>
                 <th className="w-44 px-3 py-2.5 text-center font-semibold">미리보기</th>
                 <th className="px-3 py-2.5 text-left font-semibold">코너 유형</th>
                 <th className="px-3 py-2.5 text-left font-semibold">배열·레이아웃</th>
-                <th className="px-3 py-2.5 text-left font-semibold">코너(케이스)</th>
                 <th className="w-20 px-3 py-2.5 text-left font-semibold">사용여부</th>
                 <th className="w-28 px-3 py-2.5 text-left font-semibold">승인상태</th>
                 <th className="px-3 py-2.5 text-left font-semibold">최근 수정자</th>
@@ -1201,6 +1201,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               ) : pageRows.map((t, i) => (
                 <tr key={t.id} className={cn(TBODY_TR_CLS, 'cursor-pointer last:border-0')} onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
                   <td className="px-3 py-2.5 align-middle tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 align-middle font-mono text-[12px] text-slate-500">{t.typeId}</td>
                   <td className="px-3 py-2.5">
                     {/* 미리보기를 번호 옆으로 고정 — 셀마다 같은 위치(가운데)에 렌더돼 스캔이 편함.
                         상품형은 상세와 동일한 CardPreview 썸네일(저장 스펙), 그 외는 기존 조합 가이드. */}
@@ -1212,7 +1213,6 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 align-middle"><span className={cornerTypeChipClass(t.baseCategory)}>{t.baseCategory}</span></td>
                   <td className="px-3 py-2.5 align-middle text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
-                  <td className="px-3 py-2.5 align-middle text-slate-800">{t.previewCorner?.name ?? '-'}</td>
                   <td className="px-3 py-2.5 align-middle"><YN yes={t.active} label={t.active ? '사용' : '미사용'} /></td>
                   <td className="whitespace-nowrap px-3 py-2.5 align-middle"><StatusPill label={CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status} /></td>
                   <td className="px-3 py-2.5 align-middle text-slate-600">{t.updatedBy ?? t.createdBy ?? '-'}</td>
