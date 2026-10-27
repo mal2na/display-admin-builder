@@ -366,6 +366,8 @@ export function CornerSpecThumb({ storageKey, layout }: { storageKey: string; la
 // 표시 항목 체크박스 한 줄 — 껐다 켜기만(2026-10-27 사용자 요청: 코너 정보/속성을 체크박스 on/off로).
 //  고정(disabled)=항상 노출되는 구조 항목. indent=하위 항목.
 function ChkRow({ label, checked, onChange, disabled, indent }: { label: string; checked: boolean; onChange?: (v: boolean) => void; disabled?: boolean; indent?: boolean }) {
+  // 현재 쓰는(켜진) 항목만 노출 — 꺼진 토글 항목은 숨긴다(2026-10-27 사용자 요청). 고정(disabled) 항목은 항상 노출.
+  if (!disabled && !checked) return null;
   return (
     <label className={cn('flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px]', indent && 'ml-5', disabled ? 'cursor-default' : 'cursor-pointer hover:bg-[#f8f9fb]')}>
       <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange?.(e.target.checked)} className="h-4 w-4 accent-[#3617ce]" />
@@ -463,16 +465,12 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
           <Panel n={1} title="기본 정보" aside={registerResult}>{basicInfo}</Panel>
         )}
 
-        {/* 2. 코너 정보 · 코너 속성 (미리보기 클릭으로 전환, 탭으로도 전환) */}
-        <Panel n={2} title="코너 정보 · 속성" hint="미리보기에서 카드/컴포넌트를 눌러 전환" bodyClass="">
-          <div className="flex flex-wrap items-center gap-1 border-b border-[#eef0f3] px-3">
-            <TabBtn active={sel === 'card'} onClick={() => setSel('card')}>코너 정보</TabBtn>
-            <TabBtn active={sel === 'item'} onClick={() => setSel('item')}>코너 속성</TabBtn>
-          </div>
-          {/* 탭바는 꽉차게, 표는 패널 안쪽으로 여백 + 테두리 */}
+        {/* 2. 코너 정보 · 속성 — 하나로 합쳐 '현재 쓰는 항목'만 노출(2026-10-27 사용자 요청). 탭 제거. */}
+        <Panel n={2} title="코너 정보 · 속성" hint="이 코너 유형이 쓰는 표시 항목" bodyClass="">
           <div className="p-4">
-            <div className="overflow-hidden rounded-[10px] border border-[#dce0e5]">
-              {sel === 'card' ? <CornerInfoBody spec={spec} onChange={save} layout={layout} /> : <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />}
+            <div className="overflow-hidden rounded-[10px] border border-[#dce0e5] p-2">
+              <CornerInfoBody spec={spec} onChange={save} layout={layout} />
+              <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />
             </div>
           </div>
         </Panel>

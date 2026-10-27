@@ -338,8 +338,8 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
         <div className="divide-y divide-[#dce0e5] border-t border-[#dce0e5]">
           {usageByCorner.map((u, i) => (
             <div key={i} className="flex items-start gap-4 py-4">
-              <div className="pointer-events-none h-[200px] w-[136px] shrink-0 overflow-hidden rounded-lg border border-[#dce0e5] bg-[#eef0f6]">
-                <DevicePreview corner={u.preview} fit="contain" align="top-center" />
+              <div className="pointer-events-none flex h-[220px] w-[220px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#dce0e5] bg-[#eef0f6]">
+                <DevicePreview corner={u.preview} fit="contain" align="center-middle" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
                 <p className="mb-1 truncate text-[12.5px] font-semibold text-slate-800">{u.cornerName}</p>
