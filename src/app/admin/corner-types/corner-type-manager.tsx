@@ -648,7 +648,7 @@ function ChipIconPicker({ value, onPick }: { value?: string; onPick: (icon: stri
 
 // 탭·메뉴 정의 편집기 — 껍데기(2026-10-27 사용자 요청): 개별 슬롯 행 없이 '슬롯 수'만 정의.
 //  라벨·이동 링크·아이콘·순서 같은 실제 내용은 전시화면 관리(빌더)에서 코너별로 채운다.
-function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: number; onCommit: (chips: ChipDef[], rows?: number) => void }) {
+function ChipDefEditor({ chips, rows, onCommit, footer }: { chips: ChipDef[]; rows: number; onCommit: (chips: ChipDef[], rows?: number) => void; footer?: React.ReactNode }) {
   const MIN = 1, MAX = 12;
   const count = chips.length;
   // 개수만 바꾼다 — 기존 슬롯은 유지, 늘면 빈 슬롯 추가.
@@ -677,6 +677,7 @@ function ChipDefEditor({ chips, rows, onCommit }: { chips: ChipDef[]; rows: numb
         ))}
       </div>
       <p className="text-[11px] leading-relaxed text-slate-400">코너 유형은 <b>껍데기</b> — 탭·메뉴의 <b>슬롯 수·줄 수</b>만 정의합니다. <b>라벨·이동 링크·아이콘·순서</b> 같은 실제 내용은 <b>전시화면 관리(빌더)</b>에서 코너별로 채웁니다.</p>
+      {footer && <div className="border-t border-[#eef0f3] pt-3">{footer}</div>}
     </div>
   );
 }
@@ -1906,43 +1907,39 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   chips={chips}
                   rows={rows}
                   onCommit={(nextChips, nextRows = rows) => setBlocks([{ componentType: '선택형' as ComponentType, count: 1, chips: nextChips, chipRows: nextRows }])}
+                  footer={
+                    /* FO 사용자 설정(고객 커스터마이즈) — 탭·메뉴 슬롯과 한 섹션으로 통합(2026-10-27 사용자 요청) */
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><Info className="h-3.5 w-3.5 text-sky-500" /> FO 사용자 설정 (고객 커스터마이즈)</div>
+                      <label className="flex items-center justify-between gap-2">
+                        <span className="flex flex-col">
+                          <span className="text-xs font-medium text-foreground">사용자 설정 가능</span>
+                          <span className="text-[11px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
+                        </span>
+                        <button type="button" role="switch" aria-checked={userCustom} onClick={() => setUserCustom((v) => !v)}
+                          className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-[#3617ce]' : 'bg-[#b3b9c0]')}>
+                          <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
+                        </button>
+                      </label>
+                      <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
+                      {userCustom && (
+                        <div className="grid grid-cols-2 gap-2 border-t pt-2.5">
+                          <div className="space-y-1">
+                            <label className="text-[11px] text-muted-foreground">고객 노출 최소 개수</label>
+                            <Input name="userMinItems" type="number" min={0} value={userMin} onChange={(e) => setUserMin(e.target.value)} placeholder="예: 3 (고정 포함)" className="h-8 text-xs" />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[11px] text-muted-foreground">고객 노출 최대 개수</label>
+                            <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
+                          </div>
+                          <p className="col-span-2 text-[11px] text-muted-foreground">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함.</p>
+                        </div>
+                      )}
+                    </div>
+                  }
                 />
               );
             })()}
-            {/* FO 사용자 설정 — 탭·메뉴 정의 바로 아래(우측 컨트롤 열). 선택형/업무 진입형에서만. */}
-            {(base === '업무 진입형' || compValid === '선택형') && (
-              <section className="overflow-hidden rounded-md border border-[#dce0e5]">
-                <div className="flex items-center gap-1.5 border-b border-[#dce0e5] bg-[#f8f9fb] px-3.5 py-2.5 text-xs font-semibold text-slate-700">
-                  <Info className="h-3.5 w-3.5 text-sky-500" /> FO 사용자 설정 (고객 커스터마이즈)
-                </div>
-                <div className="space-y-2.5 p-3">
-                  <label className="flex items-center justify-between gap-2">
-                    <span className="flex flex-col">
-                      <span className="text-xs font-medium text-foreground">사용자 설정 가능</span>
-                      <span className="text-[11px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
-                    </span>
-                    <button type="button" role="switch" aria-checked={userCustom} onClick={() => setUserCustom((v) => !v)}
-                      className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-[#3617ce]' : 'bg-[#b3b9c0]')}>
-                      <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
-                    </button>
-                  </label>
-                  <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
-                  {userCustom && (
-                    <div className="grid grid-cols-2 gap-2 border-t pt-2.5">
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-muted-foreground">고객 노출 최소 개수</label>
-                        <Input name="userMinItems" type="number" min={0} value={userMin} onChange={(e) => setUserMin(e.target.value)} placeholder="예: 3 (고정 포함)" className="h-8 text-xs" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-muted-foreground">고객 노출 최대 개수</label>
-                        <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
-                      </div>
-                      <p className="col-span-2 text-[11px] text-muted-foreground">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함.</p>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
             {/* 자동 구성(배열·레이아웃 요약) 카드는 제거 — 등록 결과·상품/혜택 묶기와 중복(2026-09-30 사용자 요청). 상품형은 '코너 속성' 스튜디오로 안내 대체 → 숨김(2026-10-16). */}
             <p className={cn('text-[11px] leading-relaxed text-muted-foreground', base === '상품형' && 'hidden')}>
               컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
