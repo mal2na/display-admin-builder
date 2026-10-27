@@ -180,7 +180,7 @@ function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children 
   return (
     <section className="overflow-hidden rounded-[16px] border border-[#dce0e5] bg-white">
       <button type="button" onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-5 py-4 text-left transition hover:bg-[#fafbfc]">
+        className="flex w-full items-center gap-2 bg-[#f8f9fb] px-5 py-4 text-left transition hover:bg-[#f1f3f5]">
         {n != null && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3617ce] text-[12px] font-bold text-white">{n}</span>}
         <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
         {hint && <span className="text-[11px] text-[#8b949e]">{hint}</span>}
@@ -299,7 +299,8 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
         <div className="flex h-[160px] w-full items-center justify-center bg-[#eceef1] text-[11px] text-[#b3b9c0]">Banner</div>
       ))}
       <p className="whitespace-pre-line px-3 pt-3 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
-      {spec.buttonText.show && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
+      {/* 세로형만 상단 텍스트 CTA. 가로형(가로형+배너)은 아래 캐러셀 밑에 CTA 버튼으로(2026-10-27 사용자 요청). */}
+      {spec.buttonText.show && vertical && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
       {vertical ? (
         // 세로형 = 세로 리스트(레퍼런스 4건·행 구분선). 실제 노출 개수는 빌더/노출 개수에서 결정, 미리보기는 대표 4건.
         <div className="mt-1 flex flex-col divide-y divide-[#f1f3f5] px-3 pb-2">
@@ -310,13 +311,21 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
           ))}
         </div>
       ) : (
-      <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-3">
+      <>
+      <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-2">
         {[0, 1].map((i) => (
           <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
             <ItemCard s={spec.item} />
           </button>
         ))}
       </div>
+      {/* 가로형(가로형+배너) 하단 CTA 버튼 — 전체폭 아웃라인 '더보기' 스타일(2026-10-27 사용자 요청). */}
+      {spec.buttonText.show && (
+        <div className="px-3 pb-3">
+          <div className="flex w-full items-center justify-center gap-0.5 rounded-[10px] border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.buttonText.label} <span className="text-[#b3b9c0]">›</span></div>
+        </div>
+      )}
+      </>
       )}
     </div>
   );
@@ -383,7 +392,7 @@ function CornerInfoBody({ spec, onChange, layout }: { spec: CardHomeSpec; onChan
   const hasBanner = layout == null || /배너/.test(layout); // '+배너' 레이아웃만 배너 필드 노출
   return (
     <div className="space-y-0.5">
-      <ChkRow label="타이틀(Title)" checked disabled />
+      <ChkRow label="코너 타이틀(Title)" checked disabled />
       <ChkRow label="버튼 텍스트(ButtonText)" checked={spec.buttonText.show} onChange={(v) => set({ buttonText: { ...spec.buttonText, show: v } })} />
       {hasBanner && <ChkRow label="배너(BannerSrc)" checked disabled />}
     </div>
@@ -405,7 +414,7 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
     <div className="max-h-[520px] space-y-0.5 overflow-y-auto pr-1">
         <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
         <ChkRow label="이미지(ImageSrc)" checked disabled />
-        <ChkRow label="타이틀(Title)" checked disabled />
+        <ChkRow label="아이템 타이틀(Title)" checked disabled />
         <ChkRow label="서브타이틀(SubTitle)" checked={s.subTitle.show} onChange={(v) => set('subTitle', { ...s.subTitle, show: v })} />
         <ChkRow label="가격(TextPriceGroup)" checked={pg.show} onChange={(v) => setPg({ show: v })} />
         <ChkRow label="가격 설명(PriceCaption)" checked={pg.priceCaption.show} onChange={(v) => setPg({ priceCaption: { ...pg.priceCaption, show: v } })} indent />
@@ -467,10 +476,23 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
 
         {/* 2. 코너 정보 · 속성 — 하나로 합쳐 '현재 쓰는 항목'만 노출(2026-10-27 사용자 요청). 탭 제거. */}
         <Panel n={2} title="코너 정보 · 속성" hint="이 코너 유형이 쓰는 표시 항목" bodyClass="">
-          <div className="p-4">
-            <div className="overflow-hidden rounded-[10px] border border-[#dce0e5] p-2">
-              <CornerInfoBody spec={spec} onChange={save} layout={layout} />
-              <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />
+          {/* 코너(카드)=카드 전체에 1개 · 아이템(요소)=리스트에서 반복되는 카드 1개. 같은 '타이틀'이라도 소속이 달라 그룹으로 구분(2026-10-27 사용자 요청). */}
+          <div className="space-y-3 p-4">
+            <div className="overflow-hidden rounded-[10px] border border-[#dce0e5]">
+              <div className="flex items-center gap-1.5 border-b border-[#eef0f3] bg-[#f8f9fb] px-3 py-2">
+                <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] bg-[#3617ce]/10 text-[10px] font-bold text-[#3617ce]">코</span>
+                <span className="text-[12px] font-bold text-[#454f59]">코너(카드)</span>
+                <span className="text-[11px] text-[#8b949e]">· 카드 전체에 1개 (배너·타이틀·버튼)</span>
+              </div>
+              <div className="p-2"><CornerInfoBody spec={spec} onChange={save} layout={layout} /></div>
+            </div>
+            <div className="overflow-hidden rounded-[10px] border border-[#dce0e5]">
+              <div className="flex items-center gap-1.5 border-b border-[#eef0f3] bg-[#f8f9fb] px-3 py-2">
+                <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] bg-[#00a058]/10 text-[10px] font-bold text-[#00a058]">아</span>
+                <span className="text-[12px] font-bold text-[#454f59]">아이템(요소)</span>
+                <span className="text-[11px] text-[#8b949e]">· 리스트에서 반복되는 카드 1개 (상품 이미지·타이틀·가격)</span>
+              </div>
+              <div className="p-2"><CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} /></div>
             </div>
           </div>
         </Panel>

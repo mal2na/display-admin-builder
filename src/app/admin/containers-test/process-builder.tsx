@@ -742,9 +742,6 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
       <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5">
         {/* 헤더 — 전체 폭, 고정 아님(스크롤하면 같이 올라감). 폰트는 다른 화면과 동일 */}
         <div className="mb-5">
-          <Link href={`/admin/containers-test/c/${data.containerId}`} className="mb-2 inline-flex h-[32px] items-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white px-3 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">
-            <ChevronLeft className="h-4 w-4" /> 뒤로
-          </Link>
           <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
             <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
             <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
@@ -759,19 +756,15 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
 
         {/* 2열 — 좌 디바이스(스티키·뷰포트 높이, 스크롤해도 제자리에 딱 붙음) · 우 콘텐츠 */}
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)] xl:items-start">
-          {/* 좌: 미리보기 — 스티키, 디바이스가 뷰포트 높이를 flex로 채움 */}
-          <div className="flex flex-col xl:sticky xl:top-0 xl:h-[calc(100dvh-150px)]">
-          <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-[14px] font-bold text-[var(--ink)]">미리보기</h2>
-            <span className="text-[12px] text-[var(--ink3)]">{activeTemplate?.name}{activeTemplate?.conditionGroup ? ` · ${activeTemplate.conditionGroup}` : ''}</span>
-          </div>
+          {/* 좌: 미리보기 — 고정 크기 폰(내용이 많아도 안 늘어나고 내부 스크롤), 스티키(NC-Channel 상품 전시 미리보기 기준, 2026-10-27 사용자 요청) */}
+          <div className="flex flex-col xl:sticky xl:top-4">
           {/* 정상 ↔ 폴백(CVM 비었을 때) 토글 */}
           <div className="mb-3 inline-flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
             <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-3 py-1', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>정상</button>
             <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3 py-1', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
           </div>
           {fbMode && <p className="mb-2 flex shrink-0 items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3" /> CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)</p>}
-          <DeviceFrame width={360} bodyHeight={520} fill headerLabel={data.containerName} slim>
+          <DeviceFrame width={360} bodyHeight={560} headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     liveCorners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
@@ -817,7 +810,7 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
 
             {/* 템플릿 기본 정보 */}
             <section className="overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
-              <button type="button" onClick={() => setBasicOpen((v) => !v)} className="flex w-full items-center gap-2 bg-[var(--ac2)] px-5 py-4">
+              <button type="button" onClick={() => setBasicOpen((v) => !v)} className="flex w-full items-center gap-2 bg-[var(--th)] px-5 py-4 transition hover:bg-[var(--surface-hover,#f1f3f5)]">
                 <h2 className="text-[15px] font-bold text-[var(--ink)]">템플릿 기본 정보</h2>
                 <ChevronDown className={cn('ml-auto h-4 w-4 text-[var(--ink3)] transition', !basicOpen && '-rotate-90')} />
               </button>

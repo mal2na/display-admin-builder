@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronRight, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Check, X, Search, ChevronRight, ChevronDown, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles } from 'lucide-react';
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -959,12 +959,19 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   // 코너 = 껍데기 → 같은 (코너 유형 · 배열·레이아웃 · 빅배너) 껍데기는 하나만 노출(중복 케이스 숨김, 2026-10-06 대공사).
   const filtered = (() => {
     const seen = new Set<string>();
-    return filteredAll.filter((t) => {
+    const dedup = filteredAll.filter((t) => {
       const key = `${t.baseCategory}|${t.typeDetail ?? ''}|${t.bigBanner ? 'B' : ''}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
+    // 조회결과를 코너 유형끼리 모아 보여준다(2026-10-27 사용자 요청) — 유형 순서는 필터 체크박스와 동일(VISIBLE_CORNER_TYPES), 그 안에서 배열·레이아웃 → 유형 ID.
+    const typeOrder = (bc: string) => { const i = (VISIBLE_CORNER_TYPES as readonly string[]).indexOf(bc); return i < 0 ? 999 : i; };
+    return dedup.sort((a, b) =>
+      typeOrder(a.baseCategory) - typeOrder(b.baseCategory)
+      || (a.typeDetail ?? '').localeCompare(b.typeDetail ?? '', 'ko')
+      || (a.typeId ?? '').localeCompare(b.typeId ?? '', 'ko'),
+    );
   })();
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const curPage = Math.min(page, totalPages);
@@ -1232,6 +1239,28 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
         </div>
       )}
     </div>
+  );
+}
+
+// 접이식 번호 카드 — 상품형 스튜디오 Panel 과 동일한 틀(① 기본 정보 / ② 세부 항목 …). 비상품형 폼을 같은 UI로 묶는다(2026-10-27 사용자 요청).
+function FormCard({ n, title, hint, aside, defaultOpen = true, bodyClass, children }: {
+  n?: number; title: string; hint?: string; aside?: React.ReactNode; defaultOpen?: boolean; bodyClass?: string; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="overflow-hidden rounded-[16px] border border-[#dce0e5] bg-white">
+      <button type="button" onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 bg-[#f8f9fb] px-5 py-4 text-left transition hover:bg-[#f1f3f5]">
+        {n != null && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3617ce] text-[12px] font-bold text-white">{n}</span>}
+        <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
+        {hint && <span className="text-[11px] text-[#8b949e]">{hint}</span>}
+        <span className="ml-auto flex items-center gap-3">
+          {aside}
+          <ChevronDown className={cn('h-4 w-4 shrink-0 text-[#8b949e] transition-transform', open ? 'rotate-180' : '')} />
+        </span>
+      </button>
+      {open && <div className={cn('border-t border-[#eef0f3]', bodyClass ?? 'px-5 py-4')}>{children}</div>}
+    </section>
   );
 }
 
@@ -1602,8 +1631,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       </TRow>
       {/* 컴포넌트 레이아웃(지정형/고정형)은 정의에서 제거 — 고정/택1은 빌더의 '노출 타입 베리에이션(CVM 택1)'이 placement 단위로 결정한다(2026-10-06). 저장값만 보존. */}
       <input type="hidden" name="componentLayoutMode" value={row.componentLayoutMode || '고정형'} />
-      {/* '등록 결과'는 상품형에선 '코너 정보' 옆으로 이동(2026-10-16) → 비상품형만 여기 표시. */}
-      {base !== '상품형' && <TRow label="등록 결과"><span className="text-[12px]">이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span></span></TRow>}
+      {/* '등록 결과'는 카드 헤더(aside 배지)로 이동(2026-10-27) → 헤더가 없는 bulk 일괄수정에서만 행으로 표시. */}
+      {bulk && <TRow label="등록 결과"><span className="text-[12px]">이렇게 등록돼요 · <span className="font-semibold text-foreground">{derivedName}</span></span></TRow>}
     </>
   );
 
@@ -1879,161 +1908,72 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* 기본 정보 — 상품형은 '코너 속성' 스튜디오의 1단계로 이동(미리보기 우측). 비상품형만 여기 표시(2026-10-16). */}
             {base !== '상품형' && (
             <div className={cn('order-1', !showStep(0) && 'hidden')}>
-              <div className="mb-2.5 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />기본 정보</div>
-              <div className="border-t border-[#dce0e5]">
+              <FormCard n={1} title="기본 정보"
+                aside={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}>
                 {basicPickers}
                 {metaFields}
-              </div>
+              </FormCard>
             </div>
             )}
-            <div className={cn('order-3 space-y-3', !showStep(1) && 'hidden')}>
-            {/* 배너형 — 무조건 배너 캠페인 관리에서 불러오기. 단일형=1개, 스와이프형=여러 개. 2026-09-30 사용자 확정 */}
-            {isBannerLoader && (
-              <SwipeBannerEditor
-                banners={swipeBanners as SwipeBannerItem[]}
-                bannerCampaigns={bannerCampaigns}
-                single={isSingleBannerType}
-                onCommit={(next) => { const n = isSingleBannerType ? next.slice(0, 1) : next; setBlocks([{ componentType: '배너형' as ComponentType, count: Math.max(1, n.length || 1), image: true, price: true, desc: true, banners: n }]); }}
-              />
-            )}
-            {/* 상품·혜택 묶기 — 제거(2026-10-27 사용자 요청): 코너 유형은 껍데기. 실제 상품/혜택 묶음은 빌더에서 채운다. */}
-            {/* 선택형(탭·메뉴) — 칩 정의는 코너 유형이 소유(2026-09-29 사용자 결정). 빌더는 순서만 변경. */}
-            {(compValid === '선택형' || base === '업무 진입형') && (() => {
-              const block = shownBlocks.find((b) => b.componentType === '선택형') ?? shownBlocks[0];
-              const chips = (block?.chips && block.chips.length ? block.chips : CHIP_DEFAULTS) as ChipDef[];
-              const rows = block?.chipRows ?? 2;
-              return (
-                <ChipDefEditor
-                  chips={chips}
-                  rows={rows}
-                  onCommit={(nextChips, nextRows = rows) => setBlocks([{ componentType: '선택형' as ComponentType, count: 1, chips: nextChips, chipRows: nextRows }])}
-                  footer={
-                    /* FO 사용자 설정(고객 커스터마이즈) — 탭·메뉴 슬롯과 한 섹션으로 통합(2026-10-27 사용자 요청) */
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><Info className="h-3.5 w-3.5 text-sky-500" /> FO 사용자 설정 (고객 커스터마이즈)</div>
-                      <label className="flex items-center justify-between gap-2">
-                        <span className="flex flex-col">
-                          <span className="text-xs font-medium text-foreground">사용자 설정 가능</span>
-                          <span className="text-[11px] text-muted-foreground">켜면 고객(FO)이 이 메뉴를 직접 편집(추가·삭제·순서)할 수 있어요. 고정 항목은 유지. 이 값은 빌더에서 코너별로 이어받아요.</span>
-                        </span>
-                        <button type="button" role="switch" aria-checked={userCustom} onClick={() => setUserCustom((v) => !v)}
-                          className={cn('relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', userCustom ? 'bg-[#3617ce]' : 'bg-[#b3b9c0]')}>
-                          <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform', userCustom ? 'translate-x-4' : 'translate-x-0.5')} />
-                        </button>
-                      </label>
-                      <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
-                      {userCustom && (
-                        <div className="grid grid-cols-2 gap-2 border-t pt-2.5">
-                          <div className="space-y-1">
-                            <label className="text-[11px] text-muted-foreground">고객 노출 최소 개수</label>
-                            <Input name="userMinItems" type="number" min={0} value={userMin} onChange={(e) => setUserMin(e.target.value)} placeholder="예: 3 (고정 포함)" className="h-8 text-xs" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] text-muted-foreground">고객 노출 최대 개수</label>
-                            <Input name="userMaxItems" type="number" min={0} value={userMax} onChange={(e) => setUserMax(e.target.value)} placeholder="예: 8" className="h-8 text-xs" />
-                          </div>
-                          <p className="col-span-2 text-[11px] text-muted-foreground">고객은 최소~최대 범위 안에서 항목을 노출/숨김할 수 있어요. 고정(🔒) 항목은 항상 포함.</p>
-                        </div>
-                      )}
-                    </div>
-                  }
-                />
-              );
-            })()}
-            {/* 자동 구성(배열·레이아웃 요약) 카드는 제거 — 등록 결과·상품/혜택 묶기와 중복(2026-09-30 사용자 요청). 상품형은 '코너 속성' 스튜디오로 안내 대체 → 숨김(2026-10-16). */}
-            <p className={cn('text-[11px] leading-relaxed text-muted-foreground', base === '상품형' && 'hidden')}>
-              컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구는 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
-              표시 항목(이미지·가격·배지·설명 등) on/off는 <b className="text-slate-600">{base === '상품형' ? '코너 속성' : '세부 항목'}</b>에서 조정합니다.
-            </p>
-            {/* 타겟별 문구 세트 제거 — 회의 결론상 '문구(콘텐츠)'는 빌더(전시화면 관리)에서 등록. 코너 유형은 껍데기(규격)만. */}
-            </div>
-            {/* 세부 항목 — 상품형은 '코너 속성' 스튜디오로 대체(2026-10-16) → 숨김. 값은 아래 hidden으로 보존. */}
-            {!bulk && base !== '업무 진입형' && base !== '배너형' && base !== '상품형' && (
-            <div className={cn('order-2', !showStep(2) && 'hidden')}>
-              <div className="mb-2.5 flex items-center gap-2 text-[14.5px] font-bold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />세부 항목 (항목별 사용여부)</div>
-              <div className="border-t border-[#dce0e5]">
-              <TRow label="표시 항목">
-                <div className="flex flex-wrap gap-x-6 gap-y-2">
-                  {CORNER_TYPE_FEATURES.map((f) => {
-                    const applies = featureApplies(f.key);
-                    const badgeLocked = f.key === 'useBadge' && !features.usePrice; // 배지는 가격에 종속
-                    const imageLocked = f.key === 'useImage' && applies; // 상품 이미지는 카드 필수 — 항상 ON(해제 불가)
-                    const disabled = (!applies || badgeLocked) && !imageLocked; // imageLocked는 제출 위해 비활성화하지 않음(체크 유지)
-                    const checked = imageLocked ? true : (applies && features[f.key as keyof typeof features] && !badgeLocked);
-                    const toggle = (on: boolean) => {
-                      if (imageLocked) return; // 상품 이미지는 토글 불가
-                      setFeatures((prev) => {
-                        const next = { ...prev, [f.key]: on };
-                        if (f.key === 'useMainTitle' && !on) next.useSubTitle = false;
-                        if (f.key === 'useSubTitle' && on) next.useMainTitle = true;
-                        if (f.key === 'usePrice' && !on) next.useBadge = false;
-                        if (f.key === 'useBadge' && on) next.usePrice = true;
-                        return next;
-                      });
-                    };
-                    return (
-                      <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', disabled && 'cursor-not-allowed text-muted-foreground/40', imageLocked && 'cursor-default')} title={imageLocked ? '상품 이미지는 카드 필수 요소라 항상 표시돼요' : !applies ? '이 코너 유형에는 해당 항목이 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
-                        <input type="checkbox" name={f.key} checked={checked} disabled={disabled} onChange={(e) => toggle(e.target.checked)} className="accent-[#3617ce] disabled:opacity-40" />
-                        {f.label}
-                        {imageLocked && <span className="text-[10px] font-medium text-slate-400">(고정)</span>}
-                      </label>
-                    );
-                  })}
-                </div>
-              </TRow>
-
-              {/* CTA 문구 — 'CTA' 표시 항목 ON일 때 */}
-              {eff('useMoreButton') && (
-                <TRow label="CTA 문구">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Input name="defaultMoreButtonLabel" value={moreLabel} onChange={(e) => setMoreLabel(e.target.value)} placeholder="예: 담기 / 자세히 / 전체보기" className="h-8 w-52 text-xs" />
-                    <span className="text-[11px] text-slate-400">미리보기 버튼에 그대로 노출 · 링크는 코너별로</span>
+            {/* ② 세부 항목 — '표시 항목(이 유형이 쓰는 요소)' + '노출 개수(최소~최대)'만(2026-10-27 사용자 요청). CTA 문구·이미지 모양·탭 슬롯 부가·배너·FO 설정은 빌더로 이관하고, 저장값은 hidden으로 보존해 되돌릴 수 있게 한다. */}
+            {base !== '상품형' && (
+            <div className={cn('order-2', !showStep(1) && 'hidden')}>
+              <FormCard n={2} title="세부 항목" hint="이 코너 유형이 쓰는 표시 항목 · 노출 개수">
+                <TRow label="표시 항목">
+                  <div className="flex flex-wrap gap-x-6 gap-y-2">
+                    {CORNER_TYPE_FEATURES.map((f) => {
+                      const applies = featureApplies(f.key);
+                      const badgeLocked = f.key === 'useBadge' && !features.usePrice; // 배지는 가격에 종속
+                      const imageLocked = f.key === 'useImage' && applies; // 상품 이미지는 카드 필수 — 항상 ON(해제 불가)
+                      const disabled = (!applies || badgeLocked) && !imageLocked;
+                      const checked = imageLocked ? true : (applies && features[f.key as keyof typeof features] && !badgeLocked);
+                      const toggle = (on: boolean) => {
+                        if (imageLocked) return;
+                        setFeatures((prev) => {
+                          const next = { ...prev, [f.key]: on };
+                          if (f.key === 'useMainTitle' && !on) next.useSubTitle = false;
+                          if (f.key === 'useSubTitle' && on) next.useMainTitle = true;
+                          if (f.key === 'usePrice' && !on) next.useBadge = false;
+                          if (f.key === 'useBadge' && on) next.usePrice = true;
+                          return next;
+                        });
+                      };
+                      return (
+                        <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', disabled && 'cursor-not-allowed text-muted-foreground/40', imageLocked && 'cursor-default')} title={imageLocked ? '상품 이미지는 카드 필수 요소라 항상 표시돼요' : !applies ? '이 코너 유형에는 해당 항목이 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
+                          <input type="checkbox" name={f.key} checked={checked} disabled={disabled} onChange={(e) => toggle(e.target.checked)} className="accent-[#3617ce] disabled:opacity-40" />
+                          {f.label}
+                          {imageLocked && <span className="text-[10px] font-medium text-slate-400">(고정)</span>}
+                        </label>
+                      );
+                    })}
                   </div>
                 </TRow>
-              )}
-              <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
-
-              {/* 정의 기본값 — 개수·형태만(규격). 2026-10-14 사용자 요청: 코너 유형은 껍데기라 구체 문구(타이틀·서브)를 소유하지 않는다.
-                   타이틀·서브타이틀 문구는 빌더(전시화면 관리)에서 채운다. 저장 시 유형의 문구값은 빈 값으로 정규화한다. */}
-              <input type="hidden" name="defaultMainTitle" value="" />
-              <input type="hidden" name="defaultSubTitle" value="" />
-              <input type="hidden" name="defaultSubTitleIcon" value="" />
-              {isListType && (
                 <TRow label="노출 개수">
                   <div className="flex flex-wrap items-center gap-2">
                     <input name="defaultMinItems" type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} placeholder="최소" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
                     <span className="text-xs text-muted-foreground">~</span>
                     <input name="defaultMaxItems" type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} placeholder="최대" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
-                    <span className="text-[11px] text-slate-400">코너에 노출할 아이템 개수</span>
+                    <span className="text-[11px] text-slate-400">코너에 노출할 개수 · 실제 소재·문구·순서·탭 라벨은 빌더에서 코너별로 채워요.</span>
                   </div>
                 </TRow>
-              )}
-              {(base === '상품형' || compValid === '상품형' || (base === '혜택·오퍼형' && /가로/.test(dStr))) && (
-                <TRow label="이미지 모양">
-                  <select name="defaultCardShape" value={cardShape} onChange={(e) => setCardShape(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
-                    <option value="">기본 (정사각형 1:1)</option>
-                    <option value="1:1">정사각형 (1:1)</option>
-                    <option value="3:4">포스터 (3:4)</option>
-                    <option value="직사각형">직사각형</option>
-                  </select>
-                </TRow>
-              )}
-              {isBannerType && detailValid === '스와이프형' && (
-                <TRow label="배너 노출">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <select value={bannerMode} onChange={(e) => setBannerMode(e.target.value as 'swipe' | 'auto')} className="h-8 rounded-md border bg-background px-2 text-xs">
-                      <option value="swipe">스와이프(수동)</option>
-                      <option value="auto">자동 슬라이드</option>
-                    </select>
-                    <label className="flex items-center gap-1 text-[11px] text-slate-600"><input type="checkbox" checked={bannerIndicator} onChange={(e) => setBannerIndicator(e.target.checked)} className="accent-[#3617ce]" /> 인디케이터</label>
-                    <input type="hidden" name="defaultBannerOptions" value={JSON.stringify({ mode: bannerMode, showIndicator: bannerIndicator, loop: true })} />
-                  </div>
-                </TRow>
-              )}
-              <TRow label="안내" flat><span className="text-[11px] leading-relaxed text-slate-400">체크한 항목만 이 유형 코너에 노출 · 유형에 맞지 않는 항목은 자동 비활성 · 서브타이틀은 타이틀 없이 못 켬 · 배지는 가격에 종속 · 노출 개수는 빌더에서 코너별.</span></TRow>
-              </div>
+                {/* 저장값 보존(화면에선 숨김) — CTA 문구·카드 모양·배너 옵션·FO 설정. 표시 항목 플래그는 위 체크박스가 제출, 컴포넌트(칩·배너)는 name="composition"으로 보존. */}
+                <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
+                {eff('useMoreButton') && <input type="hidden" name="defaultMoreButtonLabel" value={moreLabel} />}
+                <input type="hidden" name="defaultMainTitle" value="" />
+                <input type="hidden" name="defaultSubTitle" value="" />
+                <input type="hidden" name="defaultSubTitleIcon" value="" />
+                <input type="hidden" name="defaultCardShape" value={cardShape} />
+                <input type="hidden" name="defaultBannerOptions" value={JSON.stringify({ mode: bannerMode, showIndicator: bannerIndicator, loop: true })} />
+                <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
+                {userCustom && <input type="hidden" name="userMinItems" value={userMin} />}
+                {userCustom && <input type="hidden" name="userMaxItems" value={userMax} />}
+              </FormCard>
             </div>
             )}
+            {/* 안내 — 컴포넌트는 배열·레이아웃에서 자동 도출, 실제 내용은 빌더에서. */}
+            <p className={cn('order-3 text-[11px] leading-relaxed text-muted-foreground', base === '상품형' && 'hidden')}>
+              컴포넌트는 <b className="text-slate-600">배열·레이아웃에서 자동 도출</b>돼요(거버넌스 <span className="font-mono">PI-DSP-CMP-003</span>). 실제 소재·개수·문구·탭 라벨은 <b className="text-slate-600">빌더에서 코너를 만들 때</b> 채워요.
+            </p>
             {/* 상품형 — 세부 항목 UI는 '코너 속성' 스튜디오로 대체(숨김)하되, 저장값(규격·플래그)은 그대로 보존(2026-10-16). */}
             {!bulk && base === '상품형' && (
               <div className="hidden">
