@@ -222,8 +222,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const rawDetail = corner.layoutDetail ?? corner.layout ?? '';
   const [optOn, setOptOn] = React.useState<Record<string, boolean>>(() =>
     Object.fromEntries(availOptions.map((o) => [o, (o === '칩' && /칩/.test(rawDetail)) || (o === '배너' && /배너/.test(rawDetail))])));
-  // 칩(카테고리 탭) — 칩 옵션 On 이면 편집. '칩 불러오기'로 카탈로그 카테고리를 칩으로 추가.
-  const [chips, setChips] = React.useState<string[]>(['전체', '카테고리1', '카테고리2']);
+  // 칩(카테고리 탭) — 자유 텍스트가 아니라 카탈로그 카테고리 데이터와 연동(2026-10-28 사용자 요청: 칩 개수·정보를 데이터 연동).
+  //  기본 = '전체' + 카탈로그 카테고리. 추가/삭제도 카탈로그 카테고리에서만. 라벨은 읽기전용(데이터).
+  const [chips, setChips] = React.useState<string[]>(() => ['전체', ...catCategories]);
   const [chipLoadOpen, setChipLoadOpen] = React.useState(false);
   // ③ 채우기 항목 — 칩 On 이면 칩마다 별도 메뉴(칩 하나하나 메뉴 연동, 2026-10-28 사용자 요청). 칩 Off 면 단일 리스트(__flat__).
   const chipMode = !!optOn['칩'] && chips.length > 0;
@@ -339,20 +340,21 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               {/* 칩(카테고리 탭) — 칩 On이면 편집 + 불러오기 */}
               {optOn['칩'] && (
                 <div className="mt-2.5 border-t border-[var(--line2)] pt-2.5">
-                  <div className="mb-1.5 flex items-center justify-between">
+                  <div className="mb-1.5 flex items-center gap-1.5">
                     <span className="text-[12px] font-semibold text-[var(--ink3)]">칩 · 카테고리 탭</span>
-                    <button type="button" onClick={() => setChipLoadOpen(true)} className="rounded-[6px] border border-[var(--line2)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink2)] hover:bg-white">칩 불러오기</button>
+                    <span className="rounded-full bg-[var(--th)] px-1.5 text-[11px] font-bold text-[var(--ink3)]">{chips.length}개</span>
+                    <span className="text-[11px] text-[var(--ink4)]">· 카탈로그 카테고리와 연동</span>
                   </div>
-                  {/* 칩을 누르면 그 칩의 메뉴를 아래에서 따로 구성(칩 하나하나 메뉴 연동, 2026-10-28 사용자 요청) */}
+                  {/* 칩 = 카탈로그 카테고리 데이터(읽기전용). 누르면 그 칩의 메뉴를 아래에서 따로 구성. 추가는 '칩 불러오기'로 카테고리에서만. */}
                   <div className="flex flex-wrap items-center gap-1.5">
                     {chips.map((c, i) => (
                       <span key={i} onClick={() => setActiveChip(i)}
-                        className={cn('inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-1 text-[12px]', i === chipIdx ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line3)] bg-white')}>
-                        <input value={c} onClick={(e) => e.stopPropagation()} onChange={(e) => setChips((cs) => cs.map((x, j) => (j === i ? e.target.value : x)))} className="w-14 bg-transparent text-[var(--ink)] outline-none" />
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
+                        className={cn('inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium', i === chipIdx ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line3)] bg-white text-[var(--ink2)]')}>
+                        {c}
+                        {c !== '전체' && <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>}
                       </span>
                     ))}
-                    <button type="button" onClick={() => setChips((cs) => [...cs, '카테고리'])} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 추가</button>
+                    <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 불러오기</button>
                   </div>
                 </div>
               )}
