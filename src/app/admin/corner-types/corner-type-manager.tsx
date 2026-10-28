@@ -935,9 +935,12 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
 
   // 상위 분기(도메인) — 전시(상품형·이벤트미션 제외 6거버넌스) / 프로모션(이벤트·미션) / 상품(상품형).
   const domainTypes = types.filter((t) => domainOf(t.baseCategory) === domain);
+  // 껍데기 dedup 키(목록과 동일) — 필터 칩 개수를 조회결과(중복 제거)와 맞춘다(2026-10-28 사용자 요청).
+  const shellKeyOf = (t: { baseCategory: string; typeDetail: string | null; bigBanner?: boolean }) => `${t.baseCategory}|${listDetail(t)}|${t.bigBanner ? 'B' : ''}`;
+  const dedupTypes = (() => { const seen = new Set<string>(); return domainTypes.filter((t) => { const k = shellKeyOf(t); if (seen.has(k)) return false; seen.add(k); return true; }); })();
   // 필터 칩도 코너 유형 순서(CORNER_TYPES: 상품형→혜택·오퍼형→배너형→…)를 따른다(2026-10-28 사용자 요청).
   const typeRank = (bc: string) => { const i = (VISIBLE_CORNER_TYPES as readonly string[]).indexOf(bc); return i < 0 ? 999 : i; };
-  const baseOptions = ['전체', ...Array.from(new Set(domainTypes.map((t) => t.baseCategory).filter(Boolean))).sort((a, b) => typeRank(a) - typeRank(b))];
+  const baseOptions = ['전체', ...Array.from(new Set(dedupTypes.map((t) => t.baseCategory).filter(Boolean))).sort((a, b) => typeRank(a) - typeRank(b))];
   const detailOptions = ['전체', ...Array.from(new Set(domainTypes.map((t) => t.typeDetail).filter((d): d is string => !!d)))];
 
   const reset = () => { setBase('전체'); setDetail('전체'); setUseOn(true); setUseOff(true); setStatusSel(new Set(statusKeys)); setField('typeId'); setQ(''); setPage(1); };
@@ -967,7 +970,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const filtered = (() => {
     const seen = new Set<string>();
     const dedup = filteredAll.filter((t) => {
-      const key = `${t.baseCategory}|${listDetail(t)}|${t.bigBanner ? 'B' : ''}`;
+      const key = shellKeyOf(t);
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -1056,7 +1059,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               // 사용여부·승인상태 필터와 동일한 체크박스 UI. 동작은 단일 선택(전체 or 한 유형) 유지.
               <span key="chips" className="ck-g">
                 {baseOptions.filter((b) => b !== '콘텐츠 안내형').map((b) => {
-                  const count = b === '전체' ? domainTypes.length : domainTypes.filter((t) => t.baseCategory === b).length;
+                  const count = b === '전체' ? dedupTypes.length : dedupTypes.filter((t) => t.baseCategory === b).length;
                   return (
                     <label key={b} className={chkCls}>
                       <input type="checkbox" className={chkInput} checked={base === b} onChange={() => { setBase(b); setPage(1); }} />
@@ -1936,14 +1939,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   <CornerFieldList cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} />
                 </TRow>
                 {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
-                <TRow label="노출 개수">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <input name="defaultMinItems" type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} placeholder="최소" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
-                    <span className="text-xs text-muted-foreground">~</span>
-                    <input name="defaultMaxItems" type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} placeholder="최대" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
-                    <span className="text-[11px] text-slate-400">코너에 노출할 개수 · 실제 소재·문구·순서·탭 라벨은 빌더에서 코너별로 채워요.</span>
-                  </div>
-                </TRow>
+                {/* 노출 개수는 세부 항목의 '아이템(요소)' 그룹에 묶여 표시된다(2026-10-28 사용자 요청) → 여기선 저장값만 hidden 으로 보존. */}
+                <input type="hidden" name="defaultMinItems" value={minItems} />
+                <input type="hidden" name="defaultMaxItems" value={maxItems} />
                 {/* 저장값 보존(화면에선 숨김) — CTA 문구·카드 모양·배너 옵션·FO 설정. 표시 항목 플래그는 위 체크박스가 제출, 컴포넌트(칩·배너)는 name="composition"으로 보존. */}
                 <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
                 {eff('useMoreButton') && <input type="hidden" name="defaultMoreButtonLabel" value={moreLabel} />}

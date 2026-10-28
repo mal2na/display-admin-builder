@@ -584,7 +584,7 @@ export const CORNER_TYPE_FEATURES = [
 // ────────────────────────────────────────────────────────────────────────────
 export type CornerOption = '배너' | '칩' | 'CTA';
 export type CornerFieldDef = { key: string; ko: string; group: 'corner' | 'item'; asIs?: string; note?: string };
-export type CornerLayoutSpec = { layout: string; required: CornerFieldDef[]; note?: string };
+export type CornerLayoutSpec = { layout: string; required: CornerFieldDef[]; note?: string; minItems?: number; maxItems?: number };
 export type CornerTypeSpec = { options: CornerOption[]; minItems?: number; maxItems?: number; rows?: number; layouts: CornerLayoutSpec[] };
 
 // 재사용 필드 — 영문키는 DS(AS-IS) 기준. asIs 생략 시 key 와 동일.
@@ -621,24 +621,20 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
         FD('SubTitle', '서브타이틀', 'item', { note: '브랜드명' })] },
     ],
   },
-  // 배너형 — 배열: 단일형/스와이프형(2026-10-28 사용자 정정). 옵션 없음(ShowStroke=선택이라 제외).
+  // 배너형 — 세부 항목 없음(배너 자체가 콘텐츠). 스와이프형만 노출 개수(배너 몇 개). 2026-10-28 사용자 확정.
   배너형: {
     options: [],
     layouts: [
-      { layout: '단일형', required: [FD('Title', '배너 타이틀', 'corner', { asIs: 'BannerImageItem01' }),
-        FD('SubTitle', '배너 서브타이틀', 'corner', { asIs: 'BannerImageItem01Sub' }), FD('ImageSrc', '배너 이미지', 'item'), FD('BgColor', '배경컬러', 'corner')] },
-      { layout: '스와이프형', required: [FD('Slides', '배너 갯수', 'corner', { note: '숫자 입력' }), FD('IndicatorItem', '인디케이터', 'corner', { asIs: 'IndicatorItem' }),
-        FD('Title', '배너 타이틀', 'corner', { asIs: 'BannerImageItem01' }), FD('SubTitle', '배너 서브타이틀', 'corner', { asIs: 'BannerImageItem01Sub' }),
-        FD('ImageSrc', '배너 이미지', 'item'), FD('BgColor', '배경컬러', 'corner')] },
+      { layout: '단일형', required: [] },
+      { layout: '스와이프형', required: [], minItems: 2, maxItems: 5, note: '배너 개수만 정합니다(세부 항목 없음)' },
     ],
   },
-  // 업무 진입형 — 탭형(필수) / 리스트형(TBD). 옵션 없음.
+  // 업무 진입형 — 탭형=세부 항목 없음(메뉴 슬롯만, 빌더에서 채움). 리스트형=TBD. 2026-10-28 사용자 확정.
   '업무 진입형': {
-    options: [], rows: 2,
+    options: [],
     layouts: [
-      { layout: '탭형', required: [FD('Label', '탭명', 'corner', { asIs: 'Label' }), FD('Icon', '아이콘', 'corner'), FD('ImageSrc', '이미지', 'corner', { note: 'Shopping형' }),
-        FD('Icon', '메뉴 아이콘', 'item', { note: 'ROW01~02(1~4)' }), FD('Label', '메뉴 라벨', 'item', { note: 'ROW01~02(1~4)' })] },
-      { layout: '리스트형', required: [], note: 'TBD — 확정 후 추가' },
+      { layout: '탭형', required: [] },
+      { layout: '리스트형', required: [], minItems: 2, maxItems: 8, note: '메뉴 개수만 정합니다(세부 항목 없음)' },
     ],
   },
   // 상태 안내형 — 단일. 옵션 없음.
@@ -719,7 +715,8 @@ export function cornerFieldSpec(cornerType?: string | null, layout?: string | nu
     ?? spec.layouts.find((x) => l.includes(x.layout) || x.layout.includes(l))
     ?? spec.layouts.find((x) => (/세로/.test(l) && /세로/.test(x.layout)) || (/가로/.test(l) && /가로/.test(x.layout)))
     ?? spec.layouts[0];
-  return { options: spec.options, required: pick?.required ?? [], minItems: spec.minItems, maxItems: spec.maxItems, rows: spec.rows, layout: pick?.layout, note: pick?.note };
+  // 노출 개수 = 배열별 값이 있으면 우선(배너형 스와이프형만 등), 없으면 유형 공통.
+  return { options: spec.options, required: pick?.required ?? [], minItems: pick?.minItems ?? spec.minItems, maxItems: pick?.maxItems ?? spec.maxItems, rows: spec.rows, layout: pick?.layout, note: pick?.note };
 }
 
 // 우리 8분류(CORNER_TYPES) → T우주 이미지의 코너 유형 표기명 매핑.

@@ -64,13 +64,53 @@ function OptionRows({ options, editable, storageKey }: { options: readonly Corne
   );
 }
 
-// 코너 유형 + 배열 → 코너(카드)/아이템(요소) 체크박스 목록 + 노출 개수.
+// 형태(Variants) 세그먼트 — 가로형=Small/Medium/Large, 세로형=Profile/Data/Barcode(상품형 스튜디오와 동일 UI).
+function VariantSeg({ layout }: { layout?: string | null }) {
+  const vertical = /세로/.test(layout ?? '');
+  const opts = vertical ? ['Profile', 'Data', 'Barcode'] : ['Small', 'Medium', 'Large'];
+  const [val, setVal] = useState(opts[0]);
+  return (
+    <div className="flex items-center gap-3 rounded-md px-2 py-1.5">
+      <span className="text-[13px] font-medium text-slate-800">형태(Variants) <span className="ml-1 text-[11px] font-normal text-slate-400">· {vertical ? '프로필·데이터·바코드' : '카드 크기'}</span></span>
+      <div className="inline-flex overflow-hidden rounded-[6px] border border-[#dce0e5]">
+        {opts.map((o) => (
+          <button key={o} type="button" onClick={() => setVal(o)} className={`px-2.5 py-1 text-[12px] font-semibold ${val === o ? 'bg-[#3617ce] text-white' : 'bg-white text-[#697582] hover:bg-[#f8f9fb]'}`}>{o}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CountRow({ min, max }: { min: number; max: number }) {
+  return (
+    <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px]">
+      <span className="font-medium text-slate-800">노출 개수</span>
+      <span className="rounded-[4px] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#454f59]">{min}~{max}개</span>
+      <span className="text-[11px] text-slate-400">· 실제 개수는 빌더에서</span>
+    </div>
+  );
+}
+
+// 코너 유형 + 배열 → 코너(카드)/아이템(요소) 체크박스 목록 + 형태(Variants) + 노출 개수(아이템에 묶음).
 export function CornerFieldList({ cornerType, layout, editable, optionKey }: { cornerType?: string | null; layout?: string | null; editable?: boolean; optionKey?: string }) {
   const m = cornerFieldSpec(cornerType, layout);
   if (!m) return null;
   const cornerFields = m.required.filter((f) => f.group === 'corner');
   const itemFields = m.required.filter((f) => f.group === 'item');
   const row = (f: CornerFieldDef) => <CheckRow key={`${f.group}-${f.ko}-${f.key}`} label={f.ko} keyName={f.key} checked disabled kind="고정" asIs={f.asIs} note={f.note} />;
+
+  // 세부 항목 없음(배너형·업무진입형 탭형 등) — 옵션·필드 모두 없음. 노출 개수만 있으면 그것만.
+  if (m.required.length === 0 && m.options.length === 0) {
+    return (
+      <div className="space-y-2">
+        <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-2 text-[12px] text-slate-400">
+          {m.note || '세부 항목 없음 — 내용은 빌더에서 채웁니다.'}
+        </p>
+        {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} />}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {m.note && <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-1.5 text-[12px] text-slate-400">{m.note}</p>}
@@ -82,18 +122,20 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey }: { c
           {cornerFields.map(row)}
         </div>
       </div>
-      {/* 아이템(요소) — 고정 */}
+      {/* 아이템(요소) — 형태(Variants) + 고정 필드 + 노출 개수(아이템에 묶음, 2026-10-28 사용자 요청) */}
       {itemFields.length > 0 && (
         <div>
           <GroupHead badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)" />
-          <div className="space-y-0.5">{itemFields.map(row)}</div>
+          <div className="space-y-0.5">
+            <VariantSeg layout={m.layout ?? layout} />
+            {itemFields.map(row)}
+            {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} />}
+          </div>
         </div>
       )}
       <p className="px-2 text-[11px] text-[#8b949e]">
         <span className="text-slate-400">고정 = 못 끔</span>
         {m.options.length > 0 && <> · <span className="font-semibold text-[#3617ce]">옵션</span> = 빌더에서 On/Off</>}
-        {m.minItems != null && <> · 노출 개수 <b className="text-[#454f59]">{m.minItems}~{m.maxItems}개</b></>}
-        {m.rows != null && <> · 로우 <b className="text-[#454f59]">{m.rows}</b></>}
       </p>
     </div>
   );
