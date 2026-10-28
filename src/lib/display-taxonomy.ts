@@ -597,16 +597,16 @@ const ITEM_TITLE = FD('Title', '아이템 타이틀', 'item');
 const PRICE = FD('Price', '가격', 'item', { asIs: 'Price' });
 const DISCOUNT = FD('DiscountRate', '할인율', 'item', { asIs: 'DiscountRate' });
 const PERIOD = FD('PricePeriod', '기간', 'item', { asIs: 'PricePeriod' });
+const SUBTEXT2 = FD('SubText02', '서브텍스트2', 'item', { asIs: 'SubText02' });
 
 export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
-  // 상품형 — 배열: 가로형/세로형(세로형+배너는 세로형에 통합). 옵션(상세 On/Off): 배너 이미지 경로 하나뿐.
-  //  나머지는 전부 고정(필수). 캡션·개수는 세로형만 필수. 캡션2·캡션3·칩·CTA 는 선택/미사용이라 제외. 2026-10-28 사용자 확정.
+  // 상품형 — 배열: 가로형/세로형. 옵션 = 배너·칩·CTA(상품형·혜택형 공통, 2026-10-28 사용자 확정).
+  //  DS 실제 케이스(CarouselItem) 기준: 가로형(단말 추천)=이미지·타이틀·가격·할인율·서브텍스트2(SubTitle·기간·캡션·개수 off),
+  //  세로형(요금제 리스트)=이미지·타이틀·캡션·캡션2(가격 off). 나머지는 전부 고정.
   상품형: {
-    options: ['배너'], minItems: 3, maxItems: 8, rows: 1,
+    options: ['배너', '칩', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
-      // 가로형(단말 추천) = 가격·할인율·기간 + 캡션·캡션2·개수. 세로형(요금제 리스트) = 캡션·캡션2(가격·개수 미사용). DS 실제 케이스 기준(2026-10-28 사용자 확인).
-      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, PERIOD,
-        FD('Caption01', '캡션', 'item', { asIs: 'Caption/Caption01' }), FD('Caption02', '캡션2', 'item', { asIs: 'Caption02' }), FD('Count', '개수', 'item')] },
+      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, SUBTEXT2] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE,
         FD('Caption01', '캡션', 'item', { asIs: 'Caption/Caption01' }), FD('Caption02', '캡션2', 'item', { asIs: 'Caption02' })] },
     ],

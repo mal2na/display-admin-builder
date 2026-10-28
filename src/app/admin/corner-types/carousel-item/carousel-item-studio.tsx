@@ -56,17 +56,17 @@ export type CardHomeSpec = {
 
 const emptyBadges = () => Array.from({ length: 5 }, (_, i) => ({ show: i < 3, tone: (i === 0 ? 'Positive' : 'Neutral') as Tone, hierarchy: 'Secondary' as Hierarchy, label: 'Label' }));
 
-// 가로형 초기값 — DS 실제 케이스(단말 추천): 이미지·타이틀·가격(할인율·기간)·캡션·캡션2·개수(+2).
+// 가로형 초기값 — DS 실제 케이스(단말 추천): 이미지·타이틀·가격(99,999원)·할인율(99%)·서브텍스트2. 기간·캡션·개수 off.
 const carousel = (title: string): CarouselItemSpec => ({
   variant: 'Small',
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: true, value: '/월' } },
+  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/월' } },
   subText01: { show: false, value: 'SubText01' },
-  subText02: { show: false, value: 'SubText02' },
-  caption: { show: true, value: '데이터 500GB', icon: { show: false }, caption02: { show: true, value: '넷플릭스 프리미엄 제공' }, caption03: { show: false, value: 'Caption03' } },
-  count: { show: true, value: '+2' },
+  subText02: { show: true, value: 'SubText02' },
+  caption: { show: false, value: '5.0', icon: { show: false }, caption02: { show: false, value: '예매율 99.9%' }, caption03: { show: false, value: 'Caption03' } },
+  count: { show: false, value: '+2' },
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
 });
 
@@ -89,16 +89,17 @@ const cardHomeItem = (title: string): CarouselItemSpec => ({
 function normalizeProductItem(it: CarouselItemSpec, vertical: boolean): CarouselItemSpec {
   return {
     ...it,
-    subTitle: { ...it.subTitle, show: false },
+    subTitle: { ...it.subTitle, show: false }, // DS 가로형 케이스 ShowSubTitle=false
     subText01: { ...it.subText01, show: false },
-    subText02: { ...it.subText02, show: false },
-    // 가격·할인율·기간 = 가로형만(단말 추천). 세로형(요금제 리스트)은 가격 미사용.
+    // 서브텍스트2 = 가로형만(단말 추천). 세로형 미사용.
+    subText02: { ...it.subText02, show: !vertical },
+    // 가격·할인율 = 가로형만. 기간(PricePeriod)은 DS false → 항상 off. 세로형은 가격 미사용.
     priceGroup: { ...it.priceGroup, show: !vertical, priceCaption: { ...it.priceGroup.priceCaption, show: false },
-      discountRate: { ...it.priceGroup.discountRate, show: !vertical }, pricePeriod: { ...it.priceGroup.pricePeriod, show: !vertical } },
-    // 캡션·캡션2 = 가로형·세로형 공통. 캡션3 미사용.
-    caption: { ...it.caption, show: true, icon: { show: false }, caption02: { ...it.caption.caption02, show: true }, caption03: { ...it.caption.caption03, show: false } },
-    // 개수 = 가로형만(+2). 세로형은 미사용.
-    count: { ...it.count, show: !vertical },
+      discountRate: { ...it.priceGroup.discountRate, show: !vertical }, pricePeriod: { ...it.priceGroup.pricePeriod, show: false } },
+    // 캡션·캡션2 = 세로형만(요금제 리스트). 캡션3 미사용.
+    caption: { ...it.caption, show: vertical, icon: { show: false }, caption02: { ...it.caption.caption02, show: vertical }, caption03: { ...it.caption.caption03, show: false } },
+    // 개수 = 미사용(DS ShowCount=false)
+    count: { ...it.count, show: false },
     badgeGroup: { ...it.badgeGroup, show: false },
   };
 }
@@ -435,8 +436,10 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
   return (
     <div className="space-y-0.5">
-      {/* 옵션 — 배너이미지 하나뿐. 맨 위에 두고 클릭으로 On/Off(2026-10-28 사용자 요청). 칩·CTA는 상품형 미사용이라 제외. */}
+      {/* 옵션(배너·칩·CTA — 상품형·혜택형 공통). 맨 위에 두고 클릭으로 On/Off(2026-10-28 사용자 확정). */}
       <ChkRow label="배너이미지(BannerSrc)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
+      <ChkRow label="칩(Chip)" option checked={spec.chipOn ?? false} onChange={(v) => set({ chipOn: v })} />
+      <ChkRow label="CTA(CTA)" option checked={spec.cta?.show ?? false} onChange={(v) => set({ cta: { ...(spec.cta ?? { label: 'Label' }), show: v } })} />
       {/* 필수(고정) — 코너 메인 타이틀 · 라벨 텍스트 */}
       <ChkRow label="코너 메인 타이틀(Title)" checked disabled />
       <ChkRow label="라벨 텍스트(ButtonText)" checked disabled />
@@ -462,13 +465,12 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
         <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
         <ChkRow label="아이템 이미지(ImageSrc)" checked disabled />
         <ChkRow label="아이템 타이틀(Title)" checked disabled />
-        {/* 가로형(단말 추천) = 가격·할인율·기간 + 캡션·캡션2·개수. 세로형(요금제 리스트) = 캡션·캡션2. DS 실제 케이스 기준(2026-10-28). */}
+        {/* 가로형(단말 추천) = 가격·할인율·서브텍스트2. 세로형(요금제 리스트) = 캡션·캡션2. DS 실제 케이스 기준(2026-10-28). */}
         {!vertical && <ChkRow label="가격(Price)" checked disabled />}
         {!vertical && <ChkRow label="할인율(DiscountRate)" checked disabled />}
-        {!vertical && <ChkRow label="기간(PricePeriod)" checked disabled />}
-        <ChkRow label="캡션(Caption01)" checked disabled />
-        <ChkRow label="캡션2(Caption02)" checked disabled />
-        {!vertical && <ChkRow label="개수(Count)" checked disabled />}
+        {!vertical && <ChkRow label="서브텍스트2(SubText02)" checked disabled />}
+        {vertical && <ChkRow label="캡션(Caption01)" checked disabled />}
+        {vertical && <ChkRow label="캡션2(Caption02)" checked disabled />}
     </div>
   );
 }
