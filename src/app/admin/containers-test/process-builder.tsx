@@ -655,11 +655,13 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
 }
 
 /* ───────── 코너 추가 모달(order3 레퍼런스 + 우리 코너 유형 탭, 멀티셀렉) ───────── */
-// 코너 = 껍데기 → 같은 (유형·배열) 껍데기는 하나로. 상품형은 모든 배열을 가로형/세로형 2개로 묶는다(2026-10-28 사용자 요청).
-function shellLayout(cornerType: string, layout: string | null, layoutDetail: string | null): string {
-  const raw = layoutDetail ?? layout ?? '';
-  if (cornerType === '상품형') { if (/세로/.test(raw)) return '세로형'; if (/가로/.test(raw)) return '가로형'; }
-  return displayLayout(cornerType, raw) || raw;
+// 코너 = 껍데기 → 같은 (유형·배열) 껍데기는 하나로(2026-10-28 사용자 요청).
+//  상품형 = 모든 배열을 가로형/세로형 2개로. 배너형 = 배너 수로 단일형/스와이프형 2개로(2개 이상=스와이프형).
+function shellLayout(c: Pick<LibCorner, 'cornerType' | 'layout' | 'layoutDetail' | 'bannerCount'>): string {
+  const raw = c.layoutDetail ?? c.layout ?? '';
+  if (c.cornerType === '상품형') { if (/세로/.test(raw)) return '세로형'; if (/가로/.test(raw)) return '가로형'; }
+  if (c.cornerType === '배너형') return c.bannerCount >= 2 ? '스와이프형' : '단일형';
+  return displayLayout(c.cornerType, raw) || raw;
 }
 function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; onClose: () => void; onAdd: (cs: LibCorner[]) => void }) {
   const [q, setQ] = React.useState('');
@@ -670,7 +672,7 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
   const shells = React.useMemo(() => {
     const seen = new Set<string>(); const out: (LibCorner & { shell: string; shellTitle: string })[] = [];
     for (const c of corners) {
-      const sl = shellLayout(c.cornerType, c.layout, c.layoutDetail);
+      const sl = shellLayout(c);
       const key = `${c.cornerType}|${sl}`;
       if (seen.has(key)) continue;
       seen.add(key);

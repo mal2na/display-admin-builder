@@ -32,7 +32,7 @@ export type PCorner = {
   zone: Zone;
 };
 /** 코너 불러오기 모달용 — 코너 유형 관리의 선택 가능한 코너(+미리보기) */
-export type LibCorner = { id: string; name: string; cornerType: string; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner };
+export type LibCorner = { id: string; name: string; cornerType: string; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner; bannerCount: number };
 export type PTemplate = {
   id: string; name: string; conditionGroup: string | null; isDefault: boolean; status: string; corners: PCorner[];
   /** 템플릿 기본 정보 필드 */
@@ -109,7 +109,9 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     if (seen.has(c.name)) continue;
     seen.add(c.name);
     // 미리보기 = 껍데기 가이드(빈 슬롯). 실데이터(cornerToPreviewCorner)가 아니라 유형 규격만 보여준다(2026-10-28 사용자 요청).
-    libCorners.push({ id: c.id, name: c.name, cornerType: c.cornerType, layout: c.cornerLayout, layoutDetail: c.layoutDetail, maxItems: c.maxItems, preview: guideCornerPreview(c.cornerType, c.layoutDetail, c.componentType) });
+    //  bannerCount = 배너 컴포넌트 수(배너형 단일형/스와이프형 구분용). 2개 이상이면 스와이프형.
+    const bannerCount = c.cornerComponents.filter((cc) => cc.component.componentType === '배너형').length;
+    libCorners.push({ id: c.id, name: c.name, cornerType: c.cornerType, layout: c.cornerLayout, layoutDetail: c.layoutDetail, maxItems: c.maxItems, preview: guideCornerPreview(c.cornerType, c.layoutDetail, c.componentType), bannerCount });
   }
 
   return {
