@@ -10,7 +10,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { addCornersToTemplate, reorderTestCorners, setTestCornerZone, removeCornerFromTemplate } from './actions';
+import { addCornersFromTypes, reorderTestCorners, setTestCornerZone, removeCornerFromTemplate } from './actions';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -731,7 +731,8 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
 function shellLayout(c: Pick<LibCorner, 'cornerType' | 'layout' | 'layoutDetail' | 'bannerCount'>): string {
   const raw = c.layoutDetail ?? c.layout ?? '';
   if (c.cornerType === '상품형') { if (/세로/.test(raw)) return '세로형'; if (/가로/.test(raw)) return '가로형'; }
-  if (c.cornerType === '배너형') return c.bannerCount >= 2 ? '스와이프형' : '단일형';
+  // 배너형 = 단일형/스와이프형. 카탈로그 typeDetail(배너 단일형/스와이프형) 또는 배너 수로 구분.
+  if (c.cornerType === '배너형') return (/스와이프/.test(raw) || c.bannerCount >= 2) ? '스와이프형' : '단일형';
   return displayLayout(c.cornerType, raw) || raw;
 }
 function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; onClose: () => void; onAdd: (cs: LibCorner[]) => void }) {
@@ -1135,7 +1136,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             const tid = loadModal;
             setLoadModal(null);
             if (tid && cs.length) {
-              await addCornersToTemplate(tid, cs.map((c) => c.id));
+              // 코너 유형(카탈로그)에서 새 코너 껍데기를 생성해 배치 — 코너 유형 관리와 연동(2026-10-28).
+              await addCornersFromTypes(tid, cs.map((c) => c.id));
               router.refresh();
               toast(`코너 ${cs.length}개를 추가했습니다.`);
             }

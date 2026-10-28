@@ -4,6 +4,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { createCornerInstanceFromTypeId } from '../templates/actions';
 
 export async function addTestTemplate(containerId: string, formData: FormData) {
   const name = String(formData.get('name') ?? '').trim();
@@ -34,6 +35,20 @@ export async function addCornersToTemplate(templateId: string, cornerIds: string
     const exists = await prisma.templateCorner.findUnique({ where: { templateId_cornerId: { templateId, cornerId } } });
     if (exists) continue;
     await prisma.templateCorner.create({ data: { templateId, cornerId, order } });
+    order += 1;
+  }
+  revalidatePath(`/admin/containers-test/t/${templateId}`);
+}
+
+// 코너 추가(코너 유형 연동) — 등록된 코너 유형(카탈로그) 각각에서 새 Corner 껍데기를 생성해 템플릿에 배치(2026-10-28 사용자 요청).
+//  '전시화면 관리'와 '코너 유형 관리'를 연동: 불러오기 목록이 카탈로그와 1:1. 내용은 빌더에서 채운다.
+export async function addCornersFromTypes(templateId: string, cornerTypeIds: string[]) {
+  if (!cornerTypeIds.length) return;
+  const agg = await prisma.templateCorner.aggregate({ where: { templateId }, _max: { order: true } });
+  let order = (agg._max.order ?? -1) + 1;
+  for (const typeId of cornerTypeIds) {
+    const corner = await createCornerInstanceFromTypeId(typeId);
+    await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order } });
     order += 1;
   }
   revalidatePath(`/admin/containers-test/t/${templateId}`);
