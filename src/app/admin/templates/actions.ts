@@ -562,8 +562,8 @@ async function createScaffoldComponents(cornerId: string, cornerType: string, sp
   }
 }
 
-// 등록된 코너 유형(카탈로그) 1건 → 새 Corner 인스턴스 생성. createCornerFromType / swapCornerToType 공용.
-async function createCornerInstanceFromTypeId(cornerTypeId: string) {
+// 등록된 코너 유형(카탈로그) 1건 → 새 Corner 인스턴스 생성. createCornerFromType / swapCornerToType / 테스트 빌더 공용.
+export async function createCornerInstanceFromTypeId(cornerTypeId: string) {
   const ct = cornerTypeId ? await prisma.cornerType.findUnique({ where: { id: cornerTypeId } }) : null;
   if (!ct) throw new Error('등록된 코너 유형을 찾을 수 없습니다.');
   // 정본(불러오기의 기준) = 라이브 승인본 스냅샷. 재검수 중이라도 직전 승인본으로 생성된다.

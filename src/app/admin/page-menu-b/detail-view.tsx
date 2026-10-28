@@ -145,7 +145,7 @@ export function DetailView({ id }: { id: string }) {
 
               <MaskSect p={p} />
 
-              <Sect title="검색 및 태그 정보">
+              <Sect title="검색 및 AI 노출 정보">
                 <FTable>
                   <FRow k="태그 사용여부">{p.tagUse ? '사용' : '사용안함'}</FRow>
                   {p.tagUse && (
@@ -161,6 +161,17 @@ export function DetailView({ id }: { id: string }) {
                         ]} />
                       </FRow>
                     </>
+                  )}
+                  <FRow k="AI 노출(GEO)">{p.geoUse ? '사용' : '사용안함'}</FRow>
+                  {p.geoUse && (
+                    <FRow k="AI 노출 설정">
+                      <MTable rows={[
+                        ['AI 요약문', p.geoSummary || '—'],
+                        ['FAQ', p.geoFaq.length ? `${p.geoFaq.length}건` : '—'],
+                        ['구조화 데이터', p.geoSchema || 'WebPage'],
+                        ['AI 인용 허용', p.geoAllow ? '허용' : '차단'],
+                      ]} />
+                    </FRow>
                   )}
                 </FTable>
               </Sect>

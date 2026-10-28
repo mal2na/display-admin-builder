@@ -32,6 +32,7 @@ export type PreviewCorner = {
   id: string;
   name: string;
   cornerType: string;
+  shell?: boolean; // 껍데기 미리보기 — 메뉴 등 라벨을 실제값 대신 '메뉴1·메뉴2'로(코너 유형 상세용). 2026-10-28 사용자 요청
   title: string | null;
   maxItems: number | null;
   components: PreviewComponent[];
@@ -153,26 +154,16 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   );
 }
 
-// 메뉴 리스트(업무 진입형 · 선택형 · 메뉴 리스트) — 칩이 아니라 세로 메뉴 행 + 오른쪽 화살표.
-function MenuListView({ component }: { component: PreviewComponent }) {
+// 메뉴 리스트(업무 진입형 리스트형) — 세로 메뉴 행만. 쉐브론·순서변경(드래그) 없음(2026-10-28 사용자 요청). 행 구분선도 없음.
+function MenuListView({ component, shell }: { component: PreviewComponent; shell?: boolean }) {
   return (
-    <div className="divide-y divide-slate-100">
-      {component.atoms.map((a) => {
-        const fixed = a.menuRole === 'FIXED';
-        return (
-          <div key={a.id} className="flex items-center gap-2 py-2.5">
-            {a.imageUrl && isIconRef(a.imageUrl) && <IconGlyph name={a.imageUrl} className="h-4 w-4 shrink-0 text-slate-500" />}
-            <span className="flex-1 truncate text-[14px] text-slate-800">{a.content ?? a.name}</span>
-            {/* 고객 메뉴 역할: 고정=자물쇠(삭제/이동 불가), 편집가능=드래그 핸들(고객이 편집) */}
-            {fixed ? (
-              <Lock className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-label="고정 메뉴" />
-            ) : (
-              <GripVertical className="h-4 w-4 shrink-0 text-slate-300" aria-label="편집 가능(고객이 순서변경·삭제)" />
-            )}
-            <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
-          </div>
-        );
-      })}
+    <div>
+      {component.atoms.map((a, i) => (
+        // 아이콘 없음 · 껍데기(shell)면 실제 라벨 대신 '메뉴N'(코너 유형 상세용, 2026-10-28 사용자 요청).
+        <div key={a.id} className="flex items-center gap-2 py-2.5">
+          <span className="flex-1 truncate text-[14px] text-slate-800">{shell ? `메뉴${i + 1}` : (a.content ?? a.name)}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -518,9 +509,11 @@ function ComponentView({ component, mode, cardShape, reason, titleLines, parts }
 /** 한 Corner를 화면 영역으로 렌더 (프리뷰/빌더 공용) */
 export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const isBanner = corner.cornerType === '배너형';
+  // 메뉴 리스트(업무진입형 메뉴·리스트형) — 서브타이틀 없음(2026-10-28 사용자 요청). 타이틀만.
+  const isMenuList = /메뉴/.test(corner.layoutDetail ?? '') || (corner.cornerType === '업무 진입형' && /리스트/.test(corner.layoutDetail ?? ''));
   // 배너형은 코너 타이틀/서브타이틀을 두지 않는다(배너 자체가 콘텐츠). 헤딩 숨김. (2026-09-28 사용자 결정)
   const heading = isBanner ? null : (corner.mainTitle ?? corner.title);
-  const sub = isBanner ? null : (corner.subTitle ?? corner.name);
+  const sub = (isBanner || isMenuList) ? null : (corner.subTitle ?? corner.name);
   const showChevron = (corner.subTitleIcon ?? '화살표') !== '사용안함';
 
   // 코너 레이아웃(노출 방식) → 본문 배치 모드. 5종이 각각 다르게 렌더된다.
@@ -595,7 +588,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         </div>
       );
     return (
-      <div className="divide-y divide-slate-100">
+      <div>{/* 행 구분선 제거(2026-10-28 사용자 요청) */}
         {comps.map((c, i) => (
           <ComponentView key={c.id} component={c} mode={mode} reason={reasonFor(i)} parts={parts} />
         ))}
@@ -609,8 +602,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const bodyComps = corner.components.filter((c) => c.componentType !== '선택형');
   // 바코드 코너(고정·필수 노출형 · 바코드)는 상태카드가 아니라 멤버십 바코드 카드로 렌더
   const isBarcode = /바코드/.test(corner.layoutDetail ?? '');
-  // 메뉴 리스트(업무 진입형 · 선택형 · 메뉴 리스트)는 칩이 아니라 세로 메뉴 리스트로 렌더 — 코너 유형 관리 와이어프레임과 일치
-  const isMenuList = /메뉴/.test(corner.layoutDetail ?? '');
+  // isMenuList = 상단에서 계산(메뉴 리스트는 서브타이틀 없음). 칩이 아니라 세로 메뉴 리스트(쉐브론·순서변경 없음)로 렌더.
   const menuComp = corner.components.find((c) => c.componentType === '선택형') ?? corner.components[0];
   // 프로필형(고정·필수 노출형 · 정보형 · 프로필형)은 상태카드가 아니라 프로필 행([사진][이름·번호]…[CTA])으로 렌더
   const isProfile = /프로필/.test(corner.layoutDetail ?? '');
@@ -644,7 +636,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     ) : isProfile ? (
       <ProfileCard component={corner.components[0]} />
     ) : isMenuList ? (
-      <MenuListView component={menuComp} />
+      <MenuListView component={menuComp} shell={corner.shell} />
     ) : isBanner ? (
       <BannerCarouselBlock corner={corner} />
     ) : chipComps.length > 0 && bodyComps.length > 0 ? (

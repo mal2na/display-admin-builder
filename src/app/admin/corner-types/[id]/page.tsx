@@ -5,12 +5,15 @@ import { type CornerTypeRow } from '../corner-type-manager';
 import { getBuiltCornerOptions, getRegisteredCombos, getBannerCampaignOptions, getProductOptions } from '../built-options';
 import { type PreviewCorner } from '@/components/preview/blocks';
 import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE, PLACED_CORNER_ORDER } from '../preview-corner';
+import { baseLayout } from '@/lib/display-taxonomy';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CornerTypeDetailPage({ params }: { params: { id: string } }) {
-  const [ct, logs, builtOptions, registered, bannerCampaigns, productOptions, usageCorners] = await Promise.all([
-    prisma.cornerType.findUnique({ where: { id: params.id } }),
+  // 코너 유형을 먼저 가져와 유형별 '채우기' 카탈로그(상품형=상품 분류만)를 좁힌다(2026-10-28 사용자 정의).
+  const ct = await prisma.cornerType.findUnique({ where: { id: params.id } });
+  if (!ct) notFound();
+  const [logs, builtOptions, registered, bannerCampaigns, productOptions, usageCorners] = await Promise.all([
     prisma.auditLog.findMany({
       where: { targetType: 'CornerType', targetId: params.id },
       orderBy: { changedAt: 'desc' },
@@ -18,7 +21,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     getBuiltCornerOptions(),
     getRegisteredCombos(),
     getBannerCampaignOptions(),
-    getProductOptions(),
+    getProductOptions(ct.baseCategory),
     // 사용처: 이 코너 유형으로 생성된 코너 + 배치된 템플릿/컨테이너 + 실제 구성(미리보기용)
     prisma.corner.findMany({
       where: { sourceCornerTypeId: params.id },
@@ -26,15 +29,17 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
       orderBy: PLACED_CORNER_ORDER,
     }),
   ]);
-  if (!ct) notFound();
 
-  // 형제 케이스 — 같은 껍데기(base+typeDetail)의 다른 코너 유형들. 목록이 껍데기 하나로 합쳐지므로,
-  //  상세의 '쓰는 전시화면'은 이 껍데기를 쓰는 '모든 형제 유형'의 코너를 빠짐없이 맵핑한다(2026-10-06 사용자 요청).
-  const siblings = await prisma.cornerType.findMany({
-    where: { baseCategory: ct.baseCategory, typeDetail: ct.typeDetail },
+  // 형제 케이스 — 같은 base + '기준 배열명'(옵션 접미사 +배너·+칩 제거)의 코너 유형들.
+  //  배너·칩·CTA 가 옵션이 되며 '세로형+배너'와 '세로형'이 한 배열로 합쳐지므로, 상세의 '쓰는 전시화면'도
+  //  합쳐서 함께 나열한다(2026-10-28 사용자 요청: 상품형 세로형+배너 · 상품형 세로형 같이).
+  const sameBase = await prisma.cornerType.findMany({
+    where: { baseCategory: ct.baseCategory },
     orderBy: { typeId: 'asc' },
-    select: { id: true, name: true },
+    select: { id: true, name: true, typeDetail: true },
   });
+  const ctBaseLayout = baseLayout(ct.typeDetail);
+  const siblings = sameBase.filter((s) => baseLayout(s.typeDetail) === ctBaseLayout).map((s) => ({ id: s.id, name: s.name }));
   const siblingIds = siblings.map((s) => s.id);
   // 껍데기 전체(형제 유형 모두)로 만든 실제 코너 — 상세 '상세 정보' 맵핑용.
   const shellUsageCorners = await prisma.corner.findMany({
@@ -61,7 +66,8 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     .filter((c) => c.templateCorners.length > 0)
     .map((c) => ({
       cornerName: c.name,
-      preview: cornerToPreviewCorner(c),
+      // 코너 유형 = 껍데기 → 상세 미리보기의 메뉴 라벨은 실제값 대신 '메뉴N'(2026-10-28 사용자 요청).
+      preview: { ...cornerToPreviewCorner(c), shell: true },
       screens: c.templateCorners.map((tc) => ({ templateId: tc.template.id, container: tc.template.container.name, template: tc.template.name })),
     }));
 

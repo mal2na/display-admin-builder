@@ -28,7 +28,8 @@ const W_LG = 'w-[520px] max-w-full';
 
 /** 저장 시 원본으로 옮기는 필드 */
 const SAVE_KEYS = ['ptype', 'name', 'url', 'use', 'channels', 'search', 'remark', 'attr', 'form',
-  'auths', 'share', 'biz', 'popCh', 'nav', 'lines', 'cvm', 'reason', 'tagUse', 'tags', 'keywords', 'ogTitle', 'ogDesc'] as const;
+  'auths', 'share', 'biz', 'popCh', 'nav', 'lines', 'cvm', 'reason', 'tagUse', 'tags', 'keywords', 'ogTitle', 'ogDesc',
+  'geoUse', 'geoSummary', 'geoFaq', 'geoSchema', 'geoAllow'] as const;
 
 export function FormView({ isCreate }: { isCreate: boolean }) {
   const pm = usePm();
@@ -359,7 +360,7 @@ export function FormView({ isCreate }: { isCreate: boolean }) {
             </FTable>
           </Sect>
 
-          <Sect title="검색 및 태그정보">
+          <Sect title="검색 및 AI 노출 정보">
             <FTable>
               <FRow k="태그 사용여부"><Yn val={e.tagUse} on={(v) => set({ tagUse: v })} /></FRow>
               {e.tagUse && (
@@ -417,6 +418,40 @@ export function FormView({ isCreate }: { isCreate: boolean }) {
                       </tbody>
                     </table>
                   </FRow>
+                </>
+              )}
+              {/* ── AI 노출(GEO) — SEO 확장(2026-10-28 사용자 요청). 생성형 AI 답변에 이 페이지가 인용되도록. ── */}
+              <FRow k="AI 노출(GEO)"><span className="flex flex-wrap items-center gap-2"><Yn val={e.geoUse} on={(v) => set({ geoUse: v })} /><Hint>ChatGPT·Perplexity·AI Overviews 답변에 인용되게</Hint></span></FRow>
+              {e.geoUse && (
+                <>
+                  <FRow k="AI 요약문">
+                    <span className="flex w-full flex-wrap items-center gap-2">
+                      <input value={e.geoSummary} onChange={(ev) => set({ geoSummary: ev.target.value })} maxLength={120} placeholder="AI가 그대로 인용할 한 줄 정의 (예: ○○ 요금제는 월 OO원에 △△ 혜택을 주는 5G 요금제)" className={`${INP} ${W_LG}`} />
+                      <button type="button" className={BTN_SM} onClick={() => { const s = `${e.ogTitle || e.name} — ${e.ogDesc || revCrumb(e)}`.slice(0, 120); set({ geoSummary: s }); pm.toast('AI 요약문 추천 생성'); }}>AI 추천</button>
+                    </span>
+                  </FRow>
+                  <FRow k="FAQ (질문·답변)">
+                    <div className="flex w-full flex-col gap-2">
+                      {e.geoFaq.map((f, i) => (
+                        <div key={i} className="flex flex-wrap items-center gap-2">
+                          <input value={f.q} onChange={(ev) => { e.geoFaq[i].q = ev.target.value; bump(); }} placeholder="질문 (예: 누구에게 좋나요?)" className={`${INP} ${W_MD}`} />
+                          <input value={f.a} onChange={(ev) => { e.geoFaq[i].a = ev.target.value; bump(); }} placeholder="답변" className={`${INP} ${W_MD}`} />
+                          <button type="button" onClick={() => { e.geoFaq.splice(i, 1); bump(); }} className="px-1 font-bold text-[var(--ink3)] hover:text-[var(--bad)]">×</button>
+                        </div>
+                      ))}
+                      <button type="button" className={`${BTN_SM} self-start`} onClick={() => { e.geoFaq.push({ q: '', a: '' }); bump(); }}>+ FAQ 추가</button>
+                      <Hint>AI가 Q&amp;A를 통째로 가져가 답변에 활용해요</Hint>
+                    </div>
+                  </FRow>
+                  <FRow k="구조화 데이터">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <select value={e.geoSchema} onChange={(ev) => set({ geoSchema: ev.target.value })} className={`${INP} ${W_MD}`}>
+                        {['WebPage', 'Product', 'Offer', 'FAQPage', 'Article', 'Service'].map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <Hint>schema.org / JSON-LD 타입 · 봇이 기계적으로 파싱</Hint>
+                    </span>
+                  </FRow>
+                  <FRow k="AI 인용 허용"><span className="flex flex-wrap items-center gap-2"><Yn val={e.geoAllow} on={(v) => set({ geoAllow: v })} /><Hint>끄면 AI 크롤러에 인용 차단(llms.txt·robots 성격)</Hint></span></FRow>
                 </>
               )}
             </FTable>

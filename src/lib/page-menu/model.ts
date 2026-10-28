@@ -92,6 +92,12 @@ export type Page = {
   keywords: string;
   ogTitle: string;
   ogDesc: string;
+  /** AI 노출(GEO) — 생성형 AI 답변에 이 페이지가 인용되도록. SEO 확장 블록. */
+  geoUse: boolean;       // AI 노출 사용여부
+  geoSummary: string;    // AI 요약문(한 줄 정의) — AI가 그대로 인용
+  geoFaq: { q: string; a: string }[]; // FAQ(질문-답변)
+  geoSchema: string;     // 구조화 데이터 타입(schema.org)
+  geoAllow: boolean;     // AI 크롤러 인용/학습 허용
   menuOn: boolean;
   inMenu: boolean;
   morder: number;
@@ -121,6 +127,7 @@ export function P(o: Partial<Page>): Page {
     remark: '', auths: ['비로그인', '로그인', '간편로그인'], share: false, biz: ['none'], popCh: [], nav: [],
     lines: ['all'], cvm: '', reason: '', tooltips: [], cs: [], shortUrls: [],
     maskOn: false, maskWay: '', maskAuth: '', tagUse: false, tags: [], keywords: '', ogTitle: '', ogDesc: '',
+    geoUse: false, geoSummary: '', geoFaq: [], geoSchema: 'WebPage', geoAllow: true,
     menuOn: false, inMenu: false, morder: 0, icon: null, alt: '', rejected: false, state: 'draft',
     live: null, order: 0, parent: null, created: '2026.01.04', updated: '2026.04.01 09:00',
     id: '', name: '',

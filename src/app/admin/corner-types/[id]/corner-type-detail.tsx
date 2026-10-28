@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Pencil, Check, Minus, ExternalLink } from 'lucide-react';
 import { CornerTypeForm, DevicePreview, cornerRowPreview, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo, type BannerCampaignOption, type ProductOption } from '../corner-type-manager';
-import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi } from '@/lib/display-taxonomy';
+import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec } from '@/lib/display-taxonomy';
+import { CornerFieldList } from '../corner-fields';
 import { CornerSpecPreview, loadCornerSpec } from '../carousel-item/carousel-item-studio';
 import { CornerTypeReviewBar, cornerTypeReviewIssues } from './corner-type-review-bar';
 import { ComposedBanner, type ComposeFields } from '../../banner-campaigns/composed-banner';
@@ -34,9 +35,13 @@ export function CornerTypeDetail({ row, history, builtOptions, registered = [], 
   const [usageOpen, setUsageOpen] = useState(true); // (레거시 상단 블록용 — 현재 미표시)
   const [editing, setEditing] = useState(false); // 상세는 읽기 전용, '수정' 눌러야 편집 폼
   // 표시명 = 유형 · 배열·레이아웃 (컴포넌트는 표기에서 제외 — 저장된 name 대신 재구성).
-  const cleanName = [cornerTypeBi(row.baseCategory), layoutBi(row.typeDetail) || layoutLabel(row.typeDetail), row.bigBanner ? '빅배너' : ''].filter(Boolean).join(' · ');
+  const cleanName = [cornerTypeBi(row.baseCategory), layoutBi(displayLayout(row.baseCategory, row.typeDetail)) || layoutLabel(displayLayout(row.baseCategory, row.typeDetail)), row.bigBanner ? '빅배너' : ''].filter(Boolean).join(' · ');
   // 코너별로 분리된 유형은 실제 코너명을 주 제목으로(같은 배열이 여러 케이스여도 구분). 배너형(묶음)·미배치는 cleanName.
-  const caseName = usagePreviews[0]?.name ?? null;
+  //  상품형은 배너가 옵션 → 코너명의 '+배너'·'+칩' 접미사도 떼어 '세로형'으로 통합 표기(2026-10-28 사용자 요청).
+  const rawCaseName = usagePreviews[0]?.name ?? null;
+  const caseName = rawCaseName && cornerTypeHasOptions(row.baseCategory)
+    ? rawCaseName.replace(/\s*[+＋]\s*(배너|칩|CTA)/g, '').replace(/\s*[(（]\s*(배너|칩|CTA)\s*[)）]/g, '').trim()
+    : rawCaseName;
 
   return (
     <div className="space-y-3">
@@ -226,7 +231,8 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   const isStudio = row.baseCategory === '상품형';
   const specKey = `ct:${row.id}`;
   const [studioSpec, setStudioSpec] = useState<ReturnType<typeof loadCornerSpec> | null>(null);
-  useEffect(() => { if (isStudio) setStudioSpec(loadCornerSpec(specKey)); }, [isStudio, specKey]);
+  // 레이아웃을 넘겨 세로형은 세로형 기본값(가격 OFF·캡션)으로 — 미저장 시 가로형 기본값(가격 ON)이 잘못 뜨던 문제(2026-10-28).
+  useEffect(() => { if (isStudio) setStudioSpec(loadCornerSpec(specKey, row.typeDetail)); }, [isStudio, specKey, row.typeDetail]);
   // 배너형 외: 실제 배치된 코너가 있으면 그 코너(들)를 미리보기로 보여준다(폰 프레임 없이 카드 그대로).
   //  케이스가 여러 개면 '코너별 타일'로 분리해 2단 그리드로 나란히 — 세로 무한 나열 대신 그리드로 감싼다(2026-09-28 사용자 피드백).
   //  미배치(사용처 없음)만 조합 샘플로 폴백(히어로 등 유형 대표 렌더 보존).
@@ -242,18 +248,37 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   const priceVal = pg ? [pg.discountRate.show ? pg.discountRate.value : null, pg.price, pg.priceCaption.show ? pg.priceCaption.value : null, pg.pricePeriod.show ? pg.pricePeriod.value : null].filter(Boolean).join(' ') : '';
   const subTextVal = it ? [it.subText01.show ? it.subText01.value : null, it.subText02.show ? it.subText02.value : null].filter(Boolean).join(' · ') : '';
   const capVal = cap ? [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null, cap.caption03.show ? cap.caption03.value : null].filter(Boolean).join(' · ') : '';
-  const badgeN = it ? it.badgeGroup.items.filter((b) => b.show).length : 0;
-  const studioItems: { lbl: string; on: boolean; val?: string }[] | null = (isStudio && studioSpec && it) ? [
-    { lbl: '배너', on: true, val: studioSpec.bannerSrc || undefined },
-    { lbl: '타이틀', on: true, val: studioSpec.title },
-    { lbl: '버튼 텍스트', on: studioSpec.buttonText.show, val: studioSpec.buttonText.label },
-    { lbl: '상품 이미지', on: true, val: it.imageSrc || undefined },
-    { lbl: '서브타이틀', on: it.subTitle.show, val: it.subTitle.value },
-    { lbl: '가격', on: it.priceGroup.show, val: priceVal },
-    { lbl: '보조 텍스트', on: it.subText01.show || it.subText02.show, val: subTextVal },
-    { lbl: '캡션', on: it.caption.show, val: capVal },
-    { lbl: '개수', on: it.count.show, val: it.count.value },
-    { lbl: '배지', on: it.badgeGroup.show, val: badgeN ? `${badgeN}개` : undefined },
+  void subTextVal; void capVal; void priceVal; // 세분 항목으로 대체(값은 각 항목에서 직접) — 2026-10-28
+  // 상품형 세부 항목 — '코너유형정리' 표(2026-10-28) 필수(red)만. 배열: 가로형 / 세로형(세로형+배너 통합).
+  //  옵션(상세에서 On/Off) = 배너 이미지 경로(BannerSrc) 하나뿐. 나머지는 전부 고정(상세에서 못 끔) — 2026-10-28 사용자 확정.
+  //  캡션·개수는 세로형에서만 필수(가로형은 선택이라 제외). 캡션2·캡션3·칩·CTA 는 선택/미사용이라 코너 유형에 넣지 않는다.
+  const isV = /세로/.test(row.typeDetail);
+  const studioItems: { lbl: string; kind: '고정' | 'On/Off' | '옵션'; on: boolean; val?: string }[] | null = (isStudio && studioSpec && it) ? [
+    // 옵션(배너·칩·CTA — 상품형·혜택형 공통). 맨 위(2026-10-28 사용자 확정).
+    { lbl: '배너이미지(BannerSrc)', kind: '옵션', on: !!studioSpec.bannerOn, val: studioSpec.bannerSrc || undefined },
+    { lbl: '칩(Chip)', kind: '옵션', on: !!studioSpec.chipOn },
+    { lbl: 'CTA(CTA)', kind: '옵션', on: !!studioSpec.cta?.show, val: studioSpec.cta?.label },
+    // 기본정보(코너) — 고정
+    { lbl: '코너 메인 타이틀(Title)', kind: '고정', on: true, val: studioSpec.title },
+    { lbl: '라벨 텍스트(ButtonText)', kind: '고정', on: true, val: studioSpec.buttonText.label },
+    // 코너 정보 속성(아이템) — 고정
+    { lbl: '아이템 이미지(ImageSrc)', kind: '고정', on: true, val: it.imageSrc || undefined },
+    { lbl: '아이템 타이틀(Title)', kind: '고정', on: true },
+    // 가로형(단말 추천) = 가격·할인율·서브텍스트2 / 세로형(요금제 리스트) = 캡션·캡션2. DS 실제 케이스 기준(2026-10-28).
+    ...(!isV ? [
+      { lbl: '가격(Price)', kind: '고정' as const, on: true, val: it.priceGroup.price },
+      { lbl: '할인율(DiscountRate)', kind: '고정' as const, on: true, val: it.priceGroup.discountRate.value },
+      { lbl: '서브텍스트2(SubText02)', kind: '고정' as const, on: true, val: it.subText02.value },
+    ] : [
+      { lbl: '캡션(Caption01)', kind: '고정' as const, on: true, val: it.caption.value },
+      { lbl: '캡션2(Caption02)', kind: '고정' as const, on: true, val: it.caption.caption02.value },
+      // 세로형 가격 = 옵션(토글). 켜면 할인율·기간.
+      { lbl: '가격(TextPriceGroup)', kind: '옵션' as const, on: it.priceGroup.show, val: it.priceGroup.show ? it.priceGroup.price : undefined },
+      ...(it.priceGroup.show ? [
+        { lbl: '할인율(Discount)', kind: '옵션' as const, on: it.priceGroup.discountRate.show, val: it.priceGroup.discountRate.value },
+        { lbl: '기간(Period)', kind: '옵션' as const, on: it.priceGroup.pricePeriod.show, val: it.priceGroup.pricePeriod.value },
+      ] : []),
+    ]),
   ] : null;
 
   // 정보(읽기 전용) 블록 — 단일/멀티 레이아웃에서 공용. 프로모션 상세 .fsec/.ftable 규격.
@@ -266,7 +291,8 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
         {cornerTypePurpose(row.baseCategory) && <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{cornerTypePurpose(row.baseCategory)}</p>}
       </RORow>
       <RORow label="배열·레이아웃">
-        <span className="font-medium">{layoutBi(row.typeDetail) || layoutLabel(row.typeDetail) || '—'}</span>
+        {/* 상품형은 배너가 옵션 → '세로형+배너'를 '세로형'으로 접어 표시(2026-10-28 사용자 요청). */}
+        <span className="font-medium">{layoutBi(displayLayout(row.baseCategory, row.typeDetail)) || layoutLabel(displayLayout(row.baseCategory, row.typeDetail)) || '—'}</span>
         {row.bigBanner && <span className="ml-1.5 rounded border border-dashed border-indigo-400 bg-indigo-50/60 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">빅배너</span>}
       </RORow>
       <RORow label="운영 플랫폼">{platforms.length ? platforms.join(', ') : '—'}</RORow>
@@ -277,36 +303,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {/* 기본 문구 제거(2026-10-14 사용자 요청) — 코너 유형은 껍데기(규격)만. 구체 문구(타이틀·서브)는 빌더에서 채운다. */}
       {row.defaultCardShape && <RORow label="카드 모양">{row.defaultCardShape}</RORow>}
       {row.description && <RORow label="설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description}</span></RORow>}
-      {/* 세부 항목 — 상품형은 타이틀·CTA 포함 전 요소를 on/off + 내부 설정값으로 한 블록에 보여준다.
-          업무 진입형(탭·메뉴)·배너형은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
-      {studioItems ? (
-        <RORow label="세부 항목">
-          <div className="space-y-1">
-            {/* 켜진(ON) 항목만 — 내부 설정값까지(2026-10-19 사용자 요청) */}
-            {studioItems.filter((i) => i.on).map(({ lbl, val }) => (
-              <div key={lbl} className="flex items-start gap-2 text-[12px]">
-                <span className="inline-flex w-[88px] shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">
-                  <Check className="h-3 w-3" />{lbl}
-                </span>
-                {val && <span className="whitespace-pre-line pt-0.5 text-slate-600">{val}</span>}
-              </div>
-            ))}
-          </div>
-        </RORow>
-      ) : row.baseCategory !== '업무 진입형' && row.baseCategory !== '배너형' ? (
-      <RORow label="세부 항목">
-        <div className="flex flex-wrap gap-1.5">
-          {FEATURES.map(([k, lbl]) => {
-            const on = !!row[k];
-            return (
-              <span key={String(k)} className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]', on ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-400')}>
-                {on ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />}{lbl}
-              </span>
-            );
-          })}
-        </div>
-      </RORow>
-      ) : null}
+      {/* 코너 정보·속성은 아래 별도 섹션으로 분리(2026-10-28 사용자 요청: 전 페이지 '기본 정보 / 코너 정보·속성'으로 통일). */}
       {/* 상품형은 기본값(정렬·더보기 등)을 코너 속성/버튼 텍스트로 관리 → 기본값 행 숨김(2026-10-19 사용자 요청) */}
       {!isStudio && hasDefaults && (
         <RORow label="기본값">
@@ -320,6 +317,30 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
         </RORow>
       )}
       </div>
+
+      {/* 코너 정보 · 속성 — 전 페이지 공통 섹션명(2026-10-28 사용자 요청). 상품형은 스튜디오 항목, 그 외는 CornerFieldList. */}
+      {(studioItems || cornerFieldSpec(row.baseCategory, row.typeDetail)) && (
+        <div className="mt-6">
+          <SecHead>코너 정보 · 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></SecHead>
+          <div className="border-t border-[#dce0e5] pt-3">
+            {studioItems ? (
+              <div className="space-y-1">
+                {studioItems.map(({ lbl, kind, on, val }) => (
+                  <div key={lbl} className="flex items-start gap-2 text-[13px]">
+                    <span className={cn('font-medium', on ? 'text-slate-700' : 'text-slate-400')}>{lbl}</span>
+                    <span className={cn('text-[11px] font-semibold',
+                      kind === '옵션' ? 'text-[#3617ce]' : kind === 'On/Off' ? 'text-[#0ea5a0]' : 'font-normal text-slate-400')}>· {kind}</span>
+                    {kind !== '고정' && <span className={cn('text-[11px]', on ? 'text-[#00a058]' : 'text-slate-400')}>· {on ? 'On' : 'Off'}</span>}
+                    {on && val && <span className="whitespace-pre-line text-slate-500">· {val}</span>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <CornerFieldList cornerType={row.baseCategory} layout={row.typeDetail} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -334,11 +355,11 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {usageByCorner.length === 0 ? (
         <div className="rounded-lg border border-dashed border-[#dce0e5] bg-muted/20 p-5 text-center text-[12px] text-muted-foreground">아직 이 코너 유형을 쓰는 전시화면이 없습니다.</div>
       ) : (
-        // 리스트 — 큰 썸네일 + 코너명 + 화면 칩(빌더 링크). 미리보기 크게(2026-10-27 사용자 요청).
-        <div className="divide-y divide-[#dce0e5] border-t border-[#dce0e5]">
+        // 리스트 — 큰 썸네일 + 코너명 + 화면 칩(빌더 링크). 행 구분선·썸네일 보더 제거(2026-10-28 사용자 요청).
+        <div>
           {usageByCorner.map((u, i) => (
             <div key={i} className="flex items-start gap-4 py-4">
-              <div className="pointer-events-none flex h-[220px] w-[220px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#dce0e5] bg-[#eef0f6]">
+              <div className="pointer-events-none flex h-[220px] w-[220px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#eef0f6]">
                 <DevicePreview corner={u.preview} fit="contain" align="center-middle" />
               </div>
               <div className="min-w-0 flex-1 pt-1">

@@ -46,20 +46,23 @@ export type CarouselItemSpec = {
 
 export type CardHomeSpec = {
   title: string;
-  buttonText: Toggle<{ label: string }>;
+  buttonText: Toggle<{ label: string }>; // 라벨 텍스트(ButtonText) — 타이틀 바로 밑. 필수(고정)
+  cta: Toggle<{ label: string }>;         // CTA 버튼(Label ›) — 옵션(배너·칩·CTA 3종만 옵션, 빌더 토글). 2026-10-28
   bannerSrc: string;
+  bannerOn: boolean;                      // 배너 옵션 On/Off — 옵션(빌더 토글). 2026-10-28
+  chipOn: boolean;                        // 칩 옵션 On/Off — 옵션(상단 카테고리 탭). 2026-10-28
   item: CarouselItemSpec;
 };
 
 const emptyBadges = () => Array.from({ length: 5 }, (_, i) => ({ show: i < 3, tone: (i === 0 ? 'Positive' : 'Neutral') as Tone, hierarchy: 'Secondary' as Hierarchy, label: 'Label' }));
 
-// 가로형(이미지 244) 초기값 — 노출: 타이틀 · 가격(할인율+가격) · SubText02.
+// 가로형 초기값 — DS 실제 케이스(단말 추천): 이미지·타이틀·가격(99,999원)·할인율(99%)·서브텍스트2. 기간·캡션·개수 off.
 const carousel = (title: string): CarouselItemSpec => ({
   variant: 'Small',
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
+  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/월' } },
   subText01: { show: false, value: 'SubText01' },
   subText02: { show: true, value: 'SubText02' },
   caption: { show: false, value: '5.0', icon: { show: false }, caption02: { show: false, value: '예매율 99.9%' }, caption03: { show: false, value: 'Caption03' } },
@@ -67,26 +70,51 @@ const carousel = (title: string): CarouselItemSpec => ({
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
 });
 
-// 세로형(이미지 265/266 CardHomeItem) 초기값 — TextPriceGroup OFF, Caption ON(무제한 · 69,000원 부터). 가격 미노출.
+// 세로형 초기값 — DS 요금제 케이스: 이미지·타이틀·캡션(무제한)·캡션2 + 가격 옵션(기본 On: 99% 99,999원/Period).
 const cardHomeItem = (title: string): CarouselItemSpec => ({
   variant: 'Profile',
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: false, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
+  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: true, value: '/Period' } },
   subText01: { show: false, value: 'SubText01' },
   subText02: { show: false, value: 'SubText02' },
-  caption: { show: true, value: '무제한', icon: { show: false }, caption02: { show: true, value: '69,000원 부터' }, caption03: { show: false, value: 'Caption03' } },
+  caption: { show: true, value: '데이터 500GB', icon: { show: false }, caption02: { show: true, value: '넷플릭스 프리미엄 제공' }, caption03: { show: false, value: 'Caption03' } },
   count: { show: false, value: '+2' },
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
 });
 
-// 레이아웃별 초기 스펙 — 세로형은 CardHomeItem(가격 OFF·캡션), 그 외는 CarouselItem(가격).
+// 상품형 item 정규화 — 가로형: 가격·할인율·서브텍스트2 고정. 세로형: 캡션·캡션2 고정 + 가격은 옵션(토글, 저장값 유지).
+//  선택/미사용(서브타이틀·보조텍스트1·가격설명·캡션아이콘·캡션3·배지)은 끈다. 2026-10-28 사용자 확정.
+function normalizeProductItem(it: CarouselItemSpec, vertical: boolean): CarouselItemSpec {
+  return {
+    ...it,
+    subTitle: { ...it.subTitle, show: false },
+    subText01: { ...it.subText01, show: false },
+    // 서브텍스트2 = 가로형만(단말 추천).
+    subText02: { ...it.subText02, show: !vertical },
+    priceGroup: vertical
+      // 세로형: 가격은 옵션(토글) → 저장값 유지, 가격설명만 끔.
+      ? { ...it.priceGroup, priceCaption: { ...it.priceGroup.priceCaption, show: false } }
+      // 가로형: 가격·할인율 고정 on, 기간은 DS false.
+      : { ...it.priceGroup, show: true, priceCaption: { ...it.priceGroup.priceCaption, show: false },
+          discountRate: { ...it.priceGroup.discountRate, show: true }, pricePeriod: { ...it.priceGroup.pricePeriod, show: false } },
+    // 캡션·캡션2 = 세로형 고정. 캡션3 미사용.
+    caption: { ...it.caption, show: vertical, icon: { show: false }, caption02: { ...it.caption.caption02, show: vertical }, caption03: { ...it.caption.caption03, show: false } },
+    count: { ...it.count, show: false },
+    badgeGroup: { ...it.badgeGroup, show: false },
+  };
+}
+
+// 레이아웃별 초기 스펙 — 세로형=CardHomeItem, 가로형=CarouselItem. 배너=옵션(기본값은 '+배너' 레이아웃이면 On).
 function defaultSpec(layout?: string): CardHomeSpec {
   return {
     title: 'Title',
-    buttonText: { show: true, label: 'Label' },
+    buttonText: { show: true, label: 'Label' }, // 라벨 텍스트 = 필수(고정)
+    cta: { show: true, label: 'Label' },         // CTA = 옵션
     bannerSrc: '',
+    bannerOn: layout == null || /배너/.test(layout), // 배너 = 옵션
+    chipOn: false,                                // 칩 = 옵션(상단 카테고리 탭)
     item: isVertical(layout) ? cardHomeItem('Title') : carousel('Title'),
   };
 }
@@ -195,12 +223,15 @@ function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children 
 }
 
 // ── 미리보기: CarouselItem 카드 ───────────────────────────────
-function ItemCard({ s, w = 118 }: { s: CarouselItemSpec; w?: number }) {
+// 가로형 카드 크기 = Variants(Small/Medium/Large). DS CarouselItem 형태 변형(2026-10-28 사용자 요청).
+const H_VARIANT_WIDTH: Record<string, number> = { Small: 112, Medium: 140, Large: 170 };
+function ItemCard({ s, w }: { s: CarouselItemSpec; w?: number }) {
   const pg = s.priceGroup; const cap = s.caption;
   const line1 = [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null].filter(Boolean);
   const line2 = [cap.caption03.show ? cap.caption03.value : null].filter(Boolean);
+  const width = w ?? H_VARIANT_WIDTH[s.variant] ?? 118; // Small/Medium/Large 로 카드 폭 변경
   return (
-    <div className="flex shrink-0 flex-col gap-1.5" style={{ width: w }}>
+    <div className="flex shrink-0 flex-col gap-1.5" style={{ width }}>
       <div className="flex aspect-square w-full items-center justify-center rounded-[12px] bg-[#eceef1] text-[#b3b9c0]">
         {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full rounded-[12px] object-cover" /> : <ImageIcon className="h-5 w-5" />}
       </div>
@@ -283,8 +314,8 @@ function ItemRow({ s }: { s: CarouselItemSpec }) {
 function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec; sel?: 'card' | 'item'; onCard?: () => void; onItem?: () => void; layout?: string }) {
   const ro = !onCard && !onItem; // 읽기 전용(상세 미리보기)
   const vertical = isVertical(layout);
-  // 배너는 '+배너' 레이아웃(가로형+배너·세로형+배너)만. 그냥 세로형/가로형은 배너 없음(2026-10-19 사용자 요청). layout 미지정(단독 스튜디오)은 배너 유지.
-  const hasBanner = layout == null || /배너/.test(layout);
+  // 배너 = 옵션(배너·칩·CTA 3종만 옵션). spec.bannerOn 으로 노출 결정(2026-10-28). 레거시 스펙(bannerOn 없음)은 layout 로 방어.
+  const hasBanner = spec.bannerOn ?? (layout == null || /배너/.test(layout));
   // 세로형 = 행 구분선(divide-y)만 · 박스 테두리 없음(2026-10-19 사용자 요청). 선택 표시는 ring/bg로(테두리는 divide 색과 충돌).
   //  가로형 = 캐러셀 카드 → 선택 테두리 박스 유지.
   const itemBtnCls = () => vertical
@@ -299,11 +330,19 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
         <div className="flex h-[160px] w-full items-center justify-center bg-[#eceef1] text-[11px] text-[#b3b9c0]">Banner</div>
       ))}
       <p className="whitespace-pre-line px-3 pt-3 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
-      {/* 세로형만 상단 텍스트 CTA. 가로형(가로형+배너)은 아래 캐러셀 밑에 CTA 버튼으로(2026-10-27 사용자 요청). */}
-      {spec.buttonText.show && vertical && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
+      {/* 버튼 텍스트(ButtonText) — 타이틀 바로 밑 텍스트. 모든 레이아웃 공통(2026-10-28 사용자 요청: CTA와 분리). */}
+      {spec.buttonText.show && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
+      {/* 칩(Chip) 옵션 — 상단 카테고리 탭(2026-10-28 사용자 요청: 배너·칩·CTA 옵션 가로/세로 공통) */}
+      {spec.chipOn && (
+        <div className="mt-2 flex gap-1.5 overflow-x-auto px-3">
+          {['전체', 'Label', 'Label'].map((c, i) => (
+            <span key={i} className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold', i === 0 ? 'bg-[#3617ce] text-white' : 'bg-[#f1f3f5] text-[#697582]')}>{c}</span>
+          ))}
+        </div>
+      )}
       {vertical ? (
-        // 세로형 = 세로 리스트(레퍼런스 4건·행 구분선). 실제 노출 개수는 빌더/노출 개수에서 결정, 미리보기는 대표 4건.
-        <div className="mt-1 flex flex-col divide-y divide-[#f1f3f5] px-3 pb-2">
+        // 세로형 = 세로 리스트. 행 구분선 제거(2026-10-28 사용자 요청). 실제 노출 개수는 빌더에서, 미리보기는 대표 4건.
+        <div className="mt-1 flex flex-col px-3 pb-2">
           {[0, 1, 2, 3].map((i) => (
             <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
               <ItemRow s={spec.item} />
@@ -311,7 +350,6 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
           ))}
         </div>
       ) : (
-      <>
       <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-2">
         {[0, 1].map((i) => (
           <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
@@ -319,13 +357,12 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
           </button>
         ))}
       </div>
-      {/* 가로형(가로형+배너) 하단 CTA 버튼 — 전체폭 아웃라인 '더보기' 스타일(2026-10-27 사용자 요청). */}
-      {spec.buttonText.show && (
-        <div className="px-3 pb-3">
-          <div className="flex w-full items-center justify-center gap-0.5 rounded-[10px] border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.buttonText.label} <span className="text-[#b3b9c0]">›</span></div>
-        </div>
       )}
-      </>
+      {/* CTA — 카드 하단 전체폭 버튼(Label ›). 버튼 텍스트와 별개(2026-10-28 사용자 요청). 레거시 스펙(cta 없음) 방어. */}
+      {spec.cta?.show && (
+        <div className="px-3 pb-3 pt-1">
+          <div className="flex w-full items-center justify-center gap-0.5 rounded-[10px] border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.cta?.label || 'Label'} <span className="text-[#b3b9c0]">›</span></div>
+        </div>
       )}
     </div>
   );
@@ -334,7 +371,19 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
 // 저장된 코너 스펙 로드(로컬) — 스튜디오가 저장한 ct:<id> 를 상세·빌더에서 재사용. 미저장이면 레이아웃별 초기값.
 export function loadCornerSpec(storageKey: string, layout?: string): CardHomeSpec {
   const base = defaultSpec(layout);
-  try { const raw = localStorage.getItem(storageKey); if (raw) return { ...base, ...JSON.parse(raw) }; } catch { /* ignore */ }
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const merged = { ...base, ...JSON.parse(raw) } as CardHomeSpec;
+      // 레이아웃과 저장된 item variant가 안 맞으면(가로↔세로) item을 레이아웃 기본값으로.
+      const variants = isVertical(layout) ? V_VARIANTS : H_VARIANTS;
+      if (!(variants as readonly string[]).includes(merged.item?.variant)) merged.item = base.item;
+      // 필수(고정) 항목만 — 선택 항목 제거, 라벨 텍스트 항상 ON(2026-10-28).
+      merged.item = normalizeProductItem(merged.item, isVertical(layout));
+      merged.buttonText = { ...merged.buttonText, show: true };
+      return merged;
+    }
+  } catch { /* ignore */ }
   return base;
 }
 
@@ -374,27 +423,31 @@ export function CornerSpecThumb({ storageKey, layout }: { storageKey: string; la
 
 // 표시 항목 체크박스 한 줄 — 껐다 켜기만(2026-10-27 사용자 요청: 코너 정보/속성을 체크박스 on/off로).
 //  고정(disabled)=항상 노출되는 구조 항목. indent=하위 항목.
-function ChkRow({ label, checked, onChange, disabled, indent }: { label: string; checked: boolean; onChange?: (v: boolean) => void; disabled?: boolean; indent?: boolean }) {
-  // 현재 쓰는(켜진) 항목만 노출 — 꺼진 토글 항목은 숨긴다(2026-10-27 사용자 요청). 고정(disabled) 항목은 항상 노출.
-  if (!disabled && !checked) return null;
+function ChkRow({ label, checked, onChange, disabled, indent, initial, option }: { label: string; checked: boolean; onChange?: (v: boolean) => void; disabled?: boolean; indent?: boolean; initial?: boolean; option?: boolean }) {
+  // 필수=고정(disabled, 항상 노출)·옵션(option, 배너·칩·CTA, 항상 노출·토글)만 노출. 선택 항목은 아예 안 보임(2026-10-28 사용자 요청).
+  if (!disabled && !checked && !initial && !option) return null;
   return (
     <label className={cn('flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px]', indent && 'ml-5', disabled ? 'cursor-default' : 'cursor-pointer hover:bg-[#f8f9fb]')}>
       <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange?.(e.target.checked)} className="h-4 w-4 accent-[#3617ce]" />
       <span className={cn(checked ? 'font-medium text-slate-800' : 'text-slate-400')}>{label}</span>
       {disabled && <span className="text-[11px] text-slate-400">· 고정</span>}
+      {option && <span className="text-[11px] font-semibold text-[#3617ce]">· 옵션</span>}
     </label>
   );
 }
 
 // ── 코너 정보(CardHome) 본문 — 체크박스 on/off 목록 ──────────────
-function CornerInfoBody({ spec, onChange, layout }: { spec: CardHomeSpec; onChange: (s: CardHomeSpec) => void; layout?: string }) {
+function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: CardHomeSpec) => void; layout?: string }) {
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
-  const hasBanner = layout == null || /배너/.test(layout); // '+배너' 레이아웃만 배너 필드 노출
   return (
     <div className="space-y-0.5">
-      <ChkRow label="코너 타이틀(Title)" checked disabled />
-      <ChkRow label="버튼 텍스트(ButtonText)" checked={spec.buttonText.show} onChange={(v) => set({ buttonText: { ...spec.buttonText, show: v } })} />
-      {hasBanner && <ChkRow label="배너(BannerSrc)" checked disabled />}
+      {/* 옵션(배너·칩·CTA — 상품형·혜택형 공통). 맨 위에 두고 클릭으로 On/Off(2026-10-28 사용자 확정). */}
+      <ChkRow label="배너이미지(BannerSrc)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
+      <ChkRow label="칩(Chip)" option checked={spec.chipOn ?? false} onChange={(v) => set({ chipOn: v })} />
+      <ChkRow label="CTA(CTA)" option checked={spec.cta?.show ?? false} onChange={(v) => set({ cta: { ...(spec.cta ?? { label: 'Label' }), show: v } })} />
+      {/* 필수(고정) — 코너 메인 타이틀 · 라벨 텍스트 */}
+      <ChkRow label="코너 메인 타이틀(Title)" checked disabled />
+      <ChkRow label="라벨 텍스트(ButtonText)" checked disabled />
     </div>
   );
 }
@@ -406,28 +459,24 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
   const vertical = isVertical(layout);
   const variantOpts = vertical ? V_VARIANTS : H_VARIANTS;
   const variantVal = (variantOpts as readonly Variant[]).includes(s.variant) ? s.variant : variantOpts[0];
-  // 코너 속성 = 표시 항목 체크박스 on/off(2026-10-27 사용자 요청). 형태(Variants)만 선택, 나머지는 켰다 껐다.
-  const pg = s.priceGroup; const cap = s.caption;
+  const pg = s.priceGroup;
   const setPg = (p: Partial<typeof pg>) => set('priceGroup', { ...pg, ...p });
-  const setCap = (p: Partial<typeof cap>) => set('caption', { ...cap, ...p });
+  // 아이템 정보 — 가로형(단말 추천)=가격·할인율·서브텍스트2(고정). 세로형(요금제)=캡션·캡션2(고정) + 가격은 옵션(토글).
+  //  세로형은 케이스별로 가격을 쓰기도(넷플릭스 요금제) 안 쓰기도(데이터량 안내) 해서 가격을 옵션으로 둔다(2026-10-28 사용자 요청).
   return (
-    <div className="max-h-[520px] space-y-0.5 overflow-y-auto pr-1">
+    <div className="space-y-0.5">
         <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
-        <ChkRow label="이미지(ImageSrc)" checked disabled />
+        <ChkRow label="아이템 이미지(ImageSrc)" checked disabled />
         <ChkRow label="아이템 타이틀(Title)" checked disabled />
-        <ChkRow label="서브타이틀(SubTitle)" checked={s.subTitle.show} onChange={(v) => set('subTitle', { ...s.subTitle, show: v })} />
-        <ChkRow label="가격(TextPriceGroup)" checked={pg.show} onChange={(v) => setPg({ show: v })} />
-        <ChkRow label="가격 설명(PriceCaption)" checked={pg.priceCaption.show} onChange={(v) => setPg({ priceCaption: { ...pg.priceCaption, show: v } })} indent />
-        <ChkRow label="할인율(DiscountRate)" checked={pg.discountRate.show} onChange={(v) => setPg({ discountRate: { ...pg.discountRate, show: v } })} indent />
-        <ChkRow label="가격 기간(PricePeriod)" checked={pg.pricePeriod.show} onChange={(v) => setPg({ pricePeriod: { ...pg.pricePeriod, show: v } })} indent />
-        <ChkRow label="보조 텍스트1(SubText01)" checked={s.subText01.show} onChange={(v) => set('subText01', { ...s.subText01, show: v })} />
-        <ChkRow label="보조 텍스트2(SubText02)" checked={s.subText02.show} onChange={(v) => set('subText02', { ...s.subText02, show: v })} />
-        <ChkRow label="캡션(Caption)" checked={cap.show} onChange={(v) => setCap({ show: v })} />
-        <ChkRow label="캡션 아이콘(Caption01IconItem)" checked={cap.icon.show} onChange={(v) => setCap({ icon: { show: v } as typeof cap.icon })} indent />
-        <ChkRow label="캡션2(Caption02)" checked={cap.caption02.show} onChange={(v) => setCap({ caption02: { ...cap.caption02, show: v } })} indent />
-        <ChkRow label="캡션3(Caption03)" checked={cap.caption03.show} onChange={(v) => setCap({ caption03: { ...cap.caption03, show: v } })} indent />
-        <ChkRow label="개수(Count)" checked={s.count.show} onChange={(v) => set('count', { ...s.count, show: v })} />
-        <ChkRow label="배지(BadgeGroup)" checked={s.badgeGroup.show} onChange={(v) => set('badgeGroup', { ...s.badgeGroup, show: v })} />
+        {!vertical && <ChkRow label="가격(Price)" checked disabled />}
+        {!vertical && <ChkRow label="할인율(DiscountRate)" checked disabled />}
+        {!vertical && <ChkRow label="서브텍스트2(SubText02)" checked disabled />}
+        {vertical && <ChkRow label="캡션(Caption01)" checked disabled />}
+        {vertical && <ChkRow label="캡션2(Caption02)" checked disabled />}
+        {/* 세로형 가격 = 옵션(토글). 켜면 할인율·기간까지. */}
+        {vertical && <ChkRow label="가격(TextPriceGroup)" option checked={pg.show} onChange={(v) => setPg({ show: v })} />}
+        {vertical && pg.show && <ChkRow label="할인율(Discount)" option indent checked={pg.discountRate.show} onChange={(v) => setPg({ discountRate: { ...pg.discountRate, show: v } })} />}
+        {vertical && pg.show && <ChkRow label="기간(Period)" option indent checked={pg.pricePeriod.show} onChange={(v) => setPg({ pricePeriod: { ...pg.pricePeriod, show: v } })} />}
     </div>
   );
 }
@@ -446,7 +495,17 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
   const [sel, setSel] = useState<'card' | 'item'>('card'); // 미리보기 클릭 → 코너 정보(card) / 코너 속성(item)
   useEffect(() => {
     const base = defaultSpec(layout);
-    try { const raw = localStorage.getItem(storageKey); setSpec(raw ? { ...base, ...JSON.parse(raw) } : base); } catch { setSpec(base); }
+    try {
+      const raw = localStorage.getItem(storageKey);
+      const merged = raw ? { ...base, ...JSON.parse(raw) } as CardHomeSpec : base;
+      // 레이아웃(세로/가로)이 저장된 item variant와 안 맞으면 item을 레이아웃 기본값으로 재설정.
+      const variants = isVertical(layout) ? V_VARIANTS : H_VARIANTS;
+      if (!(variants as readonly string[]).includes(merged.item?.variant)) merged.item = base.item;
+      // 필수(고정) 항목만 남게 정규화 — 저장값에 남은 선택 항목 제거. 라벨 텍스트=필수(고정)이므로 항상 ON(2026-10-28).
+      merged.item = normalizeProductItem(merged.item, isVertical(layout));
+      merged.buttonText = { ...merged.buttonText, show: true };
+      setSpec(merged);
+    } catch { setSpec(base); }
     setSel('card');
   }, [storageKey, layout]);
   const save = (next: CardHomeSpec) => { setSpec(next); try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignore */ } };
