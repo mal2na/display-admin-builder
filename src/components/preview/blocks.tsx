@@ -153,27 +153,16 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   );
 }
 
-// 메뉴 리스트(업무 진입형 · 선택형 · 메뉴 리스트) — 칩이 아니라 세로 메뉴 행 + 오른쪽 화살표.
+// 메뉴 리스트(업무 진입형 리스트형) — 세로 메뉴 행만. 쉐브론·순서변경(드래그) 없음(2026-10-28 사용자 요청). 행 구분선도 없음.
 function MenuListView({ component }: { component: PreviewComponent }) {
-  // 행 구분선 제거(2026-10-28 사용자 요청: 미리보기·상세 보더 다 빼기).
   return (
     <div>
-      {component.atoms.map((a) => {
-        const fixed = a.menuRole === 'FIXED';
-        return (
-          <div key={a.id} className="flex items-center gap-2 py-2.5">
-            {a.imageUrl && isIconRef(a.imageUrl) && <IconGlyph name={a.imageUrl} className="h-4 w-4 shrink-0 text-slate-500" />}
-            <span className="flex-1 truncate text-[14px] text-slate-800">{a.content ?? a.name}</span>
-            {/* 고객 메뉴 역할: 고정=자물쇠(삭제/이동 불가), 편집가능=드래그 핸들(고객이 편집) */}
-            {fixed ? (
-              <Lock className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-label="고정 메뉴" />
-            ) : (
-              <GripVertical className="h-4 w-4 shrink-0 text-slate-300" aria-label="편집 가능(고객이 순서변경·삭제)" />
-            )}
-            <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
-          </div>
-        );
-      })}
+      {component.atoms.map((a) => (
+        <div key={a.id} className="flex items-center gap-2 py-2.5">
+          {a.imageUrl && isIconRef(a.imageUrl) && <IconGlyph name={a.imageUrl} className="h-4 w-4 shrink-0 text-slate-500" />}
+          <span className="flex-1 truncate text-[14px] text-slate-800">{a.content ?? a.name}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -610,8 +599,8 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const bodyComps = corner.components.filter((c) => c.componentType !== '선택형');
   // 바코드 코너(고정·필수 노출형 · 바코드)는 상태카드가 아니라 멤버십 바코드 카드로 렌더
   const isBarcode = /바코드/.test(corner.layoutDetail ?? '');
-  // 메뉴 리스트(업무 진입형 · 선택형 · 메뉴 리스트)는 칩이 아니라 세로 메뉴 리스트로 렌더 — 코너 유형 관리 와이어프레임과 일치
-  const isMenuList = /메뉴/.test(corner.layoutDetail ?? '');
+  // 메뉴 리스트(업무 진입형 메뉴·리스트형)는 칩이 아니라 세로 메뉴 리스트(쉐브론·순서변경 없음)로 렌더(2026-10-28 사용자 요청).
+  const isMenuList = /메뉴/.test(corner.layoutDetail ?? '') || (corner.cornerType === '업무 진입형' && /리스트/.test(corner.layoutDetail ?? ''));
   const menuComp = corner.components.find((c) => c.componentType === '선택형') ?? corner.components[0];
   // 프로필형(고정·필수 노출형 · 정보형 · 프로필형)은 상태카드가 아니라 프로필 행([사진][이름·번호]…[CTA])으로 렌더
   const isProfile = /프로필/.test(corner.layoutDetail ?? '');
