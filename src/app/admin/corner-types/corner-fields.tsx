@@ -1,103 +1,97 @@
 'use client';
 
 // 코너 유형 세부 항목 — '코너유형정리' 표 기준 SSOT(CORNER_TYPE_SPECS)에서 구동.
-//  2026-10-28 사용자 규칙(상품형에서 확정 → 7종 공통): 세부 항목 = 표의 필수(red)만, 전부 고정(상세에서 못 끔).
-//  유일한 토글 = 옵션(배너·칩·CTA — 유형마다 다름). 배열별로 그 배열의 필수만 보여준다(가로형/세로형 등). 상세·편집기 공용.
-//  editable=true(편집 폼): 옵션을 클릭형 체크박스(On/Off)로 표시한다(2026-10-28 사용자 요청).
+//  2026-10-28 사용자 규칙: 세부 항목 = 표의 필수(red)만, 전부 고정(상세에서 못 끔). 유일한 토글 = 옵션(배너·칩·CTA).
+//  UI = 상품형 스튜디오와 동일한 체크박스 한 줄(고정=비활성 체크 · 옵션=활성 체크). 코너(카드)/아이템(요소) 그룹으로 분리.
+//  editable=true(편집 폼): 옵션을 클릭형 체크박스(On/Off)로. 읽기(상세): 옵션도 비활성 체크로 '있음'만 표시.
 import { useEffect, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { cornerFieldSpec, type CornerFieldDef, type CornerOption } from '@/lib/display-taxonomy';
 
-function FieldRow({ f }: { f: CornerFieldDef }) {
+// 체크박스 한 줄 — 상품형 스튜디오 ChkRow 와 동일 스타일.
+function CheckRow({ label, keyName, checked, disabled, kind, asIs, note, onChange }: {
+  label: string; keyName?: string; checked: boolean; disabled?: boolean; kind: '고정' | '옵션'; asIs?: string; note?: string; onChange?: (v: boolean) => void;
+}) {
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px]">
-      <span className="font-medium text-slate-700">
-        {f.ko}
-        <span className="ml-1 font-mono text-[11px] text-slate-400">({f.key})</span>
+    <label className={cn('flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md px-2 py-1.5 text-[13px]', disabled ? 'cursor-default' : 'cursor-pointer hover:bg-[#f8f9fb]')}>
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange?.(e.target.checked)} className="h-4 w-4 accent-[#3617ce]" />
+      <span className={checked ? 'font-medium text-slate-800' : 'text-slate-400'}>
+        {label}
+        {keyName && <span className="ml-1 font-mono text-[11px] text-slate-400">({keyName})</span>}
       </span>
-      <span className="text-[11px] font-normal text-slate-400">· 고정</span>
-      {f.asIs && f.asIs !== f.key && <span className="text-[11px] text-slate-400">· AS-IS {f.asIs}</span>}
-      {f.note && <span className="text-[11px] text-slate-400">· {f.note}</span>}
-    </div>
+      {kind === '고정' && <span className="text-[11px] text-slate-400">· 고정</span>}
+      {kind === '옵션' && <span className="text-[11px] font-semibold text-[#3617ce]">· 옵션</span>}
+      {asIs && asIs !== keyName && <span className="text-[11px] text-slate-400">· AS-IS {asIs}</span>}
+      {note && <span className="text-[11px] text-slate-400">· {note}</span>}
+    </label>
   );
 }
 
-function Group({ badge, color, title, desc, rows }: { badge: string; color: string; title: string; desc: string; rows: CornerFieldDef[] }) {
-  if (!rows.length) return null;
+function GroupHead({ badge, color, title, desc }: { badge: string; color: string; title: string; desc: string }) {
   return (
-    <div>
-      <div className="mb-1.5 flex items-center gap-1.5">
-        <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] text-[10px] font-bold" style={{ backgroundColor: `${color}1a`, color }}>{badge}</span>
-        <span className="text-[12px] font-bold text-[#454f59]">{title}</span>
-        <span className="text-[11px] text-[#8b949e]">· {desc}</span>
-      </div>
-      <div className="space-y-1 pl-0.5">{rows.map((f) => <FieldRow key={`${f.group}-${f.ko}-${f.key}`} f={f} />)}</div>
+    <div className="mb-1 flex items-center gap-1.5 rounded-md bg-[#f8f9fb] px-2 py-1.5">
+      <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] text-[10px] font-bold" style={{ backgroundColor: `${color}1a`, color }}>{badge}</span>
+      <span className="text-[12px] font-bold text-[#454f59]">{title}</span>
+      <span className="text-[11px] text-[#8b949e]">· {desc}</span>
     </div>
   );
 }
 
-// 옵션 체크박스(클릭형) — 편집 폼에서 배너·칩·CTA를 On/Off로 보여준다. 기본 On. storageKey 있으면 로컬 보존.
-function OptionChecks({ options, storageKey }: { options: readonly CornerOption[]; storageKey?: string }) {
+// 옵션(배너·칩·CTA) — editable 이면 클릭형 체크박스(On/Off, 로컬 보존), 아니면 비활성 체크(있음 표시).
+function OptionRows({ options, editable, storageKey }: { options: readonly CornerOption[]; editable?: boolean; storageKey?: string }) {
   const [on, setOn] = useState<Record<string, boolean>>(() => Object.fromEntries(options.map((o) => [o, true])));
   useEffect(() => {
-    if (!storageKey) return;
+    if (!editable || !storageKey) return;
     try { const raw = localStorage.getItem(storageKey); if (raw) setOn((p) => ({ ...p, ...JSON.parse(raw) })); } catch { /* noop */ }
-  }, [storageKey]);
+  }, [editable, storageKey]);
   const toggle = (o: string) => setOn((p) => {
     const next = { ...p, [o]: !p[o] };
     if (storageKey) { try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* noop */ } }
     return next;
   });
   return (
-    <div className="space-y-1">
+    <>
       {options.map((o) => {
-        const checked = on[o] ?? true;
+        const checked = editable ? (on[o] ?? true) : true;
         return (
-          <button key={o} type="button" onClick={() => toggle(o)} className="flex w-full cursor-pointer items-center gap-2 text-left text-[13px]">
-            <span className={`flex h-[18px] w-[18px] items-center justify-center rounded-[4px] border transition ${checked ? 'border-[#3617ce] bg-[#3617ce]' : 'border-[#c4c9cf] bg-white'}`}>
-              {checked && <svg viewBox="0 0 12 12" className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2.5 6.5l2.5 2.5 4.5-5" /></svg>}
-            </span>
-            <span className="font-medium text-slate-700">{o}</span>
-            <span className="text-[11px] font-semibold text-[#3617ce]">· 옵션</span>
-            <span className={`text-[11px] ${checked ? 'text-[#00a058]' : 'text-slate-400'}`}>· {checked ? 'On' : 'Off'}</span>
-            <input type="hidden" name={`opt_${o}`} value={checked ? 'on' : ''} />
-          </button>
+          <div key={o}>
+            <CheckRow label={o} checked={checked} disabled={!editable} kind="옵션" onChange={editable ? () => toggle(o) : undefined} />
+            {editable && <input type="hidden" name={`opt_${o}`} value={checked ? 'on' : ''} />}
+          </div>
         );
       })}
-    </div>
+    </>
   );
 }
 
-// 코너 유형 + 배열 → 그 배열의 필수(고정) 항목(코너/아이템) + 옵션(배너·칩·CTA) + 노출 개수.
-//  editable: 옵션을 클릭형 체크박스로(편집 폼). optionKey: 옵션 On/Off 로컬 보존 키(편집 폼 전용).
+// 코너 유형 + 배열 → 코너(카드)/아이템(요소) 체크박스 목록 + 노출 개수.
 export function CornerFieldList({ cornerType, layout, editable, optionKey }: { cornerType?: string | null; layout?: string | null; editable?: boolean; optionKey?: string }) {
   const m = cornerFieldSpec(cornerType, layout);
   if (!m) return null;
-  const rows = (group: 'corner' | 'item') => m.required.filter((f) => f.group === group);
+  const cornerFields = m.required.filter((f) => f.group === 'corner');
+  const itemFields = m.required.filter((f) => f.group === 'item');
+  const row = (f: CornerFieldDef) => <CheckRow key={`${f.group}-${f.ko}-${f.key}`} label={f.ko} keyName={f.key} checked disabled kind="고정" asIs={f.asIs} note={f.note} />;
   return (
     <div className="space-y-3">
       {m.note && <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-1.5 text-[12px] text-slate-400">{m.note}</p>}
-      {/* 옵션 — 편집 폼은 클릭형 체크박스로 맨 위에, 상세(읽기)는 아래 칩으로. */}
-      {editable && m.options.length > 0 && (
+      {/* 코너(카드) — 옵션(배너·칩·CTA) 먼저, 그 다음 고정(타이틀·라벨) */}
+      <div>
+        <GroupHead badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)" />
+        <div className="space-y-0.5">
+          {m.options.length > 0 && <OptionRows options={m.options} editable={editable} storageKey={optionKey} />}
+          {cornerFields.map(row)}
+        </div>
+      </div>
+      {/* 아이템(요소) — 고정 */}
+      {itemFields.length > 0 && (
         <div>
-          <div className="mb-1.5 text-[12px] font-bold text-[#454f59]">옵션 <span className="text-[11px] font-normal text-[#8b949e]">· 클릭으로 On/Off</span></div>
-          <OptionChecks options={m.options} storageKey={optionKey} />
+          <GroupHead badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)" />
+          <div className="space-y-0.5">{itemFields.map(row)}</div>
         </div>
       )}
-      <Group badge="코" color="#3617ce" title="코너 정보" desc="코너에 1개 (배너·타이틀·라벨·CTA)" rows={rows('corner')} />
-      <Group badge="아" color="#00a058" title="아이템 정보" desc="개별 아이템 (이미지·타이틀·가격)" rows={rows('item')} />
-      {!editable && m.options.length > 0 && (
-        <div>
-          <div className="mb-1.5 text-[12px] font-bold text-[#454f59]">옵션 <span className="text-[11px] font-normal text-[#8b949e]">· 빌더에서 On/Off</span></div>
-          <div className="flex flex-wrap gap-1.5">
-            {m.options.map((o) => (
-              <span key={o} className="inline-flex items-center rounded-[4px] bg-[#ece8ff] px-2 py-0.5 text-[11px] font-semibold text-[#3617ce]">{o}</span>
-            ))}
-          </div>
-        </div>
-      )}
-      <p className="text-[11px] text-[#8b949e]">
-        <span className="text-slate-400">고정 = 모든 필수 항목(상세에서 못 끔)</span>
-        {m.options.length > 0 && <> · <span className="font-semibold text-[#3617ce]">옵션</span>만 {editable ? '클릭으로' : '빌더에서'} On/Off</>}
+      <p className="px-2 text-[11px] text-[#8b949e]">
+        <span className="text-slate-400">고정 = 못 끔</span>
+        {m.options.length > 0 && <> · <span className="font-semibold text-[#3617ce]">옵션</span> = 빌더에서 On/Off</>}
         {m.minItems != null && <> · 노출 개수 <b className="text-[#454f59]">{m.minItems}~{m.maxItems}개</b></>}
         {m.rows != null && <> · 로우 <b className="text-[#454f59]">{m.rows}</b></>}
       </p>
