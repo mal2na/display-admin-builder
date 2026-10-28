@@ -427,10 +427,11 @@ export function fieldOwnerMap(recSource?: string | null): { field: string; owner
 
 // ── Corner 유형 (7종) ───────────────────────────────────────
 // 개인화 추천형은 별도 유형이 아니라, 각 유형의 '추천 수급 방식(CVM 등)' 설정으로 흡수됨.
+// 순서: 상품형 → 혜택·오퍼형 → 배너형 → … (2026-10-28 사용자 요청). 필터 체크박스·목록 그룹·정렬이 이 순서를 따른다.
 export const CORNER_TYPES = [
   '상품형',
-  '배너형',
   '혜택·오퍼형',
+  '배너형',
   '업무 진입형',
   '상태 안내형',
   '콘텐츠 안내형',
@@ -592,7 +593,10 @@ const CORNER_TITLE = FD('Title', '코너 메인 타이틀', 'corner');
 const LABEL_TEXT = FD('ButtonText', '라벨 텍스트', 'corner');
 const ITEM_IMAGE = FD('ImageSrc', '아이템 이미지', 'item');
 const ITEM_TITLE = FD('Title', '아이템 타이틀', 'item');
-const PRICE_GROUP = FD('TextPriceGroup', '가격·할인율/기간', 'item', { asIs: 'Text Price Group', note: '할인율·가격·기간 묶음(1:1 매핑 아님)' });
+// 가격 그룹 — 뭉뚱그리지 않고 각각 표시(2026-10-28 사용자 요청). DS CardHomeItem 의 TextPriceGroup 하위 속성.
+const PRICE = FD('Price', '가격', 'item', { asIs: 'Price' });
+const DISCOUNT = FD('DiscountRate', '할인율', 'item', { asIs: 'DiscountRate' });
+const PERIOD = FD('PricePeriod', '기간', 'item', { asIs: 'PricePeriod' });
 
 export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   // 상품형 — 배열: 가로형/세로형(세로형+배너는 세로형에 통합). 옵션(상세 On/Off): 배너 이미지 경로 하나뿐.
@@ -600,8 +604,8 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   상품형: {
     options: ['배너'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
-      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE_GROUP] },
-      { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE_GROUP,
+      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, PERIOD] },
+      { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, PERIOD,
         FD('Caption01', '캡션', 'item', { asIs: 'Caption/Caption01/Caption02' }), FD('Count', '개수', 'item')] },
     ],
   },
@@ -610,7 +614,7 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
     options: ['배너', '칩', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, FD('Title', '아이템 타이틀', 'item', { note: '혜택명' }),
-        PRICE_GROUP, FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' }), FD('Icon', '아이콘', 'item', { asIs: 'ShowCaption01/Icon/IconFill' })] },
+        PRICE, DISCOUNT, PERIOD, FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' }), FD('Icon', '아이콘', 'item', { asIs: 'ShowCaption01/Icon/IconFill' })] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, FD('Title', '아이템 타이틀', 'item', { note: '혜택명' }),
         FD('SubTitle', '서브타이틀', 'item', { note: '브랜드명' })] },
     ],

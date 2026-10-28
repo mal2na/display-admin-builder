@@ -254,15 +254,18 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   //  캡션·개수는 세로형에서만 필수(가로형은 선택이라 제외). 캡션2·캡션3·칩·CTA 는 선택/미사용이라 코너 유형에 넣지 않는다.
   const isV = /세로/.test(row.typeDetail);
   const studioItems: { lbl: string; kind: '고정' | 'On/Off' | '옵션'; on: boolean; val?: string }[] | null = (isStudio && studioSpec && it) ? [
+    // 옵션 — 배너이미지만 On/Off(빌더에서 켜고 끔). 맨 위(2026-10-28 사용자 요청).
+    { lbl: '배너이미지(BannerSrc)', kind: '옵션', on: !!studioSpec.bannerOn, val: studioSpec.bannerSrc || undefined },
     // 기본정보(코너) — 고정
     { lbl: '코너 메인 타이틀(Title)', kind: '고정', on: true, val: studioSpec.title },
     { lbl: '라벨 텍스트(ButtonText)', kind: '고정', on: true, val: studioSpec.buttonText.label },
-    // 옵션 — 배너 이미지 경로만 On/Off(빌더에서 켜고 끔)
-    { lbl: '배너 이미지 경로(BannerSrc)', kind: '옵션', on: !!studioSpec.bannerOn, val: studioSpec.bannerSrc || undefined },
     // 코너 정보 속성(아이템) — 고정
     { lbl: '아이템 이미지(ImageSrc)', kind: '고정', on: true, val: it.imageSrc || undefined },
     { lbl: '아이템 타이틀(Title)', kind: '고정', on: true },
-    { lbl: '가격·할인율/기간(TextPriceGroup)', kind: '고정', on: true, val: it.priceGroup.price },
+    // 가격 그룹 — 각각 분리(2026-10-28 사용자 요청)
+    { lbl: '가격(Price)', kind: '고정', on: true, val: it.priceGroup.price },
+    { lbl: '할인율(DiscountRate)', kind: '고정', on: true, val: it.priceGroup.discountRate.value },
+    { lbl: '기간(PricePeriod)', kind: '고정', on: true, val: it.priceGroup.pricePeriod.value },
     ...(isV ? [
       { lbl: '캡션(Caption)', kind: '고정' as const, on: true, val: it.caption.value },
       { lbl: '개수(Count)', kind: '고정' as const, on: true, val: it.count.value },

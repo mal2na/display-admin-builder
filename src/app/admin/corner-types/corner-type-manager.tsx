@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { CornerFieldList } from './corner-fields';
-import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, VISIBLE_CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, displayLayout, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource } from '@/lib/display-taxonomy';
+import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, VISIBLE_CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, baseLayout, displayLayout, cornerTypeHasOptions, cornerFieldSpec, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource } from '@/lib/display-taxonomy';
 
 // 배너·칩·CTA 가 옵션인 유형(상품형·혜택·오퍼형·콘텐츠 안내형)은 '세로형+배너'·'세로형+칩'을 '세로형'으로 접어 통합 표기(2026-10-28 사용자 요청: 7종 적용).
 //  옵션이 없는 유형(배너형·업무진입형·상태안내형·고정필수)은 그대로 둔다. displayLayout 이 유형별로 판정.
@@ -935,7 +935,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
 
   // 상위 분기(도메인) — 전시(상품형·이벤트미션 제외 6거버넌스) / 프로모션(이벤트·미션) / 상품(상품형).
   const domainTypes = types.filter((t) => domainOf(t.baseCategory) === domain);
-  const baseOptions = ['전체', ...Array.from(new Set(domainTypes.map((t) => t.baseCategory).filter(Boolean)))];
+  // 필터 칩도 코너 유형 순서(CORNER_TYPES: 상품형→혜택·오퍼형→배너형→…)를 따른다(2026-10-28 사용자 요청).
+  const typeRank = (bc: string) => { const i = (VISIBLE_CORNER_TYPES as readonly string[]).indexOf(bc); return i < 0 ? 999 : i; };
+  const baseOptions = ['전체', ...Array.from(new Set(domainTypes.map((t) => t.baseCategory).filter(Boolean))).sort((a, b) => typeRank(a) - typeRank(b))];
   const detailOptions = ['전체', ...Array.from(new Set(domainTypes.map((t) => t.typeDetail).filter((d): d is string => !!d)))];
 
   const reset = () => { setBase('전체'); setDetail('전체'); setUseOn(true); setUseOff(true); setStatusSel(new Set(statusKeys)); setField('typeId'); setQ(''); setPage(1); };
@@ -1385,11 +1387,14 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   };
   const typeShapes = (() => {
     const seen = new Set<string>(); const out: string[] = [];
-    for (const d of cornerTypeDetails(base)) if (!seen.has(d)) { seen.add(d); out.push(d); } // 카탈로그 순서 우선(가로2.5·가로1.5·세로·그리드)
-    for (const r of registered.filter((x) => x.baseCategory === base)) if (r.typeDetail && !seen.has(r.typeDetail)) { seen.add(r.typeDetail); out.push(r.typeDetail); } // 카탈로그 밖 등록분
-    if (onOrigBase && row.typeDetail && !seen.has(row.typeDetail)) { seen.add(row.typeDetail); out.push(row.typeDetail); }
-    // 상품형은 '가로형+배너'를 1등으로(2026-10-16 사용자 요청) — 세로형과 위치 교체.
-    if (base === '상품형') out.sort((a, b) => (a === '가로형+배너' ? -1 : b === '가로형+배너' ? 1 : 0));
+    // 배너·칩·CTA 가 옵션인 유형은 '+배너'·'+칩'을 접어 기준 배열(가로형·세로형)로 통합(2026-10-28 사용자 요청). 그 외는 원본 유지.
+    const norm = (d: string) => cornerTypeHasOptions(base) ? (baseLayout(d) || d) : d;
+    const push = (d: string | null | undefined) => { if (!d) return; const n = norm(d); if (n && !seen.has(n)) { seen.add(n); out.push(n); } };
+    for (const d of cornerTypeDetails(base)) push(d); // 카탈로그 순서 우선(가로2.5·가로1.5·세로·그리드)
+    for (const r of registered.filter((x) => x.baseCategory === base)) push(r.typeDetail); // 카탈로그 밖 등록분
+    if (onOrigBase) push(row.typeDetail);
+    // 상품형은 '가로형'을 1등으로(2026-10-16 사용자 요청) — 세로형과 위치 교체.
+    if (base === '상품형') out.sort((a, b) => (a === '가로형' ? -1 : b === '가로형' ? 1 : 0));
     return out;
   })();
   const allowEmptyDetail = typeShapes.length === 0;
@@ -1619,7 +1624,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               </label>
             )}
             {typeShapes.map((d) => {
-              const isReg = registered.some((r) => r.baseCategory === base && (r.typeDetail ?? '') === d);
+              // 옵션 유형은 '+배너'·'+칩' 접어 비교 → '세로형' 칩이 '세로형+배너' 등록분도 '등록됨'으로 인식.
+              const isReg = registered.some((r) => r.baseCategory === base && displayLayout(base, r.typeDetail ?? '') === d);
               return (
                 <label key={d} className="cursor-pointer" title={isReg ? '이미 등록된 유형·배열이에요(다시 등록해도 됩니다)' : undefined}>
                   <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
@@ -1927,7 +1933,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 {/* 세부 항목 = '코너유형정리' 표 SSOT에서 필수(고정)·옵션(배너·칩·CTA)만 노출(2026-10-28 사용자 요청).
                     저장값(표시 항목 플래그)은 아래 hidden 으로 보존 — 기존 미리보기·데이터 호환. */}
                 <TRow label="세부 항목">
-                  <CornerFieldList cornerType={base} layout={detail} />
+                  <CornerFieldList cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} />
                 </TRow>
                 {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
                 <TRow label="노출 개수">

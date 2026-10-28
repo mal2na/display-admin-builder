@@ -435,11 +435,11 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
   return (
     <div className="space-y-0.5">
+      {/* 옵션 — 배너이미지 하나뿐. 맨 위에 두고 클릭으로 On/Off(2026-10-28 사용자 요청). 칩·CTA는 상품형 미사용이라 제외. */}
+      <ChkRow label="배너이미지(BannerSrc)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
       {/* 필수(고정) — 코너 메인 타이틀 · 라벨 텍스트 */}
       <ChkRow label="코너 메인 타이틀(Title)" checked disabled />
       <ChkRow label="라벨 텍스트(ButtonText)" checked disabled />
-      {/* 옵션 — 배너 이미지 경로 하나뿐. 실제 노출 On/Off는 빌더에서(2026-10-28 사용자 확정). 칩·CTA는 상품형 미사용이라 제외. */}
-      <ChkRow label="배너 이미지 경로(BannerSrc)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
     </div>
   );
 }
@@ -462,7 +462,10 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
         <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
         <ChkRow label="아이템 이미지(ImageSrc)" checked disabled />
         <ChkRow label="아이템 타이틀(Title)" checked disabled />
-        <ChkRow label="가격·할인율/기간(TextPriceGroup)" checked disabled />
+        {/* 가격 그룹 — 뭉뚱그리지 않고 각각(2026-10-28 사용자 요청) */}
+        <ChkRow label="가격(Price)" checked disabled />
+        <ChkRow label="할인율(DiscountRate)" checked disabled />
+        <ChkRow label="기간(PricePeriod)" checked disabled />
         {vertical && <ChkRow label="캡션(Caption)" checked disabled />}
         {vertical && <ChkRow label="개수(Count)" checked disabled />}
     </div>
