@@ -1058,7 +1058,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
             [['코너 유형', (
               // 사용여부·승인상태 필터와 동일한 체크박스 UI. 동작은 단일 선택(전체 or 한 유형) 유지.
               <span key="chips" className="ck-g">
-                {baseOptions.filter((b) => b !== '콘텐츠 안내형').map((b) => {
+                {baseOptions.map((b) => {
                   const count = b === '전체' ? dedupTypes.length : dedupTypes.filter((t) => t.baseCategory === b).length;
                   return (
                     <label key={b} className={chkCls}>
