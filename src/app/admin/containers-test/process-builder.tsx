@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { addCornersToTemplate, reorderTestCorners, setTestCornerZone, removeCornerFromTemplate } from './actions';
-import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, useDroppable, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core';
+import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
@@ -538,99 +538,43 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete,
   );
 }
 
-/* ───────── 코너 리스트 — Fixed / Dynamic 2밴드 + 밴드 간 드래그앤드롭 ─────────
-   두 밴드는 항상 보이고(빈 밴드도 드롭·추가 가능), 코너를 다른 밴드로 끌어다 놓으면 그 존으로 바뀐다.
-   밴드 안에서는 순서 변경. 멀티컨테이너 dnd-kit 패턴(onDragOver로 밴드 이동, onDragEnd로 순서 확정).
-   존은 Fixed / Dynamic 둘뿐 — 레거시 semi 값은 Dynamic으로 취급(2026-10-21 사용자 결정). */
-const BAND_ORDER = ['fixed', 'dynamic'] as const;
-type Band = (typeof BAND_ORDER)[number];
+/* ───────── 코너 리스트 — 순서 그대로 + 연속 존 세그먼트(fixed-dynamic-fixed-dynamic) ─────────
+   코너는 배치 순서대로 한 줄로 쌓인다. 드래그 = 순서만 변경(존 유지). '고정' 토글 = 그 자리에서 존만 Fixed↔Dynamic.
+   연속된 같은 존을 한 세그먼트(존 라벨 + 좌측 액센트 바)로 묶어, 중간에서 고정하면 fixed-dynamic-fixed-dynamic로 나뉜다.
+   존은 Fixed / Dynamic 둘뿐 — 레거시 semi 값은 Dynamic으로 취급(2026-10-28 사용자 요청: 제자리 고정). */
+type Band = 'fixed' | 'dynamic';
 const bandOf = (c: PCorner): Band => (c.zone === 'fixed' ? 'fixed' : 'dynamic');
-
-function BandDroppable({ band, children }: { band: Band; children: React.ReactNode }) {
-  const meta = ZONE_META[band];
-  const { setNodeRef, isOver } = useDroppable({ id: `band:${band}` });
-  return (
-    <div ref={setNodeRef}
-      className={cn('min-h-[44px] space-y-1.5 rounded-r-[8px] border-l-[2px] pl-2.5 pr-1 py-1 transition-colors', isOver && 'bg-[var(--th)]')}
-      style={{ borderColor: meta.hex }}>
-      {children}
-    </div>
-  );
-}
+// 상단 퀵메뉴(업무 진입형 = 앱 상단 탭 바)는 항상 맨 위. 나머지는 순서 유지(안정 정렬) → 교차 고정은 그대로(2026-10-28 사용자 요청).
+const sortNavFirst = (cs: PCorner[]): PCorner[] => {
+  const nav = cs.filter((c) => c.cornerType === '업무 진입형');
+  const rest = cs.filter((c) => c.cornerType !== '업무 진입형');
+  return [...nav, ...rest];
+};
 
 function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSelect, onAddCorner, onToast }: {
   corners: PCorner[]; onCornersChange: (rows: PCorner[]) => void; templateId: string; selCorner: string | null; onSelect: (id: string) => void; onAddCorner: () => void; onToast: (m: string) => void;
 }) {
   const router = useRouter();
   // 낙관적 로컬 상태 — 드래그 즉시 반영, 서버 저장 후 refresh로 동기화
-  const [rows, setRows] = React.useState<PCorner[]>(corners);
-  React.useEffect(() => { setRows(corners); }, [corners]);
+  const [rows, setRows] = React.useState<PCorner[]>(() => sortNavFirst(corners));
+  React.useEffect(() => { setRows(sortNavFirst(corners)); }, [corners]);
   // 리스트의 순서·존 변화를 부모(미리보기 공유 상태)로 즉시 올려 미리보기가 바로 반영되게 한다.
   React.useEffect(() => { onCornersChange(rows); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
   const rowsRef = React.useRef(rows); rowsRef.current = rows;
-  const startBand = React.useRef<Band | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const bandItems = (b: Band) => rows.filter((r) => bandOf(r) === b);
-  const bandOfOver = (overId: string): Band | null =>
-    overId.startsWith('band:') ? (overId.slice(5) as Band) : (() => { const r = rows.find((x) => x.templateCornerId === overId); return r ? bandOf(r) : null; })();
-
-  function onDragStart(e: DragStartEvent) {
-    const r = rows.find((x) => x.templateCornerId === String(e.active.id));
-    startBand.current = r ? bandOf(r) : null;
-  }
-
-  // 드래그 중 다른 밴드 위로 오면 즉시 그 밴드로 옮긴다(위치도 함께).
-  function onDragOver(e: DragOverEvent) {
-    const { active, over } = e;
-    if (!over) return;
-    const activeId = String(active.id);
-    const overId = String(over.id);
-    const cur = rows.find((r) => r.templateCornerId === activeId);
-    const ab = cur ? bandOf(cur) : null;
-    const ob = bandOfOver(overId);
-    if (!ab || !ob || ab === ob) return;
-    setRows((prev) => {
-      const moved = prev.find((r) => r.templateCornerId === activeId);
-      if (!moved) return prev;
-      const without = prev.filter((r) => r.templateCornerId !== activeId);
-      const updated = { ...moved, zone: ob }; // 'fixed' | 'dynamic'
-      let idx: number;
-      if (overId.startsWith('band:')) {
-        const idxs = without.map((r, i) => (bandOf(r) === ob ? i : -1)).filter((i) => i >= 0);
-        idx = idxs.length ? idxs[idxs.length - 1] + 1 : without.length;
-      } else {
-        idx = without.findIndex((r) => r.templateCornerId === overId);
-        if (idx < 0) idx = without.length;
-      }
-      const next = [...without];
-      next.splice(idx, 0, updated);
-      return next;
-    });
-  }
-
+  // 드래그 = 순서만 변경(존은 그대로). 존 변경은 '고정' 토글로만(제자리 고정). 2026-10-28 사용자 요청.
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
-    const activeId = String(active.id);
-    if (over && !String(over.id).startsWith('band:') && activeId !== String(over.id)) {
-      setRows((prev) => {
-        const oi = prev.findIndex((r) => r.templateCornerId === activeId);
-        const ni = prev.findIndex((r) => r.templateCornerId === String(over.id));
-        return oi >= 0 && ni >= 0 ? arrayMove(prev, oi, ni) : prev;
-      });
-    }
-    // 상태 반영 후 저장
+    if (!over || String(active.id) === String(over.id)) return;
+    setRows((prev) => {
+      const oi = prev.findIndex((r) => r.templateCornerId === String(active.id));
+      const ni = prev.findIndex((r) => r.templateCornerId === String(over.id));
+      return oi >= 0 && ni >= 0 ? arrayMove(prev, oi, ni) : prev;
+    });
     setTimeout(async () => {
-      const fr = rowsRef.current;
-      const moved = fr.find((r) => r.templateCornerId === activeId);
-      const newBand = moved ? bandOf(moved) : null;
-      const bandChanged = !!newBand && startBand.current != null && newBand !== startBand.current;
       try {
-        await reorderTestCorners(templateId, fr.map((r) => r.templateCornerId));
-        if (moved && bandChanged && newBand) {
-          await setTestCornerZone(templateId, moved.templateCornerId, newBand);
-          onToast(`‘${moved.name}’ → ${ZONE_META[newBand].label} 밴드로 이동했습니다.`);
-        }
+        await reorderTestCorners(templateId, rowsRef.current.map((r) => r.templateCornerId));
         router.refresh();
       } catch {
         setRows(corners);
@@ -667,44 +611,50 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
     }
   }
 
-  // 연속 번호 — 화면 표시 순서(밴드 순)대로 1..N
-  const displayOrder = BAND_ORDER.flatMap((b) => bandItems(b).map((c) => c.templateCornerId));
-  const noOf = (tcid: string) => displayOrder.indexOf(tcid) + 1;
+  // 연속 번호 — 배치 순서 그대로 1..N
+  const noOf = (tcid: string) => rows.findIndex((r) => r.templateCornerId === tcid) + 1;
+  // 순서 그대로 연속 같은 존을 한 세그먼트로 묶는다 → fixed-dynamic-fixed-dynamic 교차 표시(2026-10-28 사용자 요청).
+  const segments: { band: Band; items: PCorner[] }[] = [];
+  for (const r of rows) {
+    const b = bandOf(r);
+    const last = segments[segments.length - 1];
+    if (last && last.band === b) last.items.push(r);
+    else segments.push({ band: b, items: [r] });
+  }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners}
-      onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
-      <div className="space-y-3">
-        {BAND_ORDER.map((b) => {
-          const meta = ZONE_META[b];
-          const items = bandItems(b);
-          return (
-            <div key={b}>
-              {/* 밴드 헤더 — 점·영문 라벨(존 색)·한글 설명 + 개수 */}
-              <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
-                <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: meta.hex }} />
-                <span className="text-[12px] font-extrabold tracking-tight" style={{ color: meta.hex }}>{meta.label}</span>
-                <span className="truncate text-[11px] text-[var(--ink4)]">{meta.en}</span>
-                <span className="ml-auto grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full border border-[var(--line2)] bg-white px-1.5 text-[11px] font-bold text-[var(--ink3)]">{items.length}</span>
-              </div>
-              {/* 밴드 본문 — 존 색 좌측 액센트 바, 빈 밴드도 드롭·추가 가능 */}
-              <BandDroppable band={b}>
-                <SortableContext items={items.map((c) => c.templateCornerId)} strategy={verticalListSortingStrategy}>
-                  {items.length === 0 ? (
-                    <button type="button" onClick={onAddCorner}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-[var(--line3)] bg-white/50 px-2 py-3 text-[11px] font-medium text-[var(--ink4)] transition hover:border-[var(--ac)] hover:bg-[var(--ac2)] hover:text-[var(--ac)]">
-                      <Plus className="h-3.5 w-3.5" /> <b style={{ color: meta.hex }}>{meta.label}</b>에 코너 추가 · 끌어다 놓아도 됩니다
-                    </button>
-                  ) : items.map((c) => (
+    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
+      {/* 전체 리스트가 하나의 Sortable — 드래그로 순서만 바뀌고 존은 '고정' 토글로만. */}
+      <SortableContext items={rows.map((c) => c.templateCornerId)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-3">
+          {rows.length === 0 ? (
+            <button type="button" onClick={onAddCorner}
+              className="flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-[var(--line3)] bg-white/50 px-2 py-3 text-[11px] font-medium text-[var(--ink4)] transition hover:border-[var(--ac)] hover:bg-[var(--ac2)] hover:text-[var(--ac)]">
+              <Plus className="h-3.5 w-3.5" /> 코너 추가 · 끌어다 놓아도 됩니다
+            </button>
+          ) : segments.map((seg, si) => {
+            const meta = ZONE_META[seg.band];
+            return (
+              <div key={si}>
+                {/* 세그먼트 헤더 — 존 점·라벨·개수 */}
+                <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+                  <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: meta.hex }} />
+                  <span className="text-[12px] font-extrabold tracking-tight" style={{ color: meta.hex }}>{meta.label}</span>
+                  <span className="truncate text-[11px] text-[var(--ink4)]">{meta.en}</span>
+                  <span className="ml-auto grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full border border-[var(--line2)] bg-white px-1.5 text-[11px] font-bold text-[var(--ink3)]">{seg.items.length}</span>
+                </div>
+                {/* 세그먼트 본문 — 존 색 좌측 액센트 바 */}
+                <div className="space-y-1.5 rounded-r-[8px] border-l-[2px] py-1 pl-2.5 pr-1" style={{ borderColor: meta.hex }}>
+                  {seg.items.map((c) => (
                     <CornerChip key={c.templateCornerId} c={c} no={noOf(c.templateCornerId)} selected={c.id === selCorner}
                       fixed={c.zone === 'fixed'} onSelect={() => onSelect(c.id)} onToggleFixed={() => toggleFixed(c)} onDelete={() => removeCorner(c)} onToast={onToast} />
                   ))}
-                </SortableContext>
-              </BandDroppable>
-            </div>
-          );
-        })}
-      </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </SortableContext>
     </DndContext>
   );
 }
