@@ -2,8 +2,25 @@
 //  혜택 홈 등 실제 Container + Template + 배치 코너를 가져와 ProcessBuilder 에 주입(2026-10-20).
 import { prisma } from '@/lib/prisma';
 import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE } from '../corner-types/preview-corner';
-import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, type Zone } from '@/lib/display-taxonomy';
+import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, defaultComposition, componentTypesForCorner, type Zone } from '@/lib/display-taxonomy';
+import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import type { PreviewCorner } from '@/components/preview/blocks';
+
+// 코너 불러오기 '껍데기 가이드' — 코너 = 껍데기(규격)라 콘텐츠 없이 placeholder 슬롯으로만 미리보기.
+//  불러오면 코너 유형(레이아웃·노출 타입)만 들어오고 내용은 빌더 '②수급'에서 채운다(2026-10-28 사용자 요청).
+function guideCornerPreview(base: string, detail: string | null, component: string | null): PreviewCorner {
+  const noTitle = base === '배너형' || base === '고정·필수 노출형';
+  const comp = component || componentTypesForCorner(base)[0] || null; // 없으면 유형 기본 컴포넌트로 레이아웃 가이드가 뜨게
+  return compositionToPreviewCorner({
+    base,
+    detail,
+    composition: defaultComposition(comp, detail),
+    mainTitle: noTitle ? null : '타이틀',
+    subTitle: noTitle ? null : '디스크립션',
+    placeholder: true,
+    emptyImages: true,
+  });
+}
 
 export type PCorner = {
   id: string; templateCornerId: string; name: string; cornerType: string; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner;
@@ -87,7 +104,8 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
   for (const c of rawLib) {
     if (seen.has(c.name)) continue;
     seen.add(c.name);
-    libCorners.push({ id: c.id, name: c.name, cornerType: c.cornerType, layout: c.cornerLayout, layoutDetail: c.layoutDetail, maxItems: c.maxItems, preview: cornerToPreviewCorner(c) });
+    // 미리보기 = 껍데기 가이드(빈 슬롯). 실데이터(cornerToPreviewCorner)가 아니라 유형 규격만 보여준다(2026-10-28 사용자 요청).
+    libCorners.push({ id: c.id, name: c.name, cornerType: c.cornerType, layout: c.cornerLayout, layoutDetail: c.layoutDetail, maxItems: c.maxItems, preview: guideCornerPreview(c.cornerType, c.layoutDetail, c.componentType) });
   }
 
   return {
