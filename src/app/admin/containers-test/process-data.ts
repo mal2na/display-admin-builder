@@ -129,6 +129,8 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     catalogByType: {
       '상품형': await getProductOptions('상품형'),
       '혜택·오퍼형': await getProductOptions('혜택·오퍼형'),
+      '업무 진입형': await getProductOptions('업무 진입형'),
+      '콘텐츠 안내형': await getProductOptions('콘텐츠 안내형'),
     },
   };
 }

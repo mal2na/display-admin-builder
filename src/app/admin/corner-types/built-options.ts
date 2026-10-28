@@ -81,6 +81,25 @@ const PRODUCT_CATALOG: ProductOption[] = [
   { key: 'add-coloring', brand: '부가서비스', title: '컬러링', imageUrl: null, price: '1,100원', badge: null, category: '부가서비스' },
 ];
 
+// 메뉴 카탈로그 — 업무 진입형(상단 퀵메뉴·리스트) '불러오기'에서 고를 앱 메뉴 후보(2026-10-28 사용자 요청: 실제 모달).
+//  혜택 메뉴(이달의 혜택·카테고리·VIP 등) + 업무 메뉴(요금조회·납부·가입 등). 랜딩은 담은 뒤 연결.
+const MENU_CATALOG: ProductOption[] = [
+  { key: 'menu-benefit-month', brand: '혜택', title: '이달의 혜택', imageUrl: null, price: null, badge: null, category: '혜택 메뉴' },
+  { key: 'menu-benefit-pick', brand: '혜택', title: '혜택 줍기', imageUrl: null, price: null, badge: null, category: '혜택 메뉴' },
+  { key: 'menu-category', brand: '혜택', title: '카테고리', imageUrl: null, price: null, badge: null, category: '혜택 메뉴' },
+  { key: 'menu-vip', brand: '혜택', title: 'VIP Pick', imageUrl: null, price: null, badge: null, category: '혜택 메뉴' },
+  { key: 'menu-tday', brand: '혜택', title: 'T day', imageUrl: null, price: null, badge: null, category: '혜택 메뉴' },
+  { key: 'menu-event', brand: '혜택', title: '이벤트', imageUrl: null, price: null, badge: null, category: '혜택 메뉴' },
+  { key: 'menu-membership', brand: '혜택', title: '멤버십', imageUrl: null, price: null, badge: null, category: '혜택 메뉴' },
+  { key: 'menu-roaming', brand: '혜택', title: '로밍 혜택', imageUrl: null, price: null, badge: null, category: '혜택 메뉴' },
+  { key: 'menu-bill-view', brand: '업무', title: '요금 조회', imageUrl: null, price: null, badge: null, category: '업무 메뉴' },
+  { key: 'menu-bill-pay', brand: '업무', title: '요금 납부', imageUrl: null, price: null, badge: null, category: '업무 메뉴' },
+  { key: 'menu-join', brand: '업무', title: '가입 신청', imageUrl: null, price: null, badge: null, category: '업무 메뉴' },
+  { key: 'menu-usage', brand: '업무', title: '사용량 조회', imageUrl: null, price: null, badge: null, category: '업무 메뉴' },
+  { key: 'menu-plan-change', brand: '업무', title: '요금제 변경', imageUrl: null, price: null, badge: null, category: '업무 메뉴' },
+  { key: 'menu-device', brand: '업무', title: '기기 변경', imageUrl: null, price: null, badge: null, category: '업무 메뉴' },
+];
+
 // 상품형·혜택형 코너 유형에서 '상품 담기'로 선택할 후보(2026-09-29 사용자 결정).
 //  = BSS 혜택 브랜드(제휴 혜택) + 디바이스·단말(SKT 판매 상품). category로 구분(디바이스/혜택).
 //  브랜드명·대표 혜택/모델·이미지를 코너 유형 composition.items에 저장. 랜딩 URL은 담은 뒤 수동 편집.
@@ -103,6 +122,8 @@ function benefitCatalog(): ProductOption[] {
 export async function getProductOptions(cornerType?: string): Promise<ProductOption[]> {
   if (cornerType === '상품형') return PRODUCT_CATALOG;
   if (cornerType === '혜택·오퍼형' || cornerType === '혜택형') return benefitCatalog();
+  if (cornerType === '업무 진입형') return MENU_CATALOG; // 메뉴 카탈로그(혜택·업무 메뉴)
+  if (cornerType === '콘텐츠 안내형') return benefitCatalog(); // 콘텐츠(영화 등)는 혜택 카탈로그 재사용(임시)
   // 미지정(신규 등록 등)은 상품 먼저 + 혜택 — 유형 선택 후 좁혀진다.
   return [...PRODUCT_CATALOG, ...benefitCatalog()];
 }

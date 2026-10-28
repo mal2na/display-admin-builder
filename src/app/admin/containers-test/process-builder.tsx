@@ -153,13 +153,14 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
   const list = catalog.filter((o) => (cat === '전체' || (o.category ?? '기타') === cat) && (!query || `${o.brand} ${o.title}`.toLowerCase().includes(query)));
   const toggle = (k: string) => setChecked((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const submit = () => onAdd(catalog.filter((o) => checked.has(o.key)));
-  const kindLabel = cornerType === '혜택·오퍼형' ? '혜택 분류에서 선택' : '상품 분류에서 선택';
+  const kindWord = cornerType === '업무 진입형' ? '메뉴' : cornerType === '혜택·오퍼형' || cornerType === '콘텐츠 안내형' ? '혜택' : '상품';
+  const kindLabel = `${kindWord} 분류에서 선택`;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="flex h-[78vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b border-[var(--line2)] px-4 py-3">
           <Search className="h-4 w-4 text-[var(--ac)]" />
-          <h2 className="text-[14px] font-bold text-[var(--ink)]">{cornerType === '혜택·오퍼형' ? '혜택 불러오기' : '상품 불러오기'}</h2>
+          <h2 className="text-[14px] font-bold text-[var(--ink)]">{kindWord} 불러오기</h2>
           <span className="text-[12px] text-[var(--ink4)]">{kindLabel} · 여러 개 체크해 담기</span>
           <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]" aria-label="닫기"><X className="h-4 w-4" /></button>
         </div>
@@ -226,6 +227,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   //  기본 = '전체' + 카탈로그 카테고리. 추가/삭제도 카탈로그 카테고리에서만. 라벨은 읽기전용(데이터).
   const [chips, setChips] = React.useState<string[]>(() => ['전체', ...catCategories]);
   const [chipLoadOpen, setChipLoadOpen] = React.useState(false);
+  // 옵션 콘텐츠 — 배너 On이면 이미지, CTA On이면 라벨·링크(2026-10-28 사용자 요청: 배너/칩/CTA 각각 콘텐츠 불러오기).
+  const [bannerImg, setBannerImg] = React.useState('');
+  const [ctaLabel, setCtaLabel] = React.useState('');
   // ③ 채우기 항목 — 칩 On 이면 칩마다 별도 메뉴(칩 하나하나 메뉴 연동, 2026-10-28 사용자 요청). 칩 Off 면 단일 리스트(__flat__).
   const chipMode = !!optOn['칩'] && chips.length > 0;
   const [activeChip, setActiveChip] = React.useState(0);
@@ -337,6 +341,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                   </button>
                 ))}
               </div>
+              {/* 배너 On이면 배너 이미지 불러오기(2026-10-28 사용자 요청) */}
+              {optOn['배너'] && (
+                <div className="mt-2.5 border-t border-[var(--line2)] pt-2.5">
+                  <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">배너 · 이미지</p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="grid h-10 w-16 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-white text-[var(--ink4)]">
+                      {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
+                    </span>
+                    <input value={bannerImg} onChange={(e) => setBannerImg(e.target.value)} placeholder="이미지 주소 입력" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    <button type="button" onClick={() => onToast('이미지 불러오기 (데모)')} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-white">이미지 불러오기</button>
+                  </div>
+                </div>
+              )}
               {/* 칩(카테고리 탭) — 칩 On이면 편집 + 불러오기 */}
               {optOn['칩'] && (
                 <div className="mt-2.5 border-t border-[var(--line2)] pt-2.5">
@@ -356,6 +373,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                     ))}
                     <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 불러오기</button>
                   </div>
+                </div>
+              )}
+              {/* CTA On이면 버튼 이름 설정(2026-10-28 사용자 요청) */}
+              {optOn['CTA'] && (
+                <div className="mt-2.5 border-t border-[var(--line2)] pt-2.5">
+                  <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">CTA · 버튼 이름</p>
+                  <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} placeholder="버튼 이름 입력 (예: 전체보기)" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
                 </div>
               )}
             </div>
