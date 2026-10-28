@@ -16,7 +16,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
 import { FieldRow } from '@/components/ops-ui';
-import { cornerTypeChipClass, layoutLabel, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
+import { cornerTypeChipClass, layoutLabel, displayLayout, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon } from 'lucide-react';
 import type { ProcessData, PTemplate, PCorner, LibCorner } from './process-data';
 import type { ProductOption } from '../corner-types/corner-type-manager';
@@ -655,17 +655,35 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
 }
 
 /* ───────── 코너 추가 모달(order3 레퍼런스 + 우리 코너 유형 탭, 멀티셀렉) ───────── */
+// 코너 = 껍데기 → 같은 (유형·배열) 껍데기는 하나로. 상품형은 모든 배열을 가로형/세로형 2개로 묶는다(2026-10-28 사용자 요청).
+function shellLayout(cornerType: string, layout: string | null, layoutDetail: string | null): string {
+  const raw = layoutDetail ?? layout ?? '';
+  if (cornerType === '상품형') { if (/세로/.test(raw)) return '세로형'; if (/가로/.test(raw)) return '가로형'; }
+  return displayLayout(cornerType, raw) || raw;
+}
 function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; onClose: () => void; onAdd: (cs: LibCorner[]) => void }) {
   const [q, setQ] = React.useState('');
   const [tab, setTab] = React.useState('전체');
   // 상단 탭 = 코너 유형 관리의 전체 유형(7종) + 전체. 유형별 개수 표기.
   const TABS = React.useMemo(() => ['전체', ...VISIBLE_CORNER_TYPES] as const, []);
-  const countOf = (t: string) => (t === '전체' ? corners.length : corners.filter((c) => c.cornerType === t).length);
-  const list = corners.filter((c) => (tab === '전체' || c.cornerType === tab) && (!q || c.name.includes(q) || c.cornerType.includes(q)));
+  // 껍데기 단위로 접기 — 같은 (유형 · 배열(상품형=가로/세로)) 는 대표 하나만. 제목도 '유형 · 배열'로 통일.
+  const shells = React.useMemo(() => {
+    const seen = new Set<string>(); const out: (LibCorner & { shell: string; shellTitle: string })[] = [];
+    for (const c of corners) {
+      const sl = shellLayout(c.cornerType, c.layout, c.layoutDetail);
+      const key = `${c.cornerType}|${sl}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ ...c, shell: sl, shellTitle: `${c.cornerType} · ${layoutLabel(sl) || sl}` });
+    }
+    return out;
+  }, [corners]);
+  const countOf = (t: string) => (t === '전체' ? shells.length : shells.filter((c) => c.cornerType === t).length);
+  const list = shells.filter((c) => (tab === '전체' || c.cornerType === tab) && (!q || c.shellTitle.includes(q) || c.cornerType.includes(q)));
   // 멀티셀렉 — 체크된 코너 집합 + 우측 미리보기용 포커스
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
-  const [focusId, setFocusId] = React.useState<string | null>(corners[0]?.id ?? null);
-  const sel = corners.find((c) => c.id === focusId) ?? null;
+  const [focusId, setFocusId] = React.useState<string | null>(shells[0]?.id ?? null);
+  const sel = shells.find((c) => c.id === focusId) ?? null;
   const toggle = (id: string) => setPicked((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
@@ -702,8 +720,8 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
                   className={cn('flex w-full items-start gap-2.5 rounded-[10px] border px-3.5 py-3 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : focusId === c.id ? 'border-[var(--line3)] bg-[var(--th)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
                   <span className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[14px] font-bold text-[var(--ink)]">{c.name}</span>
-                    <span className="block text-[12px] text-[var(--ink4)]">{c.cornerType}{cornerLayoutText(c.layout, c.layoutDetail) ? ` · ${cornerLayoutText(c.layout, c.layoutDetail)}` : ''} · v1.0.0</span>
+                    <span className="block text-[14px] font-bold text-[var(--ink)]">{c.shellTitle}</span>
+                    <span className="block text-[12px] text-[var(--ink4)]">껍데기 · 내용은 추가 후 ② 수급에서 · v1.0.0</span>
                   </span>
                 </button>
               );
@@ -714,7 +732,7 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center gap-2 px-6 pt-5">
             {sel && <span className="rounded-[6px] bg-[var(--th)] px-2 py-1 text-[12px] font-semibold text-[var(--ink3)]">{sel.id.slice(-8).toUpperCase()}</span>}
-            <span className="truncate text-[16px] font-bold text-[var(--ink)]">{sel?.name ?? '코너를 선택하세요'}</span>
+            <span className="truncate text-[16px] font-bold text-[var(--ink)]">{sel?.shellTitle ?? '코너를 선택하세요'}</span>
             {sel && <><span className="text-[12px] text-[var(--ink4)]">v1.0.0</span><span className="rounded-[6px] bg-[#eefaf1] px-2 py-0.5 text-[11px] font-semibold text-[#00a058]">운영</span></>}
             <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]"><X className="h-4.5 w-4.5" /></button>
           </div>
