@@ -928,7 +928,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   const inputCls = 'h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-[14px] text-[14px] text-[var(--ink)] placeholder:text-[var(--ink5)] focus:border-[var(--focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]';
 
   return (
-    <ProductCatalogCtx.Provider value={data.catalogByType}>
+    <ProductCatalogCtx.Provider value={data.catalogByType ?? {}}>
     <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
       {/* 스크롤 영역 — 헤더(스크롤 시 함께 올라감) + 2열(좌 디바이스 스티키 · 우 콘텐츠) */}
       <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5">

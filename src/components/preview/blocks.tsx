@@ -158,8 +158,8 @@ function MenuListView({ component }: { component: PreviewComponent }) {
   return (
     <div>
       {component.atoms.map((a) => (
+        // 아이콘 없음(2026-10-28 사용자 요청: 나의 쇼핑만 아이콘 있던 것 제거) — 메뉴 라벨만.
         <div key={a.id} className="flex items-center gap-2 py-2.5">
-          {a.imageUrl && isIconRef(a.imageUrl) && <IconGlyph name={a.imageUrl} className="h-4 w-4 shrink-0 text-slate-500" />}
           <span className="flex-1 truncate text-[14px] text-slate-800">{a.content ?? a.name}</span>
         </div>
       ))}
@@ -508,9 +508,11 @@ function ComponentView({ component, mode, cardShape, reason, titleLines, parts }
 /** 한 Corner를 화면 영역으로 렌더 (프리뷰/빌더 공용) */
 export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const isBanner = corner.cornerType === '배너형';
+  // 메뉴 리스트(업무진입형 메뉴·리스트형) — 서브타이틀 없음(2026-10-28 사용자 요청). 타이틀만.
+  const isMenuList = /메뉴/.test(corner.layoutDetail ?? '') || (corner.cornerType === '업무 진입형' && /리스트/.test(corner.layoutDetail ?? ''));
   // 배너형은 코너 타이틀/서브타이틀을 두지 않는다(배너 자체가 콘텐츠). 헤딩 숨김. (2026-09-28 사용자 결정)
   const heading = isBanner ? null : (corner.mainTitle ?? corner.title);
-  const sub = isBanner ? null : (corner.subTitle ?? corner.name);
+  const sub = (isBanner || isMenuList) ? null : (corner.subTitle ?? corner.name);
   const showChevron = (corner.subTitleIcon ?? '화살표') !== '사용안함';
 
   // 코너 레이아웃(노출 방식) → 본문 배치 모드. 5종이 각각 다르게 렌더된다.
@@ -599,8 +601,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const bodyComps = corner.components.filter((c) => c.componentType !== '선택형');
   // 바코드 코너(고정·필수 노출형 · 바코드)는 상태카드가 아니라 멤버십 바코드 카드로 렌더
   const isBarcode = /바코드/.test(corner.layoutDetail ?? '');
-  // 메뉴 리스트(업무 진입형 메뉴·리스트형)는 칩이 아니라 세로 메뉴 리스트(쉐브론·순서변경 없음)로 렌더(2026-10-28 사용자 요청).
-  const isMenuList = /메뉴/.test(corner.layoutDetail ?? '') || (corner.cornerType === '업무 진입형' && /리스트/.test(corner.layoutDetail ?? ''));
+  // isMenuList = 상단에서 계산(메뉴 리스트는 서브타이틀 없음). 칩이 아니라 세로 메뉴 리스트(쉐브론·순서변경 없음)로 렌더.
   const menuComp = corner.components.find((c) => c.componentType === '선택형') ?? corner.components[0];
   // 프로필형(고정·필수 노출형 · 정보형 · 프로필형)은 상태카드가 아니라 프로필 행([사진][이름·번호]…[CTA])으로 렌더
   const isProfile = /프로필/.test(corner.layoutDetail ?? '');

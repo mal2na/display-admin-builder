@@ -634,7 +634,8 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
     options: [],
     layouts: [
       { layout: '탭형', required: [] },
-      { layout: '리스트형', required: [], minItems: 2, maxItems: 8, note: '메뉴 개수만 정합니다(세부 항목 없음)' },
+      // 리스트형 = 코너 타이틀 + 메뉴 라벨(아이콘·서브타이틀 없음). 메뉴 개수만 정한다. 2026-10-28 사용자 확정.
+      { layout: '리스트형', required: [CORNER_TITLE, FD('Label', '메뉴 라벨', 'item', { asIs: 'Label' })], minItems: 2, maxItems: 8 },
     ],
   },
   // 상태 안내형 — 단일. 옵션 없음.
@@ -711,10 +712,11 @@ export function cornerFieldSpec(cornerType?: string | null, layout?: string | nu
   if (!spec) return null;
   const l = layout ?? '';
   // 정확 일치 → 부분 포함(가로형+배너 ⊃ 가로형) → 세로/가로 키워드 → 첫 배열
+  // 키워드 매칭 — 세로/가로/리스트/탭/단일/스와이프(예: '메뉴 리스트'→'리스트형', '카테고리 탭'→'탭형').
+  const kw = (re: RegExp) => re.test(l) && spec.layouts.find((x) => re.test(x.layout));
   const pick = spec.layouts.find((x) => x.layout === l)
     ?? spec.layouts.find((x) => l.includes(x.layout) || x.layout.includes(l))
-    ?? spec.layouts.find((x) => (/세로/.test(l) && /세로/.test(x.layout)) || (/가로/.test(l) && /가로/.test(x.layout)))
-    ?? spec.layouts[0];
+    ?? (kw(/세로/) || kw(/가로/) || kw(/리스트/) || kw(/탭/) || kw(/단일/) || kw(/스와이프/) || spec.layouts[0]);
   // 노출 개수 = 배열별 값이 있으면 우선(배너형 스와이프형만 등), 없으면 유형 공통.
   return { options: spec.options, required: pick?.required ?? [], minItems: pick?.minItems ?? spec.minItems, maxItems: pick?.maxItems ?? spec.maxItems, rows: spec.rows, layout: pick?.layout, note: pick?.note };
 }
