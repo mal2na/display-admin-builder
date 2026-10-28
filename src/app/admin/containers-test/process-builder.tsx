@@ -25,6 +25,8 @@ const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '
 
 // 코너 '채우기 → 불러오기' 카탈로그 — 유형별(상품형=상품, 혜택·오퍼형=혜택). ProcessBuilder가 Provider로 내려준다(2026-10-28 사용자 요청).
 const ProductCatalogCtx = React.createContext<Record<string, ProductOption[]>>({});
+const EMPTY_ITEMS: { id: string; label: string }[] = [];
+const APPEND_LOAD = '__append__'; // '메뉴 추가' = 카탈로그에서 골라 현재 메뉴에 덧붙이기(2026-10-28 사용자 요청)
 
 /** 코너 레이아웃 표시 텍스트 — cornerLayout이 있으면 그 라벨, 없으면 layoutDetail(배너형: 빅배너·스몰배너·띠배너 등, 치수 괄호 제거) */
 function cornerLayoutText(layout: string | null, layoutDetail: string | null): string {
@@ -207,30 +209,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const [editName, setEditName] = React.useState(false);
   const [nameVal, setNameVal] = React.useState(corner.name);
   const options = cornerOptions(corner.preview);
-  // ③ 채우기 항목 — 실제 코너 선택지에서 시작, 메뉴 추가/삭제로 편집(클라이언트 상태)
-  const [items, setItems] = React.useState<{ id: string; label: string }[]>(
-    () => (options.length ? options : ['대표 아이템 1', '대표 아이템 2', '대표 아이템 3']).map((o, i) => ({ id: `it-${i}-${o}`, label: o })),
-  );
-  const addItem = () => setItems((xs) => [...xs, { id: `new-${Date.now()}`, label: '' }]);
-  const removeItem = (id: string) => setItems((xs) => xs.filter((x) => x.id !== id));
-  const setItemLabel = (id: string, label: string) => setItems((xs) => xs.map((x) => (x.id === id ? { ...x, label } : x)));
   const isCvmSrc = src.startsWith('CVM');
   const isData = src === 'CVM 데이터 연동';
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   const catalog = catalogByType[corner.cornerType] ?? [];
   const canLoad = catalog.length > 0;
-  const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id(여기부터 교체·확장)
-  // 멀티 셀렉으로 담기 — 첫 상품은 누른 행을 채우고, 나머지는 그 뒤에 새 행으로 추가.
-  const addFromCatalog = (ps: ProductOption[]) => {
-    if (ps.length === 0) return;
-    setItems((xs) => {
-      const idx = xs.findIndex((x) => x.id === loadForId);
-      const mapped = ps.map((p, i) => ({ id: i === 0 && idx >= 0 ? loadForId! : `load-${Date.now()}-${i}`, label: p.title }));
-      return idx < 0 ? [...xs, ...mapped] : [...xs.slice(0, idx), ...mapped, ...xs.slice(idx + 1)];
-    });
-    setLoadForId(null);
-  };
+  const catCategories = Array.from(new Set(catalog.map((c) => c.category).filter((c): c is string => !!c)));
   // 옵션(배너·칩·CTA) — 코너 유형이 허용하는 옵션을 빌더에서 On/Off 설정(2026-10-28 사용자: "배너·칩·CTA는 옵션, 여기서 설정").
   const optSpec = cornerFieldSpec(corner.cornerType, corner.layoutDetail ?? corner.layout);
   const availOptions = optSpec?.options ?? [];
@@ -240,7 +225,30 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // 칩(카테고리 탭) — 칩 옵션 On 이면 편집. '칩 불러오기'로 카탈로그 카테고리를 칩으로 추가.
   const [chips, setChips] = React.useState<string[]>(['전체', '카테고리1', '카테고리2']);
   const [chipLoadOpen, setChipLoadOpen] = React.useState(false);
-  const catCategories = Array.from(new Set(catalog.map((c) => c.category).filter((c): c is string => !!c)));
+  // ③ 채우기 항목 — 칩 On 이면 칩마다 별도 메뉴(칩 하나하나 메뉴 연동, 2026-10-28 사용자 요청). 칩 Off 면 단일 리스트(__flat__).
+  const chipMode = !!optOn['칩'] && chips.length > 0;
+  const [activeChip, setActiveChip] = React.useState(0);
+  const chipIdx = Math.min(activeChip, Math.max(0, chips.length - 1));
+  const chipKey = chipMode ? `chip:${chips[chipIdx] ?? chipIdx}` : '__flat__';
+  const defaultItems = () => (options.length ? options : ['대표 아이템 1', '대표 아이템 2', '대표 아이템 3']).map((o, i) => ({ id: `it-${i}-${o}`, label: o }));
+  const [itemsByKey, setItemsByKey] = React.useState<Record<string, { id: string; label: string }[]>>(() => ({ __flat__: defaultItems() }));
+  const items = itemsByKey[chipKey] ?? EMPTY_ITEMS;
+  const updateItems = (fn: (xs: { id: string; label: string }[]) => { id: string; label: string }[]) =>
+    setItemsByKey((m) => ({ ...m, [chipKey]: fn(m[chipKey] ?? []) }));
+  const addItem = () => updateItems((xs) => [...xs, { id: `new-${Date.now()}`, label: '' }]);
+  const removeItem = (id: string) => updateItems((xs) => xs.filter((x) => x.id !== id));
+  const setItemLabel = (id: string, label: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, label } : x)));
+  const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
+  // 멀티 셀렉으로 담기 — 첫 상품은 누른 행을 채우고, 나머지는 그 뒤에 새 행으로 추가(현재 칩의 메뉴에).
+  const addFromCatalog = (ps: ProductOption[]) => {
+    if (ps.length === 0) return;
+    updateItems((xs) => {
+      const idx = xs.findIndex((x) => x.id === loadForId);
+      const mapped = ps.map((p, i) => ({ id: i === 0 && idx >= 0 ? loadForId! : `load-${Date.now()}-${i}`, label: p.title }));
+      return idx < 0 ? [...xs, ...mapped] : [...xs.slice(0, idx), ...mapped, ...xs.slice(idx + 1)];
+    });
+    setLoadForId(null);
+  };
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
@@ -335,11 +343,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                     <span className="text-[12px] font-semibold text-[var(--ink3)]">칩 · 카테고리 탭</span>
                     <button type="button" onClick={() => setChipLoadOpen(true)} className="rounded-[6px] border border-[var(--line2)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink2)] hover:bg-white">칩 불러오기</button>
                   </div>
+                  {/* 칩을 누르면 그 칩의 메뉴를 아래에서 따로 구성(칩 하나하나 메뉴 연동, 2026-10-28 사용자 요청) */}
                   <div className="flex flex-wrap items-center gap-1.5">
                     {chips.map((c, i) => (
-                      <span key={i} className="inline-flex items-center gap-1 rounded-full border border-[var(--line3)] bg-white px-2 py-1 text-[12px]">
-                        <input value={c} onChange={(e) => setChips((cs) => cs.map((x, j) => (j === i ? e.target.value : x)))} className="w-14 bg-transparent text-[var(--ink)] outline-none" />
-                        <button type="button" onClick={() => setChips((cs) => cs.filter((_, j) => j !== i))} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
+                      <span key={i} onClick={() => setActiveChip(i)}
+                        className={cn('inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-1 text-[12px]', i === chipIdx ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line3)] bg-white')}>
+                        <input value={c} onClick={(e) => e.stopPropagation()} onChange={(e) => setChips((cs) => cs.map((x, j) => (j === i ? e.target.value : x)))} className="w-14 bg-transparent text-[var(--ink)] outline-none" />
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
                       </span>
                     ))}
                     <button type="button" onClick={() => setChips((cs) => [...cs, '카테고리'])} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 추가</button>
@@ -353,7 +363,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             <ChipLoadModal categories={catCategories} current={chips} onClose={() => setChipLoadOpen(false)}
               onAdd={(cs) => { setChips((prev) => [...prev, ...cs.filter((c) => !prev.includes(c))]); setChipLoadOpen(false); onToast(`칩 ${cs.length}개 담음`); }} />
           )}
+          {/* 칩 On이면 '현재 칩의 메뉴'임을 알려주고, 칩마다 메뉴가 따로 저장된다. */}
+          {chipMode && (
+            <div className="mb-1.5 mt-1 flex flex-wrap items-center gap-1.5 text-[12px]">
+              <span className="font-semibold text-[var(--ink2)]">칩 <span className="text-[var(--ac)]">&lsquo;{chips[chipIdx]}&rsquo;</span>의 메뉴</span>
+              <span className="text-[var(--ink4)]">— 위 칩을 눌러 칩별로 따로 구성</span>
+            </div>
+          )}
           <div className="space-y-1.5">
+            {items.length === 0 && <p className="rounded-[8px] border border-dashed border-[var(--line3)] px-3 py-4 text-center text-[12px] text-[var(--ink4)]">아직 메뉴가 없어요 · &lsquo;메뉴 추가&rsquo;로 {canLoad ? '카탈로그에서 끌어오세요' : '추가하세요'}</p>}
             {items.map((o) => (
               <div key={o.id} className="flex items-center gap-1.5 rounded-[8px] border border-[var(--line3)] bg-white px-2 py-1.5">
                 <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--ink4)]" />
@@ -370,7 +388,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             <ProductLoadModal catalog={catalog} cornerType={corner.cornerType} onClose={() => setLoadForId(null)}
               onAdd={(ps) => { addFromCatalog(ps); onToast(`${ps.length}개 담음`); }} />
           )}
-          <button type="button" onClick={addItem} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 메뉴 추가</button>
+          {/* 메뉴 추가 = 카탈로그(공차·뚜레쥬르·티켓…)에서 끌어오기. 카탈로그 없으면 빈 행 추가(2026-10-28 사용자 요청). */}
+          <button type="button" onClick={() => (canLoad ? setLoadForId(APPEND_LOAD) : addItem())} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 메뉴 추가{canLoad ? ' (카탈로그에서)' : ''}</button>
         </Sec>
       ) : isData ? (
         <Sec n={3} title="요청 — CVM에 무엇을 달라고 할지" help>
