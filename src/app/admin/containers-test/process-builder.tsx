@@ -16,7 +16,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
 import { FieldRow } from '@/components/ops-ui';
-import { cornerTypeChipClass, layoutLabel, displayLayout, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
+import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon } from 'lucide-react';
 import type { ProcessData, PTemplate, PCorner, LibCorner } from './process-data';
 import type { ProductOption } from '../corner-types/corner-type-manager';
@@ -105,6 +105,39 @@ function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceC
     );
   }
   return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onRecSourceChange={onRecSourceChange} onToast={onToast} />;
+}
+
+// 칩 불러오기 모달 — 카탈로그 카테고리를 칩(카테고리 탭)으로 멀티 셀렉 추가(2026-10-28 사용자 요청: 칩과 상품 둘 다 불러오기).
+function ChipLoadModal({ categories, current, onClose, onAdd }: { categories: string[]; current: string[]; onClose: () => void; onAdd: (cs: string[]) => void }) {
+  const [checked, setChecked] = React.useState<Set<string>>(new Set());
+  const toggle = (c: string) => setChecked((p) => { const n = new Set(p); if (n.has(c)) n.delete(c); else n.add(c); return n; });
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="flex max-h-[70vh] w-full max-w-sm flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b border-[var(--line2)] px-4 py-3">
+          <h2 className="text-[14px] font-bold text-[var(--ink)]">칩 불러오기</h2>
+          <span className="text-[12px] text-[var(--ink4)]">카테고리에서 선택</span>
+          <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]" aria-label="닫기"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {categories.length === 0 ? <p className="py-8 text-center text-[13px] text-[var(--ink4)]">카테고리가 없습니다.</p> : categories.map((c) => {
+            const on = checked.has(c); const exists = current.includes(c);
+            return (
+              <button key={c} type="button" disabled={exists} onClick={() => toggle(c)} className={cn('flex w-full items-center gap-2.5 rounded-[8px] px-2 py-2 text-left', exists ? 'opacity-40' : on ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
+                <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
+                <span className="text-[13px] font-medium text-[var(--ink)]">{c}</span>
+                {exists && <span className="ml-auto text-[11px] text-[var(--ink4)]">이미 추가됨</span>}
+              </button>
+            );
+          })}
+        </div>
+        <div className="border-t border-[var(--line2)] p-3">
+          <button type="button" disabled={checked.size === 0} onClick={() => onAdd([...checked])}
+            className="h-[42px] w-full rounded-[10px] bg-[var(--ac)] text-[14px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">칩 담기{checked.size > 0 ? ` (${checked.size})` : ''}</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // '채우기 → 불러오기' 모달 — 유형별 카탈로그(상품형=상품 9분류 · 혜택·오퍼형=혜택 분류)에서 멀티 셀렉으로 담기(2026-10-28 사용자 요청).
@@ -198,6 +231,16 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
     });
     setLoadForId(null);
   };
+  // 옵션(배너·칩·CTA) — 코너 유형이 허용하는 옵션을 빌더에서 On/Off 설정(2026-10-28 사용자: "배너·칩·CTA는 옵션, 여기서 설정").
+  const optSpec = cornerFieldSpec(corner.cornerType, corner.layoutDetail ?? corner.layout);
+  const availOptions = optSpec?.options ?? [];
+  const rawDetail = corner.layoutDetail ?? corner.layout ?? '';
+  const [optOn, setOptOn] = React.useState<Record<string, boolean>>(() =>
+    Object.fromEntries(availOptions.map((o) => [o, (o === '칩' && /칩/.test(rawDetail)) || (o === '배너' && /배너/.test(rawDetail))])));
+  // 칩(카테고리 탭) — 칩 옵션 On 이면 편집. '칩 불러오기'로 카탈로그 카테고리를 칩으로 추가.
+  const [chips, setChips] = React.useState<string[]>(['전체', '카테고리1', '카테고리2']);
+  const [chipLoadOpen, setChipLoadOpen] = React.useState(false);
+  const catCategories = Array.from(new Set(catalog.map((c) => c.category).filter((c): c is string => !!c)));
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
@@ -273,6 +316,43 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
       {/* ③ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
       {src === '운영자 편성' ? (
         <Sec n={3} title="채우기 — 항목 등록">
+          {/* 옵션(배너·칩·CTA) — 코너 유형이 허용하는 옵션을 여기서 On/Off. 칩 On이면 칩(카테고리 탭)도 여기서 채운다(2026-10-28 사용자 요청). */}
+          {availOptions.length > 0 && (
+            <div className="mb-3 rounded-[8px] border border-[var(--line3)] bg-[var(--th)] p-2.5">
+              <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">옵션 <span className="font-normal text-[var(--ink4)]">· 배너·칩·CTA 여기서 On/Off</span></p>
+              <div className="flex flex-wrap gap-1.5">
+                {availOptions.map((o) => (
+                  <button key={o} type="button" onClick={() => setOptOn((p) => ({ ...p, [o]: !p[o] }))}
+                    className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold', optOn[o] ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line3)] bg-white text-[var(--ink3)]')}>
+                    {o}<span className={optOn[o] ? 'text-white/80' : 'text-[var(--ink4)]'}>{optOn[o] ? 'On' : 'Off'}</span>
+                  </button>
+                ))}
+              </div>
+              {/* 칩(카테고리 탭) — 칩 On이면 편집 + 불러오기 */}
+              {optOn['칩'] && (
+                <div className="mt-2.5 border-t border-[var(--line2)] pt-2.5">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="text-[12px] font-semibold text-[var(--ink3)]">칩 · 카테고리 탭</span>
+                    <button type="button" onClick={() => setChipLoadOpen(true)} className="rounded-[6px] border border-[var(--line2)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink2)] hover:bg-white">칩 불러오기</button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {chips.map((c, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 rounded-full border border-[var(--line3)] bg-white px-2 py-1 text-[12px]">
+                        <input value={c} onChange={(e) => setChips((cs) => cs.map((x, j) => (j === i ? e.target.value : x)))} className="w-14 bg-transparent text-[var(--ink)] outline-none" />
+                        <button type="button" onClick={() => setChips((cs) => cs.filter((_, j) => j !== i))} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
+                      </span>
+                    ))}
+                    <button type="button" onClick={() => setChips((cs) => [...cs, '카테고리'])} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 추가</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {/* 칩 불러오기 모달 — 카탈로그 카테고리를 칩으로 추가(멀티 셀렉) */}
+          {chipLoadOpen && (
+            <ChipLoadModal categories={catCategories} current={chips} onClose={() => setChipLoadOpen(false)}
+              onAdd={(cs) => { setChips((prev) => [...prev, ...cs.filter((c) => !prev.includes(c))]); setChipLoadOpen(false); onToast(`칩 ${cs.length}개 담음`); }} />
+          )}
           <div className="space-y-1.5">
             {items.map((o) => (
               <div key={o.id} className="flex items-center gap-1.5 rounded-[8px] border border-[var(--line3)] bg-white px-2 py-1.5">
