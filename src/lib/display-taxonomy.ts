@@ -604,8 +604,9 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   상품형: {
     options: ['배너'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
-      // 가로형(단말 추천 케이스) = 가격·할인율·기간. 세로형(요금제 리스트 케이스) = 캡션·캡션2(가격 미사용). DS 실제 케이스 기준(2026-10-28 사용자 확인).
-      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, PERIOD] },
+      // 가로형(단말 추천) = 가격·할인율·기간 + 캡션·캡션2·개수. 세로형(요금제 리스트) = 캡션·캡션2(가격·개수 미사용). DS 실제 케이스 기준(2026-10-28 사용자 확인).
+      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, PERIOD,
+        FD('Caption01', '캡션', 'item', { asIs: 'Caption/Caption01' }), FD('Caption02', '캡션2', 'item', { asIs: 'Caption02' }), FD('Count', '개수', 'item')] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE,
         FD('Caption01', '캡션', 'item', { asIs: 'Caption/Caption01' }), FD('Caption02', '캡션2', 'item', { asIs: 'Caption02' })] },
     ],
