@@ -66,7 +66,8 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     .filter((c) => c.templateCorners.length > 0)
     .map((c) => ({
       cornerName: c.name,
-      preview: cornerToPreviewCorner(c),
+      // 코너 유형 = 껍데기 → 상세 미리보기의 메뉴 라벨은 실제값 대신 '메뉴N'(2026-10-28 사용자 요청).
+      preview: { ...cornerToPreviewCorner(c), shell: true },
       screens: c.templateCorners.map((tc) => ({ templateId: tc.template.id, container: tc.template.container.name, template: tc.template.name })),
     }));
 

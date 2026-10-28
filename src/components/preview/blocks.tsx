@@ -32,6 +32,7 @@ export type PreviewCorner = {
   id: string;
   name: string;
   cornerType: string;
+  shell?: boolean; // 껍데기 미리보기 — 메뉴 등 라벨을 실제값 대신 '메뉴1·메뉴2'로(코너 유형 상세용). 2026-10-28 사용자 요청
   title: string | null;
   maxItems: number | null;
   components: PreviewComponent[];
@@ -154,13 +155,13 @@ function ChipsView({ component }: { component: PreviewComponent }) {
 }
 
 // 메뉴 리스트(업무 진입형 리스트형) — 세로 메뉴 행만. 쉐브론·순서변경(드래그) 없음(2026-10-28 사용자 요청). 행 구분선도 없음.
-function MenuListView({ component }: { component: PreviewComponent }) {
+function MenuListView({ component, shell }: { component: PreviewComponent; shell?: boolean }) {
   return (
     <div>
-      {component.atoms.map((a) => (
-        // 아이콘 없음(2026-10-28 사용자 요청: 나의 쇼핑만 아이콘 있던 것 제거) — 메뉴 라벨만.
+      {component.atoms.map((a, i) => (
+        // 아이콘 없음 · 껍데기(shell)면 실제 라벨 대신 '메뉴N'(코너 유형 상세용, 2026-10-28 사용자 요청).
         <div key={a.id} className="flex items-center gap-2 py-2.5">
-          <span className="flex-1 truncate text-[14px] text-slate-800">{a.content ?? a.name}</span>
+          <span className="flex-1 truncate text-[14px] text-slate-800">{shell ? `메뉴${i + 1}` : (a.content ?? a.name)}</span>
         </div>
       ))}
     </div>
@@ -635,7 +636,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     ) : isProfile ? (
       <ProfileCard component={corner.components[0]} />
     ) : isMenuList ? (
-      <MenuListView component={menuComp} />
+      <MenuListView component={menuComp} shell={corner.shell} />
     ) : isBanner ? (
       <BannerCarouselBlock corner={corner} />
     ) : chipComps.length > 0 && bodyComps.length > 0 ? (

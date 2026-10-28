@@ -64,24 +64,38 @@ function OptionRows({ options, editable, storageKey }: { options: readonly Corne
   );
 }
 
-// 형태(Variants) 세그먼트 — 가로형=Small/Medium/Large, 세로형=Profile/Data/Barcode(상품형 스튜디오와 동일 UI).
+// 형태(Variants) 라디오 — 가로형=Small/Medium/Large, 세로형=Profile/Data/Barcode. 단일 선택이라 라디오(2026-10-28 사용자 요청).
 function VariantSeg({ layout }: { layout?: string | null }) {
   const vertical = /세로/.test(layout ?? '');
   const opts = vertical ? ['Profile', 'Data', 'Barcode'] : ['Small', 'Medium', 'Large'];
   const [val, setVal] = useState(opts[0]);
   return (
-    <div className="flex items-center gap-3 rounded-md px-2 py-1.5">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md px-2 py-1.5">
       <span className="text-[13px] font-medium text-slate-800">형태(Variants) <span className="ml-1 text-[11px] font-normal text-slate-400">· {vertical ? '프로필·데이터·바코드' : '카드 크기'}</span></span>
-      <div className="inline-flex overflow-hidden rounded-[6px] border border-[#dce0e5]">
-        {opts.map((o) => (
-          <button key={o} type="button" onClick={() => setVal(o)} className={`px-2.5 py-1 text-[12px] font-semibold ${val === o ? 'bg-[#3617ce] text-white' : 'bg-white text-[#697582] hover:bg-[#f8f9fb]'}`}>{o}</button>
-        ))}
-      </div>
+      {opts.map((o) => (
+        <label key={o} className="flex cursor-pointer items-center gap-1.5 text-[13px]">
+          <input type="radio" name="variantSel" checked={val === o} onChange={() => setVal(o)} className="h-4 w-4 accent-[#3617ce]" />
+          <span className={val === o ? 'font-medium text-slate-800' : 'text-slate-500'}>{o}</span>
+        </label>
+      ))}
     </div>
   );
 }
 
-function CountRow({ min, max }: { min: number; max: number }) {
+// 노출 개수 — 편집 폼(editable)에서는 직접 설정(최소~최대 입력), 읽기(상세)에서는 범위 표시.
+function CountRow({ min, max, editable }: { min: number; max: number; editable?: boolean }) {
+  if (editable) {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px]">
+        <span className="font-medium text-slate-800">노출 개수</span>
+        <input name="defaultMinItems" type="number" min={0} max={50} defaultValue={min} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
+        <span className="text-slate-400">~</span>
+        <input name="defaultMaxItems" type="number" min={0} max={50} defaultValue={max} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
+        <span className="text-[12px] text-slate-500">개</span>
+        <span className="text-[11px] text-slate-400">· 코너에 노출할 개수</span>
+      </div>
+    );
+  }
   return (
     <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px]">
       <span className="font-medium text-slate-800">노출 개수</span>
@@ -106,7 +120,7 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey }: { c
         <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-2 text-[12px] text-slate-400">
           {m.note || (m.minItems != null ? '노출 개수만 설정합니다 — 소재·문구는 빌더에서 채웁니다.' : '세부 항목 없음 — 내용은 빌더에서 채웁니다.')}
         </p>
-        {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} />}
+        {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} />}
       </div>
     );
   }
@@ -129,7 +143,7 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey }: { c
           <div className="space-y-0.5">
             <VariantSeg layout={m.layout ?? layout} />
             {itemFields.map(row)}
-            {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} />}
+            {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} />}
           </div>
         </div>
       )}

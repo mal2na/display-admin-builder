@@ -1939,9 +1939,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                   <CornerFieldList cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} />
                 </TRow>
                 {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
-                {/* 노출 개수는 세부 항목의 '아이템(요소)' 그룹에 묶여 표시된다(2026-10-28 사용자 요청) → 여기선 저장값만 hidden 으로 보존. */}
-                <input type="hidden" name="defaultMinItems" value={minItems} />
-                <input type="hidden" name="defaultMaxItems" value={maxItems} />
+                {/* 노출 개수 입력은 CornerFieldList(세부 항목) 안에서 설정한다(2026-10-28 사용자 요청: 여기서 설정).
+                    단, 노출 개수가 없는 유형(탭형·단일형·상태안내형·고정필수)은 CountRow가 안 떠서 저장값만 hidden 보존. */}
+                {!cornerFieldSpec(base, detail)?.minItems && <>
+                  <input type="hidden" name="defaultMinItems" value={minItems} />
+                  <input type="hidden" name="defaultMaxItems" value={maxItems} />
+                </>}
                 {/* 저장값 보존(화면에선 숨김) — CTA 문구·카드 모양·배너 옵션·FO 설정. 표시 항목 플래그는 위 체크박스가 제출, 컴포넌트(칩·배너)는 name="composition"으로 보존. */}
                 <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
                 {eff('useMoreButton') && <input type="hidden" name="defaultMoreButtonLabel" value={moreLabel} />}
