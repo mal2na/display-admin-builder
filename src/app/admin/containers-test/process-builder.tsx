@@ -23,8 +23,8 @@ import type { ProductOption } from '../corner-types/corner-type-manager';
 
 const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '비로그인 시 노출', '미노출'];
 
-// 상품형 '채우기 → 불러오기'에서 쓸 상품 카탈로그(상품 9분류). ProcessBuilder가 Provider로 내려준다(2026-10-28 사용자 요청).
-const ProductCatalogCtx = React.createContext<ProductOption[]>([]);
+// 코너 '채우기 → 불러오기' 카탈로그 — 유형별(상품형=상품, 혜택·오퍼형=혜택). ProcessBuilder가 Provider로 내려준다(2026-10-28 사용자 요청).
+const ProductCatalogCtx = React.createContext<Record<string, ProductOption[]>>({});
 
 /** 코너 레이아웃 표시 텍스트 — cornerLayout이 있으면 그 라벨, 없으면 layoutDetail(배너형: 빅배너·스몰배너·띠배너 등, 치수 괄호 제거) */
 function cornerLayoutText(layout: string | null, layoutDetail: string | null): string {
@@ -107,27 +107,31 @@ function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceC
   return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onRecSourceChange={onRecSourceChange} onToast={onToast} />;
 }
 
-// 상품형 '채우기 → 불러오기' 모달 — 상품 카탈로그(9분류: 요금제·휴대폰·인터넷/B tv·구독·악세사리·다이렉트 플랜·USIM/eSIM·로밍·부가서비스)에서 택1.
-function ProductLoadModal({ catalog, onClose, onPick }: { catalog: ProductOption[]; onClose: () => void; onPick: (p: ProductOption) => void }) {
+// '채우기 → 불러오기' 모달 — 유형별 카탈로그(상품형=상품 9분류 · 혜택·오퍼형=혜택 분류)에서 멀티 셀렉으로 담기(2026-10-28 사용자 요청).
+function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: ProductOption[]; cornerType: string; onClose: () => void; onAdd: (ps: ProductOption[]) => void }) {
   const [q, setQ] = React.useState('');
   const cats: string[] = ['전체'];
   for (const o of catalog) { const c = o.category ?? '기타'; if (!cats.includes(c)) cats.push(c); }
   const [cat, setCat] = React.useState('전체');
+  const [checked, setChecked] = React.useState<Set<string>>(new Set());
   const query = q.trim().toLowerCase();
   const list = catalog.filter((o) => (cat === '전체' || (o.category ?? '기타') === cat) && (!query || `${o.brand} ${o.title}`.toLowerCase().includes(query)));
+  const toggle = (k: string) => setChecked((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const submit = () => onAdd(catalog.filter((o) => checked.has(o.key)));
+  const kindLabel = cornerType === '혜택·오퍼형' ? '혜택 분류에서 선택' : '상품 분류에서 선택';
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="flex h-[78vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b border-[var(--line2)] px-4 py-3">
           <Search className="h-4 w-4 text-[var(--ac)]" />
-          <h2 className="text-[14px] font-bold text-[var(--ink)]">상품 불러오기</h2>
-          <span className="text-[12px] text-[var(--ink4)]">상품형 · 상품 분류에서 선택</span>
+          <h2 className="text-[14px] font-bold text-[var(--ink)]">{cornerType === '혜택·오퍼형' ? '혜택 불러오기' : '상품 불러오기'}</h2>
+          <span className="text-[12px] text-[var(--ink4)]">{kindLabel} · 여러 개 체크해 담기</span>
           <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]" aria-label="닫기"><X className="h-4 w-4" /></button>
         </div>
         <div className="space-y-2 border-b border-[var(--line2)] p-3">
           <div className="flex items-center gap-2 rounded-[8px] border border-[var(--line3)] bg-white px-3">
             <Search className="h-4 w-4 text-[var(--ink4)]" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="상품명 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
           </div>
           <div className="flex flex-wrap gap-1.5">
             {cats.map((c) => (
@@ -136,18 +140,25 @@ function ProductLoadModal({ catalog, onClose, onPick }: { catalog: ProductOption
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          {list.length === 0 ? <p className="py-10 text-center text-[13px] text-[var(--ink4)]">검색 결과가 없습니다.</p> : list.map((p) => (
-            <button key={p.key} type="button" onClick={() => onPick(p)} className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left hover:bg-[var(--th)]">
-              <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[8px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]">
-                {p.imageUrl ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={p.imageUrl} alt={p.title} className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-semibold text-[var(--ink)]">{p.title}</span>
-                <span className="block truncate text-[11px] text-[var(--ink4)]">{p.category} · {p.brand}{p.price ? ` · ${p.price}` : ''}</span>
-              </span>
-              <Plus className="h-4 w-4 shrink-0 text-[var(--ac)]" />
-            </button>
-          ))}
+          {list.length === 0 ? <p className="py-10 text-center text-[13px] text-[var(--ink4)]">검색 결과가 없습니다.</p> : list.map((p) => {
+            const on = checked.has(p.key);
+            return (
+              <button key={p.key} type="button" onClick={() => toggle(p.key)} className={cn('flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left', on ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
+                <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
+                <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[8px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]">
+                  {p.imageUrl ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={p.imageUrl} alt={p.title} className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-semibold text-[var(--ink)]">{p.title}</span>
+                  <span className="block truncate text-[11px] text-[var(--ink4)]">{p.category} · {p.brand}{p.price ? ` · ${p.price}` : ''}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="border-t border-[var(--line2)] p-3">
+          <button type="button" disabled={checked.size === 0} onClick={submit}
+            className="h-[44px] w-full rounded-[10px] bg-[var(--ac)] text-[14px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">이 항목 담기{checked.size > 0 ? ` (${checked.size})` : ''}</button>
         </div>
       </div>
     </div>
@@ -172,10 +183,21 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const setItemLabel = (id: string, label: string) => setItems((xs) => xs.map((x) => (x.id === id ? { ...x, label } : x)));
   const isCvmSrc = src.startsWith('CVM');
   const isData = src === 'CVM 데이터 연동';
-  // 상품형 '채우기 → 불러오기' — 상품 카탈로그에서 골라 항목을 채운다(2026-10-28 사용자 요청).
-  const productCatalog = React.useContext(ProductCatalogCtx);
-  const isProduct = corner.cornerType === '상품형';
-  const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
+  // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
+  const catalogByType = React.useContext(ProductCatalogCtx);
+  const catalog = catalogByType[corner.cornerType] ?? [];
+  const canLoad = catalog.length > 0;
+  const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id(여기부터 교체·확장)
+  // 멀티 셀렉으로 담기 — 첫 상품은 누른 행을 채우고, 나머지는 그 뒤에 새 행으로 추가.
+  const addFromCatalog = (ps: ProductOption[]) => {
+    if (ps.length === 0) return;
+    setItems((xs) => {
+      const idx = xs.findIndex((x) => x.id === loadForId);
+      const mapped = ps.map((p, i) => ({ id: i === 0 && idx >= 0 ? loadForId! : `load-${Date.now()}-${i}`, label: p.title }));
+      return idx < 0 ? [...xs, ...mapped] : [...xs.slice(0, idx), ...mapped, ...xs.slice(idx + 1)];
+    });
+    setLoadForId(null);
+  };
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
@@ -258,15 +280,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]"><ImageIcon className="h-3.5 w-3.5" /></span>
                 <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder="라벨 입력" className="h-[30px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
                 <button type="button" onClick={() => onToast('이동 링크 설정 (데모)')} className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-[var(--line2)] text-[var(--ink3)] hover:bg-[var(--th)]"><Link2 className="h-3.5 w-3.5" /></button>
-                <button type="button" onClick={() => (isProduct ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-[var(--th)]">불러오기</button>
+                <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-[var(--th)]">불러오기</button>
                 <button type="button" onClick={() => removeItem(o.id)} className="grid h-6 w-6 shrink-0 place-items-center text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
               </div>
             ))}
           </div>
-          {/* 상품형 불러오기 모달 — 상품 카탈로그(9분류)에서 골라 항목 라벨을 채운다 */}
+          {/* 불러오기 모달 — 유형별 카탈로그에서 멀티 셀렉으로 담기 */}
           {loadForId && (
-            <ProductLoadModal catalog={productCatalog} onClose={() => setLoadForId(null)}
-              onPick={(p) => { setItemLabel(loadForId, p.title); setLoadForId(null); onToast(`'${p.title}' 불러옴`); }} />
+            <ProductLoadModal catalog={catalog} cornerType={corner.cornerType} onClose={() => setLoadForId(null)}
+              onAdd={(ps) => { addFromCatalog(ps); onToast(`${ps.length}개 담음`); }} />
           )}
           <button type="button" onClick={addItem} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 메뉴 추가</button>
         </Sec>
@@ -826,7 +848,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   const inputCls = 'h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-[14px] text-[14px] text-[var(--ink)] placeholder:text-[var(--ink5)] focus:border-[var(--focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]';
 
   return (
-    <ProductCatalogCtx.Provider value={data.productCatalog}>
+    <ProductCatalogCtx.Provider value={data.catalogByType}>
     <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
       {/* 스크롤 영역 — 헤더(스크롤 시 함께 올라감) + 2열(좌 디바이스 스티키 · 우 콘텐츠) */}
       <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5">

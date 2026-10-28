@@ -42,8 +42,8 @@ export type ProcessData = {
   containerId: string; containerName: string; containerType: string; platform: string;
   status: string; description: string | null; previewUrl: string | null; activeTemplateId: string;
   templates: PTemplate[]; libCorners: LibCorner[];
-  /** 상품형 코너 '채우기 → 불러오기'에서 고를 상품 카탈로그(상품 9분류). 2026-10-28 사용자 요청 */
-  productCatalog: ProductOption[];
+  /** 코너 '채우기 → 불러오기' 카탈로그 — 유형별. 상품형=상품 9분류, 혜택·오퍼형=혜택 분류. 2026-10-28 사용자 요청 */
+  catalogByType: Record<string, ProductOption[]>;
 };
 
 const TYPE_LABELS: Record<string, string> = { MAIN: '메인화면', MENU: '메뉴', CURATION: '기획전', BENEFIT: '혜택 영역' };
@@ -125,7 +125,10 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     activeTemplateId: active,
     templates,
     libCorners,
-    productCatalog: await getProductOptions('상품형'),
+    catalogByType: {
+      '상품형': await getProductOptions('상품형'),
+      '혜택·오퍼형': await getProductOptions('혜택·오퍼형'),
+    },
   };
 }
 
