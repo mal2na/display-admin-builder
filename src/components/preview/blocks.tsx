@@ -155,8 +155,9 @@ function ChipsView({ component }: { component: PreviewComponent }) {
 
 // 메뉴 리스트(업무 진입형 · 선택형 · 메뉴 리스트) — 칩이 아니라 세로 메뉴 행 + 오른쪽 화살표.
 function MenuListView({ component }: { component: PreviewComponent }) {
+  // 행 구분선 제거(2026-10-28 사용자 요청: 미리보기·상세 보더 다 빼기).
   return (
-    <div className="divide-y divide-slate-100">
+    <div>
       {component.atoms.map((a) => {
         const fixed = a.menuRole === 'FIXED';
         return (
@@ -595,7 +596,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         </div>
       );
     return (
-      <div className="divide-y divide-slate-100">
+      <div>{/* 행 구분선 제거(2026-10-28 사용자 요청) */}
         {comps.map((c, i) => (
           <ComponentView key={c.id} component={c} mode={mode} reason={reasonFor(i)} parts={parts} />
         ))}

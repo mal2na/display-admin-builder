@@ -339,8 +339,8 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
         </div>
       )}
       {vertical ? (
-        // 세로형 = 세로 리스트(레퍼런스 4건·행 구분선). 실제 노출 개수는 빌더/노출 개수에서 결정, 미리보기는 대표 4건.
-        <div className="mt-1 flex flex-col divide-y divide-[#f1f3f5] px-3 pb-2">
+        // 세로형 = 세로 리스트. 행 구분선 제거(2026-10-28 사용자 요청). 실제 노출 개수는 빌더에서, 미리보기는 대표 4건.
+        <div className="mt-1 flex flex-col px-3 pb-2">
           {[0, 1, 2, 3].map((i) => (
             <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
               <ItemRow s={spec.item} />
