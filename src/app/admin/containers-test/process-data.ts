@@ -4,7 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE } from '../corner-types/preview-corner';
 import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, defaultComposition, componentTypesForCorner, type Zone } from '@/lib/display-taxonomy';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
+import { getProductOptions } from '../corner-types/built-options';
 import type { PreviewCorner } from '@/components/preview/blocks';
+import type { ProductOption } from '../corner-types/corner-type-manager';
 
 // 코너 불러오기 '껍데기 가이드' — 코너 = 껍데기(규격)라 콘텐츠 없이 placeholder 슬롯으로만 미리보기.
 //  불러오면 코너 유형(레이아웃·노출 타입)만 들어오고 내용은 빌더 '②수급'에서 채운다(2026-10-28 사용자 요청).
@@ -40,6 +42,8 @@ export type ProcessData = {
   containerId: string; containerName: string; containerType: string; platform: string;
   status: string; description: string | null; previewUrl: string | null; activeTemplateId: string;
   templates: PTemplate[]; libCorners: LibCorner[];
+  /** 상품형 코너 '채우기 → 불러오기'에서 고를 상품 카탈로그(상품 9분류). 2026-10-28 사용자 요청 */
+  productCatalog: ProductOption[];
 };
 
 const TYPE_LABELS: Record<string, string> = { MAIN: '메인화면', MENU: '메뉴', CURATION: '기획전', BENEFIT: '혜택 영역' };
@@ -119,6 +123,7 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     activeTemplateId: active,
     templates,
     libCorners,
+    productCatalog: await getProductOptions('상품형'),
   };
 }
 

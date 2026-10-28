@@ -19,8 +19,12 @@ import { FieldRow } from '@/components/ops-ui';
 import { cornerTypeChipClass, layoutLabel, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon } from 'lucide-react';
 import type { ProcessData, PTemplate, PCorner, LibCorner } from './process-data';
+import type { ProductOption } from '../corner-types/corner-type-manager';
 
 const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '비로그인 시 노출', '미노출'];
+
+// 상품형 '채우기 → 불러오기'에서 쓸 상품 카탈로그(상품 9분류). ProcessBuilder가 Provider로 내려준다(2026-10-28 사용자 요청).
+const ProductCatalogCtx = React.createContext<ProductOption[]>([]);
 
 /** 코너 레이아웃 표시 텍스트 — cornerLayout이 있으면 그 라벨, 없으면 layoutDetail(배너형: 빅배너·스몰배너·띠배너 등, 치수 괄호 제거) */
 function cornerLayoutText(layout: string | null, layoutDetail: string | null): string {
@@ -103,6 +107,53 @@ function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceC
   return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onRecSourceChange={onRecSourceChange} onToast={onToast} />;
 }
 
+// 상품형 '채우기 → 불러오기' 모달 — 상품 카탈로그(9분류: 요금제·휴대폰·인터넷/B tv·구독·악세사리·다이렉트 플랜·USIM/eSIM·로밍·부가서비스)에서 택1.
+function ProductLoadModal({ catalog, onClose, onPick }: { catalog: ProductOption[]; onClose: () => void; onPick: (p: ProductOption) => void }) {
+  const [q, setQ] = React.useState('');
+  const cats: string[] = ['전체'];
+  for (const o of catalog) { const c = o.category ?? '기타'; if (!cats.includes(c)) cats.push(c); }
+  const [cat, setCat] = React.useState('전체');
+  const query = q.trim().toLowerCase();
+  const list = catalog.filter((o) => (cat === '전체' || (o.category ?? '기타') === cat) && (!query || `${o.brand} ${o.title}`.toLowerCase().includes(query)));
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="flex h-[78vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b border-[var(--line2)] px-4 py-3">
+          <Search className="h-4 w-4 text-[var(--ac)]" />
+          <h2 className="text-[14px] font-bold text-[var(--ink)]">상품 불러오기</h2>
+          <span className="text-[12px] text-[var(--ink4)]">상품형 · 상품 분류에서 선택</span>
+          <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]" aria-label="닫기"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="space-y-2 border-b border-[var(--line2)] p-3">
+          <div className="flex items-center gap-2 rounded-[8px] border border-[var(--line3)] bg-white px-3">
+            <Search className="h-4 w-4 text-[var(--ink4)]" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="상품명 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {cats.map((c) => (
+              <button key={c} type="button" onClick={() => setCat(c)} className={cn('rounded-[7px] px-2.5 py-1 text-[12px] font-semibold', c === cat ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)] hover:bg-[var(--line)]')}>{c}</button>
+            ))}
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {list.length === 0 ? <p className="py-10 text-center text-[13px] text-[var(--ink4)]">검색 결과가 없습니다.</p> : list.map((p) => (
+            <button key={p.key} type="button" onClick={() => onPick(p)} className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left hover:bg-[var(--th)]">
+              <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[8px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]">
+                {p.imageUrl ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={p.imageUrl} alt={p.title} className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] font-semibold text-[var(--ink)]">{p.title}</span>
+                <span className="block truncate text-[11px] text-[var(--ink4)]">{p.category} · {p.brand}{p.price ? ` · ${p.price}` : ''}</span>
+              </span>
+              <Plus className="h-4 w-4 shrink-0 text-[var(--ac)]" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChange, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onToast: (m: string) => void }) {
   const [src, setSrc] = React.useState<string>(corner.recSource ?? '운영자 편성');
   const [fb, setFb] = React.useState<'미노출' | '운영자 편성으로 대체'>(corner.fallback);
@@ -118,8 +169,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   );
   const addItem = () => setItems((xs) => [...xs, { id: `new-${Date.now()}`, label: '' }]);
   const removeItem = (id: string) => setItems((xs) => xs.filter((x) => x.id !== id));
+  const setItemLabel = (id: string, label: string) => setItems((xs) => xs.map((x) => (x.id === id ? { ...x, label } : x)));
   const isCvmSrc = src.startsWith('CVM');
   const isData = src === 'CVM 데이터 연동';
+  // 상품형 '채우기 → 불러오기' — 상품 카탈로그에서 골라 항목을 채운다(2026-10-28 사용자 요청).
+  const productCatalog = React.useContext(ProductCatalogCtx);
+  const isProduct = corner.cornerType === '상품형';
+  const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
@@ -200,13 +256,18 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               <div key={o.id} className="flex items-center gap-1.5 rounded-[8px] border border-[var(--line3)] bg-white px-2 py-1.5">
                 <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--ink4)]" />
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]"><ImageIcon className="h-3.5 w-3.5" /></span>
-                <input defaultValue={o.label} placeholder="라벨 입력" className="h-[30px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder="라벨 입력" className="h-[30px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
                 <button type="button" onClick={() => onToast('이동 링크 설정 (데모)')} className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-[var(--line2)] text-[var(--ink3)] hover:bg-[var(--th)]"><Link2 className="h-3.5 w-3.5" /></button>
-                <button type="button" onClick={() => onToast('불러오기 (데모)')} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-[var(--th)]">불러오기</button>
+                <button type="button" onClick={() => (isProduct ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-[var(--th)]">불러오기</button>
                 <button type="button" onClick={() => removeItem(o.id)} className="grid h-6 w-6 shrink-0 place-items-center text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
               </div>
             ))}
           </div>
+          {/* 상품형 불러오기 모달 — 상품 카탈로그(9분류)에서 골라 항목 라벨을 채운다 */}
+          {loadForId && (
+            <ProductLoadModal catalog={productCatalog} onClose={() => setLoadForId(null)}
+              onPick={(p) => { setItemLabel(loadForId, p.title); setLoadForId(null); onToast(`'${p.title}' 불러옴`); }} />
+          )}
           <button type="button" onClick={addItem} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 메뉴 추가</button>
         </Sec>
       ) : isData ? (
@@ -745,6 +806,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   const inputCls = 'h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-[14px] text-[14px] text-[var(--ink)] placeholder:text-[var(--ink5)] focus:border-[var(--focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]';
 
   return (
+    <ProductCatalogCtx.Provider value={data.productCatalog}>
     <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
       {/* 스크롤 영역 — 헤더(스크롤 시 함께 올라감) + 2열(좌 디바이스 스티키 · 우 콘텐츠) */}
       <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5">
@@ -997,5 +1059,6 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
         </div>
       )}
     </div>
+    </ProductCatalogCtx.Provider>
   );
 }
