@@ -262,14 +262,15 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
     // 코너 정보 속성(아이템) — 고정
     { lbl: '아이템 이미지(ImageSrc)', kind: '고정', on: true, val: it.imageSrc || undefined },
     { lbl: '아이템 타이틀(Title)', kind: '고정', on: true },
-    // 가격 그룹 — 각각 분리(2026-10-28 사용자 요청)
-    { lbl: '가격(Price)', kind: '고정', on: true, val: it.priceGroup.price },
-    { lbl: '할인율(DiscountRate)', kind: '고정', on: true, val: it.priceGroup.discountRate.value },
-    { lbl: '기간(PricePeriod)', kind: '고정', on: true, val: it.priceGroup.pricePeriod.value },
-    ...(isV ? [
-      { lbl: '캡션(Caption)', kind: '고정' as const, on: true, val: it.caption.value },
-      { lbl: '개수(Count)', kind: '고정' as const, on: true, val: it.count.value },
-    ] : []),
+    // 가로형(단말 추천) = 가격·할인율·기간 각각 / 세로형(요금제 리스트) = 캡션·캡션2. DS 실제 케이스 기준(2026-10-28).
+    ...(!isV ? [
+      { lbl: '가격(Price)', kind: '고정' as const, on: true, val: it.priceGroup.price },
+      { lbl: '할인율(DiscountRate)', kind: '고정' as const, on: true, val: it.priceGroup.discountRate.value },
+      { lbl: '기간(PricePeriod)', kind: '고정' as const, on: true, val: it.priceGroup.pricePeriod.value },
+    ] : [
+      { lbl: '캡션(Caption01)', kind: '고정' as const, on: true, val: it.caption.value },
+      { lbl: '캡션2(Caption02)', kind: '고정' as const, on: true, val: it.caption.caption02.value },
+    ]),
   ] : null;
 
   // 정보(읽기 전용) 블록 — 단일/멀티 레이아웃에서 공용. 프로모션 상세 .fsec/.ftable 규격.

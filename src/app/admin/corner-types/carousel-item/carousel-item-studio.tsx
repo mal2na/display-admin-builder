@@ -70,17 +70,17 @@ const carousel = (title: string): CarouselItemSpec => ({
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
 });
 
-// 세로형 초기값 — '코너유형정리' 표 상품형 세로형 필수(red): 이미지·타이틀·가격(할인율·기간)·캡션·캡션2·개수.
+// 세로형 초기값 — DS 실제 케이스(요금제 리스트): 이미지·타이틀·캡션(무제한)·캡션2(69,000원 부터). 가격·개수 미사용.
 const cardHomeItem = (title: string): CarouselItemSpec => ({
   variant: 'Profile',
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: true, price: '69,000원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '20%' }, pricePeriod: { show: true, value: '/월' } },
+  priceGroup: { show: false, price: '69,000원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: false, value: '20%' }, pricePeriod: { show: false, value: '/월' } },
   subText01: { show: false, value: 'SubText01' },
   subText02: { show: false, value: 'SubText02' },
-  caption: { show: true, value: '무제한', icon: { show: false }, caption02: { show: true, value: '약정 할인 포함' }, caption03: { show: false, value: 'Caption03' } },
-  count: { show: true, value: '+2' },
+  caption: { show: true, value: '무제한', icon: { show: false }, caption02: { show: true, value: '69,000원 부터' }, caption03: { show: false, value: 'Caption03' } },
+  count: { show: false, value: '+2' },
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
 });
 
@@ -92,13 +92,13 @@ function normalizeProductItem(it: CarouselItemSpec, vertical: boolean): Carousel
     subTitle: { ...it.subTitle, show: false },
     subText01: { ...it.subText01, show: false },
     subText02: { ...it.subText02, show: false },
-    // 가격·할인율/기간 = 필수(고정) → 항상 On
-    priceGroup: { ...it.priceGroup, show: true, priceCaption: { ...it.priceGroup.priceCaption, show: false },
-      discountRate: { ...it.priceGroup.discountRate, show: true }, pricePeriod: { ...it.priceGroup.pricePeriod, show: true } },
-    // 캡션 = 세로형만 필수(고정). 캡션2·캡션3 은 선택이라 제외.
-    caption: { ...it.caption, show: vertical, icon: { show: false }, caption02: { ...it.caption.caption02, show: false }, caption03: { ...it.caption.caption03, show: false } },
-    // 개수 = 세로형만 필수(고정)
-    count: { ...it.count, show: vertical },
+    // 가격·할인율·기간 = 가로형만(단말 추천 케이스). 세로형(요금제 리스트)은 가격 미사용.
+    priceGroup: { ...it.priceGroup, show: !vertical, priceCaption: { ...it.priceGroup.priceCaption, show: false },
+      discountRate: { ...it.priceGroup.discountRate, show: !vertical }, pricePeriod: { ...it.priceGroup.pricePeriod, show: !vertical } },
+    // 캡션·캡션2 = 세로형만(요금제 리스트 케이스). 캡션3 미사용.
+    caption: { ...it.caption, show: vertical, icon: { show: false }, caption02: { ...it.caption.caption02, show: vertical }, caption03: { ...it.caption.caption03, show: false } },
+    // 개수 = 미사용(이 케이스 ShowCount=false)
+    count: { ...it.count, show: false },
     badgeGroup: { ...it.badgeGroup, show: false },
   };
 }
@@ -462,12 +462,12 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
         <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
         <ChkRow label="아이템 이미지(ImageSrc)" checked disabled />
         <ChkRow label="아이템 타이틀(Title)" checked disabled />
-        {/* 가격 그룹 — 뭉뚱그리지 않고 각각(2026-10-28 사용자 요청) */}
-        <ChkRow label="가격(Price)" checked disabled />
-        <ChkRow label="할인율(DiscountRate)" checked disabled />
-        <ChkRow label="기간(PricePeriod)" checked disabled />
-        {vertical && <ChkRow label="캡션(Caption)" checked disabled />}
-        {vertical && <ChkRow label="개수(Count)" checked disabled />}
+        {/* 가로형(단말 추천) = 가격·할인율·기간 각각. 세로형(요금제 리스트) = 캡션·캡션2. DS 실제 케이스 기준(2026-10-28). */}
+        {!vertical && <ChkRow label="가격(Price)" checked disabled />}
+        {!vertical && <ChkRow label="할인율(DiscountRate)" checked disabled />}
+        {!vertical && <ChkRow label="기간(PricePeriod)" checked disabled />}
+        {vertical && <ChkRow label="캡션(Caption01)" checked disabled />}
+        {vertical && <ChkRow label="캡션2(Caption02)" checked disabled />}
     </div>
   );
 }
