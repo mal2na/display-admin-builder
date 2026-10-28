@@ -3,7 +3,12 @@
 import { useState, useRef, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, VISIBLE_CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource } from '@/lib/display-taxonomy';
+import { CornerFieldList } from './corner-fields';
+import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, VISIBLE_CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, displayLayout, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource } from '@/lib/display-taxonomy';
+
+// 배너·칩·CTA 가 옵션인 유형(상품형·혜택·오퍼형·콘텐츠 안내형)은 '세로형+배너'·'세로형+칩'을 '세로형'으로 접어 통합 표기(2026-10-28 사용자 요청: 7종 적용).
+//  옵션이 없는 유형(배너형·업무진입형·상태안내형·고정필수)은 그대로 둔다. displayLayout 이 유형별로 판정.
+const listDetail = (t: { baseCategory: string; typeDetail: string | null }) => displayLayout(t.baseCategory, t.typeDetail);
 import { CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
 import { compositionToPreviewCorner, chipIconForLabel } from '@/components/preview/composition-preview';
 import { isEventCornerFamily } from '@/lib/event-taxonomy';
@@ -819,8 +824,8 @@ export function VariationCard({ v, onOpen }: { v: CornerTypeRow; onOpen: () => v
         </div>
         <div className="flex flex-1 flex-col gap-1.5 px-3 py-2.5">
           {/* 코너명(실제 케이스) = 주 식별자. 같은 배열이 여러 케이스로 분리돼도 코너명으로 구분된다. */}
-          <p className="truncate text-[13.5px] font-semibold text-[#1a1a1a] group-hover/vc:text-[#3617ce]">{v.previewCorner?.name ?? (layoutBi(v.typeDetail) || v.typeDetail || '기본')}</p>
-          <p className="truncate text-[11px] text-slate-500">{layoutBi(v.typeDetail) || v.typeDetail || '기본'}</p>
+          <p className="truncate text-[13.5px] font-semibold text-[#1a1a1a] group-hover/vc:text-[#3617ce]">{v.previewCorner?.name ?? (layoutBi(listDetail(v)) || listDetail(v) || '기본')}</p>
+          <p className="truncate text-[11px] text-slate-500">{layoutBi(listDetail(v)) || listDetail(v) || '기본'}</p>
           <div className="flex flex-wrap items-center gap-1">
             {v.liveVersion != null && v.active
               ? <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">사용 중 · v{v.liveVersion}</span>
@@ -892,7 +897,7 @@ function LayoutGroupCard({ cases, onOpen }: { cases: CornerTypeRow[]; onOpen: ()
           {multi && <span className="absolute right-3 top-3 rounded-full bg-slate-900/85 px-2 py-0.5 text-[11px] font-bold text-white">{cases.length}개 케이스</span>}
         </div>
         <div className="flex flex-1 flex-col gap-1.5 px-3 py-2.5">
-          <p className="truncate text-[13.5px] font-semibold text-[#1a1a1a] group-hover:text-[#3617ce]">{layoutBi(rep.typeDetail) || rep.typeDetail || '기본'}</p>
+          <p className="truncate text-[13.5px] font-semibold text-[#1a1a1a] group-hover:text-[#3617ce]">{layoutBi(listDetail(rep)) || listDetail(rep) || '기본'}</p>
           {/* 이 배열에 속한 케이스(코너)명 — 어떤 코너들이 묶였는지 한눈에 */}
           <p className="line-clamp-2 text-[11px] leading-tight text-slate-500">{caseNames.join(' · ')}</p>
           <div className="mt-0.5 flex flex-wrap items-center gap-1">
@@ -960,7 +965,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const filtered = (() => {
     const seen = new Set<string>();
     const dedup = filteredAll.filter((t) => {
-      const key = `${t.baseCategory}|${t.typeDetail ?? ''}|${t.bigBanner ? 'B' : ''}`;
+      const key = `${t.baseCategory}|${listDetail(t)}|${t.bigBanner ? 'B' : ''}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -1220,7 +1225,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                     </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 align-middle"><span className={cornerTypeChipClass(t.baseCategory)}>{t.baseCategory}</span></td>
-                  <td className="px-3 py-2.5 align-middle text-slate-700">{layoutBi(t.typeDetail) || t.typeDetail || '기본'}</td>
+                  <td className="px-3 py-2.5 align-middle text-slate-700">{layoutBi(listDetail(t)) || listDetail(t) || '기본'}</td>
                   <td className="px-3 py-2.5 align-middle"><YN yes={t.active} label={t.active ? '사용' : '미사용'} /></td>
                   <td className="whitespace-nowrap px-3 py-2.5 align-middle"><StatusPill label={CORNER_TYPE_STATUS_LABEL[t.status] ?? t.status} /></td>
                   <td className="px-3 py-2.5 align-middle text-slate-600">{t.updatedBy ?? t.createdBy ?? '-'}</td>
@@ -1918,36 +1923,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* ② 세부 항목 — '표시 항목(이 유형이 쓰는 요소)' + '노출 개수(최소~최대)'만(2026-10-27 사용자 요청). CTA 문구·이미지 모양·탭 슬롯 부가·배너·FO 설정은 빌더로 이관하고, 저장값은 hidden으로 보존해 되돌릴 수 있게 한다. */}
             {base !== '상품형' && (
             <div className={cn('order-2', !showStep(1) && 'hidden')}>
-              <FormCard n={2} title="세부 항목" hint="이 코너 유형이 쓰는 표시 항목 · 노출 개수">
-                <TRow label="표시 항목">
-                  <div className="flex flex-wrap gap-x-6 gap-y-2">
-                    {CORNER_TYPE_FEATURES.map((f) => {
-                      const applies = featureApplies(f.key);
-                      const badgeLocked = f.key === 'useBadge' && !features.usePrice; // 배지는 가격에 종속
-                      const imageLocked = f.key === 'useImage' && applies; // 상품 이미지는 카드 필수 — 항상 ON(해제 불가)
-                      const disabled = (!applies || badgeLocked) && !imageLocked;
-                      const checked = imageLocked ? true : (applies && features[f.key as keyof typeof features] && !badgeLocked);
-                      const toggle = (on: boolean) => {
-                        if (imageLocked) return;
-                        setFeatures((prev) => {
-                          const next = { ...prev, [f.key]: on };
-                          if (f.key === 'useMainTitle' && !on) next.useSubTitle = false;
-                          if (f.key === 'useSubTitle' && on) next.useMainTitle = true;
-                          if (f.key === 'usePrice' && !on) next.useBadge = false;
-                          if (f.key === 'useBadge' && on) next.usePrice = true;
-                          return next;
-                        });
-                      };
-                      return (
-                        <label key={f.key} className={cn('flex items-center gap-1.5 text-sm', disabled && 'cursor-not-allowed text-muted-foreground/40', imageLocked && 'cursor-default')} title={imageLocked ? '상품 이미지는 카드 필수 요소라 항상 표시돼요' : !applies ? '이 코너 유형에는 해당 항목이 없어요' : badgeLocked ? '배지는 가격 앞에 붙어요 — 가격을 켜야 배지를 쓸 수 있어요' : undefined}>
-                          <input type="checkbox" name={f.key} checked={checked} disabled={disabled} onChange={(e) => toggle(e.target.checked)} className="accent-[#3617ce] disabled:opacity-40" />
-                          {f.label}
-                          {imageLocked && <span className="text-[10px] font-medium text-slate-400">(고정)</span>}
-                        </label>
-                      );
-                    })}
-                  </div>
+              <FormCard n={2} title="세부 항목" hint="이 코너 유형이 쓰는 필수(고정)·옵션 · 노출 개수">
+                {/* 세부 항목 = '코너유형정리' 표 SSOT에서 필수(고정)·옵션(배너·칩·CTA)만 노출(2026-10-28 사용자 요청).
+                    저장값(표시 항목 플래그)은 아래 hidden 으로 보존 — 기존 미리보기·데이터 호환. */}
+                <TRow label="세부 항목">
+                  <CornerFieldList cornerType={base} layout={detail} />
                 </TRow>
+                {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
                 <TRow label="노출 개수">
                   <div className="flex flex-wrap items-center gap-2">
                     <input name="defaultMinItems" type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} placeholder="최소" className="h-8 w-20 rounded-md border bg-background px-2 text-xs" />
