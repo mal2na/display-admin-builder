@@ -611,11 +611,12 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
     ],
   },
   // 혜택·오퍼형 — 배열: 가로형/세로형. 옵션: 배너·칩·CTA(상품형과 공통).
-  //  가로형(기프티콘 케이스) = DS CarouselItem 기준 상품형 가로형과 동일: 이미지·타이틀·가격·할인율·서브텍스트2(SubTitle·기간·캡션 off). 2026-10-28 사용자 확인.
+  //  가로형 = DS CarouselItem 기준. 케이스별로 가격 상세가 갈림: 기프티콘=Price+할인율(99%), 구독=Price+기간(/월).
+  //  둘 다 담으려면 할인율·기간을 모두 포함(인스턴스에서 택1 표시). 공통: 이미지·타이틀·가격·서브텍스트2. 2026-10-28 사용자 확인.
   '혜택·오퍼형': {
     options: ['배너', '칩', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
-      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, SUBTEXT2] },
+      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, FD('PricePeriod', '기간', 'item', { asIs: 'PricePeriod' }), SUBTEXT2] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, FD('Title', '아이템 타이틀', 'item', { note: '혜택명' }),
         FD('SubTitle', '서브타이틀', 'item', { note: '브랜드명' })] },
     ],
