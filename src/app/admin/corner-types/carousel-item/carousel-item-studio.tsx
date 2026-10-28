@@ -221,12 +221,15 @@ function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children 
 }
 
 // ── 미리보기: CarouselItem 카드 ───────────────────────────────
-function ItemCard({ s, w = 118 }: { s: CarouselItemSpec; w?: number }) {
+// 가로형 카드 크기 = Variants(Small/Medium/Large). DS CarouselItem 형태 변형(2026-10-28 사용자 요청).
+const H_VARIANT_WIDTH: Record<string, number> = { Small: 112, Medium: 140, Large: 170 };
+function ItemCard({ s, w }: { s: CarouselItemSpec; w?: number }) {
   const pg = s.priceGroup; const cap = s.caption;
   const line1 = [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null].filter(Boolean);
   const line2 = [cap.caption03.show ? cap.caption03.value : null].filter(Boolean);
+  const width = w ?? H_VARIANT_WIDTH[s.variant] ?? 118; // Small/Medium/Large 로 카드 폭 변경
   return (
-    <div className="flex shrink-0 flex-col gap-1.5" style={{ width: w }}>
+    <div className="flex shrink-0 flex-col gap-1.5" style={{ width }}>
       <div className="flex aspect-square w-full items-center justify-center rounded-[12px] bg-[#eceef1] text-[#b3b9c0]">
         {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full rounded-[12px] object-cover" /> : <ImageIcon className="h-5 w-5" />}
       </div>
