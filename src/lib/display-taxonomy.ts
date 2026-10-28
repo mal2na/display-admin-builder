@@ -634,8 +634,8 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
     options: [],
     layouts: [
       { layout: '탭형', required: [] },
-      // 리스트형 = 코너 타이틀 + 메뉴 라벨(아이콘·서브타이틀 없음). 메뉴 개수만 정한다. 2026-10-28 사용자 확정.
-      { layout: '리스트형', required: [CORNER_TITLE, FD('Label', '메뉴 라벨', 'item', { asIs: 'Label' })], minItems: 2, maxItems: 8 },
+      // 리스트형 = 세부 항목·형태 없음(카드 크기 없음). 노출 개수(메뉴 개수)만 설정. 2026-10-28 사용자 확정.
+      { layout: '리스트형', required: [], minItems: 2, maxItems: 8 },
     ],
   },
   // 상태 안내형 — 단일. 옵션 없음.

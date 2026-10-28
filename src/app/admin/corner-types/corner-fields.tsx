@@ -99,12 +99,12 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey }: { c
   const itemFields = m.required.filter((f) => f.group === 'item');
   const row = (f: CornerFieldDef) => <CheckRow key={`${f.group}-${f.ko}-${f.key}`} label={f.ko} keyName={f.key} checked disabled kind="고정" asIs={f.asIs} note={f.note} />;
 
-  // 세부 항목 없음(배너형·업무진입형 탭형 등) — 옵션·필드 모두 없음. 노출 개수만 있으면 그것만.
+  // 세부 항목 없음(배너형·업무진입형 탭형·리스트형 등) — 옵션·필드 모두 없음. 노출 개수만 있으면 그것만 설정.
   if (m.required.length === 0 && m.options.length === 0) {
     return (
       <div className="space-y-2">
         <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-2 text-[12px] text-slate-400">
-          {m.note || '세부 항목 없음 — 내용은 빌더에서 채웁니다.'}
+          {m.note || (m.minItems != null ? '노출 개수만 설정합니다 — 소재·문구는 빌더에서 채웁니다.' : '세부 항목 없음 — 내용은 빌더에서 채웁니다.')}
         </p>
         {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} />}
       </div>
