@@ -103,7 +103,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
         <div className="mt-8 space-y-9">
           {/* 기본 정보 */}
           <section>
-            <SectionTitle right={<span className={BTN}><Pencil className="h-3.5 w-3.5" /> 정보 수정</span>}>기본 정보</SectionTitle>
+            <SectionTitle right={<Link href={`/admin/containers/${container.id}/edit`} className={BTN}><Pencil className="h-3.5 w-3.5" /> 정보 수정</Link>}>기본 정보</SectionTitle>
             <div className="grid grid-cols-1 border-t border-[var(--line2)] sm:grid-cols-2">
               <Row label="컨테이너 ID">{container.id.slice(-10)}</Row>
               <Row label="컨테이너 경로">{container.parent?.name ? `${container.parent.name} > ${container.name}` : `${container.name} (최상위)`}</Row>

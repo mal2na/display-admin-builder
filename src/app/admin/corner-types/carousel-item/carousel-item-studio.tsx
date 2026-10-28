@@ -73,7 +73,7 @@ const cardHomeItem = (title: string): CarouselItemSpec => ({
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: false, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
+  priceGroup: { show: false, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: false, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
   subText01: { show: false, value: 'SubText01' },
   subText02: { show: false, value: 'SubText02' },
   caption: { show: true, value: '무제한', icon: { show: false }, caption02: { show: true, value: '69,000원 부터' }, caption03: { show: false, value: 'Caption03' } },
@@ -375,8 +375,7 @@ export function CornerSpecThumb({ storageKey, layout }: { storageKey: string; la
 // 표시 항목 체크박스 한 줄 — 껐다 켜기만(2026-10-27 사용자 요청: 코너 정보/속성을 체크박스 on/off로).
 //  고정(disabled)=항상 노출되는 구조 항목. indent=하위 항목.
 function ChkRow({ label, checked, onChange, disabled, indent }: { label: string; checked: boolean; onChange?: (v: boolean) => void; disabled?: boolean; indent?: boolean }) {
-  // 현재 쓰는(켜진) 항목만 노출 — 꺼진 토글 항목은 숨긴다(2026-10-27 사용자 요청). 고정(disabled) 항목은 항상 노출.
-  if (!disabled && !checked) return null;
+  // 해제해도 행(체크박스)은 항상 노출 — 끄면 미리보기만 꺼지고, 다시 켤 수 있어야 한다(2026-10-28 사용자 요청). 꺼진 항목은 흐리게 표시.
   return (
     <label className={cn('flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px]', indent && 'ml-5', disabled ? 'cursor-default' : 'cursor-pointer hover:bg-[#f8f9fb]')}>
       <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange?.(e.target.checked)} className="h-4 w-4 accent-[#3617ce]" />

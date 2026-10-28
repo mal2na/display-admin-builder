@@ -226,7 +226,8 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   const isStudio = row.baseCategory === '상품형';
   const specKey = `ct:${row.id}`;
   const [studioSpec, setStudioSpec] = useState<ReturnType<typeof loadCornerSpec> | null>(null);
-  useEffect(() => { if (isStudio) setStudioSpec(loadCornerSpec(specKey)); }, [isStudio, specKey]);
+  // 레이아웃을 넘겨 세로형은 세로형 기본값(가격 OFF·캡션)으로 — 미저장 시 가로형 기본값(가격 ON)이 잘못 뜨던 문제(2026-10-28).
+  useEffect(() => { if (isStudio) setStudioSpec(loadCornerSpec(specKey, row.typeDetail)); }, [isStudio, specKey, row.typeDetail]);
   // 배너형 외: 실제 배치된 코너가 있으면 그 코너(들)를 미리보기로 보여준다(폰 프레임 없이 카드 그대로).
   //  케이스가 여러 개면 '코너별 타일'로 분리해 2단 그리드로 나란히 — 세로 무한 나열 대신 그리드로 감싼다(2026-09-28 사용자 피드백).
   //  미배치(사용처 없음)만 조합 샘플로 폴백(히어로 등 유형 대표 렌더 보존).
@@ -243,17 +244,29 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   const subTextVal = it ? [it.subText01.show ? it.subText01.value : null, it.subText02.show ? it.subText02.value : null].filter(Boolean).join(' · ') : '';
   const capVal = cap ? [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null, cap.caption03.show ? cap.caption03.value : null].filter(Boolean).join(' · ') : '';
   const badgeN = it ? it.badgeGroup.items.filter((b) => b.show).length : 0;
+  const hasBanner = /배너/.test(row.typeDetail ?? '');
+  void priceVal; void subTextVal; void capVal; // 세분 항목으로 대체(값은 각 항목에서 직접) — 2026-10-28
+  // 수정 폼(② 코너 정보·속성)과 동일한 라벨·구성으로 '쓰인 것(ON)'을 텍스트로 나열(2026-10-28 사용자 요청).
   const studioItems: { lbl: string; on: boolean; val?: string }[] | null = (isStudio && studioSpec && it) ? [
-    { lbl: '배너', on: true, val: studioSpec.bannerSrc || undefined },
-    { lbl: '타이틀', on: true, val: studioSpec.title },
-    { lbl: '버튼 텍스트', on: studioSpec.buttonText.show, val: studioSpec.buttonText.label },
-    { lbl: '상품 이미지', on: true, val: it.imageSrc || undefined },
-    { lbl: '서브타이틀', on: it.subTitle.show, val: it.subTitle.value },
-    { lbl: '가격', on: it.priceGroup.show, val: priceVal },
-    { lbl: '보조 텍스트', on: it.subText01.show || it.subText02.show, val: subTextVal },
-    { lbl: '캡션', on: it.caption.show, val: capVal },
-    { lbl: '개수', on: it.count.show, val: it.count.value },
-    { lbl: '배지', on: it.badgeGroup.show, val: badgeN ? `${badgeN}개` : undefined },
+    // 코너(카드)
+    { lbl: '배너(BannerSrc)', on: hasBanner, val: studioSpec.bannerSrc || undefined },
+    { lbl: '코너 타이틀(Title)', on: true, val: studioSpec.title },
+    { lbl: '버튼 텍스트(ButtonText)', on: studioSpec.buttonText.show, val: studioSpec.buttonText.label },
+    // 아이템(요소)
+    { lbl: '이미지(ImageSrc)', on: true, val: it.imageSrc || undefined },
+    { lbl: '아이템 타이틀(Title)', on: true },
+    { lbl: '서브타이틀(SubTitle)', on: it.subTitle.show, val: it.subTitle.value },
+    { lbl: '가격(TextPriceGroup)', on: it.priceGroup.show, val: it.priceGroup.price },
+    { lbl: '할인율(DiscountRate)', on: it.priceGroup.show && it.priceGroup.discountRate.show, val: it.priceGroup.discountRate.value },
+    { lbl: '가격 설명(PriceCaption)', on: it.priceGroup.show && it.priceGroup.priceCaption.show, val: it.priceGroup.priceCaption.value },
+    { lbl: '가격 기간(PricePeriod)', on: it.priceGroup.show && it.priceGroup.pricePeriod.show, val: it.priceGroup.pricePeriod.value },
+    { lbl: '보조 텍스트1(SubText01)', on: it.subText01.show, val: it.subText01.value },
+    { lbl: '보조 텍스트2(SubText02)', on: it.subText02.show, val: it.subText02.value },
+    { lbl: '캡션(Caption)', on: it.caption.show, val: it.caption.value },
+    { lbl: '캡션2(Caption02)', on: it.caption.caption02.show, val: it.caption.caption02.value },
+    { lbl: '캡션3(Caption03)', on: it.caption.caption03.show, val: it.caption.caption03.value },
+    { lbl: '개수(Count)', on: it.count.show, val: it.count.value },
+    { lbl: '배지(BadgeGroup)', on: it.badgeGroup.show, val: badgeN ? `${badgeN}개` : undefined },
   ] : null;
 
   // 정보(읽기 전용) 블록 — 단일/멀티 레이아웃에서 공용. 프로모션 상세 .fsec/.ftable 규격.
@@ -282,13 +295,11 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {studioItems ? (
         <RORow label="세부 항목">
           <div className="space-y-1">
-            {/* 켜진(ON) 항목만 — 내부 설정값까지(2026-10-19 사용자 요청) */}
+            {/* 수정 폼에서 쓰인(ON) 항목을 텍스트로 — chip 아님(2026-10-28 사용자 요청) */}
             {studioItems.filter((i) => i.on).map(({ lbl, val }) => (
-              <div key={lbl} className="flex items-start gap-2 text-[12px]">
-                <span className="inline-flex w-[88px] shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">
-                  <Check className="h-3 w-3" />{lbl}
-                </span>
-                {val && <span className="whitespace-pre-line pt-0.5 text-slate-600">{val}</span>}
+              <div key={lbl} className="flex items-start gap-2 text-[13px]">
+                <span className="font-medium text-slate-700">{lbl}</span>
+                {val && <span className="whitespace-pre-line text-slate-500">· {val}</span>}
               </div>
             ))}
           </div>

@@ -22,7 +22,7 @@ export async function addTestTemplate(containerId: string, formData: FormData) {
     },
   });
   revalidatePath(`/admin/containers-test/c/${containerId}`);
-  redirect(`/admin/containers-test/t/${template.id}`);
+  redirect(`/admin/containers-test/t/${template.id}?new=1`);
 }
 
 // 코너 추가 — 코너 유형 관리의 코너(들)를 TemplateCorner 로 템플릿에 배치(실제 DB).

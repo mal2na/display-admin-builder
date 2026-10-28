@@ -540,8 +540,8 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
   return (
     <div className={cn('rounded-[12px] border bg-white', active ? 'border-[var(--ac)]' : 'border-[var(--line2)]')}>
       {/* 카드 헤더 */}
-      <div className={cn('flex items-center gap-2.5 rounded-t-[11px] px-4 py-3', active ? 'bg-[var(--ac2)]' : 'bg-[var(--th)]')}>
-        <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]" />
+      <div className={cn('flex items-center gap-2.5 rounded-t-[11px] px-4 py-3', active ? 'bg-[#f1f3f5]' : 'bg-[var(--th)]')}>
+        {/* 드래그 핸들 제거 — 단일 템플릿이라 순서 변경이 없음(2026-10-28 사용자 요청) */}
         <button type="button" onClick={onActivate} className="min-w-0 flex-1 text-left">
           <span className="text-[14px] font-bold text-[var(--ink)]">템플릿 구성</span>
           <span className="ml-1.5 text-[12px] text-[var(--ink4)]">· {t.name}{t.conditionGroup ? ` · ${t.conditionGroup}` : ''}</span>
@@ -682,9 +682,9 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
 }
 
 /* ───────── 루트 ───────── */
-export function ProcessBuilder({ data }: { data: ProcessData }) {
+export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isNew?: boolean }) {
   const router = useRouter();
-  const [basicOpen, setBasicOpen] = React.useState(true);
+  const [basicOpen, setBasicOpen] = React.useState(isNew); // 신규 추가=펼침, 기존 접근=접힘(2026-10-28)
   const [activeId, setActiveId] = React.useState(data.activeTemplateId);
   // 아코디언 — 한 번에 하나의 템플릿만 펼침
   const [openId, setOpenId] = React.useState<string | null>(data.activeTemplateId);
@@ -726,6 +726,14 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
   React.useEffect(() => { setLiveCorners(activeTemplate?.corners ?? []); }, [activeTemplate?.corners]);
   const totalCorners = liveCorners.length;
 
+  // 거버넌스 — 상품 전시 등록과 동일하게 '필수 섹션 완료' 상태로 관리(섹션 배지 + 하단 N/M 완료·승인요청). 2026-10-28 사용자 요청.
+  const basicDone = !!activeTemplate?.name;
+  const composeDone = totalCorners > 0;
+  const validateDone = !!validation && errCount === 0;
+  const reqSections = [basicDone, composeDone, validateDone];
+  const reqDone = reqSections.filter(Boolean).length;
+  const reqTotal = reqSections.length;
+
   // 코너 리스트/상세에서 선택한 코너를 미리보기(디바이스)에서도 그 위치로 스크롤
   React.useEffect(() => {
     if (!activeSel) return;
@@ -758,10 +766,10 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)] xl:items-start">
           {/* 좌: 미리보기 — 고정 크기 폰(내용이 많아도 안 늘어나고 내부 스크롤), 스티키(NC-Channel 상품 전시 미리보기 기준, 2026-10-27 사용자 요청) */}
           <div className="flex flex-col xl:sticky xl:top-4">
-          {/* 정상 ↔ 폴백(CVM 비었을 때) 토글 */}
-          <div className="mb-3 inline-flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
-            <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-3 py-1', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>정상</button>
-            <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3 py-1', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
+          {/* 기본 ↔ 폴백(CVM 비었을 때) 토글 — 전체폭 반반 세그먼티드(2026-10-28 사용자 요청) */}
+          <div className="mb-3 flex w-full shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
+            <button type="button" onClick={() => setFbMode(false)} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>기본</button>
+            <button type="button" onClick={() => setFbMode(true)} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
           </div>
           {fbMode && <p className="mb-2 flex shrink-0 items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3" /> CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)</p>}
           <DeviceFrame width={360} bodyHeight={560} headerLabel={data.containerName} slim>
@@ -812,7 +820,13 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
             <section className="overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
               <button type="button" onClick={() => setBasicOpen((v) => !v)} className="flex w-full items-center gap-2 bg-[var(--th)] px-5 py-4 transition hover:bg-[var(--surface-hover,#f1f3f5)]">
                 <h2 className="text-[15px] font-bold text-[var(--ink)]">템플릿 기본 정보</h2>
-                <ChevronDown className={cn('ml-auto h-4 w-4 text-[var(--ink3)] transition', !basicOpen && '-rotate-90')} />
+                <span className="ml-auto flex items-center gap-2">
+                  <span className="rounded-[4px] bg-[#fff0f1] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--bad)]">필수</span>
+                  {basicDone
+                    ? <span className="rounded-[4px] bg-[#eefaf1] px-1.5 py-0.5 text-[11px] font-semibold text-[#00a058]">완료</span>
+                    : <span className="rounded-[4px] bg-white px-1.5 py-0.5 text-[11px] font-medium text-[var(--ink3)] ring-1 ring-inset ring-[var(--line2)]">미작성</span>}
+                  <ChevronDown className={cn('h-4 w-4 text-[var(--ink3)] transition', !basicOpen && '-rotate-90')} />
+                </span>
               </button>
               {basicOpen && activeTemplate && (
                 <div className="border-t border-[var(--line2)] px-6 py-5">
@@ -871,9 +885,9 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
                     corners={liveCorners}
                     onCornersChange={setLiveCorners}
                     idx={0}
-                    open
+                    open={openId === t.id}
                     active
-                    onToggle={() => {}}
+                    onToggle={() => setOpenId((cur) => (cur === t.id ? null : t.id))}
                     onActivate={() => setActiveId(t.id)}
                     selCorner={selCorner[t.id] ?? null}
                     onSelCorner={(id) => setSelCorner((m) => ({ ...m, [t.id]: id }))}
@@ -951,10 +965,13 @@ export function ProcessBuilder({ data }: { data: ProcessData }) {
           <ShieldCheck className="h-3.5 w-3.5" /> 구성 검증 {!validation ? '미검증' : errCount > 0 ? `오류 ${errCount}건` : '통과'}
           {validation && <ChevronDown className={cn('h-3.5 w-3.5 transition', panelOpen && 'rotate-180')} />}
         </button>
-        <div className="ml-auto flex items-center gap-2">
-          <button type="button" onClick={() => toast('취소')} className="h-[38px] rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-4 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">취소</button>
-          <button type="button" onClick={runValidate} className="h-[38px] rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-4 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">전체 구성 검증</button>
-          <button type="button" onClick={() => toast('저장되었습니다. (데모)')} className="h-[38px] rounded-[var(--r-field)] bg-[var(--ac)] px-5 text-[13px] font-bold text-white hover:bg-[var(--ac-h)]"><Pencil className="mr-1 inline h-3.5 w-3.5" />저장</button>
+        {/* 거버넌스 — 상품 전시 등록과 동일: 필수 N/M 완료 + 초기화·임시저장·승인요청(필수 미완료면 승인요청 비활성) */}
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-[13px] text-[var(--ink3)]">필수 <b className={cn('tabular-nums', reqDone === reqTotal ? 'text-[#00a058]' : 'text-[var(--ink)]')}>{reqDone}/{reqTotal}</b> 완료</span>
+          <button type="button" onClick={() => toast('초기화')} className="h-[38px] rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-4 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">초기화</button>
+          <button type="button" onClick={() => toast('임시저장되었습니다. (데모)')} className="h-[38px] rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-4 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">임시저장</button>
+          <button type="button" disabled={reqDone < reqTotal} onClick={() => toast('승인요청되었습니다. (데모)')}
+            className="h-[38px] rounded-[var(--r-field)] bg-[var(--ac)] px-5 text-[13px] font-bold text-white hover:bg-[var(--ac-h)] disabled:cursor-not-allowed disabled:bg-[#d0d2ff]">승인요청</button>
         </div>
       </div>
 
