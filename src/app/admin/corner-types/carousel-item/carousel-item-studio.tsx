@@ -70,35 +70,37 @@ const carousel = (title: string): CarouselItemSpec => ({
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
 });
 
-// 세로형 초기값 — DS 실제 케이스(요금제 리스트): 이미지·타이틀·캡션(무제한)·캡션2(69,000원 부터). 가격·개수 미사용.
+// 세로형 초기값 — DS 요금제 케이스: 이미지·타이틀·캡션(무제한)·캡션2 + 가격 옵션(기본 On: 99% 99,999원/Period).
 const cardHomeItem = (title: string): CarouselItemSpec => ({
   variant: 'Profile',
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: false, price: '69,000원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: false, value: '20%' }, pricePeriod: { show: false, value: '/월' } },
+  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: true, value: '/Period' } },
   subText01: { show: false, value: 'SubText01' },
   subText02: { show: false, value: 'SubText02' },
-  caption: { show: true, value: '무제한', icon: { show: false }, caption02: { show: true, value: '69,000원 부터' }, caption03: { show: false, value: 'Caption03' } },
+  caption: { show: true, value: '데이터 500GB', icon: { show: false }, caption02: { show: true, value: '넷플릭스 프리미엄 제공' }, caption03: { show: false, value: 'Caption03' } },
   count: { show: false, value: '+2' },
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
 });
 
-// 상품형 item — '코너유형정리' 표 필수(red)만. 고정(상세에서 못 끔): 가격·할인율/기간(양쪽), 캡션·개수(세로형).
-//  선택/미사용(서브타이틀·보조텍스트·가격설명·캡션아이콘·캡션2·캡션3·배지)은 끈다. 배너만 옵션(별도). 2026-10-28 사용자 확정.
+// 상품형 item 정규화 — 가로형: 가격·할인율·서브텍스트2 고정. 세로형: 캡션·캡션2 고정 + 가격은 옵션(토글, 저장값 유지).
+//  선택/미사용(서브타이틀·보조텍스트1·가격설명·캡션아이콘·캡션3·배지)은 끈다. 2026-10-28 사용자 확정.
 function normalizeProductItem(it: CarouselItemSpec, vertical: boolean): CarouselItemSpec {
   return {
     ...it,
-    subTitle: { ...it.subTitle, show: false }, // DS 가로형 케이스 ShowSubTitle=false
+    subTitle: { ...it.subTitle, show: false },
     subText01: { ...it.subText01, show: false },
-    // 서브텍스트2 = 가로형만(단말 추천). 세로형 미사용.
+    // 서브텍스트2 = 가로형만(단말 추천).
     subText02: { ...it.subText02, show: !vertical },
-    // 가격·할인율 = 가로형만. 기간(PricePeriod)은 DS false → 항상 off. 세로형은 가격 미사용.
-    priceGroup: { ...it.priceGroup, show: !vertical, priceCaption: { ...it.priceGroup.priceCaption, show: false },
-      discountRate: { ...it.priceGroup.discountRate, show: !vertical }, pricePeriod: { ...it.priceGroup.pricePeriod, show: false } },
-    // 캡션·캡션2 = 세로형만(요금제 리스트). 캡션3 미사용.
+    priceGroup: vertical
+      // 세로형: 가격은 옵션(토글) → 저장값 유지, 가격설명만 끔.
+      ? { ...it.priceGroup, priceCaption: { ...it.priceGroup.priceCaption, show: false } }
+      // 가로형: 가격·할인율 고정 on, 기간은 DS false.
+      : { ...it.priceGroup, show: true, priceCaption: { ...it.priceGroup.priceCaption, show: false },
+          discountRate: { ...it.priceGroup.discountRate, show: true }, pricePeriod: { ...it.priceGroup.pricePeriod, show: false } },
+    // 캡션·캡션2 = 세로형 고정. 캡션3 미사용.
     caption: { ...it.caption, show: vertical, icon: { show: false }, caption02: { ...it.caption.caption02, show: vertical }, caption03: { ...it.caption.caption03, show: false } },
-    // 개수 = 미사용(DS ShowCount=false)
     count: { ...it.count, show: false },
     badgeGroup: { ...it.badgeGroup, show: false },
   };
@@ -457,23 +459,24 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
   const vertical = isVertical(layout);
   const variantOpts = vertical ? V_VARIANTS : H_VARIANTS;
   const variantVal = (variantOpts as readonly Variant[]).includes(s.variant) ? s.variant : variantOpts[0];
-  const pg = s.priceGroup; const cap = s.caption;
+  const pg = s.priceGroup;
   const setPg = (p: Partial<typeof pg>) => set('priceGroup', { ...pg, ...p });
-  const setCap = (p: Partial<typeof cap>) => set('caption', { ...cap, ...p });
-  // 아이템 정보 = '코너유형정리' 표 필수(red)만. 전부 고정(상세에서 못 끔) — 2026-10-28 사용자 확정.
-  //  이미지·타이틀·가격(할인율/기간) = 양쪽 공통 고정. 캡션·개수 = 세로형만 고정(가로형은 선택이라 제외). 캡션2·캡션3 미사용.
-  void pg; void cap; void setPg; void setCap;
+  // 아이템 정보 — 가로형(단말 추천)=가격·할인율·서브텍스트2(고정). 세로형(요금제)=캡션·캡션2(고정) + 가격은 옵션(토글).
+  //  세로형은 케이스별로 가격을 쓰기도(넷플릭스 요금제) 안 쓰기도(데이터량 안내) 해서 가격을 옵션으로 둔다(2026-10-28 사용자 요청).
   return (
     <div className="space-y-0.5">
         <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
         <ChkRow label="아이템 이미지(ImageSrc)" checked disabled />
         <ChkRow label="아이템 타이틀(Title)" checked disabled />
-        {/* 가로형(단말 추천) = 가격·할인율·서브텍스트2. 세로형(요금제 리스트) = 캡션·캡션2. DS 실제 케이스 기준(2026-10-28). */}
         {!vertical && <ChkRow label="가격(Price)" checked disabled />}
         {!vertical && <ChkRow label="할인율(DiscountRate)" checked disabled />}
         {!vertical && <ChkRow label="서브텍스트2(SubText02)" checked disabled />}
         {vertical && <ChkRow label="캡션(Caption01)" checked disabled />}
         {vertical && <ChkRow label="캡션2(Caption02)" checked disabled />}
+        {/* 세로형 가격 = 옵션(토글). 켜면 할인율·기간까지. */}
+        {vertical && <ChkRow label="가격(TextPriceGroup)" option checked={pg.show} onChange={(v) => setPg({ show: v })} />}
+        {vertical && pg.show && <ChkRow label="할인율(Discount)" option indent checked={pg.discountRate.show} onChange={(v) => setPg({ discountRate: { ...pg.discountRate, show: v } })} />}
+        {vertical && pg.show && <ChkRow label="기간(Period)" option indent checked={pg.pricePeriod.show} onChange={(v) => setPg({ pricePeriod: { ...pg.pricePeriod, show: v } })} />}
     </div>
   );
 }

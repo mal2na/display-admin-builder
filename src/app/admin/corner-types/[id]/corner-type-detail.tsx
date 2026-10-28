@@ -272,6 +272,12 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
     ] : [
       { lbl: '캡션(Caption01)', kind: '고정' as const, on: true, val: it.caption.value },
       { lbl: '캡션2(Caption02)', kind: '고정' as const, on: true, val: it.caption.caption02.value },
+      // 세로형 가격 = 옵션(토글). 켜면 할인율·기간.
+      { lbl: '가격(TextPriceGroup)', kind: '옵션' as const, on: it.priceGroup.show, val: it.priceGroup.show ? it.priceGroup.price : undefined },
+      ...(it.priceGroup.show ? [
+        { lbl: '할인율(Discount)', kind: '옵션' as const, on: it.priceGroup.discountRate.show, val: it.priceGroup.discountRate.value },
+        { lbl: '기간(Period)', kind: '옵션' as const, on: it.priceGroup.pricePeriod.show, val: it.priceGroup.pricePeriod.value },
+      ] : []),
     ]),
   ] : null;
 
