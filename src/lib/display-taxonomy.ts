@@ -596,7 +596,6 @@ const ITEM_TITLE = FD('Title', '아이템 타이틀', 'item');
 // 가격 그룹 — 뭉뚱그리지 않고 각각 표시(2026-10-28 사용자 요청). DS CardHomeItem 의 TextPriceGroup 하위 속성.
 const PRICE = FD('Price', '가격', 'item', { asIs: 'Price' });
 const DISCOUNT = FD('DiscountRate', '할인율', 'item', { asIs: 'DiscountRate' });
-const PERIOD = FD('PricePeriod', '기간', 'item', { asIs: 'PricePeriod' });
 const SUBTEXT2 = FD('SubText02', '서브텍스트2', 'item', { asIs: 'SubText02' });
 
 export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
@@ -611,12 +610,12 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
         FD('Caption01', '캡션', 'item', { asIs: 'Caption/Caption01' }), FD('Caption02', '캡션2', 'item', { asIs: 'Caption02' })] },
     ],
   },
-  // 혜택·오퍼형 — 배열: 가로형/세로형. 옵션: 배너·칩·CTA.
+  // 혜택·오퍼형 — 배열: 가로형/세로형. 옵션: 배너·칩·CTA(상품형과 공통).
+  //  가로형(기프티콘 케이스) = DS CarouselItem 기준 상품형 가로형과 동일: 이미지·타이틀·가격·할인율·서브텍스트2(SubTitle·기간·캡션 off). 2026-10-28 사용자 확인.
   '혜택·오퍼형': {
     options: ['배너', '칩', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
-      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, FD('Title', '아이템 타이틀', 'item', { note: '혜택명' }),
-        PRICE, DISCOUNT, PERIOD, FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' }), FD('Icon', '아이콘', 'item', { asIs: 'ShowCaption01/Icon/IconFill' })] },
+      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, SUBTEXT2] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, FD('Title', '아이템 타이틀', 'item', { note: '혜택명' }),
         FD('SubTitle', '서브타이틀', 'item', { note: '브랜드명' })] },
     ],
