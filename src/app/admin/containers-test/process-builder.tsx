@@ -230,6 +230,10 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // 옵션 콘텐츠 — 배너 On이면 이미지, CTA On이면 라벨·링크(2026-10-28 사용자 요청: 배너/칩/CTA 각각 콘텐츠 불러오기).
   const [bannerImg, setBannerImg] = React.useState('');
   const [ctaLabel, setCtaLabel] = React.useState('');
+  // 켜진 옵션 콘텐츠는 한 번에 하나만 — 탭으로 전환(영역 절약, 2026-10-28 사용자 요청).
+  const [activeOpt, setActiveOpt] = React.useState<string | null>(null);
+  const onOptions = availOptions.filter((o) => optOn[o]);
+  const shownOpt = (activeOpt && optOn[activeOpt]) ? activeOpt : (onOptions[0] ?? null);
   // ③ 채우기 항목 — 칩 On 이면 칩마다 별도 메뉴(칩 하나하나 메뉴 연동, 2026-10-28 사용자 요청). 칩 Off 면 단일 리스트(__flat__).
   const chipMode = !!optOn['칩'] && chips.length > 0;
   const [activeChip, setActiveChip] = React.useState(0);
@@ -335,51 +339,66 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">옵션 <span className="font-normal text-[var(--ink4)]">· 배너·칩·CTA 여기서 On/Off</span></p>
               <div className="flex flex-wrap gap-1.5">
                 {availOptions.map((o) => (
-                  <button key={o} type="button" onClick={() => setOptOn((p) => ({ ...p, [o]: !p[o] }))}
+                  <button key={o} type="button"
+                    onClick={() => setOptOn((p) => { const next = !p[o]; if (next) setActiveOpt(o); return { ...p, [o]: next }; })}
                     className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold', optOn[o] ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line3)] bg-white text-[var(--ink3)]')}>
                     {o}<span className={optOn[o] ? 'text-white/80' : 'text-[var(--ink4)]'}>{optOn[o] ? 'On' : 'Off'}</span>
                   </button>
                 ))}
               </div>
-              {/* 배너 On이면 배너 이미지 불러오기(2026-10-28 사용자 요청) */}
-              {optOn['배너'] && (
+              {/* 켜진 옵션의 콘텐츠는 한 번에 하나만 — 켠 옵션이 2개↑면 탭으로 전환(2026-10-28 사용자 요청: 쌓지 말고 하나씩). */}
+              {shownOpt && (
                 <div className="mt-2.5 border-t border-[var(--line2)] pt-2.5">
-                  <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">배너 · 이미지</p>
-                  <div className="flex items-center gap-1.5">
-                    <span className="grid h-10 w-16 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-white text-[var(--ink4)]">
-                      {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
-                    </span>
-                    <input value={bannerImg} onChange={(e) => setBannerImg(e.target.value)} placeholder="이미지 주소 입력" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                    <button type="button" onClick={() => onToast('이미지 불러오기 (데모)')} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-white">이미지 불러오기</button>
-                  </div>
-                </div>
-              )}
-              {/* 칩(카테고리 탭) — 칩 On이면 편집 + 불러오기 */}
-              {optOn['칩'] && (
-                <div className="mt-2.5 border-t border-[var(--line2)] pt-2.5">
-                  <div className="mb-1.5 flex items-center gap-1.5">
-                    <span className="text-[12px] font-semibold text-[var(--ink3)]">칩 · 카테고리 탭</span>
-                    <span className="rounded-full bg-[var(--th)] px-1.5 text-[11px] font-bold text-[var(--ink3)]">{chips.length}개</span>
-                    <span className="text-[11px] text-[var(--ink4)]">· 카탈로그 카테고리와 연동</span>
-                  </div>
-                  {/* 칩 = 카탈로그 카테고리 데이터(읽기전용). 누르면 그 칩의 메뉴를 아래에서 따로 구성. 추가는 '칩 불러오기'로 카테고리에서만. */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {chips.map((c, i) => (
-                      <span key={i} onClick={() => setActiveChip(i)}
-                        className={cn('inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium', i === chipIdx ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line3)] bg-white text-[var(--ink2)]')}>
-                        {c}
-                        {c !== '전체' && <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>}
-                      </span>
-                    ))}
-                    <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 불러오기</button>
-                  </div>
-                </div>
-              )}
-              {/* CTA On이면 버튼 이름 설정(2026-10-28 사용자 요청) */}
-              {optOn['CTA'] && (
-                <div className="mt-2.5 border-t border-[var(--line2)] pt-2.5">
-                  <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">CTA · 버튼 이름</p>
-                  <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} placeholder="버튼 이름 입력 (예: 전체보기)" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                  {onOptions.length > 1 && (
+                    <div className="mb-2 flex gap-1">
+                      {onOptions.map((o) => (
+                        <button key={o} type="button" onClick={() => setActiveOpt(o)}
+                          className={cn('rounded-[6px] px-2.5 py-1 text-[12px] font-semibold', shownOpt === o ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink3)] hover:bg-white')}>
+                          {o} 설정
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {/* 배너 — 이미지 불러오기 */}
+                  {shownOpt === '배너' && (
+                    <div>
+                      <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">배너 · 이미지</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="grid h-10 w-16 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-white text-[var(--ink4)]">
+                          {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
+                        </span>
+                        <input value={bannerImg} onChange={(e) => setBannerImg(e.target.value)} placeholder="이미지 주소 입력" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                        <button type="button" onClick={() => onToast('이미지 불러오기 (데모)')} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-white">이미지 불러오기</button>
+                      </div>
+                    </div>
+                  )}
+                  {/* 칩(카테고리 탭) — 카탈로그 카테고리와 연동 */}
+                  {shownOpt === '칩' && (
+                    <div>
+                      <div className="mb-1.5 flex items-center gap-1.5">
+                        <span className="text-[12px] font-semibold text-[var(--ink3)]">칩 · 카테고리 탭</span>
+                        <span className="rounded-full bg-[var(--th)] px-1.5 text-[11px] font-bold text-[var(--ink3)]">{chips.length}개</span>
+                        <span className="text-[11px] text-[var(--ink4)]">· 카탈로그 카테고리와 연동</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {chips.map((c, i) => (
+                          <span key={i} onClick={() => setActiveChip(i)}
+                            className={cn('inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium', i === chipIdx ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line3)] bg-white text-[var(--ink2)]')}>
+                            {c}
+                            {c !== '전체' && <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>}
+                          </span>
+                        ))}
+                        <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 불러오기</button>
+                      </div>
+                    </div>
+                  )}
+                  {/* CTA — 버튼 이름 설정 */}
+                  {shownOpt === 'CTA' && (
+                    <div>
+                      <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">CTA · 버튼 이름</p>
+                      <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} placeholder="버튼 이름 입력 (예: 전체보기)" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
