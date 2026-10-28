@@ -10,8 +10,10 @@ import { baseLayout } from '@/lib/display-taxonomy';
 export const dynamic = 'force-dynamic';
 
 export default async function CornerTypeDetailPage({ params }: { params: { id: string } }) {
-  const [ct, logs, builtOptions, registered, bannerCampaigns, productOptions, usageCorners] = await Promise.all([
-    prisma.cornerType.findUnique({ where: { id: params.id } }),
+  // 코너 유형을 먼저 가져와 유형별 '채우기' 카탈로그(상품형=상품 분류만)를 좁힌다(2026-10-28 사용자 정의).
+  const ct = await prisma.cornerType.findUnique({ where: { id: params.id } });
+  if (!ct) notFound();
+  const [logs, builtOptions, registered, bannerCampaigns, productOptions, usageCorners] = await Promise.all([
     prisma.auditLog.findMany({
       where: { targetType: 'CornerType', targetId: params.id },
       orderBy: { changedAt: 'desc' },
@@ -19,7 +21,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
     getBuiltCornerOptions(),
     getRegisteredCombos(),
     getBannerCampaignOptions(),
-    getProductOptions(),
+    getProductOptions(ct.baseCategory),
     // 사용처: 이 코너 유형으로 생성된 코너 + 배치된 템플릿/컨테이너 + 실제 구성(미리보기용)
     prisma.corner.findMany({
       where: { sourceCornerTypeId: params.id },
@@ -27,7 +29,6 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
       orderBy: PLACED_CORNER_ORDER,
     }),
   ]);
-  if (!ct) notFound();
 
   // 형제 케이스 — 같은 base + '기준 배열명'(옵션 접미사 +배너·+칩 제거)의 코너 유형들.
   //  배너·칩·CTA 가 옵션이 되며 '세로형+배너'와 '세로형'이 한 배열로 합쳐지므로, 상세의 '쓰는 전시화면'도
