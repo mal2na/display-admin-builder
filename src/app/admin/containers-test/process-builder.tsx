@@ -956,12 +956,11 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
             <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
             <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
-            <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시화면 관리 (테스트)</Link>
+            <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시화면 관리</Link>
             <ChevronRight className="h-3.5 w-3.5 opacity-50" /><b className="font-semibold text-[var(--ink)]">{data.containerName}</b>
           </nav>
           <div className="mt-1.5 flex items-center gap-2">
             <h1 className="text-[20px] font-bold leading-[28px] tracking-[-0.3px] text-[var(--ink)]">{data.containerName}</h1>
-            <span className="rounded-full border border-[var(--warnln)] bg-[var(--warnbg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--warn)]">테스트</span>
           </div>
         </div>
 

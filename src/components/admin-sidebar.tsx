@@ -15,8 +15,8 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
 
         {/* 전시 관리 */}
         {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">전시 관리</p>}
-        <NavLink href="/admin/containers" icon={<MonitorSmartphone className="h-4 w-4" />} label="전시화면 관리" collapsed={collapsed} excludeFor={['/admin/containers-test']} />
-        <NavLink href="/admin/containers-test" icon={<MonitorSmartphone className="h-4 w-4" />} label="전시화면 관리 (테스트)" collapsed={collapsed} badge="테스트" />
+        {/* 전시화면 관리 = (구)테스트를 메인으로 승격(2026-10-28 사용자 요청). 기존(/admin/containers)은 백업으로 하단 이동. */}
+        <NavLink href="/admin/containers-test" icon={<MonitorSmartphone className="h-4 w-4" />} label="전시화면 관리" collapsed={collapsed} />
         <NavLink href="/admin/corner-types" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리" collapsed={collapsed} />
         <NavLink href="/admin/banner-campaigns" icon={<GalleryHorizontalEnd className="h-4 w-4" />} label="배너 캠페인 관리" collapsed={collapsed} />
         <NavLink href="/admin/messages" icon={<MessageSquareText className="h-4 w-4" />} label="문구 관리" collapsed={collapsed} badge="테스트" />
@@ -39,6 +39,7 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         {/* 백업 — 코너 유형 관리 개편 직전 스냅샷(2026-10-06). 제일 하단에 분리 배치. */}
         <div className="mt-auto" />
         {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">백업</p>}
+        <NavLink href="/admin/containers" icon={<Archive className="h-4 w-4" />} label="전시화면 관리 (백업)" collapsed={collapsed} excludeFor={['/admin/containers-test']} />
         <NavLink href="/admin/corner-types-backup" icon={<Archive className="h-4 w-4" />} label="코너 유형 관리 (백업)" collapsed={collapsed} />
       </nav>
 

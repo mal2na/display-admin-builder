@@ -57,7 +57,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
       <div className="px-10 py-8 pb-24">
         <nav className="flex flex-wrap items-center gap-1.5 text-[13px] text-[var(--ink3)]">
           <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" /><span>전시관리</span>
-          <ChevronRight className="h-3.5 w-3.5 opacity-50" /><Link href="/admin/containers-test" className="hover:underline">전시화면 관리 (테스트)</Link>
+          <ChevronRight className="h-3.5 w-3.5 opacity-50" /><Link href="/admin/containers-test" className="hover:underline">전시화면 관리</Link>
           <ChevronRight className="h-3.5 w-3.5 opacity-50" /><b className="text-[var(--ink)]">{container.name}</b>
         </nav>
 
@@ -67,7 +67,6 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
               <h1 className="text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[var(--ink)]">{container.name}</h1>
               <StatusPill label={CONTAINER_APPROVAL_STATUS_LABEL[container.approvalStatus] ?? '초안'} tone={statusTone(CONTAINER_APPROVAL_STATUS_LABEL[container.approvalStatus] ?? '')} />
               <StatusPill label={container.status === 'active' ? '전시' : '미전시'} tone={container.status === 'active' ? 'success' : 'neutral'} />
-              <span className="rounded-full border border-[var(--warnln)] bg-[var(--warnbg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--warn)]">테스트</span>
             </div>
             <p className="mt-1 text-[13px] text-[var(--ink3)]">실제 반영 기준: Container + Template + 고객 상태 + 노출 조건</p>
           </div>
