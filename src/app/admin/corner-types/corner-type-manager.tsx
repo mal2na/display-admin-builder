@@ -1932,12 +1932,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* ② 세부 항목 — '표시 항목(이 유형이 쓰는 요소)' + '노출 개수(최소~최대)'만(2026-10-27 사용자 요청). CTA 문구·이미지 모양·탭 슬롯 부가·배너·FO 설정은 빌더로 이관하고, 저장값은 hidden으로 보존해 되돌릴 수 있게 한다. */}
             {base !== '상품형' && (
             <div className={cn('order-2', !showStep(1) && 'hidden')}>
-              <FormCard n={2} title="세부 항목" hint="이 코너 유형이 쓰는 필수(고정)·옵션 · 노출 개수">
-                {/* 세부 항목 = '코너유형정리' 표 SSOT에서 필수(고정)·옵션(배너·칩·CTA)만 노출(2026-10-28 사용자 요청).
+              <FormCard n={2} title="코너 정보 · 속성" hint="이 코너 유형이 쓰는 표시 항목">
+                {/* 코너 정보·속성 = '코너유형정리' 표 SSOT에서 필수(고정)·옵션(배너·칩·CTA)만 노출(2026-10-28 사용자 요청).
                     저장값(표시 항목 플래그)은 아래 hidden 으로 보존 — 기존 미리보기·데이터 호환. */}
-                <TRow label="세부 항목">
+                <div className="px-1 py-1">
                   <CornerFieldList cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} />
-                </TRow>
+                </div>
                 {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
                 {/* 노출 개수 입력은 CornerFieldList(세부 항목) 안에서 설정한다(2026-10-28 사용자 요청: 여기서 설정).
                     단, 노출 개수가 없는 유형(탭형·단일형·상태안내형·고정필수)은 CountRow가 안 떠서 저장값만 hidden 보존. */}

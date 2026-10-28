@@ -297,29 +297,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {/* 기본 문구 제거(2026-10-14 사용자 요청) — 코너 유형은 껍데기(규격)만. 구체 문구(타이틀·서브)는 빌더에서 채운다. */}
       {row.defaultCardShape && <RORow label="카드 모양">{row.defaultCardShape}</RORow>}
       {row.description && <RORow label="설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description}</span></RORow>}
-      {/* 세부 항목 — 상품형은 타이틀·CTA 포함 전 요소를 on/off + 내부 설정값으로 한 블록에 보여준다.
-          업무 진입형(탭·메뉴)·배너형은 표시 항목이 의미 없어 숨김(2026-09-30 사용자 요청). */}
-      {studioItems ? (
-        <RORow label="세부 항목">
-          <div className="space-y-1">
-            {/* 고정(항상) · On/Off 토글(상태 표기) · 옵션(배너·칩·CTA) — 2026-10-28 사용자 요청 */}
-            {studioItems.map(({ lbl, kind, on, val }) => (
-              <div key={lbl} className="flex items-start gap-2 text-[13px]">
-                <span className={cn('font-medium', on ? 'text-slate-700' : 'text-slate-400')}>{lbl}</span>
-                <span className={cn('text-[11px] font-semibold',
-                  kind === '옵션' ? 'text-[#3617ce]' : kind === 'On/Off' ? 'text-[#0ea5a0]' : 'font-normal text-slate-400')}>· {kind}</span>
-                {kind !== '고정' && <span className={cn('text-[11px]', on ? 'text-[#00a058]' : 'text-slate-400')}>· {on ? 'On' : 'Off'}</span>}
-                {on && val && <span className="whitespace-pre-line text-slate-500">· {val}</span>}
-              </div>
-            ))}
-          </div>
-        </RORow>
-      ) : cornerFieldSpec(row.baseCategory, row.typeDetail) ? (
-      /* 상품형 외 — '코너유형정리' 표 SSOT에서 필수(고정)·옵션(배너·칩·CTA)을 렌더(2026-10-28 사용자 요청: 7종 전체) */
-      <RORow label="세부 항목">
-        <CornerFieldList cornerType={row.baseCategory} layout={row.typeDetail} />
-      </RORow>
-      ) : null}
+      {/* 코너 정보·속성은 아래 별도 섹션으로 분리(2026-10-28 사용자 요청: 전 페이지 '기본 정보 / 코너 정보·속성'으로 통일). */}
       {/* 상품형은 기본값(정렬·더보기 등)을 코너 속성/버튼 텍스트로 관리 → 기본값 행 숨김(2026-10-19 사용자 요청) */}
       {!isStudio && hasDefaults && (
         <RORow label="기본값">
@@ -333,6 +311,30 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
         </RORow>
       )}
       </div>
+
+      {/* 코너 정보 · 속성 — 전 페이지 공통 섹션명(2026-10-28 사용자 요청). 상품형은 스튜디오 항목, 그 외는 CornerFieldList. */}
+      {(studioItems || cornerFieldSpec(row.baseCategory, row.typeDetail)) && (
+        <div className="mt-6">
+          <SecHead>코너 정보 · 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></SecHead>
+          <div className="border-t border-[#dce0e5] pt-3">
+            {studioItems ? (
+              <div className="space-y-1">
+                {studioItems.map(({ lbl, kind, on, val }) => (
+                  <div key={lbl} className="flex items-start gap-2 text-[13px]">
+                    <span className={cn('font-medium', on ? 'text-slate-700' : 'text-slate-400')}>{lbl}</span>
+                    <span className={cn('text-[11px] font-semibold',
+                      kind === '옵션' ? 'text-[#3617ce]' : kind === 'On/Off' ? 'text-[#0ea5a0]' : 'font-normal text-slate-400')}>· {kind}</span>
+                    {kind !== '고정' && <span className={cn('text-[11px]', on ? 'text-[#00a058]' : 'text-slate-400')}>· {on ? 'On' : 'Off'}</span>}
+                    {on && val && <span className="whitespace-pre-line text-slate-500">· {val}</span>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <CornerFieldList cornerType={row.baseCategory} layout={row.typeDetail} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 
