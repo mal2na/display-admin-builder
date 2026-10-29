@@ -111,7 +111,7 @@ function defaultSpec(layout?: string): CardHomeSpec {
   return {
     title: 'Title',
     buttonText: { show: true, label: 'ButtonText' }, // 라벨 텍스트(ButtonText) = 필수(고정) — 미리보기 라벨 영문 표기(2026-10-29(2))
-    cta: { show: true, label: 'Label' },         // CTA = 옵션 (하단 버튼은 'Label'로 통일)
+    cta: { show: true, label: 'CTA' },           // CTA = 옵션 (하단 버튼 텍스트 = 'CTA', 2026-10-29(2) 사용자 요청)
     bannerSrc: '',
     bannerOn: layout == null || /배너/.test(layout), // 배너 = 옵션
     chipOn: false,                                // 칩 = 옵션(상단 카테고리 탭)
@@ -165,11 +165,13 @@ function TextInput({ value, onChange, placeholder, multiline }: { value: string;
   );
 }
 // 테이블 행 — 좌: 라벨(음영) · 우: 컨트롤 (기본 정보 테이블/Figma SEO 표 스타일)
-function Prop({ name, desc, sub, children }: { name: string; desc?: string; sub?: boolean; children: React.ReactNode }) {
+function Prop({ name, code, desc, sub, children }: { name: string; code?: string; desc?: string; sub?: boolean; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[150px_minmax(0,1fr)] items-start border-b border-[#eef0f3] last:border-b-0">
       <div className={cn('flex min-w-0 flex-col gap-0.5 bg-[#f8f9fb] px-3.5 py-3', sub && 'pl-5')}>
         <span className="text-[14px] font-medium text-[#454f59]">{name}</span>
+        {/* 영어 코드는 다른 라벨처럼 밑줄에(mono) — 라벨 옆 인라인 금지(2026-10-29(2) 사용자 요청). */}
+        {code && <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">({code})</span>}
         {desc && <span className="text-[10.5px] leading-tight text-[#8b949e]">{desc}</span>}
       </div>
       <div className="flex min-w-0 items-center px-3.5 py-3">{children}</div>
@@ -324,7 +326,8 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
   // 세로형 = 행 구분선(divide-y)만 · 박스 테두리 없음(2026-10-19 사용자 요청). 선택 표시는 ring/bg로(테두리는 divide 색과 충돌).
   //  가로형 = 캐러셀 카드 → 선택 테두리 박스 유지.
   const itemBtnCls = () => vertical
-    ? cn('w-full p-2 text-left transition', ro ? '' : cn('cursor-pointer rounded-[10px]', sel === 'item' ? 'bg-[#f1f2ff] ring-1 ring-inset ring-[#3617ce]' : 'hover:bg-[#f8f9fb]'))
+    // ro(표시 전용)는 좌우 패딩 없이 칩과 같은 좌측 라인에 맞춤(2026-10-29(2) 사용자 요청). 편집 모드만 p-2 클릭 영역.
+    ? cn('w-full text-left transition', ro ? 'py-2' : cn('cursor-pointer rounded-[10px] p-2', sel === 'item' ? 'bg-[#f1f2ff] ring-1 ring-inset ring-[#3617ce]' : 'hover:bg-[#f8f9fb]'))
     : cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
   return (
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
@@ -367,7 +370,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       {/* CTA — 카드 하단 전체폭 버튼(Label ›). 버튼 텍스트와 별개(2026-10-28 사용자 요청). 레거시 스펙(cta 없음) 방어. */}
       {spec.cta?.show && (
         <div className="px-[28px] pb-4 pt-1">
-          <div className="flex w-full items-center justify-center gap-0.5 rounded-full border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.cta?.label || 'Label'} <span className="text-[#b3b9c0]">›</span></div>
+          <div className="flex w-full items-center justify-center gap-0.5 rounded-full border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.cta?.label || 'CTA'} <span className="text-[#b3b9c0]">›</span></div>
         </div>
       )}
     </div>
@@ -470,12 +473,12 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
   return (
     <div>
       {/* 옵션(배너·칩·CTA — 상품형·혜택형 공통). 맨 위에 두고 클릭으로 On/Off(2026-10-28 사용자 확정). */}
-      <ChkRow label="배너이미지(BannerSrc)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
+      <ChkRow label="배너(Banner)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
       <ChkRow label="칩(Chip)" option checked={spec.chipOn ?? false} onChange={(v) => set({ chipOn: v })} />
-      <ChkRow label="CTA(CTA)" option checked={spec.cta?.show ?? false} onChange={(v) => set({ cta: { ...(spec.cta ?? { label: 'Label' }), show: v } })} />
+      <ChkRow label="CTA(CTA)" option checked={spec.cta?.show ?? false} onChange={(v) => set({ cta: { ...(spec.cta ?? { label: 'CTA' }), show: v } })} />
       {/* 필수(고정) — 코너 메인 타이틀 · 라벨 텍스트 */}
       <ChkRow label="코너 메인 타이틀(Title)" checked disabled />
-      <ChkRow label="라벨 텍스트(ButtonText)" checked disabled />
+      <ChkRow label="버튼 텍스트(ButtonText)" checked disabled />
     </div>
   );
 }
@@ -545,7 +548,7 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
   return (
     <div>
         {/* 형태(Variants) — 세로형은 제외(2026-10-29(2) 사용자 요청: 불필요). 가로형만 카드 크기(Small/Medium/Large) 선택. 라디오 버튼(비상품형 VariantControl과 동일, 2026-10-29(2)). */}
-        {!vertical && <Prop name="형태(Variants)" desc="카드 크기">
+        {!vertical && <Prop name="형태" code="Variants" desc="카드 크기">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
             {variantOpts.map((o) => (
               <label key={o} className="flex cursor-pointer items-center gap-1.5 text-[13px]">

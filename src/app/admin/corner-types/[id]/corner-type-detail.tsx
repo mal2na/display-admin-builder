@@ -293,7 +293,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
     { lbl: 'CTA(CTA)', kind: '옵션', on: !!studioSpec.cta?.show, val: studioSpec.cta?.label },
     // 기본정보(코너) — 고정
     { lbl: '코너 메인 타이틀(Title)', kind: '고정', on: true, val: studioSpec.title },
-    { lbl: '라벨 텍스트(ButtonText)', kind: '고정', on: true, val: studioSpec.buttonText.label },
+    { lbl: '버튼 텍스트(ButtonText)', kind: '고정', on: true, val: studioSpec.buttonText.label },
     // 코너 정보 속성(아이템) — 고정
     { lbl: '아이템 이미지(ImageSrc)', kind: '고정', on: true, val: it.imageSrc || undefined },
     { lbl: '아이템 타이틀(Title)', kind: '고정', on: true },
@@ -361,7 +361,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
               }
               const koOf = (s: string) => s.replace(/\s*\(.*\)\s*/, '').trim();
               // 코너(카드) = 배너·칩·CTA·코너 메인 타이틀·라벨 텍스트. 나머지(이미지·타이틀·가격 등) = 아이템(요소).
-              const isCornerRow = (r: Row) => !r.price && /^(배너|칩|CTA|코너 메인 타이틀|라벨 텍스트)/.test(r.cell.lbl);
+              const isCornerRow = (r: Row) => !r.price && /^(배너|칩|CTA|코너 메인 타이틀|버튼 텍스트)/.test(r.cell.lbl);
               const cornerRows = rows.filter(isCornerRow);
               const itemRows = rows.filter((r) => !isCornerRow(r));
               const stateVal = (c: SI) => (

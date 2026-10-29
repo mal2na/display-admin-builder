@@ -152,7 +152,7 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey, onOpt
   );
   // 옵션 라벨 — 상품형(CornerStudio)과 동일 표기: 배너→배너이미지(BannerSrc)·칩→칩(Chip)·CTA→CTA(CTA).
   const OPT_META: Record<string, { ko: string; code: string }> = {
-    '배너': { ko: '배너이미지', code: 'BannerSrc' }, '칩': { ko: '칩', code: 'Chip' }, 'CTA': { ko: 'CTA', code: 'CTA' },
+    '배너': { ko: '배너', code: 'Banner' }, '칩': { ko: '칩', code: 'Chip' }, 'CTA': { ko: 'CTA', code: 'CTA' },
   };
   const optionRow = (o: string) => {
     const used = editable ? (optOn[o] ?? true) : true;

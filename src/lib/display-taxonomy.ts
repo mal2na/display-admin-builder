@@ -592,7 +592,7 @@ export type CornerTypeSpec = { options: CornerOption[]; minItems?: number; maxIt
 // 재사용 필드 — 영문키는 DS(AS-IS) 기준. asIs 생략 시 key 와 동일.
 const FD = (key: string, ko: string, group: 'corner' | 'item', extra?: Partial<CornerFieldDef>): CornerFieldDef => ({ key, ko, group, asIs: extra?.asIs ?? key, note: extra?.note });
 const CORNER_TITLE = FD('Title', '코너 메인 타이틀', 'corner');
-const LABEL_TEXT = FD('ButtonText', '라벨 텍스트', 'corner');
+const LABEL_TEXT = FD('ButtonText', '버튼 텍스트', 'corner');
 const ITEM_IMAGE = FD('ImageSrc', '아이템 이미지', 'item');
 const ITEM_TITLE = FD('Title', '아이템 타이틀', 'item');
 // 가격 그룹 — 뭉뚱그리지 않고 각각 표시(2026-10-28 사용자 요청). DS CardHomeItem 의 TextPriceGroup 하위 속성.
