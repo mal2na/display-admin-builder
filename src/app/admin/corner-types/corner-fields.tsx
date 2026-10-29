@@ -2,7 +2,8 @@
 
 // 코너 유형 세부 항목 — '코너유형정리' 표 기준 SSOT(CORNER_TYPE_SPECS)에서 구동.
 //  2026-10-28 사용자 규칙: 세부 항목 = 표의 필수(red)만, 전부 고정(상세에서 못 끔). 유일한 토글 = 옵션(배너·칩·CTA).
-//  2026-10-29 사용자 요청: UI = 사용/미사용 라디오 쌍 + 형태(Variants) 라디오 그룹, 2열 표. 고정=사용 선택+비활성 · 옵션=사용/미사용 전환.
+//  2026-10-29 사용자 요청: UI = 사용/미사용 라디오 쌍 + 형태(Variants) 라디오 그룹.
+//  2026-10-29(2) 사용자 요청: '기본 정보'(TRow)와 같은 테이블로 — 라벨 셀(회색 150px) + 컨트롤 셀, 가로줄 보더.
 //  코너(카드)/아이템(요소) 그룹으로 분리.
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -20,43 +21,49 @@ function Radio({ name, label, checked, disabled, onPick }: {
   );
 }
 
-// 필드 한 칸 — 라벨(국문+코드) + 사용/미사용 라디오 쌍.
-function RadioRow({ label, keyName, used, disabled, name, onChange }: {
-  label: string; keyName?: string; used: boolean; disabled?: boolean; name: string; onChange?: (v: boolean) => void;
+// 표 한 행 — '기본 정보'(TRow)와 동일 규격: 라벨 셀(회색 150px) + 컨트롤 셀. tag = 옵션/고정 배지(라벨 옆).
+function FieldTableRow({ label, keyName, tag, children }: {
+  label: string; keyName?: string; tag?: { text: string; color: string }; children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2.5 text-[13px]">
-      <span className="min-w-0 flex-1 leading-[1.25]">
-        <span className={cn('font-medium', used ? 'text-slate-700' : 'text-slate-400')}>{label}</span>
-        {keyName && <span className="block font-mono text-[11px] text-slate-400">({keyName})</span>}
-      </span>
-      <div className="flex shrink-0 items-center gap-4">
-        <Radio name={name} label="사용" checked={used} disabled={disabled} onPick={() => onChange?.(true)} />
-        <Radio name={name} label="미사용" checked={!used} disabled={disabled} onPick={() => onChange?.(false)} />
+    <div className="grid grid-cols-[150px_1fr] items-stretch border-b border-[#eef1f4] last:border-b-0">
+      <div className="flex h-full flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-2.5">
+        <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-medium leading-[1.25] text-slate-700">
+          {label}
+          {tag && (
+            <span className="rounded-[4px] px-1 py-[1px] text-[10px] font-semibold" style={{ backgroundColor: `${tag.color}1a`, color: tag.color }}>{tag.text}</span>
+          )}
+        </span>
+        {keyName && <span className="font-mono text-[11px] font-normal text-slate-400">({keyName})</span>}
       </div>
+      <div className="flex min-w-0 items-center px-3.5 py-2.5">{children}</div>
     </div>
   );
 }
 
-// 형태(Variants) 라디오 그룹 — 가로형=Small/Medium/Large, 세로형=Profile/Data/Barcode. 단일 선택이라 라디오. 2열 표에서 한 줄 전체(full) 차지.
-function VariantRow({ layout }: { layout?: string | null }) {
+// 사용/미사용 라디오 쌍 — 컨트롤 셀 내용.
+function UsePair({ name, used, disabled, onChange }: { name: string; used: boolean; disabled?: boolean; onChange?: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center gap-5">
+      <Radio name={name} label="사용" checked={used} disabled={disabled} onPick={() => onChange?.(true)} />
+      <Radio name={name} label="미사용" checked={!used} disabled={disabled} onPick={() => onChange?.(false)} />
+    </div>
+  );
+}
+
+// 형태(Variants) — 가로형=Small/Medium/Large, 세로형=Profile/Data/Barcode. 단일 선택이라 라디오.
+function VariantControl({ layout }: { layout?: string | null }) {
   const vertical = /세로/.test(layout ?? '');
   const opts = vertical ? ['Profile', 'Data', 'Barcode'] : ['Small', 'Medium', 'Large'];
   const [val, setVal] = useState(opts[0]);
   return (
-    <div className="flex items-center gap-2 px-3 py-2.5 text-[13px]">
-      <span className="min-w-0 flex-1 leading-[1.25]">
-        <span className="font-medium text-slate-700">이미지 형태</span>
-        <span className="block font-mono text-[11px] text-slate-400">(Variants)</span>
-      </span>
-      <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1">
-        {opts.map((o) => (
-          <label key={o} className="flex cursor-pointer items-center gap-1.5">
-            <input type="radio" name="variantSel" checked={val === o} onChange={() => setVal(o)} className="h-4 w-4 accent-[#3617ce]" />
-            <span className={cn('whitespace-nowrap', val === o ? 'font-medium text-slate-700' : 'text-slate-500')}>{o}</span>
-          </label>
-        ))}
-      </div>
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+      {opts.map((o) => (
+        <label key={o} className="flex cursor-pointer items-center gap-1.5 text-[13px]">
+          <input type="radio" name="variantSel" checked={val === o} onChange={() => setVal(o)} className="h-4 w-4 accent-[#3617ce]" />
+          <span className={cn('whitespace-nowrap', val === o ? 'font-medium text-slate-700' : 'text-slate-500')}>{o}</span>
+        </label>
+      ))}
     </div>
   );
 }
@@ -71,44 +78,34 @@ function GroupHead({ badge, color, title, desc }: { badge: string; color: string
   );
 }
 
-// 2열 표 — 필드 칸을 왼→오 흐름으로. full=true 칸은 한 줄 전체.
-type Cell = { key: string; node: React.ReactNode; full?: boolean };
-function FieldGrid({ cells }: { cells: Cell[] }) {
-  return (
-    <div className="grid grid-cols-2 overflow-hidden rounded-md border-l border-t border-[#eef1f4]">
-      {cells.map((c) => (
-        <div key={c.key} className={cn('border-b border-r border-[#eef1f4]', c.full && 'col-span-2')}>
-          {c.node}
-        </div>
-      ))}
-    </div>
-  );
+// 테이블 외곽 — 둥근 보더로 묶어 '기본 정보' 테이블과 같은 덩어리감.
+function FieldTable({ children }: { children: React.ReactNode }) {
+  return <div className="overflow-hidden rounded-md border border-[#eef1f4]">{children}</div>;
 }
 
-// 노출 개수 — 편집 폼(editable)에서는 직접 설정(최소~최대 입력), 읽기(상세)에서는 범위 표시.
+// 노출 개수 — 편집 폼(editable)에서는 직접 설정(최소~최대 입력), 읽기(상세)에서는 범위 표시. 표 한 행으로.
 function CountRow({ min, max, editable }: { min: number; max: number; editable?: boolean }) {
-  if (editable) {
-    return (
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px]">
-        <span className="font-medium text-slate-800">노출 개수</span>
-        <input name="defaultMinItems" type="number" min={0} max={50} defaultValue={min} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
-        <span className="text-slate-400">~</span>
-        <input name="defaultMaxItems" type="number" min={0} max={50} defaultValue={max} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
-        <span className="text-[12px] text-slate-500">개</span>
-        <span className="text-[11px] text-slate-400">· 코너에 노출할 개수</span>
-      </div>
-    );
-  }
   return (
-    <div className="mt-1.5 flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px]">
-      <span className="font-medium text-slate-800">노출 개수</span>
-      <span className="rounded-[4px] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#454f59]">{min}~{max}개</span>
-      <span className="text-[11px] text-slate-400">· 실제 개수는 빌더에서</span>
-    </div>
+    <FieldTableRow label="노출 개수" keyName="count">
+      {editable ? (
+        <div className="flex flex-wrap items-center gap-1.5 text-[13px]">
+          <input name="defaultMinItems" type="number" min={0} max={50} defaultValue={min} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
+          <span className="text-slate-400">~</span>
+          <input name="defaultMaxItems" type="number" min={0} max={50} defaultValue={max} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
+          <span className="text-[12px] text-slate-500">개</span>
+          <span className="text-[11px] text-slate-400">· 코너에 노출할 개수</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-[13px]">
+          <span className="rounded-[4px] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#454f59]">{min}~{max}개</span>
+          <span className="text-[11px] text-slate-400">· 실제 개수는 빌더에서</span>
+        </div>
+      )}
+    </FieldTableRow>
   );
 }
 
-// 코너 유형 + 배열 → 코너(카드)/아이템(요소) 라디오 표 + 형태(Variants) + 노출 개수(아이템에 묶음).
+// 코너 유형 + 배열 → 코너(카드)/아이템(요소) 속성 테이블 + 형태(Variants) + 노출 개수(아이템에 묶음).
 export function CornerFieldList({ cornerType, layout, editable, optionKey }: { cornerType?: string | null; layout?: string | null; editable?: boolean; optionKey?: string }) {
   const m = cornerFieldSpec(cornerType, layout);
   const opts = m?.options ?? [];
@@ -128,21 +125,19 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey }: { c
   const cornerFields = m.required.filter((f) => f.group === 'corner');
   const itemFields = m.required.filter((f) => f.group === 'item');
 
-  const fixedCell = (f: CornerFieldDef): Cell => ({
-    key: `fx-${f.group}-${f.ko}-${f.key}`,
-    node: <RadioRow label={f.ko} keyName={f.key} used disabled name={`fld_${f.group}_${f.key}`} />,
-  });
-  const optionCell = (o: string): Cell => {
+  const fixedRow = (f: CornerFieldDef) => (
+    <FieldTableRow key={`fx-${f.group}-${f.ko}-${f.key}`} label={f.ko} keyName={f.key} tag={{ text: '고정', color: '#8b949e' }}>
+      <UsePair name={`fld_${f.group}_${f.key}`} used disabled />
+    </FieldTableRow>
+  );
+  const optionRow = (o: string) => {
     const used = editable ? (optOn[o] ?? true) : true;
-    return {
-      key: `opt-${o}`,
-      node: (
-        <>
-          <RadioRow label={o} used={used} disabled={!editable} name={`opt_${o}_r`} onChange={editable ? (v) => setOpt(o, v) : undefined} />
-          {editable && <input type="hidden" name={`opt_${o}`} value={used ? 'on' : ''} />}
-        </>
-      ),
-    };
+    return (
+      <FieldTableRow key={`opt-${o}`} label={o} tag={{ text: '옵션', color: '#3617ce' }}>
+        <UsePair name={`opt_${o}_r`} used={used} disabled={!editable} onChange={editable ? (v) => setOpt(o, v) : undefined} />
+        {editable && <input type="hidden" name={`opt_${o}`} value={used ? 'on' : ''} />}
+      </FieldTableRow>
+    );
   };
 
   // 세부 항목 없음(배너형·업무진입형 탭형·리스트형 등) — 옵션·필드 모두 없음. 노출 개수만 있으면 그것만 설정.
@@ -152,30 +147,37 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey }: { c
         <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-2 text-[12px] text-slate-400">
           {m.note || (m.minItems != null ? '노출 개수만 설정합니다 — 소재·문구는 빌더에서 채웁니다.' : '세부 항목 없음 — 내용은 빌더에서 채웁니다.')}
         </p>
-        {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} />}
+        {m.minItems != null && <FieldTable><CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} /></FieldTable>}
       </div>
     );
   }
 
-  const cornerCells: Cell[] = [...m.options.map(optionCell), ...cornerFields.map(fixedCell)];
-  const itemCells: Cell[] = [{ key: 'variants', node: <VariantRow layout={m.layout ?? layout} />, full: true }, ...itemFields.map(fixedCell)];
+  const hasCorner = m.options.length > 0 || cornerFields.length > 0;
 
   return (
     <div className="space-y-3">
       {m.note && <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-1.5 text-[12px] text-slate-400">{m.note}</p>}
       {/* 코너(카드) — 옵션(배너·칩·CTA) 먼저, 그 다음 고정(타이틀·라벨) */}
-      {cornerCells.length > 0 && (
+      {hasCorner && (
         <div>
           <GroupHead badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)" />
-          <FieldGrid cells={cornerCells} />
+          <FieldTable>
+            {m.options.map(optionRow)}
+            {cornerFields.map(fixedRow)}
+          </FieldTable>
         </div>
       )}
       {/* 아이템(요소) — 형태(Variants) + 고정 필드 + 노출 개수(아이템에 묶음) */}
       {itemFields.length > 0 && (
         <div>
           <GroupHead badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)" />
-          <FieldGrid cells={itemCells} />
-          {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} />}
+          <FieldTable>
+            <FieldTableRow label="이미지 형태" keyName="Variants">
+              <VariantControl layout={m.layout ?? layout} />
+            </FieldTableRow>
+            {itemFields.map(fixedRow)}
+            {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} />}
+          </FieldTable>
         </div>
       )}
       <p className="px-2 text-[11px] text-[#8b949e]">
