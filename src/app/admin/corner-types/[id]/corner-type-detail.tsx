@@ -203,14 +203,19 @@ const FEATURES: [keyof CornerTypeRow, string][] = [
   ['useBadge', '배지'], ['usePrice', '가격'], ['useDesc', '설명'], ['useMoreButton', 'CTA'],
 ];
 
-// 읽기 전용 표 행 — 라벨 셀(150px) + 값 셀. 2026-10-29(2) 사용자 요청: 그레이(음영)는 '수정'에만, 읽기는 음영 없이 컬럼 구분선만.
+// 읽기 전용 표 행 — 라벨 셀(150px·그레이) + 값 셀. 2026-10-29(2) 사용자 고정 규칙: 읽기 테이블도 수정 폼과 동일 — 밖에 보더·라벨 셀 그레이·박스 안 패딩.
 function RORow({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#eef1f4] last:border-b-0">
-      <div className="flex items-center border-r border-[#eef1f4] px-3.5 py-3 text-[12.5px] font-medium text-slate-600">{label}</div>
-      <div className="min-w-0 px-3.5 py-2.5 text-[13px] text-foreground">{children}</div>
+      <div className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[12.5px] font-medium text-slate-600">{label}</div>
+      <div className="min-w-0 bg-white px-3.5 py-2.5 text-[13px] text-foreground">{children}</div>
     </div>
   );
+}
+
+// 읽기 전용 테이블 외곽 — 박스(좌우) 보더 없이 위아래 가로줄만(2026-10-29(2) 사용자 고정 규칙).
+function ROTable({ children }: { children: React.ReactNode }) {
+  return <div className="border-y border-[#dce0e5]">{children}</div>;
 }
 
 // 읽기 전용 섹션 카드 — 타이틀(헤더)까지 한 박스 안에(2026-10-29(2) 사용자 요청: 기본정보 타이틀도 박스 안에). 헤더: 액센트 바 + 볼드, 본문: 표 행.
@@ -218,11 +223,10 @@ function ROSection({ title, aside, bodyClass, children }: { title: React.ReactNo
   return (
     <section className="overflow-hidden rounded-[12px] border border-[#dce0e5] bg-white">
       <div className="flex items-center gap-2 border-b border-[#eef1f4] bg-white px-4 py-3">
-        <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />
         <h3 className="text-[14.5px] font-bold text-slate-900">{title}</h3>
         {aside && <span className="ml-auto flex items-center">{aside}</span>}
       </div>
-      <div className={bodyClass}>{children}</div>
+      <div className={bodyClass ?? 'p-4'}>{children}</div>
     </section>
   );
 }
@@ -288,7 +292,8 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   // 정보(읽기 전용) 블록 — 단일/멀티 레이아웃에서 공용. 프로모션 상세 .fsec/.ftable 규격.
   const infoContent = (
     <div className="space-y-6">
-      <ROSection title="기본 정보">
+      <ROSection title="코너 기본 정보">
+      <ROTable>
       <RORow label="코너 유형">
         <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold">{cornerTypeBi(row.baseCategory)}</span>
         {cornerTypePurpose(row.baseCategory) && <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{cornerTypePurpose(row.baseCategory)}</p>}
@@ -319,32 +324,45 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
           </div>
         </RORow>
       )}
+      </ROTable>
       </ROSection>
 
       {/* 코너 정보 · 속성 — 전 페이지 공통 섹션명(2026-10-28 사용자 요청). 상품형은 스튜디오 항목, 그 외는 CornerFieldList. */}
       {(studioItems || cornerFieldSpec(row.baseCategory, row.typeDetail)) && (
         studioItems ? (
           // 상품형 — 라벨(코드·옵션/고정 배지) | 사용 상태·값 테이블(2026-10-29(2) 사용자 요청).
-          <ROSection title={<>코너 정보 · 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></>}>
-              {studioItems.map(({ lbl, kind, on, val }) => (
-                <RORow key={lbl} label={
-                  <span className="flex flex-wrap items-center gap-1.5">
-                    <span className={cn(on ? 'text-slate-700' : 'text-slate-400')}>{lbl}</span>
-                    <span className={cn('rounded-[4px] px-1 py-[1px] text-[10px] font-semibold',
-                      kind === '고정' ? 'bg-[#8b949e]/15 text-[#8b949e]' : 'bg-[#3617ce]/10 text-[#3617ce]')}>{kind === 'On/Off' ? '옵션' : kind}</span>
-                  </span>
-                }>
-                  <span className="flex flex-wrap items-center gap-2">
-                    {kind === '고정'
-                      ? <span className="text-[12px] font-medium text-slate-400">사용 고정</span>
-                      : <span className={cn('text-[12px] font-semibold', on ? 'text-[#00a058]' : 'text-slate-400')}>{on ? '사용' : '미사용'}</span>}
-                    {on && val && <span className="whitespace-pre-line text-slate-500">{val}</span>}
-                  </span>
-                </RORow>
-              ))}
+          <ROSection title={<>코너 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></>}>
+            <ROTable>
+              {(() => {
+                // 라벨엔 옵션/고정 배지 미표시(라벨 터짐 방지), 가격·할인율은 한 행으로 묶음(편집과 동일) — 2026-10-29(2) 사용자 요청.
+                const rows: { lbl: string; cells: (typeof studioItems[number] & { sub?: string })[] }[] = [];
+                for (let i = 0; i < studioItems.length; i++) {
+                  const cur = studioItems[i]; const nxt = studioItems[i + 1];
+                  if (/^가격/.test(cur.lbl) && nxt && /^할인율/.test(nxt.lbl)) {
+                    rows.push({ lbl: '가격 · 할인율', cells: [{ ...cur, sub: '가격' }, { ...nxt, sub: '할인율' }] });
+                    i++;
+                  } else rows.push({ lbl: cur.lbl, cells: [cur] });
+                }
+                return rows.map(({ lbl, cells }) => (
+                  <RORow key={lbl} label={lbl}>
+                    <span className="flex flex-wrap items-center gap-x-5 gap-y-1">
+                      {cells.map((c, ci) => (
+                        <span key={ci} className="flex items-center gap-1.5">
+                          {c.sub && <span className="text-[12px] font-medium text-slate-500">{c.sub}</span>}
+                          {c.kind === '고정'
+                            ? <span className="text-[12px] font-medium text-slate-400">사용 고정</span>
+                            : <span className={cn('text-[12px] font-semibold', c.on ? 'text-[#00a058]' : 'text-slate-400')}>{c.on ? '사용' : '미사용'}</span>}
+                          {c.on && c.val && <span className="whitespace-pre-line text-slate-500">{c.val}</span>}
+                        </span>
+                      ))}
+                    </span>
+                  </RORow>
+                ));
+              })()}
+            </ROTable>
           </ROSection>
         ) : (
-          <ROSection title={<>코너 정보 · 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></>} bodyClass="p-3">
+          <ROSection title={<>코너 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></>}>
             <CornerFieldList cornerType={row.baseCategory} layout={row.typeDetail} />
           </ROSection>
         )
@@ -358,22 +376,19 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
 
   // 상세 정보 — 이 코너 유형을 쓰는 전시화면 + 실제 만든 코너 미리보기(클릭 시 빌더로 이동). 2026-10-06 사용자 요청.
   const usageContent = (
-    <ROSection title={<>상세 정보 · 이 코너 유형을 쓰는 전시화면 <span className="text-[11px] font-normal text-slate-400">· 실제 만든 코너 {usageByCorner.length}개</span></>}
-      bodyClass={usageByCorner.length === 0 ? 'p-3.5' : undefined}>
+    <ROSection title={<>상세 정보 · 이 코너 유형을 쓰는 전시화면 <span className="text-[11px] font-normal text-slate-400">· 실제 만든 코너 {usageByCorner.length}개</span></>}>
       {usageByCorner.length === 0 ? (
-        <div className="rounded-[10px] border border-dashed border-[#dce0e5] bg-muted/20 p-5 text-center text-[12px] text-muted-foreground">아직 이 코너 유형을 쓰는 전시화면이 없습니다.</div>
+        <div className="rounded-[8px] border border-dashed border-[#dce0e5] bg-muted/20 p-5 text-center text-[12px] text-muted-foreground">아직 이 코너 유형을 쓰는 전시화면이 없습니다.</div>
       ) : (
-        // 테이블 — 코너(썸네일+이름) | 전시화면(빌더 링크 칩). 2026-10-29(2) 사용자 요청: 상세 정보도 테이블 안에.
-        <>
+        // 세로 스택 — 코너별로 썸네일 → 코너명 → 전시화면 칩을 위에서 아래로(2026-10-29(2) 사용자 요청: 좌측 2열 말고 밑으로).
+        <div className="divide-y divide-[#eef1f4]">
           {usageByCorner.map((u, i) => (
-            <div key={i} className="grid grid-cols-[260px_minmax(0,1fr)] items-stretch border-b border-[#eef1f4] last:border-b-0">
-              <div className="flex flex-col gap-2 border-r border-[#eef1f4] p-3.5">
-                <div className="pointer-events-none flex h-[160px] w-full items-center justify-center overflow-hidden rounded-[8px] bg-[#eef0f6]">
-                  <DevicePreview corner={u.preview} fit="contain" align="center-middle" />
-                </div>
-                <p className="truncate text-[12.5px] font-semibold text-slate-800">{u.cornerName}</p>
+            <div key={i} className="space-y-2 py-4 first:pt-0 last:pb-0">
+              <div className="pointer-events-none flex h-[200px] w-full items-center justify-center overflow-hidden rounded-[8px] bg-[#eef0f6]">
+                <DevicePreview corner={u.preview} fit="contain" align="center-middle" />
               </div>
-              <div className="flex min-w-0 flex-wrap content-start items-start gap-1 p-3.5">
+              <p className="text-[12.5px] font-semibold text-slate-800">{u.cornerName}</p>
+              <div className="flex flex-wrap gap-1">
                 {u.screens.length === 0 ? (
                   <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">미배치</span>
                 ) : u.screens.map((s, j) => (
@@ -388,7 +403,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
               </div>
             </div>
           ))}
-        </>
+        </div>
       )}
     </ROSection>
   );
@@ -396,7 +411,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   // 단일 미리보기(배너형 / 단일 케이스 / 미배치 샘플) — 폰 프레임 없이 카드 그대로 축소.
   //  BG 영역은 모든 유형 동일 고정 높이(PREVIEW_H), 콘텐츠는 세로 중앙 정렬 → 배너처럼 짧은 유형도 가운데(2026-09-29 사용자 요청).
   const singlePreview = (
-    <div className={cn('overflow-y-auto rounded-lg border border-[#dce0e5] bg-[#eef0f6] p-4', PREVIEW_H)}>
+    <div className={cn('overflow-y-auto rounded-[8px] bg-[#eef0f6] p-4', PREVIEW_H)}>
       {isStudio ? (
         // 상품형 — 스튜디오에서 저장한 코너 스펙(배너·타이틀·CTA·상품카드·배지)을 렌더. 세로형이면 세로 리스트.
         <CornerSpecPreview storageKey={specKey} layout={row.typeDetail ?? undefined} />
@@ -416,60 +431,41 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   );
 
   return (
-    <div className="space-y-4 rounded-lg border bg-card p-5">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-[14.5px] font-bold text-slate-900">
-          <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />
-          코너 유형 정보
-        </h2>
+    <div className="space-y-5">
+      {/* 수정 버튼 — 상단 우측(제목 제거, 각 섹션이 박스로 구분됨) */}
+      <div className="flex justify-end">
         <Button size="sm" variant="secondary" onClick={onEdit}><Pencil className="mr-1 h-3.5 w-3.5" /> 수정</Button>
       </div>
 
-      {multi ? (
-        /* 멀티 케이스 — 미리보기(코너별 타일 2단 그리드) 위, 정보 아래. 폰 프레임 없음. */
-        <div className="space-y-5">
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">미리보기 · 조합 결과
-              <span className="ml-1 font-normal text-slate-400">· 이 유형으로 쓰이는 코너 {usagePreviews.length}개(케이스별)</span>
-              <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">승인 완료</span>
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {usagePreviews.map((c, i) => (
-                <figure key={c.id} className="rounded-lg border border-[#dce0e5] bg-[#eef0f6] p-3">
-                  <figcaption className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
-                    <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-white text-[10px] font-bold tabular-nums text-slate-500 ring-1 ring-slate-200">{i + 1}</span>
-                    <span className="truncate">{c.name}</span>
-                  </figcaption>
-                  <div className={cn('pointer-events-none', PREVIEW_H)}>
-                    <DevicePreview corner={c} fit="contain" align="center-middle" />
-                  </div>
-                </figure>
-              ))}
-            </div>
-          </div>
+      {/* 미리보기(좌·고정폭 340·sticky) + 정보(우). 폭 좁으면 정보가 아래로. 수정 폼과 동일 폭·sticky(2026-10-29(2) 사용자 요청). */}
+      <div className="flex flex-wrap items-start gap-5">
+        <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
+          <ROSection title="코너 미리보기">
+            {multi ? (
+              <div className="grid gap-3">
+                {usagePreviews.map((c, i) => (
+                  <figure key={c.id} className="rounded-[8px] bg-[#eef0f6] p-3">
+                    <figcaption className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-white text-[10px] font-bold tabular-nums text-slate-500 ring-1 ring-slate-200">{i + 1}</span>
+                      <span className="truncate">{c.name}</span>
+                    </figcaption>
+                    <div className={cn('pointer-events-none', PREVIEW_H)}>
+                      <DevicePreview corner={c} fit="contain" align="center-middle" />
+                    </div>
+                  </figure>
+                ))}
+              </div>
+            ) : singlePreview}
+          </ROSection>
+        </div>
+        <div className="min-w-[300px] flex-1 space-y-5">
           {infoContent}
           {variationsContent}
         </div>
-      ) : (
-        /* 단일 — 미리보기 + 정보. 폭이 좁으면(임베드 패널 등) 정보가 미리보기 '아래'로 자연스럽게 내려가
-           per-char로 터지지 않게 flex-wrap으로 배치(뷰포트 breakpoint가 아니라 실제 컨테이너 폭 기준). */
-        <div className="flex flex-wrap items-start gap-5">
-          <div className="w-[420px] max-w-full shrink-0">
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">미리보기 · 조합 결과
-              {isBanner && <span className="ml-1 font-normal text-slate-400">· 현재 사용 중인 배너 {bannerPreviews.length}개</span>}
-              {useReal && <span className="ml-1 font-normal text-slate-400">· 실제 사용 코너</span>}
-              {useReal && <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">승인 완료</span>}
-            </p>
-            {singlePreview}
-          </div>
-          <div className="min-w-[300px] flex-1 space-y-5">
-            {infoContent}
-            {variationsContent}
-          </div>
-        </div>
-      )}
-      {/* 상세 정보 — 기본 정보 아래. 실제 코너 + 전시화면 맵핑(클릭 시 빌더). */}
-      <div className="border-t border-[#dce0e5] pt-5">{usageContent}</div>
+      </div>
+
+      {/* 상세 정보 — 전체 폭, 미리보기·정보 아래. 실제 코너 + 전시화면 맵핑(클릭 시 빌더). */}
+      {usageContent}
     </div>
   );
 }
