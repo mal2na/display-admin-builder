@@ -1670,7 +1670,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             ...compositionToPreviewCorner({
               base, detail: detailValid, composition: shownBlocks,
               mainTitle: useTitle ? (mainTitleText || 'Title') : null,
-              subTitle: useSub ? (subTitleText || 'SubTitle') : null,
+              // 코너 카드의 타이틀 밑 줄 = 라벨 텍스트(ButtonText). 서브타이틀 아님(2026-10-29(2) 사용자 요청).
+              subTitle: useSub ? (subTitleText || 'ButtonText') : null,
               placeholder: guidePreview && !mainTitleText && !subTitleText,
               emptyImages: guidePreview, // 신규 등록·수정 중 다른 case는 이미지/배너를 빈 가이드 슬롯으로. 편집 중인 그 case만 실제 이미지 유지.
               forceBanner: optBanner,
@@ -1950,7 +1951,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             <div className={cn('order-1', !showStep(0) && 'hidden')}>
               <FormCard n={1} title="코너 기본 정보"
                 aside={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}>
-                <div className="border-y border-[#dce0e5]">{basicPickers}{metaFields}</div>
+                <div className="border-t border-[#dce0e5]">{basicPickers}{metaFields}</div>
               </FormCard>
             </div>
             )}
@@ -2029,7 +2030,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         <CornerStudio
           storageKey={`ct:${row.id || 'new'}`}
           layout={detail}
-          basicInfo={<div className="border-y border-[#dce0e5]">{basicPickers}{metaFields}</div>}
+          basicInfo={<div className="border-t border-[#dce0e5]">{basicPickers}{metaFields}</div>}
           registerResult={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}
           itemCount={
             <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-t border-[#eef0f3]">

@@ -192,9 +192,12 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey, onOpt
       {/* 아이템(요소) — 형태(Variants) + 고정 필드 + 노출 개수(아이템에 묶음) */}
       {itemFields.length > 0 && (
         <GroupBox badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
-          <FieldTableRow label="이미지 형태" keyName="Variants">
-            <VariantControl layout={m.layout ?? layout} value={safeVariant} onChange={editable ? chooseVariant : undefined} disabled={!editable} />
-          </FieldTableRow>
+          {/* 형태(Variants) = 가로형 카드 크기(Small/Medium/Large)만. 세로형은 이미지 형태 불필요 → 숨김(2026-10-29(2) 사용자 요청: 상품형 스튜디오와 동일). */}
+          {!/세로/.test((m.layout ?? layout) ?? '') && (
+            <FieldTableRow label="이미지 형태" keyName="Variants">
+              <VariantControl layout={m.layout ?? layout} value={safeVariant} onChange={editable ? chooseVariant : undefined} disabled={!editable} />
+            </FieldTableRow>
+          )}
           {itemFields.map(fixedRow)}
           {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} />}
         </GroupBox>

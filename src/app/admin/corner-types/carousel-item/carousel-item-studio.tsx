@@ -222,16 +222,22 @@ function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children 
 }
 
 // ── 미리보기: CarouselItem 카드 ───────────────────────────────
-// 가로형 카드 크기 = Variants(Small/Medium/Large). DS CarouselItem 형태 변형(2026-10-28 사용자 요청).
-const H_VARIANT_WIDTH: Record<string, number> = { Small: 112, Medium: 140, Large: 170 };
+// 가로형 카드 크기 = Variants(Small/Medium/Large). DS CarouselItem 형태 변형.
+//  Small=112 정사각 / Medium=폭 그대로·이미지만 세로로 길게(aspect 4:5) / Large=170 정사각 (2026-10-29(2) 사용자 요청).
+const H_VARIANT: Record<string, { w: number; aspect: string }> = {
+  Small: { w: 112, aspect: 'aspect-square' },
+  Medium: { w: 112, aspect: 'aspect-[4/5]' },
+  Large: { w: 170, aspect: 'aspect-square' },
+};
 function ItemCard({ s, w }: { s: CarouselItemSpec; w?: number }) {
   const pg = s.priceGroup; const cap = s.caption;
   const line1 = [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null].filter(Boolean);
   const line2 = [cap.caption03.show ? cap.caption03.value : null].filter(Boolean);
-  const width = w ?? H_VARIANT_WIDTH[s.variant] ?? 118; // Small/Medium/Large 로 카드 폭 변경
+  const v = H_VARIANT[s.variant] ?? H_VARIANT.Small;
+  const width = w ?? v.w; // Small/Medium/Large — 폭은 Small/Large만 변경, Medium은 세로(이미지 비율)로만
   return (
     <div className="flex shrink-0 flex-col gap-1.5" style={{ width }}>
-      <div className="flex aspect-square w-full items-center justify-center rounded-[12px] bg-[#eef0f3] text-[#b3b9c0]">
+      <div className={cn('flex w-full items-center justify-center rounded-[12px] bg-[#eef0f3] text-[#b3b9c0]', v.aspect)}>
         {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full rounded-[12px] object-cover" /> : <ImageIcon className="h-5 w-5" />}
       </div>
       <div className="flex flex-col gap-0.5">
@@ -322,19 +328,19 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
     : cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
   return (
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
-      className={cn('overflow-hidden rounded-[28px] border-2 bg-white shadow-[0_10px_30px_rgba(20,22,40,0.14)] transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'))}>
+      className={cn('overflow-hidden rounded-[28px] border-2 bg-white shadow-[0_2px_12px_rgba(20,22,40,0.13)] transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'))}>
       {hasBanner && (spec.bannerSrc ? (
         /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="aspect-[16/10] w-full object-cover" />
       ) : (
         // 배너 — 단색(그라데이션 제거), 혜택·오퍼형과 동일 비율(aspect-16/10)·동일 색(2026-10-29(2) 사용자 요청).
         <div className="flex aspect-[16/10] w-full items-center justify-center bg-[#eef0f3] text-[12px] font-medium text-slate-500">Banner</div>
       ))}
-      <p className="whitespace-pre-line px-5 pt-4 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
+      <p className="whitespace-pre-line px-[28px] pt-4 text-[16px] font-bold leading-snug text-[#1a1a1a]">{spec.title}</p>
       {/* 버튼 텍스트(ButtonText) — 타이틀 바로 밑 텍스트. 모든 레이아웃 공통(2026-10-28 사용자 요청: CTA와 분리). */}
-      {spec.buttonText.show && <p className="mt-1 px-5 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
+      {spec.buttonText.show && <p className="mt-1 px-[28px] text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
       {/* 칩(Chip) 옵션 — 상단 카테고리 탭(2026-10-28 사용자 요청: 배너·칩·CTA 옵션 가로/세로 공통) */}
       {spec.chipOn && (
-        <div className="mt-2 flex gap-1.5 overflow-x-auto px-5">
+        <div className="mt-2 flex gap-1.5 overflow-x-auto px-[28px]">
           {['Chip', 'Chip', 'Chip'].map((c, i) => (
             <span key={i} className={cn('flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12px]', i === 0 ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>{c}</span>
           ))}
@@ -342,7 +348,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       )}
       {vertical ? (
         // 세로형 = 세로 리스트. 행 구분선 제거(2026-10-28 사용자 요청). 실제 노출 개수는 빌더에서, 미리보기는 대표 4건.
-        <div className="mt-1 flex flex-col px-5 pb-2">
+        <div className="mt-1 flex flex-col px-[28px] pb-2">
           {[0, 1, 2].map((i) => (
             <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
               <ItemRow s={spec.item} />
@@ -350,7 +356,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
           ))}
         </div>
       ) : (
-      <div className="mt-2 flex gap-2 overflow-x-auto px-5 pb-2">
+      <div className="mt-2 flex gap-2 overflow-x-auto px-[28px] pb-2">
         {[0, 1, 2].map((i) => (
           <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
             <ItemCard s={spec.item} />
@@ -360,7 +366,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       )}
       {/* CTA — 카드 하단 전체폭 버튼(Label ›). 버튼 텍스트와 별개(2026-10-28 사용자 요청). 레거시 스펙(cta 없음) 방어. */}
       {spec.cta?.show && (
-        <div className="px-5 pb-4 pt-1">
+        <div className="px-[28px] pb-4 pt-1">
           <div className="flex w-full items-center justify-center gap-0.5 rounded-full border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.cta?.label || 'Label'} <span className="text-[#b3b9c0]">›</span></div>
         </div>
       )}
@@ -538,8 +544,17 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
   //  세로형은 케이스별로 가격을 쓰기도(넷플릭스 요금제) 안 쓰기도(데이터량 안내) 해서 가격을 옵션으로 둔다(2026-10-28 사용자 요청).
   return (
     <div>
-        {/* 형태(Variants) — 세로형은 제외(2026-10-29(2) 사용자 요청: 불필요). 가로형만 카드 크기(Small/Medium/Large) 선택. */}
-        {!vertical && <Prop name="형태(Variants)" desc="카드 크기"><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>}
+        {/* 형태(Variants) — 세로형은 제외(2026-10-29(2) 사용자 요청: 불필요). 가로형만 카드 크기(Small/Medium/Large) 선택. 라디오 버튼(비상품형 VariantControl과 동일, 2026-10-29(2)). */}
+        {!vertical && <Prop name="형태(Variants)" desc="카드 크기">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+            {variantOpts.map((o) => (
+              <label key={o} className="flex cursor-pointer items-center gap-1.5 text-[13px]">
+                <input type="radio" name="variantSel" checked={variantVal === o} onChange={() => set('variant', o)} className="h-4 w-4 accent-[#3617ce]" />
+                <span className={cn('whitespace-nowrap', variantVal === o ? 'font-medium text-slate-700' : 'text-slate-500')}>{o}</span>
+              </label>
+            ))}
+          </div>
+        </Prop>}
         <ChkRow label="아이템 이미지(ImageSrc)" checked disabled />
         <ChkRow label="아이템 타이틀(Title)" checked disabled />
         {/* 가격·할인율(·기간) — 컬럼 분할 그리드 + 종속(가격 미사용이면 나머지 off+비활성) */}

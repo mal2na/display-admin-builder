@@ -13,10 +13,15 @@ const CARD_PAD_X = 'px-[28px]';
 const CARD_PAD = `${CARD_PAD_X} py-[30px]`;
 const CARD_PAD_BARCODE = `${CARD_PAD_X} py-[32px]`; // 바코드 카드는 레퍼런스 h:163 px:28 py:32 — 세로만 +2
 const CARD_RADIUS = 'rounded-[28px]';
-// 코너 UI 카드를 배경 위로 '떠 보이게' 하는 플로팅 쉐도우(2026-10-29(2) 사용자 요청: 코너 미리보기에서 코너 UI 뒤 쉐도우).
-const CARD_FLOAT_SHADOW = 'shadow-[0_10px_30px_rgba(20,22,40,0.14)]';
-// 가로형(CarouselItem) 카드 크기 변형 폭 — 상품형 스튜디오(H_VARIANT_WIDTH)와 동일 수치로 통일(2026-10-29(2)).
-const CARD_SIZE_W: Record<string, string> = { Small: 'w-[112px]', Medium: 'w-[140px]', Large: 'w-[170px]' };
+// 코너 UI 카드를 배경 위로 '떠 보이게' 하는 플로팅 쉐도우(2026-10-29(2) 사용자 요청).
+//  미리보기 박스(section)가 overflow-hidden이라 큰 쉐도우는 잘려 '보더'처럼 보임 → 본문 패딩(16px) 안에 들어오는 작은 블러로.
+const CARD_FLOAT_SHADOW = 'shadow-[0_2px_12px_rgba(20,22,40,0.13)]';
+// 가로형(CarouselItem) 카드 크기 변형 — 상품형 스튜디오(H_VARIANT)와 동일: Small 112 정사각 / Medium 폭 그대로·이미지만 세로(4:5) / Large 170 정사각(2026-10-29(2)).
+const CARD_SIZE: Record<string, { w: string; aspect: string }> = {
+  Small: { w: 'w-[112px]', aspect: 'aspect-square' },
+  Medium: { w: 'w-[112px]', aspect: 'aspect-[4/5]' },
+  Large: { w: 'w-[170px]', aspect: 'aspect-square' },
+};
 // 업무 진입형 chip형(퀵칩 라벤더 카드)은 일반 카드 패딩이 과해 보여 더 타이트하게(상하좌우, 2026-10-01 사용자 요청).
 const CHIP_CARD_PAD = 'px-[12px] py-[10px]';
 
@@ -196,10 +201,10 @@ function ProductCard({ component, shape, cardSize, reason, titleLines, emphasis 
   const cta = first(component.atoms, 'CTA');
   const square = shape === '1:1' || shape === '정사각형';
   const wide = shape === '4:3';
-  // 가로형 카드 크기 변형(Small/Medium/Large) — 설정 시 폭을 변형값으로, 이미지는 정사각(상품형 스튜디오 ItemCard와 동일). grid/emphasis는 제외.
-  const sizeCls = !grid && !emphasis ? CARD_SIZE_W[cardSize ?? ''] : undefined;
-  const ratioCls = emphasis ? 'aspect-[16/10]' : grid ? (square ? 'aspect-square' : 'aspect-[4/3]') : sizeCls ? 'aspect-square' : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
-  const wCls = grid ? 'w-full' : emphasis ? 'w-[224px]' : sizeCls ? sizeCls : square ? 'w-[150px]' : wide ? 'w-[168px]' : 'w-[156px]';
+  // 가로형 카드 크기 변형(Small/Medium/Large) — 상품형 스튜디오 ItemCard와 동일: Medium은 폭 그대로·이미지만 세로로. grid/emphasis는 제외.
+  const sz = !grid && !emphasis ? CARD_SIZE[cardSize ?? ''] : undefined;
+  const ratioCls = emphasis ? 'aspect-[16/10]' : grid ? (square ? 'aspect-square' : 'aspect-[4/3]') : sz ? sz.aspect : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
+  const wCls = grid ? 'w-full' : emphasis ? 'w-[224px]' : sz ? sz.w : square ? 'w-[150px]' : wide ? 'w-[168px]' : 'w-[156px]';
   const nameCls = titleLines === 2 ? 'line-clamp-2' : 'truncate';
   return (
     <div className={cn('shrink-0', wCls)}>
