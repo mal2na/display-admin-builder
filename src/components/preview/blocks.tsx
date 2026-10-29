@@ -313,6 +313,8 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
 function BannerCarouselBlock({ corner }: { corner: PreviewCorner }) {
   const list = corner.components ?? [];
   if (list.length === 0) return null;
+  // 배너 단일형 = 스와이프(캐러셀) 없이 배너 1장만(2026-10-29(2) 사용자 요청).
+  if (/단일/.test(corner.layoutDetail ?? '')) return <BannerCard component={list[0]} sizeDetail={corner.layoutDetail} />;
   return (
     <BannerCarousel
       options={parseBannerOptions(corner.bannerOptions)}
@@ -768,7 +770,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           <Sparkles className="h-3 w-3" /> CVM 자동 보충 {corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
         </div>
       )}
-      {corner.moreButtonUse && (
+      {corner.moreButtonUse && !isBanner && (
         <div className="pt-1 text-center">
           <span className="flex w-full items-center justify-center gap-0.5 rounded-[12px] border border-slate-300 bg-white px-4 py-2 text-[12px] font-medium text-slate-600">
             {corner.moreButtonLabel || '더보기'} <ChevronRight className="h-3 w-3" />

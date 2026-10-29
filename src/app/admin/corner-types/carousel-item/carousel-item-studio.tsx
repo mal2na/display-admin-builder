@@ -327,7 +327,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       {hasBanner && (spec.bannerSrc ? (
         /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="h-[160px] w-full object-cover" />
       ) : (
-        <div className="flex h-[160px] w-full items-center justify-center bg-[#eceef1] text-[11px] text-[#b3b9c0]">Banner</div>
+        <div className="flex h-[160px] w-full items-center justify-center bg-gradient-to-br from-indigo-200 to-slate-300 text-[12px] font-medium text-slate-600">Banner</div>
       ))}
       <p className="whitespace-pre-line px-3 pt-3 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
       {/* 버튼 텍스트(ButtonText) — 타이틀 바로 밑 텍스트. 모든 레이아웃 공통(2026-10-28 사용자 요청: CTA와 분리). */}
@@ -392,7 +392,7 @@ export function CornerSpecPreview({ storageKey, layout }: { storageKey: string; 
   const [spec, setSpec] = useState<CardHomeSpec | null>(null);
   useEffect(() => { setSpec(loadCornerSpec(storageKey, layout)); }, [storageKey, layout]);
   return (
-    <div className="mx-auto w-full max-w-[300px]">
+    <div className="w-full">
       {spec ? <CardPreview spec={spec} layout={layout} /> : <div className="h-[360px] animate-pulse rounded-[16px] bg-[#f1f3f5]" />}
     </div>
   );
@@ -561,7 +561,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 }
 
 // ── 스튜디오 — 좌: 고정 미리보기 · 우: 1.기본 정보 + 2.코너 정보/속성(클릭 전환) ──
-export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource, layout }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode; layout?: string }) {
+export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource, layout, itemCount }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode; layout?: string; itemCount?: React.ReactNode }) {
   const [spec, setSpec] = useState<CardHomeSpec>(() => defaultSpec(layout));
   const [sel, setSel] = useState<'card' | 'item'>('card'); // 미리보기 클릭 → 코너 정보(card) / 코너 속성(item)
   useEffect(() => {
@@ -589,8 +589,9 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
         {/* 코너 미리보기 — 읽기 상세와 동일하게 타이틀 포함 카드(박스)로 감쌈(2026-10-29(2) 사용자 요청). */}
         <section className="overflow-hidden rounded-[12px] border border-[#dce0e5] bg-white">
           <div className="px-4 py-3.5"><h3 className="text-[20px] font-bold leading-[1.3] text-slate-900">코너 미리보기</h3></div>
-          <div className="bg-[#f3f4f7] px-4 pb-4 pt-0">
-            <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} layout={layout} />
+          <div className="bg-[#f3f4f7] px-4 pb-4 pt-4">
+            {/* 클릭 불가(표시 전용) — 코너↔속성 선택 제거(2026-10-29(2) 사용자 요청). 우측 사용/미사용만 제어. */}
+            <CardPreview spec={spec} layout={layout} />
           </div>
         </section>
         <button type="button" onClick={reset}
@@ -626,6 +627,8 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
                 <span className="text-[11px] text-[#8b949e]">· 리스트에서 반복되는 카드 1개 (상품 이미지·타이틀·가격)</span>
               </div>
               <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />
+              {/* 노출 개수 — 아이템(요소) 하위(2026-10-29(2) 사용자 요청). 상위 폼의 minItems/maxItems와 연동. */}
+              {itemCount}
             </div>
           </div>
         </Panel>

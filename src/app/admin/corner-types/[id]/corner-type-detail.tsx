@@ -392,7 +392,16 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
                     <ROGroup badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)">{cornerRows.map(renderRow)}</ROGroup>
                   )}
                   {itemRows.length > 0 && (
-                    <ROGroup badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">{itemRows.map(renderRow)}</ROGroup>
+                    <ROGroup badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
+                      {itemRows.map(renderRow)}
+                      {/* 노출 개수 — 아이템(요소) 하위(2026-10-29(2) 사용자 요청) */}
+                      <RORow label="노출 개수">
+                        <span className="flex items-center gap-2">
+                          <span className="rounded-[4px] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#454f59]">{row.defaultMinItems ?? '–'}~{row.defaultMaxItems ?? '–'}개</span>
+                          <span className="text-[11px] text-slate-400">· 실제 개수는 빌더에서</span>
+                        </span>
+                      </RORow>
+                    </ROGroup>
                   )}
                 </div>
               );
@@ -450,7 +459,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   // 단일 미리보기(배너형 / 단일 케이스 / 미배치 샘플) — 폰 프레임 없이 카드 그대로 축소.
   //  BG 영역은 모든 유형 동일 고정 높이(PREVIEW_H), 콘텐츠는 세로 중앙 정렬 → 배너처럼 짧은 유형도 가운데(2026-09-29 사용자 요청).
   const singlePreview = (
-    <div className={cn('overflow-y-auto rounded-[8px] bg-[#eef0f6] p-4', PREVIEW_H)}>
+    <div className={PREVIEW_H}>
       {isStudio ? (
         // 상품형 — 스튜디오에서 저장한 코너 스펙(배너·타이틀·CTA·상품카드·배지)을 렌더. 세로형이면 세로 리스트.
         <CornerSpecPreview storageKey={specKey} layout={row.typeDetail ?? undefined} />
@@ -474,7 +483,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {/* 미리보기(좌·고정폭 340·sticky) + 정보(우). 폭 좁으면 정보가 아래로. 수정 폼과 동일 폭·sticky(2026-10-29(2) 사용자 요청). */}
       <div className="flex flex-wrap items-start gap-5">
         <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
-          <ROSection title="코너 미리보기" collapsible={false}>
+          <ROSection title="코너 미리보기" collapsible={false} bodyClass="max-h-[72vh] overflow-y-auto bg-[#eef0f6] px-4 pb-4 pt-4">
             {multi ? (
               <div className="grid gap-3">
                 {usagePreviews.map((c, i) => (

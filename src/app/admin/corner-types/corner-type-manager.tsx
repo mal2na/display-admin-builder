@@ -1658,7 +1658,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       <div className="flex flex-wrap items-center gap-2 px-4 py-3.5">
         <h3 className="text-[20px] font-bold leading-[1.3] text-slate-900">코너 미리보기</h3>
       </div>
-      <div className="max-h-[72vh] overflow-y-auto bg-[#eef0f6] px-4 pb-4 pt-0">
+      <div className="max-h-[72vh] overflow-y-auto bg-[#eef0f6] px-4 pb-4 pt-4">
         {(() => {
           // 코너 속성 옵션(배너·칩·CTA) 토글 → 미리보기 반영(2026-10-29(2) 사용자 요청). 옵션에 없는 유형은 undefined로 기존 동작 유지.
           const optBanner = cornerOpts['배너'];
@@ -2000,6 +2000,21 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           layout={detail}
           basicInfo={<div>{basicPickers}{metaFields}</div>}
           registerResult={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}
+          itemCount={
+            <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">
+              <div className="flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
+                <span className="text-[12px] font-medium text-[#1a1a1a]">노출 개수</span>
+                <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">(count)</span>
+              </div>
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5 px-3.5 py-3 text-[13px]">
+                <input type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
+                <span className="text-slate-400">~</span>
+                <input type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
+                <span className="text-[12px] text-slate-500">개</span>
+                <span className="text-[11px] text-slate-400">· 코너에 노출할 개수</span>
+              </div>
+            </div>
+          }
         />
       )}
 
