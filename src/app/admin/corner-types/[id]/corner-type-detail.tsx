@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Pencil, Check, Minus, ExternalLink } from 'lucide-react';
 import { CornerTypeForm, DevicePreview, cornerRowPreview, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo, type BannerCampaignOption, type ProductOption } from '../corner-type-manager';
-import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec } from '@/lib/display-taxonomy';
+import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL } from '@/lib/display-taxonomy';
 import { CornerFieldList } from '../corner-fields';
 import { CornerSpecPreview, loadCornerSpec } from '../carousel-item/carousel-item-studio';
 import { CornerTypeReviewBar, cornerTypeReviewIssues } from './corner-type-review-bar';
@@ -318,7 +318,9 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   const infoContent = (
     <div className="space-y-6">
       <ROSection title="코너 기본 정보">
+      {/* 수정 폼(기본 정보)과 동일한 필드·순서: ID → 유형 → 배열 → 플랫폼 → 사용 여부 → 승인상태 → 설명(2026-10-29(2) 사용자 요청). */}
       <ROTable>
+      <RORow label="코너 유형 ID"><span className="font-mono text-[12px] text-slate-600">{row.typeId}</span></RORow>
       <RORow label="코너 유형">
         <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold">{cornerTypeBi(row.baseCategory)}</span>
         {cornerTypePurpose(row.baseCategory) && <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{cornerTypePurpose(row.baseCategory)}</p>}
@@ -329,26 +331,13 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
         {row.bigBanner && <span className="ml-1.5 rounded border border-dashed border-indigo-400 bg-indigo-50/60 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">빅배너</span>}
       </RORow>
       <RORow label="운영 플랫폼">{platforms.length ? platforms.join(', ') : '—'}</RORow>
-      <RORow label="코너 유형 ID"><span className="font-mono text-[12px] text-slate-600">{row.typeId}</span></RORow>
-      {row.componentType && <RORow label="컴포넌트 유형">{row.componentType}</RORow>}
-      {row.markupId && <RORow label="마크업 ID"><span className="font-mono text-[12px] text-slate-600">{row.markupId}</span></RORow>}
-      {row.cvmFields && <RORow label="CVM 연동 필드"><span className="font-mono text-[11.5px] text-slate-600">{row.cvmFields}</span></RORow>}
-      {/* 기본 문구 제거(2026-10-14 사용자 요청) — 코너 유형은 껍데기(규격)만. 구체 문구(타이틀·서브)는 빌더에서 채운다. */}
-      {row.defaultCardShape && <RORow label="카드 모양">{row.defaultCardShape}</RORow>}
-      {row.description && <RORow label="설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description}</span></RORow>}
-      {/* 코너 정보·속성은 아래 별도 섹션으로 분리(2026-10-28 사용자 요청: 전 페이지 '기본 정보 / 코너 정보·속성'으로 통일). */}
-      {/* 상품형은 기본값(정렬·더보기 등)을 코너 속성/버튼 텍스트로 관리 → 기본값 행 숨김(2026-10-19 사용자 요청) */}
-      {!isStudio && hasDefaults && (
-        <RORow label="기본값">
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
-            {/* 상품형은 노출 개수를 코너 속성(스튜디오)에서 관리 → 기본값에서 숨김(2026-10-19 사용자 요청) */}
-            {!isStudio && (row.defaultMinItems != null || row.defaultMaxItems != null) && <span>노출 개수 <b className="text-foreground">{row.defaultMinItems ?? '–'}~{row.defaultMaxItems ?? '–'}</b></span>}
-            {row.defaultSortStrategy && <span>정렬 <b className="text-foreground">{SORT_LABEL[row.defaultSortStrategy] ?? row.defaultSortStrategy}</b></span>}
-            {row.defaultRecSource && <span>추천 수급 <b className="text-foreground">{row.defaultRecSource}</b></span>}
-            {row.defaultMoreButton && <span>더보기 <b className="text-foreground">{row.defaultMoreButtonLabel || '사용'}</b></span>}
-          </div>
-        </RORow>
-      )}
+      <RORow label="사용 여부">
+        <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', row.active ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground')}>{row.active ? '사용' : '미사용'}</span>
+      </RORow>
+      <RORow label="승인상태">
+        <span className="rounded-full bg-[#e8ecef] px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
+      </RORow>
+      <RORow label="코너 유형 설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description || '—'}</span></RORow>
       </ROTable>
       </ROSection>
 
