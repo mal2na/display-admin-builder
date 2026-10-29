@@ -156,7 +156,7 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
         return { ...base, name: '배너', atoms: [
           atom({ name: '타이틀', atomType: 'TEXT', content: 'Title' }),
           atom({ name: '디스크립션', atomType: 'INFO', content: 'SubTitle' }),
-          atom({ name: '이미지', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png' }),
+          atom({ name: 'ImageSrc', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png' }),
         ] };
       case '정보형':
         // 프로필형(CardHome Profile) = 프로필 이미지 + 고객명(Title) + 고객번호(SubTitle) + 버튼(Button). ProfileCard로 렌더.
@@ -197,13 +197,13 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
         // 콘텐츠 안내형(영화 등) = 이미지 + 타이틀 + 캡션(평점). 가격 없음 — 코너 속성(Title·Caption01)과 일치(2026-10-29(2) 사용자 요청).
         if (ctx?.base === '콘텐츠 안내형') {
           return { ...base, name: '콘텐츠', atoms: [
-            ...(b.image !== false ? [atom({ name: '이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png' })] : []),
+            ...(b.image !== false ? [atom({ name: 'ImageSrc', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png' })] : []),
             atom({ name: '상품명', atomType: 'TEXT', content: 'Title' }),
             atom({ name: '캡션', atomType: 'INFO', content: 'Caption01' }),
           ] };
         }
         return { ...base, name: '상품', atoms: [
-          ...(b.image !== false ? [atom({ name: '이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png' })] : []),
+          ...(b.image !== false ? [atom({ name: 'ImageSrc', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png' })] : []),
           atom({ name: '상품명', atomType: 'TEXT', content: 'Title' }),
           ...(b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: 'Badge' })] : []),
           // 가격 그룹(가격 제외 안 함): 할인율 + 가격 — 상품형 스튜디오와 동일하게 99% 99,999원 노출.
