@@ -148,48 +148,49 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
   // 신규 등록 미리보기 = 실제 카피 대신 '슬롯 라벨'(타이틀/디스크립션/혜택 문구 등)로 구조만 보여준다. 로고·이미지는 샘플 유지(레이아웃 확인용).
   if (ctx?.placeholder) {
     const isBenefitList = ctx.base === '혜택·오퍼형' && (ctx.detail ?? '').includes('세로형');
+    // 미리보기 텍스트 = 라벨(영어) 기준. 가격만 실제 값 형태 유지(2026-10-29(2) 사용자 요청).
     switch (b.componentType) {
       case '선택형':
-        return { ...base, name: '탭', selectedIndex: 0, chipVariant: 'contents', atoms: ['메뉴 1', '메뉴 2', '메뉴 3', '메뉴 4'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) };
+        return { ...base, name: '탭', selectedIndex: 0, chipVariant: 'contents', atoms: ['Chip', 'Chip', 'Chip', 'Chip'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) };
       case '배너형':
         return { ...base, name: '배너', atoms: [
-          atom({ name: '타이틀', atomType: 'TEXT', content: '타이틀' }),
-          atom({ name: '디스크립션', atomType: 'INFO', content: '디스크립션' }),
+          atom({ name: '타이틀', atomType: 'TEXT', content: 'Title' }),
+          atom({ name: '디스크립션', atomType: 'INFO', content: 'SubTitle' }),
           atom({ name: '이미지', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png' }),
         ] };
       case '정보형':
         return { ...base, name: '상태', atoms: [
           atom({ name: '값', atomType: 'PRICE', content: '0000' }),
-          atom({ name: '상태', atomType: 'BADGE', content: '상태' }),
-          atom({ name: '라벨', atomType: 'TEXT', content: '라벨' }),
+          atom({ name: '상태', atomType: 'BADGE', content: 'Badge' }),
+          atom({ name: '라벨', atomType: 'TEXT', content: 'Label' }),
           atom({ name: '아이콘', atomType: 'ICON', imageUrl: 'icon:general/Info' }),
         ] };
       case '혜택형':
         return { ...base, name: '혜택', atoms: [
           atom({ name: '로고', atomType: 'ICON', imageUrl: pick(LOGO_POOL, i) }),
-          atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: '혜택 문구' }),
-          atom({ name: '브랜드', atomType: 'INFO', content: '브랜드명' }),
+          atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: 'Title' }),
+          atom({ name: '브랜드', atomType: 'INFO', content: 'SubTitle' }),
         ] };
       case '행동형':
         return { ...base, name: '바로가기', atoms: [
-          atom({ name: '제목', atomType: 'TEXT', content: '메뉴' }),
-          atom({ name: '버튼', atomType: 'CTA', content: '바로가기', linkUrl: '/' }),
+          atom({ name: '제목', atomType: 'TEXT', content: 'Title' }),
+          atom({ name: '버튼', atomType: 'CTA', content: 'ButtonText', linkUrl: '/' }),
         ] };
       case '상품형':
         // 혜택·오퍼형 세로형 = 로고+혜택문구+브랜드(BenefitRow). 그 외 = 카드(이미지+상품명+가격+설명).
         if (isBenefitList) {
           return { ...base, name: '혜택', atoms: [
             atom({ name: '로고', atomType: 'ICON', imageUrl: pick(LOGO_POOL, i) }),
-            atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: '혜택 문구' }),
-            atom({ name: '브랜드', atomType: 'INFO', content: '브랜드명' }),
+            atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: 'Title' }),
+            atom({ name: '브랜드', atomType: 'INFO', content: 'SubTitle' }),
           ] };
         }
         return { ...base, name: '상품', atoms: [
           ...(b.image !== false ? [atom({ name: '이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png' })] : []),
-          atom({ name: '상품명', atomType: 'TEXT', content: '상품명' }),
-          ...(b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: '배지' })] : []),
-          ...(b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: '가격' })] : []),
-          ...(b.desc !== false ? [atom({ name: '설명', atomType: 'INFO', content: '설명' })] : []),
+          atom({ name: '상품명', atomType: 'TEXT', content: 'Title' }),
+          ...(b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: 'Badge' })] : []),
+          ...(b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: '99,999원' })] : []),
+          ...(b.desc !== false ? [atom({ name: '설명', atomType: 'INFO', content: 'SubText' })] : []),
         ] };
       default:
         return { ...base, name: b.componentType, atoms: [] };
@@ -440,7 +441,7 @@ export function compositionToPreviewCorner(opts: {
   const components: PreviewComponent[] = [];
   const ctx = { base: opts.base, detail: opts.detail, placeholder: opts.placeholder, emptyImages: opts.emptyImages };
   // '칩' 옵션 ON → 코너 상단에 콘텐츠 칩 행 1개 주입(옵션 토글을 미리보기에 반영).
-  if (opts.forceChip) components.push({ id: nid(), name: 'ChipContents', componentType: '선택형', selectedIndex: 0, chipVariant: 'contents', atoms: ['Label', 'Label', 'Label', 'Label'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) });
+  if (opts.forceChip) components.push({ id: nid(), name: 'ChipContents', componentType: '선택형', selectedIndex: 0, chipVariant: 'contents', atoms: ['Chip', 'Chip', 'Chip', 'Chip'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) });
   for (const b of opts.composition) for (let i = 1; i <= b.count; i++) components.push(blockComp(b, i, ctx));
   // 세로형+배너 = 요금제 히어로, 가로형+배너 = 아이폰 히어로. 둘 다 상단 히어로 배너(빅배너) 자동 표시.
   const isPlanBanner = opts.base === '상품형' && /세로형\+배너|세로형\(배너\)/.test(opts.detail ?? '');

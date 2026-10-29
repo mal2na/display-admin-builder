@@ -1668,8 +1668,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           const previewC = {
             ...compositionToPreviewCorner({
               base, detail: detailValid, composition: shownBlocks,
-              mainTitle: useTitle ? (mainTitleText || (guidePreview ? '타이틀' : '코너 타이틀')) : null,
-              subTitle: useSub ? (subTitleText || (guidePreview ? '디스크립션' : '서브타이틀')) : null,
+              mainTitle: useTitle ? (mainTitleText || 'Title') : null,
+              subTitle: useSub ? (subTitleText || 'SubTitle') : null,
               placeholder: guidePreview && !mainTitleText && !subTitleText,
               emptyImages: guidePreview, // 신규 등록·수정 중 다른 case는 이미지/배너를 빈 가이드 슬롯으로. 편집 중인 그 case만 실제 이미지 유지.
               forceBanner: optBanner,

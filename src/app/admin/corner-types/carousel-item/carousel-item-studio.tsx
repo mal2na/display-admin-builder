@@ -110,8 +110,8 @@ function normalizeProductItem(it: CarouselItemSpec, vertical: boolean): Carousel
 function defaultSpec(layout?: string): CardHomeSpec {
   return {
     title: 'Title',
-    buttonText: { show: true, label: 'Label' }, // 라벨 텍스트 = 필수(고정)
-    cta: { show: true, label: 'Label' },         // CTA = 옵션
+    buttonText: { show: true, label: 'ButtonText' }, // 라벨 텍스트(ButtonText) = 필수(고정) — 미리보기 라벨 영문 표기(2026-10-29(2))
+    cta: { show: true, label: 'Label' },         // CTA = 옵션 (하단 버튼은 'Label'로 통일)
     bannerSrc: '',
     bannerOn: layout == null || /배너/.test(layout), // 배너 = 옵션
     chipOn: false,                                // 칩 = 옵션(상단 카테고리 탭)
@@ -322,7 +322,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
     : cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
   return (
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
-      className={cn('overflow-hidden rounded-[28px] border-2 bg-white shadow-[0_10px_30px_rgba(20,22,40,0.14)] transition', ro ? 'border-[#dce0e5]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#dce0e5] hover:border-[#c4c9cf]'))}>
+      className={cn('overflow-hidden rounded-[28px] border-2 bg-white shadow-[0_10px_30px_rgba(20,22,40,0.14)] transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'))}>
       {hasBanner && (spec.bannerSrc ? (
         /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="aspect-[16/10] w-full object-cover" />
       ) : (
@@ -335,7 +335,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       {/* 칩(Chip) 옵션 — 상단 카테고리 탭(2026-10-28 사용자 요청: 배너·칩·CTA 옵션 가로/세로 공통) */}
       {spec.chipOn && (
         <div className="mt-2 flex gap-1.5 overflow-x-auto px-5">
-          {['전체', 'Label', 'Label'].map((c, i) => (
+          {['Chip', 'Chip', 'Chip'].map((c, i) => (
             <span key={i} className={cn('flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12px]', i === 0 ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>{c}</span>
           ))}
         </div>

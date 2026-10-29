@@ -722,7 +722,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           )}
           {corner.moreButtonUse && (
             <div className="pt-1 text-center">
-              <span className="flex w-full items-center justify-center gap-0.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-[12px] font-medium text-slate-600">{corner.moreButtonLabel || '더보기'} <ChevronRight className="h-3 w-3" /></span>
+              <span className="flex w-full items-center justify-center gap-0.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-[12px] font-medium text-slate-600">{corner.moreButtonLabel || 'Label'} <ChevronRight className="h-3 w-3" /></span>
             </div>
           )}
         </div>
@@ -775,7 +775,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       {corner.moreButtonUse && !isBanner && (
         <div className="pt-1 text-center">
           <span className="flex w-full items-center justify-center gap-0.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-[12px] font-medium text-slate-600">
-            {corner.moreButtonLabel || '더보기'} <ChevronRight className="h-3 w-3" />
+            {corner.moreButtonLabel || 'Label'} <ChevronRight className="h-3 w-3" />
           </span>
         </div>
       )}
