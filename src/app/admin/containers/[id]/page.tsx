@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { setContainerStatus, setDefaultTemplate, duplicateTemplate } from '../actions';
 import { restoreTemplate } from '@/app/admin/templates/actions';
@@ -58,7 +58,8 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
       },
     },
   });
-  if (!container) notFound();
+  // 없는 ID(재시드로 바뀐 옛 북마크 등)는 404 대신 컨테이너 목록으로 보냄(2026-10-29(2) 사용자 요청: 로컬 404 방지).
+  if (!container) redirect('/admin/containers');
 
   // 활성 / 보관(soft-delete) 템플릿 분리
   const activeTemplates = container.templates.filter((t) => !t.archivedAt);
