@@ -218,20 +218,38 @@ function ROTable({ children }: { children: React.ReactNode }) {
   return <div className="border-y border-[#dce0e5]">{children}</div>;
 }
 
-// 읽기 전용 섹션 카드 — 접이식(컬랩스). 헤더: 타이틀(20px 볼드) + 쉐브론, 밑 보더. 본문: 표 행(2026-10-29(2) 사용자 요청).
-function ROSection({ title, aside, bodyClass, children, defaultOpen = true }: { title: React.ReactNode; aside?: React.ReactNode; bodyClass?: string; children: React.ReactNode; defaultOpen?: boolean }) {
+// 코너(카드)/아이템(요소) 그룹 헤더 — 수정 폼과 동일하게 코/아 배지 + 제목(2026-10-29(2) 사용자 요청).
+function ROGroupHead({ badge, color, title, desc }: { badge: string; color: string; title: string; desc: string }) {
+  return (
+    <div className="mb-1.5 flex items-center gap-1.5 rounded-md bg-[#f8f9fb] px-2.5 py-2">
+      <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] text-[10px] font-bold" style={{ backgroundColor: `${color}1a`, color }}>{badge}</span>
+      <span className="text-[12px] font-bold text-[#454f59]">{title}</span>
+      <span className="text-[11px] text-[#8b949e]">· {desc}</span>
+    </div>
+  );
+}
+
+// 읽기 전용 섹션 카드 — 타이틀(20px 볼드). 타이틀 밑 보더 없음. collapsible=true면 쉐브론으로 접기(2026-10-29(2) 사용자 요청).
+function ROSection({ title, aside, bodyClass, children, defaultOpen = true, collapsible = true }: { title: React.ReactNode; aside?: React.ReactNode; bodyClass?: string; children: React.ReactNode; defaultOpen?: boolean; collapsible?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
+  const shown = collapsible ? open : true;
+  const header = (
+    <>
+      <h3 className="text-[20px] font-bold leading-[1.3] text-slate-900">{title}</h3>
+      <span className="ml-auto flex items-center gap-3">
+        {aside}
+        {collapsible && <ChevronDown className={cn('h-5 w-5 shrink-0 text-[#8b949e] transition-transform', open && 'rotate-180')} />}
+      </span>
+    </>
+  );
   return (
     <section className="overflow-hidden rounded-[12px] border border-[#dce0e5] bg-white">
-      <button type="button" onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 bg-white px-4 py-3.5 text-left transition hover:bg-[#f8f9fb]">
-        <h3 className="text-[20px] font-bold leading-[1.3] text-slate-900">{title}</h3>
-        <span className="ml-auto flex items-center gap-3">
-          {aside}
-          <ChevronDown className={cn('h-5 w-5 shrink-0 text-[#8b949e] transition-transform', open && 'rotate-180')} />
-        </span>
-      </button>
-      {open && <div className={cn('border-t border-[#eef1f4]', bodyClass ?? 'px-4 pb-4 pt-4')}>{children}</div>}
+      {collapsible ? (
+        <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2 bg-white px-4 py-3.5 text-left transition hover:bg-[#f8f9fb]">{header}</button>
+      ) : (
+        <div className="flex w-full items-center gap-2 bg-white px-4 py-3.5">{header}</div>
+      )}
+      {shown && <div className={bodyClass ?? 'px-4 pb-4 pt-0'}>{children}</div>}
     </section>
   );
 }
@@ -337,46 +355,63 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
         studioItems ? (
           // 상품형 — 라벨(코드·옵션/고정 배지) | 사용 상태·값 테이블(2026-10-29(2) 사용자 요청).
           <ROSection title={<>코너 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></>}>
-            <ROTable>
-              {(() => {
-                // 라벨엔 옵션/고정 배지 미표시(라벨 터짐 방지). 가격 + 연속된 할인율·기간은 한 행에서 컬럼 분할(수정 폼과 동일) — 2026-10-29(2) 사용자 요청.
-                type SI = typeof studioItems[number];
-                const rows: ({ price: true; cells: SI[] } | { price: false; cell: SI })[] = [];
-                for (let i = 0; i < studioItems.length; i++) {
-                  const cur = studioItems[i];
-                  if (/^가격/.test(cur.lbl)) {
-                    const grp: SI[] = [cur];
-                    while (i + 1 < studioItems.length && /^(할인율|기간)/.test(studioItems[i + 1].lbl)) { grp.push(studioItems[i + 1]); i++; }
-                    rows.push({ price: true, cells: grp });
-                  } else rows.push({ price: false, cell: cur });
-                }
-                const koOf = (s: string) => s.replace(/\s*\(.*\)\s*/, '').trim();
-                const stateVal = (c: SI) => (
-                  <>
-                    {c.kind === '고정'
-                      ? <span className="text-[12px] font-medium text-slate-400">사용 고정</span>
-                      : <span className={cn('text-[12px] font-semibold', c.on ? 'text-[#00a058]' : 'text-slate-400')}>{c.on ? '사용' : '미사용'}</span>}
-                    {c.on && c.val && <span className="whitespace-pre-line text-slate-500">{c.val}</span>}
-                  </>
+            {(() => {
+              // 라벨엔 옵션/고정 배지 미표시(라벨 터짐 방지). 가격 + 연속된 할인율·기간은 한 행에서 컬럼 분할. 코너(카드)/아이템(요소) 그룹으로 분리(수정 폼과 동일) — 2026-10-29(2) 사용자 요청.
+              type SI = typeof studioItems[number];
+              type Row = { price: true; cells: SI[] } | { price: false; cell: SI };
+              const rows: Row[] = [];
+              for (let i = 0; i < studioItems.length; i++) {
+                const cur = studioItems[i];
+                if (/^가격/.test(cur.lbl)) {
+                  const grp: SI[] = [cur];
+                  while (i + 1 < studioItems.length && /^(할인율|기간)/.test(studioItems[i + 1].lbl)) { grp.push(studioItems[i + 1]); i++; }
+                  rows.push({ price: true, cells: grp });
+                } else rows.push({ price: false, cell: cur });
+              }
+              const koOf = (s: string) => s.replace(/\s*\(.*\)\s*/, '').trim();
+              // 코너(카드) = 배너·칩·CTA·코너 메인 타이틀·라벨 텍스트. 나머지(이미지·타이틀·가격 등) = 아이템(요소).
+              const isCornerRow = (r: Row) => !r.price && /^(배너|칩|CTA|코너 메인 타이틀|라벨 텍스트)/.test(r.cell.lbl);
+              const cornerRows = rows.filter(isCornerRow);
+              const itemRows = rows.filter((r) => !isCornerRow(r));
+              const stateVal = (c: SI) => (
+                <>
+                  {c.kind === '고정'
+                    ? <span className="text-[12px] font-medium text-slate-400">사용 고정</span>
+                    : <span className={cn('text-[12px] font-semibold', c.on ? 'text-[#00a058]' : 'text-slate-400')}>{c.on ? '사용' : '미사용'}</span>}
+                  {c.on && c.val && <span className="whitespace-pre-line text-slate-500">{c.val}</span>}
+                </>
+              );
+              const renderRow = (r: Row, ri: number) => {
+                if (!r.price) return <RORow key={ri} label={koOf(r.cell.lbl)}><span className="flex min-w-0 items-center gap-2">{stateVal(r.cell)}</span></RORow>;
+                const gridCls = r.cells.length >= 3
+                  ? 'grid-cols-[150px_minmax(0,1fr)_96px_minmax(0,1fr)_96px_minmax(0,1fr)]'
+                  : 'grid-cols-[150px_minmax(0,1fr)_96px_minmax(0,1fr)]';
+                return (
+                  <div key={ri} className={cn('grid items-stretch border-b border-[#eef1f4] last:border-b-0', gridCls)}>
+                    {r.cells.flatMap((c, ci) => [
+                      <div key={`l${ci}`} className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[12.5px] font-medium text-slate-600"><span className={c.on ? '' : 'text-slate-400'}>{koOf(c.lbl)}</span></div>,
+                      <div key={`v${ci}`} className="flex min-w-0 items-center gap-2 px-3.5 py-2.5 text-[13px]">{stateVal(c)}</div>,
+                    ])}
+                  </div>
                 );
-                return rows.map((r, ri) => {
-                  if (!r.price) return <RORow key={ri} label={koOf(r.cell.lbl)}><span className="flex min-w-0 items-center gap-2">{stateVal(r.cell)}</span></RORow>;
-                  const gridCls = r.cells.length >= 3
-                    ? 'grid-cols-[150px_minmax(0,1fr)_96px_minmax(0,1fr)_96px_minmax(0,1fr)]'
-                    : 'grid-cols-[150px_minmax(0,1fr)_96px_minmax(0,1fr)]';
-                  return (
-                    <div key={ri} className={cn('grid items-stretch border-b border-[#eef1f4] last:border-b-0', gridCls)}>
-                      {r.cells.flatMap((c, ci) => [
-                        <div key={`l${ci}`} className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[12.5px] font-medium text-slate-600">
-                          <span className={c.on ? '' : 'text-slate-400'}>{koOf(c.lbl)}</span>
-                        </div>,
-                        <div key={`v${ci}`} className="flex min-w-0 items-center gap-2 px-3.5 py-2.5 text-[13px]">{stateVal(c)}</div>,
-                      ])}
+              };
+              return (
+                <div className="space-y-3">
+                  {cornerRows.length > 0 && (
+                    <div>
+                      <ROGroupHead badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)" />
+                      <ROTable>{cornerRows.map(renderRow)}</ROTable>
                     </div>
-                  );
-                });
-              })()}
-            </ROTable>
+                  )}
+                  {itemRows.length > 0 && (
+                    <div>
+                      <ROGroupHead badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)" />
+                      <ROTable>{itemRows.map(renderRow)}</ROTable>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </ROSection>
         ) : (
           <ROSection title={<>코너 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></>}>
@@ -393,7 +428,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
 
   // 상세 정보 — 이 코너 유형을 쓰는 전시화면 + 실제 만든 코너 미리보기(클릭 시 빌더로 이동). 2026-10-06 사용자 요청.
   const usageContent = (
-    <ROSection title={<>상세 정보 · 이 코너 유형을 쓰는 전시화면 <span className="text-[11px] font-normal text-slate-400">· 실제 만든 코너 {usageByCorner.length}개</span></>}>
+    <ROSection title={<>적용 화면 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형을 쓰는 전시화면 · 실제 만든 코너 {usageByCorner.length}개</span></>}>
       {usageByCorner.length === 0 ? (
         <div className="rounded-[8px] border border-dashed border-[#dce0e5] bg-muted/20 p-5 text-center text-[12px] text-muted-foreground">아직 이 코너 유형을 쓰는 전시화면이 없습니다.</div>
       ) : (
@@ -454,7 +489,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {/* 미리보기(좌·고정폭 340·sticky) + 정보(우). 폭 좁으면 정보가 아래로. 수정 폼과 동일 폭·sticky(2026-10-29(2) 사용자 요청). */}
       <div className="flex flex-wrap items-start gap-5">
         <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
-          <ROSection title="코너 미리보기">
+          <ROSection title="코너 미리보기" collapsible={false}>
             {multi ? (
               <div className="grid gap-3">
                 {usagePreviews.map((c, i) => (
