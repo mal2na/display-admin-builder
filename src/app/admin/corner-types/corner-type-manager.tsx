@@ -195,7 +195,8 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   return {
     ...c,
     showImage: row.useImage, showPrice: row.usePrice, showBadge: row.useBadge, showDesc: row.useDesc,
-    moreButtonUse: noMore ? false : row.useMoreButton, moreButtonLabel: row.defaultMoreButtonLabel ?? undefined,
+    // CTA 버튼 문구는 껍데기 placeholder — 코너 유형 미리보기는 저장된 문구(전체보기 등) 대신 항상 'CTA'(2026-10-29(2) 사용자 요청: 전 유형 CTA).
+    moreButtonUse: noMore ? false : row.useMoreButton, moreButtonLabel: 'CTA',
   };
 }
 
@@ -1502,7 +1503,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     // 배너 히어로는 상품 이미지와 독립(bannerImageUrl) — 상품 이미지 OFF에도 배너 유지
     const isBannerArr = d.includes('배너');
     const heroImg = base === '상품형' ? (d.includes('세로형') ? '/assets/ds/plan-hero-expire.png' : '/assets/ds/hero-device.png') : '/assets/ds/hero-plan.png';
-    return { ...c, bigBanner: isBannerArr, bannerImageUrl: isBannerArr ? heroImg : undefined, moreButtonUse: features.useMoreButton, moreButtonLabel: moreLabel || undefined };
+    return { ...c, bigBanner: isBannerArr, bannerImageUrl: isBannerArr ? heroImg : undefined, moreButtonUse: features.useMoreButton, moreButtonLabel: 'CTA' };
   };
 
   // bulk 컴포넌트 속성 패널(DS 그룹형 토글) — 미리보기 우측(고정)에 배치. 모든 배열에 공통 적용.
@@ -1686,7 +1687,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             showDesc: descOn,
             // CTA(더보기) — CTA 옵션이 있는 유형에서만. 업무 진입형·바코드형·배너형은 CTA 옵션이 없어 더보기 미표시.
             moreButtonUse: availOpts.includes('CTA') ? (optCta ?? eff('useMoreButton')) : false,
-            moreButtonLabel: moreLabel || undefined,
+            moreButtonLabel: 'CTA', // 껍데기 placeholder — 전 유형 'CTA' 고정(2026-10-29(2) 사용자 요청)
             // 수급 방식(CVM/운영자 편성)을 미리보기에도 반영 — 빌더와 동일하게 'CVM 개인화 · 미리보기는 폴백' 배지 노출(2026-10-06).
             recSource: recSource || undefined,
             // 형태(Variants) — 가로형만 카드 크기(Small/Medium/Large) 미리보기 반영. 세로형(Profile/Data/Barcode)은 크기 개념 아님.
