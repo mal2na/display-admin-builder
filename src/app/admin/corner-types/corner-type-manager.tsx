@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronRight, ChevronDown, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Check, X, Search, ChevronRight, ChevronLeft, ChevronDown, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles } from 'lucide-react';
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -1265,7 +1265,7 @@ function FormCard({ n, title, hint, aside, defaultOpen = true, bodyClass, childr
           <ChevronDown className={cn('h-4 w-4 shrink-0 text-[#8b949e] transition-transform', open ? 'rotate-180' : '')} />
         </span>
       </button>
-      {open && <div className={cn('border-t border-[#eef0f3]', bodyClass ?? 'px-4 pb-4 pt-4')}>{children}</div>}
+      {open && <div className={bodyClass ?? 'px-4 pb-4 pt-0'}>{children}</div>}
     </section>
   );
 }
@@ -1936,8 +1936,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             <div className={cn('order-1', !showStep(0) && 'hidden')}>
               <FormCard n={1} title="코너 기본 정보"
                 aside={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}>
-                {basicPickers}
-                {metaFields}
+                <div className="border-y border-[#dce0e5]">{basicPickers}{metaFields}</div>
               </FormCard>
             </div>
             )}
@@ -1947,9 +1946,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               <FormCard n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목">
                 {/* 코너 정보·속성 = '코너유형정리' 표 SSOT에서 필수(고정)·옵션(배너·칩·CTA)만 노출(2026-10-28 사용자 요청).
                     저장값(표시 항목 플래그)은 아래 hidden 으로 보존 — 기존 미리보기·데이터 호환. */}
-                <div className="px-1 py-1">
-                  <CornerFieldList key={`cfl-${resetNonce}`} cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} onOptionsChange={setCornerOpts} />
-                </div>
+                <CornerFieldList key={`cfl-${resetNonce}`} cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} onOptionsChange={setCornerOpts} />
                 {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
                 {/* 노출 개수 입력은 CornerFieldList(세부 항목) 안에서 설정한다(2026-10-28 사용자 요청: 여기서 설정).
                     단, 노출 개수가 없는 유형(탭형·단일형·상태안내형·고정필수)은 CountRow가 안 떠서 저장값만 hidden 보존. */}
@@ -2018,7 +2015,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         <CornerStudio
           storageKey={`ct:${row.id || 'new'}`}
           layout={detail}
-          basicInfo={<div>{basicPickers}{metaFields}</div>}
+          basicInfo={<div className="border-y border-[#dce0e5]">{basicPickers}{metaFields}</div>}
           registerResult={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}
           itemCount={
             <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-t border-[#eef0f3]">
@@ -2052,8 +2049,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* 유형 샘플 이미지 제거(2026-09-28) — 컴포넌트 조합의 실시간 미리보기(미리보기·조합 결과)로 통일. 중복 방지. */}
 
-      <div className="flex items-center justify-end gap-2 border-t pt-3">
-        <Button type="button" variant="secondary" size="sm" onClick={onClose}>취소</Button>
+      <div className="flex items-center justify-between gap-2 border-t pt-3">
+        {/* 하단 좌측 '목록'(뒤로가기) — 상단 브레드크럼 제거분 대체(2026-10-29(2) 사용자 요청) */}
+        <Link href="/admin/corner-types" className="inline-flex items-center gap-1 rounded-md border border-[#dce0e5] bg-white px-3 py-1.5 text-[13px] font-medium text-[#454f59] hover:bg-[#f8f9fb]">
+          <ChevronLeft className="h-4 w-4" /> 목록
+        </Link>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>취소</Button>
         {wizard ? (
           <>
             {step > 0 && <Button type="button" variant="secondary" size="sm" onClick={() => setStep((s) => Math.max(0, s - 1))}>이전</Button>}
@@ -2062,8 +2064,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               : <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> 등록</Button>}
           </>
         ) : (
-          <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> {isNew ? '등록' : '저장'}</Button>
-        )}
+            <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> {isNew ? '등록' : '저장'}</Button>
+          )}
+        </div>
       </div>
     </form>
   );

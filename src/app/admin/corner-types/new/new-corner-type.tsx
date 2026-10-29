@@ -39,17 +39,7 @@ export function NewCornerType({ builtOptions, registered = [], bannerCampaigns =
 
   return (
     <div>
-      <div className="flex items-center gap-3">
-        <Link
-          href="/admin/corner-types"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline"
-        >
-          <ChevronLeft className="h-4 w-4" /> 코너 유형 관리
-        </Link>
-        <div className="h-4 w-px bg-border" />
-        <h1 className="text-lg font-semibold">코너 유형 등록</h1>
-      </div>
-
+      {/* 상단 브레드크럼 제거 — 하단 좌측 '목록'(뒤로가기)으로 대체(2026-10-29(2) 사용자 요청: 상품형·비상품형 상단 간격 차이 해소) */}
       <CornerTypeForm
         row={createRow}
         builtOptions={builtOptions}

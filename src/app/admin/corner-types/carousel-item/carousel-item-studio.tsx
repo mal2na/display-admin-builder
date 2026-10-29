@@ -216,7 +216,7 @@ function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children 
           <ChevronDown className={cn('h-4 w-4 shrink-0 text-[#8b949e] transition-transform', open ? 'rotate-180' : '')} />
         </span>
       </button>
-      {open && <div className={cn('border-t border-[#eef0f3]', bodyClass ?? 'px-4 pb-4 pt-4')}>{children}</div>}
+      {open && <div className={bodyClass ?? 'px-4 pb-4 pt-0'}>{children}</div>}
     </section>
   );
 }
@@ -609,9 +609,9 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
         )}
 
         {/* 2. 코너 정보 · 속성 — 하나로 합쳐 '현재 쓰는 항목'만 노출(2026-10-27 사용자 요청). 탭 제거. */}
-        <Panel n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목" bodyClass="">
+        <Panel n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목">
           {/* 코너(카드)=카드 전체에 1개 · 아이템(요소)=리스트에서 반복되는 카드 1개. 같은 '타이틀'이라도 소속이 달라 그룹으로 구분(2026-10-27 사용자 요청). */}
-          <div className="space-y-3 p-4">
+          <div className="space-y-3">
             <div className="border-y border-[#dce0e5]">
               <div className="flex items-center gap-1.5 border-b border-[#eef0f3] bg-[#f8f9fb] px-3 py-2">
                 <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] bg-[#3617ce]/10 text-[10px] font-bold text-[#3617ce]">코</span>
