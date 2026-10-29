@@ -433,7 +433,8 @@ function InfoCard({ component }: { component: PreviewComponent }) {
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="text-[17px] font-bold leading-tight text-slate-900">{resolveCvmSample(value?.content) || component.name}</p>
-          {badge && <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">{resolveCvmSample(badge.content)}</span>}
+          {/* 배지 = 상태 안내(납부완료 등) — DS 참고: 튀지 않는 중립 회색 칩(2026-10-29(2) 사용자 요청). */}
+          {badge && <span className="rounded-[4px] bg-[#eef0f3] px-1.5 py-0.5 text-[10px] font-medium text-[#8b949e]">{resolveCvmSample(badge.content)}</span>}
         </div>
         {label && <p className="truncate text-[12px] text-slate-400">{resolveCvmSample(label.content)}</p>}
       </div>
