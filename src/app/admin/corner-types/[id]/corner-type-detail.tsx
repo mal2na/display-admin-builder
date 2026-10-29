@@ -218,15 +218,20 @@ function ROTable({ children }: { children: React.ReactNode }) {
   return <div className="border-y border-[#dce0e5]">{children}</div>;
 }
 
-// 읽기 전용 섹션 카드 — 타이틀(헤더)까지 한 박스 안에(2026-10-29(2) 사용자 요청: 기본정보 타이틀도 박스 안에). 헤더: 액센트 바 + 볼드, 본문: 표 행.
-function ROSection({ title, aside, bodyClass, children }: { title: React.ReactNode; aside?: React.ReactNode; bodyClass?: string; children: React.ReactNode }) {
+// 읽기 전용 섹션 카드 — 접이식(컬랩스). 헤더: 타이틀(20px 볼드) + 쉐브론, 밑 보더. 본문: 표 행(2026-10-29(2) 사용자 요청).
+function ROSection({ title, aside, bodyClass, children, defaultOpen = true }: { title: React.ReactNode; aside?: React.ReactNode; bodyClass?: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <section className="overflow-hidden rounded-[12px] border border-[#dce0e5] bg-white">
-      <div className="flex items-center gap-2 bg-white px-4 pt-3.5 pb-1">
-        <h3 className="text-[14.5px] font-bold text-slate-900">{title}</h3>
-        {aside && <span className="ml-auto flex items-center">{aside}</span>}
-      </div>
-      <div className={bodyClass ?? 'px-4 pb-4 pt-1'}>{children}</div>
+      <button type="button" onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 bg-white px-4 py-3.5 text-left transition hover:bg-[#f8f9fb]">
+        <h3 className="text-[20px] font-bold leading-[1.3] text-slate-900">{title}</h3>
+        <span className="ml-auto flex items-center gap-3">
+          {aside}
+          <ChevronDown className={cn('h-5 w-5 shrink-0 text-[#8b949e] transition-transform', open && 'rotate-180')} />
+        </span>
+      </button>
+      {open && <div className={cn('border-t border-[#eef1f4]', bodyClass ?? 'px-4 pb-4 pt-4')}>{children}</div>}
     </section>
   );
 }

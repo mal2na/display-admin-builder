@@ -107,7 +107,7 @@ function CountRow({ min, max, editable }: { min: number; max: number; editable?:
 }
 
 // 코너 유형 + 배열 → 코너(카드)/아이템(요소) 속성 테이블 + 형태(Variants) + 노출 개수(아이템에 묶음).
-export function CornerFieldList({ cornerType, layout, editable, optionKey }: { cornerType?: string | null; layout?: string | null; editable?: boolean; optionKey?: string }) {
+export function CornerFieldList({ cornerType, layout, editable, optionKey, onOptionsChange }: { cornerType?: string | null; layout?: string | null; editable?: boolean; optionKey?: string; onOptionsChange?: (o: Record<string, boolean>) => void }) {
   const m = cornerFieldSpec(cornerType, layout);
   const opts = m?.options ?? [];
   // 옵션(배너·칩·CTA) 사용/미사용 — editable 이면 전환+로컬 보존, 아니면 '사용' 고정 표시.
@@ -116,6 +116,8 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey }: { c
     if (!editable || !optionKey) return;
     try { const raw = localStorage.getItem(optionKey); if (raw) setOptOn((p) => ({ ...p, ...JSON.parse(raw) })); } catch { /* noop */ }
   }, [editable, optionKey]);
+  // 옵션 변경 → 상위(미리보기)로 전달. 배너·칩·CTA 토글을 코너 미리보기에 반영(2026-10-29(2) 사용자 요청).
+  useEffect(() => { onOptionsChange?.(optOn); }, [optOn, onOptionsChange]);
   const setOpt = (o: string, v: boolean) => setOptOn((p) => {
     const next = { ...p, [o]: v };
     if (optionKey) { try { localStorage.setItem(optionKey, JSON.stringify(next)); } catch { /* noop */ } }
