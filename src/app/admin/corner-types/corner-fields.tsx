@@ -88,22 +88,22 @@ function FieldTable({ children }: { children: React.ReactNode }) {
   return <div className="border-y border-[#eef1f4]">{children}</div>;
 }
 
-// 노출 개수 — 편집 폼(editable)에서는 직접 설정(최소~최대 입력), 읽기(상세)에서는 범위 표시. 표 한 행으로.
+// 노출 개수 범위 — 코너 유형은 '허용 범위(가드레일)'만. 실제 개수는 빌더/CVM이 정함(2026-10-29(2) 사용자 확정: 범위만 남기고 실제는 빌더).
 function CountRow({ min, max, editable }: { min: number; max: number; editable?: boolean }) {
   return (
-    <FieldTableRow label="노출 개수" keyName="count">
+    <FieldTableRow label="노출 개수 범위" keyName="count">
       {editable ? (
         <div className="flex flex-wrap items-center gap-1.5 text-[13px]">
           <input name="defaultMinItems" type="number" min={0} max={50} defaultValue={min} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
           <span className="text-slate-400">~</span>
           <input name="defaultMaxItems" type="number" min={0} max={50} defaultValue={max} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
           <span className="text-[12px] text-slate-500">개</span>
-          <span className="text-[11px] text-slate-400">· 코너에 노출할 개수</span>
+          <span className="text-[11px] text-slate-400">· 허용 범위(가드레일). 실제 개수는 빌더/CVM에서 정함</span>
         </div>
       ) : (
         <div className="flex items-center gap-2 text-[13px]">
           <span className="rounded-[4px] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#454f59]">{min}~{max}개</span>
-          <span className="text-[11px] text-slate-400">· 실제 개수는 빌더에서</span>
+          <span className="text-[11px] text-slate-400">· 허용 범위 · 실제 개수는 빌더/CVM</span>
         </div>
       )}
     </FieldTableRow>

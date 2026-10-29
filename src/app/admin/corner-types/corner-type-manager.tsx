@@ -2005,7 +2005,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           itemCount={
             <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">
               <div className="flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
-                <span className="text-[12px] font-medium text-[#1a1a1a]">노출 개수</span>
+                <span className="text-[12px] font-medium text-[#1a1a1a]">노출 개수 범위</span>
                 <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">(count)</span>
               </div>
               <div className="flex min-w-0 flex-wrap items-center gap-1.5 px-3.5 py-3 text-[13px]">
@@ -2013,7 +2013,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
                 <span className="text-slate-400">~</span>
                 <input type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
                 <span className="text-[12px] text-slate-500">개</span>
-                <span className="text-[11px] text-slate-400">· 코너에 노출할 개수</span>
+                <span className="text-[11px] text-slate-400">· 허용 범위(가드레일). 실제 개수는 빌더/CVM에서 정함</span>
               </div>
             </div>
           }

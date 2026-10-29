@@ -394,11 +394,11 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
                   {itemRows.length > 0 && (
                     <ROGroup badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
                       {itemRows.map(renderRow)}
-                      {/* 노출 개수 — 아이템(요소) 하위(2026-10-29(2) 사용자 요청) */}
-                      <RORow label="노출 개수">
+                      {/* 노출 개수 범위 — 허용 범위(가드레일)만. 실제 개수는 빌더/CVM(2026-10-29(2) 사용자 확정) */}
+                      <RORow label="노출 개수 범위">
                         <span className="flex items-center gap-2">
                           <span className="rounded-[4px] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#454f59]">{row.defaultMinItems ?? '–'}~{row.defaultMaxItems ?? '–'}개</span>
-                          <span className="text-[11px] text-slate-400">· 실제 개수는 빌더에서</span>
+                          <span className="text-[11px] text-slate-400">· 허용 범위 · 실제 개수는 빌더/CVM</span>
                         </span>
                       </RORow>
                     </ROGroup>
