@@ -159,10 +159,19 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
           atom({ name: '이미지', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png' }),
         ] };
       case '정보형':
+        // 프로필형(CardHome Profile) = 프로필 이미지 + 고객명(Title) + 고객번호(SubTitle) + 버튼(Button). ProfileCard로 렌더.
+        if (/프로필/.test(ctx?.detail ?? '')) {
+          return { ...base, name: '프로필', atoms: [
+            atom({ name: '고객명', atomType: 'TEXT', content: 'Title' }),
+            atom({ name: '고객번호', atomType: 'INFO', content: 'SubTitle' }),
+            atom({ name: '버튼', atomType: 'CTA', content: 'Button', linkUrl: '/' }),
+          ] };
+        }
+        // 상태 안내형(CardHome) = 타이틀(값) + 배지 + 서브타이틀 + 아이콘. 미리보기 텍스트 = 코너 속성 라벨 그대로(2026-10-29(2) 사용자 요청).
         return { ...base, name: '상태', atoms: [
-          atom({ name: '값', atomType: 'PRICE', content: '0000' }),
-          atom({ name: '상태', atomType: 'BADGE', content: 'Badge' }),
-          atom({ name: '라벨', atomType: 'TEXT', content: 'Label' }),
+          atom({ name: '타이틀', atomType: 'TEXT', content: 'Title' }),
+          atom({ name: '배지', atomType: 'BADGE', content: 'Badge' }),
+          atom({ name: '서브타이틀', atomType: 'TEXT', content: 'SubTitle' }),
           atom({ name: '아이콘', atomType: 'ICON', imageUrl: 'icon:general/Info' }),
         ] };
       case '혜택형':
