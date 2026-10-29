@@ -323,7 +323,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
     : cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
   return (
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
-      className={cn('overflow-hidden rounded-[16px] border-2 bg-white transition', ro ? 'border-[#dce0e5]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#dce0e5] hover:border-[#c4c9cf]'))}>
+      className={cn('overflow-hidden rounded-[28px] border-2 bg-white transition', ro ? 'border-[#dce0e5]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#dce0e5] hover:border-[#c4c9cf]'))}>
       {hasBanner && (spec.bannerSrc ? (
         /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="h-[160px] w-full object-cover" />
       ) : (
@@ -538,7 +538,8 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
   //  세로형은 케이스별로 가격을 쓰기도(넷플릭스 요금제) 안 쓰기도(데이터량 안내) 해서 가격을 옵션으로 둔다(2026-10-28 사용자 요청).
   return (
     <div>
-        <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
+        {/* 형태(Variants) — 세로형은 제외(2026-10-29(2) 사용자 요청: 불필요). 가로형만 카드 크기(Small/Medium/Large) 선택. */}
+        {!vertical && <Prop name="형태(Variants)" desc="카드 크기"><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>}
         <ChkRow label="아이템 이미지(ImageSrc)" checked disabled />
         <ChkRow label="아이템 타이틀(Title)" checked disabled />
         {/* 가격·할인율(·기간) — 컬럼 분할 그리드 + 종속(가격 미사용이면 나머지 off+비활성) */}
@@ -585,10 +586,13 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
     <div className="flex flex-wrap items-start gap-5">
       {/* 좌측: 미리보기 — 스크롤해도 따라오게 sticky 고정. 카드/컴포넌트 클릭으로 코너 정보↔속성 전환. */}
       <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
-        <p className="mb-1.5 text-[14.5px] font-bold text-slate-900">코너 미리보기</p>
-        <div className="rounded-[14px] border border-[#dce0e5] bg-[#f3f4f7] p-4">
-          <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} layout={layout} />
-        </div>
+        {/* 코너 미리보기 — 읽기 상세와 동일하게 타이틀 포함 카드(박스)로 감쌈(2026-10-29(2) 사용자 요청). */}
+        <section className="overflow-hidden rounded-[12px] border border-[#dce0e5] bg-white">
+          <div className="px-4 py-3.5"><h3 className="text-[20px] font-bold leading-[1.3] text-slate-900">코너 미리보기</h3></div>
+          <div className="bg-[#f3f4f7] px-4 pb-4 pt-0">
+            <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} layout={layout} />
+          </div>
+        </section>
         <button type="button" onClick={reset}
           className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#dce0e5] bg-white px-3 py-2 text-[12px] font-semibold text-[#454f59] transition hover:bg-[#f8f9fb]">
           <RotateCcw className="h-3.5 w-3.5" /> 초기 설정값으로 돌리기

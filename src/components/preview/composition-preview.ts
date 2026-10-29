@@ -440,7 +440,7 @@ export function compositionToPreviewCorner(opts: {
   const components: PreviewComponent[] = [];
   const ctx = { base: opts.base, detail: opts.detail, placeholder: opts.placeholder, emptyImages: opts.emptyImages };
   // '칩' 옵션 ON → 코너 상단에 콘텐츠 칩 행 1개 주입(옵션 토글을 미리보기에 반영).
-  if (opts.forceChip) components.push({ id: nid(), name: 'ChipContents', componentType: '선택형', selectedIndex: 0, chipVariant: 'contents', atoms: ['전체', '인기', '신상', '할인', '브랜드', '추천'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) });
+  if (opts.forceChip) components.push({ id: nid(), name: 'ChipContents', componentType: '선택형', selectedIndex: 0, chipVariant: 'contents', atoms: ['Label', 'Label', 'Label', 'Label'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) });
   for (const b of opts.composition) for (let i = 1; i <= b.count; i++) components.push(blockComp(b, i, ctx));
   // 세로형+배너 = 요금제 히어로, 가로형+배너 = 아이폰 히어로. 둘 다 상단 히어로 배너(빅배너) 자동 표시.
   const isPlanBanner = opts.base === '상품형' && /세로형\+배너|세로형\(배너\)/.test(opts.detail ?? '');

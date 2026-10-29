@@ -1653,12 +1653,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   //  flex-wrap 레이아웃의 고정폭 아이템 — 폭이 좁으면 오른쪽 설정이 아래로 내려가 per-char로 터지지 않는다.
   const livePreview = (
     <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
-      {/* '코너 정의' 헤더는 미리보기 열 상단에 — 오른쪽 '기본 정보' 헤더와 같은 로우로 정렬(2026-10-01 사용자 요청) */}
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
-        코너 미리보기
-        <span className="text-[11px] font-normal text-slate-400">왼쪽 미리보기를 보며 오른쪽에서 설정</span>
+      {/* 코너 미리보기 — 읽기 상세와 동일하게 타이틀 포함 카드(박스)로 감쌈(2026-10-29(2) 사용자 요청). */}
+      <section className="overflow-hidden rounded-[12px] border border-[#dce0e5] bg-white">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3.5">
+        <h3 className="text-[20px] font-bold leading-[1.3] text-slate-900">코너 미리보기</h3>
       </div>
-      <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#eef0f6] p-3">
+      <div className="max-h-[72vh] overflow-y-auto bg-[#eef0f6] px-4 pb-4 pt-0">
         {(() => {
           // 코너 속성 옵션(배너·칩·CTA) 토글 → 미리보기 반영(2026-10-29(2) 사용자 요청). 옵션에 없는 유형은 undefined로 기존 동작 유지.
           const optBanner = cornerOpts['배너'];
@@ -1690,6 +1690,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           return <CornerBlock corner={previewC} />;
         })()}
       </div>
+      </section>
       {/* 초기 설정값으로 돌리기 — 유형 정의 기본값(옵션 전체 사용·노출 개수·형태)으로 ② 코너 정보·속성 복원(2026-10-29(2) 사용자 요청: 모든 코너 미리보기 밑에). */}
       <button type="button" onClick={() => { try { localStorage.removeItem(`ctopt:${row.id}`); } catch { /* noop */ } setResetNonce((n) => n + 1); }}
         className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#dce0e5] bg-white px-3 py-2 text-[12px] font-semibold text-[#454f59] transition hover:bg-[#f8f9fb]">
