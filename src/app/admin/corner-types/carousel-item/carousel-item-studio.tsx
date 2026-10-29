@@ -336,7 +336,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       {spec.chipOn && (
         <div className="mt-2 flex gap-1.5 overflow-x-auto px-3">
           {['전체', 'Label', 'Label'].map((c, i) => (
-            <span key={i} className={cn('flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12px] font-medium', i === 0 ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500')}>{c}</span>
+            <span key={i} className={cn('flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12px]', i === 0 ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>{c}</span>
           ))}
         </div>
       )}

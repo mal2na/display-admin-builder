@@ -146,7 +146,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   return (
     <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
       {component.atoms.map((a, i) => (
-        <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium ' + (i === sel ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500')}>
+        <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] ' + (i === sel ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>
           {a.content ?? a.name}
         </span>
       ))}
