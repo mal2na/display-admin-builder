@@ -206,7 +206,7 @@ const FEATURES: [keyof CornerTypeRow, string][] = [
 function RORow({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#eef1f4] last:border-b-0">
-      <div className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[12.5px] font-medium text-slate-600">{label}</div>
+      <div className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[14px] font-medium text-[#454f59]">{label}</div>
       <div className="min-w-0 bg-white px-3.5 py-2.5 text-[13px] text-foreground">{children}</div>
     </div>
   );
@@ -380,7 +380,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
                 return (
                   <div key={ri} className={cn('grid items-stretch border-b border-[#eef1f4] last:border-b-0', gridCls)}>
                     {r.cells.flatMap((c, ci) => [
-                      <div key={`l${ci}`} className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[12.5px] font-medium text-slate-600"><span className={c.on ? '' : 'text-slate-400'}>{koOf(c.lbl)}</span></div>,
+                      <div key={`l${ci}`} className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[14px] font-medium text-[#454f59]"><span className={c.on ? '' : 'text-slate-400'}>{koOf(c.lbl)}</span></div>,
                       <div key={`v${ci}`} className="flex min-w-0 items-center gap-2 px-3.5 py-2.5 text-[13px]">{stateVal(c)}</div>,
                     ])}
                   </div>

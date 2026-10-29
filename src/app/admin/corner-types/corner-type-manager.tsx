@@ -2020,7 +2020,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           itemCount={
             <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-t border-[#eef0f3]">
               <div className="flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
-                <span className="text-[12px] font-medium text-[#1a1a1a]">노출 개수 범위</span>
+                <span className="text-[14px] font-medium text-[#454f59]">노출 개수 범위</span>
                 <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">(count)</span>
               </div>
               <div className="flex min-w-0 flex-wrap items-center gap-1.5 px-3.5 py-3 text-[13px]">
@@ -2126,7 +2126,7 @@ function TRow({
   // 프로모션 상세 .frow 규격에 통일 — 라벨 셀 #f8f9fb·150px·12.5px, 값 셀 px3.5 py2.5(2026-10-01 사용자 요청).
   return (
     <div className={cn('grid grid-cols-[150px_1fr] items-stretch overflow-hidden', !flat && 'border-b border-[#dce0e5]')}>
-      <label className="flex h-full flex-col justify-center bg-[#f8f9fb] px-3.5 py-3 text-[12.5px] font-medium text-slate-600">
+      <label className="flex h-full flex-col justify-center bg-[#f8f9fb] px-3.5 py-3 text-[14px] font-medium text-[#454f59]">
         <span>{label} {required && <span className="text-rose-500">*</span>}</span>
         {hint && <span className="mt-0.5 block text-[11px] font-normal text-slate-500/80">{hint}</span>}
       </label>

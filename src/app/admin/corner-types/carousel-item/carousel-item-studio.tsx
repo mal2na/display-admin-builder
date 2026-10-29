@@ -169,7 +169,7 @@ function Prop({ name, desc, sub, children }: { name: string; desc?: string; sub?
   return (
     <div className="grid grid-cols-[150px_minmax(0,1fr)] items-start border-b border-[#eef0f3] last:border-b-0">
       <div className={cn('flex min-w-0 flex-col gap-0.5 bg-[#f8f9fb] px-3.5 py-3', sub && 'pl-5')}>
-        <span className="text-[12px] font-medium text-[#1a1a1a]">{name}</span>
+        <span className="text-[14px] font-medium text-[#454f59]">{name}</span>
         {desc && <span className="text-[10.5px] leading-tight text-[#8b949e]">{desc}</span>}
       </div>
       <div className="flex min-w-0 items-center px-3.5 py-3">{children}</div>
@@ -434,7 +434,7 @@ function ChkRow({ label, checked, onChange, disabled, indent, initial, option }:
   return (
     <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">
       <div className={cn('flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3', indent && 'pl-6')}>
-        <span className="flex flex-wrap items-center gap-1.5 text-[12px] font-medium leading-[1.2] text-[#1a1a1a]">
+        <span className="flex flex-wrap items-center gap-1.5 text-[14px] font-medium leading-[1.2] text-[#454f59]">
           {ko}
           {disabled && <span className="rounded-[4px] bg-[#8b949e]/15 px-1 py-[1px] text-[10px] font-semibold text-[#8b949e]">고정</span>}
           {option && <span className="rounded-[4px] bg-[#3617ce]/10 px-1 py-[1px] text-[10px] font-semibold text-[#3617ce]">옵션</span>}
@@ -495,8 +495,8 @@ function RadioPair({ name, on, disabled, onPick }: { name: string; on: boolean; 
 function PriceCols({ pg, vertical, onChange }: { pg: CarouselItemSpec['priceGroup']; vertical: boolean; onChange: (p: Partial<CarouselItemSpec['priceGroup']>) => void }) {
   const Label = ({ ko, code, dim }: { ko: string; code: string; dim?: boolean }) => (
     <div className="flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
-      <span className="flex flex-wrap items-center gap-1.5 text-[12px] font-medium leading-[1.2]">
-        <span className={dim ? 'text-slate-300' : 'text-[#1a1a1a]'}>{ko}</span>
+      <span className="flex flex-wrap items-center gap-1.5 text-[14px] font-medium leading-[1.2]">
+        <span className={dim ? 'text-slate-300' : 'text-[#454f59]'}>{ko}</span>
         <span className="rounded-[4px] bg-[#3617ce]/10 px-1 py-[1px] text-[10px] font-semibold text-[#3617ce]">옵션</span>
       </span>
       <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">({code})</span>
