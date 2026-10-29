@@ -585,7 +585,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
     <div className="flex flex-wrap items-start gap-5">
       {/* 좌측: 미리보기 — 스크롤해도 따라오게 sticky 고정. 카드/컴포넌트 클릭으로 코너 정보↔속성 전환. */}
       <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
-        <p className="mb-1.5 text-[11px] font-medium text-[#697582]">미리보기 · <b className="text-[#454f59]">카드=코너 정보 · 안쪽 카드=코너 속성</b></p>
+        <p className="mb-1.5 text-[14.5px] font-bold text-slate-900">코너 미리보기</p>
         <div className="rounded-[14px] border border-[#dce0e5] bg-[#f3f4f7] p-4">
           <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} layout={layout} />
         </div>
@@ -600,11 +600,11 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
       <div className="min-w-[320px] flex-1 space-y-4">
         {/* 1. 기본 정보 — 헤더 우측에 현재 선택 상태값(유형·레이아웃) 칩 · 본문 테이블 여백 */}
         {basicInfo && (
-          <Panel n={1} title="기본 정보" aside={registerResult}>{basicInfo}</Panel>
+          <Panel n={1} title="코너 기본 정보" aside={registerResult}>{basicInfo}</Panel>
         )}
 
         {/* 2. 코너 정보 · 속성 — 하나로 합쳐 '현재 쓰는 항목'만 노출(2026-10-27 사용자 요청). 탭 제거. */}
-        <Panel n={2} title="코너 정보 · 속성" hint="이 코너 유형이 쓰는 표시 항목" bodyClass="">
+        <Panel n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목" bodyClass="">
           {/* 코너(카드)=카드 전체에 1개 · 아이템(요소)=리스트에서 반복되는 카드 1개. 같은 '타이틀'이라도 소속이 달라 그룹으로 구분(2026-10-27 사용자 요청). */}
           <div className="space-y-3 p-4">
             <div className="border-y border-[#dce0e5]">

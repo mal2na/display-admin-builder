@@ -126,15 +126,16 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey }: { c
   const cornerFields = m.required.filter((f) => f.group === 'corner');
   const itemFields = m.required.filter((f) => f.group === 'item');
 
+  // 읽기 모드(비편집)에선 옵션/고정 배지 미표시(라벨 터짐 방지 — 상품형 읽기와 동일) 2026-10-29(2) 사용자 요청.
   const fixedRow = (f: CornerFieldDef) => (
-    <FieldTableRow key={`fx-${f.group}-${f.ko}-${f.key}`} label={f.ko} keyName={f.key} tag={{ text: '고정', color: '#8b949e' }}>
+    <FieldTableRow key={`fx-${f.group}-${f.ko}-${f.key}`} label={f.ko} keyName={f.key} tag={editable ? { text: '고정', color: '#8b949e' } : undefined}>
       <UsePair name={`fld_${f.group}_${f.key}`} used disabled />
     </FieldTableRow>
   );
   const optionRow = (o: string) => {
     const used = editable ? (optOn[o] ?? true) : true;
     return (
-      <FieldTableRow key={`opt-${o}`} label={o} tag={{ text: '옵션', color: '#3617ce' }}>
+      <FieldTableRow key={`opt-${o}`} label={o} tag={editable ? { text: '옵션', color: '#3617ce' } : undefined}>
         <UsePair name={`opt_${o}_r`} used={used} disabled={!editable} onChange={editable ? (v) => setOpt(o, v) : undefined} />
         {editable && <input type="hidden" name={`opt_${o}`} value={used ? 'on' : ''} />}
       </FieldTableRow>
@@ -181,10 +182,12 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey }: { c
           </FieldTable>
         </div>
       )}
-      <p className="px-2 text-[11px] text-[#8b949e]">
-        <span className="text-slate-400">고정 = 사용 고정(못 끔)</span>
-        {m.options.length > 0 && <> · <span className="font-semibold text-[#3617ce]">옵션</span> = 빌더에서 사용/미사용</>}
-      </p>
+      {editable && (
+        <p className="px-2 text-[11px] text-[#8b949e]">
+          <span className="text-slate-400">고정 = 사용 고정(못 끔)</span>
+          {m.options.length > 0 && <> · <span className="font-semibold text-[#3617ce]">옵션</span> = 빌더에서 사용/미사용</>}
+        </p>
+      )}
     </div>
   );
 }

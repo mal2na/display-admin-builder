@@ -51,8 +51,8 @@ export function CornerTypeDetail({ row, history, builtOptions, registered = [], 
         </Link>
         <div className="h-4 w-px bg-border" />
         <span className="font-mono text-sm text-primary">{row.typeId}</span>
-        <h1 className="text-lg font-semibold">{caseName ?? cleanName}</h1>
-        {caseName && <span className="text-[12px] text-muted-foreground">{cleanName}</span>}
+        {/* 타이틀 = 유형·배열(cleanName)을 크게. 케이스명(기프티콘 추천 등)은 표시하지 않음(2026-10-29(2) 사용자 요청). */}
+        <h1 className="text-xl font-bold text-slate-900">{cleanName}</h1>
         <Badge variant="outline">{cornerTypeBi(row.baseCategory)}</Badge>
         <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', row.active ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground')}>
           {row.active ? '사용' : '미사용'}
@@ -334,30 +334,42 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
           <ROSection title={<>코너 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></>}>
             <ROTable>
               {(() => {
-                // 라벨엔 옵션/고정 배지 미표시(라벨 터짐 방지), 가격·할인율은 한 행으로 묶음(편집과 동일) — 2026-10-29(2) 사용자 요청.
-                const rows: { lbl: string; cells: (typeof studioItems[number] & { sub?: string })[] }[] = [];
+                // 라벨엔 옵션/고정 배지 미표시(라벨 터짐 방지). 가격 + 연속된 할인율·기간은 한 행에서 컬럼 분할(수정 폼과 동일) — 2026-10-29(2) 사용자 요청.
+                type SI = typeof studioItems[number];
+                const rows: ({ price: true; cells: SI[] } | { price: false; cell: SI })[] = [];
                 for (let i = 0; i < studioItems.length; i++) {
-                  const cur = studioItems[i]; const nxt = studioItems[i + 1];
-                  if (/^가격/.test(cur.lbl) && nxt && /^할인율/.test(nxt.lbl)) {
-                    rows.push({ lbl: '가격 · 할인율', cells: [{ ...cur, sub: '가격' }, { ...nxt, sub: '할인율' }] });
-                    i++;
-                  } else rows.push({ lbl: cur.lbl, cells: [cur] });
+                  const cur = studioItems[i];
+                  if (/^가격/.test(cur.lbl)) {
+                    const grp: SI[] = [cur];
+                    while (i + 1 < studioItems.length && /^(할인율|기간)/.test(studioItems[i + 1].lbl)) { grp.push(studioItems[i + 1]); i++; }
+                    rows.push({ price: true, cells: grp });
+                  } else rows.push({ price: false, cell: cur });
                 }
-                return rows.map(({ lbl, cells }) => (
-                  <RORow key={lbl} label={lbl}>
-                    <span className="flex flex-wrap items-center gap-x-5 gap-y-1">
-                      {cells.map((c, ci) => (
-                        <span key={ci} className="flex items-center gap-1.5">
-                          {c.sub && <span className="text-[12px] font-medium text-slate-500">{c.sub}</span>}
-                          {c.kind === '고정'
-                            ? <span className="text-[12px] font-medium text-slate-400">사용 고정</span>
-                            : <span className={cn('text-[12px] font-semibold', c.on ? 'text-[#00a058]' : 'text-slate-400')}>{c.on ? '사용' : '미사용'}</span>}
-                          {c.on && c.val && <span className="whitespace-pre-line text-slate-500">{c.val}</span>}
-                        </span>
-                      ))}
-                    </span>
-                  </RORow>
-                ));
+                const koOf = (s: string) => s.replace(/\s*\(.*\)\s*/, '').trim();
+                const stateVal = (c: SI) => (
+                  <>
+                    {c.kind === '고정'
+                      ? <span className="text-[12px] font-medium text-slate-400">사용 고정</span>
+                      : <span className={cn('text-[12px] font-semibold', c.on ? 'text-[#00a058]' : 'text-slate-400')}>{c.on ? '사용' : '미사용'}</span>}
+                    {c.on && c.val && <span className="whitespace-pre-line text-slate-500">{c.val}</span>}
+                  </>
+                );
+                return rows.map((r, ri) => {
+                  if (!r.price) return <RORow key={ri} label={koOf(r.cell.lbl)}><span className="flex min-w-0 items-center gap-2">{stateVal(r.cell)}</span></RORow>;
+                  const gridCls = r.cells.length >= 3
+                    ? 'grid-cols-[150px_minmax(0,1fr)_96px_minmax(0,1fr)_96px_minmax(0,1fr)]'
+                    : 'grid-cols-[150px_minmax(0,1fr)_96px_minmax(0,1fr)]';
+                  return (
+                    <div key={ri} className={cn('grid items-stretch border-b border-[#eef1f4] last:border-b-0', gridCls)}>
+                      {r.cells.flatMap((c, ci) => [
+                        <div key={`l${ci}`} className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[12.5px] font-medium text-slate-600">
+                          <span className={c.on ? '' : 'text-slate-400'}>{koOf(c.lbl)}</span>
+                        </div>,
+                        <div key={`v${ci}`} className="flex min-w-0 items-center gap-2 px-3.5 py-2.5 text-[13px]">{stateVal(c)}</div>,
+                      ])}
+                    </div>
+                  );
+                });
               })()}
             </ROTable>
           </ROSection>

@@ -1654,8 +1654,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
       {/* '코너 정의' 헤더는 미리보기 열 상단에 — 오른쪽 '기본 정보' 헤더와 같은 로우로 정렬(2026-10-01 사용자 요청) */}
       <div className="mb-2 flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
-        <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />
-        코너 정의
+        코너 미리보기
         <span className="text-[11px] font-normal text-slate-400">왼쪽 미리보기를 보며 오른쪽에서 설정</span>
       </div>
       <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#eef0f6] p-3">
@@ -1925,7 +1924,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* 기본 정보 — 상품형은 '코너 속성' 스튜디오의 1단계로 이동(미리보기 우측). 비상품형만 여기 표시(2026-10-16). */}
             {base !== '상품형' && (
             <div className={cn('order-1', !showStep(0) && 'hidden')}>
-              <FormCard n={1} title="기본 정보"
+              <FormCard n={1} title="코너 기본 정보"
                 aside={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}>
                 {basicPickers}
                 {metaFields}
@@ -1935,7 +1934,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* ② 세부 항목 — '표시 항목(이 유형이 쓰는 요소)' + '노출 개수(최소~최대)'만(2026-10-27 사용자 요청). CTA 문구·이미지 모양·탭 슬롯 부가·배너·FO 설정은 빌더로 이관하고, 저장값은 hidden으로 보존해 되돌릴 수 있게 한다. */}
             {base !== '상품형' && (
             <div className={cn('order-2', !showStep(1) && 'hidden')}>
-              <FormCard n={2} title="코너 정보 · 속성" hint="이 코너 유형이 쓰는 표시 항목">
+              <FormCard n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목">
                 {/* 코너 정보·속성 = '코너유형정리' 표 SSOT에서 필수(고정)·옵션(배너·칩·CTA)만 노출(2026-10-28 사용자 요청).
                     저장값(표시 항목 플래그)은 아래 hidden 으로 보존 — 기존 미리보기·데이터 호환. */}
                 <div className="px-1 py-1">
