@@ -322,7 +322,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
     : cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
   return (
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
-      className={cn('overflow-hidden rounded-[28px] border-2 bg-white transition', ro ? 'border-[#dce0e5]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#dce0e5] hover:border-[#c4c9cf]'))}>
+      className={cn('overflow-hidden rounded-[28px] border-2 bg-white shadow-[0_10px_30px_rgba(20,22,40,0.14)] transition', ro ? 'border-[#dce0e5]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#dce0e5] hover:border-[#c4c9cf]'))}>
       {hasBanner && (spec.bannerSrc ? (
         /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="aspect-[16/10] w-full object-cover" />
       ) : (
@@ -343,7 +343,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       {vertical ? (
         // 세로형 = 세로 리스트. 행 구분선 제거(2026-10-28 사용자 요청). 실제 노출 개수는 빌더에서, 미리보기는 대표 4건.
         <div className="mt-1 flex flex-col px-5 pb-2">
-          {[0, 1, 2, 3].map((i) => (
+          {[0, 1, 2].map((i) => (
             <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
               <ItemRow s={spec.item} />
             </button>
@@ -351,7 +351,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
         </div>
       ) : (
       <div className="mt-2 flex gap-2 overflow-x-auto px-5 pb-2">
-        {[0, 1].map((i) => (
+        {[0, 1, 2].map((i) => (
           <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
             <ItemCard s={spec.item} />
           </button>

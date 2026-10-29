@@ -13,6 +13,8 @@ const CARD_PAD_X = 'px-[28px]';
 const CARD_PAD = `${CARD_PAD_X} py-[30px]`;
 const CARD_PAD_BARCODE = `${CARD_PAD_X} py-[32px]`; // 바코드 카드는 레퍼런스 h:163 px:28 py:32 — 세로만 +2
 const CARD_RADIUS = 'rounded-[28px]';
+// 코너 UI 카드를 배경 위로 '떠 보이게' 하는 플로팅 쉐도우(2026-10-29(2) 사용자 요청: 코너 미리보기에서 코너 UI 뒤 쉐도우).
+const CARD_FLOAT_SHADOW = 'shadow-[0_10px_30px_rgba(20,22,40,0.14)]';
 // 업무 진입형 chip형(퀵칩 라벤더 카드)은 일반 카드 패딩이 과해 보여 더 타이트하게(상하좌우, 2026-10-01 사용자 요청).
 const CHIP_CARD_PAD = 'px-[12px] py-[10px]';
 
@@ -660,7 +662,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 바코드 카드는 세로 패딩만 +2(레퍼런스 py:32). 그 외는 표준 카드 패딩.
   const hasBarcode = corner.components.some((c) => c.atoms.some((a) => a.atomType === 'BARCODE'));
   const stdPad = hasBarcode ? CARD_PAD_BARCODE : CARD_PAD;
-  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#e8ecef] ${CHIP_CARD_PAD}` : `${CARD_RADIUS} bg-white ${stdPad} shadow-sm`);
+  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#e8ecef] ${CHIP_CARD_PAD} ${CARD_FLOAT_SHADOW}` : `${CARD_RADIUS} bg-white ${stdPad} ${CARD_FLOAT_SHADOW}`);
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
@@ -702,7 +704,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 히어로가 있으면 카드는 패딩 없이(overflow-hidden) 배너를 꼭대기 full-bleed로, 본문만 패딩.
   if (bannerEl && !isBanner) {
     return (
-      <section className={`overflow-hidden ${CARD_RADIUS} bg-white shadow-sm`}>
+      <section className={`overflow-hidden ${CARD_RADIUS} bg-white ${CARD_FLOAT_SHADOW}`}>
         {bannerEl}
         <div className={`space-y-2 ${CARD_PAD_X} pb-[30px] pt-[20px]`}>
           {heading && (

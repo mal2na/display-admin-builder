@@ -1688,7 +1688,16 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             // 수급 방식(CVM/운영자 편성)을 미리보기에도 반영 — 빌더와 동일하게 'CVM 개인화 · 미리보기는 폴백' 배지 노출(2026-10-06).
             recSource: recSource || undefined,
           };
-          return <CornerBlock corner={previewC} />;
+          // 미리보기 아이템(요소)은 우선 3개로 고정 — 선택형(칩/탭)은 유지, 본문 반복 카드만 3개로 캡(2026-10-29(2) 사용자 요청).
+          //  실제 노출 개수는 빌더/CVM이 정하므로 코너 유형 미리보기는 대표 3건만 보여준다.
+          const capped = {
+            ...previewC,
+            components: [
+              ...previewC.components.filter((c) => c.componentType === '선택형'),
+              ...previewC.components.filter((c) => c.componentType !== '선택형').slice(0, 3),
+            ],
+          };
+          return <CornerBlock corner={capped} />;
         })()}
       </div>
       </section>
@@ -1921,8 +1930,10 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       {/* ③ 컴포넌트 조합 — 이 코너 유형에 담을 컴포넌트를 순서대로 조립. (bulk 수정에선 컴포넌트 속성으로 대체 → 제외) */}
       {/* 비상품형 — 미리보기+설정 섹션. 상품형은 아래 CornerStudio가 담당(빈 섹션으로 간격 생기지 않게 제외, 2026-10-29(2) 사용자 요청). */}
       {!bulk && base !== '상품형' && (
-      /* 좌우 보더 없는 섹션(목업 105) — 굵은 제목 + 가로줄 테이블만. */
-      <section className="space-y-2">
+      /* 좌우 보더 없는 섹션(목업 105) — 굵은 제목 + 가로줄 테이블만.
+         space-y-2 제거: 숨은 composition input이 첫 자식이라 flex 행(2번째 자식)에 margin-top 8px가 붙어
+         상품형(div 래퍼)보다 8px 내려가던 문제 해소(2026-10-29(2) 사용자 요청: 최상단 패딩 통일). */
+      <section>
         <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
         {/* 미리보기(고정폭) + 설정 — 뷰포트 breakpoint가 아니라 실제 컨테이너 폭에 반응(flex-wrap). gap-5로 상품형(CornerStudio)·읽기와 통일(2026-10-29(2) 사용자 요청). */}
         <div className="flex flex-wrap items-start gap-5">
