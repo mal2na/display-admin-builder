@@ -208,16 +208,16 @@ function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children 
   return (
     <section className="overflow-hidden rounded-[16px] border border-[#dce0e5] bg-white">
       <button type="button" onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 bg-[#f8f9fb] px-5 py-4 text-left transition hover:bg-[#f1f3f5]">
+        className="flex w-full items-center gap-2 bg-white px-4 py-3.5 text-left transition hover:bg-[#f8f9fb]">
         {n != null && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3617ce] text-[12px] font-bold text-white">{n}</span>}
-        <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
+        <h2 className="text-[20px] font-bold leading-[1.3] text-slate-900">{title}</h2>
         {hint && <span className="text-[11px] text-[#8b949e]">{hint}</span>}
         <span className="ml-auto flex items-center gap-3">
           {aside}
           <ChevronDown className={cn('h-4 w-4 shrink-0 text-[#8b949e] transition-transform', open ? 'rotate-180' : '')} />
         </span>
       </button>
-      {open && <div className={cn('border-t border-[#eef0f3]', bodyClass ?? 'px-5 py-4')}>{children}</div>}
+      {open && <div className={bodyClass ?? 'px-4 pb-4 pt-0'}>{children}</div>}
     </section>
   );
 }
@@ -336,7 +336,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       {spec.chipOn && (
         <div className="mt-2 flex gap-1.5 overflow-x-auto px-3">
           {['전체', 'Label', 'Label'].map((c, i) => (
-            <span key={i} className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold', i === 0 ? 'bg-[#3617ce] text-white' : 'bg-[#f1f3f5] text-[#697582]')}>{c}</span>
+            <span key={i} className={cn('flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12px] font-medium', i === 0 ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500')}>{c}</span>
           ))}
         </div>
       )}
@@ -361,7 +361,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       {/* CTA — 카드 하단 전체폭 버튼(Label ›). 버튼 텍스트와 별개(2026-10-28 사용자 요청). 레거시 스펙(cta 없음) 방어. */}
       {spec.cta?.show && (
         <div className="px-3 pb-3 pt-1">
-          <div className="flex w-full items-center justify-center gap-0.5 rounded-[10px] border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.cta?.label || 'Label'} <span className="text-[#b3b9c0]">›</span></div>
+          <div className="flex w-full items-center justify-center gap-0.5 rounded-full border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.cta?.label || 'Label'} <span className="text-[#b3b9c0]">›</span></div>
         </div>
       )}
     </div>
