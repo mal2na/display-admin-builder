@@ -231,7 +231,7 @@ function ItemCard({ s, w }: { s: CarouselItemSpec; w?: number }) {
   const width = w ?? H_VARIANT_WIDTH[s.variant] ?? 118; // Small/Medium/Large 로 카드 폭 변경
   return (
     <div className="flex shrink-0 flex-col gap-1.5" style={{ width }}>
-      <div className="flex aspect-square w-full items-center justify-center rounded-[12px] bg-[#e9eaf4] text-[#b3b9c0]">
+      <div className="flex aspect-square w-full items-center justify-center rounded-[12px] bg-[#eef0f3] text-[#b3b9c0]">
         {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full rounded-[12px] object-cover" /> : <ImageIcon className="h-5 w-5" />}
       </div>
       <div className="flex flex-col gap-0.5">
@@ -283,7 +283,7 @@ function ItemRow({ s }: { s: CarouselItemSpec }) {
   if (s.variant === 'Barcode') return <Barcode />;
   return (
     <div className="flex w-full items-start gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#e9eaf4] text-[#b3b9c0]">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#eef0f3] text-[#b3b9c0]">
         {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -327,7 +327,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
         /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="aspect-[16/10] w-full object-cover" />
       ) : (
         // 배너 — 단색(그라데이션 제거), 혜택·오퍼형과 동일 비율(aspect-16/10)·동일 색(2026-10-29(2) 사용자 요청).
-        <div className="flex aspect-[16/10] w-full items-center justify-center bg-[#e9eaf4] text-[12px] font-medium text-slate-500">Banner</div>
+        <div className="flex aspect-[16/10] w-full items-center justify-center bg-[#eef0f3] text-[12px] font-medium text-slate-500">Banner</div>
       ))}
       <p className="whitespace-pre-line px-5 pt-4 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
       {/* 버튼 텍스트(ButtonText) — 타이틀 바로 밑 텍스트. 모든 레이아웃 공통(2026-10-28 사용자 요청: CTA와 분리). */}
@@ -602,7 +602,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
       </div>
 
       {/* 우측(스크롤): 각 섹션은 SEO 설정 패널처럼 접고 펼치는 Panel. 미리보기 sticky가 끝까지 따라옴 */}
-      <div className="min-w-[320px] flex-1 space-y-4">
+      <div className="min-w-[320px] flex-1 space-y-3">
         {/* 1. 기본 정보 — 헤더 우측에 현재 선택 상태값(유형·레이아웃) 칩 · 본문 테이블 여백 */}
         {basicInfo && (
           <Panel n={1} title="코너 기본 정보" aside={registerResult}>{basicInfo}</Panel>

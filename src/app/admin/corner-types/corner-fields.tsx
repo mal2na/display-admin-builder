@@ -27,14 +27,14 @@ function FieldTableRow({ label, keyName, tag, children }: {
 }) {
   return (
     <div className="grid grid-cols-[150px_1fr] items-stretch border-b border-[#eef1f4] last:border-b-0">
-      <div className="flex h-full flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-2.5">
-        <span className="flex flex-wrap items-center gap-1.5 text-[14px] font-medium leading-[1.25] text-[#454f59]">
+      <div className="flex h-full flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
+        <span className="flex flex-wrap items-center gap-1.5 text-[14px] font-medium leading-[1.2] text-[#454f59]">
           {label}
           {tag && (
             <span className="rounded-[4px] px-1 py-[1px] text-[10px] font-semibold" style={{ backgroundColor: `${tag.color}1a`, color: tag.color }}>{tag.text}</span>
           )}
         </span>
-        {keyName && <span className="font-mono text-[11px] font-normal text-slate-400">({keyName})</span>}
+        {keyName && <span className="font-mono text-[10.5px] font-normal leading-tight text-slate-400">({keyName})</span>}
       </div>
       <div className="flex min-w-0 items-center px-3.5 py-2.5">{children}</div>
     </div>
