@@ -173,14 +173,13 @@ function domainGovernances(domain: Domain, present: string[]): string[] {
 //  코너 = 껍데기(규격)라 실데이터가 아니라 '가이드'로 그린다(2026-10-06 코너 유형 관리 대공사 방향). 목록·상세·수정 공용.
 export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   // 카드 자체가 완결형인 유형은 코너 타이틀·디스크립션이 없다 → 미리보기에서 완전 제외.
-  //  배너형·고정필수형·상태 안내형, 탭형(업무 진입형 탭 등), 아이콘/이미지/팝업/띠/텍스트배너/프로필/바코드 레이아웃.
+  //  배너형·바코드형, 칩/탭형(업무 진입형 칩 등), 아이콘/이미지/팝업/띠/텍스트배너/프로필/바코드/상태 레이아웃.
   const dStr = row.typeDetail ?? '';
   const noTitle =
     row.baseCategory === '배너형' ||
-    row.baseCategory === '고정·필수 노출형' ||
-    row.baseCategory === '상태 안내형' ||
-    /탭/.test(dStr) ||
-    ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
+    row.baseCategory === '바코드형' ||
+    /탭|칩/.test(dStr) ||
+    ['아이콘', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드', '상태'].some((k) => dStr.includes(k));
   const c = compositionToPreviewCorner({
     base: row.baseCategory,
     detail: row.typeDetail,
@@ -704,12 +703,9 @@ export const CORNER_TYPE_INFO: Record<string, { purpose: string; allow: string; 
     allow: '혜택형, 정보형, 행동형, 배너형',
   },
   '업무 진입형': {
-    purpose: '조회·변경·신청·납부처럼 자주 쓰는 업무로 바로 이동하게 하는 코너입니다. 탭·칩 메뉴(선택형)로 구성합니다.',
+    // 2026-10-29 통합: 진입(칩·리스트) + 상태안내·프로필까지. 배열 4종(상태안내·프로필·리스트·칩).
+    purpose: '조회·변경·신청·납부 업무로 바로 이동(칩·리스트)하게 하고, 고객 상태·보유 정보·프로필을 안내하는 코너입니다.',
     allow: '행동형, 정보형, 선택형',
-  },
-  '상태 안내형': {
-    purpose: '고객 상태·보유 정보·진행 상태·제한 사유 등 “지금 내 상황”을 안내하는 코너입니다.',
-    allow: '정보형, 행동형',
   },
   '콘텐츠 안내형': {
     purpose: '이용 가이드·설명·추천 콘텐츠 등을 제공하는 코너입니다.',
@@ -719,9 +715,10 @@ export const CORNER_TYPE_INFO: Record<string, { purpose: string; allow: string; 
     purpose: '고객 상태와 행동에 따라 후보와 노출 순서를 다르게 보여주는 코너입니다. (수급 방식으로 CVM 개인화를 켠 코너)',
     allow: '정보형, 혜택형, 선택형, 행동형, 배너형',
   },
-  '고정·필수 노출형': {
-    purpose: '필수 고지·장애 안내·보안 안내처럼 항상 안정적으로 유지·노출해야 하는 정보를 노출하는 코너입니다.',
-    allow: '정보형, 행동형',
+  '바코드형': {
+    // 2026-10-29 신규: 멤버십 바코드(구 고정·필수 노출형에서 분리).
+    purpose: '멤버십 바코드를 노출하는 코너입니다. 바코드 값은 회원 인증 기반으로 런타임 발급되고, 어드민은 라벨·유효(갱신)시간 정책만 관리합니다.',
+    allow: '정보형',
   },
 };
 
@@ -1306,6 +1303,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const isNew = !row.id;
   // 등록(신규)은 스텝퍼로 단계별 설정 — 프로모션 등록처럼(2026-09-30 사용자 요청). 수정은 전체를 한 화면에.
   const [step, setStep] = useState(0);
+  const [resetNonce, setResetNonce] = useState(0); // 비상품형 '초기 설정값으로 돌리기' — CornerFieldList 리마운트 키.
+  const [cornerOpts, setCornerOpts] = useState<Record<string, boolean>>({}); // 비상품형 코너 속성 옵션(배너·칩·CTA) 상태 — 미리보기 반영용.
   // 2단 분류: ① 코너 유형(base) → ② 배열·레이아웃(detail). 구성 컴포넌트는 배열·레이아웃에서 자동 도출.
   const [base, setBase] = useState(row.baseCategory);
   const [detail, setDetail] = useState(row.typeDetail ?? '');
@@ -1426,8 +1425,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   // 헤더(코너 타이틀/서브타이틀) 없는 유형 — 배너·아이콘/이미지 카드, 그리고 '순수 탭'(선택형)만.
   //  '세로형(카테고리탭)'처럼 상품형 리스트의 탭 변형은 헤더가 있으므로 제외(선택형일 때만 탭=무헤더).
   const isStandaloneTab = compValid === '선택형' && (/카테고리\s*탭/.test(dStr) || dStr.includes('고정형(탭)'));
-  //  고정·필수 노출형(프로필형·바코드형 등)은 카드 자체가 완결형이라 코너 타이틀·디스크립션이 없다(2026-09-29 사용자 요청).
-  const noHeaderType = isBannerType || isStandaloneTab || base === '고정·필수 노출형' || base === '상태 안내형' || ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
+  //  바코드형, 업무 진입형의 상태안내·프로필 카드는 카드 자체가 완결형이라 코너 타이틀·디스크립션이 없다(2026-10-29 통합 반영).
+  const noHeaderType = isBannerType || isStandaloneTab || base === '바코드형' || ['아이콘', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드', '상태'].some((k) => dStr.includes(k));
   // 여러 아이템을 나열하는 리스트형 코너 — 노출 개수·더보기가 의미 있는 유형(상품형/혜택형/정보형 리스트)
   const isListType = compValid === '상품형' || compValid === '혜택형' || (compValid === '정보형' && /리스트/.test(dStr));
   const featureApplies = (key: string) => {
@@ -1656,12 +1655,15 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
       {/* '코너 정의' 헤더는 미리보기 열 상단에 — 오른쪽 '기본 정보' 헤더와 같은 로우로 정렬(2026-10-01 사용자 요청) */}
       <div className="mb-2 flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
-        <span className="inline-block h-[14px] w-[4px] rounded-[2px] bg-[#3617ce]" />
-        코너 정의
+        코너 미리보기
         <span className="text-[11px] font-normal text-slate-400">왼쪽 미리보기를 보며 오른쪽에서 설정</span>
       </div>
       <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#eef0f6] p-3">
         {(() => {
+          // 코너 속성 옵션(배너·칩·CTA) 토글 → 미리보기 반영(2026-10-29(2) 사용자 요청). 옵션에 없는 유형은 undefined로 기존 동작 유지.
+          const optBanner = cornerOpts['배너'];
+          const optChip = cornerOpts['칩'];
+          const optCta = cornerOpts['CTA'];
           const previewC = {
             ...compositionToPreviewCorner({
               base, detail: detailValid, composition: shownBlocks,
@@ -1669,6 +1671,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               subTitle: useSub ? (subTitleText || (guidePreview ? '디스크립션' : '서브타이틀')) : null,
               placeholder: guidePreview && !mainTitleText && !subTitleText,
               emptyImages: guidePreview, // 신규 등록·수정 중 다른 case는 이미지/배너를 빈 가이드 슬롯으로. 편집 중인 그 case만 실제 이미지 유지.
+              forceBanner: optBanner,
+              forceChip: optChip,
             }),
             cardShape: cardShape || undefined,
             subTitleIcon,
@@ -1677,8 +1681,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             showPrice: priceOn,
             showBadge: eff('useBadge'),
             showDesc: descOn,
-            // CTA(더보기) 표시 항목 ON → 미리보기 버튼으로 반영(2026-10-06). 그동안 전달 누락으로 버튼이 안 보였음.
-            moreButtonUse: eff('useMoreButton'),
+            // CTA(더보기) 표시 항목 ON → 미리보기 버튼으로 반영. 코너 속성 'CTA' 옵션이 있으면 그 값 우선.
+            moreButtonUse: optCta ?? eff('useMoreButton'),
             moreButtonLabel: moreLabel || undefined,
             // 수급 방식(CVM/운영자 편성)을 미리보기에도 반영 — 빌더와 동일하게 'CVM 개인화 · 미리보기는 폴백' 배지 노출(2026-10-06).
             recSource: recSource || undefined,
@@ -1686,6 +1690,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           return <CornerBlock corner={previewC} />;
         })()}
       </div>
+      {/* 초기 설정값으로 돌리기 — 유형 정의 기본값(옵션 전체 사용·노출 개수·형태)으로 ② 코너 정보·속성 복원(2026-10-29(2) 사용자 요청: 모든 코너 미리보기 밑에). */}
+      <button type="button" onClick={() => { try { localStorage.removeItem(`ctopt:${row.id}`); } catch { /* noop */ } setResetNonce((n) => n + 1); }}
+        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#dce0e5] bg-white px-3 py-2 text-[12px] font-semibold text-[#454f59] transition hover:bg-[#f8f9fb]">
+        <RotateCcw className="h-3.5 w-3.5" /> 초기 설정값으로 돌리기
+      </button>
     </div>
   );
 
@@ -1922,7 +1931,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* 기본 정보 — 상품형은 '코너 속성' 스튜디오의 1단계로 이동(미리보기 우측). 비상품형만 여기 표시(2026-10-16). */}
             {base !== '상품형' && (
             <div className={cn('order-1', !showStep(0) && 'hidden')}>
-              <FormCard n={1} title="기본 정보"
+              <FormCard n={1} title="코너 기본 정보"
                 aside={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}>
                 {basicPickers}
                 {metaFields}
@@ -1932,11 +1941,11 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             {/* ② 세부 항목 — '표시 항목(이 유형이 쓰는 요소)' + '노출 개수(최소~최대)'만(2026-10-27 사용자 요청). CTA 문구·이미지 모양·탭 슬롯 부가·배너·FO 설정은 빌더로 이관하고, 저장값은 hidden으로 보존해 되돌릴 수 있게 한다. */}
             {base !== '상품형' && (
             <div className={cn('order-2', !showStep(1) && 'hidden')}>
-              <FormCard n={2} title="코너 정보 · 속성" hint="이 코너 유형이 쓰는 표시 항목">
+              <FormCard n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목">
                 {/* 코너 정보·속성 = '코너유형정리' 표 SSOT에서 필수(고정)·옵션(배너·칩·CTA)만 노출(2026-10-28 사용자 요청).
                     저장값(표시 항목 플래그)은 아래 hidden 으로 보존 — 기존 미리보기·데이터 호환. */}
                 <div className="px-1 py-1">
-                  <CornerFieldList cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} />
+                  <CornerFieldList key={`cfl-${resetNonce}`} cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} onOptionsChange={setCornerOpts} />
                 </div>
                 {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
                 {/* 노출 개수 입력은 CornerFieldList(세부 항목) 안에서 설정한다(2026-10-28 사용자 요청: 여기서 설정).
@@ -2277,7 +2286,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         <Slot label="CTA" className="h-6 w-20 rounded-full" />
       </div>
     );
-  } else if (base === '상태 안내형' || has('아이콘', '금액형', '사용량형', '요약')) {
+  } else if (has('아이콘', '금액형', '사용량형', '요약', '상태')) {
     // 마이.png 상태 카드(아이콘/이미지형): 값(Value) + 상태(Status) + 라벨(Label) + 우측 icon/이미지
     body = (
       <div className="flex items-center gap-2 rounded-lg border border-[#dce0e5] bg-[#f8f9fb] p-3">

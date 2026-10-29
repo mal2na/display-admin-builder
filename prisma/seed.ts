@@ -351,7 +351,7 @@ async function main() {
     { name: '점검 내용', atomType: 'INFO', content: '해당 시간 일부 서비스 이용이 제한됩니다' },
   ]);
   const cornerNotice = await corner(
-    { name: '공지/안내', cornerType: '고정·필수 노출형', title: '꼭 확인해 주세요', maxItems: 2 },
+    { name: '공지/안내', cornerType: '업무 진입형', title: '꼭 확인해 주세요', maxItems: 2, layoutDetail: '아이콘/이미지형' },
     [{ id: noticeComp.id, componentType: '정보형' }],
   );
 
@@ -861,7 +861,7 @@ async function main() {
     { name: '가입현황 CTA', atomType: 'CTA', content: '나의 가입 현황', linkUrl: '/my/subscription' },
   ]);
   const myCornerProfile = await corner(
-    { name: '프로필·가입현황', cornerType: '고정·필수 노출형', title: '내 정보', maxItems: 1, layoutDetail: '프로필형', subTitleIcon: '사용안함' },
+    { name: '프로필·가입현황', cornerType: '업무 진입형', title: '내 정보', maxItems: 1, layoutDetail: '프로필형', subTitleIcon: '사용안함' },
     [{ id: myProfile.id, componentType: '정보형' }],
   );
 
@@ -873,7 +873,7 @@ async function main() {
     { name: '요금 라벨', atomType: 'TEXT', content: '실시간 이용요금' },
   ]);
   const myCornerBill = await corner(
-    { name: '실시간 이용요금', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
+    { name: '실시간 이용요금', cornerType: '업무 진입형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
     [{ id: myBill.id, componentType: '정보형' }],
   );
 
@@ -885,7 +885,7 @@ async function main() {
     { name: '포인트 라벨', atomType: 'TEXT', content: 'T멤버십 포인트' },
   ]);
   const myCornerPoint = await corner(
-    { name: 'T멤버십 포인트', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
+    { name: 'T멤버십 포인트', cornerType: '업무 진입형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
     [{ id: myPoint.id, componentType: '정보형' }],
   );
 
@@ -896,7 +896,7 @@ async function main() {
     { name: '멤버십 번호(고객정보 연동)', atomType: 'INFO', content: '@cvm:membership.number' }, // 고객정보에서 회원 멤버십 번호 바인딩
   ]);
   const myCornerBarcode = await corner(
-    { name: 'T멤버십 바코드', cornerType: '고정·필수 노출형', maxItems: 1, layoutDetail: '바코드', subTitleIcon: '사용안함' },
+    { name: 'T멤버십 바코드', cornerType: '바코드형', maxItems: 1, layoutDetail: '바코드', subTitleIcon: '사용안함' },
     [{ id: myBarcode.id, componentType: '정보형' }],
   );
 
@@ -908,7 +908,7 @@ async function main() {
     { name: '데이터 라벨', atomType: 'TEXT', content: '실시간 잔여량' },
   ]);
   const myCornerData = await corner(
-    { name: '실시간 데이터 잔여량', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
+    { name: '실시간 데이터 잔여량', cornerType: '업무 진입형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
     [{ id: myData.id, componentType: '정보형' }],
   );
 
@@ -920,7 +920,7 @@ async function main() {
     { name: '결합 라벨', atomType: 'TEXT', content: '결합가족' },
   ]);
   const myCornerCombine = await corner(
-    { name: '결합가족', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
+    { name: '결합가족', cornerType: '업무 진입형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
     [{ id: myCombine.id, componentType: '정보형' }],
   );
 
@@ -943,7 +943,7 @@ async function main() {
     { name: '결제 라벨', atomType: 'TEXT', content: '휴대폰 결제 / 콘텐츠 이용료' },
   ]);
   const myCornerPay = await corner(
-    { name: '휴대폰 결제·이용료', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
+    { name: '휴대폰 결제·이용료', cornerType: '업무 진입형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
     [{ id: myPay.id, componentType: '정보형' }],
   );
 
@@ -955,7 +955,7 @@ async function main() {
     { name: '구독 라벨', atomType: 'TEXT', content: 'T 우주 월 구독료' },
   ]);
   const myCornerSub = await corner(
-    { name: 'T 우주 구독료', cornerType: '상태 안내형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
+    { name: 'T 우주 구독료', cornerType: '업무 진입형', maxItems: 1, layoutDetail: '아이콘/이미지형', subTitleIcon: '화살표' },
     [{ id: mySub.id, componentType: '정보형' }],
   );
 
@@ -1230,18 +1230,18 @@ async function main() {
   //  샘플: 아이콘형 상태카드 6종. (루쥬 코코 이미지 예시는 배너형·이미지형 CY0000004로 이동)
   const STATUS_ICON_SAMPLES = ['my-bill', 'my-point', 'my-data', 'my-combine', 'my-pay', 'my-sub'];
   await prisma.cornerType.updateMany({
-    where: { baseCategory: '상태 안내형', typeDetail: '아이콘/이미지형' },
+    where: { baseCategory: '업무 진입형', typeDetail: '아이콘/이미지형' },
     data: {
       cvmFields: 'bill.amount,membership.point,data.remaining,combine.count',
       sampleImageUrl: STATUS_ICON_SAMPLES.map((s) => `/assets/corner-samples/${s}.png`).join('\n'),
     },
   });
   await prisma.cornerType.updateMany({
-    where: { baseCategory: '고정·필수 노출형', typeDetail: '바코드' },
+    where: { baseCategory: '바코드형', typeDetail: '바코드' },
     data: { cvmFields: 'membership.number' },
   });
   await prisma.cornerType.updateMany({
-    where: { baseCategory: '고정·필수 노출형', typeDetail: '프로필형' },
+    where: { baseCategory: '업무 진입형', typeDetail: '프로필형' },
     data: { cvmFields: 'customer.name,customer.phone' },
   });
   // FO 사용자 설정(고객 커스터마이즈) 기본값 — 업무 진입형(메뉴·탭) 유형은 고객이 3~8개 범위에서 편집 가능

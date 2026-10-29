@@ -433,10 +433,14 @@ export function compositionToPreviewCorner(opts: {
   composition: Composition;
   placeholder?: boolean; // 신규 등록: 슬롯 라벨(타이틀/디스크립션/혜택 문구 등)로 구조만 표시
   emptyImages?: boolean; // 신규 등록: 이미지/배너 영역을 빈 자리로만(여기 채우세요) — 등록 가이드 폼
+  forceBanner?: boolean; // 비상품형 '배너' 옵션 ON → 상단 배너 영역 노출(2026-10-29(2) 사용자 요청)
+  forceChip?: boolean;   // 비상품형 '칩' 옵션 ON → 상단 콘텐츠 칩 행 주입
 }): PreviewCorner {
   uid = 0;
   const components: PreviewComponent[] = [];
   const ctx = { base: opts.base, detail: opts.detail, placeholder: opts.placeholder, emptyImages: opts.emptyImages };
+  // '칩' 옵션 ON → 코너 상단에 콘텐츠 칩 행 1개 주입(옵션 토글을 미리보기에 반영).
+  if (opts.forceChip) components.push({ id: nid(), name: 'ChipContents', componentType: '선택형', selectedIndex: 0, chipVariant: 'contents', atoms: ['전체', '인기', '신상', '할인', '브랜드', '추천'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) });
   for (const b of opts.composition) for (let i = 1; i <= b.count; i++) components.push(blockComp(b, i, ctx));
   // 세로형+배너 = 요금제 히어로, 가로형+배너 = 아이폰 히어로. 둘 다 상단 히어로 배너(빅배너) 자동 표시.
   const isPlanBanner = opts.base === '상품형' && /세로형\+배너|세로형\(배너\)/.test(opts.detail ?? '');
@@ -453,9 +457,10 @@ export function compositionToPreviewCorner(opts: {
     subTitle: opts.subTitle ?? null,
     layoutDetail: opts.detail ?? null,
     cornerLayout: opts.layout ?? null,
-    bigBanner: isPlanBanner || isDeviceBanner || isBenefitBanner || undefined,
-    // 신규 등록 가이드 폼에선 배너 히어로도 빈 영역(샘플 히어로 미노출).
-    bannerImageUrl: opts.emptyImages ? null : (isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : undefined),
+    bigBanner: opts.forceBanner || isPlanBanner || isDeviceBanner || isBenefitBanner || undefined,
+    // 신규 등록 가이드 폼에선 배너 히어로도 빈 영역. '배너' 옵션 강제 시엔 상품 이미지 대신 'Banner' 슬롯(센티넬: 렌더 불가 → 그라데이션 Banner 박스).
+    bannerImageUrl: isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : (opts.forceBanner ? 'Banner' : (opts.emptyImages ? null : undefined)),
+    bannerName: opts.forceBanner ? 'Banner' : undefined,
     emptyImages: opts.emptyImages ?? null,
     components,
   };

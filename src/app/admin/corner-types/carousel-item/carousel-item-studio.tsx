@@ -96,9 +96,9 @@ function normalizeProductItem(it: CarouselItemSpec, vertical: boolean): Carousel
     priceGroup: vertical
       // 세로형: 가격은 옵션(토글) → 저장값 유지, 가격설명만 끔.
       ? { ...it.priceGroup, priceCaption: { ...it.priceGroup.priceCaption, show: false } }
-      // 가로형: 가격·할인율 고정 on, 기간은 DS false.
-      : { ...it.priceGroup, show: true, priceCaption: { ...it.priceGroup.priceCaption, show: false },
-          discountRate: { ...it.priceGroup.discountRate, show: true }, pricePeriod: { ...it.priceGroup.pricePeriod, show: false } },
+      // 가로형: 가격·할인율은 옵션(토글) → 저장값 유지(2026-10-29(2) 사용자 요청). 가격설명·기간만 끔.
+      : { ...it.priceGroup, priceCaption: { ...it.priceGroup.priceCaption, show: false },
+          pricePeriod: { ...it.priceGroup.pricePeriod, show: false } },
     // 캡션·캡션2 = 세로형 고정. 캡션3 미사용.
     caption: { ...it.caption, show: vertical, icon: { show: false }, caption02: { ...it.caption.caption02, show: vertical }, caption03: { ...it.caption.caption03, show: false } },
     count: { ...it.count, show: false },
@@ -426,13 +426,35 @@ export function CornerSpecThumb({ storageKey, layout }: { storageKey: string; la
 function ChkRow({ label, checked, onChange, disabled, indent, initial, option }: { label: string; checked: boolean; onChange?: (v: boolean) => void; disabled?: boolean; indent?: boolean; initial?: boolean; option?: boolean }) {
   // 필수=고정(disabled, 항상 노출)·옵션(option, 배너·칩·CTA, 항상 노출·토글)만 노출. 선택 항목은 아예 안 보임(2026-10-28 사용자 요청).
   if (!disabled && !checked && !initial && !option) return null;
+  // 2026-10-29(2) 사용자 요청: 체크박스 나열 → '기본 정보'(TRow)·형태(Prop)와 같은 테이블 행. 라벨 셀(회색 150px) + 컨트롤 셀.
+  //  라벨 "배너이미지(BannerSrc)" → 국문(ko) + 코드(key) 분리.
+  const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(label);
+  const ko = m ? m[1] : label;
+  const key = m ? m[2] : undefined;
   return (
-    <label className={cn('flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px]', indent && 'ml-5', disabled ? 'cursor-default' : 'cursor-pointer hover:bg-[#f8f9fb]')}>
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange?.(e.target.checked)} className="h-4 w-4 accent-[#3617ce]" />
-      <span className={cn(checked ? 'font-medium text-slate-800' : 'text-slate-400')}>{label}</span>
-      {disabled && <span className="text-[11px] text-slate-400">· 고정</span>}
-      {option && <span className="text-[11px] font-semibold text-[#3617ce]">· 옵션</span>}
-    </label>
+    <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">
+      <div className={cn('flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3', indent && 'pl-6')}>
+        <span className="flex flex-wrap items-center gap-1.5 text-[12px] font-medium leading-[1.2] text-[#1a1a1a]">
+          {ko}
+          {disabled && <span className="rounded-[4px] bg-[#8b949e]/15 px-1 py-[1px] text-[10px] font-semibold text-[#8b949e]">고정</span>}
+          {option && <span className="rounded-[4px] bg-[#3617ce]/10 px-1 py-[1px] text-[10px] font-semibold text-[#3617ce]">옵션</span>}
+        </span>
+        {key && <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">({key})</span>}
+      </div>
+      <div className="flex min-w-0 items-center px-3.5 py-3">
+        {/* 사용/미사용 라디오 쌍. 고정(disabled)이면 '사용' 선택 + 비활성(못 끔)으로 표기(2026-10-29(2) 사용자 요청). */}
+        <div className="flex items-center gap-5">
+          <label className={cn('flex items-center gap-1.5 text-[13px]', disabled ? 'cursor-default' : 'cursor-pointer')}>
+            <input type="radio" name={`cs_${label}`} checked={checked} disabled={disabled} onChange={() => onChange?.(true)} className="h-4 w-4 accent-[#3617ce]" />
+            <span className={cn('whitespace-nowrap', checked ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>사용</span>
+          </label>
+          <label className={cn('flex items-center gap-1.5 text-[13px]', disabled ? 'cursor-default' : 'cursor-pointer')}>
+            <input type="radio" name={`cs_${label}`} checked={!checked} disabled={disabled} onChange={() => onChange?.(false)} className="h-4 w-4 accent-[#3617ce]" />
+            <span className={cn('whitespace-nowrap', !checked ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>미사용</span>
+          </label>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -440,7 +462,7 @@ function ChkRow({ label, checked, onChange, disabled, indent, initial, option }:
 function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: CardHomeSpec) => void; layout?: string }) {
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
   return (
-    <div className="space-y-0.5">
+    <div>
       {/* 옵션(배너·칩·CTA — 상품형·혜택형 공통). 맨 위에 두고 클릭으로 On/Off(2026-10-28 사용자 확정). */}
       <ChkRow label="배너이미지(BannerSrc)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
       <ChkRow label="칩(Chip)" option checked={spec.chipOn ?? false} onChange={(v) => set({ chipOn: v })} />
@@ -449,6 +471,57 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
       <ChkRow label="코너 메인 타이틀(Title)" checked disabled />
       <ChkRow label="라벨 텍스트(ButtonText)" checked disabled />
     </div>
+  );
+}
+
+// 한 행에 나란히 놓는 사용/미사용 라디오 단위 — 소제목(title) + 라디오 쌍. 비활성이면 회색.
+// 사용/미사용 라디오 쌍(제목 없음 — 제목은 표의 라벨 셀에). 비활성이면 회색.
+function RadioPair({ name, on, disabled, onPick }: { name: string; on: boolean; disabled?: boolean; onPick: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center gap-5">
+      <label className={cn('flex items-center gap-1.5 text-[13px]', disabled ? 'cursor-default' : 'cursor-pointer')}>
+        <input type="radio" name={name} checked={on} disabled={disabled} onChange={() => onPick(true)} className="h-4 w-4 accent-[#3617ce]" />
+        <span className={cn('whitespace-nowrap', on ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>사용</span>
+      </label>
+      <label className={cn('flex items-center gap-1.5 text-[13px]', disabled ? 'cursor-default' : 'cursor-pointer')}>
+        <input type="radio" name={name} checked={!on} disabled={disabled} onChange={() => onPick(false)} className="h-4 w-4 accent-[#3617ce]" />
+        <span className={cn('whitespace-nowrap', !on ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>미사용</span>
+      </label>
+    </div>
+  );
+}
+
+// 가격·할인율(·기간) — 컬럼 분할 그리드(라벨|라디오쌍). 가격 미사용이면 나머지 off+비활성, 가격 사용이면 할인율·기간 독립 옵션(2026-10-29(2) 사용자 요청).
+function PriceCols({ pg, vertical, onChange }: { pg: CarouselItemSpec['priceGroup']; vertical: boolean; onChange: (p: Partial<CarouselItemSpec['priceGroup']>) => void }) {
+  const Label = ({ ko, code, dim }: { ko: string; code: string; dim?: boolean }) => (
+    <div className="flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
+      <span className="flex flex-wrap items-center gap-1.5 text-[12px] font-medium leading-[1.2]">
+        <span className={dim ? 'text-slate-300' : 'text-[#1a1a1a]'}>{ko}</span>
+        <span className="rounded-[4px] bg-[#3617ce]/10 px-1 py-[1px] text-[10px] font-semibold text-[#3617ce]">옵션</span>
+      </span>
+      <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">({code})</span>
+    </div>
+  );
+  const Cell = ({ children }: { children: React.ReactNode }) => <div className="flex min-w-0 items-center px-3.5 py-3">{children}</div>;
+  const price = (<>
+    <Label ko="가격" code={vertical ? 'TextPriceGroup' : 'Price'} />
+    <Cell><RadioPair name="csu_가격" on={pg.show}
+      onPick={(v) => onChange(v ? { show: true } : { show: false, discountRate: { ...pg.discountRate, show: false }, pricePeriod: { ...pg.pricePeriod, show: false } })} /></Cell>
+  </>);
+  const disc = (<>
+    <Label ko="할인율" code={vertical ? 'Discount' : 'DiscountRate'} dim={!pg.show} />
+    <Cell><RadioPair name="csu_할인율" on={pg.show && pg.discountRate.show} disabled={!pg.show}
+      onPick={(v) => onChange({ discountRate: { ...pg.discountRate, show: v } })} /></Cell>
+  </>);
+  const period = (<>
+    <Label ko="기간" code="Period" dim={!pg.show} />
+    <Cell><RadioPair name="csu_기간" on={pg.show && pg.pricePeriod.show} disabled={!pg.show}
+      onPick={(v) => onChange({ pricePeriod: { ...pg.pricePeriod, show: v } })} /></Cell>
+  </>);
+  return vertical ? (
+    <div className="grid grid-cols-[150px_minmax(0,1fr)_104px_minmax(0,1fr)_104px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">{price}{disc}{period}</div>
+  ) : (
+    <div className="grid grid-cols-[150px_minmax(0,1fr)_104px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">{price}{disc}</div>
   );
 }
 
@@ -464,19 +537,16 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
   // 아이템 정보 — 가로형(단말 추천)=가격·할인율·서브텍스트2(고정). 세로형(요금제)=캡션·캡션2(고정) + 가격은 옵션(토글).
   //  세로형은 케이스별로 가격을 쓰기도(넷플릭스 요금제) 안 쓰기도(데이터량 안내) 해서 가격을 옵션으로 둔다(2026-10-28 사용자 요청).
   return (
-    <div className="space-y-0.5">
+    <div>
         <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
         <ChkRow label="아이템 이미지(ImageSrc)" checked disabled />
         <ChkRow label="아이템 타이틀(Title)" checked disabled />
-        {!vertical && <ChkRow label="가격(Price)" checked disabled />}
-        {!vertical && <ChkRow label="할인율(DiscountRate)" checked disabled />}
+        {/* 가격·할인율(·기간) — 컬럼 분할 그리드 + 종속(가격 미사용이면 나머지 off+비활성) */}
+        {!vertical && <PriceCols pg={pg} vertical={false} onChange={setPg} />}
         {!vertical && <ChkRow label="서브텍스트2(SubText02)" checked disabled />}
         {vertical && <ChkRow label="캡션(Caption01)" checked disabled />}
         {vertical && <ChkRow label="캡션2(Caption02)" checked disabled />}
-        {/* 세로형 가격 = 옵션(토글). 켜면 할인율·기간까지. */}
-        {vertical && <ChkRow label="가격(TextPriceGroup)" option checked={pg.show} onChange={(v) => setPg({ show: v })} />}
-        {vertical && pg.show && <ChkRow label="할인율(Discount)" option indent checked={pg.discountRate.show} onChange={(v) => setPg({ discountRate: { ...pg.discountRate, show: v } })} />}
-        {vertical && pg.show && <ChkRow label="기간(Period)" option indent checked={pg.pricePeriod.show} onChange={(v) => setPg({ pricePeriod: { ...pg.pricePeriod, show: v } })} />}
+        {vertical && <PriceCols pg={pg} vertical onChange={setPg} />}
     </div>
   );
 }
@@ -514,8 +584,8 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
   return (
     <div className="flex flex-wrap items-start gap-5">
       {/* 좌측: 미리보기 — 스크롤해도 따라오게 sticky 고정. 카드/컴포넌트 클릭으로 코너 정보↔속성 전환. */}
-      <div className="w-[300px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
-        <p className="mb-1.5 text-[11px] font-medium text-[#697582]">미리보기 · <b className="text-[#454f59]">카드=코너 정보 · 안쪽 카드=코너 속성</b></p>
+      <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
+        <p className="mb-1.5 text-[14.5px] font-bold text-slate-900">코너 미리보기</p>
         <div className="rounded-[14px] border border-[#dce0e5] bg-[#f3f4f7] p-4">
           <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} layout={layout} />
         </div>
@@ -530,28 +600,28 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
       <div className="min-w-[320px] flex-1 space-y-4">
         {/* 1. 기본 정보 — 헤더 우측에 현재 선택 상태값(유형·레이아웃) 칩 · 본문 테이블 여백 */}
         {basicInfo && (
-          <Panel n={1} title="기본 정보" aside={registerResult}>{basicInfo}</Panel>
+          <Panel n={1} title="코너 기본 정보" aside={registerResult}>{basicInfo}</Panel>
         )}
 
         {/* 2. 코너 정보 · 속성 — 하나로 합쳐 '현재 쓰는 항목'만 노출(2026-10-27 사용자 요청). 탭 제거. */}
-        <Panel n={2} title="코너 정보 · 속성" hint="이 코너 유형이 쓰는 표시 항목" bodyClass="">
+        <Panel n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목" bodyClass="">
           {/* 코너(카드)=카드 전체에 1개 · 아이템(요소)=리스트에서 반복되는 카드 1개. 같은 '타이틀'이라도 소속이 달라 그룹으로 구분(2026-10-27 사용자 요청). */}
           <div className="space-y-3 p-4">
-            <div className="overflow-hidden rounded-[10px] border border-[#dce0e5]">
+            <div className="border-y border-[#dce0e5]">
               <div className="flex items-center gap-1.5 border-b border-[#eef0f3] bg-[#f8f9fb] px-3 py-2">
                 <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] bg-[#3617ce]/10 text-[10px] font-bold text-[#3617ce]">코</span>
                 <span className="text-[12px] font-bold text-[#454f59]">코너(카드)</span>
                 <span className="text-[11px] text-[#8b949e]">· 카드 전체에 1개 (배너·타이틀·버튼)</span>
               </div>
-              <div className="p-2"><CornerInfoBody spec={spec} onChange={save} layout={layout} /></div>
+              <CornerInfoBody spec={spec} onChange={save} layout={layout} />
             </div>
-            <div className="overflow-hidden rounded-[10px] border border-[#dce0e5]">
+            <div className="border-y border-[#dce0e5]">
               <div className="flex items-center gap-1.5 border-b border-[#eef0f3] bg-[#f8f9fb] px-3 py-2">
                 <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] bg-[#00a058]/10 text-[10px] font-bold text-[#00a058]">아</span>
                 <span className="text-[12px] font-bold text-[#454f59]">아이템(요소)</span>
                 <span className="text-[11px] text-[#8b949e]">· 리스트에서 반복되는 카드 1개 (상품 이미지·타이틀·가격)</span>
               </div>
-              <div className="p-2"><CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} /></div>
+              <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />
             </div>
           </div>
         </Panel>
