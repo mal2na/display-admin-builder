@@ -411,7 +411,8 @@ function ProfileCard({ component }: { component?: PreviewComponent }) {
           : avatar ? <AtomIcon atom={avatar} className="h-6 w-6" /> : <User className="h-6 w-6" />}
       </div>
       <div className="flex min-w-0 flex-1 items-baseline gap-2">
-        <span className="shrink-0 text-[15px] font-bold text-slate-900">{resolveCvmSample(name?.content) || '고객'}님</span>
+        {/* '님'은 실제 이름(한글)에만 — 영문 라벨 placeholder(Title 등)엔 붙이지 않음(2026-10-29(2) 사용자 요청). */}
+        {(() => { const nm = resolveCvmSample(name?.content) || '고객'; return <span className="shrink-0 text-[15px] font-bold text-slate-900">{nm}{/^[A-Za-z]/.test(nm) ? '' : '님'}</span>; })()}
         {phone && <span className="truncate text-[13px] font-medium text-slate-400">{resolveCvmSample(phone.content)}</span>}
       </div>
       {cta && <span className="shrink-0 whitespace-nowrap rounded-full bg-slate-200/70 px-3 py-1.5 text-[12px] font-medium text-slate-600">{cta.content}</span>}
