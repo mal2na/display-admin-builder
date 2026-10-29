@@ -51,9 +51,8 @@ export function CornerTypeDetail({ row, history, builtOptions, registered = [], 
         </Link>
         <div className="h-4 w-px bg-border" />
         <span className="font-mono text-sm text-primary">{row.typeId}</span>
-        {/* 타이틀 = 유형·배열(cleanName)을 크게. 케이스명(기프티콘 추천 등)은 표시하지 않음(2026-10-29(2) 사용자 요청). */}
+        {/* 타이틀 = 유형·배열(cleanName)을 크게. 케이스명 미표시 + 유형 배지 중복 제거(2026-10-29(2) 사용자 요청: 타이틀에 이미 유형이 있어 뒤 칩 삭제). */}
         <h1 className="text-xl font-bold text-slate-900">{cleanName}</h1>
-        <Badge variant="outline">{cornerTypeBi(row.baseCategory)}</Badge>
         <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', row.active ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground')}>
           {row.active ? '사용' : '미사용'}
         </span>
