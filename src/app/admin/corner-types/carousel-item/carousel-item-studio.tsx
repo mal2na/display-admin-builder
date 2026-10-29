@@ -209,7 +209,6 @@ function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children 
     <section className="overflow-hidden rounded-[16px] border border-[#dce0e5] bg-white">
       <button type="button" onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center gap-2 bg-white px-4 py-3.5 text-left transition hover:bg-[#f8f9fb]">
-        {n != null && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3617ce] text-[12px] font-bold text-white">{n}</span>}
         <h2 className="text-[20px] font-bold leading-[1.3] text-slate-900">{title}</h2>
         {hint && <span className="text-[11px] text-[#8b949e]">{hint}</span>}
         <span className="ml-auto flex items-center gap-3">
@@ -217,7 +216,7 @@ function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children 
           <ChevronDown className={cn('h-4 w-4 shrink-0 text-[#8b949e] transition-transform', open ? 'rotate-180' : '')} />
         </span>
       </button>
-      {open && <div className={bodyClass ?? 'px-4 pb-4 pt-0'}>{children}</div>}
+      {open && <div className={cn('border-t border-[#eef0f3]', bodyClass ?? 'px-4 pb-4 pt-4')}>{children}</div>}
     </section>
   );
 }
@@ -232,7 +231,7 @@ function ItemCard({ s, w }: { s: CarouselItemSpec; w?: number }) {
   const width = w ?? H_VARIANT_WIDTH[s.variant] ?? 118; // Small/Medium/Large 로 카드 폭 변경
   return (
     <div className="flex shrink-0 flex-col gap-1.5" style={{ width }}>
-      <div className="flex aspect-square w-full items-center justify-center rounded-[12px] bg-[#eceef1] text-[#b3b9c0]">
+      <div className="flex aspect-square w-full items-center justify-center rounded-[12px] bg-[#e9eaf4] text-[#b3b9c0]">
         {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full rounded-[12px] object-cover" /> : <ImageIcon className="h-5 w-5" />}
       </div>
       <div className="flex flex-col gap-0.5">
@@ -284,7 +283,7 @@ function ItemRow({ s }: { s: CarouselItemSpec }) {
   if (s.variant === 'Barcode') return <Barcode />;
   return (
     <div className="flex w-full items-start gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#eceef1] text-[#b3b9c0]">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#e9eaf4] text-[#b3b9c0]">
         {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -325,16 +324,17 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
       className={cn('overflow-hidden rounded-[28px] border-2 bg-white transition', ro ? 'border-[#dce0e5]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#dce0e5] hover:border-[#c4c9cf]'))}>
       {hasBanner && (spec.bannerSrc ? (
-        /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="h-[160px] w-full object-cover" />
+        /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="aspect-[16/10] w-full object-cover" />
       ) : (
-        <div className="flex h-[160px] w-full items-center justify-center bg-gradient-to-br from-indigo-200 to-slate-300 text-[12px] font-medium text-slate-600">Banner</div>
+        // 배너 — 단색(그라데이션 제거), 혜택·오퍼형과 동일 비율(aspect-16/10)·동일 색(2026-10-29(2) 사용자 요청).
+        <div className="flex aspect-[16/10] w-full items-center justify-center bg-[#e9eaf4] text-[12px] font-medium text-slate-500">Banner</div>
       ))}
-      <p className="whitespace-pre-line px-3 pt-3 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
+      <p className="whitespace-pre-line px-5 pt-4 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
       {/* 버튼 텍스트(ButtonText) — 타이틀 바로 밑 텍스트. 모든 레이아웃 공통(2026-10-28 사용자 요청: CTA와 분리). */}
-      {spec.buttonText.show && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
+      {spec.buttonText.show && <p className="mt-1 px-5 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
       {/* 칩(Chip) 옵션 — 상단 카테고리 탭(2026-10-28 사용자 요청: 배너·칩·CTA 옵션 가로/세로 공통) */}
       {spec.chipOn && (
-        <div className="mt-2 flex gap-1.5 overflow-x-auto px-3">
+        <div className="mt-2 flex gap-1.5 overflow-x-auto px-5">
           {['전체', 'Label', 'Label'].map((c, i) => (
             <span key={i} className={cn('flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12px]', i === 0 ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>{c}</span>
           ))}
@@ -342,7 +342,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       )}
       {vertical ? (
         // 세로형 = 세로 리스트. 행 구분선 제거(2026-10-28 사용자 요청). 실제 노출 개수는 빌더에서, 미리보기는 대표 4건.
-        <div className="mt-1 flex flex-col px-3 pb-2">
+        <div className="mt-1 flex flex-col px-5 pb-2">
           {[0, 1, 2, 3].map((i) => (
             <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
               <ItemRow s={spec.item} />
@@ -350,7 +350,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
           ))}
         </div>
       ) : (
-      <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-2">
+      <div className="mt-2 flex gap-2 overflow-x-auto px-5 pb-2">
         {[0, 1].map((i) => (
           <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
             <ItemCard s={spec.item} />
@@ -360,7 +360,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       )}
       {/* CTA — 카드 하단 전체폭 버튼(Label ›). 버튼 텍스트와 별개(2026-10-28 사용자 요청). 레거시 스펙(cta 없음) 방어. */}
       {spec.cta?.show && (
-        <div className="px-3 pb-3 pt-1">
+        <div className="px-5 pb-4 pt-1">
           <div className="flex w-full items-center justify-center gap-0.5 rounded-full border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.cta?.label || 'Label'} <span className="text-[#b3b9c0]">›</span></div>
         </div>
       )}

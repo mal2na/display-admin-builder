@@ -681,7 +681,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         className="block w-full bg-gradient-to-b from-sky-50 to-white"
       />
     ) : (
-      <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-indigo-200 to-slate-300 text-[12px] font-medium text-slate-600">
+      <div className="flex aspect-[16/10] w-full items-center justify-center bg-[#e9eaf4] text-[12px] font-medium text-slate-500">
         {corner.bannerName ?? bannerSrc.split('/').pop()}
       </div>
     )

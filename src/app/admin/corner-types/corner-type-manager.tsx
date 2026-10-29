@@ -1258,7 +1258,6 @@ function FormCard({ n, title, hint, aside, defaultOpen = true, bodyClass, childr
     <section className="overflow-hidden rounded-[16px] border border-[#dce0e5] bg-white">
       <button type="button" onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center gap-2 bg-white px-4 py-3.5 text-left transition hover:bg-[#f8f9fb]">
-        {n != null && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3617ce] text-[12px] font-bold text-white">{n}</span>}
         <h2 className="text-[20px] font-bold leading-[1.3] text-slate-900">{title}</h2>
         {hint && <span className="text-[11px] text-[#8b949e]">{hint}</span>}
         <span className="ml-auto flex items-center gap-3">
@@ -1266,7 +1265,7 @@ function FormCard({ n, title, hint, aside, defaultOpen = true, bodyClass, childr
           <ChevronDown className={cn('h-4 w-4 shrink-0 text-[#8b949e] transition-transform', open ? 'rotate-180' : '')} />
         </span>
       </button>
-      {open && <div className={bodyClass ?? 'px-4 pb-4 pt-0'}>{children}</div>}
+      {open && <div className={cn('border-t border-[#eef0f3]', bodyClass ?? 'px-4 pb-4 pt-4')}>{children}</div>}
     </section>
   );
 }
@@ -1920,12 +1919,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       )}
 
       {/* ③ 컴포넌트 조합 — 이 코너 유형에 담을 컴포넌트를 순서대로 조립. (bulk 수정에선 컴포넌트 속성으로 대체 → 제외) */}
-      {!bulk && (
+      {/* 비상품형 — 미리보기+설정 섹션. 상품형은 아래 CornerStudio가 담당(빈 섹션으로 간격 생기지 않게 제외, 2026-10-29(2) 사용자 요청). */}
+      {!bulk && base !== '상품형' && (
       /* 좌우 보더 없는 섹션(목업 105) — 굵은 제목 + 가로줄 테이블만. */
       <section className="space-y-2">
         <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
-        {/* 미리보기(고정폭) + 설정 — 뷰포트 breakpoint가 아니라 실제 컨테이너 폭에 반응(flex-wrap). 좁으면 설정이 미리보기 아래로. */}
-        <div className="flex flex-wrap gap-4">
+        {/* 미리보기(고정폭) + 설정 — 뷰포트 breakpoint가 아니라 실제 컨테이너 폭에 반응(flex-wrap). gap-5로 상품형(CornerStudio)·읽기와 통일(2026-10-29(2) 사용자 요청). */}
+        <div className="flex flex-wrap items-start gap-5">
           {/* 왼쪽: 라이브 미리보기(sticky). 상품형은 '코너 속성(CarouselItem)' 스튜디오의 미리보기만 쓴다(2026-10-16 사용자 요청) → 숨김. */}
           {base !== '상품형' && livePreview}
           {/* 오른쪽: 모든 설정 — (등록은 스텝별) 유형·배열 → 컴포넌트 구성 → 표시 항목 */}
@@ -1996,7 +1996,25 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* 상품형 — 코너 속성 스튜디오: 1.기본 정보(미리보기+기본 정보+코너 정보) + 2.코너 속성(CarouselItem).
            기본 정보 필드(basicPickers·metaFields)를 미리보기 우측으로, 등록 결과는 코너 정보 옆으로(2026-10-16 사용자 요청). */}
-      {showStep(2) && base === '상품형' && (
+      {!bulk && base === '상품형' && showStep(2) && (
+      <div>
+        {/* 상품형 폼 제출용 hidden — composition + 저장값(스펙은 CornerStudio가 localStorage로 저장). 한 div로 묶어 빈 섹션 간격 방지(2026-10-29(2) 사용자 요청). */}
+        <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
+        <div className="hidden">
+          {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
+          <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
+          {eff('useMoreButton') && <input type="hidden" name="defaultMoreButtonLabel" value={moreLabel} />}
+          <input type="hidden" name="defaultMainTitle" value="" />
+          <input type="hidden" name="defaultSubTitle" value="" />
+          <input type="hidden" name="defaultSubTitleIcon" value="" />
+          <input type="hidden" name="defaultMinItems" value={minItems} />
+          <input type="hidden" name="defaultMaxItems" value={maxItems} />
+          <input type="hidden" name="defaultCardShape" value={cardShape} />
+          <input type="hidden" name="defaultBannerOptions" value={JSON.stringify({ mode: bannerMode, showIndicator: bannerIndicator, loop: true })} />
+          <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
+          {userCustom && <input type="hidden" name="userMinItems" value={userMin} />}
+          {userCustom && <input type="hidden" name="userMaxItems" value={userMax} />}
+        </div>
         <CornerStudio
           storageKey={`ct:${row.id || 'new'}`}
           layout={detail}
@@ -2018,6 +2036,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             </div>
           }
         />
+      </div>
       )}
 
       {/* 추천 수급 · 노출 구성 = 한 섹션. 콘텐츠 출처(수급 방식)를 먼저 정하고, 그에 따라 노출 구성(정렬·CTA)을 설정.
