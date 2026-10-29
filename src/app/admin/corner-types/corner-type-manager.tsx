@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronRight, ChevronDown, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Check, X, Search, ChevronRight, ChevronLeft, ChevronDown, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles } from 'lucide-react';
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -183,8 +183,8 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   const c = compositionToPreviewCorner({
     base: row.baseCategory,
     detail: row.typeDetail,
-    mainTitle: noTitle || !row.useMainTitle ? null : '타이틀',
-    subTitle: noTitle || !row.useSubTitle ? null : '디스크립션',
+    mainTitle: noTitle || !row.useMainTitle ? null : 'Title',
+    subTitle: noTitle || !row.useSubTitle ? null : 'ButtonText',
     // 가이드는 저장된 조합(실데이터 포함)이 아니라 유형 기본 조합(generic)으로 — 상품명·가격·설명 '슬롯 라벨'만 보이게.
     composition: defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: row.useBadge, desc: row.useDesc }),
     placeholder: true, // 슬롯 라벨(상품명·가격·설명 등)로 구조만
@@ -1257,16 +1257,15 @@ function FormCard({ n, title, hint, aside, defaultOpen = true, bodyClass, childr
   return (
     <section className="overflow-hidden rounded-[16px] border border-[#dce0e5] bg-white">
       <button type="button" onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 bg-[#f8f9fb] px-5 py-4 text-left transition hover:bg-[#f1f3f5]">
-        {n != null && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3617ce] text-[12px] font-bold text-white">{n}</span>}
-        <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
+        className="flex w-full items-center gap-2 bg-white px-4 py-3.5 text-left transition hover:bg-[#f8f9fb]">
+        <h2 className="text-[20px] font-bold leading-[1.3] text-slate-900">{title}</h2>
         {hint && <span className="text-[11px] text-[#8b949e]">{hint}</span>}
         <span className="ml-auto flex items-center gap-3">
           {aside}
           <ChevronDown className={cn('h-4 w-4 shrink-0 text-[#8b949e] transition-transform', open ? 'rotate-180' : '')} />
         </span>
       </button>
-      {open && <div className={cn('border-t border-[#eef0f3]', bodyClass ?? 'px-5 py-4')}>{children}</div>}
+      {open && <div className={bodyClass ?? 'px-4 pb-4 pt-0'}>{children}</div>}
     </section>
   );
 }
@@ -1305,6 +1304,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const [step, setStep] = useState(0);
   const [resetNonce, setResetNonce] = useState(0); // 비상품형 '초기 설정값으로 돌리기' — CornerFieldList 리마운트 키.
   const [cornerOpts, setCornerOpts] = useState<Record<string, boolean>>({}); // 비상품형 코너 속성 옵션(배너·칩·CTA) 상태 — 미리보기 반영용.
+  const [cornerVariant, setCornerVariant] = useState<string>('Small'); // 비상품형 형태(Variants) — 가로형 Small/Medium/Large 카드 크기 미리보기 반영(2026-10-29(2)).
   // 2단 분류: ① 코너 유형(base) → ② 배열·레이아웃(detail). 구성 컴포넌트는 배열·레이아웃에서 자동 도출.
   const [base, setBase] = useState(row.baseCategory);
   const [detail, setDetail] = useState(row.typeDetail ?? '');
@@ -1498,7 +1498,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     // 저장된 조합이 아니라 '현재 속성 토글(features)' 기준으로 조합 생성 → 끄면 즉시 미리보기에서 빠짐
     const comp = defaultComposition(compForShape(base, d), d, { image: features.useImage, price: features.usePrice, badge: features.useBadge || d.includes('태그'), desc: features.useDesc });
     // 속성은 배열 형태와 무관하게 토글 그대로 적용(모든 배열 동일) — detail 기반 eff 대신 features 직접 사용
-    const c = compositionToPreviewCorner({ base, detail: d, composition: comp, mainTitle: features.useMainTitle ? '코너 타이틀' : null, subTitle: features.useSubTitle ? '서브타이틀' : null });
+    const c = compositionToPreviewCorner({ base, detail: d, composition: comp, mainTitle: features.useMainTitle ? 'Title' : null, subTitle: features.useSubTitle ? 'ButtonText' : null, placeholder: true, emptyImages: true });
     // 배너 히어로는 상품 이미지와 독립(bannerImageUrl) — 상품 이미지 OFF에도 배너 유지
     const isBannerArr = d.includes('배너');
     const heroImg = base === '상품형' ? (d.includes('세로형') ? '/assets/ds/plan-hero-expire.png' : '/assets/ds/hero-device.png') : '/assets/ds/hero-plan.png';
@@ -1653,22 +1653,25 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   //  flex-wrap 레이아웃의 고정폭 아이템 — 폭이 좁으면 오른쪽 설정이 아래로 내려가 per-char로 터지지 않는다.
   const livePreview = (
     <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
-      {/* '코너 정의' 헤더는 미리보기 열 상단에 — 오른쪽 '기본 정보' 헤더와 같은 로우로 정렬(2026-10-01 사용자 요청) */}
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-[14.5px] font-bold text-slate-900">
-        코너 미리보기
-        <span className="text-[11px] font-normal text-slate-400">왼쪽 미리보기를 보며 오른쪽에서 설정</span>
+      {/* 코너 미리보기 — 읽기 상세와 동일하게 타이틀 포함 카드(박스)로 감쌈(2026-10-29(2) 사용자 요청). */}
+      <section className="overflow-hidden rounded-[12px] border border-[#dce0e5] bg-white">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3.5">
+        <h3 className="text-[20px] font-bold leading-[1.3] text-slate-900">코너 미리보기</h3>
       </div>
-      <div className="max-h-[72vh] overflow-y-auto rounded-xl border bg-[#eef0f6] p-3">
+      <div className="max-h-[72vh] overflow-y-auto bg-[#eef0f6] px-4 pb-4 pt-4">
         {(() => {
-          // 코너 속성 옵션(배너·칩·CTA) 토글 → 미리보기 반영(2026-10-29(2) 사용자 요청). 옵션에 없는 유형은 undefined로 기존 동작 유지.
-          const optBanner = cornerOpts['배너'];
-          const optChip = cornerOpts['칩'];
-          const optCta = cornerOpts['CTA'];
+          // 코너 속성 옵션(배너·칩·CTA) 토글 → 미리보기 반영(2026-10-29(2) 사용자 요청).
+          //  이 유형이 실제로 갖는 옵션에만 적용 — 업무 진입형 등 옵션 없는 유형은 전환 전 값이 남아도 강제하지 않음.
+          const availOpts = cornerFieldSpec(base, detailValid)?.options ?? [];
+          const optBanner = availOpts.includes('배너') ? cornerOpts['배너'] : undefined;
+          const optChip = availOpts.includes('칩') ? cornerOpts['칩'] : undefined;
+          const optCta = availOpts.includes('CTA') ? cornerOpts['CTA'] : undefined;
           const previewC = {
             ...compositionToPreviewCorner({
               base, detail: detailValid, composition: shownBlocks,
-              mainTitle: useTitle ? (mainTitleText || (guidePreview ? '타이틀' : '코너 타이틀')) : null,
-              subTitle: useSub ? (subTitleText || (guidePreview ? '디스크립션' : '서브타이틀')) : null,
+              mainTitle: useTitle ? (mainTitleText || 'Title') : null,
+              // 코너 카드의 타이틀 밑 줄 = 라벨 텍스트(ButtonText). 서브타이틀 아님(2026-10-29(2) 사용자 요청).
+              subTitle: useSub ? (subTitleText || 'ButtonText') : null,
               placeholder: guidePreview && !mainTitleText && !subTitleText,
               emptyImages: guidePreview, // 신규 등록·수정 중 다른 case는 이미지/배너를 빈 가이드 슬롯으로. 편집 중인 그 case만 실제 이미지 유지.
               forceBanner: optBanner,
@@ -1681,17 +1684,29 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             showPrice: priceOn,
             showBadge: eff('useBadge'),
             showDesc: descOn,
-            // CTA(더보기) 표시 항목 ON → 미리보기 버튼으로 반영. 코너 속성 'CTA' 옵션이 있으면 그 값 우선.
-            moreButtonUse: optCta ?? eff('useMoreButton'),
+            // CTA(더보기) — CTA 옵션이 있는 유형에서만. 업무 진입형·바코드형·배너형은 CTA 옵션이 없어 더보기 미표시.
+            moreButtonUse: availOpts.includes('CTA') ? (optCta ?? eff('useMoreButton')) : false,
             moreButtonLabel: moreLabel || undefined,
             // 수급 방식(CVM/운영자 편성)을 미리보기에도 반영 — 빌더와 동일하게 'CVM 개인화 · 미리보기는 폴백' 배지 노출(2026-10-06).
             recSource: recSource || undefined,
+            // 형태(Variants) — 가로형만 카드 크기(Small/Medium/Large) 미리보기 반영. 세로형(Profile/Data/Barcode)은 크기 개념 아님.
+            cardSize: /가로/.test(detailValid ?? '') ? cornerVariant : undefined,
           };
-          return <CornerBlock corner={previewC} />;
+          // 미리보기 아이템(요소)은 우선 3개로 고정 — 선택형(칩/탭)은 유지, 본문 반복 카드만 3개로 캡(2026-10-29(2) 사용자 요청).
+          //  실제 노출 개수는 빌더/CVM이 정하므로 코너 유형 미리보기는 대표 3건만 보여준다.
+          const capped = {
+            ...previewC,
+            components: [
+              ...previewC.components.filter((c) => c.componentType === '선택형'),
+              ...previewC.components.filter((c) => c.componentType !== '선택형').slice(0, 3),
+            ],
+          };
+          return <CornerBlock corner={capped} />;
         })()}
       </div>
+      </section>
       {/* 초기 설정값으로 돌리기 — 유형 정의 기본값(옵션 전체 사용·노출 개수·형태)으로 ② 코너 정보·속성 복원(2026-10-29(2) 사용자 요청: 모든 코너 미리보기 밑에). */}
-      <button type="button" onClick={() => { try { localStorage.removeItem(`ctopt:${row.id}`); } catch { /* noop */ } setResetNonce((n) => n + 1); }}
+      <button type="button" onClick={() => { try { localStorage.removeItem(`ctopt:${row.id}`); localStorage.removeItem(`ctvar:${row.id}`); } catch { /* noop */ } setCornerVariant('Small'); setResetNonce((n) => n + 1); }}
         className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#dce0e5] bg-white px-3 py-2 text-[12px] font-semibold text-[#454f59] transition hover:bg-[#f8f9fb]">
         <RotateCcw className="h-3.5 w-3.5" /> 초기 설정값으로 돌리기
       </button>
@@ -1841,7 +1856,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         await formAction(fd);
         onClose();
       }}
-      className="space-y-4 p-5"
+      className="space-y-5"
     >
       {bulk && <input type="hidden" name="bulkArraysJson" value={JSON.stringify(selectedArrays)} />}
       {/* 폼 내부 제목 제거 — 페이지 상단 브레드크럼으로 대체(2026-10-01 사용자 요청). bulk(배열 일괄 수정)만 제목 유지. */}
@@ -1917,12 +1932,15 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       )}
 
       {/* ③ 컴포넌트 조합 — 이 코너 유형에 담을 컴포넌트를 순서대로 조립. (bulk 수정에선 컴포넌트 속성으로 대체 → 제외) */}
-      {!bulk && (
-      /* 좌우 보더 없는 섹션(목업 105) — 굵은 제목 + 가로줄 테이블만. */
-      <section className="space-y-2">
+      {/* 비상품형 — 미리보기+설정 섹션. 상품형은 아래 CornerStudio가 담당(빈 섹션으로 간격 생기지 않게 제외, 2026-10-29(2) 사용자 요청). */}
+      {!bulk && base !== '상품형' && (
+      /* 좌우 보더 없는 섹션(목업 105) — 굵은 제목 + 가로줄 테이블만.
+         space-y-2 제거: 숨은 composition input이 첫 자식이라 flex 행(2번째 자식)에 margin-top 8px가 붙어
+         상품형(div 래퍼)보다 8px 내려가던 문제 해소(2026-10-29(2) 사용자 요청: 최상단 패딩 통일). */
+      <section>
         <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
-        {/* 미리보기(고정폭) + 설정 — 뷰포트 breakpoint가 아니라 실제 컨테이너 폭에 반응(flex-wrap). 좁으면 설정이 미리보기 아래로. */}
-        <div className="flex flex-wrap gap-4">
+        {/* 미리보기(고정폭) + 설정 — 뷰포트 breakpoint가 아니라 실제 컨테이너 폭에 반응(flex-wrap). gap-5로 상품형(CornerStudio)·읽기와 통일(2026-10-29(2) 사용자 요청). */}
+        <div className="flex flex-wrap items-start gap-5">
           {/* 왼쪽: 라이브 미리보기(sticky). 상품형은 '코너 속성(CarouselItem)' 스튜디오의 미리보기만 쓴다(2026-10-16 사용자 요청) → 숨김. */}
           {base !== '상품형' && livePreview}
           {/* 오른쪽: 모든 설정 — (등록은 스텝별) 유형·배열 → 컴포넌트 구성 → 표시 항목 */}
@@ -1933,8 +1951,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             <div className={cn('order-1', !showStep(0) && 'hidden')}>
               <FormCard n={1} title="코너 기본 정보"
                 aside={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}>
-                {basicPickers}
-                {metaFields}
+                <div className="border-t border-[#dce0e5]">{basicPickers}{metaFields}</div>
               </FormCard>
             </div>
             )}
@@ -1944,9 +1961,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               <FormCard n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목">
                 {/* 코너 정보·속성 = '코너유형정리' 표 SSOT에서 필수(고정)·옵션(배너·칩·CTA)만 노출(2026-10-28 사용자 요청).
                     저장값(표시 항목 플래그)은 아래 hidden 으로 보존 — 기존 미리보기·데이터 호환. */}
-                <div className="px-1 py-1">
-                  <CornerFieldList key={`cfl-${resetNonce}`} cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} onOptionsChange={setCornerOpts} />
-                </div>
+                <CornerFieldList key={`cfl-${resetNonce}`} cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} onOptionsChange={setCornerOpts} variantKey={`ctvar:${row.id}`} onVariantChange={setCornerVariant} />
                 {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
                 {/* 노출 개수 입력은 CornerFieldList(세부 항목) 안에서 설정한다(2026-10-28 사용자 요청: 여기서 설정).
                     단, 노출 개수가 없는 유형(탭형·단일형·상태안내형·고정필수)은 CountRow가 안 떠서 저장값만 hidden 보존. */}
@@ -1993,13 +2008,47 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* 상품형 — 코너 속성 스튜디오: 1.기본 정보(미리보기+기본 정보+코너 정보) + 2.코너 속성(CarouselItem).
            기본 정보 필드(basicPickers·metaFields)를 미리보기 우측으로, 등록 결과는 코너 정보 옆으로(2026-10-16 사용자 요청). */}
-      {showStep(2) && base === '상품형' && (
+      {!bulk && base === '상품형' && showStep(2) && (
+      <div>
+        {/* 상품형 폼 제출용 hidden — composition + 저장값(스펙은 CornerStudio가 localStorage로 저장). 한 div로 묶어 빈 섹션 간격 방지(2026-10-29(2) 사용자 요청). */}
+        <input type="hidden" name="composition" value={JSON.stringify(shownBlocks)} />
+        <div className="hidden">
+          {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
+          <input type="hidden" name="defaultMoreButton" value={eff('useMoreButton') ? '1' : ''} />
+          {eff('useMoreButton') && <input type="hidden" name="defaultMoreButtonLabel" value={moreLabel} />}
+          <input type="hidden" name="defaultMainTitle" value="" />
+          <input type="hidden" name="defaultSubTitle" value="" />
+          <input type="hidden" name="defaultSubTitleIcon" value="" />
+          <input type="hidden" name="defaultMinItems" value={minItems} />
+          <input type="hidden" name="defaultMaxItems" value={maxItems} />
+          <input type="hidden" name="defaultCardShape" value={cardShape} />
+          <input type="hidden" name="defaultBannerOptions" value={JSON.stringify({ mode: bannerMode, showIndicator: bannerIndicator, loop: true })} />
+          <input type="hidden" name="userCustomizable" value={userCustom ? '1' : ''} />
+          {userCustom && <input type="hidden" name="userMinItems" value={userMin} />}
+          {userCustom && <input type="hidden" name="userMaxItems" value={userMax} />}
+        </div>
         <CornerStudio
           storageKey={`ct:${row.id || 'new'}`}
           layout={detail}
-          basicInfo={<div>{basicPickers}{metaFields}</div>}
+          basicInfo={<div className="border-t border-[#dce0e5]">{basicPickers}{metaFields}</div>}
           registerResult={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}
+          itemCount={
+            <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-t border-[#eef0f3]">
+              <div className="flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
+                <span className="text-[14px] font-medium text-[#454f59]">노출 개수 범위</span>
+                <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">(count)</span>
+              </div>
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5 px-3.5 py-3 text-[13px]">
+                <input type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
+                <span className="text-slate-400">~</span>
+                <input type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
+                <span className="text-[12px] text-slate-500">개</span>
+                <span className="text-[11px] text-slate-400">· 허용 범위(가드레일). 실제 개수는 빌더/CVM에서 정함</span>
+              </div>
+            </div>
+          }
         />
+      </div>
       )}
 
       {/* 추천 수급 · 노출 구성 = 한 섹션. 콘텐츠 출처(수급 방식)를 먼저 정하고, 그에 따라 노출 구성(정렬·CTA)을 설정.
@@ -2015,8 +2064,13 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* 유형 샘플 이미지 제거(2026-09-28) — 컴포넌트 조합의 실시간 미리보기(미리보기·조합 결과)로 통일. 중복 방지. */}
 
-      <div className="flex items-center justify-end gap-2 border-t pt-3">
-        <Button type="button" variant="secondary" size="sm" onClick={onClose}>취소</Button>
+      <div className="flex items-center justify-between gap-2 border-t pt-3">
+        {/* 하단 좌측 '목록'(뒤로가기) — 상단 브레드크럼 제거분 대체(2026-10-29(2) 사용자 요청) */}
+        <Link href="/admin/corner-types" className="inline-flex items-center gap-1 rounded-md border border-[#dce0e5] bg-white px-3 py-1.5 text-[13px] font-medium text-[#454f59] hover:bg-[#f8f9fb]">
+          <ChevronLeft className="h-4 w-4" /> 목록
+        </Link>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>취소</Button>
         {wizard ? (
           <>
             {step > 0 && <Button type="button" variant="secondary" size="sm" onClick={() => setStep((s) => Math.max(0, s - 1))}>이전</Button>}
@@ -2025,8 +2079,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               : <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> 등록</Button>}
           </>
         ) : (
-          <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> {isNew ? '등록' : '저장'}</Button>
-        )}
+            <Button type="submit" size="sm"><Check className="mr-1 h-4 w-4" /> {isNew ? '등록' : '저장'}</Button>
+          )}
+        </div>
       </div>
     </form>
   );
@@ -2086,7 +2141,7 @@ function TRow({
   // 프로모션 상세 .frow 규격에 통일 — 라벨 셀 #f8f9fb·150px·12.5px, 값 셀 px3.5 py2.5(2026-10-01 사용자 요청).
   return (
     <div className={cn('grid grid-cols-[150px_1fr] items-stretch overflow-hidden', !flat && 'border-b border-[#dce0e5]')}>
-      <label className="flex h-full flex-col justify-center bg-[#f8f9fb] px-3.5 py-3 text-[12.5px] font-medium text-slate-600">
+      <label className="flex h-full flex-col justify-center bg-[#f8f9fb] px-3.5 py-3 text-[14px] font-medium text-[#454f59]">
         <span>{label} {required && <span className="text-rose-500">*</span>}</span>
         {hint && <span className="mt-0.5 block text-[11px] font-normal text-slate-500/80">{hint}</span>}
       </label>

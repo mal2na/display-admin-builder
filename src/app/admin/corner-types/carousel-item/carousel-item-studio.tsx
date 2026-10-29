@@ -62,10 +62,10 @@ const carousel = (title: string): CarouselItemSpec => ({
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/월' } },
+  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'PriceCaption' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
   subText01: { show: false, value: 'SubText01' },
   subText02: { show: true, value: 'SubText02' },
-  caption: { show: false, value: '5.0', icon: { show: false }, caption02: { show: false, value: '예매율 99.9%' }, caption03: { show: false, value: 'Caption03' } },
+  caption: { show: false, value: 'Caption01', icon: { show: false }, caption02: { show: false, value: 'Caption02' }, caption03: { show: false, value: 'Caption03' } },
   count: { show: false, value: '+2' },
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
 });
@@ -76,10 +76,10 @@ const cardHomeItem = (title: string): CarouselItemSpec => ({
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'Caption01' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: true, value: '/Period' } },
+  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'PriceCaption' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: true, value: '/Period' } },
   subText01: { show: false, value: 'SubText01' },
   subText02: { show: false, value: 'SubText02' },
-  caption: { show: true, value: '데이터 500GB', icon: { show: false }, caption02: { show: true, value: '넷플릭스 프리미엄 제공' }, caption03: { show: false, value: 'Caption03' } },
+  caption: { show: true, value: 'Caption01', icon: { show: false }, caption02: { show: true, value: 'Caption02' }, caption03: { show: false, value: 'Caption03' } },
   count: { show: false, value: '+2' },
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
 });
@@ -110,8 +110,8 @@ function normalizeProductItem(it: CarouselItemSpec, vertical: boolean): Carousel
 function defaultSpec(layout?: string): CardHomeSpec {
   return {
     title: 'Title',
-    buttonText: { show: true, label: 'Label' }, // 라벨 텍스트 = 필수(고정)
-    cta: { show: true, label: 'Label' },         // CTA = 옵션
+    buttonText: { show: true, label: 'ButtonText' }, // 라벨 텍스트(ButtonText) = 필수(고정) — 미리보기 라벨 영문 표기(2026-10-29(2))
+    cta: { show: true, label: 'CTA' },           // CTA = 옵션 (하단 버튼 텍스트 = 'CTA', 2026-10-29(2) 사용자 요청)
     bannerSrc: '',
     bannerOn: layout == null || /배너/.test(layout), // 배너 = 옵션
     chipOn: false,                                // 칩 = 옵션(상단 카테고리 탭)
@@ -165,11 +165,13 @@ function TextInput({ value, onChange, placeholder, multiline }: { value: string;
   );
 }
 // 테이블 행 — 좌: 라벨(음영) · 우: 컨트롤 (기본 정보 테이블/Figma SEO 표 스타일)
-function Prop({ name, desc, sub, children }: { name: string; desc?: string; sub?: boolean; children: React.ReactNode }) {
+function Prop({ name, code, desc, sub, children }: { name: string; code?: string; desc?: string; sub?: boolean; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[150px_minmax(0,1fr)] items-start border-b border-[#eef0f3] last:border-b-0">
       <div className={cn('flex min-w-0 flex-col gap-0.5 bg-[#f8f9fb] px-3.5 py-3', sub && 'pl-5')}>
-        <span className="text-[12px] font-medium text-[#1a1a1a]">{name}</span>
+        <span className="text-[14px] font-medium text-[#454f59]">{name}</span>
+        {/* 영어 코드는 다른 라벨처럼 밑줄에(mono) — 라벨 옆 인라인 금지(2026-10-29(2) 사용자 요청). */}
+        {code && <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">({code})</span>}
         {desc && <span className="text-[10.5px] leading-tight text-[#8b949e]">{desc}</span>}
       </div>
       <div className="flex min-w-0 items-center px-3.5 py-3">{children}</div>
@@ -208,31 +210,36 @@ function Panel({ n, title, hint, aside, defaultOpen = true, bodyClass, children 
   return (
     <section className="overflow-hidden rounded-[16px] border border-[#dce0e5] bg-white">
       <button type="button" onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 bg-[#f8f9fb] px-5 py-4 text-left transition hover:bg-[#f1f3f5]">
-        {n != null && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3617ce] text-[12px] font-bold text-white">{n}</span>}
-        <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
+        className="flex w-full items-center gap-2 bg-white px-4 py-3.5 text-left transition hover:bg-[#f8f9fb]">
+        <h2 className="text-[20px] font-bold leading-[1.3] text-slate-900">{title}</h2>
         {hint && <span className="text-[11px] text-[#8b949e]">{hint}</span>}
         <span className="ml-auto flex items-center gap-3">
           {aside}
           <ChevronDown className={cn('h-4 w-4 shrink-0 text-[#8b949e] transition-transform', open ? 'rotate-180' : '')} />
         </span>
       </button>
-      {open && <div className={cn('border-t border-[#eef0f3]', bodyClass ?? 'px-5 py-4')}>{children}</div>}
+      {open && <div className={bodyClass ?? 'px-4 pb-4 pt-0'}>{children}</div>}
     </section>
   );
 }
 
 // ── 미리보기: CarouselItem 카드 ───────────────────────────────
-// 가로형 카드 크기 = Variants(Small/Medium/Large). DS CarouselItem 형태 변형(2026-10-28 사용자 요청).
-const H_VARIANT_WIDTH: Record<string, number> = { Small: 112, Medium: 140, Large: 170 };
+// 가로형 카드 크기 = Variants(Small/Medium/Large). DS CarouselItem 형태 변형.
+//  Small=112 정사각 / Medium=폭 그대로·이미지만 세로로 길게(aspect 4:5) / Large=170 정사각 (2026-10-29(2) 사용자 요청).
+const H_VARIANT: Record<string, { w: number; aspect: string }> = {
+  Small: { w: 112, aspect: 'aspect-square' },
+  Medium: { w: 112, aspect: 'aspect-[4/5]' },
+  Large: { w: 170, aspect: 'aspect-square' },
+};
 function ItemCard({ s, w }: { s: CarouselItemSpec; w?: number }) {
   const pg = s.priceGroup; const cap = s.caption;
   const line1 = [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null].filter(Boolean);
   const line2 = [cap.caption03.show ? cap.caption03.value : null].filter(Boolean);
-  const width = w ?? H_VARIANT_WIDTH[s.variant] ?? 118; // Small/Medium/Large 로 카드 폭 변경
+  const v = H_VARIANT[s.variant] ?? H_VARIANT.Small;
+  const width = w ?? v.w; // Small/Medium/Large — 폭은 Small/Large만 변경, Medium은 세로(이미지 비율)로만
   return (
     <div className="flex shrink-0 flex-col gap-1.5" style={{ width }}>
-      <div className="flex aspect-square w-full items-center justify-center rounded-[12px] bg-[#eceef1] text-[#b3b9c0]">
+      <div className={cn('flex w-full items-center justify-center rounded-[12px] bg-[#eef0f3] text-[#b3b9c0]', v.aspect)}>
         {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full rounded-[12px] object-cover" /> : <ImageIcon className="h-5 w-5" />}
       </div>
       <div className="flex flex-col gap-0.5">
@@ -284,7 +291,7 @@ function ItemRow({ s }: { s: CarouselItemSpec }) {
   if (s.variant === 'Barcode') return <Barcode />;
   return (
     <div className="flex w-full items-start gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#eceef1] text-[#b3b9c0]">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#eef0f3] text-[#b3b9c0]">
         {s.imageSrc ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.imageSrc} alt={s.title} className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -319,39 +326,41 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
   // 세로형 = 행 구분선(divide-y)만 · 박스 테두리 없음(2026-10-19 사용자 요청). 선택 표시는 ring/bg로(테두리는 divide 색과 충돌).
   //  가로형 = 캐러셀 카드 → 선택 테두리 박스 유지.
   const itemBtnCls = () => vertical
-    ? cn('w-full p-2 text-left transition', ro ? '' : cn('cursor-pointer rounded-[10px]', sel === 'item' ? 'bg-[#f1f2ff] ring-1 ring-inset ring-[#3617ce]' : 'hover:bg-[#f8f9fb]'))
+    // ro(표시 전용)는 좌우 패딩 없이 칩과 같은 좌측 라인에 맞춤(2026-10-29(2) 사용자 요청). 편집 모드만 p-2 클릭 영역.
+    ? cn('w-full text-left transition', ro ? 'py-2' : cn('cursor-pointer rounded-[10px] p-2', sel === 'item' ? 'bg-[#f1f2ff] ring-1 ring-inset ring-[#3617ce]' : 'hover:bg-[#f8f9fb]'))
     : cn('shrink-0 rounded-[12px] border-2 p-0.5 text-left transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'item' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'));
   return (
     <div onClick={onCard} title={ro ? undefined : '카드 전체 = 코너 정보'}
-      className={cn('overflow-hidden rounded-[16px] border-2 bg-white transition', ro ? 'border-[#dce0e5]' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-[#dce0e5] hover:border-[#c4c9cf]'))}>
+      className={cn('overflow-hidden rounded-[28px] border-2 bg-white shadow-[0_2px_12px_rgba(20,22,40,0.13)] transition', ro ? 'border-transparent' : cn('cursor-pointer', sel === 'card' ? 'border-[#3617ce]' : 'border-transparent hover:border-[#c4c9cf]'))}>
       {hasBanner && (spec.bannerSrc ? (
-        /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="h-[160px] w-full object-cover" />
+        /* eslint-disable-next-line @next/next/no-img-element */ <img src={spec.bannerSrc} alt="banner" className="aspect-[16/10] w-full object-cover" />
       ) : (
-        <div className="flex h-[160px] w-full items-center justify-center bg-[#eceef1] text-[11px] text-[#b3b9c0]">Banner</div>
+        // 배너 — 단색(그라데이션 제거), 혜택·오퍼형과 동일 비율(aspect-16/10)·동일 색(2026-10-29(2) 사용자 요청).
+        <div className="flex aspect-[16/10] w-full items-center justify-center bg-[#eef0f3] text-[12px] font-medium text-slate-500">Banner</div>
       ))}
-      <p className="whitespace-pre-line px-3 pt-3 text-[15px] font-bold leading-tight text-[#1a1a1a]">{spec.title}</p>
-      {/* 버튼 텍스트(ButtonText) — 타이틀 바로 밑 텍스트. 모든 레이아웃 공통(2026-10-28 사용자 요청: CTA와 분리). */}
-      {spec.buttonText.show && <p className="mt-1 px-3 text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
+      <p className="whitespace-pre-line px-[28px] pt-4 text-[16px] font-bold leading-snug text-slate-900">{spec.title}</p>
+      {/* 버튼 텍스트(ButtonText) — 타이틀 바로 밑. 혜택·오퍼형(CornerBlock)과 위치·색 통일: mt-0.5·slate-400(2026-10-29(2) 사용자 요청). */}
+      {spec.buttonText.show && <p className="mt-0.5 flex items-center gap-0.5 px-[28px] text-[12px] text-slate-400">{spec.buttonText.label} ›</p>}
       {/* 칩(Chip) 옵션 — 상단 카테고리 탭(2026-10-28 사용자 요청: 배너·칩·CTA 옵션 가로/세로 공통) */}
       {spec.chipOn && (
-        <div className="mt-2 flex gap-1.5 overflow-x-auto px-3">
-          {['전체', 'Label', 'Label'].map((c, i) => (
-            <span key={i} className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold', i === 0 ? 'bg-[#3617ce] text-white' : 'bg-[#f1f3f5] text-[#697582]')}>{c}</span>
+        <div className="mt-2 flex gap-1.5 overflow-x-auto px-[28px]">
+          {['Chip', 'Chip', 'Chip'].map((c, i) => (
+            <span key={i} className={cn('flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12px]', i === 0 ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>{c}</span>
           ))}
         </div>
       )}
       {vertical ? (
         // 세로형 = 세로 리스트. 행 구분선 제거(2026-10-28 사용자 요청). 실제 노출 개수는 빌더에서, 미리보기는 대표 4건.
-        <div className="mt-1 flex flex-col px-3 pb-2">
-          {[0, 1, 2, 3].map((i) => (
+        <div className="mt-1 flex flex-col px-[28px] pb-2">
+          {[0, 1, 2].map((i) => (
             <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
               <ItemRow s={spec.item} />
             </button>
           ))}
         </div>
       ) : (
-      <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-2">
-        {[0, 1].map((i) => (
+      <div className="mt-2 flex gap-2 overflow-x-auto px-[28px] pb-2">
+        {[0, 1, 2].map((i) => (
           <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
             <ItemCard s={spec.item} />
           </button>
@@ -360,8 +369,8 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       )}
       {/* CTA — 카드 하단 전체폭 버튼(Label ›). 버튼 텍스트와 별개(2026-10-28 사용자 요청). 레거시 스펙(cta 없음) 방어. */}
       {spec.cta?.show && (
-        <div className="px-3 pb-3 pt-1">
-          <div className="flex w-full items-center justify-center gap-0.5 rounded-[10px] border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.cta?.label || 'Label'} <span className="text-[#b3b9c0]">›</span></div>
+        <div className="px-[28px] pb-4 pt-1">
+          <div className="flex w-full items-center justify-center gap-0.5 rounded-full border border-[#dce0e5] bg-white py-2 text-[12px] font-medium text-[#697582]">{spec.cta?.label || 'CTA'} <span className="text-[#b3b9c0]">›</span></div>
         </div>
       )}
     </div>
@@ -380,7 +389,9 @@ export function loadCornerSpec(storageKey: string, layout?: string): CardHomeSpe
       if (!(variants as readonly string[]).includes(merged.item?.variant)) merged.item = base.item;
       // 필수(고정) 항목만 — 선택 항목 제거, 라벨 텍스트 항상 ON(2026-10-28).
       merged.item = normalizeProductItem(merged.item, isVertical(layout));
-      merged.buttonText = { ...merged.buttonText, show: true };
+      // 버튼텍스트·CTA 라벨은 껍데기 placeholder(필드 코드) — 저장된 구값('Label')이 남아도 항상 코드로 고정(2026-10-29(2) 사용자 요청).
+      merged.buttonText = { ...merged.buttonText, show: true, label: 'ButtonText' };
+      if (merged.cta) merged.cta = { ...merged.cta, label: 'CTA' };
       return merged;
     }
   } catch { /* ignore */ }
@@ -392,7 +403,7 @@ export function CornerSpecPreview({ storageKey, layout }: { storageKey: string; 
   const [spec, setSpec] = useState<CardHomeSpec | null>(null);
   useEffect(() => { setSpec(loadCornerSpec(storageKey, layout)); }, [storageKey, layout]);
   return (
-    <div className="mx-auto w-full max-w-[300px]">
+    <div className="w-full">
       {spec ? <CardPreview spec={spec} layout={layout} /> : <div className="h-[360px] animate-pulse rounded-[16px] bg-[#f1f3f5]" />}
     </div>
   );
@@ -434,7 +445,7 @@ function ChkRow({ label, checked, onChange, disabled, indent, initial, option }:
   return (
     <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">
       <div className={cn('flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3', indent && 'pl-6')}>
-        <span className="flex flex-wrap items-center gap-1.5 text-[12px] font-medium leading-[1.2] text-[#1a1a1a]">
+        <span className="flex flex-wrap items-center gap-1.5 text-[14px] font-medium leading-[1.2] text-[#454f59]">
           {ko}
           {disabled && <span className="rounded-[4px] bg-[#8b949e]/15 px-1 py-[1px] text-[10px] font-semibold text-[#8b949e]">고정</span>}
           {option && <span className="rounded-[4px] bg-[#3617ce]/10 px-1 py-[1px] text-[10px] font-semibold text-[#3617ce]">옵션</span>}
@@ -464,12 +475,12 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
   return (
     <div>
       {/* 옵션(배너·칩·CTA — 상품형·혜택형 공통). 맨 위에 두고 클릭으로 On/Off(2026-10-28 사용자 확정). */}
-      <ChkRow label="배너이미지(BannerSrc)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
+      <ChkRow label="배너(Banner)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
       <ChkRow label="칩(Chip)" option checked={spec.chipOn ?? false} onChange={(v) => set({ chipOn: v })} />
-      <ChkRow label="CTA(CTA)" option checked={spec.cta?.show ?? false} onChange={(v) => set({ cta: { ...(spec.cta ?? { label: 'Label' }), show: v } })} />
+      <ChkRow label="CTA(CTA)" option checked={spec.cta?.show ?? false} onChange={(v) => set({ cta: { ...(spec.cta ?? { label: 'CTA' }), show: v } })} />
       {/* 필수(고정) — 코너 메인 타이틀 · 라벨 텍스트 */}
       <ChkRow label="코너 메인 타이틀(Title)" checked disabled />
-      <ChkRow label="라벨 텍스트(ButtonText)" checked disabled />
+      <ChkRow label="버튼 텍스트(ButtonText)" checked disabled />
     </div>
   );
 }
@@ -495,8 +506,8 @@ function RadioPair({ name, on, disabled, onPick }: { name: string; on: boolean; 
 function PriceCols({ pg, vertical, onChange }: { pg: CarouselItemSpec['priceGroup']; vertical: boolean; onChange: (p: Partial<CarouselItemSpec['priceGroup']>) => void }) {
   const Label = ({ ko, code, dim }: { ko: string; code: string; dim?: boolean }) => (
     <div className="flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
-      <span className="flex flex-wrap items-center gap-1.5 text-[12px] font-medium leading-[1.2]">
-        <span className={dim ? 'text-slate-300' : 'text-[#1a1a1a]'}>{ko}</span>
+      <span className="flex flex-wrap items-center gap-1.5 text-[14px] font-medium leading-[1.2]">
+        <span className={dim ? 'text-slate-300' : 'text-[#454f59]'}>{ko}</span>
         <span className="rounded-[4px] bg-[#3617ce]/10 px-1 py-[1px] text-[10px] font-semibold text-[#3617ce]">옵션</span>
       </span>
       <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">({code})</span>
@@ -538,7 +549,17 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
   //  세로형은 케이스별로 가격을 쓰기도(넷플릭스 요금제) 안 쓰기도(데이터량 안내) 해서 가격을 옵션으로 둔다(2026-10-28 사용자 요청).
   return (
     <div>
-        <Prop name="형태(Variants)" desc={vertical ? '프로필 · 데이터 · 바코드' : '카드 크기'}><Seg value={variantVal} options={variantOpts} onChange={(v) => set('variant', v)} /></Prop>
+        {/* 형태(Variants) — 세로형은 제외(2026-10-29(2) 사용자 요청: 불필요). 가로형만 카드 크기(Small/Medium/Large) 선택. 라디오 버튼(비상품형 VariantControl과 동일, 2026-10-29(2)). */}
+        {!vertical && <Prop name="형태" code="Variants">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+            {variantOpts.map((o) => (
+              <label key={o} className="flex cursor-pointer items-center gap-1.5 text-[13px]">
+                <input type="radio" name="variantSel" checked={variantVal === o} onChange={() => set('variant', o)} className="h-4 w-4 accent-[#3617ce]" />
+                <span className={cn('whitespace-nowrap', variantVal === o ? 'font-medium text-slate-700' : 'text-slate-500')}>{o}</span>
+              </label>
+            ))}
+          </div>
+        </Prop>}
         <ChkRow label="아이템 이미지(ImageSrc)" checked disabled />
         <ChkRow label="아이템 타이틀(Title)" checked disabled />
         {/* 가격·할인율(·기간) — 컬럼 분할 그리드 + 종속(가격 미사용이면 나머지 off+비활성) */}
@@ -560,7 +581,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 }
 
 // ── 스튜디오 — 좌: 고정 미리보기 · 우: 1.기본 정보 + 2.코너 정보/속성(클릭 전환) ──
-export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource, layout }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode; layout?: string }) {
+export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource, layout, itemCount }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode; layout?: string; itemCount?: React.ReactNode }) {
   const [spec, setSpec] = useState<CardHomeSpec>(() => defaultSpec(layout));
   const [sel, setSel] = useState<'card' | 'item'>('card'); // 미리보기 클릭 → 코너 정보(card) / 코너 속성(item)
   useEffect(() => {
@@ -585,10 +606,14 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
     <div className="flex flex-wrap items-start gap-5">
       {/* 좌측: 미리보기 — 스크롤해도 따라오게 sticky 고정. 카드/컴포넌트 클릭으로 코너 정보↔속성 전환. */}
       <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
-        <p className="mb-1.5 text-[14.5px] font-bold text-slate-900">코너 미리보기</p>
-        <div className="rounded-[14px] border border-[#dce0e5] bg-[#f3f4f7] p-4">
-          <CardPreview spec={spec} sel={sel} onCard={() => setSel('card')} onItem={() => setSel('item')} layout={layout} />
-        </div>
+        {/* 코너 미리보기 — 읽기 상세와 동일하게 타이틀 포함 카드(박스)로 감쌈(2026-10-29(2) 사용자 요청). */}
+        <section className="overflow-hidden rounded-[12px] border border-[#dce0e5] bg-white">
+          <div className="px-4 py-3.5"><h3 className="text-[20px] font-bold leading-[1.3] text-slate-900">코너 미리보기</h3></div>
+          <div className="bg-[#f3f4f7] px-4 pb-4 pt-4">
+            {/* 클릭 불가(표시 전용) — 코너↔속성 선택 제거(2026-10-29(2) 사용자 요청). 우측 사용/미사용만 제어. */}
+            <CardPreview spec={spec} layout={layout} />
+          </div>
+        </section>
         <button type="button" onClick={reset}
           className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#dce0e5] bg-white px-3 py-2 text-[12px] font-semibold text-[#454f59] transition hover:bg-[#f8f9fb]">
           <RotateCcw className="h-3.5 w-3.5" /> 초기 설정값으로 돌리기
@@ -597,16 +622,16 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
       </div>
 
       {/* 우측(스크롤): 각 섹션은 SEO 설정 패널처럼 접고 펼치는 Panel. 미리보기 sticky가 끝까지 따라옴 */}
-      <div className="min-w-[320px] flex-1 space-y-4">
+      <div className="min-w-[320px] flex-1 space-y-3">
         {/* 1. 기본 정보 — 헤더 우측에 현재 선택 상태값(유형·레이아웃) 칩 · 본문 테이블 여백 */}
         {basicInfo && (
           <Panel n={1} title="코너 기본 정보" aside={registerResult}>{basicInfo}</Panel>
         )}
 
         {/* 2. 코너 정보 · 속성 — 하나로 합쳐 '현재 쓰는 항목'만 노출(2026-10-27 사용자 요청). 탭 제거. */}
-        <Panel n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목" bodyClass="">
+        <Panel n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목">
           {/* 코너(카드)=카드 전체에 1개 · 아이템(요소)=리스트에서 반복되는 카드 1개. 같은 '타이틀'이라도 소속이 달라 그룹으로 구분(2026-10-27 사용자 요청). */}
-          <div className="space-y-3 p-4">
+          <div className="space-y-3">
             <div className="border-y border-[#dce0e5]">
               <div className="flex items-center gap-1.5 border-b border-[#eef0f3] bg-[#f8f9fb] px-3 py-2">
                 <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] bg-[#3617ce]/10 text-[10px] font-bold text-[#3617ce]">코</span>
@@ -622,6 +647,8 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
                 <span className="text-[11px] text-[#8b949e]">· 리스트에서 반복되는 카드 1개 (상품 이미지·타이틀·가격)</span>
               </div>
               <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />
+              {/* 노출 개수 — 아이템(요소) 하위(2026-10-29(2) 사용자 요청). 상위 폼의 minItems/maxItems와 연동. */}
+              {itemCount}
             </div>
           </div>
         </Panel>

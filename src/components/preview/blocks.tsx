@@ -13,6 +13,15 @@ const CARD_PAD_X = 'px-[28px]';
 const CARD_PAD = `${CARD_PAD_X} py-[30px]`;
 const CARD_PAD_BARCODE = `${CARD_PAD_X} py-[32px]`; // 바코드 카드는 레퍼런스 h:163 px:28 py:32 — 세로만 +2
 const CARD_RADIUS = 'rounded-[28px]';
+// 코너 UI 카드를 배경 위로 '떠 보이게' 하는 플로팅 쉐도우(2026-10-29(2) 사용자 요청).
+//  미리보기 박스(section)가 overflow-hidden이라 큰 쉐도우는 잘려 '보더'처럼 보임 → 본문 패딩(16px) 안에 들어오는 작은 블러로.
+const CARD_FLOAT_SHADOW = 'shadow-[0_2px_12px_rgba(20,22,40,0.13)]';
+// 가로형(CarouselItem) 카드 크기 변형 — 상품형 스튜디오(H_VARIANT)와 동일: Small 112 정사각 / Medium 폭 그대로·이미지만 세로(4:5) / Large 170 정사각(2026-10-29(2)).
+const CARD_SIZE: Record<string, { w: string; aspect: string }> = {
+  Small: { w: 'w-[112px]', aspect: 'aspect-square' },
+  Medium: { w: 'w-[112px]', aspect: 'aspect-[4/5]' },
+  Large: { w: 'w-[170px]', aspect: 'aspect-square' },
+};
 // 업무 진입형 chip형(퀵칩 라벤더 카드)은 일반 카드 패딩이 과해 보여 더 타이트하게(상하좌우, 2026-10-01 사용자 요청).
 const CHIP_CARD_PAD = 'px-[12px] py-[10px]';
 
@@ -47,6 +56,7 @@ export type PreviewCorner = {
   cvmFillCount?: number | null; // CVM 보충 — 노출 개수(max)보다 운영자 등록이 적을 때 CVM이 채우는 칸 수(가안)
   bigBanner?: boolean | null; // 배치(인스턴스) 옵션 — 상단 빅배너로 강조
   cardShape?: string | null; // 상품형 2.5배열 카드 모양 (정사각형 | 직사각형)
+  cardSize?: string | null; // 가로형(CarouselItem) 카드 크기 변형 Small/Medium/Large (2026-10-29(2): 모든 가로형 코너 유형 공통)
   titleLines?: number | null; // 상품 카드 제목 줄 수 (2=두 줄)
   bannerImageUrl?: string | null;
   bannerName?: string | null;
@@ -146,7 +156,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   return (
     <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
       {component.atoms.map((a, i) => (
-        <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium ' + (i === sel ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500')}>
+        <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] ' + (i === sel ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>
           {a.content ?? a.name}
         </span>
       ))}
@@ -168,7 +178,7 @@ function MenuListView({ component, shell }: { component: PreviewComponent; shell
   );
 }
 
-function ProductCard({ component, shape, reason, titleLines, emphasis = false, grid = false, parts }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null; emphasis?: boolean; grid?: boolean; parts?: CardParts }) {
+function ProductCard({ component, shape, cardSize, reason, titleLines, emphasis = false, grid = false, parts }: { component: PreviewComponent; shape?: string | null; cardSize?: string | null; reason?: string; titleLines?: number | null; emphasis?: boolean; grid?: boolean; parts?: CardParts }) {
   // 코너별 표시 항목 — 끈 요소는 렌더하지 않는다(미지정=노출). 배지는 가격에 종속(가격 꺼지면 배지도 숨김).
   const showImg = parts?.image !== false;
   const showPrice = parts?.price !== false;
@@ -191,8 +201,10 @@ function ProductCard({ component, shape, reason, titleLines, emphasis = false, g
   const cta = first(component.atoms, 'CTA');
   const square = shape === '1:1' || shape === '정사각형';
   const wide = shape === '4:3';
-  const ratioCls = emphasis ? 'aspect-[16/10]' : grid ? (square ? 'aspect-square' : 'aspect-[4/3]') : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
-  const wCls = grid ? 'w-full' : emphasis ? 'w-[224px]' : square ? 'w-[150px]' : wide ? 'w-[168px]' : 'w-[156px]';
+  // 가로형 카드 크기 변형(Small/Medium/Large) — 상품형 스튜디오 ItemCard와 동일: Medium은 폭 그대로·이미지만 세로로. grid/emphasis는 제외.
+  const sz = !grid && !emphasis ? CARD_SIZE[cardSize ?? ''] : undefined;
+  const ratioCls = emphasis ? 'aspect-[16/10]' : grid ? (square ? 'aspect-square' : 'aspect-[4/3]') : sz ? sz.aspect : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
+  const wCls = grid ? 'w-full' : emphasis ? 'w-[224px]' : sz ? sz.w : square ? 'w-[150px]' : wide ? 'w-[168px]' : 'w-[156px]';
   const nameCls = titleLines === 2 ? 'line-clamp-2' : 'truncate';
   return (
     <div className={cn('shrink-0', wCls)}>
@@ -313,6 +325,8 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
 function BannerCarouselBlock({ corner }: { corner: PreviewCorner }) {
   const list = corner.components ?? [];
   if (list.length === 0) return null;
+  // 배너 단일형 = 스와이프(캐러셀) 없이 배너 1장만(2026-10-29(2) 사용자 요청).
+  if (/단일/.test(corner.layoutDetail ?? '')) return <BannerCard component={list[0]} sizeDetail={corner.layoutDetail} />;
   return (
     <BannerCarousel
       options={parseBannerOptions(corner.bannerOptions)}
@@ -397,7 +411,8 @@ function ProfileCard({ component }: { component?: PreviewComponent }) {
           : avatar ? <AtomIcon atom={avatar} className="h-6 w-6" /> : <User className="h-6 w-6" />}
       </div>
       <div className="flex min-w-0 flex-1 items-baseline gap-2">
-        <span className="shrink-0 text-[15px] font-bold text-slate-900">{resolveCvmSample(name?.content) || '고객'}님</span>
+        {/* '님'은 실제 이름(한글)에만 — 영문 라벨 placeholder(Title 등)엔 붙이지 않음(2026-10-29(2) 사용자 요청). */}
+        {(() => { const nm = resolveCvmSample(name?.content) || '고객'; return <span className="shrink-0 text-[15px] font-bold text-slate-900">{nm}{/^[A-Za-z]/.test(nm) ? '' : '님'}</span>; })()}
         {phone && <span className="truncate text-[13px] font-medium text-slate-400">{resolveCvmSample(phone.content)}</span>}
       </div>
       {cta && <span className="shrink-0 whitespace-nowrap rounded-full bg-slate-200/70 px-3 py-1.5 text-[12px] font-medium text-slate-600">{cta.content}</span>}
@@ -419,7 +434,8 @@ function InfoCard({ component }: { component: PreviewComponent }) {
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="text-[17px] font-bold leading-tight text-slate-900">{resolveCvmSample(value?.content) || component.name}</p>
-          {badge && <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">{resolveCvmSample(badge.content)}</span>}
+          {/* 배지 = 상태 안내(납부완료 등) — DS 참고: 튀지 않는 중립 회색 칩(2026-10-29(2) 사용자 요청). */}
+          {badge && <span className="rounded-[4px] bg-[#eef0f3] px-1.5 py-0.5 text-[10px] font-medium text-[#8b949e]">{resolveCvmSample(badge.content)}</span>}
         </div>
         {label && <p className="truncate text-[12px] text-slate-400">{resolveCvmSample(label.content)}</p>}
       </div>
@@ -482,7 +498,7 @@ type LayoutMode = 'horizontal' | 'emphasis' | 'grid' | 'single' | 'list';
 // 코너별 표시 항목(상품 카드 요소 on/off) — 미지정(undefined)은 노출로 본다.
 type CardParts = { image?: boolean; price?: boolean; badge?: boolean; desc?: boolean };
 
-function ComponentView({ component, mode, cardShape, reason, titleLines, parts }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; reason?: string; titleLines?: number | null; parts?: CardParts }) {
+function ComponentView({ component, mode, cardShape, cardSize, reason, titleLines, parts }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; cardSize?: string | null; reason?: string; titleLines?: number | null; parts?: CardParts }) {
   switch (component.componentType) {
     case '선택형':
       return <ChipsView component={component} />;
@@ -494,7 +510,7 @@ function ComponentView({ component, mode, cardShape, reason, titleLines, parts }
           ? <PlanBannerRow component={component} />
           : <BenefitRow component={component} reason={reason} parts={parts} />;
       }
-      return <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} parts={parts} />;
+      return <ProductCard component={component} shape={cardShape} cardSize={cardSize} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} parts={parts} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':
@@ -566,7 +582,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       return (
         <div className="flex gap-3 overflow-x-auto pb-1">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} parts={parts} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} cardSize={corner.cardSize} titleLines={corner.titleLines} reason={reasonFor(i)} parts={parts} />
           ))}
         </div>
       );
@@ -658,7 +674,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 바코드 카드는 세로 패딩만 +2(레퍼런스 py:32). 그 외는 표준 카드 패딩.
   const hasBarcode = corner.components.some((c) => c.atoms.some((a) => a.atomType === 'BARCODE'));
   const stdPad = hasBarcode ? CARD_PAD_BARCODE : CARD_PAD;
-  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#e8ecef] ${CHIP_CARD_PAD}` : `${CARD_RADIUS} bg-white ${stdPad} shadow-sm`);
+  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#e8ecef] ${CHIP_CARD_PAD} ${CARD_FLOAT_SHADOW}` : `${CARD_RADIUS} bg-white ${stdPad} ${CARD_FLOAT_SHADOW}`);
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
@@ -679,7 +695,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
         className="block w-full bg-gradient-to-b from-sky-50 to-white"
       />
     ) : (
-      <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-indigo-200 to-slate-300 text-[12px] font-medium text-slate-600">
+      <div className="flex aspect-[16/10] w-full items-center justify-center bg-[#eef0f3] text-[12px] font-medium text-slate-500">
         {corner.bannerName ?? bannerSrc.split('/').pop()}
       </div>
     )
@@ -700,7 +716,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 히어로가 있으면 카드는 패딩 없이(overflow-hidden) 배너를 꼭대기 full-bleed로, 본문만 패딩.
   if (bannerEl && !isBanner) {
     return (
-      <section className={`overflow-hidden ${CARD_RADIUS} bg-white shadow-sm`}>
+      <section className={`overflow-hidden ${CARD_RADIUS} bg-white ${CARD_FLOAT_SHADOW}`}>
         {bannerEl}
         <div className={`space-y-2 ${CARD_PAD_X} pb-[30px] pt-[20px]`}>
           {heading && (
@@ -718,7 +734,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           )}
           {corner.moreButtonUse && (
             <div className="pt-1 text-center">
-              <span className="flex w-full items-center justify-center gap-0.5 rounded-[12px] border border-slate-300 bg-white px-4 py-2 text-[12px] font-medium text-slate-600">{corner.moreButtonLabel || '더보기'} <ChevronRight className="h-3 w-3" /></span>
+              <span className="flex w-full items-center justify-center gap-0.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-[12px] font-medium text-slate-600">{corner.moreButtonLabel || 'CTA'} <ChevronRight className="h-3 w-3" /></span>
             </div>
           )}
         </div>
@@ -768,10 +784,10 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           <Sparkles className="h-3 w-3" /> CVM 자동 보충 {corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
         </div>
       )}
-      {corner.moreButtonUse && (
+      {corner.moreButtonUse && !isBanner && (
         <div className="pt-1 text-center">
-          <span className="flex w-full items-center justify-center gap-0.5 rounded-[12px] border border-slate-300 bg-white px-4 py-2 text-[12px] font-medium text-slate-600">
-            {corner.moreButtonLabel || '더보기'} <ChevronRight className="h-3 w-3" />
+          <span className="flex w-full items-center justify-center gap-0.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-[12px] font-medium text-slate-600">
+            {corner.moreButtonLabel || 'CTA'} <ChevronRight className="h-3 w-3" />
           </span>
         </div>
       )}
