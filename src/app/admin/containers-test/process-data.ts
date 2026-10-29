@@ -11,7 +11,7 @@ import type { ProductOption } from '../corner-types/corner-type-manager';
 // 코너 불러오기 '껍데기 가이드' — 코너 = 껍데기(규격)라 콘텐츠 없이 placeholder 슬롯으로만 미리보기.
 //  불러오면 코너 유형(레이아웃·노출 타입)만 들어오고 내용은 빌더 '②수급'에서 채운다(2026-10-28 사용자 요청).
 function guideCornerPreview(base: string, detail: string | null, component: string | null): PreviewCorner {
-  const noTitle = base === '배너형' || base === '고정·필수 노출형';
+  const noTitle = base === '배너형' || base === '바코드형';
   const comp = component || componentTypesForCorner(base)[0] || null; // 없으면 유형 기본 컴포넌트로 레이아웃 가이드가 뜨게
   return compositionToPreviewCorner({
     base,

@@ -2991,7 +2991,7 @@ function BannerLoadModal({
 // 코너 불러오기 '껍데기 가이드' 코너 — 리스트 썸네일(미니 미리보기)·우측 미리보기 공용.
 //  코너 = 껍데기(규격)라 콘텐츠 없이 placeholder 슬롯으로만. 코너 유형 관리 '코너 정의' 가이드와 동일 규칙.
 function guideCornerFor(base: string, detail: string, component: string): PreviewCorner {
-  const noTitle = base === '배너형' || base === '고정·필수 노출형';
+  const noTitle = base === '배너형' || base === '바코드형';
   return compositionToPreviewCorner({
     base,
     detail,

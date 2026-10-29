@@ -173,14 +173,13 @@ function domainGovernances(domain: Domain, present: string[]): string[] {
 //  코너 = 껍데기(규격)라 실데이터가 아니라 '가이드'로 그린다(2026-10-06 코너 유형 관리 대공사 방향). 목록·상세·수정 공용.
 export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   // 카드 자체가 완결형인 유형은 코너 타이틀·디스크립션이 없다 → 미리보기에서 완전 제외.
-  //  배너형·고정필수형·상태 안내형, 탭형(업무 진입형 탭 등), 아이콘/이미지/팝업/띠/텍스트배너/프로필/바코드 레이아웃.
+  //  배너형·바코드형, 칩/탭형(업무 진입형 칩 등), 아이콘/이미지/팝업/띠/텍스트배너/프로필/바코드/상태 레이아웃.
   const dStr = row.typeDetail ?? '';
   const noTitle =
     row.baseCategory === '배너형' ||
-    row.baseCategory === '고정·필수 노출형' ||
-    row.baseCategory === '상태 안내형' ||
-    /탭/.test(dStr) ||
-    ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
+    row.baseCategory === '바코드형' ||
+    /탭|칩/.test(dStr) ||
+    ['아이콘', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드', '상태'].some((k) => dStr.includes(k));
   const c = compositionToPreviewCorner({
     base: row.baseCategory,
     detail: row.typeDetail,
@@ -704,12 +703,9 @@ export const CORNER_TYPE_INFO: Record<string, { purpose: string; allow: string; 
     allow: '혜택형, 정보형, 행동형, 배너형',
   },
   '업무 진입형': {
-    purpose: '조회·변경·신청·납부처럼 자주 쓰는 업무로 바로 이동하게 하는 코너입니다. 탭·칩 메뉴(선택형)로 구성합니다.',
+    // 2026-10-29 통합: 진입(칩·리스트) + 상태안내·프로필까지. 배열 4종(상태안내·프로필·리스트·칩).
+    purpose: '조회·변경·신청·납부 업무로 바로 이동(칩·리스트)하게 하고, 고객 상태·보유 정보·프로필을 안내하는 코너입니다.',
     allow: '행동형, 정보형, 선택형',
-  },
-  '상태 안내형': {
-    purpose: '고객 상태·보유 정보·진행 상태·제한 사유 등 “지금 내 상황”을 안내하는 코너입니다.',
-    allow: '정보형, 행동형',
   },
   '콘텐츠 안내형': {
     purpose: '이용 가이드·설명·추천 콘텐츠 등을 제공하는 코너입니다.',
@@ -719,9 +715,10 @@ export const CORNER_TYPE_INFO: Record<string, { purpose: string; allow: string; 
     purpose: '고객 상태와 행동에 따라 후보와 노출 순서를 다르게 보여주는 코너입니다. (수급 방식으로 CVM 개인화를 켠 코너)',
     allow: '정보형, 혜택형, 선택형, 행동형, 배너형',
   },
-  '고정·필수 노출형': {
-    purpose: '필수 고지·장애 안내·보안 안내처럼 항상 안정적으로 유지·노출해야 하는 정보를 노출하는 코너입니다.',
-    allow: '정보형, 행동형',
+  '바코드형': {
+    // 2026-10-29 신규: 멤버십 바코드(구 고정·필수 노출형에서 분리).
+    purpose: '멤버십 바코드를 노출하는 코너입니다. 바코드 값은 회원 인증 기반으로 런타임 발급되고, 어드민은 라벨·유효(갱신)시간 정책만 관리합니다.',
+    allow: '정보형',
   },
 };
 
@@ -1426,8 +1423,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   // 헤더(코너 타이틀/서브타이틀) 없는 유형 — 배너·아이콘/이미지 카드, 그리고 '순수 탭'(선택형)만.
   //  '세로형(카테고리탭)'처럼 상품형 리스트의 탭 변형은 헤더가 있으므로 제외(선택형일 때만 탭=무헤더).
   const isStandaloneTab = compValid === '선택형' && (/카테고리\s*탭/.test(dStr) || dStr.includes('고정형(탭)'));
-  //  고정·필수 노출형(프로필형·바코드형 등)은 카드 자체가 완결형이라 코너 타이틀·디스크립션이 없다(2026-09-29 사용자 요청).
-  const noHeaderType = isBannerType || isStandaloneTab || base === '고정·필수 노출형' || base === '상태 안내형' || ['아이콘형', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드'].some((k) => dStr.includes(k));
+  //  바코드형, 업무 진입형의 상태안내·프로필 카드는 카드 자체가 완결형이라 코너 타이틀·디스크립션이 없다(2026-10-29 통합 반영).
+  const noHeaderType = isBannerType || isStandaloneTab || base === '바코드형' || ['아이콘', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드', '상태'].some((k) => dStr.includes(k));
   // 여러 아이템을 나열하는 리스트형 코너 — 노출 개수·더보기가 의미 있는 유형(상품형/혜택형/정보형 리스트)
   const isListType = compValid === '상품형' || compValid === '혜택형' || (compValid === '정보형' && /리스트/.test(dStr));
   const featureApplies = (key: string) => {
@@ -2277,7 +2274,7 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
         <Slot label="CTA" className="h-6 w-20 rounded-full" />
       </div>
     );
-  } else if (base === '상태 안내형' || has('아이콘', '금액형', '사용량형', '요약')) {
+  } else if (has('아이콘', '금액형', '사용량형', '요약', '상태')) {
     // 마이.png 상태 카드(아이콘/이미지형): 값(Value) + 상태(Status) + 라벨(Label) + 우측 icon/이미지
     body = (
       <div className="flex items-center gap-2 rounded-lg border border-[#dce0e5] bg-[#f8f9fb] p-3">

@@ -658,7 +658,7 @@ export async function createCornerFromType(templateId: string, formData: FormDat
 
   const order = await nextOrder('templateCorner', { templateId });
   // 위치 고정 기본값 — 상단 퀵메뉴(업무 진입형)·고정필수형은 자리 잠금이 자연스러움(운영자가 체크박스로 해제 가능). 2026-10-06.
-  const pinned = corner.cornerType === '업무 진입형' || corner.cornerType === '고정·필수 노출형';
+  const pinned = corner.cornerType === '업무 진입형' || corner.cornerType === '바코드형';
   const tc = await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order, pinned } });
   rp(templateId);
   return tc.id; // 생성된 templateCorner id → 빌더에서 새 코너로 포커싱

@@ -340,7 +340,7 @@ export const CVM_FALLBACKS = ['미노출', '운영자 편성으로 대체'] as c
 export type CvmFallback = (typeof CVM_FALLBACKS)[number];
 
 /** CVM이 비어도 '미노출' 불가 → 폴백을 '운영자 편성'으로 강제하는 코너 유형(2026-10-12 사용자 결정). */
-export const NAV_MUST_SHOW = ['업무 진입형', '고정·필수 노출형'] as const;
+export const NAV_MUST_SHOW = ['업무 진입형', '바코드형'] as const;
 export const mustAlwaysShow = (cornerType: string) => (NAV_MUST_SHOW as readonly string[]).includes(cornerType);
 
 /**
@@ -356,7 +356,7 @@ export function effectiveFallback(cornerType: string, cvmFallback: string | null
 // ── 전시 존(밴드) — 템플릿을 '얼마나 동적인가'로 3밴드로 나눈다(2026-10-13) ───────
 //  Dynamic : CVM이 실시간 재정렬·개인화(순위·콘텐츠 변경). 수급=CVM.
 //  Semi    : 운영자가 기간/캠페인 단위로 편성(시즌·프로모션·제휴). 수급=운영자 편성.
-//  Fixed   : 항상 그 자리, 거의 불변(메뉴성 진입). 업무 진입형·고정·필수 노출형.
+//  Fixed   : 항상 그 자리, 거의 불변(메뉴성 진입). 업무 진입형·바코드형.
 //  세로 순서는 연속 밴드 고정: Dynamic(상단) → Semi → Fixed(하단). 위치 고정(pinned·퀵메뉴)은 밴드 위에 둔다.
 export const ZONES = ['dynamic', 'semi', 'fixed'] as const;
 export type Zone = (typeof ZONES)[number];
@@ -425,21 +425,22 @@ export function fieldOwnerMap(recSource?: string | null): { field: string; owner
   ];
 }
 
-// ── Corner 유형 (7종) ───────────────────────────────────────
+// ── Corner 유형 (6종) ───────────────────────────────────────
 // 개인화 추천형은 별도 유형이 아니라, 각 유형의 '추천 수급 방식(CVM 등)' 설정으로 흡수됨.
-// 순서: 상품형 → 혜택·오퍼형 → 배너형 → … (2026-10-28 사용자 요청). 필터 체크박스·목록 그룹·정렬이 이 순서를 따른다.
+// 2026-10-29 사용자 확정: '상태 안내형'·'고정·필수 노출형'을 폐지하고 '업무 진입형'으로 통합(배열=상태안내·프로필·리스트·칩).
+//  바코드형은 신규 최상위 유형으로 분리(멤버십 바코드). → 7종 - 2 + 1 = 6종.
+// 순서: 상품형 → 혜택·오퍼형 → 배너형 → 업무 진입형 → 콘텐츠 안내형 → 바코드형. 필터 체크박스·목록 그룹·정렬이 이 순서를 따른다.
 export const CORNER_TYPES = [
   '상품형',
   '혜택·오퍼형',
   '배너형',
   '업무 진입형',
-  '상태 안내형',
   '콘텐츠 안내형',
-  '고정·필수 노출형',
+  '바코드형',
 ] as const;
 export type CornerType = (typeof CORNER_TYPES)[number];
 
-// UI 노출용 코너 유형 — 7종 전체(2026-10-28 사용자 요청: 콘텐츠 안내형 복원. 합칠 유형은 추후 논의).
+// UI 노출용 코너 유형 — 6종 전체(2026-10-29 사용자 확정).
 export const VISIBLE_CORNER_TYPES: CornerType[] = [...CORNER_TYPES];
 
 // 코너 유형별 '목적' — 정책서 코너 유형 표(목적 컬럼)의 문구를 그대로 사용(임의 변경 금지).
@@ -447,10 +448,11 @@ export const CORNER_TYPE_PURPOSE: Record<CornerType, string> = {
   상품형: '상품, 요금제, 단말, 부가서비스 후보를 탐색하게 한다.',
   배너형: '배너 캠페인 관리에서 등록한 배너를 불러와 노출한다(소재·문구는 코너에서 직접 만들지 않음). 단일형=배너 1개, 스와이프형=배너 여러 개.',
   '혜택·오퍼형': '고객이 받을 수 있는 혜택, 쿠폰, 제휴 오퍼를 제안한다.',
-  '업무 진입형': '조회, 변경, 신청, 납부 같은 업무로 바로 이동하게 한다.',
-  '상태 안내형': '고객 상태, 보유 정보, 진행 상태, 제한 사유를 안내한다.',
+  // 업무 진입형 = 진입(탭·메뉴) + 상태/프로필 안내까지 통합(2026-10-29). 상태안내·프로필·리스트·칩 배열을 품는다.
+  '업무 진입형': '조회·변경·신청·납부 업무로 바로 이동시키고, 고객 상태·보유 정보·프로필을 안내한다.',
   '콘텐츠 안내형': '이용 가이드, 설명, 추천 콘텐츠를 제공한다.',
-  '고정·필수 노출형': '필수 고지, 장애 안내, 보안 안내처럼 안정적으로 유지해야 하는 정보를 노출한다.',
+  // 바코드형 = 멤버십 바코드(회원별 런타임 발급). 어드민은 라벨·유효시간 정책만 관리.
+  '바코드형': '멤버십 바코드를 노출한다(값은 회원 인증 기반 런타임 발급, 어드민은 정책만 관리).',
 };
 export function cornerTypePurpose(cornerType?: string | null): string {
   if (!cornerType) return '';
@@ -463,10 +465,11 @@ export const CORNER_TYPE_GOVERNANCE: Record<CornerType, string> = {
   상품형: '정책: 상품형. 상세설계 확장으로 선택형(상단 카테고리 탭)까지. 상품·요금제·단말·부가서비스 후보를 탐색.',
   배너형: '정책: 배너형 컴포넌트만. 기간성 이벤트·공지·프로모션을 노출한다. 서비스 전체 캠페인은 배너 관리에서 캠페인 단위로.',
   '혜택·오퍼형': '정책 허용: 혜택형·정보형·행동형·배너형. 상세설계 확장으로 상품형·선택형까지(제휴·기프티콘·구독 상품 카드, 카테고리 탭). 혜택·쿠폰·오퍼를 제안.',
-  '업무 진입형': '정책 허용: 행동형·정보형·선택형. 조회·변경·신청·납부 같은 업무로 바로 이동시키는 진입 코너(탭·메뉴·바로가기).',
-  '상태 안내형': '정책: 정보형·행동형. 요금·포인트·잔여량처럼 고객 상태·보유·진행·제한 사유를 안내.',
+  // 업무 진입형 = 진입(탭·메뉴) + 상태·프로필 안내 통합(2026-10-29, 구 상태안내형·고정필수 흡수). 배열: 상태안내·프로필·리스트·칩.
+  '업무 진입형': '정책 허용: 행동형·정보형·선택형. 조회·변경·신청·납부 진입(탭·메뉴·바로가기)과 고객 상태·보유·프로필 안내.',
   '콘텐츠 안내형': '정책 허용: 정보형·행동형·배너형. 상세설계 확장으로 상품형까지(영화 예매 등 콘텐츠+상품 카드). 이용 가이드·설명·추천 콘텐츠.',
-  '고정·필수 노출형': '정책: 정보형·행동형. 필수 고지·장애·보안 안내처럼 안정적으로 유지할 정보(바코드·프로필).',
+  // 바코드형 = 멤버십 바코드(정보형). 회원별 런타임 발급 → 어드민은 라벨·유효시간 정책만.
+  '바코드형': '정책: 정보형. 멤버십 바코드를 안정적으로 노출(값은 런타임 발급, 어드민은 정책만 관리).',
 };
 export function cornerTypeGovernance(cornerType?: string | null): string {
   if (!cornerType) return '';
@@ -490,9 +493,8 @@ export const CORNER_TYPE_CHIP: Record<CornerType, string> = {
   배너형: 'bg-[#FFDCDC] text-[#ED3B3E]',              // negative
   '혜택·오퍼형': 'bg-[#FFE4C4] text-[#D66400]',        // warning
   '업무 진입형': 'bg-[#D9E9FF] text-[#2E7AFF]',        // info
-  '상태 안내형': 'bg-[#C8F6E1] text-[#038E52]',        // success
   '콘텐츠 안내형': 'bg-[#DCE0E5] text-[#454F59]',      // neutral
-  '고정·필수 노출형': 'bg-[#DCE0E5] text-[#454F59]',   // neutral
+  '바코드형': 'bg-[#C8F6E1] text-[#038E52]',           // success
 };
 // 이벤트·미션 전용 코너 계열(3종)
 export const EVENT_CORNER_FAMILY_CHIP: Record<string, string> = {
@@ -629,21 +631,20 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
       { layout: '스와이프형', required: [], minItems: 2, maxItems: 5, note: '배너 개수만 정합니다(세부 항목 없음)' },
     ],
   },
-  // 업무 진입형 — 탭형=세부 항목 없음(메뉴 슬롯만, 빌더에서 채움). 리스트형=TBD. 2026-10-28 사용자 확정.
+  // 업무 진입형 — 진입(리스트·칩)에 상태안내·프로필까지 통합(2026-10-29 사용자 확정). 배열 4종. 옵션 없음.
+  //  · 상태 안내형(CardHome): 타이틀·서브타이틀·배지·아이콘(단일 카드).
+  //  · 프로필형(CardHome): 프로필 이미지·고객명·고객번호·버튼(단일 카드).
+  //  · 리스트형: 메뉴 슬롯만(빌더에서 채움), 노출 개수만.
+  //  · 칩형(ChipHome): 칩·탭 슬롯만(빌더에서 카탈로그 카테고리로 채움).
   '업무 진입형': {
-    options: [],
-    layouts: [
-      { layout: '탭형', required: [] },
-      // 리스트형 = 세부 항목·형태 없음(카드 크기 없음). 노출 개수(메뉴 개수)만 설정. 2026-10-28 사용자 확정.
-      { layout: '리스트형', required: [], minItems: 2, maxItems: 8 },
-    ],
-  },
-  // 상태 안내형 — 단일. 옵션 없음.
-  '상태 안내형': {
     options: [],
     layouts: [
       { layout: '상태 안내형', required: [CORNER_TITLE, FD('SubTitle', '서브타이틀', 'corner', { asIs: 'Show Subtitle', note: '설명' }),
         FD('BadgeItem', '배지', 'corner', { asIs: 'BadgeItem(ShowBadge, Label)' }), FD('IconItem', '아이콘', 'corner', { asIs: 'IconItem(ShowIcon, Icon)' })] },
+      { layout: '프로필형', required: [FD('ImageSrc', '프로필 이미지', 'corner'), FD('Title', '고객명', 'corner'),
+        FD('SubTitle', '고객번호', 'corner', { asIs: 'SubTitle', note: '표시여부' }), FD('Button', '버튼', 'corner', { asIs: 'Button' })] },
+      { layout: '리스트형', required: [], minItems: 2, maxItems: 8 },
+      { layout: '칩형', required: [] },
     ],
   },
   // 콘텐츠 안내형 — 가로형. 옵션: 배너·CTA.
@@ -654,11 +655,10 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
         FD('Title', '아이템 타이틀', 'item', { note: '영화 제목' }), FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' })] },
     ],
   },
-  // 고정·필수 노출형 — 프로필형/바코드형. 옵션 없음.
-  '고정·필수 노출형': {
+  // 바코드형 — 멤버십 바코드(신규 최상위, 2026-10-29). CardHome · Variants My · 필수: 바코드명(Title). 값은 런타임 발급.
+  '바코드형': {
     options: [],
     layouts: [
-      { layout: '프로필형', required: [FD('ImageSrc', '프로필 이미지', 'corner'), FD('Title', '고객명', 'corner'), FD('SubTitle', '고객번호', 'corner', { asIs: 'SubTitle', note: '표시여부' })] },
       { layout: '바코드형', required: [FD('Title', '바코드명', 'corner')] },
     ],
   },
@@ -711,12 +711,20 @@ export function cornerFieldSpec(cornerType?: string | null, layout?: string | nu
   const spec = cornerType ? CORNER_TYPE_SPECS[cornerType as CornerType] : null;
   if (!spec) return null;
   const l = layout ?? '';
-  // 정확 일치 → 부분 포함(가로형+배너 ⊃ 가로형) → 세로/가로 키워드 → 첫 배열
-  // 키워드 매칭 — 세로/가로/리스트/탭/단일/스와이프(예: '메뉴 리스트'→'리스트형', '카테고리 탭'→'탭형').
-  const kw = (re: RegExp) => re.test(l) && spec.layouts.find((x) => re.test(x.layout));
+  // 정확 일치 → 부분 포함(가로형+배너 ⊃ 가로형) → 키워드 매칭 → 첫 배열.
+  // 키워드 매칭 — DB 저장 배열명(detail)을 새 배열로 라우팅. pickKw(detail 정규식, 배열명 정규식).
+  //  예: '메뉴 리스트'→'리스트형', '카테고리 탭'→'칩형', '아이콘/이미지형'→'상태 안내형', '프로필형'→'프로필형', '바코드'→'바코드형'.
+  const pickKw = (lre: RegExp, want: RegExp) => lre.test(l) && spec.layouts.find((x) => want.test(x.layout));
   const pick = spec.layouts.find((x) => x.layout === l)
     ?? spec.layouts.find((x) => l.includes(x.layout) || x.layout.includes(l))
-    ?? (kw(/세로/) || kw(/가로/) || kw(/리스트/) || kw(/탭/) || kw(/단일/) || kw(/스와이프/) || spec.layouts[0]);
+    ?? (pickKw(/세로/, /세로/) || pickKw(/가로/, /가로/)
+      || pickKw(/메뉴|리스트/, /리스트/)
+      || pickKw(/탭|칩|카테고리/, /칩/)
+      || pickKw(/아이콘|카드|상태/, /상태/)
+      || pickKw(/프로필/, /프로필/)
+      || pickKw(/바코드/, /바코드/)
+      || pickKw(/단일/, /단일/) || pickKw(/스와이프/, /스와이프/)
+      || spec.layouts[0]);
   // 노출 개수 = 배열별 값이 있으면 우선(배너형 스와이프형만 등), 없으면 유형 공통.
   return { options: spec.options, required: pick?.required ?? [], minItems: pick?.minItems ?? spec.minItems, maxItems: pick?.maxItems ?? spec.maxItems, rows: spec.rows, layout: pick?.layout, note: pick?.note };
 }
@@ -727,7 +735,6 @@ export const CORNER_TYPE_IMAGE_NAME: Partial<Record<CornerType, string>> = {
   상품형: '상품형',
   배너형: '배너형',
   '혜택·오퍼형': '혜택 컨텐츠형',
-  '고정·필수 노출형': '관리용(고정형)',
 };
 export function cornerTypeDisplayName(baseCategory: string): string {
   return CORNER_TYPE_IMAGE_NAME[baseCategory as CornerType] ?? baseCategory;
@@ -821,14 +828,12 @@ export const CORNER_COMPONENT_MAP: Record<CornerType, readonly ComponentType[]> 
   배너형: ['배너형'],
   // 정책: 혜택형·정보형·행동형·배너형. (+상품형·선택형 = 제휴·기프티콘·구독 상품 카드/카테고리 탭, 상세설계 확장)
   '혜택·오퍼형': ['혜택형', '정보형', '행동형', '배너형', '상품형', '선택형'],
-  // 정책: 행동형·정보형·선택형. 조회·변경·신청·납부 업무 진입. (기존 선택형 단일 → 정책대로 확대)
+  // 정책: 행동형·정보형·선택형. 조회·변경·신청·납부 진입 + 상태·프로필 안내(구 상태안내형 흡수, 2026-10-29).
   '업무 진입형': ['행동형', '정보형', '선택형'],
-  // 정책: 정보형·행동형. (일치)
-  '상태 안내형': ['정보형', '행동형'],
   // 정책: 정보형·행동형·배너형. (+상품형 = 영화 예매 등 콘텐츠+상품 카드, 상세설계 확장)
   '콘텐츠 안내형': ['정보형', '행동형', '배너형', '상품형'],
-  // 정책: 정보형·행동형. (일치)
-  '고정·필수 노출형': ['정보형', '행동형'],
+  // 바코드형 = 정보형(멤버십 바코드). 구 고정·필수 노출형에서 분리(2026-10-29).
+  '바코드형': ['정보형'],
 };
 
 export function isComponentAllowedInCorner(
@@ -857,9 +862,10 @@ export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
   // ── 특이케이스: 목적별 특정 배열만 ──
   // 배너형 = 배너 단일형 / 스와이프형 (2026-09-29 사용자 확정). '이미지형'은 구 표기 → 폐기.
   배너형: ['배너 단일형', '스와이프형'],
-  '업무 진입형': ['카테고리 탭', '메뉴 리스트'],
-  '상태 안내형': ['아이콘/이미지형'],
-  '고정·필수 노출형': ['프로필형', '바코드'],
+  // 업무 진입형 4배열(2026-10-29): 상태안내(아이콘/이미지형)·프로필형·리스트형(메뉴 리스트)·칩형(카테고리 탭).
+  '업무 진입형': ['아이콘/이미지형', '프로필형', '메뉴 리스트', '카테고리 탭'],
+  // 바코드형 — 멤버십 바코드 단일 배열.
+  '바코드형': ['바코드'],
 };
 export function cornerTypeDetails(cornerType: string): readonly string[] {
   return (CORNER_TYPE_DETAILS as Record<string, readonly string[]>)[cornerType] ?? [];
@@ -869,9 +875,10 @@ export function cornerTypeDetails(cornerType: string): readonly string[] {
 //  콘텐츠 이름(카테고리 탭·바코드…)을 형태명(탭형·바코드형…)으로. 매처/DB는 원값 그대로라 안전.
 const LAYOUT_LABEL: Record<string, string> = {
   '세로형(카테고리탭)': '세로형(탭)',
-  '카테고리 탭': '탭형',
+  // 업무 진입형 배열 표기(2026-10-29): 칩형·리스트형·상태 안내형·프로필형.
+  '카테고리 탭': '칩형',
   '메뉴 리스트': '리스트형',
-  '아이콘/이미지형': '카드형',
+  '아이콘/이미지형': '상태 안내형',
   '바코드': '바코드형',
 };
 export function layoutLabel(detail?: string | null): string {
@@ -885,9 +892,8 @@ export const CORNER_TYPE_EN: Record<string, string> = {
   '배너형': 'Banner',
   '혜택·오퍼형': 'Benefit·Offer',
   '업무 진입형': 'Quick Entry',
-  '상태 안내형': 'Status',
   '콘텐츠 안내형': 'Content',
-  '고정·필수 노출형': 'Fixed·Required',
+  '바코드형': 'Barcode',
   '개인화 추천형': 'Personalized',
 };
 // 배열(레이아웃) 영문 — 저장 원값 기준(표시 라벨도 함께 매핑해 안전).
