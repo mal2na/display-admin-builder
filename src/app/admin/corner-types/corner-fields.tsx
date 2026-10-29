@@ -138,10 +138,15 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey, onOpt
       <UsePair name={`fld_${f.group}_${f.key}`} used disabled />
     </FieldTableRow>
   );
+  // 옵션 라벨 — 상품형(CornerStudio)과 동일 표기: 배너→배너이미지(BannerSrc)·칩→칩(Chip)·CTA→CTA(CTA).
+  const OPT_META: Record<string, { ko: string; code: string }> = {
+    '배너': { ko: '배너이미지', code: 'BannerSrc' }, '칩': { ko: '칩', code: 'Chip' }, 'CTA': { ko: 'CTA', code: 'CTA' },
+  };
   const optionRow = (o: string) => {
     const used = editable ? (optOn[o] ?? true) : true;
+    const meta = OPT_META[o] ?? { ko: o, code: o };
     return (
-      <FieldTableRow key={`opt-${o}`} label={o} tag={editable ? { text: '옵션', color: '#3617ce' } : undefined}>
+      <FieldTableRow key={`opt-${o}`} label={meta.ko} keyName={meta.code} tag={editable ? { text: '옵션', color: '#3617ce' } : undefined}>
         <UsePair name={`opt_${o}_r`} used={used} disabled={!editable} onChange={editable ? (v) => setOpt(o, v) : undefined} />
         {editable && <input type="hidden" name={`opt_${o}`} value={used ? 'on' : ''} />}
       </FieldTableRow>
