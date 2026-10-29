@@ -338,9 +338,9 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
         // 배너 — 단색(그라데이션 제거), 혜택·오퍼형과 동일 비율(aspect-16/10)·동일 색(2026-10-29(2) 사용자 요청).
         <div className="flex aspect-[16/10] w-full items-center justify-center bg-[#eef0f3] text-[12px] font-medium text-slate-500">Banner</div>
       ))}
-      <p className="whitespace-pre-line px-[28px] pt-4 text-[16px] font-bold leading-snug text-[#1a1a1a]">{spec.title}</p>
-      {/* 버튼 텍스트(ButtonText) — 타이틀 바로 밑 텍스트. 모든 레이아웃 공통(2026-10-28 사용자 요청: CTA와 분리). */}
-      {spec.buttonText.show && <p className="mt-1 px-[28px] text-[12px] text-[#697582]">{spec.buttonText.label} ›</p>}
+      <p className="whitespace-pre-line px-[28px] pt-4 text-[16px] font-bold leading-snug text-slate-900">{spec.title}</p>
+      {/* 버튼 텍스트(ButtonText) — 타이틀 바로 밑. 혜택·오퍼형(CornerBlock)과 위치·색 통일: mt-0.5·slate-400(2026-10-29(2) 사용자 요청). */}
+      {spec.buttonText.show && <p className="mt-0.5 flex items-center gap-0.5 px-[28px] text-[12px] text-slate-400">{spec.buttonText.label} ›</p>}
       {/* 칩(Chip) 옵션 — 상단 카테고리 탭(2026-10-28 사용자 요청: 배너·칩·CTA 옵션 가로/세로 공통) */}
       {spec.chipOn && (
         <div className="mt-2 flex gap-1.5 overflow-x-auto px-[28px]">
