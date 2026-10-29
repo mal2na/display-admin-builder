@@ -458,12 +458,12 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
 
   // 단일 미리보기(배너형 / 단일 케이스 / 미배치 샘플) — 폰 프레임 없이 카드 그대로 축소.
   //  BG 영역은 모든 유형 동일 고정 높이(PREVIEW_H), 콘텐츠는 세로 중앙 정렬 → 배너처럼 짧은 유형도 가운데(2026-09-29 사용자 요청).
-  const singlePreview = (
+  const singlePreview = isStudio ? (
+    // 상품형 — 자연 높이로 흐름(고정 높이 금지 → 긴 내용도 안 잘림). 바깥 박스(max-h-72vh)가 스크롤 처리(2026-10-29(2) 사용자 요청).
+    <CornerSpecPreview storageKey={specKey} layout={row.typeDetail ?? undefined} />
+  ) : (
     <div className={PREVIEW_H}>
-      {isStudio ? (
-        // 상품형 — 스튜디오에서 저장한 코너 스펙(배너·타이틀·CTA·상품카드·배지)을 렌더. 세로형이면 세로 리스트.
-        <CornerSpecPreview storageKey={specKey} layout={row.typeDetail ?? undefined} />
-      ) : isBanner ? (
+      {isBanner ? (
         <div className="flex h-full flex-col items-center justify-center gap-3">
           {bannerPreviews.map((b) => (
             <ComposedBanner key={b.id} f={b.fields} width={412} height={132} preview />

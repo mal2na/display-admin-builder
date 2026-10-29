@@ -1660,10 +1660,12 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       </div>
       <div className="max-h-[72vh] overflow-y-auto bg-[#eef0f6] px-4 pb-4 pt-4">
         {(() => {
-          // 코너 속성 옵션(배너·칩·CTA) 토글 → 미리보기 반영(2026-10-29(2) 사용자 요청). 옵션에 없는 유형은 undefined로 기존 동작 유지.
-          const optBanner = cornerOpts['배너'];
-          const optChip = cornerOpts['칩'];
-          const optCta = cornerOpts['CTA'];
+          // 코너 속성 옵션(배너·칩·CTA) 토글 → 미리보기 반영(2026-10-29(2) 사용자 요청).
+          //  이 유형이 실제로 갖는 옵션에만 적용 — 업무 진입형 등 옵션 없는 유형은 전환 전 값이 남아도 강제하지 않음.
+          const availOpts = cornerFieldSpec(base, detailValid)?.options ?? [];
+          const optBanner = availOpts.includes('배너') ? cornerOpts['배너'] : undefined;
+          const optChip = availOpts.includes('칩') ? cornerOpts['칩'] : undefined;
+          const optCta = availOpts.includes('CTA') ? cornerOpts['CTA'] : undefined;
           const previewC = {
             ...compositionToPreviewCorner({
               base, detail: detailValid, composition: shownBlocks,
@@ -1681,8 +1683,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             showPrice: priceOn,
             showBadge: eff('useBadge'),
             showDesc: descOn,
-            // CTA(더보기) 표시 항목 ON → 미리보기 버튼으로 반영. 코너 속성 'CTA' 옵션이 있으면 그 값 우선.
-            moreButtonUse: optCta ?? eff('useMoreButton'),
+            // CTA(더보기) — CTA 옵션이 있는 유형에서만. 업무 진입형·바코드형·배너형은 CTA 옵션이 없어 더보기 미표시.
+            moreButtonUse: availOpts.includes('CTA') ? (optCta ?? eff('useMoreButton')) : false,
             moreButtonLabel: moreLabel || undefined,
             // 수급 방식(CVM/운영자 편성)을 미리보기에도 반영 — 빌더와 동일하게 'CVM 개인화 · 미리보기는 폴백' 배지 노출(2026-10-06).
             recSource: recSource || undefined,
