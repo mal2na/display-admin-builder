@@ -548,7 +548,7 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
   return (
     <div>
         {/* 형태(Variants) — 세로형은 제외(2026-10-29(2) 사용자 요청: 불필요). 가로형만 카드 크기(Small/Medium/Large) 선택. 라디오 버튼(비상품형 VariantControl과 동일, 2026-10-29(2)). */}
-        {!vertical && <Prop name="형태" code="Variants" desc="카드 크기">
+        {!vertical && <Prop name="형태" code="Variants">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
             {variantOpts.map((o) => (
               <label key={o} className="flex cursor-pointer items-center gap-1.5 text-[13px]">
