@@ -389,7 +389,9 @@ export function loadCornerSpec(storageKey: string, layout?: string): CardHomeSpe
       if (!(variants as readonly string[]).includes(merged.item?.variant)) merged.item = base.item;
       // 필수(고정) 항목만 — 선택 항목 제거, 라벨 텍스트 항상 ON(2026-10-28).
       merged.item = normalizeProductItem(merged.item, isVertical(layout));
-      merged.buttonText = { ...merged.buttonText, show: true };
+      // 버튼텍스트·CTA 라벨은 껍데기 placeholder(필드 코드) — 저장된 구값('Label')이 남아도 항상 코드로 고정(2026-10-29(2) 사용자 요청).
+      merged.buttonText = { ...merged.buttonText, show: true, label: 'ButtonText' };
+      if (merged.cta) merged.cta = { ...merged.cta, label: 'CTA' };
       return merged;
     }
   } catch { /* ignore */ }

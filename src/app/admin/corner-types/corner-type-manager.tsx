@@ -183,8 +183,8 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   const c = compositionToPreviewCorner({
     base: row.baseCategory,
     detail: row.typeDetail,
-    mainTitle: noTitle || !row.useMainTitle ? null : '타이틀',
-    subTitle: noTitle || !row.useSubTitle ? null : '디스크립션',
+    mainTitle: noTitle || !row.useMainTitle ? null : 'Title',
+    subTitle: noTitle || !row.useSubTitle ? null : 'ButtonText',
     // 가이드는 저장된 조합(실데이터 포함)이 아니라 유형 기본 조합(generic)으로 — 상품명·가격·설명 '슬롯 라벨'만 보이게.
     composition: defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: row.useBadge, desc: row.useDesc }),
     placeholder: true, // 슬롯 라벨(상품명·가격·설명 등)로 구조만
@@ -1498,7 +1498,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     // 저장된 조합이 아니라 '현재 속성 토글(features)' 기준으로 조합 생성 → 끄면 즉시 미리보기에서 빠짐
     const comp = defaultComposition(compForShape(base, d), d, { image: features.useImage, price: features.usePrice, badge: features.useBadge || d.includes('태그'), desc: features.useDesc });
     // 속성은 배열 형태와 무관하게 토글 그대로 적용(모든 배열 동일) — detail 기반 eff 대신 features 직접 사용
-    const c = compositionToPreviewCorner({ base, detail: d, composition: comp, mainTitle: features.useMainTitle ? '코너 타이틀' : null, subTitle: features.useSubTitle ? '서브타이틀' : null });
+    const c = compositionToPreviewCorner({ base, detail: d, composition: comp, mainTitle: features.useMainTitle ? 'Title' : null, subTitle: features.useSubTitle ? 'ButtonText' : null, placeholder: true, emptyImages: true });
     // 배너 히어로는 상품 이미지와 독립(bannerImageUrl) — 상품 이미지 OFF에도 배너 유지
     const isBannerArr = d.includes('배너');
     const heroImg = base === '상품형' ? (d.includes('세로형') ? '/assets/ds/plan-hero-expire.png' : '/assets/ds/hero-device.png') : '/assets/ds/hero-plan.png';
