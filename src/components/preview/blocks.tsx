@@ -15,6 +15,8 @@ const CARD_PAD_BARCODE = `${CARD_PAD_X} py-[32px]`; // 바코드 카드는 레�
 const CARD_RADIUS = 'rounded-[28px]';
 // 코너 UI 카드를 배경 위로 '떠 보이게' 하는 플로팅 쉐도우(2026-10-29(2) 사용자 요청: 코너 미리보기에서 코너 UI 뒤 쉐도우).
 const CARD_FLOAT_SHADOW = 'shadow-[0_10px_30px_rgba(20,22,40,0.14)]';
+// 가로형(CarouselItem) 카드 크기 변형 폭 — 상품형 스튜디오(H_VARIANT_WIDTH)와 동일 수치로 통일(2026-10-29(2)).
+const CARD_SIZE_W: Record<string, string> = { Small: 'w-[112px]', Medium: 'w-[140px]', Large: 'w-[170px]' };
 // 업무 진입형 chip형(퀵칩 라벤더 카드)은 일반 카드 패딩이 과해 보여 더 타이트하게(상하좌우, 2026-10-01 사용자 요청).
 const CHIP_CARD_PAD = 'px-[12px] py-[10px]';
 
@@ -49,6 +51,7 @@ export type PreviewCorner = {
   cvmFillCount?: number | null; // CVM 보충 — 노출 개수(max)보다 운영자 등록이 적을 때 CVM이 채우는 칸 수(가안)
   bigBanner?: boolean | null; // 배치(인스턴스) 옵션 — 상단 빅배너로 강조
   cardShape?: string | null; // 상품형 2.5배열 카드 모양 (정사각형 | 직사각형)
+  cardSize?: string | null; // 가로형(CarouselItem) 카드 크기 변형 Small/Medium/Large (2026-10-29(2): 모든 가로형 코너 유형 공통)
   titleLines?: number | null; // 상품 카드 제목 줄 수 (2=두 줄)
   bannerImageUrl?: string | null;
   bannerName?: string | null;
@@ -170,7 +173,7 @@ function MenuListView({ component, shell }: { component: PreviewComponent; shell
   );
 }
 
-function ProductCard({ component, shape, reason, titleLines, emphasis = false, grid = false, parts }: { component: PreviewComponent; shape?: string | null; reason?: string; titleLines?: number | null; emphasis?: boolean; grid?: boolean; parts?: CardParts }) {
+function ProductCard({ component, shape, cardSize, reason, titleLines, emphasis = false, grid = false, parts }: { component: PreviewComponent; shape?: string | null; cardSize?: string | null; reason?: string; titleLines?: number | null; emphasis?: boolean; grid?: boolean; parts?: CardParts }) {
   // 코너별 표시 항목 — 끈 요소는 렌더하지 않는다(미지정=노출). 배지는 가격에 종속(가격 꺼지면 배지도 숨김).
   const showImg = parts?.image !== false;
   const showPrice = parts?.price !== false;
@@ -193,8 +196,10 @@ function ProductCard({ component, shape, reason, titleLines, emphasis = false, g
   const cta = first(component.atoms, 'CTA');
   const square = shape === '1:1' || shape === '정사각형';
   const wide = shape === '4:3';
-  const ratioCls = emphasis ? 'aspect-[16/10]' : grid ? (square ? 'aspect-square' : 'aspect-[4/3]') : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
-  const wCls = grid ? 'w-full' : emphasis ? 'w-[224px]' : square ? 'w-[150px]' : wide ? 'w-[168px]' : 'w-[156px]';
+  // 가로형 카드 크기 변형(Small/Medium/Large) — 설정 시 폭을 변형값으로, 이미지는 정사각(상품형 스튜디오 ItemCard와 동일). grid/emphasis는 제외.
+  const sizeCls = !grid && !emphasis ? CARD_SIZE_W[cardSize ?? ''] : undefined;
+  const ratioCls = emphasis ? 'aspect-[16/10]' : grid ? (square ? 'aspect-square' : 'aspect-[4/3]') : sizeCls ? 'aspect-square' : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
+  const wCls = grid ? 'w-full' : emphasis ? 'w-[224px]' : sizeCls ? sizeCls : square ? 'w-[150px]' : wide ? 'w-[168px]' : 'w-[156px]';
   const nameCls = titleLines === 2 ? 'line-clamp-2' : 'truncate';
   return (
     <div className={cn('shrink-0', wCls)}>
@@ -486,7 +491,7 @@ type LayoutMode = 'horizontal' | 'emphasis' | 'grid' | 'single' | 'list';
 // 코너별 표시 항목(상품 카드 요소 on/off) — 미지정(undefined)은 노출로 본다.
 type CardParts = { image?: boolean; price?: boolean; badge?: boolean; desc?: boolean };
 
-function ComponentView({ component, mode, cardShape, reason, titleLines, parts }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; reason?: string; titleLines?: number | null; parts?: CardParts }) {
+function ComponentView({ component, mode, cardShape, cardSize, reason, titleLines, parts }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; cardSize?: string | null; reason?: string; titleLines?: number | null; parts?: CardParts }) {
   switch (component.componentType) {
     case '선택형':
       return <ChipsView component={component} />;
@@ -498,7 +503,7 @@ function ComponentView({ component, mode, cardShape, reason, titleLines, parts }
           ? <PlanBannerRow component={component} />
           : <BenefitRow component={component} reason={reason} parts={parts} />;
       }
-      return <ProductCard component={component} shape={cardShape} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} parts={parts} />;
+      return <ProductCard component={component} shape={cardShape} cardSize={cardSize} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} parts={parts} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':
@@ -570,7 +575,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       return (
         <div className="flex gap-3 overflow-x-auto pb-1">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} titleLines={corner.titleLines} reason={reasonFor(i)} parts={parts} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} cardSize={corner.cardSize} titleLines={corner.titleLines} reason={reasonFor(i)} parts={parts} />
           ))}
         </div>
       );

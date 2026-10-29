@@ -52,15 +52,17 @@ function UsePair({ name, used, disabled, onChange }: { name: string; used: boole
 }
 
 // 형태(Variants) — 가로형=Small/Medium/Large, 세로형=Profile/Data/Barcode. 단일 선택이라 라디오.
-function VariantControl({ layout }: { layout?: string | null }) {
+function VariantControl({ layout, value, onChange, disabled }: { layout?: string | null; value?: string; onChange?: (v: string) => void; disabled?: boolean }) {
   const vertical = /세로/.test(layout ?? '');
   const opts = vertical ? ['Profile', 'Data', 'Barcode'] : ['Small', 'Medium', 'Large'];
-  const [val, setVal] = useState(opts[0]);
+  const [local, setLocal] = useState(opts[0]);
+  const val = value ?? local;
+  const pick = (o: string) => { setLocal(o); onChange?.(o); };
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
       {opts.map((o) => (
-        <label key={o} className="flex cursor-pointer items-center gap-1.5 text-[13px]">
-          <input type="radio" name="variantSel" checked={val === o} onChange={() => setVal(o)} className="h-4 w-4 accent-[#3617ce]" />
+        <label key={o} className={cn('flex items-center gap-1.5 text-[13px]', disabled ? 'cursor-default' : 'cursor-pointer')}>
+          <input type="radio" name="variantSel" checked={val === o} disabled={disabled} onChange={() => pick(o)} className="h-4 w-4 accent-[#3617ce]" />
           <span className={cn('whitespace-nowrap', val === o ? 'font-medium text-slate-700' : 'text-slate-500')}>{o}</span>
         </label>
       ))}
@@ -111,7 +113,7 @@ function CountRow({ min, max, editable }: { min: number; max: number; editable?:
 }
 
 // 코너 유형 + 배열 → 코너(카드)/아이템(요소) 속성 테이블 + 형태(Variants) + 노출 개수(아이템에 묶음).
-export function CornerFieldList({ cornerType, layout, editable, optionKey, onOptionsChange }: { cornerType?: string | null; layout?: string | null; editable?: boolean; optionKey?: string; onOptionsChange?: (o: Record<string, boolean>) => void }) {
+export function CornerFieldList({ cornerType, layout, editable, optionKey, onOptionsChange, variantKey, onVariantChange }: { cornerType?: string | null; layout?: string | null; editable?: boolean; optionKey?: string; onOptionsChange?: (o: Record<string, boolean>) => void; variantKey?: string; onVariantChange?: (v: string) => void }) {
   const m = cornerFieldSpec(cornerType, layout);
   const opts = m?.options ?? [];
   // 옵션(배너·칩·CTA) 사용/미사용 — editable 이면 전환+로컬 보존, 아니면 '사용' 고정 표시.
@@ -122,6 +124,16 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey, onOpt
   }, [editable, optionKey]);
   // 옵션 변경 → 상위(미리보기)로 전달. 배너·칩·CTA 토글을 코너 미리보기에 반영(2026-10-29(2) 사용자 요청).
   useEffect(() => { onOptionsChange?.(optOn); }, [optOn, onOptionsChange]);
+  // 형태(Variants) — 가로형 Small/Medium/Large / 세로형 Profile/Data/Barcode. 선택값을 미리보기(카드 크기)로 전달(2026-10-29(2) 사용자 요청).
+  const variantOpts = /세로/.test(layout ?? '') ? ['Profile', 'Data', 'Barcode'] : ['Small', 'Medium', 'Large'];
+  const [variant, setVariant] = useState<string>(variantOpts[0]);
+  const safeVariant = variantOpts.includes(variant) ? variant : variantOpts[0];
+  useEffect(() => {
+    if (!editable || !variantKey) return;
+    try { const raw = localStorage.getItem(variantKey); if (raw) setVariant(raw); } catch { /* noop */ }
+  }, [editable, variantKey]);
+  useEffect(() => { onVariantChange?.(safeVariant); }, [safeVariant, onVariantChange]);
+  const chooseVariant = (v: string) => { setVariant(v); if (variantKey) { try { localStorage.setItem(variantKey, v); } catch { /* noop */ } } };
   const setOpt = (o: string, v: boolean) => setOptOn((p) => {
     const next = { ...p, [o]: v };
     if (optionKey) { try { localStorage.setItem(optionKey, JSON.stringify(next)); } catch { /* noop */ } }
@@ -181,7 +193,7 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey, onOpt
       {itemFields.length > 0 && (
         <GroupBox badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
           <FieldTableRow label="이미지 형태" keyName="Variants">
-            <VariantControl layout={m.layout ?? layout} />
+            <VariantControl layout={m.layout ?? layout} value={safeVariant} onChange={editable ? chooseVariant : undefined} disabled={!editable} />
           </FieldTableRow>
           {itemFields.map(fixedRow)}
           {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} />}

@@ -1304,6 +1304,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const [step, setStep] = useState(0);
   const [resetNonce, setResetNonce] = useState(0); // 비상품형 '초기 설정값으로 돌리기' — CornerFieldList 리마운트 키.
   const [cornerOpts, setCornerOpts] = useState<Record<string, boolean>>({}); // 비상품형 코너 속성 옵션(배너·칩·CTA) 상태 — 미리보기 반영용.
+  const [cornerVariant, setCornerVariant] = useState<string>('Small'); // 비상품형 형태(Variants) — 가로형 Small/Medium/Large 카드 크기 미리보기 반영(2026-10-29(2)).
   // 2단 분류: ① 코너 유형(base) → ② 배열·레이아웃(detail). 구성 컴포넌트는 배열·레이아웃에서 자동 도출.
   const [base, setBase] = useState(row.baseCategory);
   const [detail, setDetail] = useState(row.typeDetail ?? '');
@@ -1687,6 +1688,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             moreButtonLabel: moreLabel || undefined,
             // 수급 방식(CVM/운영자 편성)을 미리보기에도 반영 — 빌더와 동일하게 'CVM 개인화 · 미리보기는 폴백' 배지 노출(2026-10-06).
             recSource: recSource || undefined,
+            // 형태(Variants) — 가로형만 카드 크기(Small/Medium/Large) 미리보기 반영. 세로형(Profile/Data/Barcode)은 크기 개념 아님.
+            cardSize: /가로/.test(detailValid ?? '') ? cornerVariant : undefined,
           };
           // 미리보기 아이템(요소)은 우선 3개로 고정 — 선택형(칩/탭)은 유지, 본문 반복 카드만 3개로 캡(2026-10-29(2) 사용자 요청).
           //  실제 노출 개수는 빌더/CVM이 정하므로 코너 유형 미리보기는 대표 3건만 보여준다.
@@ -1702,7 +1705,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       </div>
       </section>
       {/* 초기 설정값으로 돌리기 — 유형 정의 기본값(옵션 전체 사용·노출 개수·형태)으로 ② 코너 정보·속성 복원(2026-10-29(2) 사용자 요청: 모든 코너 미리보기 밑에). */}
-      <button type="button" onClick={() => { try { localStorage.removeItem(`ctopt:${row.id}`); } catch { /* noop */ } setResetNonce((n) => n + 1); }}
+      <button type="button" onClick={() => { try { localStorage.removeItem(`ctopt:${row.id}`); localStorage.removeItem(`ctvar:${row.id}`); } catch { /* noop */ } setCornerVariant('Small'); setResetNonce((n) => n + 1); }}
         className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#dce0e5] bg-white px-3 py-2 text-[12px] font-semibold text-[#454f59] transition hover:bg-[#f8f9fb]">
         <RotateCcw className="h-3.5 w-3.5" /> 초기 설정값으로 돌리기
       </button>
@@ -1957,7 +1960,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
               <FormCard n={2} title="코너 속성" hint="이 코너 유형이 쓰는 표시 항목">
                 {/* 코너 정보·속성 = '코너유형정리' 표 SSOT에서 필수(고정)·옵션(배너·칩·CTA)만 노출(2026-10-28 사용자 요청).
                     저장값(표시 항목 플래그)은 아래 hidden 으로 보존 — 기존 미리보기·데이터 호환. */}
-                <CornerFieldList key={`cfl-${resetNonce}`} cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} onOptionsChange={setCornerOpts} />
+                <CornerFieldList key={`cfl-${resetNonce}`} cornerType={base} layout={detail} editable optionKey={`ctopt:${row.id}`} onOptionsChange={setCornerOpts} variantKey={`ctvar:${row.id}`} onVariantChange={setCornerVariant} />
                 {CORNER_TYPE_FEATURES.map((f) => (features[f.key as keyof typeof features] ? <input key={f.key} type="hidden" name={f.key} value="on" /> : null))}
                 {/* 노출 개수 입력은 CornerFieldList(세부 항목) 안에서 설정한다(2026-10-28 사용자 요청: 여기서 설정).
                     단, 노출 개수가 없는 유형(탭형·단일형·상태안내형·고정필수)은 CountRow가 안 떠서 저장값만 hidden 보존. */}
