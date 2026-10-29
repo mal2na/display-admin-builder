@@ -194,12 +194,21 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
             atom({ name: '브랜드', atomType: 'INFO', content: 'SubTitle' }),
           ] };
         }
+        // 콘텐츠 안내형(영화 등) = 이미지 + 타이틀 + 캡션(평점). 가격 없음 — 코너 속성(Title·Caption01)과 일치(2026-10-29(2) 사용자 요청).
+        if (ctx?.base === '콘텐츠 안내형') {
+          return { ...base, name: '콘텐츠', atoms: [
+            ...(b.image !== false ? [atom({ name: '이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png' })] : []),
+            atom({ name: '상품명', atomType: 'TEXT', content: 'Title' }),
+            atom({ name: '캡션', atomType: 'INFO', content: 'Caption01' }),
+          ] };
+        }
         return { ...base, name: '상품', atoms: [
           ...(b.image !== false ? [atom({ name: '이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png' })] : []),
           atom({ name: '상품명', atomType: 'TEXT', content: 'Title' }),
           ...(b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: 'Badge' })] : []),
-          ...(b.price !== false ? [atom({ name: '가격', atomType: 'PRICE', content: '99,999원' })] : []),
-          ...(b.desc !== false ? [atom({ name: '설명', atomType: 'INFO', content: 'SubText' })] : []),
+          // 가격 그룹(가격 제외 안 함): 할인율 + 가격 — 상품형 스튜디오와 동일하게 99% 99,999원 노출.
+          ...(b.price !== false ? [atom({ name: '할인율', atomType: 'TEXT', content: '99%' }), atom({ name: '가격', atomType: 'PRICE', content: '99,999원' })] : []),
+          ...(b.desc !== false ? [atom({ name: '설명', atomType: 'INFO', content: 'SubText02' })] : []),
         ] };
       default:
         return { ...base, name: b.componentType, atoms: [] };
