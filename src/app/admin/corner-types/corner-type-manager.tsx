@@ -1844,7 +1844,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         await formAction(fd);
         onClose();
       }}
-      className="space-y-4 p-5"
+      className="space-y-5"
     >
       {bulk && <input type="hidden" name="bulkArraysJson" value={JSON.stringify(selectedArrays)} />}
       {/* 폼 내부 제목 제거 — 페이지 상단 브레드크럼으로 대체(2026-10-01 사용자 요청). bulk(배열 일괄 수정)만 제목 유지. */}
