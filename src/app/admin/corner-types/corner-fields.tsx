@@ -80,7 +80,8 @@ function GroupHead({ badge, color, title, desc }: { badge: string; color: string
 
 // 테이블 외곽 — 둥근 보더로 묶어 '기본 정보' 테이블과 같은 덩어리감.
 function FieldTable({ children }: { children: React.ReactNode }) {
-  return <div className="overflow-hidden rounded-md border border-[#eef1f4]">{children}</div>;
+  // 좌우 보더 없이 위아래만(2026-10-29(2) 사용자 고정 규칙 — 읽기·수정 테이블 공통).
+  return <div className="border-y border-[#eef1f4]">{children}</div>;
 }
 
 // 노출 개수 — 편집 폼(editable)에서는 직접 설정(최소~최대 입력), 읽기(상세)에서는 범위 표시. 표 한 행으로.

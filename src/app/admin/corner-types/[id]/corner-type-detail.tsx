@@ -222,11 +222,11 @@ function ROTable({ children }: { children: React.ReactNode }) {
 function ROSection({ title, aside, bodyClass, children }: { title: React.ReactNode; aside?: React.ReactNode; bodyClass?: string; children: React.ReactNode }) {
   return (
     <section className="overflow-hidden rounded-[12px] border border-[#dce0e5] bg-white">
-      <div className="flex items-center gap-2 border-b border-[#eef1f4] bg-white px-4 py-3">
+      <div className="flex items-center gap-2 bg-white px-4 pt-3.5 pb-1">
         <h3 className="text-[14.5px] font-bold text-slate-900">{title}</h3>
         {aside && <span className="ml-auto flex items-center">{aside}</span>}
       </div>
-      <div className={bodyClass ?? 'p-4'}>{children}</div>
+      <div className={bodyClass ?? 'px-4 pb-4 pt-1'}>{children}</div>
     </section>
   );
 }
@@ -380,26 +380,28 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       {usageByCorner.length === 0 ? (
         <div className="rounded-[8px] border border-dashed border-[#dce0e5] bg-muted/20 p-5 text-center text-[12px] text-muted-foreground">아직 이 코너 유형을 쓰는 전시화면이 없습니다.</div>
       ) : (
-        // 세로 스택 — 코너별로 썸네일 → 코너명 → 전시화면 칩을 위에서 아래로(2026-10-29(2) 사용자 요청: 좌측 2열 말고 밑으로).
+        // 좌: 이미지(고정폭) · 우: 전시화면 경로 리스트(세로). 2026-10-29(2) 사용자 요청.
         <div className="divide-y divide-[#eef1f4]">
           {usageByCorner.map((u, i) => (
-            <div key={i} className="space-y-2 py-4 first:pt-0 last:pb-0">
-              <div className="pointer-events-none flex h-[200px] w-full items-center justify-center overflow-hidden rounded-[8px] bg-[#eef0f6]">
+            <div key={i} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
+              <div className="pointer-events-none flex h-[180px] w-[220px] shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[#eef0f6]">
                 <DevicePreview corner={u.preview} fit="contain" align="center-middle" />
               </div>
-              <p className="text-[12.5px] font-semibold text-slate-800">{u.cornerName}</p>
-              <div className="flex flex-wrap gap-1">
-                {u.screens.length === 0 ? (
-                  <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">미배치</span>
-                ) : u.screens.map((s, j) => (
-                  <Link key={j} href={`/admin/templates/${s.templateId}/builder`} className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-white px-1.5 py-0.5 text-[11px] ring-1 ring-slate-200 transition hover:ring-indigo-400" title="전시화면 관리(빌더)에서 열기">
-                    <Box className="h-3 w-3 shrink-0 text-slate-400" />
-                    <span className="whitespace-nowrap text-slate-700">{s.container}</span>
-                    <ChevronRight className="h-2.5 w-2.5 shrink-0 text-slate-300" />
-                    <span className="whitespace-nowrap font-medium text-indigo-700">{s.template}</span>
-                    <ExternalLink className="h-2.5 w-2.5 shrink-0 text-indigo-400" />
-                  </Link>
-                ))}
+              <div className="min-w-0 flex-1">
+                <p className="mb-2 text-[12.5px] font-semibold text-slate-800">{u.cornerName}</p>
+                <div className="flex flex-col items-start gap-1.5">
+                  {u.screens.length === 0 ? (
+                    <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">미배치</span>
+                  ) : u.screens.map((s, j) => (
+                    <Link key={j} href={`/admin/templates/${s.templateId}/builder`} className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-white px-1.5 py-0.5 text-[11px] ring-1 ring-slate-200 transition hover:ring-indigo-400" title="전시화면 관리(빌더)에서 열기">
+                      <Box className="h-3 w-3 shrink-0 text-slate-400" />
+                      <span className="whitespace-nowrap text-slate-700">{s.container}</span>
+                      <ChevronRight className="h-2.5 w-2.5 shrink-0 text-slate-300" />
+                      <span className="whitespace-nowrap font-medium text-indigo-700">{s.template}</span>
+                      <ExternalLink className="h-2.5 w-2.5 shrink-0 text-indigo-400" />
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           ))}
@@ -432,11 +434,6 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
 
   return (
     <div className="space-y-5">
-      {/* 수정 버튼 — 상단 우측(제목 제거, 각 섹션이 박스로 구분됨) */}
-      <div className="flex justify-end">
-        <Button size="sm" variant="secondary" onClick={onEdit}><Pencil className="mr-1 h-3.5 w-3.5" /> 수정</Button>
-      </div>
-
       {/* 미리보기(좌·고정폭 340·sticky) + 정보(우). 폭 좁으면 정보가 아래로. 수정 폼과 동일 폭·sticky(2026-10-29(2) 사용자 요청). */}
       <div className="flex flex-wrap items-start gap-5">
         <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
@@ -458,14 +455,21 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
             ) : singlePreview}
           </ROSection>
         </div>
+        {/* 우측 — 코너 기본 정보 / 코너 속성 / 상세 정보. 좌측 미리보기 영역은 항상 미리보기만(2026-10-29(2) 사용자 요청). */}
         <div className="min-w-[300px] flex-1 space-y-5">
           {infoContent}
           {variationsContent}
+          {usageContent}
         </div>
       </div>
 
-      {/* 상세 정보 — 전체 폭, 미리보기·정보 아래. 실제 코너 + 전시화면 맵핑(클릭 시 빌더). */}
-      {usageContent}
+      {/* 하단 액션 — 좌: 목록, 우: 수정(2026-10-29(2) 사용자 요청). */}
+      <div className="flex items-center justify-between gap-2 border-t border-[#eef1f4] pt-4">
+        <Link href="/admin/corner-types" className="inline-flex h-[38px] items-center gap-1.5 rounded-[8px] border border-[#c4c9cf] bg-white px-4 text-[13px] font-semibold text-slate-600 transition hover:bg-[#f8f9fb]">
+          <ChevronLeft className="h-4 w-4" /> 목록
+        </Link>
+        <Button size="sm" variant="secondary" onClick={onEdit}><Pencil className="mr-1 h-3.5 w-3.5" /> 수정</Button>
+      </div>
     </div>
   );
 }
