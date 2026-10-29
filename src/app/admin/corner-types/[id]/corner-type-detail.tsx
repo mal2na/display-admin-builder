@@ -217,13 +217,16 @@ function ROTable({ children }: { children: React.ReactNode }) {
   return <div className="border-y border-[#dce0e5]">{children}</div>;
 }
 
-// 코너(카드)/아이템(요소) 그룹 헤더 — 수정 폼과 동일하게 코/아 배지 + 제목(2026-10-29(2) 사용자 요청).
-function ROGroupHead({ badge, color, title, desc }: { badge: string; color: string; title: string; desc: string }) {
+// 코너(카드)/아이템(요소) 그룹 — 헤더 바 + 행을 한 박스로 붙임(수정 폼과 동일, 2026-10-29(2) 사용자 요청: 헤더·테이블 붙이기).
+function ROGroup({ badge, color, title, desc, children }: { badge: string; color: string; title: string; desc: string; children: React.ReactNode }) {
   return (
-    <div className="mb-1.5 flex items-center gap-1.5 rounded-md bg-[#f8f9fb] px-2.5 py-2">
-      <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] text-[10px] font-bold" style={{ backgroundColor: `${color}1a`, color }}>{badge}</span>
-      <span className="text-[12px] font-bold text-[#454f59]">{title}</span>
-      <span className="text-[11px] text-[#8b949e]">· {desc}</span>
+    <div className="border-y border-[#dce0e5]">
+      <div className="flex items-center gap-1.5 border-b border-[#eef0f3] bg-[#f8f9fb] px-3 py-2">
+        <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] text-[10px] font-bold" style={{ backgroundColor: `${color}1a`, color }}>{badge}</span>
+        <span className="text-[12px] font-bold text-[#454f59]">{title}</span>
+        <span className="text-[11px] text-[#8b949e]">· {desc}</span>
+      </div>
+      <div>{children}</div>
     </div>
   );
 }
@@ -397,16 +400,10 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
               return (
                 <div className="space-y-3">
                   {cornerRows.length > 0 && (
-                    <div>
-                      <ROGroupHead badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)" />
-                      <ROTable>{cornerRows.map(renderRow)}</ROTable>
-                    </div>
+                    <ROGroup badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)">{cornerRows.map(renderRow)}</ROGroup>
                   )}
                   {itemRows.length > 0 && (
-                    <div>
-                      <ROGroupHead badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)" />
-                      <ROTable>{itemRows.map(renderRow)}</ROTable>
-                    </div>
+                    <ROGroup badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">{itemRows.map(renderRow)}</ROGroup>
                   )}
                 </div>
               );

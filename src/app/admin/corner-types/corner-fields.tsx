@@ -68,12 +68,16 @@ function VariantControl({ layout }: { layout?: string | null }) {
   );
 }
 
-function GroupHead({ badge, color, title, desc }: { badge: string; color: string; title: string; desc: string }) {
+// 그룹 — 헤더 바 + 행을 한 박스로 붙임(2026-10-29(2) 사용자 요청: 헤더·테이블 붙이기, 좌우 보더 없이 위아래만).
+function GroupBox({ badge, color, title, desc, children }: { badge: string; color: string; title: string; desc: string; children: React.ReactNode }) {
   return (
-    <div className="mb-1.5 flex items-center gap-1.5 rounded-md bg-[#f8f9fb] px-2 py-1.5">
-      <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] text-[10px] font-bold" style={{ backgroundColor: `${color}1a`, color }}>{badge}</span>
-      <span className="text-[12px] font-bold text-[#454f59]">{title}</span>
-      <span className="text-[11px] text-[#8b949e]">· {desc}</span>
+    <div className="border-y border-[#eef1f4]">
+      <div className="flex items-center gap-1.5 border-b border-[#eef0f3] bg-[#f8f9fb] px-3 py-2">
+        <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] text-[10px] font-bold" style={{ backgroundColor: `${color}1a`, color }}>{badge}</span>
+        <span className="text-[12px] font-bold text-[#454f59]">{title}</span>
+        <span className="text-[11px] text-[#8b949e]">· {desc}</span>
+      </div>
+      <div>{children}</div>
     </div>
   );
 }
@@ -163,26 +167,20 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey, onOpt
       {m.note && <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-1.5 text-[12px] text-slate-400">{m.note}</p>}
       {/* 코너(카드) — 옵션(배너·칩·CTA) 먼저, 그 다음 고정(타이틀·라벨) */}
       {hasCorner && (
-        <div>
-          <GroupHead badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)" />
-          <FieldTable>
-            {m.options.map(optionRow)}
-            {cornerFields.map(fixedRow)}
-          </FieldTable>
-        </div>
+        <GroupBox badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)">
+          {m.options.map(optionRow)}
+          {cornerFields.map(fixedRow)}
+        </GroupBox>
       )}
       {/* 아이템(요소) — 형태(Variants) + 고정 필드 + 노출 개수(아이템에 묶음) */}
       {itemFields.length > 0 && (
-        <div>
-          <GroupHead badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)" />
-          <FieldTable>
-            <FieldTableRow label="이미지 형태" keyName="Variants">
-              <VariantControl layout={m.layout ?? layout} />
-            </FieldTableRow>
-            {itemFields.map(fixedRow)}
-            {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} />}
-          </FieldTable>
-        </div>
+        <GroupBox badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
+          <FieldTableRow label="이미지 형태" keyName="Variants">
+            <VariantControl layout={m.layout ?? layout} />
+          </FieldTableRow>
+          {itemFields.map(fixedRow)}
+          {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} />}
+        </GroupBox>
       )}
       {editable && (
         <p className="px-2 text-[11px] text-[#8b949e]">
