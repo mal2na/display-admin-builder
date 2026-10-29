@@ -458,8 +458,8 @@ export function compositionToPreviewCorner(opts: {
     layoutDetail: opts.detail ?? null,
     cornerLayout: opts.layout ?? null,
     bigBanner: opts.forceBanner || isPlanBanner || isDeviceBanner || isBenefitBanner || undefined,
-    // 신규 등록 가이드 폼에선 배너 히어로도 빈 영역(샘플 히어로 미노출). '배너' 옵션 강제 시엔 배너 슬롯(Banner)만.
-    bannerImageUrl: opts.emptyImages ? null : (isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : undefined),
+    // 신규 등록 가이드 폼에선 배너 히어로도 빈 영역. '배너' 옵션 강제 시엔 상품 이미지 대신 'Banner' 슬롯(센티넬: 렌더 불가 → 그라데이션 Banner 박스).
+    bannerImageUrl: isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : (opts.forceBanner ? 'Banner' : (opts.emptyImages ? null : undefined)),
     bannerName: opts.forceBanner ? 'Banner' : undefined,
     emptyImages: opts.emptyImages ?? null,
     components,
