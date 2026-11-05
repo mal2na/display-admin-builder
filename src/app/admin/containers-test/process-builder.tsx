@@ -261,8 +261,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // 프로필형(업무 진입형) = 고객 정보(이름·휴대폰 등)라 '무조건 CVM 데이터 연동' 고정(2026-11-05 사용자 요청).
   const layoutDetailStr = corner.layoutDetail ?? corner.layout ?? '';
   const isProfile = corner.cornerType === '업무 진입형' && /프로필/.test(layoutDetailStr);
+  // 상태 안내형 = '어떤 상태 카드를 어떤 순서로'는 운영자가 뭉텅이로 편성, 값·보조문구는 런타임 고객 데이터(@cvm). → 운영자 편성 고정(2026-11-05 사용자 요청).
+  const isStatus = corner.cornerType === '업무 진입형' && /상태|아이콘.?이미지/.test(layoutDetailStr);
   const [srcState, setSrc] = React.useState<string>(corner.recSource ?? '운영자 편성');
-  const src = isProfile ? 'CVM 데이터 연동' : srcState;
+  const src = isProfile ? 'CVM 데이터 연동' : isStatus ? '운영자 편성' : srcState;
+  const srcLocked = isProfile || isStatus;
   const [fb, setFb] = React.useState<'미노출' | '운영자 편성으로 대체'>(corner.fallback);
   const [cat, setCat] = React.useState('혜택');
   const [topN, setTopN] = React.useState(5);
@@ -284,7 +287,6 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
-  const isStatus = corner.cornerType === '업무 진입형' && /상태|아이콘.?이미지/.test(layoutDetailStr);
   const catalog = (isStatus ? catalogByType['상태 안내형'] : catalogByType[corner.cornerType]) ?? [];
   const canLoad = catalog.length > 0;
   const catCategories = Array.from(new Set(catalog.map((c) => c.category).filter((c): c is string => !!c)));
@@ -501,11 +503,12 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
       {/* ② 수급 — 클릭해 전환. 프로필형은 CVM 데이터 연동 고정(잠금). */}
       <Sec n={2} title="수급 — 이 자리를 누가 채우나" help>
         {isProfile && <p className="mb-2 flex items-center gap-1 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] text-[#2e4fd6]"><Lock className="h-3.5 w-3.5" /> 프로필형은 고객 정보라 <b>CVM 데이터 연동</b>으로 고정됩니다.</p>}
+        {isStatus && <p className="mb-2 flex items-center gap-1 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] text-[#2e4fd6]"><Lock className="h-3.5 w-3.5" /> 상태 안내형은 운영자가 <b>상태 카드를 뭉텅이로 편성</b>하고, 값·보조문구는 런타임 고객 데이터(@cvm)로 자동 표시됩니다. → <b>운영자 편성</b> 고정.</p>}
         <div className="space-y-2">
           {REC_SOURCE_METHODS.map((m) => {
             const info = REC_SOURCE_INFO[m]; const on = m === src; const Icon = REC_ICON[m] ?? Sparkles;
             return (
-              <button key={m} type="button" disabled={isProfile} onClick={() => { setSrc(m); onRecSourceChange(m); }} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]', isProfile && !on && 'opacity-40')}>
+              <button key={m} type="button" disabled={srcLocked} onClick={() => { setSrc(m); onRecSourceChange(m); }} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]', srcLocked && !on && 'opacity-40')}>
                 <div className="flex items-center gap-2">
                   <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
                   <Icon className={cn('h-3.5 w-3.5', on ? 'text-[var(--ac)]' : 'text-[var(--ink4)]')} />
