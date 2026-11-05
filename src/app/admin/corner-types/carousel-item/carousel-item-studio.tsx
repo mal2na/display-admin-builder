@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Children, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronDown, Image as ImageIcon, RotateCcw } from 'lucide-react';
 
@@ -62,9 +62,9 @@ const carousel = (title: string): CarouselItemSpec => ({
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'PriceCaption' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
+  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'PriceCaption' }, discountRate: { show: false, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
   subText01: { show: false, value: 'SubText01' },
-  subText02: { show: true, value: 'SubText02' },
+  subText02: { show: true, value: 'SubText' },
   caption: { show: false, value: 'Caption01', icon: { show: false }, caption02: { show: false, value: 'Caption02' }, caption03: { show: false, value: 'Caption03' } },
   count: { show: false, value: '+2' },
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
@@ -78,7 +78,7 @@ const cardHomeItem = (title: string): CarouselItemSpec => ({
   subTitle: { show: false, value: 'SubTitle' },
   priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'PriceCaption' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: true, value: '/Period' } },
   subText01: { show: false, value: 'SubText01' },
-  subText02: { show: false, value: 'SubText02' },
+  subText02: { show: false, value: 'SubText' },
   caption: { show: true, value: 'Caption01', icon: { show: false }, caption02: { show: true, value: 'Caption02' }, caption03: { show: false, value: 'Caption03' } },
   count: { show: false, value: '+2' },
   badgeGroup: { show: false, labelCount: 3, items: emptyBadges() },
@@ -96,7 +96,7 @@ function normalizeProductItem(it: CarouselItemSpec, vertical: boolean): Carousel
     priceGroup: vertical
       // 세로형: 가격은 옵션(토글) → 저장값 유지, 가격설명만 끔.
       ? { ...it.priceGroup, priceCaption: { ...it.priceGroup.priceCaption, show: false } }
-      // 가로형: 가격·할인율은 옵션(토글) → 저장값 유지(2026-10-29(2) 사용자 요청). 가격설명·기간만 끔.
+      // 가로형: 가격·할인율 = 옵션(토글, 저장값 유지). 할인율은 가격에 종속(가격 N이면 자동 off). 가격설명·기간은 끔(2026-11-04 SB v13).
       : { ...it.priceGroup, priceCaption: { ...it.priceGroup.priceCaption, show: false },
           pricePeriod: { ...it.priceGroup.pricePeriod, show: false } },
     // 캡션·캡션2 = 세로형 고정. 캡션3 미사용.
@@ -109,13 +109,13 @@ function normalizeProductItem(it: CarouselItemSpec, vertical: boolean): Carousel
 // 레이아웃별 초기 스펙 — 세로형=CardHomeItem, 가로형=CarouselItem. 배너=옵션(기본값은 '+배너' 레이아웃이면 On).
 function defaultSpec(layout?: string): CardHomeSpec {
   return {
-    title: 'Title',
+    title: 'CornerTitle', // 코너 타이틀 placeholder = 필드 코드(CornerTitle). 미리보기=테이블 컬럼과 일치(2026-11-05)
     buttonText: { show: true, label: 'ButtonText' }, // 라벨 텍스트(ButtonText) = 필수(고정) — 미리보기 라벨 영문 표기(2026-10-29(2))
     cta: { show: true, label: 'CTA' },           // CTA = 옵션 (하단 버튼 텍스트 = 'CTA', 2026-10-29(2) 사용자 요청)
     bannerSrc: '',
-    bannerOn: layout == null || /배너/.test(layout), // 배너 = 옵션
-    chipOn: false,                                // 칩 = 옵션(상단 카테고리 탭)
-    item: isVertical(layout) ? cardHomeItem('Title') : carousel('Title'),
+    bannerOn: true, // 배너 = 옵션, Default Y(2026-11-04 SB v13)
+    chipOn: true,   // 칩 = 옵션, Default Y(2026-11-04 SB v13)
+    item: isVertical(layout) ? cardHomeItem('ItemTitle') : carousel('ItemTitle'),
   };
 }
 
@@ -166,15 +166,15 @@ function TextInput({ value, onChange, placeholder, multiline }: { value: string;
 }
 // 테이블 행 — 좌: 라벨(음영) · 우: 컨트롤 (기본 정보 테이블/Figma SEO 표 스타일)
 function Prop({ name, code, desc, sub, children }: { name: string; code?: string; desc?: string; sub?: boolean; children: React.ReactNode }) {
+  // 패딩·정렬·코드 표기를 ChkRow와 동일하게(px-3 py-2.5·프리텐다드) — 전 행 높이 통일(2026-11-05 사용자 요청).
   return (
-    <div className="grid grid-cols-[150px_minmax(0,1fr)] items-start border-b border-[#eef0f3] last:border-b-0">
-      <div className={cn('flex min-w-0 flex-col gap-0.5 bg-[#f8f9fb] px-3.5 py-3', sub && 'pl-5')}>
-        <span className="text-[14px] font-medium text-[#454f59]">{name}</span>
-        {/* 영어 코드는 다른 라벨처럼 밑줄에(mono) — 라벨 옆 인라인 금지(2026-10-29(2) 사용자 요청). */}
-        {code && <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">({code})</span>}
+    <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">
+      <div className={cn('flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3 py-2.5', sub && 'pl-6')}>
+        <span className="text-[14px] font-medium leading-[1.2] text-[#454f59]">{name}</span>
+        {code && <span className="text-[10.5px] leading-tight text-[#8b949e]">({code})</span>}
         {desc && <span className="text-[10.5px] leading-tight text-[#8b949e]">{desc}</span>}
       </div>
-      <div className="flex min-w-0 items-center px-3.5 py-3">{children}</div>
+      <div className="flex min-w-0 items-center px-3 py-2.5">{children}</div>
     </div>
   );
 }
@@ -389,9 +389,11 @@ export function loadCornerSpec(storageKey: string, layout?: string): CardHomeSpe
       if (!(variants as readonly string[]).includes(merged.item?.variant)) merged.item = base.item;
       // 필수(고정) 항목만 — 선택 항목 제거, 라벨 텍스트 항상 ON(2026-10-28).
       merged.item = normalizeProductItem(merged.item, isVertical(layout));
-      // 버튼텍스트·CTA 라벨은 껍데기 placeholder(필드 코드) — 저장된 구값('Label')이 남아도 항상 코드로 고정(2026-10-29(2) 사용자 요청).
+      // 타이틀·버튼텍스트·CTA·아이템 타이틀 = 껍데기 placeholder(필드 코드) — 저장된 구값('Label'·'Title')이 남아도 항상 코드로 고정, 미리보기=테이블 컬럼과 일치(2026-11-05 사용자 요청).
+      merged.title = 'CornerTitle';
       merged.buttonText = { ...merged.buttonText, show: true, label: 'ButtonText' };
       if (merged.cta) merged.cta = { ...merged.cta, label: 'CTA' };
+      merged.item = { ...merged.item, title: 'ItemTitle' };
       return merged;
     }
   } catch { /* ignore */ }
@@ -434,38 +436,58 @@ export function CornerSpecThumb({ storageKey, layout }: { storageKey: string; la
 
 // 표시 항목 체크박스 한 줄 — 껐다 켜기만(2026-10-27 사용자 요청: 코너 정보/속성을 체크박스 on/off로).
 //  고정(disabled)=항상 노출되는 구조 항목. indent=하위 항목.
-function ChkRow({ label, checked, onChange, disabled, indent, initial, option }: { label: string; checked: boolean; onChange?: (v: boolean) => void; disabled?: boolean; indent?: boolean; initial?: boolean; option?: boolean }) {
+function ChkRow({ label, checked, onChange, disabled, indent, initial, option, bare }: { label: string; checked: boolean; onChange?: (v: boolean) => void; disabled?: boolean; indent?: boolean; initial?: boolean; option?: boolean; bare?: boolean }) {
   // 필수=고정(disabled, 항상 노출)·옵션(option, 배너·칩·CTA, 항상 노출·토글)만 노출. 선택 항목은 아예 안 보임(2026-10-28 사용자 요청).
   if (!disabled && !checked && !initial && !option) return null;
-  // 2026-10-29(2) 사용자 요청: 체크박스 나열 → '기본 정보'(TRow)·형태(Prop)와 같은 테이블 행. 라벨 셀(회색 150px) + 컨트롤 셀.
-  //  라벨 "배너이미지(BannerSrc)" → 국문(ko) + 코드(key) 분리.
+  // 라벨 "배너(Banner)" → 국문(ko) + 코드(key, 프리텐다드) 분리. bare=2열 셀(라벨 108px, 보더 없음).
   const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(label);
   const ko = m ? m[1] : label;
   const key = m ? m[2] : undefined;
   return (
-    <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">
-      <div className={cn('flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3', indent && 'pl-6')}>
+    <div className={cn('grid items-stretch', bare ? 'h-full grid-cols-[150px_minmax(0,1fr)]' : 'grid-cols-[150px_minmax(0,1fr)] border-b border-[#eef0f3] last:border-b-0')}>
+      <div className={cn('flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3 py-2.5', indent && 'pl-6')}>
         <span className="flex flex-wrap items-center gap-1.5 text-[14px] font-medium leading-[1.2] text-[#454f59]">
           {ko}
           {disabled && <span className="rounded-[4px] bg-[#8b949e]/15 px-1 py-[1px] text-[10px] font-semibold text-[#8b949e]">고정</span>}
           {option && <span className="rounded-[4px] bg-[#3617ce]/10 px-1 py-[1px] text-[10px] font-semibold text-[#3617ce]">옵션</span>}
         </span>
-        {key && <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">({key})</span>}
+        {key && <span className="text-[10.5px] leading-tight text-[#8b949e]">({key})</span>}
       </div>
-      <div className="flex min-w-0 items-center px-3.5 py-3">
-        {/* 사용/미사용 라디오 쌍. 고정(disabled)이면 '사용' 선택 + 비활성(못 끔)으로 표기(2026-10-29(2) 사용자 요청). */}
-        <div className="flex items-center gap-5">
+      <div className="flex min-w-0 items-center px-3 py-2.5">
+        {/* Y/N 라디오 쌍(SB v13). 고정(disabled)이면 Y 선택 + 비활성(못 끔). */}
+        <div className="flex items-center gap-4">
           <label className={cn('flex items-center gap-1.5 text-[13px]', disabled ? 'cursor-default' : 'cursor-pointer')}>
             <input type="radio" name={`cs_${label}`} checked={checked} disabled={disabled} onChange={() => onChange?.(true)} className="h-4 w-4 accent-[#3617ce]" />
-            <span className={cn('whitespace-nowrap', checked ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>사용</span>
+            <span className={cn('whitespace-nowrap', checked ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>Y</span>
           </label>
           <label className={cn('flex items-center gap-1.5 text-[13px]', disabled ? 'cursor-default' : 'cursor-pointer')}>
             <input type="radio" name={`cs_${label}`} checked={!checked} disabled={disabled} onChange={() => onChange?.(false)} className="h-4 w-4 accent-[#3617ce]" />
-            <span className={cn('whitespace-nowrap', !checked ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>미사용</span>
+            <span className={cn('whitespace-nowrap', !checked ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>N</span>
           </label>
         </div>
       </div>
     </div>
+  );
+}
+
+// 2열 래퍼 — 같은 종류(옵션/고정)끼리 2칸씩(홀수면 마지막 빈 칸). SB v13.
+function StudioPairs({ children }: { children: React.ReactNode }) {
+  const arr = Children.toArray(children);
+  const rows: React.ReactNode[][] = [];
+  for (let i = 0; i < arr.length; i += 2) rows.push([arr[i], arr[i + 1] ?? null]);
+  return (
+    <>
+      {rows.map((r, i) => (
+        r[1] == null ? (
+          <div key={i} className="border-b border-[#eef0f3] last:border-b-0">{r[0]}</div>
+        ) : (
+          <div key={i} className="grid grid-cols-2 border-b border-[#eef0f3] last:border-b-0 [&>*:first-child]:border-r [&>*:first-child]:border-[#eef0f3]">
+            {r[0]}
+            {r[1]}
+          </div>
+        )
+      ))}
+    </>
   );
 }
 
@@ -474,13 +496,16 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
   return (
     <div>
-      {/* 옵션(배너·칩·CTA — 상품형·혜택형 공통). 맨 위에 두고 클릭으로 On/Off(2026-10-28 사용자 확정). */}
-      <ChkRow label="배너(Banner)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
-      <ChkRow label="칩(Chip)" option checked={spec.chipOn ?? false} onChange={(v) => set({ chipOn: v })} />
-      <ChkRow label="CTA(CTA)" option checked={spec.cta?.show ?? false} onChange={(v) => set({ cta: { ...(spec.cta ?? { label: 'CTA' }), show: v } })} />
-      {/* 필수(고정) — 코너 메인 타이틀 · 라벨 텍스트 */}
-      <ChkRow label="코너 메인 타이틀(Title)" checked disabled />
-      <ChkRow label="버튼 텍스트(ButtonText)" checked disabled />
+      {/* 옵션(배너·칩·CTA)끼리 2열, 고정(코너 타이틀·버튼 텍스트)끼리 2열(SB v13). */}
+      <StudioPairs>
+        <ChkRow bare label="배너(Banner)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
+        <ChkRow bare label="칩(Chip)" option checked={spec.chipOn ?? false} onChange={(v) => set({ chipOn: v })} />
+        <ChkRow bare label="CTA(CallToAction)" option checked={spec.cta?.show ?? false} onChange={(v) => set({ cta: { ...(spec.cta ?? { label: 'CTA' }), show: v } })} />
+      </StudioPairs>
+      <StudioPairs>
+        <ChkRow bare label="코너 타이틀(CornerTitle)" checked disabled />
+        <ChkRow bare label="버튼 텍스트(ButtonText)" checked disabled />
+      </StudioPairs>
     </div>
   );
 }
@@ -489,14 +514,14 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
 // 사용/미사용 라디오 쌍(제목 없음 — 제목은 표의 라벨 셀에). 비활성이면 회색.
 function RadioPair({ name, on, disabled, onPick }: { name: string; on: boolean; disabled?: boolean; onPick: (v: boolean) => void }) {
   return (
-    <div className="flex items-center gap-5">
+    <div className="flex items-center gap-4">
       <label className={cn('flex items-center gap-1.5 text-[13px]', disabled ? 'cursor-default' : 'cursor-pointer')}>
         <input type="radio" name={name} checked={on} disabled={disabled} onChange={() => onPick(true)} className="h-4 w-4 accent-[#3617ce]" />
-        <span className={cn('whitespace-nowrap', on ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>사용</span>
+        <span className={cn('whitespace-nowrap', on ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>Y</span>
       </label>
       <label className={cn('flex items-center gap-1.5 text-[13px]', disabled ? 'cursor-default' : 'cursor-pointer')}>
         <input type="radio" name={name} checked={!on} disabled={disabled} onChange={() => onPick(false)} className="h-4 w-4 accent-[#3617ce]" />
-        <span className={cn('whitespace-nowrap', !on ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>미사용</span>
+        <span className={cn('whitespace-nowrap', !on ? (disabled ? 'text-slate-400' : 'text-slate-700') : 'text-slate-400')}>N</span>
       </label>
     </div>
   );
@@ -505,15 +530,15 @@ function RadioPair({ name, on, disabled, onPick }: { name: string; on: boolean; 
 // 가격·할인율(·기간) — 컬럼 분할 그리드(라벨|라디오쌍). 가격 미사용이면 나머지 off+비활성, 가격 사용이면 할인율·기간 독립 옵션(2026-10-29(2) 사용자 요청).
 function PriceCols({ pg, vertical, onChange }: { pg: CarouselItemSpec['priceGroup']; vertical: boolean; onChange: (p: Partial<CarouselItemSpec['priceGroup']>) => void }) {
   const Label = ({ ko, code, dim }: { ko: string; code: string; dim?: boolean }) => (
-    <div className="flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
+    <div className="flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3 py-2.5">
       <span className="flex flex-wrap items-center gap-1.5 text-[14px] font-medium leading-[1.2]">
         <span className={dim ? 'text-slate-300' : 'text-[#454f59]'}>{ko}</span>
         <span className="rounded-[4px] bg-[#3617ce]/10 px-1 py-[1px] text-[10px] font-semibold text-[#3617ce]">옵션</span>
       </span>
-      <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">({code})</span>
+      <span className="text-[10.5px] leading-tight text-[#8b949e]">({code})</span>
     </div>
   );
-  const Cell = ({ children }: { children: React.ReactNode }) => <div className="flex min-w-0 items-center px-3.5 py-3">{children}</div>;
+  const Cell = ({ children }: { children: React.ReactNode }) => <div className="flex min-w-0 items-center px-3 py-2.5">{children}</div>;
   const price = (<>
     <Label ko="가격" code={vertical ? 'TextPriceGroup' : 'Price'} />
     <Cell><RadioPair name="csu_가격" on={pg.show}
@@ -530,9 +555,9 @@ function PriceCols({ pg, vertical, onChange }: { pg: CarouselItemSpec['priceGrou
       onPick={(v) => onChange({ pricePeriod: { ...pg.pricePeriod, show: v } })} /></Cell>
   </>);
   return vertical ? (
-    <div className="grid grid-cols-[150px_minmax(0,1fr)_104px_minmax(0,1fr)_104px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">{price}{disc}{period}</div>
+    <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)_150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0 [&>*:nth-child(3)]:border-l [&>*:nth-child(5)]:border-l [&>*]:border-[#eef0f3]">{price}{disc}{period}</div>
   ) : (
-    <div className="grid grid-cols-[150px_minmax(0,1fr)_104px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">{price}{disc}</div>
+    <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0 [&>*:nth-child(3)]:border-l [&>*]:border-[#eef0f3]">{price}{disc}</div>
   );
 }
 
@@ -551,23 +576,32 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
     <div>
         {/* 형태(Variants) — 세로형은 제외(2026-10-29(2) 사용자 요청: 불필요). 가로형만 카드 크기(Small/Medium/Large) 선택. 라디오 버튼(비상품형 VariantControl과 동일, 2026-10-29(2)). */}
         {!vertical && <Prop name="형태" code="Variants">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+          <div className="flex items-center gap-4">
             {variantOpts.map((o) => (
               <label key={o} className="flex cursor-pointer items-center gap-1.5 text-[13px]">
                 <input type="radio" name="variantSel" checked={variantVal === o} onChange={() => set('variant', o)} className="h-4 w-4 accent-[#3617ce]" />
-                <span className={cn('whitespace-nowrap', variantVal === o ? 'font-medium text-slate-700' : 'text-slate-500')}>{o}</span>
+                <span className={cn('whitespace-nowrap', variantVal === o ? 'text-slate-700' : 'text-slate-400')}>{o}</span>
               </label>
             ))}
           </div>
         </Prop>}
+        {/* 아이템 이미지·아이템 타이틀 = 위아래(각 전체폭)로(2026-11-05 사용자 요청). 가격 그룹은 한 줄. */}
         <ChkRow label="아이템 이미지(ImageSrc)" checked disabled />
-        <ChkRow label="아이템 타이틀(Title)" checked disabled />
-        {/* 가격·할인율(·기간) — 컬럼 분할 그리드 + 종속(가격 미사용이면 나머지 off+비활성) */}
-        {!vertical && <PriceCols pg={pg} vertical={false} onChange={setPg} />}
-        {!vertical && <ChkRow label="서브텍스트2(SubText02)" checked disabled />}
-        {vertical && <ChkRow label="캡션(Caption01)" checked disabled />}
-        {vertical && <ChkRow label="캡션2(Caption02)" checked disabled />}
+        <ChkRow label="아이템 타이틀(ItemTitle)" checked disabled />
+        {/* 세로형 = 가격 그룹(가격·할인율·기간)을 캡션 위로(2026-11-05 사용자 요청). */}
         {vertical && <PriceCols pg={pg} vertical onChange={setPg} />}
+        {vertical && (
+          <StudioPairs>
+            <ChkRow bare label="캡션(Caption01)" checked disabled />
+            <ChkRow bare label="캡션2(Caption02)" checked disabled />
+          </StudioPairs>
+        )}
+        {!vertical && <PriceCols pg={pg} vertical={false} onChange={setPg} />}
+        {!vertical && (
+          <StudioPairs>
+            <ChkRow bare label="서브 텍스트(SubText)" checked disabled />
+          </StudioPairs>
+        )}
     </div>
   );
 }
@@ -594,7 +628,11 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
       if (!(variants as readonly string[]).includes(merged.item?.variant)) merged.item = base.item;
       // 필수(고정) 항목만 남게 정규화 — 저장값에 남은 선택 항목 제거. 라벨 텍스트=필수(고정)이므로 항상 ON(2026-10-28).
       merged.item = normalizeProductItem(merged.item, isVertical(layout));
-      merged.buttonText = { ...merged.buttonText, show: true };
+      // 미리보기 placeholder = 테이블 컬럼 필드 코드로 고정(저장된 구값 'Label'·'Title' 무시) — 등록·수정 미리보기도 상세와 동일(2026-11-05 사용자 요청).
+      merged.title = 'CornerTitle';
+      merged.buttonText = { ...merged.buttonText, show: true, label: 'ButtonText' };
+      if (merged.cta) merged.cta = { ...merged.cta, label: 'CTA' };
+      merged.item = { ...merged.item, title: 'ItemTitle' };
       setSpec(merged);
     } catch { setSpec(base); }
     setSel('card');

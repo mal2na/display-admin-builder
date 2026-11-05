@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Children, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -212,6 +212,41 @@ function RORow({ label, children }: { label: React.ReactNode; children: React.Re
   );
 }
 
+// 2열용 읽기 셀 — 라벨(국문+코드, 프리텐다드) | 값. 수정 폼 FieldTableRow 의 읽기 버전.
+function DetailCell({ lbl, children }: { lbl: string; children: React.ReactNode }) {
+  const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(lbl);
+  const ko = m ? m[1] : lbl; const code = m ? m[2] : undefined;
+  return (
+    <div className="grid h-full grid-cols-[150px_minmax(0,1fr)] items-stretch">
+      <div className="flex flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3 py-2.5">
+        <span className="text-[14px] font-medium leading-[1.2] text-[#454f59]">{ko}</span>
+        {code && <span className="text-[10.5px] leading-tight text-[#8b949e]">({code})</span>}
+      </div>
+      <div className="flex min-w-0 items-center gap-2 px-3 py-2.5 text-[13px]">{children}</div>
+    </div>
+  );
+}
+// 2열 래퍼 — 같은 종류끼리 2칸씩(홀수면 마지막 빈 칸). 상세(읽기)용.
+function DetailPairs({ children }: { children: React.ReactNode }) {
+  const arr = Children.toArray(children);
+  const rows: React.ReactNode[][] = [];
+  for (let i = 0; i < arr.length; i += 2) rows.push([arr[i], arr[i + 1] ?? null]);
+  return (
+    <>
+      {rows.map((r, i) => (
+        r[1] == null ? (
+          <div key={i} className="border-b border-[#eef1f4] last:border-b-0">{r[0]}</div>
+        ) : (
+          <div key={i} className="grid grid-cols-2 border-b border-[#eef1f4] last:border-b-0 [&>*:first-child]:border-r [&>*:first-child]:border-[#eef1f4]">
+            {r[0]}
+            {r[1]}
+          </div>
+        )
+      ))}
+    </>
+  );
+}
+
 // 읽기 전용 테이블 외곽 — 박스(좌우) 보더 없이 위아래 가로줄만(2026-10-29(2) 사용자 고정 규칙).
 function ROTable({ children }: { children: React.ReactNode }) {
   return <div className="border-y border-[#dce0e5]">{children}</div>;
@@ -288,20 +323,20 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   const isV = /세로/.test(row.typeDetail);
   const studioItems: { lbl: string; kind: '고정' | 'On/Off' | '옵션'; on: boolean; val?: string }[] | null = (isStudio && studioSpec && it) ? [
     // 옵션(배너·칩·CTA — 상품형·혜택형 공통). 맨 위(2026-10-28 사용자 확정).
-    { lbl: '배너이미지(BannerSrc)', kind: '옵션', on: !!studioSpec.bannerOn, val: studioSpec.bannerSrc || undefined },
+    { lbl: '배너(Banner)', kind: '옵션', on: !!studioSpec.bannerOn, val: studioSpec.bannerSrc || undefined },
     { lbl: '칩(Chip)', kind: '옵션', on: !!studioSpec.chipOn },
-    { lbl: 'CTA(CTA)', kind: '옵션', on: !!studioSpec.cta?.show, val: studioSpec.cta?.label },
+    { lbl: 'CTA(CallToAction)', kind: '옵션', on: !!studioSpec.cta?.show, val: studioSpec.cta?.label },
     // 기본정보(코너) — 고정
-    { lbl: '코너 메인 타이틀(Title)', kind: '고정', on: true, val: studioSpec.title },
+    { lbl: '코너 타이틀(CornerTitle)', kind: '고정', on: true, val: studioSpec.title },
     { lbl: '버튼 텍스트(ButtonText)', kind: '고정', on: true, val: studioSpec.buttonText.label },
     // 코너 정보 속성(아이템) — 고정
     { lbl: '아이템 이미지(ImageSrc)', kind: '고정', on: true, val: it.imageSrc || undefined },
-    { lbl: '아이템 타이틀(Title)', kind: '고정', on: true },
+    { lbl: '아이템 타이틀(ItemTitle)', kind: '고정', on: true },
     // 가로형(단말 추천) = 가격·할인율·서브텍스트2 / 세로형(요금제 리스트) = 캡션·캡션2. DS 실제 케이스 기준(2026-10-28).
     ...(!isV ? [
       { lbl: '가격(Price)', kind: '고정' as const, on: true, val: it.priceGroup.price },
       { lbl: '할인율(DiscountRate)', kind: '고정' as const, on: true, val: it.priceGroup.discountRate.value },
-      { lbl: '서브텍스트2(SubText02)', kind: '고정' as const, on: true, val: it.subText02.value },
+      { lbl: '서브 텍스트(SubText)', kind: '고정' as const, on: true, val: it.subText02.value },
     ] : [
       { lbl: '캡션(Caption01)', kind: '고정' as const, on: true, val: it.caption.value },
       { lbl: '캡션2(Caption02)', kind: '고정' as const, on: true, val: it.caption.caption02.value },
@@ -361,46 +396,58 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
               }
               const koOf = (s: string) => s.replace(/\s*\(.*\)\s*/, '').trim();
               // 코너(카드) = 배너·칩·CTA·코너 메인 타이틀·라벨 텍스트. 나머지(이미지·타이틀·가격 등) = 아이템(요소).
-              const isCornerRow = (r: Row) => !r.price && /^(배너|칩|CTA|코너 메인 타이틀|버튼 텍스트)/.test(r.cell.lbl);
+              const isCornerRow = (r: Row) => !r.price && /^(배너|칩|CTA|코너 타이틀|버튼 텍스트)/.test(r.cell.lbl);
               const cornerRows = rows.filter(isCornerRow);
               const itemRows = rows.filter((r) => !isCornerRow(r));
+              // 값 표기 — 고정=Y, 옵션=Y/N(SB v13 상세와 동일). 저장값은 흐린 보조 표기.
               const stateVal = (c: SI) => (
                 <>
-                  {c.kind === '고정'
-                    ? <span className="text-[12px] font-medium text-slate-400">사용 고정</span>
-                    : <span className={cn('text-[12px] font-semibold', c.on ? 'text-[#00a058]' : 'text-slate-400')}>{c.on ? '사용' : '미사용'}</span>}
-                  {c.on && c.val && <span className="whitespace-pre-line text-slate-500">{c.val}</span>}
+                  <span className="text-[13px] font-semibold text-slate-700">{c.kind === '고정' ? 'Y' : (c.on ? 'Y' : 'N')}</span>
+                  {c.on && c.val && <span className="whitespace-pre-line text-[12px] text-slate-400">{c.val}</span>}
                 </>
               );
-              const renderRow = (r: Row, ri: number) => {
-                if (!r.price) return <RORow key={ri} label={koOf(r.cell.lbl)}><span className="flex min-w-0 items-center gap-2">{stateVal(r.cell)}</span></RORow>;
-                const gridCls = r.cells.length >= 3
-                  ? 'grid-cols-[150px_minmax(0,1fr)_96px_minmax(0,1fr)_96px_minmax(0,1fr)]'
-                  : 'grid-cols-[150px_minmax(0,1fr)_96px_minmax(0,1fr)]';
+              const cell = (c: SI) => <DetailCell key={c.lbl} lbl={c.lbl}>{stateVal(c)}</DetailCell>;
+              // 가격 그룹(가격·할인율·기간) 한 줄 — 108px 라벨·코드(프리텐다드).
+              const priceRow = (cells: SI[], key: number) => {
+                const gridCls = cells.length >= 3
+                  ? 'grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)_150px_minmax(0,1fr)]'
+                  : 'grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)]';
                 return (
-                  <div key={ri} className={cn('grid items-stretch border-b border-[#eef1f4] last:border-b-0', gridCls)}>
-                    {r.cells.flatMap((c, ci) => [
-                      <div key={`l${ci}`} className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[14px] font-medium text-[#454f59]"><span className={c.on ? '' : 'text-slate-400'}>{koOf(c.lbl)}</span></div>,
-                      <div key={`v${ci}`} className="flex min-w-0 items-center gap-2 px-3.5 py-2.5 text-[13px]">{stateVal(c)}</div>,
+                  <div key={`pr${key}`} className={cn('grid items-stretch border-b border-[#eef1f4] last:border-b-0 [&>*:nth-child(3)]:border-l [&>*:nth-child(5)]:border-l [&>*]:border-[#eef1f4]', gridCls)}>
+                    {cells.flatMap((c, ci) => [
+                      <div key={`l${ci}`} className="flex flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3 py-2.5">
+                        <span className="text-[14px] font-medium leading-[1.2] text-[#454f59]">{koOf(c.lbl)}</span>
+                        <span className="text-[10.5px] leading-tight text-[#8b949e]">({/\(([^)]+)\)/.exec(c.lbl)?.[1] ?? ''})</span>
+                      </div>,
+                      <div key={`v${ci}`} className="flex min-w-0 items-center gap-2 px-3 py-2.5 text-[13px]">{stateVal(c)}</div>,
                     ])}
                   </div>
                 );
               };
+              // 순서 유지하며 비-가격은 2열로 묶고, 가격 그룹은 한 줄. 아이템 이미지·아이템 타이틀은 각 전체폭(위아래)으로(2026-11-05 사용자 요청, 수정 폼과 동일).
+              const isStacked = (c: SI) => /\((ImageSrc|ItemTitle)\)/.test(c.lbl);
+              const renderGrouped = (rs: Row[]) => {
+                const out: React.ReactNode[] = []; let buf: SI[] = [];
+                const flush = () => { if (buf.length) { out.push(<DetailPairs key={`dp${out.length}`}>{buf.map(cell)}</DetailPairs>); buf = []; } };
+                rs.forEach((r) => {
+                  if (r.price) { flush(); out.push(priceRow(r.cells, out.length)); }
+                  else if (isStacked(r.cell)) { flush(); out.push(<DetailPairs key={`st${out.length}`}>{cell(r.cell)}</DetailPairs>); }
+                  else buf.push(r.cell);
+                });
+                flush();
+                return out;
+              };
               return (
                 <div className="space-y-3">
                   {cornerRows.length > 0 && (
-                    <ROGroup badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)">{cornerRows.map(renderRow)}</ROGroup>
+                    <ROGroup badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)">{renderGrouped(cornerRows)}</ROGroup>
                   )}
                   {itemRows.length > 0 && (
                     <ROGroup badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
-                      {itemRows.map(renderRow)}
-                      {/* 노출 개수 범위 — 허용 범위(가드레일)만. 실제 개수는 빌더/CVM(2026-10-29(2) 사용자 확정) */}
-                      <RORow label="노출 개수 범위">
-                        <span className="flex items-center gap-2">
-                          <span className="rounded-[4px] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#454f59]">{row.defaultMinItems ?? '–'}~{row.defaultMaxItems ?? '–'}개</span>
-                          <span className="text-[11px] text-slate-400">· 허용 범위 · 실제 개수는 빌더/CVM</span>
-                        </span>
-                      </RORow>
+                      {/* 형태(Variants) — 가로형만(세로형 제외, 수정 폼과 동일). */}
+                      {!isV && it && <DetailPairs><DetailCell lbl="형태(Variants)"><span className="text-[13px] text-slate-700">{it.variant}</span></DetailCell></DetailPairs>}
+                      {renderGrouped(itemRows)}
+                      {/* 노출 개수 범위 제거 — 빌더에서 관리(2026-11-05 사용자 요청). */}
                     </ROGroup>
                   )}
                 </div>

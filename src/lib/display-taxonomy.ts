@@ -585,42 +585,44 @@ export const CORNER_TYPE_FEATURES = [
 //   · 아이템 노출 개수(min~max)·로우 수는 코너 유형 공통. 빌더는 데이터만 연결.
 // ────────────────────────────────────────────────────────────────────────────
 export type CornerOption = '배너' | '칩' | 'CTA';
-export type CornerFieldDef = { key: string; ko: string; group: 'corner' | 'item'; asIs?: string; note?: string };
-export type CornerLayoutSpec = { layout: string; required: CornerFieldDef[]; note?: string; minItems?: number; maxItems?: number };
+// defaultOn = 옵션 필드의 기본 Y/N(미지정 시 Y). dependsOn = 상위 필드 key(상위가 N이면 비활성+강제 N). 2026-11-04 SB v13.
+export type CornerFieldDef = { key: string; ko: string; group: 'corner' | 'item'; asIs?: string; note?: string; defaultOn?: boolean; dependsOn?: string };
+// optional = 배열별로 필수가 아닌 아이템/코너 필드(가격·할인율·기간 등). 빌더/코너유형에서 On/Off(2026-11-02 SB 옵션화 도입).
+// rowCounts = 줄(Row)별 노출 개수(칩형 탭 그리드 등). 줄마다 입력 1개(2026-11-02 SB 탭형).
+export type CornerLayoutSpec = { layout: string; required: CornerFieldDef[]; optional?: CornerFieldDef[]; rowCounts?: { label: string; default: number }[]; note?: string; minItems?: number; maxItems?: number };
 export type CornerTypeSpec = { options: CornerOption[]; minItems?: number; maxItems?: number; rows?: number; layouts: CornerLayoutSpec[] };
 
 // 재사용 필드 — 영문키는 DS(AS-IS) 기준. asIs 생략 시 key 와 동일.
-const FD = (key: string, ko: string, group: 'corner' | 'item', extra?: Partial<CornerFieldDef>): CornerFieldDef => ({ key, ko, group, asIs: extra?.asIs ?? key, note: extra?.note });
-const CORNER_TITLE = FD('Title', '코너 메인 타이틀', 'corner');
+const FD = (key: string, ko: string, group: 'corner' | 'item', extra?: Partial<CornerFieldDef>): CornerFieldDef => ({ key, ko, group, asIs: extra?.asIs ?? key, note: extra?.note, defaultOn: extra?.defaultOn, dependsOn: extra?.dependsOn });
+// 명칭·영문코드는 SB v13 이미지 기준: 코너 타이틀(CornerTitle) / 아이템 타이틀(ItemTitle) / 서브 텍스트(SubText).
+const CORNER_TITLE = FD('CornerTitle', '코너 타이틀', 'corner');
 const LABEL_TEXT = FD('ButtonText', '버튼 텍스트', 'corner');
 const ITEM_IMAGE = FD('ImageSrc', '아이템 이미지', 'item');
-const ITEM_TITLE = FD('Title', '아이템 타이틀', 'item');
-// 가격 그룹 — 뭉뚱그리지 않고 각각 표시(2026-10-28 사용자 요청). DS CardHomeItem 의 TextPriceGroup 하위 속성.
-const PRICE = FD('Price', '가격', 'item', { asIs: 'Price' });
-const DISCOUNT = FD('DiscountRate', '할인율', 'item', { asIs: 'DiscountRate' });
-const SUBTEXT2 = FD('SubText02', '서브텍스트2', 'item', { asIs: 'SubText02' });
+const ITEM_TITLE = FD('ItemTitle', '아이템 타이틀', 'item');
+// 가격 그룹 — 옵션(Y/N). 가격 기본 Y, 할인율 기본 N·가격 종속, 기간 기본 Y(2026-11-04 SB v13).
+const PRICE = FD('Price', '가격', 'item', { defaultOn: true });
+const DISCOUNT = FD('DiscountRate', '할인율', 'item', { defaultOn: false, dependsOn: 'Price' });
+const PERIOD = FD('PricePeriod', '기간', 'item', { defaultOn: true });
+const SUBTEXT = FD('SubText', '서브 텍스트', 'item');
+const SUBTITLE_ITEM = FD('SubTitle', '서브 타이틀', 'item'); // 혜택·오퍼형 세로형 = 브랜드(SubTitle). 미리보기(BenefitRow)와 컬럼 일치(2026-11-05 사용자 요청)
 
 export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
-  // 상품형 — 배열: 가로형/세로형. 옵션 = 배너·칩·CTA(상품형·혜택형 공통, 2026-10-28 사용자 확정).
-  //  DS 실제 케이스(CarouselItem) 기준: 가로형(단말 추천)=이미지·타이틀·가격·할인율·서브텍스트2(SubTitle·기간·캡션·개수 off),
-  //  세로형(요금제 리스트)=이미지·타이틀·캡션·캡션2(가격 off). 나머지는 전부 고정.
+  // 상품형 — SB v13. 가로형: 가격(Y)·할인율(N,가격종속) 옵션 / 세로형: 가격·할인율·기간 옵션 + 캡션 고정. 실제 UI는 스튜디오가 렌더(이 스펙은 썸네일·개수).
   상품형: {
     options: ['배너', '칩', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
-      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, SUBTEXT2] },
+      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTEXT], optional: [PRICE, DISCOUNT] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE,
-        FD('Caption01', '캡션', 'item', { asIs: 'Caption/Caption01' }), FD('Caption02', '캡션2', 'item', { asIs: 'Caption02' })] },
+        FD('Caption01', '캡션', 'item', { asIs: 'Caption/Caption01' }), FD('Caption02', '캡션2', 'item', { asIs: 'Caption02' })],
+        optional: [PRICE, DISCOUNT, PERIOD] },
     ],
   },
-  // 혜택·오퍼형 — 배열: 가로형/세로형. 옵션: 배너·칩·CTA(상품형과 공통).
-  //  가로형 = DS CarouselItem 기준. 케이스별로 가격 상세가 갈림: 기프티콘=Price+할인율(99%), 구독=Price+기간(/월).
-  //  둘 다 담으려면 할인율·기간을 모두 포함(인스턴스에서 택1 표시). 공통: 이미지·타이틀·가격·서브텍스트2. 2026-10-28 사용자 확인.
+  // 혜택·오퍼형 — SB v13. 가로형: 가격·할인율·기간 옵션 / 세로형: 이미지·타이틀·서브텍스트 고정.
   '혜택·오퍼형': {
     options: ['배너', '칩', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
-      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, PRICE, DISCOUNT, FD('PricePeriod', '기간', 'item', { asIs: 'PricePeriod' }), SUBTEXT2] },
-      { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, FD('Title', '아이템 타이틀', 'item', { note: '혜택명' }),
-        FD('SubTitle', '서브타이틀', 'item', { note: '브랜드명' })] },
+      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE], optional: [PRICE, DISCOUNT, PERIOD] },
+      { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTITLE_ITEM] },
     ],
   },
   // 배너형 — 세부 항목 없음(배너 자체가 콘텐츠). 스와이프형만 노출 개수(배너 몇 개). 2026-10-28 사용자 확정.
@@ -631,35 +633,33 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
       { layout: '스와이프형', required: [], minItems: 2, maxItems: 5, note: '배너 개수만 정합니다(세부 항목 없음)' },
     ],
   },
-  // 업무 진입형 — 진입(리스트·칩)에 상태안내·프로필까지 통합(2026-10-29 사용자 확정). 배열 4종. 옵션 없음.
-  //  · 상태 안내형(CardHome): 타이틀·서브타이틀·배지·아이콘(단일 카드).
-  //  · 프로필형(CardHome): 프로필 이미지·고객명·고객번호·버튼(단일 카드).
-  //  · 리스트형: 메뉴 슬롯만(빌더에서 채움), 노출 개수만.
-  //  · 칩형(ChipHome): 칩·탭 슬롯만(빌더에서 카탈로그 카테고리로 채움).
+  // 업무 진입형 — SB v13. 배열 4종(Default 칩형). 칩형/리스트형=세부없음(빌더/개수), 상태안내형·프로필형=단일 카드 필수 항목.
   '업무 진입형': {
     options: [],
     layouts: [
-      { layout: '상태 안내형', required: [CORNER_TITLE, FD('SubTitle', '서브타이틀', 'corner', { asIs: 'Show Subtitle', note: '설명' }),
-        FD('BadgeItem', '배지', 'corner', { asIs: 'BadgeItem(ShowBadge, Label)' }), FD('IconItem', '아이콘', 'corner', { asIs: 'IconItem(ShowIcon, Icon)' })] },
-      { layout: '프로필형', required: [FD('ImageSrc', '프로필 이미지', 'corner'), FD('Title', '고객명', 'corner'),
-        FD('SubTitle', '고객번호', 'corner', { asIs: 'SubTitle', note: '표시여부' }), FD('Button', '버튼', 'corner', { asIs: 'Button' })] },
-      { layout: '리스트형', required: [], minItems: 2, maxItems: 8 },
       { layout: '칩형', required: [] },
+      // 리스트형 = 코너 타이틀(카드) + 리스트(반복 아이템). 2026-11-05 사용자 요청.
+      { layout: '리스트형', required: [CORNER_TITLE, FD('List', '리스트', 'item', { asIs: 'List' })], minItems: 2, maxItems: 8 },
+      { layout: '상태 안내형', required: [CORNER_TITLE, FD('SubTitle', '서브 타이틀', 'corner', { asIs: 'SubTitle' }),
+        FD('BadgeItem', '배지', 'corner', { asIs: 'BadgeItem' }), FD('IconItem', '아이콘', 'corner', { asIs: 'IconItem' })] },
+      // 프로필형 = 고객명(CornerTitle) · 휴대폰 번호(Caption) · 버튼(Button). 미리보기·컬럼 코드 일치(2026-11-05 사용자 요청).
+      { layout: '프로필형', required: [FD('ImageSrc', '프로필 이미지', 'corner'), FD('CornerTitle', '고객명', 'corner'),
+        FD('Caption', '휴대폰 번호', 'corner', { asIs: 'Caption' }), FD('Button', '버튼', 'corner', { asIs: 'Button' })] },
     ],
   },
-  // 콘텐츠 안내형 — 가로형. 옵션: 배너·CTA.
+  // 콘텐츠 안내형 — 가로형만. 옵션: 배너·CTA. 아이템: 이미지·타이틀·캡션평점(Caption01).
   '콘텐츠 안내형': {
     options: ['배너', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, FD('ImageSrc', '아이템 이미지', 'item', { note: '영화 이미지' }),
-        FD('Title', '아이템 타이틀', 'item', { note: '영화 제목' }), FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' })] },
+        FD('ItemTitle', '아이템 타이틀', 'item', { note: '영화 제목' }), FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' })] },
     ],
   },
   // 바코드형 — 멤버십 바코드(신규 최상위, 2026-10-29). CardHome · Variants My · 필수: 바코드명(Title). 값은 런타임 발급.
   '바코드형': {
     options: [],
     layouts: [
-      { layout: '바코드형', required: [FD('Title', '바코드명', 'corner')] },
+      { layout: '바코드형', required: [FD('Title', '타이틀', 'corner')] },
     ],
   },
 };
@@ -707,7 +707,7 @@ export function cornerTypeFieldModel(cornerType?: string | null): { fixed: Corne
 }
 
 // 코너 유형 + 배열명 → 해당 배열의 필수 항목·옵션. 배열명이 안 맞으면 첫 배열(또는 '세로/가로' 포함 매칭).
-export function cornerFieldSpec(cornerType?: string | null, layout?: string | null): { options: CornerOption[]; required: CornerFieldDef[]; minItems?: number; maxItems?: number; rows?: number; layout?: string; note?: string } | null {
+export function cornerFieldSpec(cornerType?: string | null, layout?: string | null): { options: CornerOption[]; required: CornerFieldDef[]; optional: CornerFieldDef[]; rowCounts?: { label: string; default: number }[]; minItems?: number; maxItems?: number; rows?: number; layout?: string; note?: string } | null {
   const spec = cornerType ? CORNER_TYPE_SPECS[cornerType as CornerType] : null;
   if (!spec) return null;
   const l = layout ?? '';
@@ -726,7 +726,7 @@ export function cornerFieldSpec(cornerType?: string | null, layout?: string | nu
       || pickKw(/단일/, /단일/) || pickKw(/스와이프/, /스와이프/)
       || spec.layouts[0]);
   // 노출 개수 = 배열별 값이 있으면 우선(배너형 스와이프형만 등), 없으면 유형 공통.
-  return { options: spec.options, required: pick?.required ?? [], minItems: pick?.minItems ?? spec.minItems, maxItems: pick?.maxItems ?? spec.maxItems, rows: spec.rows, layout: pick?.layout, note: pick?.note };
+  return { options: spec.options, required: pick?.required ?? [], optional: pick?.optional ?? [], rowCounts: pick?.rowCounts, minItems: pick?.minItems ?? spec.minItems, maxItems: pick?.maxItems ?? spec.maxItems, rows: spec.rows, layout: pick?.layout, note: pick?.note };
 }
 
 // 우리 8분류(CORNER_TYPES) → T우주 이미지의 코너 유형 표기명 매핑.

@@ -183,10 +183,11 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   const c = compositionToPreviewCorner({
     base: row.baseCategory,
     detail: row.typeDetail,
-    mainTitle: noTitle || !row.useMainTitle ? null : 'Title',
+    mainTitle: noTitle || !row.useMainTitle ? null : 'CornerTitle',
     subTitle: noTitle || !row.useSubTitle ? null : 'ButtonText',
     // 가이드는 저장된 조합(실데이터 포함)이 아니라 유형 기본 조합(generic)으로 — 상품명·가격·설명 '슬롯 라벨'만 보이게.
-    composition: defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: row.useBadge, desc: row.useDesc }),
+    //  배지는 어느 코너 유형에도 컬럼으로 없다(레거시 useBadge 무시) → 미리보기에서 제외(2026-11-05 사용자 요청). 상태안내형 배지는 별도(b.badge 비의존).
+    composition: defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: false, desc: row.useDesc }),
     placeholder: true, // 슬롯 라벨(상품명·가격·설명 등)로 구조만
     emptyImages: true, // 이미지·배너 영역은 빈 자리로
   });
@@ -194,7 +195,7 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   const noMore = noTitle;
   return {
     ...c,
-    showImage: row.useImage, showPrice: row.usePrice, showBadge: row.useBadge, showDesc: row.useDesc,
+    showImage: row.useImage, showPrice: row.usePrice, showBadge: false, showDesc: row.useDesc,
     // CTA 버튼 문구는 껍데기 placeholder — 코너 유형 미리보기는 저장된 문구(전체보기 등) 대신 항상 'CTA'(2026-10-29(2) 사용자 요청: 전 유형 CTA).
     moreButtonUse: noMore ? false : row.useMoreButton, moreButtonLabel: 'CTA',
   };
@@ -1499,7 +1500,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     // 저장된 조합이 아니라 '현재 속성 토글(features)' 기준으로 조합 생성 → 끄면 즉시 미리보기에서 빠짐
     const comp = defaultComposition(compForShape(base, d), d, { image: features.useImage, price: features.usePrice, badge: features.useBadge || d.includes('태그'), desc: features.useDesc });
     // 속성은 배열 형태와 무관하게 토글 그대로 적용(모든 배열 동일) — detail 기반 eff 대신 features 직접 사용
-    const c = compositionToPreviewCorner({ base, detail: d, composition: comp, mainTitle: features.useMainTitle ? 'Title' : null, subTitle: features.useSubTitle ? 'ButtonText' : null, placeholder: true, emptyImages: true });
+    const c = compositionToPreviewCorner({ base, detail: d, composition: comp, mainTitle: features.useMainTitle ? 'CornerTitle' : null, subTitle: features.useSubTitle ? 'ButtonText' : null, placeholder: true, emptyImages: true });
     // 배너 히어로는 상품 이미지와 독립(bannerImageUrl) — 상품 이미지 OFF에도 배너 유지
     const isBannerArr = d.includes('배너');
     const heroImg = base === '상품형' ? (d.includes('세로형') ? '/assets/ds/plan-hero-expire.png' : '/assets/ds/hero-device.png') : '/assets/ds/hero-plan.png';
@@ -1511,7 +1512,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     const GROUPS: { title: string; sub: string; items: { key: keyof typeof features; label: string; sub: string; locked?: boolean; dep?: string }[] }[] = [
       { title: '이미지', sub: 'ImageSrc', items: [{ key: 'useImage', label: '상품 이미지', sub: 'ImageSrc' }] },
       { title: '텍스트', sub: 'TextProductGroup', items: [
-        { key: 'useMainTitle', label: '타이틀', sub: 'Title', locked: true },
+        { key: 'useMainTitle', label: '타이틀', sub: 'CornerTitle', locked: true },
         { key: 'useSubTitle', label: '서브타이틀', sub: 'SubTitle' },
       ] },
       { title: '가격', sub: 'TextPriceGroup', items: [
@@ -1601,14 +1602,20 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       <input type="hidden" name="layout" value={row.layout ?? ''} />
       <input type="hidden" name="componentType" value={compValid} />
       <input type="hidden" name="bigBanner" value="" />
-      <TRow label="코너 유형 ID"><span className="font-mono text-[12px] text-slate-700">{row.typeId}</span></TRow>
+      <TRow label="코너 유형 ID"><span className="font-mono text-[12px] text-slate-700">{row.typeId || '자동 채번'}</span></TRow>
+      {/* 코너 마크업 ID — 필수. 영문 대문자·숫자 10자 이내, 중복 불가, 등록 후 수정 불가(2026-11-04 SB v13). */}
+      <TRow label="코너 마크업 ID" required hint="영문 대문자·숫자 10자 이내 · 중복 불가">
+        <Input name="markupId" defaultValue={(row as { markupId?: string }).markupId ?? ''} placeholder="코너 마크업 ID를 입력해주세요"
+          maxLength={10} className="h-8 max-w-[320px] text-xs font-mono uppercase"
+          onInput={(e) => { const t = e.currentTarget; t.value = t.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10); }} />
+      </TRow>
       <TRow label="코너 유형" required hint="이 코너가 화면에서 맡는 역할">
         <div className="space-y-2">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             {baseOptions.map((c) => (
-              <label key={c} className="cursor-pointer">
-                <input type="radio" name="baseCategory" value={c} checked={base === c} onChange={() => { setBase(c); setDetail(defaultShapeFor(c)); }} className="peer sr-only" />
-                <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-[#3617ce] peer-checked:bg-[#3617ce] peer-checked:text-white">{c}</span>
+              <label key={c} className="flex cursor-pointer items-center gap-1.5 text-xs">
+                <input type="radio" name="baseCategory" value={c} checked={base === c} onChange={() => { setBase(c); setDetail(defaultShapeFor(c)); }} className="h-4 w-4 accent-[#3617ce]" />
+                <span className={cn('whitespace-nowrap', base === c ? 'font-medium text-slate-700' : 'text-slate-500')}>{c}</span>
               </label>
             ))}
           </div>
@@ -1619,28 +1626,22 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       </TRow>
       <TRow label="배열·레이아웃" hint="어떤 형태로 보여줄지">
         <div className="space-y-2">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             {allowEmptyDetail && (
-              <label className="cursor-pointer">
-                <input type="radio" name="typeDetail" value="" checked={detailValid === ''} onChange={() => setDetail('')} className="peer sr-only" />
-                <span className="inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-[#3617ce] peer-checked:bg-[#3617ce] peer-checked:text-white">선택 안 함</span>
+              <label className="flex cursor-pointer items-center gap-1.5 text-xs">
+                <input type="radio" name="typeDetail" value="" checked={detailValid === ''} onChange={() => setDetail('')} className="h-4 w-4 accent-[#3617ce]" />
+                <span className={cn('whitespace-nowrap', detailValid === '' ? 'font-medium text-slate-700' : 'text-slate-500')}>선택 안 함</span>
               </label>
             )}
-            {typeShapes.map((d) => {
-              // 옵션 유형은 '+배너'·'+칩' 접어 비교 → '세로형' 칩이 '세로형+배너' 등록분도 '등록됨'으로 인식.
-              const isReg = registered.some((r) => r.baseCategory === base && displayLayout(base, r.typeDetail ?? '') === d);
-              return (
-                <label key={d} className="cursor-pointer" title={isReg ? '이미 등록된 유형·배열이에요(다시 등록해도 됩니다)' : undefined}>
-                  <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="peer sr-only" />
-                  <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-indigo-300 peer-checked:border-[#3617ce] peer-checked:bg-[#3617ce] peer-checked:text-white', isReg && 'border-emerald-300 bg-emerald-50/60')}>
-                    {layoutLabel(d)}
-                    {isReg && <span className="inline-flex items-center rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold leading-none text-white">등록됨</span>}
-                  </span>
-                </label>
-              );
-            })}
+            {typeShapes.map((d) => (
+              // '등록됨' 배지 제거 — 이미 등록된 것만 불러오므로 불필요(2026-11-05 사용자 요청).
+              <label key={d} className="flex cursor-pointer items-center gap-1.5 text-xs">
+                <input type="radio" name="typeDetail" value={d} checked={detailValid === d} onChange={() => setDetail(d)} className="h-4 w-4 accent-[#3617ce]" />
+                <span className={cn('whitespace-nowrap', detailValid === d ? 'font-medium text-slate-700' : 'text-slate-500')}>{layoutLabel(d)}</span>
+              </label>
+            ))}
           </div>
-          <p className="text-[11px] leading-relaxed text-muted-foreground">배열은 <b>형태(레이아웃)</b>만 정합니다. <span className="rounded-sm bg-emerald-600 px-1 py-[1px] text-[9px] font-semibold text-white">등록됨</span>은 이미 등록된 배열(다시 등록 가능) · 노출 개수는 빌더에서.</p>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">배열은 <b>형태(레이아웃)</b>만 정합니다 · 노출 개수는 빌더에서.</p>
         </div>
       </TRow>
       {/* 컴포넌트 레이아웃(지정형/고정형)은 정의에서 제거 — 고정/택1은 빌더의 '노출 타입 베리에이션(CVM 택1)'이 placement 단위로 결정한다(2026-10-06). 저장값만 보존. */}
@@ -1670,7 +1671,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           const previewC = {
             ...compositionToPreviewCorner({
               base, detail: detailValid, composition: shownBlocks,
-              mainTitle: useTitle ? (mainTitleText || 'Title') : null,
+              mainTitle: useTitle ? (mainTitleText || 'CornerTitle') : null,
               // 코너 카드의 타이틀 밑 줄 = 라벨 텍스트(ButtonText). 서브타이틀 아님(2026-10-29(2) 사용자 요청).
               subTitle: useSub ? (subTitleText || 'ButtonText') : null,
               placeholder: guidePreview && !mainTitleText && !subTitleText,
@@ -2033,21 +2034,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           layout={detail}
           basicInfo={<div className="border-t border-[#dce0e5]">{basicPickers}{metaFields}</div>}
           registerResult={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}
-          itemCount={
-            <div className="grid grid-cols-[150px_minmax(0,1fr)] items-stretch border-t border-[#eef0f3]">
-              <div className="flex min-w-0 flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
-                <span className="text-[14px] font-medium text-[#454f59]">노출 개수 범위</span>
-                <span className="font-mono text-[10.5px] leading-tight text-[#8b949e]">(count)</span>
-              </div>
-              <div className="flex min-w-0 flex-wrap items-center gap-1.5 px-3.5 py-3 text-[13px]">
-                <input type="number" min={0} max={50} value={minItems} onChange={(e) => setMinItems(e.target.value)} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
-                <span className="text-slate-400">~</span>
-                <input type="number" min={0} max={50} value={maxItems} onChange={(e) => setMaxItems(e.target.value)} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
-                <span className="text-[12px] text-slate-500">개</span>
-                <span className="text-[11px] text-slate-400">· 허용 범위(가드레일). 실제 개수는 빌더/CVM에서 정함</span>
-              </div>
-            </div>
-          }
         />
       </div>
       )}
@@ -2126,6 +2112,18 @@ function OpsCheckGroup({ name, options, initial }: { name: string; options: read
   );
 }
 
+// 보조 설명(hint)을 라벨 옆 ⓘ 툴팁으로 — 작은 회색 서브텍스트 대신(2026-11-05 사용자 요청). DS tooltip 토큰(r8·padding12·bg #fcfcfd·text #454f59).
+function HintTip({ text }: { text: string }) {
+  return (
+    <span className="group/tip relative inline-flex shrink-0 align-middle">
+      <Info className="h-3.5 w-3.5 cursor-help text-[#b3b9c0] transition group-hover/tip:text-[#697582]" />
+      <span role="tooltip" className="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 hidden w-max max-w-[240px] -translate-x-1/2 whitespace-normal break-keep rounded-[8px] bg-[#fcfcfd] px-3 py-2 text-[11px] font-normal leading-relaxed text-[#454f59] shadow-[0_0_8px_-2px_#0000001f] ring-1 ring-black/5 group-hover/tip:block">
+        {text}
+      </span>
+    </span>
+  );
+}
+
 function TRow({
   label,
   required,
@@ -2140,11 +2138,12 @@ function TRow({
   children: React.ReactNode;
 }) {
   // 프로모션 상세 .frow 규격에 통일 — 라벨 셀 #f8f9fb·150px·12.5px, 값 셀 px3.5 py2.5(2026-10-01 사용자 요청).
+  //  보조 설명은 라벨 옆 ⓘ 툴팁으로(2026-11-05 사용자 요청).
   return (
-    <div className={cn('grid grid-cols-[150px_1fr] items-stretch overflow-hidden', !flat && 'border-b border-[#dce0e5]')}>
-      <label className="flex h-full flex-col justify-center bg-[#f8f9fb] px-3.5 py-3 text-[14px] font-medium text-[#454f59]">
+    <div className={cn('grid grid-cols-[150px_1fr] items-stretch overflow-visible', !flat && 'border-b border-[#dce0e5]')}>
+      <label className="flex h-full items-center gap-1 bg-[#f8f9fb] px-3.5 py-3 text-[14px] font-medium text-[#454f59]">
         <span>{label} {required && <span className="text-rose-500">*</span>}</span>
-        {hint && <span className="mt-0.5 block text-[11px] font-normal text-slate-500/80">{hint}</span>}
+        {hint && <HintTip text={hint} />}
       </label>
       <div className="min-w-0 px-3.5 py-2.5">{children}</div>
     </div>
