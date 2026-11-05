@@ -432,7 +432,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const items = itemsByKey[chipKey] ?? seedForKey;
   const updateItems = (fn: (xs: FillItem[]) => FillItem[]) =>
     setItemsByKey((m) => ({ ...m, [chipKey]: fn(m[chipKey] ?? seedForKey) }));
-  const addItem = () => updateItems((xs) => [...xs, { id: `new-${Date.now()}`, label: '', mode: 'direct' }]);
+  // 새 행은 세그먼트 기본값을 '불러오기'로(2026-11-05 사용자 요청) → 우측 '불러오기' 버튼이 바로 뜬다. 직접 입력하려면 '직접' 선택.
+  const addItem = () => updateItems((xs) => [...xs, { id: `new-${Date.now()}`, label: '', mode: 'load' }]);
   const removeItem = (id: string) => updateItems((xs) => xs.filter((x) => x.id !== id));
   const setItemLabel = (id: string, label: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, label } : x)));
   const setItemLink = (id: string, link: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, link } : x)));
@@ -805,25 +806,26 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               return (
               <div key={o.id} className="flex items-center gap-1.5 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
                 <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]" />
-                {/* 세그먼트 — 직접 등록 | 불러오기(메뉴 관리) */}
+                {/* 세그먼트 — 직접 | 불러오기. 불러오기를 고르면 '모달 즉시 열기/잠금' 대신 우측에 '불러오기' 버튼이 뜬다(2026-11-05 사용자 요청: 켜짐 금지, 우측 버튼). */}
                 <div className="flex shrink-0 gap-0.5 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-[3px] text-[11px] font-semibold">
                   <button type="button" onClick={() => setItemMode(o.id, 'direct')} className={cn('rounded-[6px] px-2 py-1 transition', !loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>직접</button>
-                  <button type="button" onClick={() => { setItemMode(o.id, 'load'); setLoadForId(o.id); }} className={cn('rounded-[6px] px-2 py-1 transition', loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>불러오기</button>
+                  <button type="button" onClick={() => setItemMode(o.id, 'load')} className={cn('rounded-[6px] px-2 py-1 transition', loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>불러오기</button>
                 </div>
-                {/* 아이콘 — 직접이면 클릭해 아이콘 선택, 불러오기면 메뉴 아이콘(클릭 시 메뉴 다시 불러오기) */}
-                <button type="button" onClick={() => (loaded ? setLoadForId(o.id) : setIconForId(o.id))} title={loaded ? '메뉴 불러오기' : '아이콘 선택'}
+                {/* 아이콘 — 클릭해 아이콘 선택(직접) */}
+                <button type="button" onClick={() => setIconForId(o.id)} title="아이콘 선택"
                   className={cn('grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[7px] transition', o.icon ? 'bg-[var(--ac2)] text-[var(--ac)] hover:ring-1 hover:ring-[var(--ac)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
                   {o.icon ? <ItemIcon src={o.icon} iconClass="h-[18px] w-[18px]" imgClass="h-5 w-5 object-contain" /> : <ImageIcon className="h-4 w-4" />}
                 </button>
-                {/* 텍스트 — 직접이면 편집, 불러오기면 읽기(메뉴 관리 값) */}
-                <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} readOnly={loaded} placeholder="메뉴명"
-                  className={cn('h-[32px] min-w-0 flex-1 rounded-[7px] px-2 text-[13px] focus:outline-none', loaded ? 'bg-[var(--th)] text-[var(--ink2)]' : 'border border-[var(--line2)] focus:border-[var(--ac)]')} />
-                {/* 링크 */}
-                <div className={cn('flex h-[32px] min-w-0 basis-[30%] items-center gap-1 rounded-[7px] px-2', loaded ? 'bg-[var(--th)]' : 'border border-[var(--line2)]')} title="이동 링크">
+                {/* 텍스트·링크 — 항상 편집 가능 */}
+                <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder="메뉴명"
+                  className="h-[32px] min-w-0 flex-1 rounded-[7px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                <div className="flex h-[32px] min-w-0 basis-[26%] items-center gap-1 rounded-[7px] border border-[var(--line2)] px-2" title="이동 링크">
                   <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-                  <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} readOnly={loaded} placeholder="이동 링크"
-                    className={cn('h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none', loaded && 'text-[var(--ink3)]')} />
+                  <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="이동 링크"
+                    className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                 </div>
+                {/* 불러오기 모드일 때만 우측에 '불러오기' 버튼 → 메뉴 관리 모달 */}
+                {loaded && <button type="button" onClick={() => setLoadForId(o.id)} title="메뉴 관리에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 py-1.5 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3 w-3" /> 불러오기</button>}
                 <button type="button" onClick={() => removeItem(o.id)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
               </div>
               );
@@ -841,10 +843,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           )}
           {/* 추가 — 직접 추가는 칩형(퀵메뉴)에만. 단일형 배너는 기존 있으면 '변경'만·비면 '불러오기'. 나머지는 '불러오기' 단일(2026-11-05 사용자 확정). */}
           {isChip ? (
-            <div className="mt-2 flex gap-1.5">
-              <button type="button" onClick={addItem} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 직접 추가</button>
-              {canLoad && <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white py-2 text-[12px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 메뉴 관리에서 불러오기</button>}
-            </div>
+            <button type="button" onClick={addItem} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 추가</button>
           ) : bannerSingle ? (
             items.length === 0 ? (
               <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3.5 w-3.5" /> 배너 캠페인에서 불러오기</button>
