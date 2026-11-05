@@ -477,6 +477,14 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   });
   const cardToComponent = (p: ProductOption) => {
     const base = { id: `c-${p.key}-${Math.random().toString(36).slice(2, 8)}`, name: p.title };
+    // 배너 — 이미지+타이틀+서브(브랜드)+랜딩. 스와이프/단일 모두 BannerCard로 렌더(2026-11-05 사용자 요청: 불러오면 미리보기에 반영).
+    if (isBanner) {
+      return { ...base, componentType: '배너형', atoms: [
+        { id: `a-img-${p.key}`, name: 'IMAGE', atomType: 'IMAGE', content: null, imageUrl: p.imageUrl ?? null, altText: p.title, linkUrl: p.landing ?? null },
+        mkAtom('TEXT', p.title),
+        ...(p.brand ? [mkAtom('INFO', p.brand)] : []),
+      ] };
+    }
     if (isProfile) {
       const info = p.key === 'pf-card-grade' ? '@cvm:membership.grade' : '@cvm:customer.phone';
       // 아바타 아톰은 넣지 않음 → ProfileCard가 기본 User 글리프로 렌더(@cvm 회원 사진은 런타임). 2026-11-05.
@@ -500,7 +508,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const loadCardsToPreview = (ps: ProductOption[]) => {
     if (!ps.length) return;
     const comps = ps.map(cardToComponent);
-    onPreviewPatch({ components: isProfile ? comps.slice(0, 1) : comps });
+    // 프로필·단일형 배너=1장만, 상태·스와이프 배너=여러 장 모두 반영.
+    onPreviewPatch({ components: (isProfile || bannerSingle) ? comps.slice(0, 1) : comps });
   };
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -701,11 +710,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                             <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
                           </span>
                         ))}
-                        {/* 빈 자리 = 점선 'Chip' placeholder 하나만 맨 앞에(2026-11-05 사용자 요청). 클릭하면 불러오기로 채운다. */}
-                        {chips.length < chipSlotCount && (
-                          <button type="button" onClick={() => setChipLoadOpen(true)}
-                            className="inline-flex items-center rounded-full border border-dashed border-[var(--line3)] bg-white px-2.5 py-1 text-[12px] font-medium text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]">Chip</button>
-                        )}
+                        {/* 디폴트는 '+ 칩 불러오기' 버튼만 — 여기서 카테고리를 추가한다(2026-11-05 사용자 요청: 점선 placeholder 제거). */}
                         <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 불러오기</button>
                       </div>
                       <p className="mt-1.5 text-[11px] text-[var(--ink4)]">점선 <b className="text-[var(--ink3)]">Chip</b>은 빈 자리예요 · <b className="text-[var(--ink3)]">불러오기</b>로 카테고리를 넣으면 반영됩니다. 칩을 누르면 아래 아이템이 그 칩 항목으로 바뀌어요.</p>
@@ -853,7 +858,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           {/* 불러오기 모달 — 유형별 카탈로그에서 멀티 셀렉으로 담기 */}
           {loadForId && (
             <ProductLoadModal catalog={catalog} cornerType={isStatus ? '상태 안내형' : corner.cornerType} onClose={() => setLoadForId(null)}
-              onAdd={(ps) => { addFromCatalog(ps); onToast(`${ps.length}개 담음`); }} />
+              onAdd={(ps) => { addFromCatalog(ps); if (isBanner) loadCardsToPreview(ps); onToast(`${ps.length}개 담음`); }} />
           )}
           {/* 아이콘 선택 모달 — 행 아이콘 영역 클릭 시(2026-11-05 사용자 요청) */}
           {iconForId && (
