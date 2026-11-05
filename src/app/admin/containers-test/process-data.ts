@@ -118,11 +118,12 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       // 채워진 코너는 저장 콘텐츠 그대로, 신규 껍데기(스캐폴드)는 코너 유형 관리와 동일한 가이드로 렌더(2026-11-05 사용자 요청: 기존 채워진 건 그대로, 신규 등록만 코너 유형 관리처럼).
       //  Corner에는 componentType 컬럼이 없으므로 스캐폴드 컴포넌트(선택형 칩 제외)의 유형을 가이드 조합에 넘겨 코너 유형 관리와 일치시킨다.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      preview: cornerIsFilled(tc.corner)
+      //  CTA(더보기 버튼)는 빌더에선 '우선 다 꺼둔 상태'로 보여준다(2026-11-05 사용자 요청. 코너 유형 관리는 ON 유지). 켜면 빌더에서 토글.
+      preview: { ...(cornerIsFilled(tc.corner)
         ? cornerToPreviewCorner(tc.corner)
         : guideCornerPreview(tc.corner.cornerType, tc.corner.layoutDetail ?? tc.corner.cornerLayout,
             ((tc.corner.cornerComponents ?? []).find((cc: any) => cc.component?.componentType !== '선택형')?.component?.componentType)
-            ?? (tc.corner.cornerComponents ?? [])[0]?.component?.componentType ?? null),
+            ?? (tc.corner.cornerComponents ?? [])[0]?.component?.componentType ?? null)), moreButtonUse: false },
       recSource: tc.corner.recSource ? normalizeRecSource(tc.corner.recSource) : null,
       isCvm: isCvmSource(tc.corner.recSource),
       fallback: effectiveFallback(tc.corner.cornerType, tc.corner.cvmFallback),
