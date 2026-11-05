@@ -374,7 +374,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   });
   const [chipLoadOpen, setChipLoadOpen] = React.useState(false);
   // 배너 옵션 콘텐츠 — 배너 On이면 이미지. CTA 라벨은 '버튼 텍스트(buttonTextVal)'로 통합(2026-11-05 사용자 요청).
-  const [bannerImg, setBannerImg] = React.useState('');
+  // 배너 옵션 썸네일 — 좌측 미리보기에 이미 배너가 있으면(코너 배너 이미지/첫 이미지 아톰) 그걸 기본값으로(2026-11-05 사용자 요청: 미리보기 배너를 ③에 반영).
+  const [bannerImg, setBannerImg] = React.useState(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pvAny = pv as any;
+    if (pvAny?.bannerImageUrl) return pvAny.bannerImageUrl as string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const img = (pv?.components ?? []).flatMap((c: any) => c.atoms ?? []).find((a: any) => (a.atomType === 'IMAGE' || a.atomType === 'ICON') && typeof a.imageUrl === 'string' && a.imageUrl.startsWith('/'))?.imageUrl;
+    return img ?? '';
+  });
   // ③ 채우기 항목 — 칩 On 이면 칩마다 별도 메뉴(칩 하나하나 메뉴 연동, 2026-10-28 사용자 요청). 칩 Off 면 단일 리스트(__flat__).
   const chipMode = !!optOn['칩'] && chips.length > 0;
   const [activeChip, setActiveChip] = React.useState(0);
@@ -807,13 +815,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               // 이미지 기반 유형(영화·배너·혜택·상품) — 썸네일(불러온 이미지, 클릭 시 교체) + 제목·링크 직접 편집 + 행별 불러오기(2026-11-05 사용자 확정: 각 행 직접 편집+불러오기).
               if (!isChip) {
                 return (
-                <div key={o.id} className="flex items-center gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
+                <div key={o.id} className={cn('flex gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5', isBanner ? 'items-stretch' : 'items-center')}>
                   {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김(2026-11-05 사용자 요청) */}
-                  {!bannerSingle && <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]" />}
-                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 인풋 2줄 높이(≈60px)에 맞추고 넓게(배너 비율)로 '배너답게'(2026-11-05 사용자 요청). 그 외 정사각 */}
+                  {!bannerSingle && <GripVertical className={cn('h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]', isBanner && 'mt-1')} />}
+                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 행 높이를 꽉 채우고 넓게(배너 비율) + 전체가 보이게 contain(크롭 금지, 얼라인 맞춤). 그 외 정사각 */}
                   <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="이미지 불러오기"
-                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'h-[60px] w-[128px]' : 'h-10 w-10')}>
-                    <ItemIcon src={o.icon} iconClass="h-5 w-5" imgClass={cn('h-full w-full', isBanner ? 'object-cover' : 'object-contain')} />
+                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'w-[132px] self-stretch bg-white' : 'h-10 w-10 bg-[var(--th)]')}>
+                    <ItemIcon src={o.icon} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
                   </button>
                   {/* 제목·링크 직접 편집. 배너는 사이즈(스몰배너 672×324 등)도 표기 — 배너 캠페인에서 함께 끌어온다(2026-11-05 사용자 요청). */}
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -1083,7 +1091,8 @@ const sameRowList = (a: PCorner[], b: PCorner[]): boolean => {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
     const x = a[i], y = b[i];
-    if (x.templateCornerId !== y.templateCornerId || x.zone !== y.zone || x.recSource !== y.recSource || x.isCvm !== y.isCvm) return false;
+    // name·layoutDetail도 비교에 포함 — 코너명 수정이 목록 칩에 반영되게(2026-11-05 사용자 요청: 변경 안 되던 버그).
+    if (x.templateCornerId !== y.templateCornerId || x.zone !== y.zone || x.recSource !== y.recSource || x.isCvm !== y.isCvm || x.name !== y.name || x.layoutDetail !== y.layoutDetail) return false;
   }
   return true;
 };
