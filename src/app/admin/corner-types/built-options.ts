@@ -166,9 +166,20 @@ const BANNER_CATALOG: ProductOption[] = [
   { key: 'bn-ott', title: 'OTT 무제한, 지금 요금제 하나로', brand: '0 Week 전용 혜택', imageUrl: '/assets/banner-plan-ott.svg', price: null, badge: '혜택', category: '배너' },
   { key: 'bn-sbux', title: '스타벅스 제휴 — 최대 20% 할인', brand: 'T 멤버십', imageUrl: '/assets/banner-starbucks.svg', price: null, badge: '제휴', category: '배너' },
 ];
+// 상태 안내형(업무 진입형) 카탈로그 — 마이 홈의 '내 상태' 카드를 뭉텅이로 가져온다(2026-11-05 사용자 요청: 클릭하면 데이터가 한 번에).
+//  값·보조문구는 런타임 고객 데이터(@cvm)로 자동 표시, 여기선 어떤 상태 카드를 노출할지만 고른다.
+const STATUS_CATALOG: ProductOption[] = [
+  { key: 'st-tuniverse', title: 'T 우주 구독료', brand: '67,500원 · 3개 상품 구독중', imageUrl: 'lucide:Boxes', price: null, badge: '구독', category: '상태' },
+  { key: 'st-phonebill', title: '휴대폰 결제·이용료', brand: '23,800원 · 80,000원 한도', imageUrl: 'lucide:CreditCard', price: null, badge: null, category: '상태' },
+  { key: 'st-livefee', title: '실시간 이용요금', brand: '39,250원 · 3월 납부완료', imageUrl: 'lucide:Receipt', price: null, badge: null, category: '상태' },
+  { key: 'st-tpoint', title: 'T멤버십 포인트', brand: '13,500P · 3월 누적할인 1,700원', imageUrl: 'lucide:Coins', price: null, badge: null, category: '상태' },
+  { key: 'st-data', title: '실시간 데이터 잔여량', brand: '6.5GB · 월 20GB', imageUrl: 'lucide:Gauge', price: null, badge: null, category: '상태' },
+  { key: 'st-family', title: '결합가족', brand: '4명 · 15,000원 할인', imageUrl: 'lucide:Users', price: null, badge: null, category: '상태' },
+];
 // 코너 유형 '채우기' 카탈로그 — 상품형=상품 분류(9)만, 혜택·오퍼형=혜택 분류만, 그 외/미지정=둘 다(2026-10-28 사용자 정의).
 //  "상품형을 클릭하면 상품 정보만 채울 수 있다" — 혜택 브랜드는 상품형에서 제외.
 export async function getProductOptions(cornerType?: string): Promise<ProductOption[]> {
+  if (cornerType === '상태 안내형') return STATUS_CATALOG; // 업무 진입형 상태 안내형 전용(2026-11-05)
   if (cornerType === '상품형') return PRODUCT_CATALOG;
   if (cornerType === '혜택·오퍼형' || cornerType === '혜택형') return benefitCatalog();
   if (cornerType === '업무 진입형') return MENU_CATALOG; // 메뉴 카탈로그(혜택·업무 메뉴)
