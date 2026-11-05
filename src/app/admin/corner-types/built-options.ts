@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type { BuiltCornerOption, RegisteredCombo, BannerCampaignOption, ProductOption } from './corner-type-manager';
 import { BSS_PRODUCTS } from '@/lib/bss-products';
+import { EPC_PRODUCT_CATALOG } from './epc-catalog';
 
 /**
  * 전시화면관리(빌더)에서 실제로 만들어진 Corner의 유형 조합을 코너 유형 등록 후보로 반환한다.
@@ -188,7 +189,7 @@ const PROFILE_CATALOG: ProductOption[] = [
 export async function getProductOptions(cornerType?: string): Promise<ProductOption[]> {
   if (cornerType === '상태 안내형') return STATUS_CATALOG; // 업무 진입형 상태 안내형 전용(2026-11-05)
   if (cornerType === '프로필형') return PROFILE_CATALOG; // 업무 진입형 프로필형 = 고객정보 한번에 가져오기(2026-11-05)
-  if (cornerType === '상품형') return PRODUCT_CATALOG;
+  if (cornerType === '상품형') return EPC_PRODUCT_CATALOG; // 상품형 = EPC 상품 조회 결과 기반(2026-11-05 사용자 제공 JSON)
   if (cornerType === '혜택·오퍼형' || cornerType === '혜택형') return benefitCatalog();
   if (cornerType === '업무 진입형') return MENU_CATALOG; // 메뉴 카탈로그(혜택·업무 메뉴)
   if (cornerType === '콘텐츠 안내형') return MOVIE_CATALOG; // 콘텐츠 안내형 = 영화만 불러오기(2026-11-05 사용자 요청)
