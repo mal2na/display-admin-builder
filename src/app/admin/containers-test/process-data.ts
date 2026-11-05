@@ -171,6 +171,7 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       '혜택형': await getProductOptions('혜택형'),
       '업무 진입형': await getProductOptions('업무 진입형'),
       '상태 안내형': await getProductOptions('상태 안내형'), // 업무 진입형 상태 안내형 전용 상태 카드(2026-11-05)
+      '프로필형': await getProductOptions('프로필형'), // 업무 진입형 프로필형 = 고객정보 한번에 가져오기(2026-11-05)
       '콘텐츠 안내형': await getProductOptions('콘텐츠 안내형'),
       '배너형': await getProductOptions('배너형'), // 배너 가져오기(배너 캠페인 관리) 카탈로그 — 누락돼 가져오기 안 되던 문제 수정(2026-11-05)
     },

@@ -209,8 +209,8 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
   const list = catalog.filter((o) => (cat === '전체' || (o.category ?? '기타') === cat) && (!query || `${o.brand} ${o.title}`.toLowerCase().includes(query)));
   const toggle = (k: string) => setChecked((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const submit = () => onAdd(catalog.filter((o) => checked.has(o.key)));
-  const kindWord = cornerType === '상태 안내형' ? '상태' : cornerType === '업무 진입형' ? '메뉴' : cornerType === '콘텐츠 안내형' ? '영화' : cornerType === '배너형' ? '배너' : cornerType === '혜택·오퍼형' ? '혜택' : '상품';
-  const kindLabel = cornerType === '콘텐츠 안내형' ? '지금 등록된 영화에서 선택' : cornerType === '상태 안내형' ? '내 상태 카드에서 선택 — 값은 고객 데이터로 자동' : cornerType === '배너형' ? '배너 캠페인 관리에 등록된 배너에서 선택' : `${kindWord} 분류에서 선택`;
+  const kindWord = cornerType === '상태 안내형' ? '상태 카드' : cornerType === '프로필형' ? '프로필 카드' : cornerType === '업무 진입형' ? '메뉴' : cornerType === '콘텐츠 안내형' ? '영화' : cornerType === '배너형' ? '배너' : cornerType === '혜택·오퍼형' ? '혜택' : '상품';
+  const kindLabel = cornerType === '콘텐츠 안내형' ? '지금 등록된 영화에서 선택' : cornerType === '상태 안내형' ? '완성된 상태 카드를 통째로 선택 — 값은 고객 데이터로 자동' : cornerType === '프로필형' ? '완성된 프로필 카드를 통째로 선택 — 값은 고객 데이터로 자동' : cornerType === '배너형' ? '배너 캠페인 관리에 등록된 배너에서 선택' : `${kindWord} 분류에서 선택`;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="flex h-[78vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -250,7 +250,7 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
         </div>
         <div className="border-t border-[var(--line2)] p-3">
           <button type="button" disabled={checked.size === 0} onClick={submit}
-            className="h-[44px] w-full rounded-[10px] bg-[var(--ac)] text-[14px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">{kindWord === '배너' ? '배너 가져오기' : kindWord === '상태' ? '상태 카드 가져오기' : (kindWord === '메뉴' || kindWord === '영화' ? `${kindWord} 추가` : '이 항목 담기')}{checked.size > 0 ? ` (${checked.size})` : ''}</button>
+            className="h-[44px] w-full rounded-[10px] bg-[var(--ac)] text-[14px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">{kindWord === '배너' ? '배너 가져오기' : (kindWord === '상태 카드' || kindWord === '프로필 카드') ? `${kindWord} 가져오기` : (kindWord === '메뉴' || kindWord === '영화' ? `${kindWord} 추가` : '이 항목 담기')}{checked.size > 0 ? ` (${checked.size})` : ''}</button>
         </div>
       </div>
     </div>
@@ -264,8 +264,12 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // 상태 안내형 = '어떤 상태 카드를 어떤 순서로'는 운영자가 뭉텅이로 편성, 값·보조문구는 런타임 고객 데이터(@cvm). → 운영자 편성 고정(2026-11-05 사용자 요청).
   const isStatus = corner.cornerType === '업무 진입형' && /상태|아이콘.?이미지/.test(layoutDetailStr);
   const [srcState, setSrc] = React.useState<string>(corner.recSource ?? '운영자 편성');
-  const src = isProfile ? 'CVM 데이터 연동' : isStatus ? '운영자 편성' : srcState;
+  // 프로필형·상태 안내형 = 'CVM 추천'이 아니라 '고객정보 바인딩(@cvm:key)'. 무엇을 노출할지는 운영자가 정하고 값만 런타임 고객 데이터로 자동.
+  //  → 둘 다 운영자 편성 고정(CVM 추천 잠금). (2026-11-05 사용자 확정: CVM은 추천, 고객정보 세팅은 운영자)
+  const src = (isProfile || isStatus) ? '운영자 편성' : srcState;
   const srcLocked = isProfile || isStatus;
+  // 카드 1장 = 코너 1개인 유형(프로필형·상태 안내형) — 코너/아이템 분리 없음. 세그먼트 컨트롤 제거, 코너 세팅 + '한번에 가져오기'만(2026-11-05 사용자 요청).
+  const cardOnly = isProfile || isStatus;
   const [fb, setFb] = React.useState<'미노출' | '운영자 편성으로 대체'>(corner.fallback);
   const [cat, setCat] = React.useState('혜택');
   const [topN, setTopN] = React.useState(5);
@@ -287,7 +291,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
-  const catalog = (isStatus ? catalogByType['상태 안내형'] : catalogByType[corner.cornerType]) ?? [];
+  const catalog = (isStatus ? catalogByType['상태 안내형'] : isProfile ? catalogByType['프로필형'] : catalogByType[corner.cornerType]) ?? [];
   const canLoad = catalog.length > 0;
   const catCategories = Array.from(new Set(catalog.map((c) => c.category).filter((c): c is string => !!c)));
   // 옵션(배너·칩·CTA) — 코너 유형이 허용하는 옵션을 빌더에서 On/Off 설정(2026-10-28 사용자: "배너·칩·CTA는 옵션, 여기서 설정").
@@ -305,8 +309,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
       (o === 'CTA' && !!pv?.moreButtonUse)])));
   // 코너 공통 필드(코너 타이틀·버튼 텍스트) — 코너 유형 required 중 corner 그룹. 빌더에 입력란이 없던 문제 수정(2026-11-05 사용자 요청).
   const cornerReqFields = (optSpec?.required ?? []).filter((f) => f.group === 'corner');
-  const hasCornerTitle = cornerReqFields.some((f) => f.key === 'CornerTitle');
-  const hasButtonText = cornerReqFields.some((f) => f.key === 'ButtonText');
+  // 프로필형 = '내 정보/프로필·가입현황' 같은 코너 타이틀/서브를 두지 않는다(고객정보 행 자체가 콘텐츠). 코너 세팅 없이 '고객정보 가져오기'만(2026-11-05 사용자 요청).
+  const hasCornerTitle = !isProfile && cornerReqFields.some((f) => f.key === 'CornerTitle');
+  const hasButtonText = !isProfile && cornerReqFields.some((f) => f.key === 'ButtonText');
   const [cornerTitleVal, setCornerTitleVal] = React.useState(() => (pv?.mainTitle && pv.mainTitle !== 'CornerTitle' ? pv.mainTitle : ''));
   // 버튼 텍스트(ButtonText) = 미리보기의 '서브 타이틀'(타이틀 아래 보조 문구, 예: T 영화예매). CTA(전체보기)와는 별개(2026-11-05 사용자 요청).
   const [buttonTextVal, setButtonTextVal] = React.useState(() => (pv?.subTitle && pv.subTitle !== 'ButtonText' ? pv.subTitle : ''));
@@ -343,9 +348,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // 배너 단일형 = 배너 1장 → 순서 변경 없음(드래그 핸들 제거). 스와이프형만 여러 장 재정렬(2026-11-05 사용자 요청).
   const bannerSingle = isBanner && !/스와이프|swipe/i.test(detailStr);
   // 상태 안내형 = '상태 카드'를 뭉텅이로 가져오기 전용(값·보조문구는 런타임 고객 데이터 @cvm, 2026-11-05 사용자 요청).
-  const loadOnly = corner.cornerType === '콘텐츠 안내형' || isBenefitList || isBanner || isStatus;
-  const itemWord = corner.cornerType === '콘텐츠 안내형' ? '영화' : isStatus ? '상태' : corner.cornerType === '업무 진입형' ? '메뉴' : isBanner ? '배너' : isBenefitList ? '혜택' : '항목';
-  const loadFields = corner.cornerType === '콘텐츠 안내형' ? '이미지·제목·평점·예매율' : isStatus ? '값·보조문구 자동(@cvm)' : isBanner ? '배너 이미지·문구·랜딩' : '로고·혜택 문구·브랜드';
+  const loadOnly = corner.cornerType === '콘텐츠 안내형' || isBenefitList || isBanner || isStatus || isProfile;
+  const itemWord = corner.cornerType === '콘텐츠 안내형' ? '영화' : isStatus ? '상태' : isProfile ? '고객정보' : corner.cornerType === '업무 진입형' ? '메뉴' : isBanner ? '배너' : isBenefitList ? '혜택' : '항목';
+  const loadFields = corner.cornerType === '콘텐츠 안내형' ? '이미지·제목·평점·예매율' : (isStatus || isProfile) ? '값 자동(@cvm)' : isBanner ? '배너 이미지·문구·랜딩' : '로고·혜택 문구·브랜드';
   // 좌측 미리보기에 '실제로 보이는' 항목을 ③채우기 기본값으로 — 채워진 코너는 그 코너의 콘텐츠와 1:1 일치(2026-11-05 사용자 요청).
   const PV_PLACEHOLDER = /^(CornerTitle|ItemTitle|SubTitle|SubText|ButtonText|Caption\d*|Chip\d+|Title|라벨|주요 값|배너 타이틀|상품 \d|혜택 \d)/;
   const previewItems = (): FillItem[] => {
@@ -502,7 +507,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
 
       {/* ② 수급 — 클릭해 전환. 프로필형은 CVM 데이터 연동 고정(잠금). */}
       <Sec n={2} title="수급 — 이 자리를 누가 채우나" help>
-        {isProfile && <p className="mb-2 flex items-center gap-1 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] text-[#2e4fd6]"><Lock className="h-3.5 w-3.5" /> 프로필형은 고객 정보라 <b>CVM 데이터 연동</b>으로 고정됩니다.</p>}
+        {isProfile && <p className="mb-2 flex items-start gap-1 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]"><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span>프로필형은 <b>어떤 고객정보를 노출할지</b>를 운영자가 정하고(CVM 추천 아님), 값은 런타임 고객 데이터(@cvm)로 자동 표시됩니다. → <b>운영자 편성</b> 고정.</span></p>}
         {isStatus && <p className="mb-2 flex items-center gap-1 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] text-[#2e4fd6]"><Lock className="h-3.5 w-3.5" /> 상태 안내형은 운영자가 <b>상태 카드를 뭉텅이로 편성</b>하고, 값·보조문구는 런타임 고객 데이터(@cvm)로 자동 표시됩니다. → <b>운영자 편성</b> 고정.</p>}
         <div className="space-y-2">
           {REC_SOURCE_METHODS.map((m) => {
@@ -538,15 +543,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             <ChipLoadModal categories={catCategories} current={chips} onClose={() => setChipLoadOpen(false)}
               onAdd={(cs) => { setChips((prev) => [...prev, ...cs.filter((c) => !prev.includes(c))]); setChipLoadOpen(false); onToast(`칩 ${cs.length}개 담음`); }} />
           )}
-          {/* ── 코너 속성 / 아이템 탭 — 등록을 나눠서(2026-11-05 사용자 요청). 코너 속성이 없으면(배너형 등) 아이템만 노출. ── */}
-          {(hasCornerTitle || hasButtonText || availOptions.length > 0) && (
+          {/* ── 코너 속성 / 아이템 탭 — 등록을 나눠서(2026-11-05 사용자 요청). 코너 속성이 없으면(배너형 등) 아이템만 노출. 카드 1장 유형(프로필·상태)은 탭 없음. ── */}
+          {(hasCornerTitle || hasButtonText || availOptions.length > 0) && !cardOnly && (
             <div className="mb-3 flex gap-1 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
               <button type="button" onClick={() => setFillTab('코너')} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', fillTab === '코너' ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>코너 속성</button>
               <button type="button" onClick={() => setFillTab('아이템')} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', fillTab === '아이템' ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>아이템 <span className="font-normal opacity-70">· {items.length}</span></button>
             </div>
           )}
-          {/* ── 코너 속성 — 코너 타이틀·버튼 텍스트·옵션(배너·칩·CTA). ── */}
-          {(hasCornerTitle || hasButtonText || availOptions.length > 0) && fillTab === '코너' && (
+          {/* ── 코너 속성 — 코너 타이틀·버튼 텍스트·옵션(배너·칩·CTA). 카드 1장 유형은 항상 노출. ── */}
+          {(hasCornerTitle || hasButtonText || availOptions.length > 0) && (fillTab === '코너' || cardOnly) && (
             <div className="mb-1 rounded-[8px] border border-[var(--line3)] bg-[var(--th)] p-2.5">
               <p className="mb-2 text-[12px] font-bold text-[var(--ink2)]">코너 <span className="font-normal text-[var(--ink4)]">· 코너 전체에 적용</span></p>
               {hasCornerTitle && (
@@ -624,8 +629,35 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               )}
             </div>
           )}
+          {/* ── 카드 1장 유형(프로필·상태) = 아이템 리스트 없이 '한번에 가져오기'만. 값은 런타임 고객 데이터(@cvm) 자동. ── */}
+          {cardOnly && (
+            <div className="rounded-[8px] border border-[var(--line3)] bg-white p-2.5">
+              <div className="mb-2 flex items-start gap-2 text-[12px] leading-relaxed text-[var(--ink2)]">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ac)]" />
+                <span>{isProfile
+                  ? <>완성된 <b className="text-[var(--ac)]">프로필 카드</b>(사진·이름·휴대폰·가입현황)를 통째로 가져오세요. 값은 런타임 고객 데이터(<b>@cvm</b>)로 자동 표시됩니다.</>
+                  : <>완성된 <b className="text-[var(--ac)]">상태 카드</b>(이용요금·포인트 등)를 통째로 가져오세요. 값·보조문구는 런타임 고객 데이터(<b>@cvm</b>)로 자동 표시됩니다.</>}</span>
+              </div>
+              {items.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {items.map((o) => (
+                    <span key={o.id} className="inline-flex items-center gap-1 rounded-full bg-[var(--ac2)] py-1 pl-1.5 pr-2 text-[12px] font-medium text-[var(--ac)]">
+                      <span className="grid h-4 w-4 place-items-center overflow-hidden"><ItemIcon src={o.icon} iconClass="h-3.5 w-3.5" imgClass="h-3.5 w-3.5 object-contain" /></span>
+                      {o.label}
+                      <button type="button" onClick={() => removeItem(o.id)} className="text-[var(--ac)] opacity-60 hover:text-[var(--bad)] hover:opacity-100"><X className="h-3 w-3" /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> {isProfile ? '프로필 카드 가져오기' : '상태 카드 가져오기'}</button>
+              {loadForId && (
+                <ProductLoadModal catalog={catalog} cornerType={isStatus ? '상태 안내형' : isProfile ? '프로필형' : corner.cornerType} onClose={() => setLoadForId(null)}
+                  onAdd={(ps) => { addFromCatalog(ps); onToast(`${ps.length}개 담음`); }} />
+              )}
+            </div>
+          )}
           {/* ── 아이템 탭(또는 코너 속성이 없는 유형)에서만 아이템 리스트 노출 ── */}
-          {(!(hasCornerTitle || hasButtonText || availOptions.length > 0) || fillTab === '아이템') && (
+          {!cardOnly && (!(hasCornerTitle || hasButtonText || availOptions.length > 0) || fillTab === '아이템') && (
           <>
           {/* 배너형 = 배너 캠페인 관리에서 '가져오기'로만 채움 — 안내 + 아래 가져오기 버튼(2026-11-05 사용자 요청). */}
           {isBanner && (
@@ -1259,7 +1291,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
     if (!activeSel) return;
     document.getElementById(`pv-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     document.getElementById(`chip-${activeSel}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }, [activeSel]);
+    // 새 코너 추가 직후엔 refresh로 리스트가 갱신된 다음 프레임에 요소가 생기므로 한 번 더 시도(2026-11-05 사용자 요청: 추가 코너로 포커스).
+  }, [activeSel, liveCorners.length]);
 
   // Figma BO 공통 textfield 토큰 — h38·r6·inset-x 14·본문 14·border #c4c9cf·포커스 border #b3b9c0+ring 2 #dce0e5
   const inputCls = 'h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-[14px] text-[14px] text-[var(--ink)] placeholder:text-[var(--ink5)] focus:border-[var(--focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]';
@@ -1506,8 +1539,14 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             setLoadModal(null);
             if (tid && cs.length) {
               // 코너 유형(카탈로그)에서 새 코너 껍데기를 생성해 배치 — 코너 유형 관리와 연동(2026-10-28).
-              await addCornersFromTypes(tid, cs.map((c) => c.id));
+              const created = await addCornersFromTypes(tid, cs.map((c) => c.id));
               router.refresh();
+              // 새로 추가한 코너(마지막)로 포커스 — 선택·상세 패널이 그 코너로 이동(2026-11-05 사용자 요청).
+              if (created && created.length) {
+                const newId = created[created.length - 1];
+                setActiveId(tid); setOpenId(tid);
+                setSelCorner((m) => ({ ...m, [tid]: newId }));
+              }
               toast(`코너 ${cs.length}개를 추가했습니다.`);
             }
           }}

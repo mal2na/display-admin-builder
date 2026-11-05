@@ -176,10 +176,17 @@ const STATUS_CATALOG: ProductOption[] = [
   { key: 'st-data', title: '실시간 데이터 잔여량', brand: '6.5GB · 월 20GB', imageUrl: 'lucide:Gauge', price: null, badge: null, category: '상태' },
   { key: 'st-family', title: '결합가족', brand: '4명 · 15,000원 할인', imageUrl: 'lucide:Users', price: null, badge: null, category: '상태' },
 ];
+// 프로필형(업무 진입형) 카탈로그 — '완성된 프로필 카드'를 통째로 가져온다(2026-11-05 사용자 확정: 요소 아니라 완성 카드 묶음).
+//  카드 한 장 = 사진·이름·휴대폰·가입현황이 한 세트. 값은 런타임 고객 데이터(@cvm)로 자동 표시, 운영자는 어떤 완성 카드를 노출할지만 고른다.
+const PROFILE_CATALOG: ProductOption[] = [
+  { key: 'pf-card-basic', title: '내 프로필 카드', brand: '사진 · 이름 · 휴대폰 · 가입현황 CTA · @cvm 자동', imageUrl: lu('CircleUserRound'), price: null, badge: null, category: '프로필' },
+  { key: 'pf-card-grade', title: '등급 강조 프로필 카드', brand: '사진 · 이름 · 멤버십 등급 · 가입현황 CTA · @cvm 자동', imageUrl: lu('CircleUserRound'), price: null, badge: null, category: '프로필' },
+];
 // 코너 유형 '채우기' 카탈로그 — 상품형=상품 분류(9)만, 혜택·오퍼형=혜택 분류만, 그 외/미지정=둘 다(2026-10-28 사용자 정의).
 //  "상품형을 클릭하면 상품 정보만 채울 수 있다" — 혜택 브랜드는 상품형에서 제외.
 export async function getProductOptions(cornerType?: string): Promise<ProductOption[]> {
   if (cornerType === '상태 안내형') return STATUS_CATALOG; // 업무 진입형 상태 안내형 전용(2026-11-05)
+  if (cornerType === '프로필형') return PROFILE_CATALOG; // 업무 진입형 프로필형 = 고객정보 한번에 가져오기(2026-11-05)
   if (cornerType === '상품형') return PRODUCT_CATALOG;
   if (cornerType === '혜택·오퍼형' || cornerType === '혜택형') return benefitCatalog();
   if (cornerType === '업무 진입형') return MENU_CATALOG; // 메뉴 카탈로그(혜택·업무 메뉴)

@@ -530,9 +530,11 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const isMovie = corner.cornerType === '콘텐츠 안내형';
   // 메뉴 리스트(업무진입형 메뉴·리스트형) — 서브타이틀 없음(2026-10-28 사용자 요청). 타이틀만.
   const isMenuList = /메뉴/.test(corner.layoutDetail ?? '') || (corner.cornerType === '업무 진입형' && /리스트/.test(corner.layoutDetail ?? ''));
+  // 프로필형 = 고객정보 행(사진·이름·번호·CTA) 자체가 콘텐츠 → '내 정보/프로필·가입현황' 코너 헤딩 숨김(2026-11-05 사용자 요청).
+  const isProfileLayout = /프로필/.test(corner.layoutDetail ?? '');
   // 배너형은 코너 타이틀/서브타이틀을 두지 않는다(배너 자체가 콘텐츠). 헤딩 숨김. (2026-09-28 사용자 결정)
-  const heading = isBanner ? null : (corner.mainTitle ?? corner.title);
-  const sub = (isBanner || isMenuList) ? null : (corner.subTitle ?? corner.name);
+  const heading = (isBanner || isProfileLayout) ? null : (corner.mainTitle ?? corner.title);
+  const sub = (isBanner || isMenuList || isProfileLayout) ? null : (corner.subTitle ?? corner.name);
   const showChevron = (corner.subTitleIcon ?? '화살표') !== '사용안함';
 
   // 코너 레이아웃(노출 방식) → 본문 배치 모드. 5종이 각각 다르게 렌더된다.
