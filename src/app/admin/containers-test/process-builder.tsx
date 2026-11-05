@@ -458,10 +458,24 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // 새 행은 세그먼트 기본값을 '불러오기'로(2026-11-05 사용자 요청) → 우측 '불러오기' 버튼이 바로 뜬다. 직접 입력하려면 '직접' 선택.
   const addItem = () => updateItems((xs) => [...xs, { id: `new-${Date.now()}`, label: '', mode: 'load' }]);
   const removeItem = (id: string) => updateItems((xs) => xs.filter((x) => x.id !== id));
-  const setItemLabel = (id: string, label: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, label } : x)));
-  const setItemLink = (id: string, link: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, link } : x)));
+  // 칩형(퀵메뉴) 아이템 편집(아이콘·라벨·링크)을 좌측 미리보기 선택형 아톰에 반영(2026-11-05 사용자 요청: 미리보기에서 바꾸면 아이콘도 바뀌어야).
+  const pushChipPreview = (next: FillItem[]) => {
+    if (!isChip) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const comps = (pv?.components ?? []).map((c: any) => c.componentType === '선택형'
+      ? { ...c, atoms: next.map((o, i) => ({ id: `ci-${i}-${o.id}`, name: o.label || `Chip${i + 1}`, atomType: 'TEXT', content: o.label || `Chip${i + 1}`, imageUrl: o.icon ?? null, altText: null, linkUrl: o.link ?? null })) }
+      : c);
+    onPreviewPatch({ components: comps });
+  };
+  const editItems = (id: string, patch: Partial<FillItem>) => {
+    const next = items.map((x) => (x.id === id ? { ...x, ...patch } : x));
+    updateItems(() => next);
+    pushChipPreview(next);
+  };
+  const setItemLabel = (id: string, label: string) => editItems(id, { label });
+  const setItemLink = (id: string, link: string) => editItems(id, { link });
   const setItemMode = (id: string, mode: FillItem['mode']) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, mode } : x)));
-  const setItemIcon = (id: string, icon: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, icon } : x)));
+  const setItemIcon = (id: string, icon: string) => editItems(id, { icon });
   const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
   const [iconForId, setIconForId] = React.useState<string | null>(null); // 아이콘 선택 모달 대상 항목 id(2026-11-05 사용자 요청)
   // 삭제 — 데이터 있는 항목은 확인 모달, 빈 항목은 바로 삭제(2026-11-05 사용자 요청).

@@ -1,5 +1,17 @@
 import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles, ImageIcon } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
+
+// 빌더 아이콘 선택 모달이 넣는 'lucide:Name' 아이콘을 미리보기에서도 그린다(2026-11-05 사용자 요청: 미리보기에서 바꾸면 반영).
+function PreviewChipIcon({ src, className }: { src?: string | null; className?: string }) {
+  if (src && src.startsWith('lucide:')) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const C = (LucideIcons as any)[src.slice(7)];
+    if (C) return <C className={className} strokeWidth={1.75} fill="currentColor" />;
+  }
+  if (src && isRenderableImg(src) && !isIconRef(src)) return <PreviewImage src={src} alt="" className={className} />;
+  return <IconGlyph name={src && isIconRef(src) ? src : 'icon:general/Category'} className={className} />;
+}
 import { resolveCvmSample, cvmBindingLabel, isCvmSource } from '@/lib/display-taxonomy';
 import { PreviewImage } from './preview-image';
 import { cn } from '@/lib/utils';
@@ -105,10 +117,8 @@ function ChipsView({ component }: { component: PreviewComponent }) {
     const chip = (a: PreviewAtom) => (
       <span key={a.id} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/50 py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#eef0f6] text-[#3617ce]">
-          {a.imageUrl && isRenderableImg(a.imageUrl) && !isIconRef(a.imageUrl)
-            ? /* 디자인 제공 퀵칩 아이콘(#3617ce svg) — 흰 원형 뱃지 위 글리프 크기로 렌더 */
-              /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.imageUrl} alt={a.altText ?? ''} className="h-3.5 w-3.5 object-contain" />
-            : <IconGlyph name={a.imageUrl && isIconRef(a.imageUrl) ? a.imageUrl : 'icon:general/Category'} className="h-3.5 w-3.5" />}
+          {/* lucide: (빌더 아이콘 선택) · 이미지 · icon: 글리프 모두 지원 — 빌더에서 아이콘 바꾸면 미리보기도 반영(2026-11-05 사용자 요청). */}
+          <PreviewChipIcon src={a.imageUrl} className="h-3.5 w-3.5" />
         </span>
         {a.content ?? a.name}
       </span>
