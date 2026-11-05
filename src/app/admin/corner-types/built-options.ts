@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type { BuiltCornerOption, RegisteredCombo, BannerCampaignOption, ProductOption } from './corner-type-manager';
 import { BSS_PRODUCTS } from '@/lib/bss-products';
+import { EPC_PRODUCT_CATALOG } from './epc-catalog';
 
 /**
  * 전시화면관리(빌더)에서 실제로 만들어진 Corner의 유형 조합을 코너 유형 등록 후보로 반환한다.
@@ -160,16 +161,35 @@ function benefitCatalog(): ProductOption[] {
   ];
 }
 // 배너 카탈로그 — 배너형은 '배너 캠페인 관리'에 등록된 배너를 '가져오기'로만 채운다(2026-11-05 사용자 요청: 직접 입력 없음, 캠페인에서 가져옴).
+// 배너 카탈로그 — 배너 캠페인 관리에 등록된 배너. 불러오기 시 이미지·타이틀·이동링크(랜딩)·사이즈를 함께 끌어온다(2026-11-05 사용자 요청).
 const BANNER_CATALOG: ProductOption[] = [
-  { key: 'bn-lotte', title: '이번 주말, 가족 나들이에 쓰기 좋은 혜택', brand: 'LOTTE WORLD ADVENTURE', imageUrl: '/assets/lotteworld.png', price: null, badge: '제휴', category: '배너' },
-  { key: 'bn-airpods', title: 'AirPods Max3 사전 예약 하셨나요?', brand: '사전예약 클럽 멤버십 혜택', imageUrl: '/assets/airpods-max.png', price: null, badge: '사전예약', category: '배너' },
-  { key: 'bn-ott', title: 'OTT 무제한, 지금 요금제 하나로', brand: '0 Week 전용 혜택', imageUrl: '/assets/banner-plan-ott.svg', price: null, badge: '혜택', category: '배너' },
-  { key: 'bn-sbux', title: '스타벅스 제휴 — 최대 20% 할인', brand: 'T 멤버십', imageUrl: '/assets/banner-starbucks.svg', price: null, badge: '제휴', category: '배너' },
+  { key: 'bn-lotte', title: '이번 주말, 가족 나들이에 쓰기 좋은 혜택', brand: 'LOTTE WORLD ADVENTURE', imageUrl: '/assets/lotteworld.png', price: null, badge: '제휴', category: '배너', landing: '/event/lotteworld-2026', size: '스몰배너 (672×324)' },
+  { key: 'bn-airpods', title: 'AirPods Max3 사전 예약 하셨나요?', brand: '사전예약 클럽 멤버십 혜택', imageUrl: '/assets/airpods-max.png', price: null, badge: '사전예약', category: '배너', landing: '/preorder/airpods-max3', size: '스몰배너 (672×324)' },
+  { key: 'bn-ott', title: 'OTT 무제한, 지금 요금제 하나로', brand: '0 Week 전용 혜택', imageUrl: '/assets/banner-plan-ott.svg', price: null, badge: '혜택', category: '배너', landing: '/plan/ott-unlimited', size: '빅배너 (1080×604)' },
+  { key: 'bn-sbux', title: '스타벅스 제휴 — 최대 20% 할인', brand: 'T 멤버십', imageUrl: '/assets/banner-starbucks.svg', price: null, badge: '제휴', category: '배너', landing: '/membership/starbucks', size: '스몰배너 (672×324)' },
+];
+// 상태 안내형(업무 진입형) 카탈로그 — 마이 홈의 '내 상태' 카드를 뭉텅이로 가져온다(2026-11-05 사용자 요청: 클릭하면 데이터가 한 번에).
+//  값·보조문구는 런타임 고객 데이터(@cvm)로 자동 표시, 여기선 어떤 상태 카드를 노출할지만 고른다.
+const STATUS_CATALOG: ProductOption[] = [
+  { key: 'st-tuniverse', title: 'T 우주 구독료', brand: '67,500원 · 3개 상품 구독중', imageUrl: 'lucide:Boxes', price: null, badge: '구독', category: '상태' },
+  { key: 'st-phonebill', title: '휴대폰 결제·이용료', brand: '23,800원 · 80,000원 한도', imageUrl: 'lucide:CreditCard', price: null, badge: null, category: '상태' },
+  { key: 'st-livefee', title: '실시간 이용요금', brand: '39,250원 · 3월 납부완료', imageUrl: 'lucide:Receipt', price: null, badge: null, category: '상태' },
+  { key: 'st-tpoint', title: 'T멤버십 포인트', brand: '13,500P · 3월 누적할인 1,700원', imageUrl: 'lucide:Coins', price: null, badge: null, category: '상태' },
+  { key: 'st-data', title: '실시간 데이터 잔여량', brand: '6.5GB · 월 20GB', imageUrl: 'lucide:Gauge', price: null, badge: null, category: '상태' },
+  { key: 'st-family', title: '결합가족', brand: '4명 · 15,000원 할인', imageUrl: 'lucide:Users', price: null, badge: null, category: '상태' },
+];
+// 프로필형(업무 진입형) 카탈로그 — '완성된 프로필 카드'를 통째로 가져온다(2026-11-05 사용자 확정: 요소 아니라 완성 카드 묶음).
+//  카드 한 장 = 사진·이름·휴대폰·가입현황이 한 세트. 값은 런타임 고객 데이터(@cvm)로 자동 표시, 운영자는 어떤 완성 카드를 노출할지만 고른다.
+const PROFILE_CATALOG: ProductOption[] = [
+  { key: 'pf-card-basic', title: '내 프로필 카드', brand: '사진 · 이름 · 휴대폰 · 가입현황 CTA · @cvm 자동', imageUrl: lu('CircleUserRound'), price: null, badge: null, category: '프로필' },
+  { key: 'pf-card-grade', title: '등급 강조 프로필 카드', brand: '사진 · 이름 · 멤버십 등급 · 가입현황 CTA · @cvm 자동', imageUrl: lu('CircleUserRound'), price: null, badge: null, category: '프로필' },
 ];
 // 코너 유형 '채우기' 카탈로그 — 상품형=상품 분류(9)만, 혜택·오퍼형=혜택 분류만, 그 외/미지정=둘 다(2026-10-28 사용자 정의).
 //  "상품형을 클릭하면 상품 정보만 채울 수 있다" — 혜택 브랜드는 상품형에서 제외.
 export async function getProductOptions(cornerType?: string): Promise<ProductOption[]> {
-  if (cornerType === '상품형') return PRODUCT_CATALOG;
+  if (cornerType === '상태 안내형') return STATUS_CATALOG; // 업무 진입형 상태 안내형 전용(2026-11-05)
+  if (cornerType === '프로필형') return PROFILE_CATALOG; // 업무 진입형 프로필형 = 고객정보 한번에 가져오기(2026-11-05)
+  if (cornerType === '상품형') return EPC_PRODUCT_CATALOG; // 상품형 = EPC 상품 조회 결과 기반(2026-11-05 사용자 제공 JSON)
   if (cornerType === '혜택·오퍼형' || cornerType === '혜택형') return benefitCatalog();
   if (cornerType === '업무 진입형') return MENU_CATALOG; // 메뉴 카탈로그(혜택·업무 메뉴)
   if (cornerType === '콘텐츠 안내형') return MOVIE_CATALOG; // 콘텐츠 안내형 = 영화만 불러오기(2026-11-05 사용자 요청)

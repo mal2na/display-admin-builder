@@ -54,12 +54,16 @@ export async function addCornersFromTypes(templateId: string, cornerTypeIds: str
   });
   const inheritedZone = last ? effectiveZone(last.zone, last.corner?.cornerType, last.corner?.recSource) : 'dynamic';
   let order = (last?.order ?? -1) + 1;
+  // 생성한 코너 id를 반환해 빌더가 '새로 추가한 코너로 포커스'할 수 있게 한다(2026-11-05 사용자 요청).
+  const createdCornerIds: string[] = [];
   for (const typeId of cornerTypeIds) {
     const corner = await createCornerInstanceFromTypeId(typeId);
     await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order, zone: inheritedZone } });
+    createdCornerIds.push(corner.id);
     order += 1;
   }
   revalidatePath(`/admin/containers-test/t/${templateId}`);
+  return createdCornerIds;
 }
 
 // 코너명 수정 — 빌더 '① 코너 정보'의 코너명 편집을 실제 저장(Corner.name). 2026-11-05 사용자 요청(데모 → 실제).

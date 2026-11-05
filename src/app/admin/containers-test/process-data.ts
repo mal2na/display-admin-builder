@@ -4,23 +4,22 @@ import { prisma } from '@/lib/prisma';
 import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE } from '../corner-types/preview-corner';
 
 // 신규 '껍데기(스캐폴드)' 아톰의 플레이스홀더 내용 — 이게 전부면 아직 안 채워진 코너로 본다(buildComp 기본값과 1:1).
-const SCAFFOLD_PLACEHOLDERS = new Set<string>([
-  '전체', '카테고리1', '카테고리2', '카테고리3', '브랜드', '상품 1', '상품 2', '상품 3',
-  '선택 약정 12개월 기준', '/12개월', '256GB | 512GB | 1TB',
-  '혜택 1 문구를 입력하세요', '혜택 2 문구를 입력하세요', '혜택 3 문구를 입력하세요',
-  '브랜드 1', '브랜드 2', '브랜드 3', '배너 타이틀', '배너 설명 문구', '자세히 보기', '라벨', '주요 값',
-]);
-// 코너가 '실제 내용'으로 채워졌는지 판정 — 실제 에셋 이미지(/로 시작) 또는 플레이스홀더가 아닌 실제 텍스트가 하나라도 있으면 채워진 것.
-//  채워진 코너는 저장 콘텐츠로(그대로), 신규 껍데기는 코너 유형 관리와 동일한 가이드로 렌더(2026-11-05 사용자 요청).
+// 스캐폴드(껍데기) 플레이스홀더 텍스트 패턴 — buildComp 기본값. 이게 전부면 '아직 안 채워진 신규 코너'.
+const SCAFFOLD_TEXT_RE = /^(전체|카테고리\s*\d*|브랜드\s*\d*|상품\s*\d+|상품명|혜택\s*\d+( 문구를 입력하세요)?|배너 타이틀|배너 설명 문구|자세히 보기|라벨|주요 값|메뉴\s*\d*|대표 아이템\s*\d*|CornerTitle|ItemTitle|SubTitle|SubText|ButtonText|Caption\d*|Chip\d+|Title)$/;
+// 코너가 '실제 내용'으로 채워졌는지 판정(2026-11-05 사용자 요청: 신규 상품형 가로형이 옛날 껍데기로 뜨던 문제).
+//  판정은 '진짜 콘텐츠 신호'만 — ① 실제 에셋 이미지(/·http) ② TEXT/BENEFIT_TEXT의 비(非)플레이스홀더 실제 문구.
+//  배지(NEW 등)·INFO·PRICE·기본 스펙 문구(용량·약정 등)는 껍데기에도 있으므로 '채움' 신호로 보지 않는다.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function cornerIsFilled(c: any): boolean {
   for (const cc of c.cornerComponents ?? []) {
     for (const ca of cc.component?.componentAtoms ?? []) {
       const a = ca.atom;
       if (!a) continue;
-      if (typeof a.imageUrl === 'string' && a.imageUrl.startsWith('/')) return true;
-      const t = (a.content ?? '').trim();
-      if (t && !SCAFFOLD_PLACEHOLDERS.has(t)) return true;
+      if (typeof a.imageUrl === 'string' && (a.imageUrl.startsWith('/') || a.imageUrl.startsWith('http'))) return true;
+      if (a.atomType === 'TEXT' || a.atomType === 'BENEFIT_TEXT') {
+        const t = (a.content ?? '').trim();
+        if (t && !SCAFFOLD_TEXT_RE.test(t)) return true;
+      }
     }
   }
   return false;
@@ -119,11 +118,12 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       // 채워진 코너는 저장 콘텐츠 그대로, 신규 껍데기(스캐폴드)는 코너 유형 관리와 동일한 가이드로 렌더(2026-11-05 사용자 요청: 기존 채워진 건 그대로, 신규 등록만 코너 유형 관리처럼).
       //  Corner에는 componentType 컬럼이 없으므로 스캐폴드 컴포넌트(선택형 칩 제외)의 유형을 가이드 조합에 넘겨 코너 유형 관리와 일치시킨다.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      preview: cornerIsFilled(tc.corner)
+      //  CTA(더보기 버튼)는 빌더에선 '우선 다 꺼둔 상태'로 보여준다(2026-11-05 사용자 요청. 코너 유형 관리는 ON 유지). 켜면 빌더에서 토글.
+      preview: { ...(cornerIsFilled(tc.corner)
         ? cornerToPreviewCorner(tc.corner)
         : guideCornerPreview(tc.corner.cornerType, tc.corner.layoutDetail ?? tc.corner.cornerLayout,
             ((tc.corner.cornerComponents ?? []).find((cc: any) => cc.component?.componentType !== '선택형')?.component?.componentType)
-            ?? (tc.corner.cornerComponents ?? [])[0]?.component?.componentType ?? null),
+            ?? (tc.corner.cornerComponents ?? [])[0]?.component?.componentType ?? null)), moreButtonUse: false },
       recSource: tc.corner.recSource ? normalizeRecSource(tc.corner.recSource) : null,
       isCvm: isCvmSource(tc.corner.recSource),
       fallback: effectiveFallback(tc.corner.cornerType, tc.corner.cvmFallback),
@@ -170,6 +170,8 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       '혜택·오퍼형': await getProductOptions('혜택·오퍼형'),
       '혜택형': await getProductOptions('혜택형'),
       '업무 진입형': await getProductOptions('업무 진입형'),
+      '상태 안내형': await getProductOptions('상태 안내형'), // 업무 진입형 상태 안내형 전용 상태 카드(2026-11-05)
+      '프로필형': await getProductOptions('프로필형'), // 업무 진입형 프로필형 = 고객정보 한번에 가져오기(2026-11-05)
       '콘텐츠 안내형': await getProductOptions('콘텐츠 안내형'),
       '배너형': await getProductOptions('배너형'), // 배너 가져오기(배너 캠페인 관리) 카탈로그 — 누락돼 가져오기 안 되던 문제 수정(2026-11-05)
     },

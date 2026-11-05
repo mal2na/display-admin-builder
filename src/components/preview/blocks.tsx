@@ -94,6 +94,10 @@ function ImageBox({ atom, className }: { atom?: PreviewAtom; className?: string 
 function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const variant = component.chipVariant ?? (component.atoms.some((a) => a.imageUrl) ? 'home' : 'contents');
+  // 전부 placeholder(Chip1·전체·카테고리 등)면 미리보기엔 '칩 불러오기' 칩 하나만 — 실제 카테고리가 들어오면 전부(2026-11-05 사용자 요청).
+  const CHIP_PH = /^(chip\d*|전체|카테고리|tab\d*|category\d*)$/i;
+  const allPh = component.atoms.length > 0 && component.atoms.every((a) => CHIP_PH.test((a.content ?? a.name ?? '').trim()));
+  const atoms = allPh ? [{ ...component.atoms[0], content: '칩 불러오기' }] : component.atoms;
 
   // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
   if (variant === 'home') {
@@ -111,8 +115,8 @@ function ChipsView({ component }: { component: PreviewComponent }) {
     );
     if (twoRows) {
       // 가로(행) 우선 배치: 앞 절반이 윗줄, 뒤 절반이 아랫줄 — 번호가 좌→우로 이어지게.
-      const mid = Math.ceil(component.atoms.length / 2);
-      const grid = [component.atoms.slice(0, mid), component.atoms.slice(mid)];
+      const mid = Math.ceil(atoms.length / 2);
+      const grid = [atoms.slice(0, mid), atoms.slice(mid)];
       return (
         <div className="flex flex-col gap-2 overflow-x-auto pb-1">
           {grid.map((r, ri) => (
@@ -122,7 +126,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
       );
     }
     return (
-      <div className="flex flex-nowrap items-start gap-2 overflow-x-auto pb-1">{component.atoms.map(chip)}</div>
+      <div className="flex flex-nowrap items-start gap-2 overflow-x-auto pb-1">{atoms.map(chip)}</div>
     );
   }
 
@@ -130,7 +134,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   if (variant === 'page') {
     return (
       <div className="flex flex-nowrap items-center gap-4 overflow-x-auto border-b border-slate-100 pb-0">
-        {component.atoms.map((a, i) => (
+        {atoms.map((a, i) => (
           <span key={a.id} className={'shrink-0 whitespace-nowrap border-b-2 pb-2 text-[13px] ' + (i === sel ? 'border-slate-900 font-semibold text-slate-900' : 'border-transparent font-medium text-slate-400')}>
             {a.content ?? a.name}
           </span>
@@ -143,7 +147,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   if (variant === 'filter') {
     return (
       <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
-        {component.atoms.map((a) => (
+        {atoms.map((a) => (
           <span key={a.id} className="flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-slate-300 bg-white px-3 text-[12px] font-medium text-slate-600">
             {a.content ?? a.name} <ChevronDown className="h-3 w-3 text-slate-400" />
           </span>
@@ -155,7 +159,7 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩. 카테고리 필터는 항상 한 줄(가로 스크롤). 2026-10-06 사용자 요청(세로형+칩은 칩 한 줄).
   return (
     <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
-      {component.atoms.map((a, i) => (
+      {atoms.map((a, i) => (
         <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] ' + (i === sel ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>
           {a.content ?? a.name}
         </span>
@@ -271,12 +275,12 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   // 배너 규격(layoutDetail의 W×H)으로 실제 비율을 잡는다 — 빅/스몰/띠/팝업이 눈에 보이게.
   //  규격에 W×H가 없으면(예: '배너 단일형'): 완성형 이미지는 빅배너(672×460), 콤포즈형(타이틀+로고)은 납작한 띠 비율(672×260)로 → 뚱뚱한 박스 방지.
   const m = (sizeDetail ?? '').match(/(\d+)\s*[×xX*]\s*(\d+)/);
-  const ratio = m ? `${m[1]} / ${m[2]}` : (isFullBanner ? '672 / 460' : '672 / 260');
-  // 콤포즈형(타이틀+로고)은 규격이 커도(빅배너 672×460 등) 세로가 길면 비어 보임(뚱뚱) → 폭 대비 최대 672:260 비율로 캡.
+  const ratio = m ? `${m[1]} / ${m[2]}` : (isFullBanner ? '672 / 460' : '672 / 324');
+  // 콤포즈형(타이틀+로고)은 스몰배너(672×324) 비율로 '배너답게 길게' — 규격이 더 커도 세로는 324로 캡(뚱뚱 방지, 2026-11-05 사용자 요청).
   const composeRatio = (() => {
-    if (!m) return isFullBanner ? '672 / 460' : '672 / 260';
+    if (!m) return isFullBanner ? '672 / 460' : '672 / 324';
     const w = Number(m[1]), h = Number(m[2]);
-    const capH = Math.round((w * 260) / 672);
+    const capH = Math.round((w * 324) / 672);
     return `${w} / ${Math.min(h, capH)}`;
   })();
   if (ratio) {
@@ -530,9 +534,11 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const isMovie = corner.cornerType === '콘텐츠 안내형';
   // 메뉴 리스트(업무진입형 메뉴·리스트형) — 서브타이틀 없음(2026-10-28 사용자 요청). 타이틀만.
   const isMenuList = /메뉴/.test(corner.layoutDetail ?? '') || (corner.cornerType === '업무 진입형' && /리스트/.test(corner.layoutDetail ?? ''));
+  // 프로필형 = 고객정보 행(사진·이름·번호·CTA) 자체가 콘텐츠 → '내 정보/프로필·가입현황' 코너 헤딩 숨김(2026-11-05 사용자 요청).
+  const isProfileLayout = /프로필/.test(corner.layoutDetail ?? '');
   // 배너형은 코너 타이틀/서브타이틀을 두지 않는다(배너 자체가 콘텐츠). 헤딩 숨김. (2026-09-28 사용자 결정)
-  const heading = isBanner ? null : (corner.mainTitle ?? corner.title);
-  const sub = (isBanner || isMenuList) ? null : (corner.subTitle ?? corner.name);
+  const heading = (isBanner || isProfileLayout) ? null : (corner.mainTitle ?? corner.title);
+  const sub = (isBanner || isMenuList || isProfileLayout) ? null : (corner.subTitle ?? corner.name);
   const showChevron = (corner.subTitleIcon ?? '화살표') !== '사용안함';
 
   // 코너 레이아웃(노출 방식) → 본문 배치 모드. 5종이 각각 다르게 렌더된다.
@@ -695,7 +701,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       <img
         src={bannerSrc}
         alt={corner.bannerName ?? ''}
-        className="block w-full bg-gradient-to-b from-sky-50 to-white"
+        className="block aspect-[16/10] w-full bg-gradient-to-b from-sky-50 to-white object-cover object-center"
       />
     ) : (
       <div className="flex aspect-[16/10] w-full items-center justify-center bg-[#eef0f3] text-[12px] font-medium text-slate-500">

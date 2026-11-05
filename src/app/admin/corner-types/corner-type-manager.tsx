@@ -32,7 +32,7 @@ export type RegisteredCombo = { baseCategory: string; componentType: string | nu
 // 배너 캠페인 후보 — 스와이프형 코너 유형에서 '배너 묶기'로 선택(랜딩 URL은 캠페인에서 끌어옴).
 export type BannerCampaignOption = { id: string; title: string; linkUrl: string | null; imageUrl: string | null; size: string | null };
 // 상품/혜택 후보 — 상품형·혜택형 코너 유형에서 '상품 담기'로 선택(BSS 혜택 브랜드 + 디바이스·단말). 랜딩 URL은 담은 뒤 수동 편집.
-export type ProductOption = { key: string; title: string; brand: string; imageUrl: string | null; price: string | null; badge: string | null; category?: string };
+export type ProductOption = { key: string; title: string; brand: string; imageUrl: string | null; price: string | null; badge: string | null; category?: string; landing?: string; size?: string };
 
 // 전시화면관리(빌더)에서 실제로 만들어진 코너 유형 조합. 등록 폼의 선택지를 이걸로 제한한다.
 export type BuiltCornerOption = {
