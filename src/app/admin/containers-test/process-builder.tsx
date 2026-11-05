@@ -313,6 +313,52 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             </div>
           )}
         </Row>
+        {/* 코너 속성(표시 항목) 요약 — 코너 유형 관리가 정의한 껍데기의 표시 항목을 읽기전용으로(②수급·③채우기에서 뭘 채우는지 먼저 보여줌).
+            좁은 패널이라 전체 Y/N 표(오버플로) 대신 그룹별 '칩 요약'으로 — 코너(카드)/아이템(요소) 그룹·고정/옵션 구분은 유지(2026-11-05 사용자 요청). */}
+        {(() => {
+          const spec = cornerFieldSpec(corner.cornerType, corner.layoutDetail ?? corner.layout);
+          if (!spec) return null;
+          const cornerFixed = spec.required.filter((f) => f.group === 'corner');
+          const itemFixed = spec.required.filter((f) => f.group === 'item');
+          const itemOpt = (spec.optional ?? []).filter((f) => f.group === 'item');
+          const isGaro = /가로/.test(corner.layoutDetail ?? corner.layout ?? '');
+          const FieldChip = ({ ko, code, opt }: { ko: string; code?: string; opt?: boolean }) => (
+            <span className={cn('inline-flex items-center gap-1 rounded-[6px] border px-1.5 py-0.5 text-[11px]', opt ? 'border-[#cfd2ff] bg-[#f3f0ff] text-[var(--ac)]' : 'border-[var(--line2)] bg-white text-[var(--ink2)]')}>
+              {ko}{code && <span className="text-[9px] text-[var(--ink4)]">{code}</span>}
+            </span>
+          );
+          const Grp = ({ badge, color, title, children }: { badge: string; color: string; title: string; children: React.ReactNode }) => (
+            <div>
+              <div className="mb-1 flex items-center gap-1">
+                <span className="grid h-[15px] w-[15px] place-items-center rounded-[4px] text-[9px] font-bold text-white" style={{ background: color }}>{badge}</span>
+                <span className="text-[11px] font-bold text-[var(--ink3)]">{title}</span>
+              </div>
+              <div className="flex flex-wrap gap-1">{children}</div>
+            </div>
+          );
+          const hasCorner = spec.options.length > 0 || cornerFixed.length > 0;
+          const hasItem = itemFixed.length > 0 || itemOpt.length > 0 || isGaro;
+          if (!hasCorner && !hasItem) return null;
+          return (
+            <div className="mt-3 space-y-2.5 border-t border-[var(--line2)] pt-3">
+              <p className="text-[12px] font-bold text-[var(--ink2)]">코너 속성 <span className="font-normal text-[var(--ink4)]">· 이 껍데기가 쓰는 표시 항목</span></p>
+              {hasCorner && (
+                <Grp badge="코" color="#3617ce" title="코너(카드)">
+                  {spec.options.map((o) => <FieldChip key={o} ko={o} opt />)}
+                  {cornerFixed.map((f) => <FieldChip key={f.key} ko={f.ko} code={f.key} />)}
+                </Grp>
+              )}
+              {hasItem && (
+                <Grp badge="아" color="#00a058" title="아이템(요소)">
+                  {isGaro && <FieldChip ko="형태" code="Variants" />}
+                  {itemFixed.map((f) => <FieldChip key={f.key} ko={f.ko} code={f.key} />)}
+                  {itemOpt.map((f) => <FieldChip key={f.key} ko={f.ko} code={f.key} opt />)}
+                </Grp>
+              )}
+              <p className="text-[10.5px] text-[var(--ink4)]"><span className="mr-1.5 inline-block rounded-[4px] border border-[#cfd2ff] bg-[#f3f0ff] px-1 text-[var(--ac)]">옵션</span> 빌더에서 on/off · 나머지는 고정</p>
+            </div>
+          );
+        })()}
       </Sec>
 
       {/* ② 수급 — 클릭해 전환 */}
