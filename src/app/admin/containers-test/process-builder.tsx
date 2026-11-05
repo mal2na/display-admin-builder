@@ -238,7 +238,7 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
   const toggle = (k: string) => setChecked((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const submit = () => onAdd(catalog.filter((o) => checked.has(o.key)));
   const kindWord = cornerType === '상태 안내형' ? '상태 카드' : cornerType === '프로필형' ? '프로필 카드' : cornerType === '업무 진입형' ? '메뉴' : cornerType === '콘텐츠 안내형' ? '영화' : cornerType === '배너형' ? '배너' : cornerType === '혜택·오퍼형' ? '혜택' : '상품';
-  const kindLabel = cornerType === '콘텐츠 안내형' ? '지금 등록된 영화에서 선택' : cornerType === '상태 안내형' ? '완성된 상태 카드를 통째로 선택 — 값은 고객 데이터로 자동' : cornerType === '프로필형' ? '완성된 프로필 카드를 통째로 선택 — 값은 고객 데이터로 자동' : cornerType === '배너형' ? '배너 캠페인 관리에 등록된 배너에서 선택' : `${kindWord} 분류에서 선택`;
+  const kindLabel = cornerType === '콘텐츠 안내형' ? '지금 등록된 영화에서 선택' : cornerType === '상태 안내형' ? '완성된 상태 카드를 통째로 선택 — 값은 고객 데이터로 자동' : cornerType === '프로필형' ? '완성된 프로필 카드를 통째로 선택 — 값은 고객 데이터로 자동' : cornerType === '배너형' ? '배너 캠페인 관리에 등록된 배너에서 선택(이미지·문구·랜딩 함께)' : cornerType === '업무 진입형' ? '메뉴 관리에 등록된 메뉴에서 선택' : `${kindWord} 분류에서 선택`;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="flex h-[78vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -356,16 +356,17 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const [ctaLinkVal, setCtaLinkVal] = React.useState(() => ((pv as { moreButtonLink?: string | null } | undefined)?.moreButtonLink ?? ''));
   // ③채우기를 '코너 | 아이템' 탭으로 나눠 등록(2026-11-05 사용자 요청). 코너 속성이 없는 유형(배너형 등)은 아이템만.
   const [fillTab, setFillTab] = React.useState<'코너' | '아이템'>('코너');
-  // 칩(카테고리 탭) — 자유 텍스트가 아니라 카탈로그 카테고리 데이터와 연동(2026-10-28 사용자 요청: 칩 개수·정보를 데이터 연동).
-  //  기본 = '전체' + 카탈로그 카테고리. 추가/삭제도 카탈로그 카테고리에서만. 라벨은 읽기전용(데이터).
-  // 칩은 처음엔 '전체'만 — 나머지 카테고리는 '칩 불러오기' 모달에서 골라 넣는다(2026-11-05 사용자 요청).
-  // 칩 라벨 — 채워진 코너는 '좌측 미리보기의 실제 칩'(선택형 아톰: 카페·베이커리…)을 그대로, 신규 껍데기는 '전체'만(2026-11-05 사용자 요청).
+  // 칩(카테고리 탭) — 실제로 '불러온 카테고리'만 저장. 나머지 빈 자리는 점선 'Chip' 플레이스홀더로 표시, 불러오기로 채우면 반영(2026-11-05 사용자 요청).
+  //  placeholder(Chip/전체/카테고리 등 필드코드)는 실제 칩이 아니므로 제외하고, 미리보기 선택형 아톰의 '진짜 카테고리'만 초기값으로.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const chipComp0 = (pv?.components ?? []).find((c: any) => c.componentType === '선택형');
+  // 칩 슬롯 수 = 미리보기 선택형 아톰 수(없으면 4). 점선 placeholder 개수의 기준.
+  const chipSlotCount = (chipComp0?.atoms?.length ?? 0) > 0 ? chipComp0!.atoms.length : 4;
   const [chips, setChips] = React.useState<string[]>(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const chipComp = (pv?.components ?? []).find((c: any) => c.componentType === '선택형');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const labels = (chipComp?.atoms ?? []).map((a: any) => (a.content || a.name || '').trim()).filter((l: string) => !!l);
-    return labels.length ? labels : ['전체'];
+    const labels = (chipComp0?.atoms ?? []).map((a: any) => (a.content || a.name || '').trim())
+      .filter((l: string) => l && !/^(chip\d*|전체|카테고리|tab\d*|category\d*)$/i.test(l));
+    return labels; // 진짜 카테고리만(없으면 빈 배열 → 전부 점선 placeholder)
   });
   const [chipLoadOpen, setChipLoadOpen] = React.useState(false);
   // 배너 옵션 콘텐츠 — 배너 On이면 이미지. CTA 라벨은 '버튼 텍스트(buttonTextVal)'로 통합(2026-11-05 사용자 요청).
@@ -446,7 +447,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
       const idx = xs.findIndex((x) => x.id === loadForId);
       const mapped: FillItem[] = ps.map((p, i) => ({
         id: i === 0 && idx >= 0 ? loadForId! : `load-${Date.now()}-${i}`,
-        label: p.title, icon: p.imageUrl ?? null, link: `/${(p.category ?? 'menu')}/${p.key}`, sub: p.brand ?? undefined, mode: 'load',
+        // 이동링크 = 배너 등 캠페인의 랜딩값을 그대로(없으면 카테고리 경로). 사이즈/브랜드는 보조 표기로(2026-11-05 사용자 요청).
+        label: p.title, icon: p.imageUrl ?? null, link: p.landing ?? `/${(p.category ?? 'menu')}/${p.key}`, sub: p.size ?? p.brand ?? undefined, mode: 'load',
       }));
       return idx < 0 ? [...xs, ...mapped] : [...xs.slice(0, idx), ...mapped, ...xs.slice(idx + 1)];
     });
@@ -652,37 +654,41 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                       </button>
                     ))}
                   </div>
-                  {/* 배너 On → 이미지 입력(한 칸만). 세로형+배너·세로형+칩이 서로 다른 배열이라 배너·칩이 동시에 켜지는 일은 거의 없음. */}
+                  {/* 배너 On → 배너 이미지. 주소 직접 입력은 불필요(배너 소재는 배너 캠페인 관리에서) → 썸네일 + '불러오기'만(2026-11-05 사용자 요청). */}
                   {optOn['배너'] && (
                     <div className="mt-2 rounded-[7px] border border-[var(--line2)] bg-white p-2">
-                      <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink3)]">배너 이미지</p>
+                      <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink3)]">배너 이미지 <span className="font-normal text-[var(--ink4)]">· 배너 캠페인 관리에서</span></p>
                       <div className="flex items-center gap-1.5">
                         <span className="grid h-10 w-16 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-white text-[var(--ink4)]">
                           {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
                         </span>
-                        <input value={bannerImg} onChange={(e) => setBannerImg(e.target.value)} placeholder="이미지 주소 입력" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                        <button type="button" onClick={() => onToast('이미지 불러오기 (데모)')} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-[var(--th)]">불러오기</button>
+                        <button type="button" onClick={() => onToast('배너 불러오기 (데모)')} className="flex flex-1 items-center justify-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white py-1.5 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 배너 캠페인에서 불러오기</button>
                       </div>
                     </div>
                   )}
-                  {/* 칩 On → 카테고리 탭 */}
+                  {/* 칩 On → 카테고리 탭. 불러온 칩=실선(클릭=아이템 전환·X 삭제), 빈 자리=점선 'Chip'(클릭하면 불러오기). 2026-11-05 사용자 요청. */}
                   {optOn['칩'] && (
                     <div className="mt-2 rounded-[7px] border border-[var(--line2)] bg-white p-2">
                       <div className="mb-1.5 flex items-center gap-1.5">
                         <span className="text-[11px] font-semibold text-[var(--ink3)]">카테고리 탭</span>
-                        <span className="rounded-full bg-[var(--th)] px-1.5 text-[11px] font-bold text-[var(--ink3)]">{chips.length}개</span>
+                        <span className="rounded-full bg-[var(--th)] px-1.5 text-[11px] font-bold text-[var(--ink3)]">{chips.length}/{Math.max(chipSlotCount, chips.length)}</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
                         {chips.map((c, i) => (
                           <span key={i} onClick={() => setActiveChip(i)}
                             className={cn('inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium', i === chipIdx ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line3)] bg-white text-[var(--ink2)]')}>
                             {c}
-                            {c !== '전체' && <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>}
+                            <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
                           </span>
+                        ))}
+                        {/* 빈 슬롯 = 점선 'Chip' placeholder. 클릭하면 불러오기로 채운다. */}
+                        {Array.from({ length: Math.max(0, chipSlotCount - chips.length) }).map((_, i) => (
+                          <button key={`ph-${i}`} type="button" onClick={() => setChipLoadOpen(true)}
+                            className="inline-flex items-center rounded-full border border-dashed border-[var(--line3)] bg-white px-2.5 py-1 text-[12px] font-medium text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]">Chip</button>
                         ))}
                         <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 불러오기</button>
                       </div>
-                      <p className="mt-1.5 text-[11px] text-[var(--ink4)]">칩을 누르면 아래 <b className="text-[var(--ink3)]">아이템</b>이 그 칩의 항목으로 바뀝니다 — 칩마다 따로 채워요.</p>
+                      <p className="mt-1.5 text-[11px] text-[var(--ink4)]">점선 <b className="text-[var(--ink3)]">Chip</b>은 빈 자리예요 · <b className="text-[var(--ink3)]">불러오기</b>로 카테고리를 넣으면 반영됩니다. 칩을 누르면 아래 아이템이 그 칩 항목으로 바뀌어요.</p>
                     </div>
                   )}
                   {/* CTA On → 하단 더보기 버튼 문구(전체보기 등). 버튼 텍스트(서브 타이틀)와는 별개(2026-11-05 사용자 요청). */}
@@ -769,54 +775,55 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           <div className="space-y-1.5">
             {items.length === 0 && <p className="rounded-[8px] border border-dashed border-[var(--line3)] px-3 py-4 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 ' + itemWord + '에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
             {items.map((o) => {
-              // 칩형(퀵메뉴)만 편집 행(아이콘·텍스트·링크·직접 입력). 나머지 유형은 전부 불러오기 전용 → 포스터/썸네일+제목+변경 행(2026-11-05 사용자 확정).
+              // 이미지 기반 유형(영화·배너·혜택·상품) — 썸네일(불러온 이미지, 클릭 시 교체) + 제목·링크 직접 편집 + 행별 불러오기(2026-11-05 사용자 확정: 각 행 직접 편집+불러오기).
               if (!isChip) {
                 return (
                 <div key={o.id} className="flex items-center gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
                   {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김(2026-11-05 사용자 요청) */}
                   {!bannerSingle && <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]" />}
-                  {/* 배너는 썸네일을 '배너답게' 넓은 가로 비율로(2026-11-05 사용자 요청). 그 외(영화·혜택)는 정사각 */}
-                  {isBanner ? (
-                    <span className="grid h-11 w-[84px] shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]">
-                      <ItemIcon src={o.icon} iconClass="h-5 w-5" imgClass="h-full w-full object-cover" />
-                    </span>
-                  ) : (
-                    <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[7px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]">
-                      <ItemIcon src={o.icon} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{o.label || `${itemWord} 미선택`}</p>
-                    <p className="truncate text-[11px] text-[var(--ink4)]">{o.sub || loadFields}</p>
+                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 넓게, 그 외 정사각 */}
+                  <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="이미지 불러오기"
+                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'h-11 w-[84px]' : 'h-10 w-10')}>
+                    <ItemIcon src={o.icon} iconClass="h-5 w-5" imgClass={cn('h-full w-full', isBanner ? 'object-cover' : 'object-contain')} />
+                  </button>
+                  {/* 제목·링크 직접 편집. 배너는 사이즈(스몰배너 672×324 등)도 표기 — 배너 캠페인에서 함께 끌어온다(2026-11-05 사용자 요청). */}
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    {isBanner && o.sub && <span className="w-fit rounded-[4px] bg-[var(--th)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink3)]">{o.sub}</span>}
+                    <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder={isBanner ? '배너 타이틀' : `${itemWord} 제목`} className="h-[28px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    <div className="flex h-[28px] items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="이동 링크(랜딩)">
+                      <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+                      <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder={isBanner ? '랜딩 링크 (불러오기 시 자동)' : '이동 링크'} className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                    </div>
                   </div>
-                  <span className="hidden shrink-0 rounded-[5px] bg-[var(--ac2)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ac)] sm:inline">{loadFields} 자동</span>
-                  <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} className="shrink-0 rounded-[7px] border border-[var(--line2)] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[var(--ink2)] hover:bg-[var(--th)]">변경</button>
+                  {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2 py-1.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
                   <button type="button" onClick={() => removeItem(o.id)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
                 </div>
                 );
               }
-              // 한 줄 레이아웃(아이콘·텍스트·링크) — 항상 직접 편집 가능. 세그먼트 토글 폐기(토글+모달 혼용은 혼란), 행별 '불러오기' 버튼으로 카탈로그 교체(2026-11-05 사용자 요청).
+              // 칩형(퀵메뉴) — 행마다 [직접 등록 | 불러오기] 세그먼트. 직접=아이콘·텍스트·링크 입력, 불러오기=메뉴 관리에서 메뉴를 끌어옴(2026-11-05 사용자 요청: 세그먼트 부활·소스는 메뉴 관리).
+              const loaded = o.mode === 'load';
               return (
               <div key={o.id} className="flex items-center gap-1.5 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
                 <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]" />
-                {/* 아이콘 — 클릭하면 아이콘 선택 모달. 있으면 보라 채운 아이콘, 없으면 점선 자리(2026-11-05 사용자 요청) */}
-                <button type="button" onClick={() => setIconForId(o.id)} title="아이콘 선택"
+                {/* 세그먼트 — 직접 등록 | 불러오기(메뉴 관리) */}
+                <div className="flex shrink-0 gap-0.5 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-[3px] text-[11px] font-semibold">
+                  <button type="button" onClick={() => setItemMode(o.id, 'direct')} className={cn('rounded-[6px] px-2 py-1 transition', !loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>직접</button>
+                  <button type="button" onClick={() => { setItemMode(o.id, 'load'); setLoadForId(o.id); }} className={cn('rounded-[6px] px-2 py-1 transition', loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>불러오기</button>
+                </div>
+                {/* 아이콘 — 직접이면 클릭해 아이콘 선택, 불러오기면 메뉴 아이콘(클릭 시 메뉴 다시 불러오기) */}
+                <button type="button" onClick={() => (loaded ? setLoadForId(o.id) : setIconForId(o.id))} title={loaded ? '메뉴 불러오기' : '아이콘 선택'}
                   className={cn('grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[7px] transition', o.icon ? 'bg-[var(--ac2)] text-[var(--ac)] hover:ring-1 hover:ring-[var(--ac)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
                   {o.icon ? <ItemIcon src={o.icon} iconClass="h-[18px] w-[18px]" imgClass="h-5 w-5 object-contain" /> : <ImageIcon className="h-4 w-4" />}
                 </button>
-                {/* 텍스트 — 항상 편집 가능 */}
-                <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder="텍스트"
-                  className="h-[32px] min-w-0 flex-1 rounded-[7px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                {/* 링크 — 항상 편집 가능 */}
-                <div className="flex h-[32px] min-w-0 basis-[30%] items-center gap-1 rounded-[7px] border border-[var(--line2)] px-2" title="이동 링크">
+                {/* 텍스트 — 직접이면 편집, 불러오기면 읽기(메뉴 관리 값) */}
+                <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} readOnly={loaded} placeholder="메뉴명"
+                  className={cn('h-[32px] min-w-0 flex-1 rounded-[7px] px-2 text-[13px] focus:outline-none', loaded ? 'bg-[var(--th)] text-[var(--ink2)]' : 'border border-[var(--line2)] focus:border-[var(--ac)]')} />
+                {/* 링크 */}
+                <div className={cn('flex h-[32px] min-w-0 basis-[30%] items-center gap-1 rounded-[7px] px-2', loaded ? 'bg-[var(--th)]' : 'border border-[var(--line2)]')} title="이동 링크">
                   <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-                  <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="이동 링크"
-                    className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                  <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} readOnly={loaded} placeholder="이동 링크"
+                    className={cn('h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none', loaded && 'text-[var(--ink3)]')} />
                 </div>
-                {/* 행별 불러오기 — 카탈로그에서 이 행을 교체(모달). 토글이 아니라 명확한 액션 버튼(2026-11-05 사용자 요청) */}
-                {canLoad && (
-                  <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2 py-1.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>
-                )}
                 <button type="button" onClick={() => removeItem(o.id)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
               </div>
               );
@@ -836,7 +843,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           {isChip ? (
             <div className="mt-2 flex gap-1.5">
               <button type="button" onClick={addItem} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 직접 추가</button>
-              {canLoad && <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white py-2 text-[12px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 카탈로그에서 불러오기</button>}
+              {canLoad && <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white py-2 text-[12px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 메뉴 관리에서 불러오기</button>}
             </div>
           ) : bannerSingle ? (
             items.length === 0 ? (

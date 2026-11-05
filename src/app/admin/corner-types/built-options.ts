@@ -160,11 +160,12 @@ function benefitCatalog(): ProductOption[] {
   ];
 }
 // 배너 카탈로그 — 배너형은 '배너 캠페인 관리'에 등록된 배너를 '가져오기'로만 채운다(2026-11-05 사용자 요청: 직접 입력 없음, 캠페인에서 가져옴).
+// 배너 카탈로그 — 배너 캠페인 관리에 등록된 배너. 불러오기 시 이미지·타이틀·이동링크(랜딩)·사이즈를 함께 끌어온다(2026-11-05 사용자 요청).
 const BANNER_CATALOG: ProductOption[] = [
-  { key: 'bn-lotte', title: '이번 주말, 가족 나들이에 쓰기 좋은 혜택', brand: 'LOTTE WORLD ADVENTURE', imageUrl: '/assets/lotteworld.png', price: null, badge: '제휴', category: '배너' },
-  { key: 'bn-airpods', title: 'AirPods Max3 사전 예약 하셨나요?', brand: '사전예약 클럽 멤버십 혜택', imageUrl: '/assets/airpods-max.png', price: null, badge: '사전예약', category: '배너' },
-  { key: 'bn-ott', title: 'OTT 무제한, 지금 요금제 하나로', brand: '0 Week 전용 혜택', imageUrl: '/assets/banner-plan-ott.svg', price: null, badge: '혜택', category: '배너' },
-  { key: 'bn-sbux', title: '스타벅스 제휴 — 최대 20% 할인', brand: 'T 멤버십', imageUrl: '/assets/banner-starbucks.svg', price: null, badge: '제휴', category: '배너' },
+  { key: 'bn-lotte', title: '이번 주말, 가족 나들이에 쓰기 좋은 혜택', brand: 'LOTTE WORLD ADVENTURE', imageUrl: '/assets/lotteworld.png', price: null, badge: '제휴', category: '배너', landing: '/event/lotteworld-2026', size: '스몰배너 (672×324)' },
+  { key: 'bn-airpods', title: 'AirPods Max3 사전 예약 하셨나요?', brand: '사전예약 클럽 멤버십 혜택', imageUrl: '/assets/airpods-max.png', price: null, badge: '사전예약', category: '배너', landing: '/preorder/airpods-max3', size: '스몰배너 (672×324)' },
+  { key: 'bn-ott', title: 'OTT 무제한, 지금 요금제 하나로', brand: '0 Week 전용 혜택', imageUrl: '/assets/banner-plan-ott.svg', price: null, badge: '혜택', category: '배너', landing: '/plan/ott-unlimited', size: '빅배너 (1080×604)' },
+  { key: 'bn-sbux', title: '스타벅스 제휴 — 최대 20% 할인', brand: 'T 멤버십', imageUrl: '/assets/banner-starbucks.svg', price: null, badge: '제휴', category: '배너', landing: '/membership/starbucks', size: '스몰배너 (672×324)' },
 ];
 // 상태 안내형(업무 진입형) 카탈로그 — 마이 홈의 '내 상태' 카드를 뭉텅이로 가져온다(2026-11-05 사용자 요청: 클릭하면 데이터가 한 번에).
 //  값·보조문구는 런타임 고객 데이터(@cvm)로 자동 표시, 여기선 어떤 상태 카드를 노출할지만 고른다.
