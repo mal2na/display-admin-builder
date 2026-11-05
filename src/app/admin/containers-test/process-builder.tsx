@@ -1487,10 +1487,69 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           </div>
         </div>
 
+        {/* 템플릿 기본 정보 — 2열 위 전체폭(디바이스 top ↔ 템플릿 구성 top 정렬, 2026-11-05 사용자 요청 A+B) */}
+        <section className="mb-6 overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
+          <button type="button" onClick={() => setBasicOpen((v) => !v)} className="flex w-full items-center gap-2 bg-[var(--th)] px-5 py-4 transition hover:bg-[var(--surface-hover,#f1f3f5)]">
+            <h2 className="text-[15px] font-bold text-[var(--ink)]">템플릿 기본 정보</h2>
+            <span className="ml-auto flex items-center gap-2">
+              <span className="rounded-[4px] bg-[#fff0f1] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--bad)]">필수</span>
+              {basicDone
+                ? <span className="rounded-[4px] bg-[#eefaf1] px-1.5 py-0.5 text-[11px] font-semibold text-[#00a058]">완료</span>
+                : <span className="rounded-[4px] bg-white px-1.5 py-0.5 text-[11px] font-medium text-[var(--ink3)] ring-1 ring-inset ring-[var(--line2)]">미작성</span>}
+              <ChevronDown className={cn('h-4 w-4 text-[var(--ink3)] transition', !basicOpen && '-rotate-90')} />
+            </span>
+          </button>
+          {basicOpen && activeTemplate && (
+            <div className="border-t border-[var(--line2)] px-6 py-5">
+              <div className="grid gap-x-8 border-t border-[var(--line2)] md:grid-cols-2">
+              <FieldRow label="템플릿명" required>
+                <input defaultValue={activeTemplate.name} placeholder="예: 혜택 VIP" className={inputCls} />
+              </FieldRow>
+              <FieldRow label="메모">
+                <input defaultValue={activeTemplate.memo ?? ''} maxLength={30} placeholder="한글/영문/숫자/특수문자 30자 이내" className={inputCls} />
+              </FieldRow>
+              <FieldRow label="로그인 구분" required>
+                <div className="flex h-[38px] items-center gap-5 text-[14px] text-[var(--ink)]">
+                  <label className="flex items-center gap-1.5"><input type="radio" name="tplLogin" defaultChecked={activeTemplate.conditionGroup !== '비로그인'} className="accent-[var(--ac)]" /> 로그인</label>
+                  <label className="flex items-center gap-1.5"><input type="radio" name="tplLogin" defaultChecked={activeTemplate.conditionGroup === '비로그인'} className="accent-[var(--ac)]" /> 비로그인</label>
+                </div>
+              </FieldRow>
+              <FieldRow label="기본 템플릿 여부" required>
+                <div className="py-1">
+                  <div className="flex items-center gap-5 text-[14px] text-[var(--ink)]">
+                    <label className="flex items-center gap-1.5"><input type="radio" name="tplDefault" defaultChecked={!activeTemplate.isDefault} className="accent-[var(--ac)]" /> N</label>
+                    <label className="flex items-center gap-1.5"><input type="radio" name="tplDefault" defaultChecked={activeTemplate.isDefault} className="accent-[var(--ac)]" /> Y</label>
+                  </div>
+                  <p className="mt-1.5 text-[12px] text-[var(--ink4)]">Y로 지정하면 기존 기본 템플릿은 해제됩니다.</p>
+                </div>
+              </FieldRow>
+              <FieldRow label="전시 여부" required>
+                <div className="flex h-[38px] items-center gap-5 text-[14px] text-[var(--ink)]">
+                  <label className="flex items-center gap-1.5"><input type="radio" name="tplDisplay" defaultChecked={activeTemplate.displayOn} className="accent-[var(--ac)]" /> 전시</label>
+                  <label className="flex items-center gap-1.5"><input type="radio" name="tplDisplay" defaultChecked={!activeTemplate.displayOn} className="accent-[var(--ac)]" /> 미전시</label>
+                </div>
+              </FieldRow>
+              <FieldRow label="전시 기간">
+                <div className="py-1">
+                  <div className="flex items-center gap-2">
+                    <input type="datetime-local" defaultValue={toLocalInput(activeTemplate.startAt)} disabled={activeTemplate.startAtOnApproval} className={cn(inputCls, 'flex-1', activeTemplate.startAtOnApproval && 'bg-[var(--th)] text-[var(--ink4)]')} />
+                    <span className="text-[13px] text-[var(--ink4)]">~</span>
+                    <input type="datetime-local" defaultValue={toLocalInput(activeTemplate.endAt)} className={cn(inputCls, 'flex-1')} />
+                  </div>
+                  <label className="mt-2 flex items-center gap-1.5 text-[12px] text-[var(--ink2)]">
+                    <input type="checkbox" defaultChecked={activeTemplate.startAtOnApproval} className="accent-[var(--ac)]" /> 시작일을 승인일시로 설정
+                  </label>
+                </div>
+              </FieldRow>
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* 2열 — 좌 디바이스(스티키·뷰포트 높이, 스크롤해도 제자리에 딱 붙음) · 우 콘텐츠 */}
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)] xl:items-start">
           {/* 좌: 미리보기 — 고정 크기 폰(내용이 많아도 안 늘어나고 내부 스크롤), 스티키(NC-Channel 상품 전시 미리보기 기준, 2026-10-27 사용자 요청) */}
-          <div className="flex flex-col xl:sticky xl:top-4">
+          <div className="flex flex-col xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)]">
           {/* 기본 ↔ 폴백 토글 + 폴백 설명(토글 옆, 같은 줄) — 설명이 아래로 쌓여 디바이스가 밀리지 않게 한 줄 고정(2026-11-05 사용자 요청) */}
           <div className="mb-3 flex w-full shrink-0 items-center gap-2">
             <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
@@ -1499,7 +1558,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             </div>
             {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
           </div>
-          <DeviceFrame width={360} bodyHeight={560} headerLabel={data.containerName} slim>
+          <DeviceFrame width={360} bodyHeight="min(560px, calc(100vh - 230px))" headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     liveCorners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
@@ -1540,67 +1599,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           </DeviceFrame>
         </div>
 
-        {/* 우: 기본 정보 + 템플릿 구성 + 구성 검증 — 페이지와 함께 스크롤 */}
+        {/* 우: 템플릿 구성 + 구성 검증 — 페이지와 함께 스크롤 (기본 정보는 2열 위 전체폭으로 분리) */}
         <div className="space-y-6">
-
-            {/* 템플릿 기본 정보 */}
-            <section className="overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
-              <button type="button" onClick={() => setBasicOpen((v) => !v)} className="flex w-full items-center gap-2 bg-[var(--th)] px-5 py-4 transition hover:bg-[var(--surface-hover,#f1f3f5)]">
-                <h2 className="text-[15px] font-bold text-[var(--ink)]">템플릿 기본 정보</h2>
-                <span className="ml-auto flex items-center gap-2">
-                  <span className="rounded-[4px] bg-[#fff0f1] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--bad)]">필수</span>
-                  {basicDone
-                    ? <span className="rounded-[4px] bg-[#eefaf1] px-1.5 py-0.5 text-[11px] font-semibold text-[#00a058]">완료</span>
-                    : <span className="rounded-[4px] bg-white px-1.5 py-0.5 text-[11px] font-medium text-[var(--ink3)] ring-1 ring-inset ring-[var(--line2)]">미작성</span>}
-                  <ChevronDown className={cn('h-4 w-4 text-[var(--ink3)] transition', !basicOpen && '-rotate-90')} />
-                </span>
-              </button>
-              {basicOpen && activeTemplate && (
-                <div className="border-t border-[var(--line2)] px-6 py-5">
-                  <div className="border-t border-[var(--line2)]">
-                  <FieldRow label="템플릿명" required>
-                    <input defaultValue={activeTemplate.name} placeholder="예: 혜택 VIP" className={inputCls} />
-                  </FieldRow>
-                  <FieldRow label="메모">
-                    <input defaultValue={activeTemplate.memo ?? ''} maxLength={30} placeholder="한글/영문/숫자/특수문자 30자 이내" className={inputCls} />
-                  </FieldRow>
-                  <FieldRow label="로그인 구분" required>
-                    <div className="flex h-[38px] items-center gap-5 text-[14px] text-[var(--ink)]">
-                      <label className="flex items-center gap-1.5"><input type="radio" name="tplLogin" defaultChecked={activeTemplate.conditionGroup !== '비로그인'} className="accent-[var(--ac)]" /> 로그인</label>
-                      <label className="flex items-center gap-1.5"><input type="radio" name="tplLogin" defaultChecked={activeTemplate.conditionGroup === '비로그인'} className="accent-[var(--ac)]" /> 비로그인</label>
-                    </div>
-                  </FieldRow>
-                  <FieldRow label="기본 템플릿 여부" required>
-                    <div className="py-1">
-                      <div className="flex items-center gap-5 text-[14px] text-[var(--ink)]">
-                        <label className="flex items-center gap-1.5"><input type="radio" name="tplDefault" defaultChecked={!activeTemplate.isDefault} className="accent-[var(--ac)]" /> N</label>
-                        <label className="flex items-center gap-1.5"><input type="radio" name="tplDefault" defaultChecked={activeTemplate.isDefault} className="accent-[var(--ac)]" /> Y</label>
-                      </div>
-                      <p className="mt-1.5 text-[12px] text-[var(--ink4)]">Y로 지정하면 기존 기본 템플릿은 해제됩니다.</p>
-                    </div>
-                  </FieldRow>
-                  <FieldRow label="전시 여부" required>
-                    <div className="flex h-[38px] items-center gap-5 text-[14px] text-[var(--ink)]">
-                      <label className="flex items-center gap-1.5"><input type="radio" name="tplDisplay" defaultChecked={activeTemplate.displayOn} className="accent-[var(--ac)]" /> 전시</label>
-                      <label className="flex items-center gap-1.5"><input type="radio" name="tplDisplay" defaultChecked={!activeTemplate.displayOn} className="accent-[var(--ac)]" /> 미전시</label>
-                    </div>
-                  </FieldRow>
-                  <FieldRow label="전시 기간">
-                    <div className="py-1">
-                      <div className="flex items-center gap-2">
-                        <input type="datetime-local" defaultValue={toLocalInput(activeTemplate.startAt)} disabled={activeTemplate.startAtOnApproval} className={cn(inputCls, 'flex-1', activeTemplate.startAtOnApproval && 'bg-[var(--th)] text-[var(--ink4)]')} />
-                        <span className="text-[13px] text-[var(--ink4)]">~</span>
-                        <input type="datetime-local" defaultValue={toLocalInput(activeTemplate.endAt)} className={cn(inputCls, 'flex-1')} />
-                      </div>
-                      <label className="mt-2 flex items-center gap-1.5 text-[12px] text-[var(--ink2)]">
-                        <input type="checkbox" defaultChecked={activeTemplate.startAtOnApproval} className="accent-[var(--ac)]" /> 시작일을 승인일시로 설정
-                      </label>
-                    </div>
-                  </FieldRow>
-                  </div>
-                </div>
-              )}
-            </section>
 
             {/* 템플릿 구성 — 클릭해 들어온 단일 템플릿만 (제목은 카드 헤더로) */}
             <section>
