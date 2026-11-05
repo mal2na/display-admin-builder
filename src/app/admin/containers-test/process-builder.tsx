@@ -766,8 +766,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           <div className="space-y-1.5">
             {items.length === 0 && <p className="rounded-[8px] border border-dashed border-[var(--line3)] px-3 py-4 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 ' + itemWord + '에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
             {items.map((o) => {
-              // 콘텐츠 안내형 = 영화만 '불러오기' 전용(직접입력·토글·링크 없음) → 포스터+제목+평점·예매율 표기(2026-11-05 사용자 요청).
-              if (loadOnly) {
+              // 불러오기 전용 유형(영화·배너·혜택 세로)도 '직접 추가'한 행(mode=direct)은 편집 행으로 — 각 유형마다 불러오기·직접 둘 다 가능(2026-11-05 사용자 요청).
+              //  불러온 행(mode=load)만 포스터+제목+평점/변경 형태로 표기.
+              if (loadOnly && o.mode !== 'direct') {
                 return (
                 <div key={o.id} className="flex items-center gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
                   {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김(2026-11-05 사용자 요청) */}
@@ -829,15 +830,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             <IconPickerModal current={items.find((x) => x.id === iconForId)?.icon ?? null} onClose={() => setIconForId(null)}
               onPick={(ic) => { setItemIcon(iconForId, ic); setIconForId(null); onToast('아이콘을 적용했습니다.'); }} />
           )}
-          {/* 추가 — 불러오기 전용(영화·배너 등)은 가져오기 단일 버튼. 그 외는 '직접 추가(빈 행)' + '카탈로그에서 불러오기' 2버튼(2026-11-05 사용자 요청: 직접 입력 복구). */}
-          {loadOnly ? (
-            <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> {isBanner ? '배너 가져오기 (배너 캠페인 관리에서)' : (itemWord + ' 추가 (등록된 ' + itemWord + '에서)')}</button>
-          ) : (
-            <div className="mt-2 flex gap-1.5">
-              <button type="button" onClick={addItem} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 직접 추가</button>
-              {canLoad && <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white py-2 text-[12px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 카탈로그에서 불러오기</button>}
-            </div>
-          )}
+          {/* 추가 — 각 유형마다 '직접 추가(빈 행)' + '불러오기' 둘 다 제공(2026-11-05 사용자 요청). */}
+          <div className="mt-2 flex gap-1.5">
+            <button type="button" onClick={addItem} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 직접 추가</button>
+            {canLoad && <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white py-2 text-[12px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> {isBanner ? '배너 캠페인에서 불러오기' : loadOnly ? ('등록된 ' + itemWord + '에서 불러오기') : '카탈로그에서 불러오기'}</button>}
+          </div>
           </>
           )}
         </Sec>
