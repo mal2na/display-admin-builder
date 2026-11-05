@@ -829,8 +829,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             <IconPickerModal current={items.find((x) => x.id === iconForId)?.icon ?? null} onClose={() => setIconForId(null)}
               onPick={(ic) => { setItemIcon(iconForId, ic); setIconForId(null); onToast('아이콘을 적용했습니다.'); }} />
           )}
-          {/* 메뉴 추가 = 카탈로그(공차·뚜레쥬르·티켓…)에서 끌어오기. 카탈로그 없으면 빈 행 추가(2026-10-28 사용자 요청). */}
-          <button type="button" onClick={() => (canLoad ? setLoadForId(APPEND_LOAD) : addItem())} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> {isBanner ? '배너 가져오기 (배너 캠페인 관리에서)' : isStatus ? '상태 카드 가져오기' : (itemWord + ' 추가' + (canLoad ? (loadOnly ? ' (등록된 ' + itemWord + '에서)' : ' (카탈로그에서)') : ''))}</button>
+          {/* 추가 — 불러오기 전용(영화·배너 등)은 가져오기 단일 버튼. 그 외는 '직접 추가(빈 행)' + '카탈로그에서 불러오기' 2버튼(2026-11-05 사용자 요청: 직접 입력 복구). */}
+          {loadOnly ? (
+            <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> {isBanner ? '배너 가져오기 (배너 캠페인 관리에서)' : (itemWord + ' 추가 (등록된 ' + itemWord + '에서)')}</button>
+          ) : (
+            <div className="mt-2 flex gap-1.5">
+              <button type="button" onClick={addItem} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 직접 추가</button>
+              {canLoad && <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white py-2 text-[12px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 카탈로그에서 불러오기</button>}
+            </div>
+          )}
           </>
           )}
         </Sec>
