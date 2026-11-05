@@ -1,7 +1,30 @@
 // 전시화면 관리 (테스트) — order3-create(주문 프로세스 등록) 레이아웃용 데이터 로더.
 //  혜택 홈 등 실제 Container + Template + 배치 코너를 가져와 ProcessBuilder 에 주입(2026-10-20).
 import { prisma } from '@/lib/prisma';
-import { PLACED_CORNER_INCLUDE } from '../corner-types/preview-corner';
+import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE } from '../corner-types/preview-corner';
+
+// 신규 '껍데기(스캐폴드)' 아톰의 플레이스홀더 내용 — 이게 전부면 아직 안 채워진 코너로 본다(buildComp 기본값과 1:1).
+const SCAFFOLD_PLACEHOLDERS = new Set<string>([
+  '전체', '카테고리1', '카테고리2', '카테고리3', '브랜드', '상품 1', '상품 2', '상품 3',
+  '선택 약정 12개월 기준', '/12개월', '256GB | 512GB | 1TB',
+  '혜택 1 문구를 입력하세요', '혜택 2 문구를 입력하세요', '혜택 3 문구를 입력하세요',
+  '브랜드 1', '브랜드 2', '브랜드 3', '배너 타이틀', '배너 설명 문구', '자세히 보기', '라벨', '주요 값',
+]);
+// 코너가 '실제 내용'으로 채워졌는지 판정 — 실제 에셋 이미지(/로 시작) 또는 플레이스홀더가 아닌 실제 텍스트가 하나라도 있으면 채워진 것.
+//  채워진 코너는 저장 콘텐츠로(그대로), 신규 껍데기는 코너 유형 관리와 동일한 가이드로 렌더(2026-11-05 사용자 요청).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function cornerIsFilled(c: any): boolean {
+  for (const cc of c.cornerComponents ?? []) {
+    for (const ca of cc.component?.componentAtoms ?? []) {
+      const a = ca.atom;
+      if (!a) continue;
+      if (typeof a.imageUrl === 'string' && a.imageUrl.startsWith('/')) return true;
+      const t = (a.content ?? '').trim();
+      if (t && !SCAFFOLD_PLACEHOLDERS.has(t)) return true;
+    }
+  }
+  return false;
+}
 import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, defaultComposition, componentTypesForCorner, CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { getProductOptions } from '../corner-types/built-options';
@@ -93,9 +116,10 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       layout: tc.corner.cornerLayout,
       layoutDetail: tc.corner.layoutDetail,
       maxItems: tc.corner.maxItems,
-      // 배치된 코너의 미리보기도 '코너 유형 관리와 동일한' 가이드 방식으로 생성(2026-11-05 사용자 요청: 불러온 코너가 코너 유형 관리처럼 나오게).
-      //  compositionToPreviewCorner가 유형별 샘플(영화·혜택·요금제 등)을 주입하므로 저장 아톰이 아니라 유형·배열 기준으로 렌더 → 코너 유형 관리/불러오기 목록과 100% 일치.
-      preview: guideCornerPreview(tc.corner.cornerType, tc.corner.layoutDetail ?? tc.corner.cornerLayout, tc.corner.componentType),
+      // 채워진 코너는 저장 콘텐츠 그대로, 신규 껍데기(스캐폴드)는 코너 유형 관리와 동일한 가이드로 렌더(2026-11-05 사용자 요청: 기존 채워진 건 그대로, 신규 등록만 코너 유형 관리처럼).
+      preview: cornerIsFilled(tc.corner)
+        ? cornerToPreviewCorner(tc.corner)
+        : guideCornerPreview(tc.corner.cornerType, tc.corner.layoutDetail ?? tc.corner.cornerLayout, tc.corner.componentType),
       recSource: tc.corner.recSource ? normalizeRecSource(tc.corner.recSource) : null,
       isCvm: isCvmSource(tc.corner.recSource),
       fallback: effectiveFallback(tc.corner.cornerType, tc.corner.cvmFallback),
