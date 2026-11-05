@@ -17,7 +17,8 @@ export function cornerToPreviewCorner(c: any): PreviewCorner {
     layoutDetail: c.cornerType === '배너형' ? '띠배너 (672×214)' : c.layoutDetail,
     subTitleIcon: c.subTitleIcon, moreButtonUse: c.moreButtonUse, moreButtonLabel: c.moreButtonLabel,
     bigBanner: c.bigBanner, cardShape: c.cardShape, titleLines: c.titleLines,
-    bannerImageUrl: c.banner?.imageUrl ?? null, bannerOptions: c.bannerOptions,
+    // 빅배너 히어로 이미지 = 배너 라이브러리(banner relation) 우선, 없으면 Corner.sampleImageUrl(가로형+배너 히어로 직접 지정, 2026-11-05 사용자 요청).
+    bannerImageUrl: c.banner?.imageUrl ?? (c.bigBanner && c.sampleImageUrl ? c.sampleImageUrl : null), bannerOptions: c.bannerOptions,
     // 코너 유형 관리 미리보기에서는 CVM/추천 수급 배지를 표시하지 않는다(2026-09-28 사용자 요청 "cvm 빼줘"). 값은 비워 배지 렌더를 막음.
     recSource: null, recSourcePlan: null, showRecReason: false,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -456,6 +456,10 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const setItemIcon = (id: string, icon: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, icon } : x)));
   const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
   const [iconForId, setIconForId] = React.useState<string | null>(null); // 아이콘 선택 모달 대상 항목 id(2026-11-05 사용자 요청)
+  // 삭제 — 데이터 있는 항목은 확인 모달, 빈 항목은 바로 삭제(2026-11-05 사용자 요청).
+  const [removeTarget, setRemoveTarget] = React.useState<FillItem | null>(null);
+  const itemHasData = (o: FillItem) => !!((o.label && o.label.trim()) || o.icon || (o.link && o.link.trim()) || o.sub);
+  const tryRemove = (o: FillItem) => (itemHasData(o) ? setRemoveTarget(o) : removeItem(o.id));
   // 멀티 셀렉으로 담기 — 아이콘+텍스트+링크를 '한 번에' 불러온다. 첫 항목은 누른 행을 채우고, 나머지는 그 뒤 새 행으로.
   const addFromCatalog = (ps: ProductOption[]) => {
     if (ps.length === 0) return;
@@ -821,7 +825,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                     </div>
                   </div>
                   {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2 py-1.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
-                  <button type="button" onClick={() => removeItem(o.id)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                  <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
                 </div>
                 );
               }
@@ -850,7 +854,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                 </div>
                 {/* 불러오기 모드일 때만 우측에 '불러오기' 버튼 → 메뉴 관리 모달 */}
                 {loaded && <button type="button" onClick={() => setLoadForId(o.id)} title="메뉴 관리에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 py-1.5 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3 w-3" /> 불러오기</button>}
-                <button type="button" onClick={() => removeItem(o.id)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
               </div>
               );
             })}
@@ -864,6 +868,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           {iconForId && (
             <IconPickerModal current={items.find((x) => x.id === iconForId)?.icon ?? null} onClose={() => setIconForId(null)}
               onPick={(ic) => { setItemIcon(iconForId, ic); setIconForId(null); onToast('아이콘을 적용했습니다.'); }} />
+          )}
+          {/* 삭제 확인 모달 — 데이터 있는 항목만(빈 항목은 바로 삭제, 2026-11-05 사용자 요청). */}
+          {removeTarget && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" onClick={() => setRemoveTarget(null)}>
+              <div className="w-full max-w-xs rounded-[16px] bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                <p className="text-[15px] font-bold text-[var(--ink)]">항목을 삭제할까요?</p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--ink3)]"><b className="text-[var(--ink)]">{removeTarget.label || '이 항목'}</b> 의 내용이 함께 삭제됩니다.</p>
+                <div className="mt-5 flex justify-end gap-2">
+                  <button type="button" onClick={() => setRemoveTarget(null)} className="rounded-[8px] border border-[var(--line2)] bg-white px-4 py-2 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">취소</button>
+                  <button type="button" onClick={() => { removeItem(removeTarget.id); setRemoveTarget(null); onToast('항목을 삭제했습니다.'); }} className="rounded-[8px] bg-[var(--bad)] px-4 py-2 text-[13px] font-semibold text-white hover:opacity-90">삭제</button>
+                </div>
+              </div>
+            </div>
           )}
           {/* 추가 — 직접 추가는 칩형(퀵메뉴)에만. 단일형 배너는 기존 있으면 '변경'만·비면 '불러오기'. 나머지는 '불러오기' 단일(2026-11-05 사용자 확정). */}
           {isChip ? (

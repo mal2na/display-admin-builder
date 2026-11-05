@@ -546,6 +546,7 @@ async function main() {
       cardShape: '1:1', // 상품 이미지 = 1:1 정사각형
       layoutDetail: '가로형+배너', // 상단 히어로(아이폰) + 가로 상품 카드
       bigBanner: true,
+      sampleImageUrl: '/assets/shop-hero-iphone.webp', // 와이드 아이폰 빅배너 히어로(2026-11-05 사용자 제공 이미지) → preview.bannerImageUrl로 매핑
       cornerLayout: '가로 SWIPE형',
       subTitleIcon: '화살표',
       sortStrategy: '인기순',
