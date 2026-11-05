@@ -399,11 +399,15 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
               const isCornerRow = (r: Row) => !r.price && /^(배너|칩|CTA|코너 타이틀|버튼 텍스트)/.test(r.cell.lbl);
               const cornerRows = rows.filter(isCornerRow);
               const itemRows = rows.filter((r) => !isCornerRow(r));
-              // 값 표기 — 고정=Y, 옵션=Y/N(SB v13 상세와 동일). 저장값은 흐린 보조 표기.
+              // 옵션(배너·칩·CTA)끼리 · 고정(코너 타이틀·버튼 텍스트)끼리 2열(수정 폼과 동일, 2026-11-05 사용자 요청).
+              const kindOf = (r: Row) => (r.price ? '' : r.cell.kind);
+              const cornerOptRows = cornerRows.filter((r) => kindOf(r) === '옵션');
+              const cornerFixedRows = cornerRows.filter((r) => kindOf(r) !== '옵션');
+              // 값 표기 — 고정=Y, 옵션=Y/N. 가격·할인율·기간만 값(99,999원 등) 표기, 나머지(CTA·타이틀·텍스트)는 Y/N만(코드는 라벨에 이미 표기, 2026-11-05 사용자 요청).
               const stateVal = (c: SI) => (
                 <>
                   <span className="text-[13px] font-semibold text-slate-700">{c.kind === '고정' ? 'Y' : (c.on ? 'Y' : 'N')}</span>
-                  {c.on && c.val && <span className="whitespace-pre-line text-[12px] text-slate-400">{c.val}</span>}
+                  {c.on && c.val && /^(가격|할인율|기간)/.test(c.lbl) && <span className="whitespace-pre-line text-[12px] text-slate-400">{c.val}</span>}
                 </>
               );
               const cell = (c: SI) => <DetailCell key={c.lbl} lbl={c.lbl}>{stateVal(c)}</DetailCell>;
@@ -440,7 +444,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
               return (
                 <div className="space-y-3">
                   {cornerRows.length > 0 && (
-                    <ROGroup badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)">{renderGrouped(cornerRows)}</ROGroup>
+                    <ROGroup badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)">{renderGrouped(cornerOptRows)}{renderGrouped(cornerFixedRows)}</ROGroup>
                   )}
                   {itemRows.length > 0 && (
                     <ROGroup badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">

@@ -151,7 +151,8 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
     // 미리보기 텍스트 = 라벨(영어) 기준. 가격만 실제 값 형태 유지(2026-10-29(2) 사용자 요청).
     switch (b.componentType) {
       case '선택형':
-        return { ...base, name: '탭', selectedIndex: 0, chipVariant: 'contents', atoms: ['Chip', 'Chip', 'Chip', 'Chip'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) };
+        // 칩 placeholder = Chip1·Chip2…(필드 코드 표기, 2026-11-05 사용자 요청 — 코너 유형 관리·빌더 미리보기 일치).
+        return { ...base, name: '탭', selectedIndex: 0, chipVariant: 'contents', atoms: ['Chip1', 'Chip2', 'Chip3', 'Chip4'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) };
       case '배너형':
         return { ...base, name: '배너', atoms: [
           atom({ name: '타이틀', atomType: 'TEXT', content: 'Title' }),

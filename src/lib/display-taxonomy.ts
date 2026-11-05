@@ -629,15 +629,16 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   배너형: {
     options: [],
     layouts: [
-      { layout: '단일형', required: [] },
-      { layout: '스와이프형', required: [], minItems: 2, maxItems: 5, note: '배너 개수만 정합니다(세부 항목 없음)' },
+      { layout: '단일형', required: [], note: '배너 소재(이미지·문구·랜딩)는 배너 캠페인 관리에서 등록해요. 이 코너에 어떤 배너를 노출할지는 전시화면 관리(빌더)에서 선택합니다.' },
+      { layout: '스와이프형', required: [], minItems: 2, maxItems: 5, note: '배너 소재(이미지·문구·랜딩)는 배너 캠페인 관리에서 등록해요. 여러 배너를 어떤 순서로 묶어 노출할지(배너 조합)는 전시화면 관리(빌더)에서 정합니다.' },
     ],
   },
   // 업무 진입형 — SB v13. 배열 4종(Default 칩형). 칩형/리스트형=세부없음(빌더/개수), 상태안내형·프로필형=단일 카드 필수 항목.
   '업무 진입형': {
     options: [],
     layouts: [
-      { layout: '칩형', required: [] },
+      // 칩형 = 아이콘 + 라벨(반복 칩). 둘 다 고정(2026-11-05 사용자 요청).
+      { layout: '칩형', required: [FD('Icon', '아이콘', 'item', { asIs: 'Icon' }), FD('Label', '라벨', 'item', { asIs: 'Label' })] },
       // 리스트형 = 코너 타이틀(카드) + 리스트(반복 아이템). 2026-11-05 사용자 요청.
       { layout: '리스트형', required: [CORNER_TITLE, FD('List', '리스트', 'item', { asIs: 'List' })], minItems: 2, maxItems: 8 },
       { layout: '상태 안내형', required: [CORNER_TITLE, FD('SubTitle', '서브 타이틀', 'corner', { asIs: 'SubTitle' }),
@@ -862,8 +863,8 @@ export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
   // ── 특이케이스: 목적별 특정 배열만 ──
   // 배너형 = 배너 단일형 / 스와이프형 (2026-09-29 사용자 확정). '이미지형'은 구 표기 → 폐기.
   배너형: ['배너 단일형', '스와이프형'],
-  // 업무 진입형 4배열(2026-10-29): 상태안내(아이콘/이미지형)·프로필형·리스트형(메뉴 리스트)·칩형(카테고리 탭).
-  '업무 진입형': ['아이콘/이미지형', '프로필형', '메뉴 리스트', '카테고리 탭'],
+  // 업무 진입형 4배열 — 표기 순서: 칩형 → 리스트형 → 프로필형 → 상태 안내형(2026-11-05 사용자 요청). 저장값은 유지(카테고리 탭=칩형·메뉴 리스트=리스트형·아이콘/이미지형=상태 안내형).
+  '업무 진입형': ['카테고리 탭', '메뉴 리스트', '프로필형', '아이콘/이미지형'],
   // 바코드형 — 멤버십 바코드 단일 배열.
   '바코드형': ['바코드'],
 };

@@ -608,8 +608,8 @@ function autoMapChip(label: string): { url: string; icon: string } {
   return { url: `tworld://quickmenu/${encodeURIComponent(slug)}`, icon };
 }
 // 선택형(탭·메뉴) 기본 칩 — 아이콘+라벨+자동 링크. 편집기·미리보기 공용.
-// 껍데기 기본 — 탭·메뉴 슬롯 8칸, 라벨은 '메뉴1·메뉴2…'(실제 라벨은 빌더에서 채움). 2026-10-27 사용자 요청.
-const CHIP_DEFAULTS: ChipDef[] = Array.from({ length: 8 }, (_, i) => ({ label: `메뉴${i + 1}` }));
+// 껍데기 기본 — 탭·메뉴 슬롯 8칸, 라벨은 'Chip1·Chip2…'(실제 라벨은 빌더에서 채움). 2026-11-05 사용자 요청(필드 코드 표기).
+const CHIP_DEFAULTS: ChipDef[] = Array.from({ length: 8 }, (_, i) => ({ label: `Chip${i + 1}` }));
 // 불러온 칩의 빈 아이콘·이동 링크를 라벨에서 자동 채움 — 등록 정의를 그대로 '불러오기'(수정 시 데이터가 쌓여 보이게). 추가는 직접 입력. 2026-09-30
 const hydrateChips = (chips: ChipDef[]): ChipDef[] => chips.map((c) => { const a = autoMapChip(c.label); return { ...c, icon: c.icon ?? a.icon, linkUrl: c.linkUrl || a.url }; });
 
@@ -660,7 +660,7 @@ function ChipDefEditor({ chips, rows, onCommit, footer }: { chips: ChipDef[]; ro
   // 개수만 바꾼다 — 기존 슬롯은 유지, 늘면 빈 슬롯 추가.
   const setCount = (n: number) => {
     const next = Math.max(MIN, Math.min(MAX, Math.floor(n) || MIN));
-    onCommit(Array.from({ length: next }, (_, i) => chips[i] ?? { label: `메뉴${i + 1}` }), rows);
+    onCommit(Array.from({ length: next }, (_, i) => chips[i] ?? { label: `Chip${i + 1}` }), rows);
   };
   return (
     <div className="space-y-3 rounded-md border border-[#dce0e5] bg-white p-3">

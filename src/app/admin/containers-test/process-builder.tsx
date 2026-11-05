@@ -859,8 +859,11 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
             {sel ? (
               <>
                 <p className="mb-2 text-[14px] font-bold text-[var(--ink)]">화면 구성</p>
+                {/* 미리보기 폭 축소 — 코너 유형 관리처럼 폰 폭(최대 300px)으로 가운데 정렬(2026-11-05 사용자 요청). */}
                 <div className="rounded-[14px] border border-[var(--line2)] bg-[var(--th)] p-4">
-                  <CornerBlock corner={sel.preview} />
+                  <div className="mx-auto w-full max-w-[300px]">
+                    <CornerBlock corner={sel.preview} />
+                  </div>
                 </div>
                 <p className="mb-2 mt-5 text-[14px] font-bold text-[var(--ink)]">기본 노출 조건</p>
                 <div className="rounded-[10px] bg-[var(--th)] px-4 py-3 text-[13px] leading-relaxed text-[var(--ink2)]">

@@ -10,18 +10,27 @@ import type { ProductOption } from '../corner-types/corner-type-manager';
 
 // 코너 불러오기 '껍데기 가이드' — 코너 = 껍데기(규격)라 콘텐츠 없이 placeholder 슬롯으로만 미리보기.
 //  불러오면 코너 유형(레이아웃·노출 타입)만 들어오고 내용은 빌더 '②수급'에서 채운다(2026-10-28 사용자 요청).
+//  ★ 코너 유형 관리의 '코너 미리보기'(cornerRowPreview)와 똑같이 맞춘다(2026-11-05 사용자 요청) —
+//     라벨=CornerTitle/ButtonText, 배지 제외, noTitle(탭·칩·프로필·상태 등) 처리까지 동일.
+//     process-data는 서버 모듈이라 client의 cornerRowPreview를 직접 import하지 않고 동일 로직을 복제한다.
 function guideCornerPreview(base: string, detail: string | null, component: string | null): PreviewCorner {
-  const noTitle = base === '배너형' || base === '바코드형';
+  const dStr = detail ?? '';
+  const noTitle =
+    base === '배너형' ||
+    base === '바코드형' ||
+    /탭|칩/.test(dStr) ||
+    ['아이콘', '이미지형', '팝업', '띠', '텍스트배너', '프로필', '바코드', '상태'].some((k) => dStr.includes(k));
   const comp = component || componentTypesForCorner(base)[0] || null; // 없으면 유형 기본 컴포넌트로 레이아웃 가이드가 뜨게
-  return compositionToPreviewCorner({
+  const c = compositionToPreviewCorner({
     base,
     detail,
-    composition: defaultComposition(comp, detail),
-    mainTitle: noTitle ? null : '타이틀',
-    subTitle: noTitle ? null : '디스크립션',
+    composition: defaultComposition(comp, detail, { badge: false }), // 배지 없음(어느 유형에도 배지 컬럼 없음)
+    mainTitle: noTitle ? null : 'CornerTitle',
+    subTitle: noTitle ? null : 'ButtonText',
     placeholder: true,
     emptyImages: true,
   });
+  return { ...c, showImage: true, showPrice: true, showBadge: false, showDesc: true, moreButtonUse: noTitle ? false : true, moreButtonLabel: 'CTA' };
 }
 
 export type PCorner = {
