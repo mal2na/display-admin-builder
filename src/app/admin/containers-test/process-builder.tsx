@@ -419,6 +419,38 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
     });
     setLoadForId(null);
   };
+  // 카드 1장 유형(프로필·상태) = 가져온 '완성 카드'를 미리보기 컴포넌트로 만들어 코너 preview에 실제 반영(2026-11-05 사용자 요청: 가져오면 그려져야 함).
+  //  값은 @cvm 바인딩이라 미리보기는 sample로 표시(프로필=이름·휴대폰/등급, 상태=값·배지·라벨·아이콘).
+  const mkAtom = (atomType: string, content: string | null, imageUrl: string | null = null) => ({
+    id: `a-${atomType}-${Math.random().toString(36).slice(2, 8)}`, name: atomType, atomType, content, imageUrl, altText: null, linkUrl: null,
+  });
+  const cardToComponent = (p: ProductOption) => {
+    const base = { id: `c-${p.key}-${Math.random().toString(36).slice(2, 8)}`, name: p.title };
+    if (isProfile) {
+      const info = p.key === 'pf-card-grade' ? '@cvm:membership.grade' : '@cvm:customer.phone';
+      // 아바타 아톰은 넣지 않음 → ProfileCard가 기본 User 글리프로 렌더(@cvm 회원 사진은 런타임). 2026-11-05.
+      return { ...base, componentType: '정보형', atoms: [
+        mkAtom('TEXT', '@cvm:customer.name'),
+        mkAtom('INFO', info),
+        mkAtom('CTA', '나의 가입 현황'),
+      ] };
+    }
+    // 상태 카드 — brand "값 · 보조문구"를 값(PRICE)+배지(BADGE)로 분리, 라벨은 title, 아이콘은 imageUrl.
+    const [val, ...rest] = (p.brand ?? '').split('·').map((s) => s.trim());
+    const badge = rest.join(' · ');
+    return { ...base, componentType: '정보형', atoms: [
+      mkAtom('PRICE', val || p.title),
+      ...(badge ? [mkAtom('BADGE', badge)] : []),
+      mkAtom('TEXT', p.title),
+      mkAtom('ICON', null, p.imageUrl ?? null),
+    ] };
+  };
+  // 프로필=카드 1장(첫 선택), 상태=여러 카드 묶음(세로로 쌓임). 가져오면 preview.components를 교체해 바로 그려지게 한다.
+  const loadCardsToPreview = (ps: ProductOption[]) => {
+    if (!ps.length) return;
+    const comps = ps.map(cardToComponent);
+    onPreviewPatch({ components: isProfile ? comps.slice(0, 1) : comps });
+  };
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
@@ -660,7 +692,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> {isProfile ? '프로필 카드 가져오기' : '상태 카드 가져오기'}</button>
               {loadForId && (
                 <ProductLoadModal catalog={catalog} cornerType={isStatus ? '상태 안내형' : isProfile ? '프로필형' : corner.cornerType} onClose={() => setLoadForId(null)}
-                  onAdd={(ps) => { addFromCatalog(ps); onToast(`${ps.length}개 담음`); }} />
+                  onAdd={(ps) => { addFromCatalog(ps); loadCardsToPreview(ps); onToast(`${ps.length}개 담음`); }} />
               )}
             </div>
           )}
