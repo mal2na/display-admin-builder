@@ -160,7 +160,7 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
           atom({ name: 'ImageSrc', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png' }),
         ] };
       case '정보형':
-        // 프로필형(CardHome Profile) = 프로필 이미지 + 고객명(Title) + 고객번호(SubTitle) + 버튼(Button). ProfileCard로 렌더.
+        // 프로필형(CardHome Profile) = 프로필 이미지 + 고객명(CornerTitle) + 고객번호(Caption) + 버튼(Button). ProfileCard로 렌더.
         if (/프로필/.test(ctx?.detail ?? '')) {
           return { ...base, name: '프로필', atoms: [
             atom({ name: '고객명', atomType: 'TEXT', content: 'CornerTitle' }),

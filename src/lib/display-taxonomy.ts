@@ -650,9 +650,9 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
         FD('Caption', '휴대폰 번호', 'corner', { asIs: 'Caption' }), FD('Button', '버튼', 'corner', { asIs: 'Button' })] },
     ],
   },
-  // 콘텐츠 안내형 — 가로형만. 옵션: 배너·CTA. 아이템: 이미지·타이틀·캡션평점(Caption01).
+  // 콘텐츠 안내형 — 가로형만. 옵션: CTA (배너 없음, 2026-11-05 사용자 확정). 아이템: 이미지·타이틀·캡션평점(Caption01).
   '콘텐츠 안내형': {
-    options: ['배너', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
+    options: ['CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, FD('ImageSrc', '아이템 이미지', 'item', { note: '영화 이미지' }),
         FD('ItemTitle', '아이템 타이틀', 'item', { note: '영화 제목' }), FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' })] },
@@ -877,7 +877,6 @@ export function cornerTypeDetails(cornerType: string): readonly string[] {
 // ── 표시명 통일(2026-09) — 저장값(typeDetail)은 유지하고 화면 표기만 '형태 기준'으로 정리. ──
 //  콘텐츠 이름(카테고리 탭·바코드…)을 형태명(탭형·바코드형…)으로. 매처/DB는 원값 그대로라 안전.
 const LAYOUT_LABEL: Record<string, string> = {
-  '세로형(카테고리탭)': '세로형(탭)',
   // 업무 진입형 배열 표기(2026-10-29): 칩형·리스트형·상태 안내형·프로필형.
   '카테고리 탭': '칩형',
   '메뉴 리스트': '리스트형',
@@ -887,8 +886,11 @@ const LAYOUT_LABEL: Record<string, string> = {
   '가로 SWIPE형': '가로형',
   '가로 Swipe형': '가로형',
   '세로 리스트형': '세로형',
+  '세로형(카테고리탭)': '세로형',
+  '세로형(탭)': '세로형',
   '이미지형': '배너 단일형',
   '이미지형/빅배너': '배너 단일형',
+  '빅배너': '배너 단일형',
   '팝업배너형': '배너 단일형',
   '텍스트배너': '배너 단일형',
   '스몰배너': '배너 단일형',
