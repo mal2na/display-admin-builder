@@ -178,7 +178,7 @@ function MenuListView({ component, shell }: { component: PreviewComponent; shell
   );
 }
 
-function ProductCard({ component, shape, cardSize, reason, titleLines, emphasis = false, grid = false, parts }: { component: PreviewComponent; shape?: string | null; cardSize?: string | null; reason?: string; titleLines?: number | null; emphasis?: boolean; grid?: boolean; parts?: CardParts }) {
+function ProductCard({ component, shape, cardSize, reason, titleLines, emphasis = false, grid = false, movie = false, parts }: { component: PreviewComponent; shape?: string | null; cardSize?: string | null; reason?: string; titleLines?: number | null; emphasis?: boolean; grid?: boolean; movie?: boolean; parts?: CardParts }) {
   // 코너별 표시 항목 — 끈 요소는 렌더하지 않는다(미지정=노출). 배지는 가격에 종속(가격 꺼지면 배지도 숨김).
   const showImg = parts?.image !== false;
   const showPrice = parts?.price !== false;
@@ -203,8 +203,9 @@ function ProductCard({ component, shape, cardSize, reason, titleLines, emphasis 
   const wide = shape === '4:3';
   // 가로형 카드 크기 변형(Small/Medium/Large) — 상품형 스튜디오 ItemCard와 동일: Medium은 폭 그대로·이미지만 세로로. grid/emphasis는 제외.
   const sz = !grid && !emphasis ? CARD_SIZE[cardSize ?? ''] : undefined;
-  const ratioCls = emphasis ? 'aspect-[16/10]' : grid ? (square ? 'aspect-square' : 'aspect-[4/3]') : sz ? sz.aspect : square ? 'aspect-square' : wide ? 'aspect-[4/3]' : 'aspect-[3/4]';
-  const wCls = grid ? 'w-full' : emphasis ? 'w-[224px]' : sz ? sz.w : square ? 'w-[150px]' : wide ? 'w-[168px]' : 'w-[156px]';
+  // 세로 포스터(3/4)는 '영화(콘텐츠 안내형)'에만. 상품형 등 그 외는 1:1 스몰이 기본(2026-11-05 사용자 요청).
+  const ratioCls = emphasis ? 'aspect-[16/10]' : grid ? (square ? 'aspect-square' : 'aspect-[4/3]') : sz ? sz.aspect : movie ? 'aspect-[3/4]' : wide ? 'aspect-[4/3]' : 'aspect-square';
+  const wCls = grid ? 'w-full' : emphasis ? 'w-[224px]' : sz ? sz.w : movie ? 'w-[156px]' : wide ? 'w-[168px]' : square ? 'w-[150px]' : 'w-[112px]';
   const nameCls = titleLines === 2 ? 'line-clamp-2' : 'truncate';
   return (
     <div className={cn('shrink-0', wCls)}>
@@ -498,7 +499,7 @@ type LayoutMode = 'horizontal' | 'emphasis' | 'grid' | 'single' | 'list';
 // 코너별 표시 항목(상품 카드 요소 on/off) — 미지정(undefined)은 노출로 본다.
 type CardParts = { image?: boolean; price?: boolean; badge?: boolean; desc?: boolean };
 
-function ComponentView({ component, mode, cardShape, cardSize, reason, titleLines, parts }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; cardSize?: string | null; reason?: string; titleLines?: number | null; parts?: CardParts }) {
+function ComponentView({ component, mode, cardShape, cardSize, reason, titleLines, movie = false, parts }: { component: PreviewComponent; mode?: LayoutMode; cardShape?: string | null; cardSize?: string | null; reason?: string; titleLines?: number | null; movie?: boolean; parts?: CardParts }) {
   switch (component.componentType) {
     case '선택형':
       return <ChipsView component={component} />;
@@ -510,7 +511,7 @@ function ComponentView({ component, mode, cardShape, cardSize, reason, titleLine
           ? <PlanBannerRow component={component} />
           : <BenefitRow component={component} reason={reason} parts={parts} />;
       }
-      return <ProductCard component={component} shape={cardShape} cardSize={cardSize} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} parts={parts} />;
+      return <ProductCard component={component} shape={cardShape} cardSize={cardSize} reason={reason} titleLines={titleLines} emphasis={mode === 'emphasis'} grid={mode === 'grid'} movie={movie} parts={parts} />;
     case '배너형':
       return <BannerCard component={component} />;
     case '혜택형':
@@ -525,6 +526,8 @@ function ComponentView({ component, mode, cardShape, cardSize, reason, titleLine
 /** 한 Corner를 화면 영역으로 렌더 (프리뷰/빌더 공용) */
 export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   const isBanner = corner.cornerType === '배너형';
+  // 영화(콘텐츠 안내형)만 세로 포스터 비율 — 상품형 등은 1:1(2026-11-05 사용자 요청).
+  const isMovie = corner.cornerType === '콘텐츠 안내형';
   // 메뉴 리스트(업무진입형 메뉴·리스트형) — 서브타이틀 없음(2026-10-28 사용자 요청). 타이틀만.
   const isMenuList = /메뉴/.test(corner.layoutDetail ?? '') || (corner.cornerType === '업무 진입형' && /리스트/.test(corner.layoutDetail ?? ''));
   // 배너형은 코너 타이틀/서브타이틀을 두지 않는다(배너 자체가 콘텐츠). 헤딩 숨김. (2026-09-28 사용자 결정)
@@ -582,7 +585,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       return (
         <div className="flex gap-3 overflow-x-auto pb-1">
           {comps.map((c, i) => (
-            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} cardSize={corner.cardSize} titleLines={corner.titleLines} reason={reasonFor(i)} parts={parts} />
+            <ComponentView key={c.id} component={c} mode={mode} cardShape={corner.cardShape} cardSize={corner.cardSize} titleLines={corner.titleLines} reason={reasonFor(i)} movie={isMovie} parts={parts} />
           ))}
         </div>
       );

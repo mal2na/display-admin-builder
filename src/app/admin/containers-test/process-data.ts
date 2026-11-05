@@ -117,9 +117,13 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       layoutDetail: tc.corner.layoutDetail,
       maxItems: tc.corner.maxItems,
       // 채워진 코너는 저장 콘텐츠 그대로, 신규 껍데기(스캐폴드)는 코너 유형 관리와 동일한 가이드로 렌더(2026-11-05 사용자 요청: 기존 채워진 건 그대로, 신규 등록만 코너 유형 관리처럼).
+      //  Corner에는 componentType 컬럼이 없으므로 스캐폴드 컴포넌트(선택형 칩 제외)의 유형을 가이드 조합에 넘겨 코너 유형 관리와 일치시킨다.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       preview: cornerIsFilled(tc.corner)
         ? cornerToPreviewCorner(tc.corner)
-        : guideCornerPreview(tc.corner.cornerType, tc.corner.layoutDetail ?? tc.corner.cornerLayout, tc.corner.componentType),
+        : guideCornerPreview(tc.corner.cornerType, tc.corner.layoutDetail ?? tc.corner.cornerLayout,
+            ((tc.corner.cornerComponents ?? []).find((cc: any) => cc.component?.componentType !== '선택형')?.component?.componentType)
+            ?? (tc.corner.cornerComponents ?? [])[0]?.component?.componentType ?? null),
       recSource: tc.corner.recSource ? normalizeRecSource(tc.corner.recSource) : null,
       isCvm: isCvmSource(tc.corner.recSource),
       fallback: effectiveFallback(tc.corner.cornerType, tc.corner.cvmFallback),
@@ -164,8 +168,10 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     catalogByType: {
       '상품형': await getProductOptions('상품형'),
       '혜택·오퍼형': await getProductOptions('혜택·오퍼형'),
+      '혜택형': await getProductOptions('혜택형'),
       '업무 진입형': await getProductOptions('업무 진입형'),
       '콘텐츠 안내형': await getProductOptions('콘텐츠 안내형'),
+      '배너형': await getProductOptions('배너형'), // 배너 가져오기(배너 캠페인 관리) 카탈로그 — 누락돼 가져오기 안 되던 문제 수정(2026-11-05)
     },
   };
 }

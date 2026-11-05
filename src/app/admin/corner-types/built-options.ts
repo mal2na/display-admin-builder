@@ -159,6 +159,13 @@ function benefitCatalog(): ProductOption[] {
     })),
   ];
 }
+// 배너 카탈로그 — 배너형은 '배너 캠페인 관리'에 등록된 배너를 '가져오기'로만 채운다(2026-11-05 사용자 요청: 직접 입력 없음, 캠페인에서 가져옴).
+const BANNER_CATALOG: ProductOption[] = [
+  { key: 'bn-lotte', title: '이번 주말, 가족 나들이에 쓰기 좋은 혜택', brand: 'LOTTE WORLD ADVENTURE', imageUrl: '/assets/lotteworld.png', price: null, badge: '제휴', category: '배너' },
+  { key: 'bn-airpods', title: 'AirPods Max3 사전 예약 하셨나요?', brand: '사전예약 클럽 멤버십 혜택', imageUrl: '/assets/airpods-max.png', price: null, badge: '사전예약', category: '배너' },
+  { key: 'bn-ott', title: 'OTT 무제한, 지금 요금제 하나로', brand: '0 Week 전용 혜택', imageUrl: '/assets/banner-plan-ott.svg', price: null, badge: '혜택', category: '배너' },
+  { key: 'bn-sbux', title: '스타벅스 제휴 — 최대 20% 할인', brand: 'T 멤버십', imageUrl: '/assets/banner-starbucks.svg', price: null, badge: '제휴', category: '배너' },
+];
 // 코너 유형 '채우기' 카탈로그 — 상품형=상품 분류(9)만, 혜택·오퍼형=혜택 분류만, 그 외/미지정=둘 다(2026-10-28 사용자 정의).
 //  "상품형을 클릭하면 상품 정보만 채울 수 있다" — 혜택 브랜드는 상품형에서 제외.
 export async function getProductOptions(cornerType?: string): Promise<ProductOption[]> {
@@ -166,6 +173,7 @@ export async function getProductOptions(cornerType?: string): Promise<ProductOpt
   if (cornerType === '혜택·오퍼형' || cornerType === '혜택형') return benefitCatalog();
   if (cornerType === '업무 진입형') return MENU_CATALOG; // 메뉴 카탈로그(혜택·업무 메뉴)
   if (cornerType === '콘텐츠 안내형') return MOVIE_CATALOG; // 콘텐츠 안내형 = 영화만 불러오기(2026-11-05 사용자 요청)
+  if (cornerType === '배너형') return BANNER_CATALOG; // 배너형 = 배너 캠페인 관리에서 가져오기(2026-11-05 사용자 요청)
   // 미지정(신규 등록 등)은 상품 먼저 + 혜택 — 유형 선택 후 좁혀진다.
   return [...PRODUCT_CATALOG, ...benefitCatalog()];
 }
