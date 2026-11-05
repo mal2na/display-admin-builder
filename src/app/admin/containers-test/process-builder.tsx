@@ -24,9 +24,13 @@ import * as LucideIcons from 'lucide-react';
 function ItemIcon({ src, iconClass = 'h-4 w-4', imgClass = 'h-5 w-5 object-contain' }: { src?: string | null; iconClass?: string; imgClass?: string }) {
   if (!src) return <ImageIcon className={iconClass} />;
   if (src.startsWith('lucide:')) {
-    const Cmp = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[src.slice(7)] ?? ImageIcon;
-    return <Cmp className={iconClass} />;
+    // 아웃라인(보더) 대신 'fill 아이콘'으로 — 미리보기 칩의 보라 채운 아이콘과 같은 느낌(2026-11-05 사용자 요청).
+    const Cmp = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string; fill?: string; strokeWidth?: number }>>)[src.slice(7)] ?? ImageIcon;
+    return <Cmp className={iconClass} fill="currentColor" strokeWidth={1.25} />;
   }
+  // 미리보기 칩 아이콘(퀵메뉴) — 인라인 SVG 마크업이면 그대로, icon: 포맷은 일반 아이콘으로 폴백(2026-11-05 사용자 요청).
+  if (src.includes('<svg')) return <span className={cn('inline-flex', iconClass)} aria-hidden dangerouslySetInnerHTML={{ __html: src }} />;
+  if (src.startsWith('icon:')) return <ImageIcon className={iconClass} />;
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt="" className={imgClass} />;
 }
@@ -233,7 +237,7 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
             return (
               <button key={p.key} type="button" onClick={() => toggle(p.key)} className={cn('flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left', on ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
                 <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
-                <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[8px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink3)]">
+                <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-[var(--ac2)] text-[var(--ac)]">
                   <ItemIcon src={p.imageUrl} iconClass="h-5 w-5" imgClass="h-full w-full object-cover" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -346,7 +350,17 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
     const out: FillItem[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (corner.preview?.components ?? []).forEach((comp: any, i: number) => {
-      if (comp.componentType === '선택형') return; // 칩(카테고리 탭)은 아이템 아님
+      if (comp.componentType === '선택형') {
+        // 업무 진입형 칩형(퀵메뉴)은 '칩 하나하나가 아이템' — 라벨+아이콘(미리보기 칩의 보라 아이콘)+링크를 그대로 가져온다(2026-11-05 사용자 요청).
+        //  그 외(혜택·오퍼형 세로형+칩의 카테고리 탭)는 아이템이 아니라 칩 설정이므로 스킵.
+        if (corner.cornerType !== '업무 진입형') return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (comp.atoms ?? []).forEach((a: any, j: number) => {
+          const label = (a.content || a.name || '').trim();
+          if (label && !PV_PLACEHOLDER.test(label)) out.push({ id: `pv-chip-${i}-${j}`, label, icon: a.imageUrl ?? null, link: a.linkUrl ?? undefined, mode: 'load' });
+        });
+        return;
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const atoms: any[] = comp.atoms ?? [];
       const img = atoms.find((a) => (a.atomType === 'IMAGE' || a.atomType === 'ICON') && typeof a.imageUrl === 'string' && a.imageUrl.startsWith('/'))?.imageUrl ?? null;
@@ -665,9 +679,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                   <button type="button" onClick={() => setItemMode(o.id, 'direct')} className={cn('rounded-[6px] px-2.5 py-1 transition', !loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>직접</button>
                   <button type="button" onClick={() => { setItemMode(o.id, 'load'); if (canLoad) setLoadForId(o.id); }} className={cn('rounded-[6px] px-2.5 py-1 transition', loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>불러오기</button>
                 </div>
-                {/* 아이콘 */}
-                {loaded ? (
-                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[7px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]">
+                {/* 아이콘 — 있으면 보라 채운 아이콘(미리보기 칩과 동일), 없으면 선택 버튼(2026-11-05 사용자 요청) */}
+                {o.icon ? (
+                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[7px] bg-[var(--ac2)] text-[var(--ac)]">
                     <ItemIcon src={o.icon} iconClass="h-[18px] w-[18px]" imgClass="h-5 w-5 object-contain" />
                   </span>
                 ) : (
