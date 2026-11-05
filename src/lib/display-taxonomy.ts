@@ -151,6 +151,8 @@ export function defaultComposition(
   else if (ct === '상품형') blocks.push({ componentType: '상품형', count: d.includes('단일') ? 1 : d === '세로형' ? 4 : (d.includes('세로형') && d.includes('배너')) ? 2 : 3, ...flags });
   else if (ct === '혜택형') blocks.push({ componentType: '혜택형', count: 3, badge: flags.badge });
   else if (ct === '정보형') blocks.push({ componentType: '정보형', count: /리스트|상태/.test(d) ? 4 : 1 });
+  // 배너형 스와이프형 = 여러 배너(스와이프) → 미리보기도 여러 장으로(2026-11-05 사용자 요청). 단일형은 1장.
+  else if (ct === '배너형') blocks.push({ componentType: '배너형', count: /스와이프|swipe/i.test(d) ? 3 : 1 });
   else if (ct) blocks.push({ componentType: ct, count: 1 });
   // 배열에 '카테고리 탭'이 있고 주 컴포넌트가 선택형이 아니면 상단 탭 블록을 얹는다.
   if (/카테고리\s*탭/.test(d) && ct !== '선택형' && blocks.length) blocks.unshift({ componentType: '선택형', count: 1 });
@@ -629,15 +631,16 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   배너형: {
     options: [],
     layouts: [
-      { layout: '단일형', required: [] },
-      { layout: '스와이프형', required: [], minItems: 2, maxItems: 5, note: '배너 개수만 정합니다(세부 항목 없음)' },
+      { layout: '단일형', required: [], note: '배너 소재(이미지·문구·랜딩)는 배너 캠페인 관리에서 등록해요. 이 코너에 어떤 배너를 노출할지는 전시화면 관리(빌더)에서 선택합니다.' },
+      { layout: '스와이프형', required: [], minItems: 2, maxItems: 5, note: '배너 소재(이미지·문구·랜딩)는 배너 캠페인 관리에서 등록해요. 여러 배너를 어떤 순서로 묶어 노출할지(배너 조합)는 전시화면 관리(빌더)에서 정합니다.' },
     ],
   },
   // 업무 진입형 — SB v13. 배열 4종(Default 칩형). 칩형/리스트형=세부없음(빌더/개수), 상태안내형·프로필형=단일 카드 필수 항목.
   '업무 진입형': {
     options: [],
     layouts: [
-      { layout: '칩형', required: [] },
+      // 칩형 = 아이콘 + 라벨(반복 칩). 둘 다 고정(2026-11-05 사용자 요청).
+      { layout: '칩형', required: [FD('Icon', '아이콘', 'item', { asIs: 'Icon' }), FD('Label', '라벨', 'item', { asIs: 'Label' })] },
       // 리스트형 = 코너 타이틀(카드) + 리스트(반복 아이템). 2026-11-05 사용자 요청.
       { layout: '리스트형', required: [CORNER_TITLE, FD('List', '리스트', 'item', { asIs: 'List' })], minItems: 2, maxItems: 8 },
       { layout: '상태 안내형', required: [CORNER_TITLE, FD('SubTitle', '서브 타이틀', 'corner', { asIs: 'SubTitle' }),
@@ -647,9 +650,9 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
         FD('Caption', '휴대폰 번호', 'corner', { asIs: 'Caption' }), FD('Button', '버튼', 'corner', { asIs: 'Button' })] },
     ],
   },
-  // 콘텐츠 안내형 — 가로형만. 옵션: 배너·CTA. 아이템: 이미지·타이틀·캡션평점(Caption01).
+  // 콘텐츠 안내형 — 가로형만. 옵션: CTA (배너 없음, 2026-11-05 사용자 확정). 아이템: 이미지·타이틀·캡션평점(Caption01).
   '콘텐츠 안내형': {
-    options: ['배너', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
+    options: ['CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, FD('ImageSrc', '아이템 이미지', 'item', { note: '영화 이미지' }),
         FD('ItemTitle', '아이템 타이틀', 'item', { note: '영화 제목' }), FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' })] },
@@ -862,8 +865,8 @@ export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
   // ── 특이케이스: 목적별 특정 배열만 ──
   // 배너형 = 배너 단일형 / 스와이프형 (2026-09-29 사용자 확정). '이미지형'은 구 표기 → 폐기.
   배너형: ['배너 단일형', '스와이프형'],
-  // 업무 진입형 4배열(2026-10-29): 상태안내(아이콘/이미지형)·프로필형·리스트형(메뉴 리스트)·칩형(카테고리 탭).
-  '업무 진입형': ['아이콘/이미지형', '프로필형', '메뉴 리스트', '카테고리 탭'],
+  // 업무 진입형 4배열 — 표기 순서: 칩형 → 리스트형 → 프로필형 → 상태 안내형(2026-11-05 사용자 요청). 저장값은 유지(카테고리 탭=칩형·메뉴 리스트=리스트형·아이콘/이미지형=상태 안내형).
+  '업무 진입형': ['카테고리 탭', '메뉴 리스트', '프로필형', '아이콘/이미지형'],
   // 바코드형 — 멤버십 바코드 단일 배열.
   '바코드형': ['바코드'],
 };
@@ -874,12 +877,25 @@ export function cornerTypeDetails(cornerType: string): readonly string[] {
 // ── 표시명 통일(2026-09) — 저장값(typeDetail)은 유지하고 화면 표기만 '형태 기준'으로 정리. ──
 //  콘텐츠 이름(카테고리 탭·바코드…)을 형태명(탭형·바코드형…)으로. 매처/DB는 원값 그대로라 안전.
 const LAYOUT_LABEL: Record<string, string> = {
-  '세로형(카테고리탭)': '세로형(탭)',
   // 업무 진입형 배열 표기(2026-10-29): 칩형·리스트형·상태 안내형·프로필형.
   '카테고리 탭': '칩형',
   '메뉴 리스트': '리스트형',
   '아이콘/이미지형': '상태 안내형',
   '바코드': '바코드형',
+  // 레거시 cornerLayout/배열 표기 → 코너 유형 관리 배열명으로 정규화(2026-11-05 사용자 요청: 빌더·코너 유형 관리 라벨 통일).
+  '가로 SWIPE형': '가로형',
+  '가로 Swipe형': '가로형',
+  '세로 리스트형': '세로형',
+  '세로형(카테고리탭)': '세로형',
+  '세로형(탭)': '세로형',
+  // 배너형 단일 배열 표기 = '단일형'(2026-11-05 사용자 요청: '배너 단일형' → '단일형'으로 코너 유형 관리·전시화면 관리 통일). 저장값은 '배너 단일형' 유지.
+  '배너 단일형': '단일형',
+  '이미지형': '단일형',
+  '이미지형/빅배너': '단일형',
+  '빅배너': '단일형',
+  '팝업배너형': '단일형',
+  '텍스트배너': '단일형',
+  '스몰배너': '단일형',
 };
 export function layoutLabel(detail?: string | null): string {
   if (!detail) return '';
@@ -905,7 +921,7 @@ const LAYOUT_EN: Record<string, string> = {
   '카테고리 탭': 'Tab', '탭형': 'Tab', '메뉴 리스트': 'List', '리스트형': 'List', '메뉴형': 'Menu',
   '아이콘/이미지형': 'Card', '카드형': 'Card', '프로필형': 'Profile',
   '바코드': 'Barcode', '바코드형': 'Barcode', '이미지형': 'Image', '텍스트 고지형': 'Text Notice',
-  '배너 단일형': 'Single', '스와이프형': 'Swipe',
+  '배너 단일형': 'Single', '단일형': 'Single', '스와이프형': 'Swipe',
   '가로형(무비)': 'Horizontal (Movie)', '상태 리스트형': 'Status Card',
   '칩형(ChipHome)': 'ChipHome', '칩형(ChipContents)': 'ChipContents', '칩형(ChipFilter)': 'ChipFilter', '칩형(ChipPage)': 'ChipPage', '칩형': 'ChipHome',
 };

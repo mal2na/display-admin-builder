@@ -1,7 +1,7 @@
 'use client';
 
 import { NavLink } from '@/components/nav-link';
-import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, Archive, ClipboardList } from 'lucide-react';
+import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, Archive, ClipboardList, Menu as MenuIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 좌측 사이드바 — NC-Channel Product Admin LNB 규격. 폭 236px, 라벤더 var(--bg) 배경.
@@ -29,6 +29,8 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         {/* 운영 관리 */}
         {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">운영 관리</p>}
         <NavLink href="/admin/comments" icon={<MessagesSquare className="h-4 w-4" />} label="댓글·리뷰 관리" collapsed={collapsed} />
+        {/* 메뉴 관리(전체메뉴) — FO 전체메뉴 노출·순서·분류 편성 + 승인(2026-11-05 사용자 요청 · SB PG529/530/531). */}
+        <NavLink href="/admin/menus" icon={<MenuIcon className="h-4 w-4" />} label="메뉴 관리" collapsed={collapsed} />
         {/* 메뉴 관리는 빌더로 이관 → '전체페이지 관리'로 통합. 페이지 개발 설정은 페이지 상세의 '개발설정' 탭으로 흡수(2026-10-06). */}
         {/* 순서: 전체페이지 → App 버전 → App 스플래시 → App 위젯 (2026-10-07 사용자 요청) */}
         <NavLink href="/admin/page-menu-b" icon={<FolderTree className="h-4 w-4" />} label="전체페이지 관리" collapsed={collapsed} />

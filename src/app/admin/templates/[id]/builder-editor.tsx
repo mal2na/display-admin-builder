@@ -41,7 +41,6 @@ import {
   ZONES,
   type Zone,
   CVM_TARGET_HINTS,
-  defaultComposition,
   CHIP_BASE,
   type AtomType,
   type CornerType,
@@ -49,8 +48,8 @@ import {
 import { cn } from '@/lib/utils';
 import { CornerSupplyPanel } from './corner-supply-panel';
 import { DeviceFrame, CornerBlock, type PreviewCorner } from '@/components/preview/blocks';
-import { chipIconForLabel, compositionToPreviewCorner } from '@/components/preview/composition-preview';
-import { DevicePreview } from '../../corner-types/corner-type-manager';
+import { chipIconForLabel } from '@/components/preview/composition-preview';
+import { DevicePreview, cornerRowPreview, EMPTY_CORNER_TYPE } from '../../corner-types/corner-type-manager';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 import { IconPickerModal } from './icon-picker-modal';
 import { AssetPickerModal } from '@/components/asset-picker-modal';
@@ -2991,15 +2990,13 @@ function BannerLoadModal({
 // 코너 불러오기 '껍데기 가이드' 코너 — 리스트 썸네일(미니 미리보기)·우측 미리보기 공용.
 //  코너 = 껍데기(규격)라 콘텐츠 없이 placeholder 슬롯으로만. 코너 유형 관리 '코너 정의' 가이드와 동일 규칙.
 function guideCornerFor(base: string, detail: string, component: string): PreviewCorner {
-  const noTitle = base === '배너형' || base === '바코드형';
-  return compositionToPreviewCorner({
-    base,
-    detail,
-    composition: defaultComposition(component, detail),
-    mainTitle: noTitle ? null : '타이틀',
-    subTitle: noTitle ? null : '디스크립션',
-    placeholder: true,
-    emptyImages: true,
+  // 코너 유형 관리의 '코너 미리보기'와 똑같이 — cornerRowPreview를 그대로 공유(2026-11-05 사용자 요청:
+  //  코너 불러오기/추가 미리보기 = 코너 유형 관리 미리보기와 동일한 매핑·라벨·배지 처리).
+  return cornerRowPreview({
+    ...EMPTY_CORNER_TYPE,
+    baseCategory: base,
+    typeDetail: detail || null,
+    componentType: component || null,
   });
 }
 

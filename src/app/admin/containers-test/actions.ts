@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createCornerInstanceFromTypeId } from '../templates/actions';
+import { effectiveZone } from '@/lib/display-taxonomy';
 
 export async function addTestTemplate(containerId: string, formData: FormData) {
   const name = String(formData.get('name') ?? '').trim();
@@ -44,13 +45,28 @@ export async function addCornersToTemplate(templateId: string, cornerIds: string
 //  '전시화면 관리'와 '코너 유형 관리'를 연동: 불러오기 목록이 카탈로그와 1:1. 내용은 빌더에서 채운다.
 export async function addCornersFromTypes(templateId: string, cornerTypeIds: string[]) {
   if (!cornerTypeIds.length) return;
-  const agg = await prisma.templateCorner.aggregate({ where: { templateId }, _max: { order: true } });
-  let order = (agg._max.order ?? -1) + 1;
+  // 신규 코너는 '무조건 맨 아래'에 이어 붙이고, Fixed/Dynamic으로 새 밴드를 만들지 않는다 —
+  //  마지막 코너의 '효과적 존'(저장값 없으면 유형에서 파생)을 그대로 물려받아 같은 밴드로 이어지게 한다(2026-11-05 사용자 요청).
+  //  기존 코너는 zone이 NULL이라 런타임에 파생되므로, 신규 코너에는 그 파생 결과를 명시적으로 저장해 밴드가 끊기지 않게 한다.
+  const last = await prisma.templateCorner.findFirst({
+    where: { templateId }, orderBy: { order: 'desc' },
+    select: { order: true, zone: true, corner: { select: { cornerType: true, recSource: true } } },
+  });
+  const inheritedZone = last ? effectiveZone(last.zone, last.corner?.cornerType, last.corner?.recSource) : 'dynamic';
+  let order = (last?.order ?? -1) + 1;
   for (const typeId of cornerTypeIds) {
     const corner = await createCornerInstanceFromTypeId(typeId);
-    await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order } });
+    await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order, zone: inheritedZone } });
     order += 1;
   }
+  revalidatePath(`/admin/containers-test/t/${templateId}`);
+}
+
+// 코너명 수정 — 빌더 '① 코너 정보'의 코너명 편집을 실제 저장(Corner.name). 2026-11-05 사용자 요청(데모 → 실제).
+export async function renameCorner(templateId: string, cornerId: string, name: string) {
+  const n = name.trim();
+  if (!n) throw new Error('코너명을 입력하세요.');
+  await prisma.corner.update({ where: { id: cornerId }, data: { name: n } });
   revalidatePath(`/admin/containers-test/t/${templateId}`);
 }
 

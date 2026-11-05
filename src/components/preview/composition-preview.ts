@@ -151,7 +151,8 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
     // 미리보기 텍스트 = 라벨(영어) 기준. 가격만 실제 값 형태 유지(2026-10-29(2) 사용자 요청).
     switch (b.componentType) {
       case '선택형':
-        return { ...base, name: '탭', selectedIndex: 0, chipVariant: 'contents', atoms: ['Chip', 'Chip', 'Chip', 'Chip'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) };
+        // 칩 placeholder = Chip1·Chip2…(필드 코드 표기, 2026-11-05 사용자 요청 — 코너 유형 관리·빌더 미리보기 일치).
+        return { ...base, name: '탭', selectedIndex: 0, chipVariant: 'contents', atoms: ['Chip1', 'Chip2', 'Chip3', 'Chip4'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) };
       case '배너형':
         return { ...base, name: '배너', atoms: [
           atom({ name: '타이틀', atomType: 'TEXT', content: 'Title' }),
@@ -159,7 +160,7 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
           atom({ name: 'ImageSrc', atomType: 'IMAGE', imageUrl: '/assets/lotteworld.png' }),
         ] };
       case '정보형':
-        // 프로필형(CardHome Profile) = 프로필 이미지 + 고객명(Title) + 고객번호(SubTitle) + 버튼(Button). ProfileCard로 렌더.
+        // 프로필형(CardHome Profile) = 프로필 이미지 + 고객명(CornerTitle) + 고객번호(Caption) + 버튼(Button). ProfileCard로 렌더.
         if (/프로필/.test(ctx?.detail ?? '')) {
           return { ...base, name: '프로필', atoms: [
             atom({ name: '고객명', atomType: 'TEXT', content: 'CornerTitle' }),
@@ -477,9 +478,12 @@ export function compositionToPreviewCorner(opts: {
     layoutDetail: opts.detail ?? null,
     cornerLayout: opts.layout ?? null,
     bigBanner: opts.forceBanner || isPlanBanner || isDeviceBanner || isBenefitBanner || undefined,
-    // 신규 등록 가이드 폼에선 배너 히어로도 빈 영역. '배너' 옵션 강제 시엔 상품 이미지 대신 'Banner' 슬롯(센티넬: 렌더 불가 → 그라데이션 Banner 박스).
-    bannerImageUrl: isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : (opts.forceBanner ? 'Banner' : (opts.emptyImages ? null : undefined)),
-    bannerName: opts.forceBanner ? 'Banner' : undefined,
+    // 신규 등록·껍데기 가이드(emptyImages)에선 배너 히어로도 '빈 Banner 슬롯'(그라데이션 Banner 박스)으로 — 실제 이미지(iPhone 히어로 등) 금지(2026-11-05 사용자 요청: 코너 유형 관리 미리보기와 동일).
+    //  실제 노출(emptyImages 아님)에서만 PLAN_HERO/DEVICE_HERO 실이미지.
+    bannerImageUrl: opts.emptyImages
+      ? ((isPlanBanner || isDeviceBanner || isBenefitBanner || opts.forceBanner) ? 'Banner' : null)
+      : (isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : (opts.forceBanner ? 'Banner' : undefined)),
+    bannerName: (opts.forceBanner || (opts.emptyImages && (isPlanBanner || isDeviceBanner || isBenefitBanner))) ? 'Banner' : undefined,
     emptyImages: opts.emptyImages ?? null,
     components,
   };
