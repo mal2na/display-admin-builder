@@ -733,7 +733,7 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete,
   const typePrefix = `${c.cornerType} · `;
   const displayName = c.name.startsWith(typePrefix) ? c.name.slice(typePrefix.length) : c.name;
   return (
-    <div ref={setNodeRef} style={style} onClick={onSelect}
+    <div ref={setNodeRef} style={style} id={`chip-${c.id}`} onClick={onSelect}
       className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-2 transition',
         isDragging && 'z-10 opacity-80 shadow-lg',
         selected ? 'border-[var(--ac)] bg-[var(--ac2)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
@@ -1139,11 +1139,12 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   const reqDone = reqSections.filter(Boolean).length;
   const reqTotal = reqSections.length;
 
-  // 코너 리스트/상세에서 선택한 코너를 미리보기(디바이스)에서도 그 위치로 스크롤
+  // 선택한 코너를 '양쪽' 모두 그 위치로 스크롤 — 좌측 디바이스 미리보기(pv-)와 가운데 코너 구성 리스트(chip-).
+  //  미리보기를 클릭하면 코너 구성에서도 같이 스크롤돼 복잡한 정보에서 길을 잃지 않게 한다(2026-11-05 사용자 요청).
   React.useEffect(() => {
     if (!activeSel) return;
-    const el = document.getElementById(`pv-${activeSel}`);
-    if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    document.getElementById(`pv-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    document.getElementById(`chip-${activeSel}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }, [activeSel]);
 
   // Figma BO 공통 textfield 토큰 — h38·r6·inset-x 14·본문 14·border #c4c9cf·포커스 border #b3b9c0+ring 2 #dce0e5
