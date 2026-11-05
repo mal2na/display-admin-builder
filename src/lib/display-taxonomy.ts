@@ -645,8 +645,10 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
       { layout: '리스트형', required: [CORNER_TITLE, FD('List', '리스트', 'item', { asIs: 'List' })], minItems: 2, maxItems: 8 },
       { layout: '상태 안내형', required: [CORNER_TITLE, FD('SubTitle', '서브 타이틀', 'corner', { asIs: 'SubTitle' }),
         FD('BadgeItem', '배지', 'corner', { asIs: 'BadgeItem' }), FD('IconItem', '아이콘', 'corner', { asIs: 'IconItem' })] },
-      // 프로필형 = 고객명(CornerTitle) · 휴대폰 번호(Caption) · 버튼(Button). 미리보기·컬럼 코드 일치(2026-11-05 사용자 요청).
-      { layout: '프로필형', required: [FD('ImageSrc', '프로필 이미지', 'corner'), FD('CornerTitle', '고객명', 'corner'),
+      // 프로필형 = 카드 타이틀(내 정보)·서브 타이틀(프로필·가입현황) + 프로필 이미지·고객명·휴대폰 번호·버튼. 미리보기(ProfileCard)와 일치(2026-11-05 사용자 요청: CornerTitle=내 정보지 고객명 아님).
+      //  고객명·휴대폰·프로필 이미지는 고객 정보(CVM 자동), 타이틀·서브 타이틀·버튼은 운영자 문구.
+      { layout: '프로필형', required: [FD('CornerTitle', '타이틀', 'corner'), FD('ButtonText', '서브 타이틀', 'corner'),
+        FD('ImageSrc', '프로필 이미지', 'corner'), FD('CustomerName', '고객명', 'corner', { asIs: 'CustomerName' }),
         FD('Caption', '휴대폰 번호', 'corner', { asIs: 'Caption' }), FD('Button', '버튼', 'corner', { asIs: 'Button' })] },
     ],
   },
