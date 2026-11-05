@@ -587,6 +587,8 @@ export async function createCornerInstanceFromTypeId(cornerTypeId: string) {
     data: {
       name,
       cornerType: def.baseCategory,
+      // 코너 유형의 주 컴포넌트를 코너에 상속 → 미리보기(guideCornerPreview)가 코너 유형 관리(cornerRowPreview)와 동일한 조합으로 렌더(2026-11-05 사용자 요청).
+      componentType: def.componentType,
       typeLabel: isComposite ? baseName : null,
       layoutDetail: cornerLayoutDetail, // 유형 상세 (+ 빅배너 마커)
       cornerLayout: def.layout, // 등록된 코너 레이아웃 상속 → 미리보기 형태가 등록 유형과 일치
