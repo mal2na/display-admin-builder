@@ -162,14 +162,14 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
         // 프로필형(CardHome Profile) = 프로필 이미지 + 고객명(Title) + 고객번호(SubTitle) + 버튼(Button). ProfileCard로 렌더.
         if (/프로필/.test(ctx?.detail ?? '')) {
           return { ...base, name: '프로필', atoms: [
-            atom({ name: '고객명', atomType: 'TEXT', content: 'Title' }),
-            atom({ name: '고객번호', atomType: 'INFO', content: 'SubTitle' }),
+            atom({ name: '고객명', atomType: 'TEXT', content: 'CornerTitle' }),
+            atom({ name: '고객번호', atomType: 'INFO', content: 'Caption' }),
             atom({ name: '버튼', atomType: 'CTA', content: 'Button', linkUrl: '/' }),
           ] };
         }
         // 상태 안내형(CardHome) = 타이틀(값) + 배지 + 서브타이틀 + 아이콘. 미리보기 텍스트 = 코너 속성 라벨 그대로(2026-10-29(2) 사용자 요청).
         return { ...base, name: '상태', atoms: [
-          atom({ name: '타이틀', atomType: 'TEXT', content: 'Title' }),
+          atom({ name: '타이틀', atomType: 'TEXT', content: 'CornerTitle' }),
           atom({ name: '배지', atomType: 'BADGE', content: 'Badge' }),
           atom({ name: '서브타이틀', atomType: 'TEXT', content: 'SubTitle' }),
           atom({ name: '아이콘', atomType: 'ICON', imageUrl: 'icon:general/Info' }),
@@ -177,12 +177,12 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
       case '혜택형':
         return { ...base, name: '혜택', atoms: [
           atom({ name: '로고', atomType: 'ICON', imageUrl: pick(LOGO_POOL, i) }),
-          atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: 'Title' }),
+          atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: 'ItemTitle' }),
           atom({ name: '브랜드', atomType: 'INFO', content: 'SubTitle' }),
         ] };
       case '행동형':
         return { ...base, name: '바로가기', atoms: [
-          atom({ name: '제목', atomType: 'TEXT', content: 'Title' }),
+          atom({ name: '제목', atomType: 'TEXT', content: 'ItemTitle' }),
           atom({ name: '버튼', atomType: 'CTA', content: 'ButtonText', linkUrl: '/' }),
         ] };
       case '상품형':
@@ -190,7 +190,7 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
         if (isBenefitList) {
           return { ...base, name: '혜택', atoms: [
             atom({ name: '로고', atomType: 'ICON', imageUrl: pick(LOGO_POOL, i) }),
-            atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: 'Title' }),
+            atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: 'ItemTitle' }),
             atom({ name: '브랜드', atomType: 'INFO', content: 'SubTitle' }),
           ] };
         }
@@ -198,17 +198,17 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
         if (ctx?.base === '콘텐츠 안내형') {
           return { ...base, name: '콘텐츠', atoms: [
             ...(b.image !== false ? [atom({ name: 'ImageSrc', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png' })] : []),
-            atom({ name: '상품명', atomType: 'TEXT', content: 'Title' }),
+            atom({ name: '상품명', atomType: 'TEXT', content: 'ItemTitle' }),
             atom({ name: '캡션', atomType: 'INFO', content: 'Caption01' }),
           ] };
         }
         return { ...base, name: '상품', atoms: [
           ...(b.image !== false ? [atom({ name: 'ImageSrc', atomType: 'IMAGE', imageUrl: '/assets/ds/device-iphone.png' })] : []),
-          atom({ name: '상품명', atomType: 'TEXT', content: 'Title' }),
-          ...(b.badge ? [atom({ name: '배지', atomType: 'BADGE', content: 'Badge' })] : []),
+          atom({ name: '상품명', atomType: 'TEXT', content: 'ItemTitle' }),
+          // 배지는 어느 코너 유형에도 컬럼으로 없다 → 미리보기에서 제외(2026-11-05 사용자 요청: 혜택·오퍼형 가로형 배지 제거).
           // 가격 그룹(가격 제외 안 함): 할인율 + 가격 — 상품형 스튜디오와 동일하게 99% 99,999원 노출.
           ...(b.price !== false ? [atom({ name: '할인율', atomType: 'TEXT', content: '99%' }), atom({ name: '가격', atomType: 'PRICE', content: '99,999원' })] : []),
-          ...(b.desc !== false ? [atom({ name: '설명', atomType: 'INFO', content: 'SubText02' })] : []),
+          ...(b.desc !== false ? [atom({ name: '설명', atomType: 'INFO', content: 'SubText' })] : []),
         ] };
       default:
         return { ...base, name: b.componentType, atoms: [] };

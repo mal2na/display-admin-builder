@@ -5,7 +5,7 @@
 //  2026-10-29 사용자 요청: UI = 사용/미사용 라디오 쌍 + 형태(Variants) 라디오 그룹.
 //  2026-10-29(2) 사용자 요청: '기본 정보'(TRow)와 같은 테이블로 — 라벨 셀(회색 150px) + 컨트롤 셀, 가로줄 보더.
 //  코너(카드)/아이템(요소) 그룹으로 분리.
-import { useEffect, useState } from 'react';
+import { Children, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { cornerFieldSpec, type CornerFieldDef } from '@/lib/display-taxonomy';
 
@@ -22,32 +22,54 @@ function Radio({ name, label, checked, disabled, onPick }: {
 }
 
 // 표 한 행 — '기본 정보'(TRow)와 동일 규격: 라벨 셀(회색 150px) + 컨트롤 셀. tag = 옵션/고정 배지(라벨 옆).
-function FieldTableRow({ label, keyName, tag, children }: {
-  label: string; keyName?: string; tag?: { text: string; color: string }; children: React.ReactNode;
+function FieldTableRow({ label, keyName, tag, children, bare }: {
+  label: string; keyName?: string; tag?: { text: string; color: string }; children: React.ReactNode; bare?: boolean;
 }) {
   return (
-    <div className="grid grid-cols-[150px_1fr] items-stretch border-b border-[#eef1f4] last:border-b-0">
-      <div className="flex h-full flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3.5 py-3">
+    <div className={cn('grid items-stretch', bare ? 'h-full grid-cols-[150px_1fr]' : 'grid-cols-[150px_1fr] border-b border-[#eef1f4] last:border-b-0')}>
+      <div className="flex h-full flex-col justify-center gap-0.5 bg-[#f8f9fb] px-3 py-2.5">
         <span className="flex flex-wrap items-center gap-1.5 text-[14px] font-medium leading-[1.2] text-[#454f59]">
           {label}
           {tag && (
             <span className="rounded-[4px] px-1 py-[1px] text-[10px] font-semibold" style={{ backgroundColor: `${tag.color}1a`, color: tag.color }}>{tag.text}</span>
           )}
         </span>
-        {keyName && <span className="font-mono text-[10.5px] font-normal leading-tight text-slate-400">({keyName})</span>}
+        {keyName && <span className="text-[10.5px] font-normal leading-tight text-slate-400">({keyName})</span>}
       </div>
-      <div className="flex min-w-0 items-center px-3.5 py-2.5">{children}</div>
+      <div className="flex min-w-0 items-center px-3 py-2">{children}</div>
     </div>
   );
 }
 
-// 사용/미사용 라디오 쌍 — 컨트롤 셀 내용.
+// Y/N 라디오 쌍 — 컨트롤 셀 내용(SB v13 표기).
 function UsePair({ name, used, disabled, onChange }: { name: string; used: boolean; disabled?: boolean; onChange?: (v: boolean) => void }) {
   return (
-    <div className="flex items-center gap-5">
-      <Radio name={name} label="사용" checked={used} disabled={disabled} onPick={() => onChange?.(true)} />
-      <Radio name={name} label="미사용" checked={!used} disabled={disabled} onPick={() => onChange?.(false)} />
+    <div className="flex items-center gap-4">
+      <Radio name={name} label="Y" checked={used} disabled={disabled} onPick={() => onChange?.(true)} />
+      <Radio name={name} label="N" checked={!used} disabled={disabled} onPick={() => onChange?.(false)} />
     </div>
+  );
+}
+
+// 2열 래퍼 — 같은 종류(옵션/고정)끼리만 짝지어 한 줄에 2칸. 홀수면 마지막 칸은 비움(SB v13: 옵션끼리·고정끼리 2열).
+function Pairs({ children }: { children: React.ReactNode }) {
+  const arr = Children.toArray(children);
+  const rows: React.ReactNode[][] = [];
+  for (let i = 0; i < arr.length; i += 2) rows.push([arr[i], arr[i + 1] ?? null]);
+  return (
+    <>
+      {rows.map((r, i) => (
+        r[1] == null ? (
+          // 홀수(짝 없음) — 전폭 1열(가운데 보더 없음, 흰 영역 길게).
+          <div key={i} className="border-b border-[#eef1f4] last:border-b-0">{r[0]}</div>
+        ) : (
+          <div key={i} className="grid grid-cols-2 border-b border-[#eef1f4] last:border-b-0 [&>*:first-child]:border-r [&>*:first-child]:border-[#eef1f4]">
+            {r[0]}
+            {r[1]}
+          </div>
+        )
+      ))}
+    </>
   );
 }
 
@@ -85,39 +107,14 @@ function GroupBox({ badge, color, title, desc, children }: { badge: string; colo
 }
 
 // 테이블 외곽 — 둥근 보더로 묶어 '기본 정보' 테이블과 같은 덩어리감.
-function FieldTable({ children }: { children: React.ReactNode }) {
-  // 좌우 보더 없이 위아래만(2026-10-29(2) 사용자 고정 규칙 — 읽기·수정 테이블 공통).
-  return <div className="border-y border-[#eef1f4]">{children}</div>;
-}
-
-// 노출 개수 범위 — 코너 유형은 '허용 범위(가드레일)'만. 실제 개수는 빌더/CVM이 정함(2026-10-29(2) 사용자 확정: 범위만 남기고 실제는 빌더).
-function CountRow({ min, max, editable }: { min: number; max: number; editable?: boolean }) {
-  return (
-    <FieldTableRow label="노출 개수 범위" keyName="count">
-      {editable ? (
-        <div className="flex flex-wrap items-center gap-1.5 text-[13px]">
-          <input name="defaultMinItems" type="number" min={0} max={50} defaultValue={min} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
-          <span className="text-slate-400">~</span>
-          <input name="defaultMaxItems" type="number" min={0} max={50} defaultValue={max} className="h-7 w-16 rounded-[6px] border border-[#dce0e5] bg-white px-2 text-[12px]" />
-          <span className="text-[12px] text-slate-500">개</span>
-          <span className="text-[11px] text-slate-400">· 허용 범위(가드레일). 실제 개수는 빌더/CVM에서 정함</span>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 text-[13px]">
-          <span className="rounded-[4px] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#454f59]">{min}~{max}개</span>
-          <span className="text-[11px] text-slate-400">· 허용 범위 · 실제 개수는 빌더/CVM</span>
-        </div>
-      )}
-    </FieldTableRow>
-  );
-}
-
 // 코너 유형 + 배열 → 코너(카드)/아이템(요소) 속성 테이블 + 형태(Variants) + 노출 개수(아이템에 묶음).
 export function CornerFieldList({ cornerType, layout, editable, optionKey, onOptionsChange, variantKey, onVariantChange }: { cornerType?: string | null; layout?: string | null; editable?: boolean; optionKey?: string; onOptionsChange?: (o: Record<string, boolean>) => void; variantKey?: string; onVariantChange?: (v: string) => void }) {
   const m = cornerFieldSpec(cornerType, layout);
   const opts = m?.options ?? [];
-  // 옵션(배너·칩·CTA) 사용/미사용 — editable 이면 전환+로컬 보존, 아니면 '사용' 고정 표시.
-  const [optOn, setOptOn] = useState<Record<string, boolean>>(() => Object.fromEntries(opts.map((o) => [o, true])));
+  // 옵션 아이템 필드(가격·할인율·기간 등) — 배열별 On/Off(2026-11-02 SB 옵션화). 코너(카드) 옵션(배너·칩·CTA)과 같은 저장소(optOn)에 보존.
+  const itemOpts = m?.optional?.filter((f) => f.group === 'item') ?? [];
+  // 옵션(배너·칩·CTA) + 옵션 아이템 필드 사용/미사용 — editable 이면 전환+로컬 보존, 아니면 '사용' 고정 표시.
+  const [optOn, setOptOn] = useState<Record<string, boolean>>(() => Object.fromEntries([...opts.map((o) => [o, true]), ...itemOpts.map((f) => [f.key, f.defaultOn !== false])]));
   useEffect(() => {
     if (!editable || !optionKey) return;
     try { const raw = localStorage.getItem(optionKey); if (raw) setOptOn((p) => ({ ...p, ...JSON.parse(raw) })); } catch { /* noop */ }
@@ -145,34 +142,58 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey, onOpt
   const itemFields = m.required.filter((f) => f.group === 'item');
 
   // 읽기 모드(비편집)에선 옵션/고정 배지 미표시(라벨 터짐 방지 — 상품형 읽기와 동일) 2026-10-29(2) 사용자 요청.
-  const fixedRow = (f: CornerFieldDef) => (
-    <FieldTableRow key={`fx-${f.group}-${f.ko}-${f.key}`} label={f.ko} keyName={f.key} tag={editable ? { text: '고정', color: '#8b949e' } : undefined}>
+  const fixedRow = (f: CornerFieldDef, bare?: boolean) => (
+    <FieldTableRow key={`fx-${f.group}-${f.ko}-${f.key}`} label={f.ko} keyName={f.key} tag={editable ? { text: '고정', color: '#8b949e' } : undefined} bare={bare}>
       <UsePair name={`fld_${f.group}_${f.key}`} used disabled />
     </FieldTableRow>
   );
   // 옵션 라벨 — 상품형(CornerStudio)과 동일 표기: 배너→배너이미지(BannerSrc)·칩→칩(Chip)·CTA→CTA(CTA).
   const OPT_META: Record<string, { ko: string; code: string }> = {
-    '배너': { ko: '배너', code: 'Banner' }, '칩': { ko: '칩', code: 'Chip' }, 'CTA': { ko: 'CTA', code: 'CTA' },
+    '배너': { ko: '배너', code: 'Banner' }, '칩': { ko: '칩', code: 'Chip' }, 'CTA': { ko: 'CTA', code: 'CallToAction' },
   };
-  const optionRow = (o: string) => {
+  const optionRow = (o: string, bare?: boolean) => {
     const used = editable ? (optOn[o] ?? true) : true;
     const meta = OPT_META[o] ?? { ko: o, code: o };
     return (
-      <FieldTableRow key={`opt-${o}`} label={meta.ko} keyName={meta.code} tag={editable ? { text: '옵션', color: '#3617ce' } : undefined}>
+      <FieldTableRow key={`opt-${o}`} label={meta.ko} keyName={meta.code} tag={editable ? { text: '옵션', color: '#3617ce' } : undefined} bare={bare}>
         <UsePair name={`opt_${o}_r`} used={used} disabled={!editable} onChange={editable ? (v) => setOpt(o, v) : undefined} />
         {editable && <input type="hidden" name={`opt_${o}`} value={used ? 'on' : ''} />}
       </FieldTableRow>
     );
   };
+  // 옵션 아이템 필드 행 — 코너(카드) 옵션과 동일한 '옵션' 배지 + Y/N. key 로 저장(opt_item_<key>).
+  const itemOptionRow = (f: CornerFieldDef, bare?: boolean) => {
+    // dependsOn(예: 할인율→가격): 상위가 N이면 비활성 + 강제 N.
+    const depOff = !!f.dependsOn && optOn[f.dependsOn] === false;
+    const used = editable ? (depOff ? false : (optOn[f.key] ?? f.defaultOn !== false)) : true;
+    return (
+      <FieldTableRow key={`iopt-${f.key}`} label={f.ko} keyName={f.key} tag={editable ? { text: '옵션', color: '#3617ce' } : undefined} bare={bare}>
+        <UsePair name={`iopt_${f.key}_r`} used={used} disabled={!editable || depOff} onChange={editable && !depOff ? (v) => setOpt(f.key, v) : undefined} />
+        {editable && <input type="hidden" name={`opt_item_${f.key}`} value={used ? 'on' : ''} />}
+      </FieldTableRow>
+    );
+  };
+  // 가격 그룹(가격·할인율·기간) — 한 줄에 묶어 N열. 할인율은 가격 종속(SB v13).
+  const priceGroupRow = () => (
+    <div className="grid border-b border-[#eef1f4] last:border-b-0 [&>*:not(:first-child)]:border-l [&>*:not(:first-child)]:border-[#eef1f4]"
+      style={{ gridTemplateColumns: `repeat(${itemOpts.length}, minmax(0,1fr))` }}>
+      {itemOpts.map((f) => itemOptionRow(f, true))}
+    </div>
+  );
 
-  // 세부 항목 없음(배너형·업무진입형 탭형·리스트형 등) — 옵션·필드 모두 없음. 노출 개수만 있으면 그것만 설정.
+  // 세부 항목 없음(배너형·업무진입형 칩형/리스트형 등) — 옵션·필드 모두 없음. 노출 개수는 빌더에서 관리(2026-11-05 사용자 요청).
   if (m.required.length === 0 && m.options.length === 0) {
     return (
       <div className="space-y-2">
         <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-2 text-[12px] text-slate-400">
-          {m.note || (m.minItems != null ? '노출 개수만 설정합니다 — 소재·문구는 빌더에서 채웁니다.' : '세부 항목 없음 — 내용은 빌더에서 채웁니다.')}
+          {m.note || '세부 항목은 빌더에서 입력 또는 선택해 주세요.'}
         </p>
-        {m.minItems != null && <FieldTable><CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} /></FieldTable>}
+        {editable && m.minItems != null && (
+          <>
+            <input type="hidden" name="defaultMinItems" value={m.minItems} readOnly />
+            <input type="hidden" name="defaultMaxItems" value={m.maxItems ?? m.minItems} readOnly />
+          </>
+        )}
       </div>
     );
   }
@@ -182,25 +203,37 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey, onOpt
   return (
     <div className="space-y-3">
       {m.note && <p className="rounded-md border border-dashed border-[#dce0e5] bg-[#f8f9fb] px-2.5 py-1.5 text-[12px] text-slate-400">{m.note}</p>}
-      {/* 코너(카드) — 옵션(배너·칩·CTA) 먼저, 그 다음 고정(타이틀·라벨) */}
+      {/* 코너(카드) — 옵션(배너·칩·CTA)끼리 2열, 고정(타이틀·버튼)끼리 2열(SB v13). */}
       {hasCorner && (
         <GroupBox badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)">
-          {m.options.map(optionRow)}
-          {cornerFields.map(fixedRow)}
+          {m.options.length > 0 && <Pairs>{m.options.map((o) => optionRow(o, true))}</Pairs>}
+          {cornerFields.length > 0 && <Pairs>{cornerFields.map((f) => fixedRow(f, true))}</Pairs>}
         </GroupBox>
       )}
-      {/* 아이템(요소) — 형태(Variants) + 고정 필드 + 노출 개수(아이템에 묶음) */}
-      {itemFields.length > 0 && (
+      {/* 아이템(요소) — 형태(Variants) + 고정 2열 + 가격 그룹(가격·할인율·기간) 한 줄. 노출 개수 범위는 코너 유형 관리에서 제거(빌더에서 정함, 2026-11-05 사용자 요청). */}
+      {(itemFields.length > 0 || itemOpts.length > 0) && (
         <GroupBox badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
-          {/* 형태(Variants) = 가로형 카드 크기(Small/Medium/Large)만. 세로형은 이미지 형태 불필요 → 숨김(2026-10-29(2) 사용자 요청: 상품형 스튜디오와 동일). */}
-          {!/세로/.test((m.layout ?? layout) ?? '') && (
+          {/* 형태(Variants) = 이미지 카드 크기(Small/Medium/Large)만 — 아이템 이미지가 있는 가로형 한정. 세로형·리스트형(이미지 없음)은 숨김. */}
+          {itemFields.some((f) => f.key === 'ImageSrc') && !/세로/.test((m.layout ?? layout) ?? '') && (
             <FieldTableRow label="이미지 형태" keyName="Variants">
               <VariantControl layout={m.layout ?? layout} value={safeVariant} onChange={editable ? chooseVariant : undefined} disabled={!editable} />
             </FieldTableRow>
           )}
-          {itemFields.map(fixedRow)}
-          {m.minItems != null && <CountRow min={m.minItems} max={m.maxItems ?? m.minItems} editable={editable} />}
+          {/* 아이템 이미지(ImageSrc)·아이템 타이틀(ItemTitle) = 위아래(각 전체폭)로, 나머지 고정 필드는 2열(2026-11-05 사용자 요청). */}
+          {itemFields.filter((f) => f.key === 'ImageSrc' || f.key === 'ItemTitle').map((f) => fixedRow(f))}
+          {(() => {
+            const rest = itemFields.filter((f) => f.key !== 'ImageSrc' && f.key !== 'ItemTitle');
+            return rest.length > 0 ? <Pairs>{rest.map((f) => fixedRow(f, true))}</Pairs> : null;
+          })()}
+          {itemOpts.length > 0 && priceGroupRow()}
         </GroupBox>
+      )}
+      {/* 노출 개수 범위 UI는 제거하되 저장값은 hidden으로 보존 — 빌더에서 관리(2026-11-05 사용자 요청). */}
+      {editable && m.minItems != null && (
+        <>
+          <input type="hidden" name="defaultMinItems" value={m.minItems} readOnly />
+          <input type="hidden" name="defaultMaxItems" value={m.maxItems ?? m.minItems} readOnly />
+        </>
       )}
       {editable && (
         <p className="px-2 text-[11px] text-[#8b949e]">
