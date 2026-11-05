@@ -711,6 +711,27 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           </>
           )}
         </Sec>
+      ) : isProfile ? (
+        <Sec n={3} title="프로필 카드 — 문구 설정">
+          <div className="mb-2 flex items-start gap-1.5 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]">
+            <span className="mt-0.5">ⓘ</span><span><b>고객명·휴대폰 번호·프로필 이미지</b>는 고객 정보로 자동 표시(@cvm)됩니다. 아래 문구만 설정하세요.</span>
+          </div>
+          <label className="mb-2 block">
+            <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">타이틀 <span className="font-normal text-[var(--ink4)]">CornerTitle · 예: 내 정보</span></span>
+            <input value={cornerTitleVal} onChange={(e) => { setCornerTitleVal(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'CornerTitle' }); }} placeholder="예: 내 정보" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+          </label>
+          <label className="mb-2 block">
+            <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">서브 타이틀 <span className="font-normal text-[var(--ink4)]">ButtonText · 예: 프로필·가입현황</span></span>
+            <input value={buttonTextVal} onChange={(e) => { setButtonTextVal(e.target.value); onPreviewPatch({ subTitle: e.target.value || 'ButtonText' }); }} placeholder="예: 프로필·가입현황" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+          </label>
+          <div className="flex flex-wrap items-center gap-1.5 rounded-[8px] bg-[var(--th)] px-3 py-2 text-[11px] text-[var(--ink3)]">
+            <span className="font-semibold">고객 정보 자동</span>
+            <span className="rounded-[4px] bg-white px-1.5 py-0.5">프로필 이미지</span>
+            <span className="rounded-[4px] bg-white px-1.5 py-0.5">고객명</span>
+            <span className="rounded-[4px] bg-white px-1.5 py-0.5">휴대폰 번호</span>
+            <span className="text-[var(--ink4)]">— @cvm 바인딩</span>
+          </div>
+        </Sec>
       ) : isData ? (
         <Sec n={3} title="요청 — CVM에 무엇을 달라고 할지" help>
           <div className="mb-2 flex items-start gap-1.5 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]">
