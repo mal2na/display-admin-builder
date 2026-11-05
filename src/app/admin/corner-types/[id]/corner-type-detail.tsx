@@ -257,8 +257,8 @@ function ROGroup({ badge, color, title, desc, children }: { badge: string; color
   return (
     <div className="border-y border-[#dce0e5]">
       <div className="flex items-center gap-1.5 border-b border-[#eef0f3] bg-[#f8f9fb] px-3 py-2">
-        <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] text-[10px] font-bold" style={{ backgroundColor: `${color}1a`, color }}>{badge}</span>
-        <span className="text-[12px] font-bold text-[#454f59]">{title}</span>
+        {/* 단문자 배지(코·아) 제거 — 제목 색으로만 구분(2026-11-05 사용자 요청) */}
+        <span className="text-[12px] font-bold" style={{ color }}>{title}</span>
         <span className="text-[11px] text-[#8b949e]">· {desc}</span>
       </div>
       <div>{children}</div>

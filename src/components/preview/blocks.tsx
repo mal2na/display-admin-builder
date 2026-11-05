@@ -695,7 +695,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       <img
         src={bannerSrc}
         alt={corner.bannerName ?? ''}
-        className="block max-h-[180px] w-full bg-gradient-to-b from-sky-50 to-white object-cover object-center"
+        className="block aspect-[16/10] w-full bg-gradient-to-b from-sky-50 to-white object-cover object-center"
       />
     ) : (
       <div className="flex aspect-[16/10] w-full items-center justify-center bg-[#eef0f3] text-[12px] font-medium text-slate-500">

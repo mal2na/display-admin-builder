@@ -450,11 +450,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               {ko}{code && <span className="text-[9px] text-[var(--ink4)]">{code}</span>}
             </span>
           );
-          const Grp = ({ badge, color, title, children }: { badge: string; color: string; title: string; children: React.ReactNode }) => (
+          const Grp = ({ color, title, children }: { color: string; title: string; children: React.ReactNode }) => (
             <div>
+              {/* 단문자 배지(코·아) 제거 — 제목 색으로만 구분(2026-11-05 사용자 요청) */}
               <div className="mb-1 flex items-center gap-1">
-                <span className="grid h-[15px] w-[15px] place-items-center rounded-[4px] text-[9px] font-bold text-white" style={{ background: color }}>{badge}</span>
-                <span className="text-[11px] font-bold text-[var(--ink3)]">{title}</span>
+                <span className="text-[11px] font-bold" style={{ color }}>{title}</span>
               </div>
               <div className="flex flex-wrap gap-1">{children}</div>
             </div>
@@ -466,13 +466,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             <div className="mt-3 space-y-2.5 border-t border-[var(--line2)] pt-3">
               <p className="text-[12px] font-bold text-[var(--ink2)]">코너 속성 <span className="font-normal text-[var(--ink4)]">· 이 껍데기가 쓰는 표시 항목</span></p>
               {hasCorner && (
-                <Grp badge="코" color="#3617ce" title="코너(카드)">
+                <Grp color="#3617ce" title="코너(카드)">
                   {spec.options.map((o) => <FieldChip key={o} ko={o} opt />)}
                   {cornerFixed.map((f) => <FieldChip key={f.key} ko={f.ko} code={f.key} />)}
                 </Grp>
               )}
               {hasItem && (
-                <Grp badge="아" color="#00a058" title="아이템(요소)">
+                <Grp color="#00a058" title="아이템(요소)">
                   {isGaro && <FieldChip ko="형태" code="Variants" />}
                   {itemFixed.map((f) => <FieldChip key={f.key} ko={f.ko} code={f.key} />)}
                   {itemOpt.map((f) => <FieldChip key={f.key} ko={f.ko} code={f.key} opt />)}
