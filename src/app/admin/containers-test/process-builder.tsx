@@ -313,7 +313,14 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // 칩(카테고리 탭) — 자유 텍스트가 아니라 카탈로그 카테고리 데이터와 연동(2026-10-28 사용자 요청: 칩 개수·정보를 데이터 연동).
   //  기본 = '전체' + 카탈로그 카테고리. 추가/삭제도 카탈로그 카테고리에서만. 라벨은 읽기전용(데이터).
   // 칩은 처음엔 '전체'만 — 나머지 카테고리는 '칩 불러오기' 모달에서 골라 넣는다(2026-11-05 사용자 요청).
-  const [chips, setChips] = React.useState<string[]>(() => ['전체']);
+  // 칩 라벨 — 채워진 코너는 '좌측 미리보기의 실제 칩'(선택형 아톰: 카페·베이커리…)을 그대로, 신규 껍데기는 '전체'만(2026-11-05 사용자 요청).
+  const [chips, setChips] = React.useState<string[]>(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const chipComp = (pv?.components ?? []).find((c: any) => c.componentType === '선택형');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const labels = (chipComp?.atoms ?? []).map((a: any) => (a.content || a.name || '').trim()).filter((l: string) => !!l);
+    return labels.length ? labels : ['전체'];
+  });
   const [chipLoadOpen, setChipLoadOpen] = React.useState(false);
   // 배너 옵션 콘텐츠 — 배너 On이면 이미지. CTA 라벨은 '버튼 텍스트(buttonTextVal)'로 통합(2026-11-05 사용자 요청).
   const [bannerImg, setBannerImg] = React.useState('');
