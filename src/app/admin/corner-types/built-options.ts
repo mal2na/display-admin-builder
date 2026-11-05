@@ -136,17 +136,28 @@ const MOVIE_CATALOG: ProductOption[] = [
 //  브랜드명·대표 혜택/모델·이미지를 코너 유형 composition.items에 저장. 랜딩 URL은 담은 뒤 수동 편집.
 // BSS 대분류(EAT/BUY/PLAY) → 모달에서 구분해 보여줄 한글 카테고리(2026-09-30 사용자 요청: 디바이스·음식 등 구분).
 const BSS_CAT_KO: Record<string, string> = { EAT: '음식', BUY: '쇼핑', PLAY: '문화·여가' };
+// 대표 제휴 혜택 — 미리보기(composition-preview BENEFIT_ITEMS)와 '동일'하게 맞춘 3종(2026-11-05 사용자 요청: 0 Week ③채우기 = 미리보기와 일치).
+//  혜택·오퍼형 세로형 ③채우기가 이 3종으로 '채워진 채' 시작한다(카탈로그 맨 앞). 불러오기 모달에도 맨 위에 노출.
+const REP_BENEFITS: ProductOption[] = [
+  { key: 'rep-gongcha', title: '인기 음료 6종 50% 할인', brand: '공차', imageUrl: '/assets/brand-gongcha.png', price: null, badge: '할인', category: '음식' },
+  { key: 'rep-tlj', title: '브라우니 1개 증정', brand: '뚜레쥬르', imageUrl: '/assets/brand-tlj.png', price: null, badge: '증정', category: '음식' },
+  { key: 'rep-nol', title: '전시회 40% 할인', brand: 'NOL 티켓', imageUrl: '/assets/brand-nol.png', price: null, badge: '할인', category: '문화·여가' },
+];
 // 혜택 카탈로그 — 혜택 = 가입·등급·이용·행동·조건에 따라 추가로 받는 가치(Value 중심). 제휴 할인·멤버십 혜택(음식/쇼핑/문화).
+//  맨 앞 3종은 미리보기와 일치하는 대표 혜택(REP_BENEFITS), 그 뒤로 전체 제휴 브랜드.
 function benefitCatalog(): ProductOption[] {
-  return BSS_PRODUCTS.map((p) => ({
-    key: p.key,
-    title: p.benefit || p.name,
-    brand: p.name,
-    imageUrl: p.logo || null,
-    price: null,
-    badge: p.badges[0] ?? null,
-    category: BSS_CAT_KO[p.category] ?? '혜택',
-  }));
+  return [
+    ...REP_BENEFITS,
+    ...BSS_PRODUCTS.map((p) => ({
+      key: p.key,
+      title: p.benefit || p.name,
+      brand: p.name,
+      imageUrl: p.logo || null,
+      price: null,
+      badge: p.badges[0] ?? null,
+      category: BSS_CAT_KO[p.category] ?? '혜택',
+    })),
+  ];
 }
 // 코너 유형 '채우기' 카탈로그 — 상품형=상품 분류(9)만, 혜택·오퍼형=혜택 분류만, 그 외/미지정=둘 다(2026-10-28 사용자 정의).
 //  "상품형을 클릭하면 상품 정보만 채울 수 있다" — 혜택 브랜드는 상품형에서 제외.

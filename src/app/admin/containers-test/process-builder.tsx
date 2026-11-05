@@ -17,7 +17,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
 import { FieldRow } from '@/components/ops-ui';
 import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
-import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, GalleryHorizontalEnd } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 // 아이템 아이콘 — 'lucide:<Name>'은 벡터 아이콘, 그 외는 실제 이미지(포스터·로고). 2026-11-05 사용자 요청(메뉴 아이콘을 텍스트에 맞는 벡터로).
@@ -146,8 +146,8 @@ function Sec({ n, title, help, children }: { n: number; title: string; help?: bo
   );
 }
 
-function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceChange, onOptionsChange, onToast }: {
-  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onToast: (m: string) => void;
+function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: {
+  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void;
 }) {
   if (!corner) {
     return (
@@ -156,7 +156,7 @@ function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceC
       </div>
     );
   }
-  return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onToast={onToast} />;
+  return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onPreviewPatch={onPreviewPatch} onToast={onToast} />;
 }
 
 // 칩 불러오기 모달 — 카탈로그 카테고리를 칩(카테고리 탭)으로 멀티 셀렉 추가(2026-10-28 사용자 요청: 칩과 상품 둘 다 불러오기).
@@ -251,7 +251,7 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
   );
 }
 
-function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChange, onOptionsChange, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onToast: (m: string) => void }) {
+function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void }) {
   const [src, setSrc] = React.useState<string>(corner.recSource ?? '운영자 편성');
   const [fb, setFb] = React.useState<'미노출' | '운영자 편성으로 대체'>(corner.fallback);
   const [cat, setCat] = React.useState('혜택');
@@ -280,19 +280,27 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const optSpec = cornerFieldSpec(corner.cornerType, corner.layoutDetail ?? corner.layout);
   const availOptions = optSpec?.options ?? [];
   const rawDetail = corner.layoutDetail ?? corner.layout ?? '';
+  // 옵션 토글은 코너의 '실제 미리보기 상태'에서 시작한다(2026-11-05 사용자 요청: 옵션 꺼져 있는데 전체보기 나오는 불일치 수정).
+  //  CTA=moreButtonUse / 배너=bigBanner / 칩=선택형 컴포넌트 유무. 토글을 끄면 applyOptsToPreview로 미리보기도 함께 꺼진다.
+  const pv = corner.preview;
+  const hasChipComp = !!pv?.components?.some((c) => c.componentType === '선택형');
   const [optOn, setOptOn] = React.useState<Record<string, boolean>>(() =>
-    Object.fromEntries(availOptions.map((o) => [o, (o === '칩' && /칩/.test(rawDetail)) || (o === '배너' && /배너/.test(rawDetail))])));
+    Object.fromEntries(availOptions.map((o) => [o,
+      (o === '칩' && (/칩/.test(rawDetail) || hasChipComp)) ||
+      (o === '배너' && (/배너/.test(rawDetail) || !!pv?.bigBanner)) ||
+      (o === 'CTA' && !!pv?.moreButtonUse)])));
+  // 코너 공통 필드(코너 타이틀·버튼 텍스트) — 코너 유형 required 중 corner 그룹. 빌더에 입력란이 없던 문제 수정(2026-11-05 사용자 요청).
+  const cornerReqFields = (optSpec?.required ?? []).filter((f) => f.group === 'corner');
+  const hasCornerTitle = cornerReqFields.some((f) => f.key === 'CornerTitle');
+  const hasButtonText = cornerReqFields.some((f) => f.key === 'ButtonText');
+  const [cornerTitleVal, setCornerTitleVal] = React.useState(() => (pv?.mainTitle && pv.mainTitle !== 'CornerTitle' ? pv.mainTitle : ''));
+  const [buttonTextVal, setButtonTextVal] = React.useState(() => (pv?.moreButtonLabel && pv.moreButtonLabel !== 'CTA' ? pv.moreButtonLabel : ''));
   // 칩(카테고리 탭) — 자유 텍스트가 아니라 카탈로그 카테고리 데이터와 연동(2026-10-28 사용자 요청: 칩 개수·정보를 데이터 연동).
   //  기본 = '전체' + 카탈로그 카테고리. 추가/삭제도 카탈로그 카테고리에서만. 라벨은 읽기전용(데이터).
   const [chips, setChips] = React.useState<string[]>(() => ['전체', ...catCategories]);
   const [chipLoadOpen, setChipLoadOpen] = React.useState(false);
-  // 옵션 콘텐츠 — 배너 On이면 이미지, CTA On이면 라벨·링크(2026-10-28 사용자 요청: 배너/칩/CTA 각각 콘텐츠 불러오기).
+  // 배너 옵션 콘텐츠 — 배너 On이면 이미지. CTA 라벨은 '버튼 텍스트(buttonTextVal)'로 통합(2026-11-05 사용자 요청).
   const [bannerImg, setBannerImg] = React.useState('');
-  const [ctaLabel, setCtaLabel] = React.useState('');
-  // 켜진 옵션 콘텐츠는 한 번에 하나만 — 탭으로 전환(영역 절약, 2026-10-28 사용자 요청).
-  const [activeOpt, setActiveOpt] = React.useState<string | null>(null);
-  const onOptions = availOptions.filter((o) => optOn[o]);
-  const shownOpt = (activeOpt && optOn[activeOpt]) ? activeOpt : (onOptions[0] ?? null);
   // ③ 채우기 항목 — 칩 On 이면 칩마다 별도 메뉴(칩 하나하나 메뉴 연동, 2026-10-28 사용자 요청). 칩 Off 면 단일 리스트(__flat__).
   const chipMode = !!optOn['칩'] && chips.length > 0;
   const [activeChip, setActiveChip] = React.useState(0);
@@ -302,6 +310,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const detailStr = corner.layoutDetail ?? corner.layout ?? '';
   const isBenefitList = (corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형') && /세로/.test(detailStr);
   const loadOnly = corner.cornerType === '콘텐츠 안내형' || isBenefitList;
+  // 배너형 = ③채우기(아이템) 없음 — 배너는 '배너 캠페인 관리'에서 가져온다(2026-11-05 사용자 요청).
+  const isBanner = corner.cornerType === '배너형';
   const itemWord = corner.cornerType === '콘텐츠 안내형' ? '영화' : corner.cornerType === '업무 진입형' ? '메뉴' : isBenefitList ? '혜택' : '항목';
   const loadFields = corner.cornerType === '콘텐츠 안내형' ? '이미지·제목·평점·예매율' : '로고·혜택 문구·브랜드';
   // 기본 아이템 — 불러오기 전용 유형은 카탈로그(영화/혜택)로 '채워진 채' 시작(2026-11-05 사용자 요청). 그 외는 라벨 슬롯.
@@ -312,9 +322,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
     return (options.length ? options : ['대표 아이템 1', '대표 아이템 2', '대표 아이템 3']).map((o, i) => ({ id: `it-${i}-${o}`, label: o, mode: 'direct' as const }));
   };
   const [itemsByKey, setItemsByKey] = React.useState<Record<string, FillItem[]>>(() => ({ __flat__: defaultItems() }));
-  const items = itemsByKey[chipKey] ?? EMPTY_ITEMS;
+  // 칩 On으로 바꾸면 칩별 리스트는 아직 비어 있다 → 빈 화면처럼 보이지 않게 칩마다 기본 시드로 채워 시작(2026-11-05 사용자 요청: 칩 On 시 데이터 영역 유지). 편집 시 그대로 저장된다.
+  const seedForKey = React.useMemo(() => defaultItems(), [chipKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const items = itemsByKey[chipKey] ?? seedForKey;
   const updateItems = (fn: (xs: FillItem[]) => FillItem[]) =>
-    setItemsByKey((m) => ({ ...m, [chipKey]: fn(m[chipKey] ?? []) }));
+    setItemsByKey((m) => ({ ...m, [chipKey]: fn(m[chipKey] ?? seedForKey) }));
   const addItem = () => updateItems((xs) => [...xs, { id: `new-${Date.now()}`, label: '', mode: 'direct' }]);
   const removeItem = (id: string) => updateItems((xs) => xs.filter((x) => x.id !== id));
   const setItemLabel = (id: string, label: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, label } : x)));
@@ -458,52 +470,54 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
       {/* ③ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
       {src === '운영자 편성' ? (
         <Sec n={3} title="채우기 — 항목 등록">
-          {/* 옵션(배너·칩·CTA) — 코너 유형이 허용하는 옵션을 여기서 On/Off. 칩 On이면 칩(카테고리 탭)도 여기서 채운다(2026-10-28 사용자 요청). */}
-          {availOptions.length > 0 && (
+          {/* ── 코너 — 코너 유형 관리처럼 '코너 / 아이템'으로 나눈다(2026-11-05 사용자 요청). 코너 타이틀·버튼 텍스트·옵션(배너·칩·CTA)은 코너 속성. ── */}
+          {(hasCornerTitle || hasButtonText || availOptions.length > 0) && (
             <div className="mb-3 rounded-[8px] border border-[var(--line3)] bg-[var(--th)] p-2.5">
-              <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">옵션 <span className="font-normal text-[var(--ink4)]">· 배너·칩·CTA 여기서 On/Off</span></p>
-              <div className="flex flex-wrap gap-1.5">
-                {availOptions.map((o) => (
-                  <button key={o} type="button"
-                    onClick={() => setOptOn((p) => { const next = !p[o]; if (next) setActiveOpt(o); const no = { ...p, [o]: next }; onOptionsChange(no, ctaLabel); return no; })}
-                    className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold', optOn[o] ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line3)] bg-white text-[var(--ink3)]')}>
-                    {o}<span className={optOn[o] ? 'text-white/80' : 'text-[var(--ink4)]'}>{optOn[o] ? 'On' : 'Off'}</span>
-                  </button>
-                ))}
-              </div>
-              {/* 켜진 옵션의 콘텐츠는 한 번에 하나만 — 켠 옵션이 2개↑면 탭으로 전환(2026-10-28 사용자 요청: 쌓지 말고 하나씩). */}
-              {shownOpt && (
-                <div className="mt-2.5 border-t border-[var(--line2)] pt-2.5">
-                  {onOptions.length > 1 && (
-                    <div className="mb-2 flex gap-1">
-                      {onOptions.map((o) => (
-                        <button key={o} type="button" onClick={() => setActiveOpt(o)}
-                          className={cn('rounded-[6px] px-2.5 py-1 text-[12px] font-semibold', shownOpt === o ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink3)] hover:bg-white')}>
-                          {o} 설정
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {/* 배너 — 이미지 불러오기 */}
-                  {shownOpt === '배너' && (
-                    <div>
-                      <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">배너 · 이미지</p>
+              <p className="mb-2 text-[12px] font-bold text-[var(--ink2)]">코너 <span className="font-normal text-[var(--ink4)]">· 코너 전체에 적용</span></p>
+              {hasCornerTitle && (
+                <label className="mb-2 block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">코너 타이틀 <span className="font-normal text-[var(--ink4)]">CornerTitle</span></span>
+                  <input value={cornerTitleVal} onChange={(e) => { setCornerTitleVal(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'CornerTitle' }); }} placeholder="코너 제목 입력" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                </label>
+              )}
+              {hasButtonText && (
+                <label className="mb-2 block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">버튼 텍스트 <span className="font-normal text-[var(--ink4)]">ButtonText · CTA 켤 때 노출</span></span>
+                  <input value={buttonTextVal} onChange={(e) => { setButtonTextVal(e.target.value); onPreviewPatch({ moreButtonLabel: e.target.value || 'CTA' }); }} placeholder="비워두면 'CTA' (예: 전체보기)" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                </label>
+              )}
+              {/* 옵션(배너·칩·CTA) — On/Off. CTA는 위 '버튼 텍스트'로 설정하므로 별도 패널 없음 → 길게 쌓이지 않음(2026-11-05 사용자 요청). */}
+              {availOptions.length > 0 && (
+                <div className="border-t border-[var(--line2)] pt-2">
+                  <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink3)]">옵션 <span className="font-normal text-[var(--ink4)]">· 배너·칩·CTA On/Off</span></p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {availOptions.map((o) => (
+                      <button key={o} type="button"
+                        onClick={() => setOptOn((p) => { const next = !p[o]; const no = { ...p, [o]: next }; onOptionsChange(no, buttonTextVal); return no; })}
+                        className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold', optOn[o] ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line3)] bg-white text-[var(--ink3)]')}>
+                        {o}<span className={optOn[o] ? 'text-white/80' : 'text-[var(--ink4)]'}>{optOn[o] ? 'On' : 'Off'}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {/* 배너 On → 이미지 입력(한 칸만). 세로형+배너·세로형+칩이 서로 다른 배열이라 배너·칩이 동시에 켜지는 일은 거의 없음. */}
+                  {optOn['배너'] && (
+                    <div className="mt-2 rounded-[7px] border border-[var(--line2)] bg-white p-2">
+                      <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink3)]">배너 이미지</p>
                       <div className="flex items-center gap-1.5">
                         <span className="grid h-10 w-16 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-white text-[var(--ink4)]">
                           {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
                         </span>
                         <input value={bannerImg} onChange={(e) => setBannerImg(e.target.value)} placeholder="이미지 주소 입력" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                        <button type="button" onClick={() => onToast('이미지 불러오기 (데모)')} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-white">이미지 불러오기</button>
+                        <button type="button" onClick={() => onToast('이미지 불러오기 (데모)')} className="shrink-0 rounded-[6px] border border-[var(--line2)] px-2 py-1 text-[12px] font-medium text-[var(--ink2)] hover:bg-[var(--th)]">불러오기</button>
                       </div>
                     </div>
                   )}
-                  {/* 칩(카테고리 탭) — 카탈로그 카테고리와 연동 */}
-                  {shownOpt === '칩' && (
-                    <div>
+                  {/* 칩 On → 카테고리 탭 */}
+                  {optOn['칩'] && (
+                    <div className="mt-2 rounded-[7px] border border-[var(--line2)] bg-white p-2">
                       <div className="mb-1.5 flex items-center gap-1.5">
-                        <span className="text-[12px] font-semibold text-[var(--ink3)]">칩 · 카테고리 탭</span>
+                        <span className="text-[11px] font-semibold text-[var(--ink3)]">카테고리 탭</span>
                         <span className="rounded-full bg-[var(--th)] px-1.5 text-[11px] font-bold text-[var(--ink3)]">{chips.length}개</span>
-                        <span className="text-[11px] text-[var(--ink4)]">· 카탈로그 카테고리와 연동</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
                         {chips.map((c, i) => (
@@ -515,20 +529,23 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                         ))}
                         <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 불러오기</button>
                       </div>
-                    </div>
-                  )}
-                  {/* CTA — 버튼 이름 설정 */}
-                  {shownOpt === 'CTA' && (
-                    <div>
-                      <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">CTA · 버튼 이름</p>
-                      <input value={ctaLabel} onChange={(e) => { setCtaLabel(e.target.value); onOptionsChange({ ...optOn, CTA: true }, e.target.value); }} placeholder="비워두면 'CTA'로 표기 (예: 전체보기)" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                      <p className="mt-1 text-[11px] text-[var(--ink4)]">비워두면 미리보기에 <span className="font-semibold text-[var(--ac)]">CTA</span>가 기본으로 들어갑니다.</p>
+                      <p className="mt-1.5 text-[11px] text-[var(--ink4)]">칩을 누르면 아래 <b className="text-[var(--ink3)]">아이템</b>이 그 칩의 항목으로 바뀝니다 — 칩마다 따로 채워요.</p>
                     </div>
                   )}
                 </div>
               )}
             </div>
           )}
+          {/* 배너형 = 아이템 채우기 없음 — 배너 캠페인 관리에서 가져온다(2026-11-05 사용자 요청). */}
+          {isBanner ? (
+            <div className="flex items-start gap-2 rounded-[8px] border border-[var(--line2)] bg-white px-3 py-3 text-[12px] leading-relaxed text-[var(--ink2)]">
+              <GalleryHorizontalEnd className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ac)]" />
+              <span>이 코너의 배너는 <b className="text-[var(--ac)]">배너 캠페인 관리</b>에서 등록한 배너를 가져옵니다. 여기서 따로 채울 항목이 없어요.</span>
+            </div>
+          ) : (
+          <>
+          {/* ── 아이템 — 실제 노출 항목 리스트(코너 유형 관리의 '아이템'에 대응). ── */}
+          <p className="mb-1.5 text-[12px] font-bold text-[var(--ink2)]">아이템 <span className="font-normal text-[var(--ink4)]">· {itemWord} {items.length}개</span></p>
           {/* 칩 불러오기 모달 — 카탈로그 카테고리를 칩으로 추가(멀티 셀렉) */}
           {chipLoadOpen && (
             <ChipLoadModal categories={catCategories} current={chips} onClose={() => setChipLoadOpen(false)}
@@ -542,7 +559,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             </div>
           )}
           <div className="space-y-1.5">
-            {items.length === 0 && <p className="rounded-[8px] border border-dashed border-[var(--line3)] px-3 py-4 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 영화에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
+            {items.length === 0 && <p className="rounded-[8px] border border-dashed border-[var(--line3)] px-3 py-4 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 ' + itemWord + '에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
             {items.map((o) => {
               // 콘텐츠 안내형 = 영화만 '불러오기' 전용(직접입력·토글·링크 없음) → 포스터+제목+평점·예매율 표기(2026-11-05 사용자 요청).
               if (loadOnly) {
@@ -600,7 +617,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               onAdd={(ps) => { addFromCatalog(ps); onToast(`${ps.length}개 담음`); }} />
           )}
           {/* 메뉴 추가 = 카탈로그(공차·뚜레쥬르·티켓…)에서 끌어오기. 카탈로그 없으면 빈 행 추가(2026-10-28 사용자 요청). */}
-          <button type="button" onClick={() => (canLoad ? setLoadForId(APPEND_LOAD) : addItem())} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> {itemWord} 추가{canLoad ? (loadOnly ? ' (등록된 영화에서)' : ' (카탈로그에서)') : ''}</button>
+          <button type="button" onClick={() => (canLoad ? setLoadForId(APPEND_LOAD) : addItem())} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> {itemWord} 추가{canLoad ? (loadOnly ? ' (등록된 ' + itemWord + '에서)' : ' (카탈로그에서)') : ''}</button>
+          </>
+          )}
         </Sec>
       ) : isData ? (
         <Sec n={3} title="요청 — CVM에 무엇을 달라고 할지" help>
@@ -943,6 +962,7 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
                 <CornerDetail template={t} corner={selected} index={selIndex} onPreviewFallback={onPreviewFallback}
                   onRecSourceChange={(src) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, recSource: src, isCvm: src.startsWith('CVM') } : c)); }}
                   onOptionsChange={(opts, ctaLabel) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, preview: applyOptsToPreview(c.preview, opts, ctaLabel) } : c)); }}
+                  onPreviewPatch={(patch) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, preview: c.preview ? { ...c.preview, ...patch } : c.preview } : c)); }}
                   onToast={onToast} />
               </div>
             </div>
@@ -1386,3 +1406,5 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
     </ProductCatalogCtx.Provider>
   );
 }
+
+
