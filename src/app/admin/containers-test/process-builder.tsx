@@ -198,6 +198,34 @@ function ChipLoadModal({ categories, current, onClose, onAdd }: { categories: st
   );
 }
 
+// 아이콘 선택 모달 — 메뉴/칩 아이템의 아이콘을 아이콘 세트에서 고른다(2026-11-05 사용자 요청: 아이콘 영역 클릭 시 모달).
+const MENU_ICON_SET = ['Grid2x2', 'LayoutGrid', 'Gift', 'Tag', 'Crown', 'Star', 'Ticket', 'Film', 'Globe', 'Smartphone', 'Headphones', 'Gauge', 'Receipt', 'Coins', 'Users', 'CreditCard', 'Boxes', 'Signal', 'IdCard', 'RefreshCw', 'Repeat', 'FileText', 'Bell', 'Heart', 'MapPin', 'Wallet', 'ShoppingBag', 'Percent', 'Calendar', 'Bookmark'];
+function IconPickerModal({ current, onClose, onPick }: { current?: string | null; onClose: () => void; onPick: (icon: string) => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-md overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b border-[var(--line2)] px-4 py-3">
+          <ImageIcon className="h-4 w-4 text-[var(--ac)]" />
+          <h2 className="text-[14px] font-bold text-[var(--ink)]">아이콘 선택</h2>
+          <span className="text-[12px] text-[var(--ink4)]">아이콘 세트에서 고르세요</span>
+          <button type="button" onClick={onClose} className="ml-auto grid h-7 w-7 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[var(--th)]"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="grid max-h-[50vh] grid-cols-6 gap-2 overflow-y-auto p-4">
+          {MENU_ICON_SET.map((n) => {
+            const src = `lucide:${n}`; const on = current === src;
+            return (
+              <button key={n} type="button" onClick={() => onPick(src)} title={n}
+                className={cn('grid aspect-square place-items-center rounded-[8px] border transition', on ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line2)] bg-white text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
+                <ItemIcon src={src} iconClass="h-5 w-5" imgClass="h-5 w-5" />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // '채우기 → 불러오기' 모달 — 유형별 카탈로그(상품형=상품 9분류 · 혜택·오퍼형=혜택 분류)에서 멀티 셀렉으로 담기(2026-10-28 사용자 요청).
 function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: ProductOption[]; cornerType: string; onClose: () => void; onAdd: (ps: ProductOption[]) => void }) {
   const [q, setQ] = React.useState('');
@@ -405,7 +433,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const setItemLabel = (id: string, label: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, label } : x)));
   const setItemLink = (id: string, link: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, link } : x)));
   const setItemMode = (id: string, mode: FillItem['mode']) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, mode } : x)));
+  const setItemIcon = (id: string, icon: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, icon } : x)));
   const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
+  const [iconForId, setIconForId] = React.useState<string | null>(null); // 아이콘 선택 모달 대상 항목 id(2026-11-05 사용자 요청)
   // 멀티 셀렉으로 담기 — 아이콘+텍스트+링크를 '한 번에' 불러온다. 첫 항목은 누른 행을 채우고, 나머지는 그 뒤 새 행으로.
   const addFromCatalog = (ps: ProductOption[]) => {
     if (ps.length === 0) return;
@@ -762,33 +792,28 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                 </div>
                 );
               }
-              const loaded = o.mode === 'load';
-              // 칩형 등 — 한 줄 레이아웃(아이콘·텍스트·링크) + 중립 세그먼트 토글.
+              // 한 줄 레이아웃(아이콘·텍스트·링크) — 항상 직접 편집 가능. 세그먼트 토글 폐기(토글+모달 혼용은 혼란), 행별 '불러오기' 버튼으로 카탈로그 교체(2026-11-05 사용자 요청).
               return (
               <div key={o.id} className="flex items-center gap-1.5 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
                 <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]" />
-                {/* 모드 — 세그먼트. 선택 칩은 흰 배경 + 연보라 링 + 보라 글자로 또렷하게(2026-11-05 사용자 요청). */}
-                <div className="flex shrink-0 gap-0.5 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-[3px] text-[11px] font-semibold">
-                  <button type="button" onClick={() => setItemMode(o.id, 'direct')} className={cn('rounded-[6px] px-2.5 py-1 transition', !loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>직접</button>
-                  <button type="button" onClick={() => { setItemMode(o.id, 'load'); if (canLoad) setLoadForId(o.id); }} className={cn('rounded-[6px] px-2.5 py-1 transition', loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>불러오기</button>
-                </div>
-                {/* 아이콘 — 있으면 보라 채운 아이콘(미리보기 칩과 동일), 없으면 선택 버튼(2026-11-05 사용자 요청) */}
-                {o.icon ? (
-                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[7px] bg-[var(--ac2)] text-[var(--ac)]">
-                    <ItemIcon src={o.icon} iconClass="h-[18px] w-[18px]" imgClass="h-5 w-5 object-contain" />
-                  </span>
-                ) : (
-                  <button type="button" onClick={() => onToast('아이콘 선택 (데모)')} title="아이콘 선택" className="grid h-8 w-8 shrink-0 place-items-center rounded-[7px] border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><ImageIcon className="h-4 w-4" /></button>
-                )}
-                {/* 텍스트 */}
-                <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} readOnly={loaded} placeholder="텍스트"
-                  className={cn('h-[32px] min-w-0 flex-1 rounded-[7px] px-2 text-[13px] focus:outline-none', loaded ? 'bg-[var(--th)] text-[var(--ink2)]' : 'border border-[var(--line2)] focus:border-[var(--ac)]')} />
-                {/* 링크 */}
-                <div className={cn('flex h-[32px] min-w-0 basis-[34%] items-center gap-1 rounded-[7px] px-2', loaded ? 'bg-[var(--th)]' : 'border border-[var(--line2)]')} title="이동 링크">
+                {/* 아이콘 — 클릭하면 아이콘 선택 모달. 있으면 보라 채운 아이콘, 없으면 점선 자리(2026-11-05 사용자 요청) */}
+                <button type="button" onClick={() => setIconForId(o.id)} title="아이콘 선택"
+                  className={cn('grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[7px] transition', o.icon ? 'bg-[var(--ac2)] text-[var(--ac)] hover:ring-1 hover:ring-[var(--ac)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
+                  {o.icon ? <ItemIcon src={o.icon} iconClass="h-[18px] w-[18px]" imgClass="h-5 w-5 object-contain" /> : <ImageIcon className="h-4 w-4" />}
+                </button>
+                {/* 텍스트 — 항상 편집 가능 */}
+                <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder="텍스트"
+                  className="h-[32px] min-w-0 flex-1 rounded-[7px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                {/* 링크 — 항상 편집 가능 */}
+                <div className="flex h-[32px] min-w-0 basis-[30%] items-center gap-1 rounded-[7px] border border-[var(--line2)] px-2" title="이동 링크">
                   <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-                  <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} readOnly={loaded} placeholder="이동 링크"
-                    className={cn('h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none', loaded && 'text-[var(--ink3)]')} />
+                  <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="이동 링크"
+                    className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                 </div>
+                {/* 행별 불러오기 — 카탈로그에서 이 행을 교체(모달). 토글이 아니라 명확한 액션 버튼(2026-11-05 사용자 요청) */}
+                {canLoad && (
+                  <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2 py-1.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>
+                )}
                 <button type="button" onClick={() => removeItem(o.id)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
               </div>
               );
@@ -798,6 +823,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           {loadForId && (
             <ProductLoadModal catalog={catalog} cornerType={isStatus ? '상태 안내형' : corner.cornerType} onClose={() => setLoadForId(null)}
               onAdd={(ps) => { addFromCatalog(ps); onToast(`${ps.length}개 담음`); }} />
+          )}
+          {/* 아이콘 선택 모달 — 행 아이콘 영역 클릭 시(2026-11-05 사용자 요청) */}
+          {iconForId && (
+            <IconPickerModal current={items.find((x) => x.id === iconForId)?.icon ?? null} onClose={() => setIconForId(null)}
+              onPick={(ic) => { setItemIcon(iconForId, ic); setIconForId(null); onToast('아이콘을 적용했습니다.'); }} />
           )}
           {/* 메뉴 추가 = 카탈로그(공차·뚜레쥬르·티켓…)에서 끌어오기. 카탈로그 없으면 빈 행 추가(2026-10-28 사용자 요청). */}
           <button type="button" onClick={() => (canLoad ? setLoadForId(APPEND_LOAD) : addItem())} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> {isBanner ? '배너 가져오기 (배너 캠페인 관리에서)' : isStatus ? '상태 카드 가져오기' : (itemWord + ' 추가' + (canLoad ? (loadOnly ? ' (등록된 ' + itemWord + '에서)' : ' (카탈로그에서)') : ''))}</button>
