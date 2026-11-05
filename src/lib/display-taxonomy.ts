@@ -888,12 +888,14 @@ const LAYOUT_LABEL: Record<string, string> = {
   '세로 리스트형': '세로형',
   '세로형(카테고리탭)': '세로형',
   '세로형(탭)': '세로형',
-  '이미지형': '배너 단일형',
-  '이미지형/빅배너': '배너 단일형',
-  '빅배너': '배너 단일형',
-  '팝업배너형': '배너 단일형',
-  '텍스트배너': '배너 단일형',
-  '스몰배너': '배너 단일형',
+  // 배너형 단일 배열 표기 = '단일형'(2026-11-05 사용자 요청: '배너 단일형' → '단일형'으로 코너 유형 관리·전시화면 관리 통일). 저장값은 '배너 단일형' 유지.
+  '배너 단일형': '단일형',
+  '이미지형': '단일형',
+  '이미지형/빅배너': '단일형',
+  '빅배너': '단일형',
+  '팝업배너형': '단일형',
+  '텍스트배너': '단일형',
+  '스몰배너': '단일형',
 };
 export function layoutLabel(detail?: string | null): string {
   if (!detail) return '';
@@ -919,7 +921,7 @@ const LAYOUT_EN: Record<string, string> = {
   '카테고리 탭': 'Tab', '탭형': 'Tab', '메뉴 리스트': 'List', '리스트형': 'List', '메뉴형': 'Menu',
   '아이콘/이미지형': 'Card', '카드형': 'Card', '프로필형': 'Profile',
   '바코드': 'Barcode', '바코드형': 'Barcode', '이미지형': 'Image', '텍스트 고지형': 'Text Notice',
-  '배너 단일형': 'Single', '스와이프형': 'Swipe',
+  '배너 단일형': 'Single', '단일형': 'Single', '스와이프형': 'Swipe',
   '가로형(무비)': 'Horizontal (Movie)', '상태 리스트형': 'Status Card',
   '칩형(ChipHome)': 'ChipHome', '칩형(ChipContents)': 'ChipContents', '칩형(ChipFilter)': 'ChipFilter', '칩형(ChipPage)': 'ChipPage', '칩형': 'ChipHome',
 };

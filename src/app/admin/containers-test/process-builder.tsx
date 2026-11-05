@@ -55,11 +55,12 @@ const EMPTY_ITEMS: FillItem[] = [];
 const APPEND_LOAD = '__append__'; // '메뉴 추가' = 카탈로그에서 골라 현재 메뉴에 덧붙이기(2026-10-28 사용자 요청)
 
 // 배너·칩·CTA 옵션 토글 → 선택 코너 미리보기에 반영(코너 유형 미리보기와 동일, 2026-11-05 사용자 요청).
-function applyOptsToPreview(preview: PCorner['preview'], opts: Record<string, boolean>): PCorner['preview'] {
+// CTA On이면 버튼 라벨은 입력값, 비어 있으면 무조건 'CTA'를 기본으로 박는다(2026-11-05 사용자 요청).
+function applyOptsToPreview(preview: PCorner['preview'], opts: Record<string, boolean>, ctaLabel?: string): PCorner['preview'] {
   if (!preview) return preview;
   const next = { ...preview };
   if ('배너' in opts) { next.bigBanner = opts['배너']; if (opts['배너'] && !next.bannerImageUrl) next.bannerImageUrl = 'Banner'; }
-  if ('CTA' in opts) { next.moreButtonUse = opts['CTA']; if (opts['CTA'] && !next.moreButtonLabel) next.moreButtonLabel = 'CTA'; }
+  if ('CTA' in opts) { next.moreButtonUse = opts['CTA']; if (opts['CTA']) next.moreButtonLabel = (ctaLabel ?? '').trim() || 'CTA'; }
   if ('칩' in opts) {
     const isOptChip = (c: { componentType: string; name: string }) => c.componentType === '선택형' && c.name === '칩옵션';
     const hasChip = next.components.some(isOptChip);
@@ -146,7 +147,7 @@ function Sec({ n, title, help, children }: { n: number; title: string; help?: bo
 }
 
 function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceChange, onOptionsChange, onToast }: {
-  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>) => void; onToast: (m: string) => void;
+  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onToast: (m: string) => void;
 }) {
   if (!corner) {
     return (
@@ -250,7 +251,7 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
   );
 }
 
-function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChange, onOptionsChange, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>) => void; onToast: (m: string) => void }) {
+function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChange, onOptionsChange, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onToast: (m: string) => void }) {
   const [src, setSrc] = React.useState<string>(corner.recSource ?? '운영자 편성');
   const [fb, setFb] = React.useState<'미노출' | '운영자 편성으로 대체'>(corner.fallback);
   const [cat, setCat] = React.useState('혜택');
@@ -440,9 +441,12 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                   {/* 설명 문구는 ⓘ 툴팁으로(인라인 제거, 2026-11-05 사용자 요청) */}
                   <Tip text={info.how} />
                 </div>
-                <div className="ml-6 mt-1 flex items-center gap-1 text-[11px]">
+                {/* 파란=CVM이 내려주는 것, 노랑=전시 어드민이 채우는 것. 라벨로 구분(2026-11-05 사용자 요청: 칩 의미 구분). */}
+                <div className="ml-6 mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px]">
+                  <span className="text-[var(--ink4)]">CVM이 줌</span>
                   <span className="rounded-[4px] bg-[#e6efff] px-1.5 py-0.5 font-semibold text-[#2e6ff2]">{info.cvmGives}</span>
-                  <ChevronRight className="h-3 w-3 text-[var(--ink4)]" />
+                  <span className="text-[var(--line2)]">|</span>
+                  <span className="text-[var(--ink4)]">우리가 채움</span>
                   <span className="rounded-[4px] bg-[#fff0d6] px-1.5 py-0.5 font-semibold text-[#b67a12]">{info.weBuild}</span>
                 </div>
               </button>
@@ -461,7 +465,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               <div className="flex flex-wrap gap-1.5">
                 {availOptions.map((o) => (
                   <button key={o} type="button"
-                    onClick={() => setOptOn((p) => { const next = !p[o]; if (next) setActiveOpt(o); const no = { ...p, [o]: next }; onOptionsChange(no); return no; })}
+                    onClick={() => setOptOn((p) => { const next = !p[o]; if (next) setActiveOpt(o); const no = { ...p, [o]: next }; onOptionsChange(no, ctaLabel); return no; })}
                     className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold', optOn[o] ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line3)] bg-white text-[var(--ink3)]')}>
                     {o}<span className={optOn[o] ? 'text-white/80' : 'text-[var(--ink4)]'}>{optOn[o] ? 'On' : 'Off'}</span>
                   </button>
@@ -517,7 +521,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                   {shownOpt === 'CTA' && (
                     <div>
                       <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">CTA · 버튼 이름</p>
-                      <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} placeholder="버튼 이름 입력 (예: 전체보기)" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                      <input value={ctaLabel} onChange={(e) => { setCtaLabel(e.target.value); onOptionsChange({ ...optOn, CTA: true }, e.target.value); }} placeholder="비워두면 'CTA'로 표기 (예: 전체보기)" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                      <p className="mt-1 text-[11px] text-[var(--ink4)]">비워두면 미리보기에 <span className="font-semibold text-[var(--ac)]">CTA</span>가 기본으로 들어갑니다.</p>
                     </div>
                   )}
                 </div>
@@ -937,7 +942,7 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
               <div className="min-h-0 overflow-y-auto pr-0.5">
                 <CornerDetail template={t} corner={selected} index={selIndex} onPreviewFallback={onPreviewFallback}
                   onRecSourceChange={(src) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, recSource: src, isCvm: src.startsWith('CVM') } : c)); }}
-                  onOptionsChange={(opts) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, preview: applyOptsToPreview(c.preview, opts) } : c)); }}
+                  onOptionsChange={(opts, ctaLabel) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, preview: applyOptsToPreview(c.preview, opts, ctaLabel) } : c)); }}
                   onToast={onToast} />
               </div>
             </div>
