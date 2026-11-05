@@ -54,6 +54,14 @@ export async function addCornersFromTypes(templateId: string, cornerTypeIds: str
   revalidatePath(`/admin/containers-test/t/${templateId}`);
 }
 
+// 코너명 수정 — 빌더 '① 코너 정보'의 코너명 편집을 실제 저장(Corner.name). 2026-11-05 사용자 요청(데모 → 실제).
+export async function renameCorner(templateId: string, cornerId: string, name: string) {
+  const n = name.trim();
+  if (!n) throw new Error('코너명을 입력하세요.');
+  await prisma.corner.update({ where: { id: cornerId }, data: { name: n } });
+  revalidatePath(`/admin/containers-test/t/${templateId}`);
+}
+
 // 코너 순서 변경 — 밴드 간 드래그앤드롭의 순서 저장(TemplateCorner.order, 테스트 경로 revalidate).
 export async function reorderTestCorners(templateId: string, orderedTemplateCornerIds: string[]) {
   if (!orderedTemplateCornerIds.length) return;

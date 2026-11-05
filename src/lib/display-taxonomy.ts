@@ -151,6 +151,8 @@ export function defaultComposition(
   else if (ct === '상품형') blocks.push({ componentType: '상품형', count: d.includes('단일') ? 1 : d === '세로형' ? 4 : (d.includes('세로형') && d.includes('배너')) ? 2 : 3, ...flags });
   else if (ct === '혜택형') blocks.push({ componentType: '혜택형', count: 3, badge: flags.badge });
   else if (ct === '정보형') blocks.push({ componentType: '정보형', count: /리스트|상태/.test(d) ? 4 : 1 });
+  // 배너형 스와이프형 = 여러 배너(스와이프) → 미리보기도 여러 장으로(2026-11-05 사용자 요청). 단일형은 1장.
+  else if (ct === '배너형') blocks.push({ componentType: '배너형', count: /스와이프|swipe/i.test(d) ? 3 : 1 });
   else if (ct) blocks.push({ componentType: ct, count: 1 });
   // 배열에 '카테고리 탭'이 있고 주 컴포넌트가 선택형이 아니면 상단 탭 블록을 얹는다.
   if (/카테고리\s*탭/.test(d) && ct !== '선택형' && blocks.length) blocks.unshift({ componentType: '선택형', count: 1 });
@@ -881,6 +883,15 @@ const LAYOUT_LABEL: Record<string, string> = {
   '메뉴 리스트': '리스트형',
   '아이콘/이미지형': '상태 안내형',
   '바코드': '바코드형',
+  // 레거시 cornerLayout/배열 표기 → 코너 유형 관리 배열명으로 정규화(2026-11-05 사용자 요청: 빌더·코너 유형 관리 라벨 통일).
+  '가로 SWIPE형': '가로형',
+  '가로 Swipe형': '가로형',
+  '세로 리스트형': '세로형',
+  '이미지형': '배너 단일형',
+  '이미지형/빅배너': '배너 단일형',
+  '팝업배너형': '배너 단일형',
+  '텍스트배너': '배너 단일형',
+  '스몰배너': '배너 단일형',
 };
 export function layoutLabel(detail?: string | null): string {
   if (!detail) return '';

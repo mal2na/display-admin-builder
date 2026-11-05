@@ -10,7 +10,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { addCornersFromTypes, reorderTestCorners, setTestCornerZone, removeCornerFromTemplate } from './actions';
+import { addCornersFromTypes, reorderTestCorners, setTestCornerZone, removeCornerFromTemplate, renameCorner } from './actions';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -207,8 +207,17 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const [cat, setCat] = React.useState('혜택');
   const [topN, setTopN] = React.useState(5);
   // ① 코너 정보 — 코너명만 편집 가능(유형·레이아웃·개수는 코너 유형 관리에서 불러오는 껍데기)
+  const router = useRouter();
   const [editName, setEditName] = React.useState(false);
   const [nameVal, setNameVal] = React.useState(corner.name);
+  // 코너명 저장 — 실제 DB 반영(2026-11-05 사용자 요청: 수정이 안 되던 데모 → 실제 저장).
+  const saveName = async () => {
+    const n = nameVal.trim();
+    if (!n) { onToast('코너명을 입력하세요.'); return; }
+    setEditName(false);
+    try { await renameCorner(template.id, corner.id, n); router.refresh(); onToast('코너명을 수정했습니다.'); }
+    catch { setNameVal(corner.name); onToast('코너명을 저장하지 못했습니다.'); }
+  };
   const options = cornerOptions(corner.preview);
   const isCvmSrc = src.startsWith('CVM');
   const isData = src === 'CVM 데이터 연동';
@@ -291,7 +300,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             <div className="flex items-center gap-1.5">
               <input value={nameVal} onChange={(e) => setNameVal(e.target.value)} autoFocus
                 className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line3)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-              <button type="button" onClick={() => { setEditName(false); onToast('코너명을 수정했습니다. (데모)'); }}
+              <button type="button" onClick={saveName}
                 className="inline-flex h-[30px] shrink-0 items-center gap-1 rounded-[6px] bg-[var(--ac)] px-2 text-[12px] font-semibold text-white hover:bg-[var(--ac-h)]"><Check className="h-3 w-3" /> 완료</button>
               <button type="button" onClick={() => { setNameVal(corner.name); setEditName(false); }}
                 className="inline-flex h-[30px] shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[12px] text-[var(--ink3)] hover:bg-[var(--th)]"><X className="h-3 w-3" /> 취소</button>
@@ -544,6 +553,9 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete,
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.templateCornerId });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const layoutText = cornerLayoutText(c.layout, c.layoutDetail);
+  // 이름에 '유형 · ' 접두가 붙은 자동생성 코너는 접두를 떼어 '배열(레이아웃)'만 제목으로(유형은 아래 칩으로만). 2026-11-05 사용자 요청.
+  const typePrefix = `${c.cornerType} · `;
+  const displayName = c.name.startsWith(typePrefix) ? c.name.slice(typePrefix.length) : c.name;
   return (
     <div ref={setNodeRef} style={style} onClick={onSelect}
       className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-2 transition',
@@ -551,12 +563,15 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete,
         selected ? 'border-[var(--ac)] bg-[var(--ac2)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
       {/* 상단 행 — 그립·번호·이름·고정·토글·삭제 */}
       <div className="flex items-center gap-2">
-        <button type="button" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} title="드래그로 순서·밴드 이동"
-          className="flex shrink-0 cursor-grab touch-none items-center rounded p-0.5 text-[var(--ink4)] hover:bg-[var(--th)] active:cursor-grabbing">
-          <GripVertical className="h-3.5 w-3.5" />
-        </button>
-        <span className="w-4 shrink-0 text-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
-        <span className={cn('min-w-0 flex-1 truncate text-[13px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{c.name}</span>
+        {/* 그립·번호는 바싹 붙인다(핸들↔번호 빈 공간 축소, 2026-11-05 사용자 요청). */}
+        <div className="flex shrink-0 items-center gap-1">
+          <button type="button" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} title="드래그로 순서·밴드 이동"
+            className="flex cursor-grab touch-none items-center rounded p-0.5 text-[var(--ink4)] hover:bg-[var(--th)] active:cursor-grabbing">
+            <GripVertical className="h-3.5 w-3.5" />
+          </button>
+          <span className="w-4 text-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
+        </div>
+        <span className={cn('min-w-0 flex-1 truncate text-[13px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{displayName}</span>
         {/* 고정(Fixed) 토글 */}
         <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFixed(); }} title={fixed ? 'Fixed 고정됨 — 눌러서 해제' : '눌러서 Fixed로 고정'}
           className={cn('inline-flex h-5 shrink-0 items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
@@ -575,8 +590,10 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete,
         </button>
       </div>
       {/* 하단 행 — 유형 칩 · 레이아웃(전체 폭, 안 잘림) */}
-      <div className="mt-1 flex items-center gap-1.5 pl-[30px]">
+      {/* 칩·레이아웃 줄 — 번호가 아니라 '제목(텍스트)' 시작선에 맞춘다(그립18+gap4+번호16+gap8=46px). 2026-11-05 사용자 요청. */}
+      <div className="mt-1 flex items-center gap-1.5 pl-[46px]">
         <span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span>
+        {/* 배열·레이아웃은 칩 옆에 '항상' 작게 표기 — 굵은 제목(코너명)은 편집으로 바뀌어도 이 표기는 유지(2026-11-05 사용자 요청). */}
         {layoutText && <span className="whitespace-nowrap text-[11px] text-[var(--ink4)]">{layoutText}</span>}
       </div>
     </div>
@@ -590,19 +607,27 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete,
 type Band = 'fixed' | 'dynamic';
 const bandOf = (c: PCorner): Band => (c.zone === 'fixed' ? 'fixed' : 'dynamic');
 // 상단 퀵메뉴(업무 진입형 = 앱 상단 탭 바)는 항상 맨 위. 나머지는 순서 유지(안정 정렬) → 교차 고정은 그대로(2026-10-28 사용자 요청).
-const sortNavFirst = (cs: PCorner[]): PCorner[] => {
-  const nav = cs.filter((c) => c.cornerType === '업무 진입형');
-  const rest = cs.filter((c) => c.cornerType !== '업무 진입형');
-  return [...nav, ...rest];
+// 내용 동일 여부 — props→rows 동기화가 '같은 내용, 다른 참조'로 무한 setState 루프를 만들지 않도록 비교(2026-11-05 버그픽스).
+const sameRowList = (a: PCorner[], b: PCorner[]): boolean => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i], y = b[i];
+    if (x.templateCornerId !== y.templateCornerId || x.zone !== y.zone || x.recSource !== y.recSource || x.isCvm !== y.isCvm) return false;
+  }
+  return true;
 };
 
 function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSelect, onAddCorner, onToast }: {
   corners: PCorner[]; onCornersChange: (rows: PCorner[]) => void; templateId: string; selCorner: string | null; onSelect: (id: string) => void; onAddCorner: () => void; onToast: (m: string) => void;
 }) {
   const router = useRouter();
-  // 낙관적 로컬 상태 — 드래그 즉시 반영, 서버 저장 후 refresh로 동기화
-  const [rows, setRows] = React.useState<PCorner[]>(() => sortNavFirst(corners));
-  React.useEffect(() => { setRows(sortNavFirst(corners)); }, [corners]);
+  // 낙관적 로컬 상태 — 드래그 즉시 반영, 서버 저장 후 refresh로 동기화.
+  //  등록 순서(order) 그대로 노출한다 — 유형별 재정렬 금지(2026-11-05 사용자 요청: 순서 유지 + 고정은 제자리).
+  const [rows, setRows] = React.useState<PCorner[]>(() => corners);
+  // props가 '같은 내용·다른 참조'로 와도 rows를 새로 만들지 않는다 → 아래 onCornersChange 효과와의 무한 루프 차단(2026-11-05 버그픽스).
+  React.useEffect(() => {
+    setRows((prev) => (sameRowList(prev, corners) ? prev : corners));
+  }, [corners]);
   // 리스트의 순서·존 변화를 부모(미리보기 공유 상태)로 즉시 올려 미리보기가 바로 반영되게 한다.
   React.useEffect(() => { onCornersChange(rows); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
   const rowsRef = React.useRef(rows); rowsRef.current = rows;
@@ -838,9 +863,10 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
                 <button key={c.id} type="button" onClick={() => { toggle(c.id); setFocusId(c.id); }}
                   className={cn('flex w-full items-start gap-2.5 rounded-[10px] border px-3.5 py-3 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : focusId === c.id ? 'border-[var(--line3)] bg-[var(--th)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
                   <span className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
+                  {/* 두 줄 — 위: 배열(레이아웃) 굵게 · 아래: 유형 칩. '껍데기…' 안내문구 제거(2026-11-05 사용자 요청). */}
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[14px] font-bold text-[var(--ink)]">{c.shellTitle}</span>
-                    <span className="block text-[12px] text-[var(--ink4)]">껍데기 · 내용은 추가 후 ② 수급에서 · v1.0.0</span>
+                    <span className="block truncate text-[14px] font-bold text-[var(--ink)]">{layoutLabel(c.shell) || c.shell || c.cornerType}</span>
+                    <span className="mt-1 flex"><span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span></span>
                   </span>
                 </button>
               );

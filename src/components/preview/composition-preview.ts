@@ -478,9 +478,12 @@ export function compositionToPreviewCorner(opts: {
     layoutDetail: opts.detail ?? null,
     cornerLayout: opts.layout ?? null,
     bigBanner: opts.forceBanner || isPlanBanner || isDeviceBanner || isBenefitBanner || undefined,
-    // 신규 등록 가이드 폼에선 배너 히어로도 빈 영역. '배너' 옵션 강제 시엔 상품 이미지 대신 'Banner' 슬롯(센티넬: 렌더 불가 → 그라데이션 Banner 박스).
-    bannerImageUrl: isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : (opts.forceBanner ? 'Banner' : (opts.emptyImages ? null : undefined)),
-    bannerName: opts.forceBanner ? 'Banner' : undefined,
+    // 신규 등록·껍데기 가이드(emptyImages)에선 배너 히어로도 '빈 Banner 슬롯'(그라데이션 Banner 박스)으로 — 실제 이미지(iPhone 히어로 등) 금지(2026-11-05 사용자 요청: 코너 유형 관리 미리보기와 동일).
+    //  실제 노출(emptyImages 아님)에서만 PLAN_HERO/DEVICE_HERO 실이미지.
+    bannerImageUrl: opts.emptyImages
+      ? ((isPlanBanner || isDeviceBanner || isBenefitBanner || opts.forceBanner) ? 'Banner' : null)
+      : (isPlanBanner ? PLAN_HERO : isDeviceBanner ? DEVICE_HERO : (opts.forceBanner ? 'Banner' : undefined)),
+    bannerName: (opts.forceBanner || (opts.emptyImages && (isPlanBanner || isDeviceBanner || isBenefitBanner))) ? 'Banner' : undefined,
     emptyImages: opts.emptyImages ?? null,
     components,
   };
