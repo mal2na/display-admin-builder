@@ -382,8 +382,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const isBanner = corner.cornerType === '배너형';
   // 배너 단일형 = 배너 1장 → 순서 변경 없음(드래그 핸들 제거). 스와이프형만 여러 장 재정렬(2026-11-05 사용자 요청).
   const bannerSingle = isBanner && !/스와이프|swipe/i.test(detailStr);
+  // '직접 추가'(운영자가 라벨·아이콘·링크를 직접 입력)는 업무 진입형 칩형(퀵메뉴)에만. 나머지는 전부 불러오기(로드)만(2026-11-05 사용자 확정).
+  const isChip = corner.cornerType === '업무 진입형' && /칩|카테고리/.test(detailStr);
   // 상태 안내형 = '상태 카드'를 뭉텅이로 가져오기 전용(값·보조문구는 런타임 고객 데이터 @cvm, 2026-11-05 사용자 요청).
-  const loadOnly = corner.cornerType === '콘텐츠 안내형' || isBenefitList || isBanner || isStatus || isProfile;
+  //  칩형을 제외한 모든 아이템 리스트 유형은 '불러오기 전용'(행=변경, 직접 입력 없음).
+  const loadOnly = !isChip;
   const itemWord = corner.cornerType === '콘텐츠 안내형' ? '영화' : isStatus ? '상태' : isProfile ? '고객정보' : corner.cornerType === '업무 진입형' ? '메뉴' : isBanner ? '배너' : isBenefitList ? '혜택' : '항목';
   const loadFields = corner.cornerType === '콘텐츠 안내형' ? '이미지·제목·평점·예매율' : (isStatus || isProfile) ? '값 자동(@cvm)' : isBanner ? '배너 이미지·문구·랜딩' : '로고·혜택 문구·브랜드';
   // 좌측 미리보기에 '실제로 보이는' 항목을 ③채우기 기본값으로 — 채워진 코너는 그 코너의 콘텐츠와 1:1 일치(2026-11-05 사용자 요청).
@@ -766,9 +769,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           <div className="space-y-1.5">
             {items.length === 0 && <p className="rounded-[8px] border border-dashed border-[var(--line3)] px-3 py-4 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 ' + itemWord + '에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
             {items.map((o) => {
-              // 불러오기 전용 유형(영화·배너·혜택 세로)도 '직접 추가'한 행(mode=direct)은 편집 행으로 — 각 유형마다 불러오기·직접 둘 다 가능(2026-11-05 사용자 요청).
-              //  불러온 행(mode=load)만 포스터+제목+평점/변경 형태로 표기.
-              if (loadOnly && o.mode !== 'direct') {
+              // 칩형(퀵메뉴)만 편집 행(아이콘·텍스트·링크·직접 입력). 나머지 유형은 전부 불러오기 전용 → 포스터/썸네일+제목+변경 행(2026-11-05 사용자 확정).
+              if (!isChip) {
                 return (
                 <div key={o.id} className="flex items-center gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
                   {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김(2026-11-05 사용자 요청) */}
@@ -830,11 +832,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             <IconPickerModal current={items.find((x) => x.id === iconForId)?.icon ?? null} onClose={() => setIconForId(null)}
               onPick={(ic) => { setItemIcon(iconForId, ic); setIconForId(null); onToast('아이콘을 적용했습니다.'); }} />
           )}
-          {/* 추가 — 각 유형마다 '직접 추가(빈 행)' + '불러오기' 둘 다 제공(2026-11-05 사용자 요청). */}
-          <div className="mt-2 flex gap-1.5">
-            <button type="button" onClick={addItem} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 직접 추가</button>
-            {canLoad && <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white py-2 text-[12px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> {isBanner ? '배너 캠페인에서 불러오기' : loadOnly ? ('등록된 ' + itemWord + '에서 불러오기') : '카탈로그에서 불러오기'}</button>}
-          </div>
+          {/* 추가 — 직접 추가는 칩형(퀵메뉴)에만. 단일형 배너는 기존 있으면 '변경'만·비면 '불러오기'. 나머지는 '불러오기' 단일(2026-11-05 사용자 확정). */}
+          {isChip ? (
+            <div className="mt-2 flex gap-1.5">
+              <button type="button" onClick={addItem} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Plus className="h-3.5 w-3.5" /> 직접 추가</button>
+              {canLoad && <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="flex flex-1 items-center justify-center gap-1 rounded-[8px] border border-[var(--line2)] bg-white py-2 text-[12px] font-semibold text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 카탈로그에서 불러오기</button>}
+            </div>
+          ) : bannerSingle ? (
+            items.length === 0 ? (
+              <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3.5 w-3.5" /> 배너 캠페인에서 불러오기</button>
+            ) : null
+          ) : canLoad ? (
+            <button type="button" onClick={() => setLoadForId(APPEND_LOAD)} className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-[#cfd2ff] bg-[var(--ac2)] py-2 text-[12px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3.5 w-3.5" /> {isBanner ? '배너 캠페인에서 불러오기' : ('등록된 ' + itemWord + '에서 불러오기')}</button>
+          ) : null}
           </>
           )}
         </Sec>
