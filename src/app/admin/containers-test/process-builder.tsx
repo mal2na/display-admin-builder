@@ -57,6 +57,8 @@ const ProductCatalogCtx = React.createContext<Record<string, ProductOption[]>>({
 type FillItem = { id: string; label: string; icon?: string | null; link?: string; sub?: string; mode: 'direct' | 'load' };
 const EMPTY_ITEMS: FillItem[] = [];
 const APPEND_LOAD = '__append__'; // '메뉴 추가' = 카탈로그에서 골라 현재 메뉴에 덧붙이기(2026-10-28 사용자 요청)
+// 라벨 → 딥링크 슬러그(링크를 비워두지 않고 세트로 채우기용, 2026-11-05 사용자 요청). 한글/영숫자 유지, 나머지는 '-'.
+const slugLink = (s: string) => (s || '').trim().toLowerCase().replace(/[^\w가-힣]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'item';
 
 // 배너·칩·CTA 옵션 토글 → 선택 코너 미리보기에 반영(코너 유형 미리보기와 동일, 2026-11-05 사용자 요청).
 // CTA On이면 버튼 라벨은 입력값, 비어 있으면 무조건 'CTA'를 기본으로 박는다(2026-11-05 사용자 요청).
@@ -309,9 +311,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const [nameVal, setNameVal] = React.useState(corner.name);
   // 코너명 저장 — 실제 DB 반영(2026-11-05 사용자 요청: 수정이 안 되던 데모 → 실제 저장).
   const saveName = async () => {
-    const n = nameVal.trim();
-    if (!n) { onToast('코너명을 입력하세요.'); return; }
+    // 비우고 완료하면 기본 배열명(세로형 등)으로 되돌린다(2026-11-05 사용자 요청: 다 지우고 완료 → 기존 배열명).
+    const fallback = layoutLabel(corner.layoutDetail ?? corner.layout ?? '') || corner.layoutDetail || corner.layout || corner.cornerType;
+    const n = nameVal.trim() || fallback;
     setEditName(false);
+    setNameVal(n);
     try { await renameCorner(template.id, corner.id, n); router.refresh(); onToast('코너명을 수정했습니다.'); }
     catch { setNameVal(corner.name); onToast('코너명을 저장하지 못했습니다.'); }
   };
@@ -403,7 +407,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (comp.atoms ?? []).forEach((a: any, j: number) => {
           const label = (a.content || a.name || '').trim();
-          if (label && !PV_PLACEHOLDER.test(label)) out.push({ id: `pv-chip-${i}-${j}`, label, icon: a.imageUrl ?? null, link: a.linkUrl ?? undefined, mode: 'load' });
+          // 링크는 placeholder로 비워두지 말고 세트로 채운다 — 링크값 없으면 라벨 기반 딥링크로(2026-11-05 사용자 요청).
+          if (label && !PV_PLACEHOLDER.test(label)) out.push({ id: `pv-chip-${i}-${j}`, label, icon: a.imageUrl ?? null, link: a.linkUrl || `/menu/${slugLink(label)}`, mode: 'load' });
         });
         return;
       }
@@ -413,8 +418,18 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
       const benefit = atoms.find((a) => a.atomType === 'BENEFIT_TEXT')?.content;
       const text = atoms.find((a) => a.atomType === 'TEXT' && a.content && !PV_PLACEHOLDER.test(String(a.content).trim()))?.content;
       const label = (benefit || text || '').trim();
-      const sub = atoms.find((a) => a.atomType === 'INFO' && a.content)?.content ?? undefined;
-      if ((label && !PV_PLACEHOLDER.test(label)) || img) out.push({ id: `pv-${i}-${comp.id ?? i}`, label: label || itemWord, icon: img, sub, mode: 'load' });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const linkA = atoms.find((a: any) => typeof a.linkUrl === 'string' && a.linkUrl)?.linkUrl ?? undefined;
+      let sub = atoms.find((a) => a.atomType === 'INFO' && a.content)?.content ?? undefined;
+      let link = linkA;
+      // 배너는 랜딩 링크·사이즈를 배너 캠페인(카탈로그)에서 매칭해 채운다(2026-11-05 사용자 요청: 랜딩 다 넣기).
+      if (isBanner) {
+        const m = catalog.find((p) => p.title === label || p.title === text || p.imageUrl === img);
+        if (m) { if (!link) link = m.landing; if (m.size) sub = m.size; }
+      }
+      // 링크는 비워두지 않고 세트로 채운다 — 유형별 딥링크 경로 + 라벨 슬러그(2026-11-05 사용자 요청: 플레이스홀더로 두지 말고 다 채워).
+      if (!link) { const base = corner.cornerType === '배너형' ? 'event' : (corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형') ? 'benefit' : corner.cornerType === '상품형' ? 'product' : corner.cornerType === '콘텐츠 안내형' ? 'movie' : 'link'; link = `/${base}/${slugLink(label || String(comp.id ?? i))}`; }
+      if ((label && !PV_PLACEHOLDER.test(label)) || img) out.push({ id: `pv-${i}-${comp.id ?? i}`, label: label || itemWord, icon: img, link, sub, mode: 'load' });
     });
     return out;
   };
@@ -655,15 +670,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                       </button>
                     ))}
                   </div>
-                  {/* 배너 On → 배너 이미지. 주소 직접 입력은 불필요(배너 소재는 배너 캠페인 관리에서) → 썸네일 + '불러오기'만(2026-11-05 사용자 요청). */}
+                  {/* 배너 On(옵션 배너) → 소재 불러오기 3소스: 배너 캠페인 / DS 포탈 / 로컬(2026-11-05 사용자 요청). 주소 직접 입력은 없음. */}
                   {optOn['배너'] && (
                     <div className="mt-2 rounded-[7px] border border-[var(--line2)] bg-white p-2">
-                      <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink3)]">배너 이미지 <span className="font-normal text-[var(--ink4)]">· 배너 캠페인 관리에서</span></p>
-                      <div className="flex items-center gap-1.5">
+                      <div className="mb-1.5 flex items-center gap-1.5">
                         <span className="grid h-10 w-16 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-white text-[var(--ink4)]">
                           {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
                         </span>
-                        <button type="button" onClick={() => onToast('배너 불러오기 (데모)')} className="flex flex-1 items-center justify-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white py-1.5 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 배너 캠페인에서 불러오기</button>
+                        <p className="text-[11px] font-semibold text-[var(--ink3)]">배너 이미지 <span className="font-normal text-[var(--ink4)]">· 소재를 불러오세요</span></p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {([['배너 캠페인', '배너 캠페인 관리'], ['DS 포탈', 'DS 포탈'], ['로컬', '로컬 업로드']] as const).map(([label, src]) => (
+                          <button key={label} type="button" onClick={() => onToast(`${src}에서 불러오기 (데모)`)} className="flex items-center justify-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-1 py-1.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3 shrink-0" /> {label}</button>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -682,11 +701,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                             <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
                           </span>
                         ))}
-                        {/* 빈 슬롯 = 점선 'Chip' placeholder. 클릭하면 불러오기로 채운다. */}
-                        {Array.from({ length: Math.max(0, chipSlotCount - chips.length) }).map((_, i) => (
-                          <button key={`ph-${i}`} type="button" onClick={() => setChipLoadOpen(true)}
+                        {/* 빈 자리 = 점선 'Chip' placeholder 하나만 맨 앞에(2026-11-05 사용자 요청). 클릭하면 불러오기로 채운다. */}
+                        {chips.length < chipSlotCount && (
+                          <button type="button" onClick={() => setChipLoadOpen(true)}
                             className="inline-flex items-center rounded-full border border-dashed border-[var(--line3)] bg-white px-2.5 py-1 text-[12px] font-medium text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]">Chip</button>
-                        ))}
+                        )}
                         <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 불러오기</button>
                       </div>
                       <p className="mt-1.5 text-[11px] text-[var(--ink4)]">점선 <b className="text-[var(--ink3)]">Chip</b>은 빈 자리예요 · <b className="text-[var(--ink3)]">불러오기</b>로 카테고리를 넣으면 반영됩니다. 칩을 누르면 아래 아이템이 그 칩 항목으로 바뀌어요.</p>
@@ -782,9 +801,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                 <div key={o.id} className="flex items-center gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
                   {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김(2026-11-05 사용자 요청) */}
                   {!bannerSingle && <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]" />}
-                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 넓게, 그 외 정사각 */}
+                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 인풋 2줄 높이(≈60px)에 맞추고 넓게(배너 비율)로 '배너답게'(2026-11-05 사용자 요청). 그 외 정사각 */}
                   <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="이미지 불러오기"
-                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'h-11 w-[84px]' : 'h-10 w-10')}>
+                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'h-[60px] w-[128px]' : 'h-10 w-10')}>
                     <ItemIcon src={o.icon} iconClass="h-5 w-5" imgClass={cn('h-full w-full', isBanner ? 'object-cover' : 'object-contain')} />
                   </button>
                   {/* 제목·링크 직접 편집. 배너는 사이즈(스몰배너 672×324 등)도 표기 — 배너 캠페인에서 함께 끌어온다(2026-11-05 사용자 요청). */}
