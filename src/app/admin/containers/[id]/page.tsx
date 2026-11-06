@@ -295,7 +295,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
                                 <LoginGroupSelect templateId={t.id} value={t.conditionGroup} />
                               </td>
                               <td className="h-12 px-3 font-medium">
-                                <Link href={`/admin/templates/${t.id}/builder`} className="flex items-center gap-1 text-[var(--ac)] hover:underline">
+                                <Link href={`/admin/containers-test/t/${t.id}`} className="flex items-center gap-1 text-[var(--ac)] hover:underline">
                                   {t.isDefault && <Star className="h-3.5 w-3.5 fill-[var(--ac)] text-[var(--ac)]" />}
                                   {t.name}
                                 </Link>
@@ -323,7 +323,7 @@ export default async function ContainerDetailPage({ params }: { params: { id: st
                                 {/* 빌더 · 복사 · ⋯(보관) — 보관은 확인 팝오버로 인-컨텍스트 처리 */}
                                 <TemplateRowActions
                                   templateId={t.id}
-                                  builderHref={`/admin/templates/${t.id}/builder`}
+                                  builderHref={`/admin/containers-test/t/${t.id}`}
                                   duplicateAction={duplicateTemplate.bind(null, container.id, t.id)}
                                   archiveBlockReason={archiveBlockReason}
                                   deleteBlockReason={deleteBlockReason}

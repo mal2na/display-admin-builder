@@ -102,7 +102,7 @@ export default async function ComparePage({ params }: { params: { id: string } }
               )}
             </DeviceFrame>
             <Link
-              href={`/admin/templates/${t.id}/builder`}
+              href={`/admin/containers-test/t/${t.id}`}
               className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
             >
               <PencilRuler className="h-3.5 w-3.5" /> 이 Template 빌더 열기
