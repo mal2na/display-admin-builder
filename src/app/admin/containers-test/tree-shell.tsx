@@ -31,7 +31,7 @@ export async function ContainersTestShell({ children }: { children: React.ReactN
         allRows={allRows}
         linkContainerTpl="/admin/containers-test/c/{id}"
         linkTemplateTpl="/admin/containers-test/t/{id}"
-        newHref="/admin/containers/new"
+        newHref="/admin/containers-test/new"
       />
       <div className="min-w-0 flex-1 overflow-y-auto rounded-2xl border bg-white shadow-sm">{children}</div>
     </div>

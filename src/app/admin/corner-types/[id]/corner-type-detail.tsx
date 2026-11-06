@@ -111,7 +111,7 @@ export function CornerTypeDetail({ row, history, builtOptions, registered = [], 
                     <div className="mb-1.5 flex items-center gap-1 text-[11px]">
                       {g.container ? (
                         g.templateId ? (
-                          <Link href={`/admin/templates/${g.templateId}/builder`} className="inline-flex items-center gap-1 rounded hover:bg-indigo-50/60" title="전시화면 관리(빌더)에서 열기">
+                          <Link href={`/admin/containers-test/t/${g.templateId}`} className="inline-flex items-center gap-1 rounded hover:bg-indigo-50/60" title="전시화면 관리(빌더)에서 열기">
                             <Box className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                             <span className="font-semibold text-slate-800 hover:underline">{g.container}</span>
                             <ChevronRight className="h-3 w-3 shrink-0 text-slate-300" />
@@ -490,7 +490,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
                   {u.screens.length === 0 ? (
                     <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">미배치</span>
                   ) : u.screens.map((s, j) => (
-                    <Link key={j} href={`/admin/templates/${s.templateId}/builder`} className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-white px-1.5 py-0.5 text-[11px] ring-1 ring-slate-200 transition hover:ring-indigo-400" title="전시화면 관리(빌더)에서 열기">
+                    <Link key={j} href={`/admin/containers-test/t/${s.templateId}`} className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-white px-1.5 py-0.5 text-[11px] ring-1 ring-slate-200 transition hover:ring-indigo-400" title="전시화면 관리(빌더)에서 열기">
                       <Box className="h-3 w-3 shrink-0 text-slate-400" />
                       <span className="whitespace-nowrap text-slate-700">{s.container}</span>
                       <ChevronRight className="h-2.5 w-2.5 shrink-0 text-slate-300" />

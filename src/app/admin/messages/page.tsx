@@ -40,7 +40,7 @@ export default async function MessagesPage() {
       const id = `title:${c.id}`;
       const e = byId.get(id);
       if (e) { if (!e.usages.includes(u)) e.usages.push(u); }
-      else byId.set(id, { id, kind: 'title', use: '타이틀', label: c.name, base: c.mainTitle, variants: toChips(c.mainTitleVariants), usages: [u], editHref: `/admin/templates/${t.id}/builder`, cornerId: c.id });
+      else byId.set(id, { id, kind: 'title', use: '타이틀', label: c.name, base: c.mainTitle, variants: toChips(c.mainTitleVariants), usages: [u], editHref: `/admin/containers-test/t/${t.id}`, cornerId: c.id });
     }
   }
   // 배리에이션 많은 문구 → 위로 (관리 우선순위)

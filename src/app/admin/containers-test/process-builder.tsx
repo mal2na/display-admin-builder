@@ -374,7 +374,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   });
   const [chipLoadOpen, setChipLoadOpen] = React.useState(false);
   // 배너 옵션 콘텐츠 — 배너 On이면 이미지. CTA 라벨은 '버튼 텍스트(buttonTextVal)'로 통합(2026-11-05 사용자 요청).
-  const [bannerImg, setBannerImg] = React.useState('');
+  // 배너 옵션 썸네일 — 좌측 미리보기에 이미 배너가 있으면(코너 배너 이미지/첫 이미지 아톰) 그걸 기본값으로(2026-11-05 사용자 요청: 미리보기 배너를 ③에 반영).
+  const [bannerImg, setBannerImg] = React.useState(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pvAny = pv as any;
+    if (pvAny?.bannerImageUrl) return pvAny.bannerImageUrl as string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const img = (pv?.components ?? []).flatMap((c: any) => c.atoms ?? []).find((a: any) => (a.atomType === 'IMAGE' || a.atomType === 'ICON') && typeof a.imageUrl === 'string' && a.imageUrl.startsWith('/'))?.imageUrl;
+    return img ?? '';
+  });
   // ③ 채우기 항목 — 칩 On 이면 칩마다 별도 메뉴(칩 하나하나 메뉴 연동, 2026-10-28 사용자 요청). 칩 Off 면 단일 리스트(__flat__).
   const chipMode = !!optOn['칩'] && chips.length > 0;
   const [activeChip, setActiveChip] = React.useState(0);
@@ -450,10 +458,24 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // 새 행은 세그먼트 기본값을 '불러오기'로(2026-11-05 사용자 요청) → 우측 '불러오기' 버튼이 바로 뜬다. 직접 입력하려면 '직접' 선택.
   const addItem = () => updateItems((xs) => [...xs, { id: `new-${Date.now()}`, label: '', mode: 'load' }]);
   const removeItem = (id: string) => updateItems((xs) => xs.filter((x) => x.id !== id));
-  const setItemLabel = (id: string, label: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, label } : x)));
-  const setItemLink = (id: string, link: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, link } : x)));
+  // 칩형(퀵메뉴) 아이템 편집(아이콘·라벨·링크)을 좌측 미리보기 선택형 아톰에 반영(2026-11-05 사용자 요청: 미리보기에서 바꾸면 아이콘도 바뀌어야).
+  const pushChipPreview = (next: FillItem[]) => {
+    if (!isChip) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const comps = (pv?.components ?? []).map((c: any) => c.componentType === '선택형'
+      ? { ...c, atoms: next.map((o, i) => ({ id: `ci-${i}-${o.id}`, name: o.label || `Chip${i + 1}`, atomType: 'TEXT', content: o.label || `Chip${i + 1}`, imageUrl: o.icon ?? null, altText: null, linkUrl: o.link ?? null })) }
+      : c);
+    onPreviewPatch({ components: comps });
+  };
+  const editItems = (id: string, patch: Partial<FillItem>) => {
+    const next = items.map((x) => (x.id === id ? { ...x, ...patch } : x));
+    updateItems(() => next);
+    pushChipPreview(next);
+  };
+  const setItemLabel = (id: string, label: string) => editItems(id, { label });
+  const setItemLink = (id: string, link: string) => editItems(id, { link });
   const setItemMode = (id: string, mode: FillItem['mode']) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, mode } : x)));
-  const setItemIcon = (id: string, icon: string) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, icon } : x)));
+  const setItemIcon = (id: string, icon: string) => editItems(id, { icon });
   const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
   const [iconForId, setIconForId] = React.useState<string | null>(null); // 아이콘 선택 모달 대상 항목 id(2026-11-05 사용자 요청)
   // 삭제 — 데이터 있는 항목은 확인 모달, 빈 항목은 바로 삭제(2026-11-05 사용자 요청).
@@ -807,13 +829,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               // 이미지 기반 유형(영화·배너·혜택·상품) — 썸네일(불러온 이미지, 클릭 시 교체) + 제목·링크 직접 편집 + 행별 불러오기(2026-11-05 사용자 확정: 각 행 직접 편집+불러오기).
               if (!isChip) {
                 return (
-                <div key={o.id} className="flex items-center gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
+                <div key={o.id} className={cn('flex gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5', isBanner ? 'items-stretch' : 'items-center')}>
                   {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김(2026-11-05 사용자 요청) */}
-                  {!bannerSingle && <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]" />}
-                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 인풋 2줄 높이(≈60px)에 맞추고 넓게(배너 비율)로 '배너답게'(2026-11-05 사용자 요청). 그 외 정사각 */}
+                  {!bannerSingle && <GripVertical className={cn('h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]', isBanner && 'mt-1')} />}
+                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 행 높이를 꽉 채우고 넓게(배너 비율) + 전체가 보이게 contain(크롭 금지, 얼라인 맞춤). 그 외 정사각 */}
                   <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="이미지 불러오기"
-                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'h-[60px] w-[128px]' : 'h-10 w-10')}>
-                    <ItemIcon src={o.icon} iconClass="h-5 w-5" imgClass={cn('h-full w-full', isBanner ? 'object-cover' : 'object-contain')} />
+                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'w-[132px] self-stretch bg-white' : 'h-10 w-10 bg-[var(--th)]')}>
+                    <ItemIcon src={o.icon} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
                   </button>
                   {/* 제목·링크 직접 편집. 배너는 사이즈(스몰배너 672×324 등)도 표기 — 배너 캠페인에서 함께 끌어온다(2026-11-05 사용자 요청). */}
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -1083,7 +1105,8 @@ const sameRowList = (a: PCorner[], b: PCorner[]): boolean => {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
     const x = a[i], y = b[i];
-    if (x.templateCornerId !== y.templateCornerId || x.zone !== y.zone || x.recSource !== y.recSource || x.isCvm !== y.isCvm) return false;
+    // name·layoutDetail도 비교에 포함 — 코너명 수정이 목록 칩에 반영되게(2026-11-05 사용자 요청: 변경 안 되던 버그).
+    if (x.templateCornerId !== y.templateCornerId || x.zone !== y.zone || x.recSource !== y.recSource || x.isCvm !== y.isCvm || x.name !== y.name || x.layoutDetail !== y.layoutDetail) return false;
   }
   return true;
 };
@@ -1450,25 +1473,24 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
     <ProductCatalogCtx.Provider value={data.catalogByType ?? {}}>
     <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
       {/* 스크롤 영역 — 헤더(스크롤 시 함께 올라감) + 2열(좌 디바이스 스티키 · 우 콘텐츠) */}
-      <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5">
-        {/* 헤더 — 전체 폭, 고정 아님(스크롤하면 같이 올라감). 폰트는 다른 화면과 동일 */}
-        <div className="mb-5">
-          <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
-            <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
-            <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
-            <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시화면 관리</Link>
-            <ChevronRight className="h-3.5 w-3.5 opacity-50" /><b className="font-semibold text-[var(--ink)]">{data.containerName}</b>
-          </nav>
-          <div className="mt-1.5 flex items-center gap-2">
-            <h1 className="text-[20px] font-bold leading-[28px] tracking-[-0.3px] text-[var(--ink)]">{data.containerName}</h1>
-          </div>
+      {/* 헤더 — 상단 고정(스크롤해도 유지) · 디바이스 가용 높이를 일정하게 유지하기 위함(2026-11-06 사용자 요청) */}
+      <div className="shrink-0 px-6 pb-2 pt-4">
+        <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
+          <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
+          <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
+          <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시화면 관리</Link>
+          <ChevronRight className="h-3.5 w-3.5 opacity-50" /><b className="font-semibold text-[var(--ink)]">{data.containerName}</b>
+        </nav>
+        <div className="mt-1.5 flex items-center gap-2">
+          <h1 className="text-[20px] font-bold leading-[28px] tracking-[-0.3px] text-[var(--ink)]">{data.containerName}</h1>
         </div>
+      </div>
 
-        {/* 2열 — 좌 디바이스(스티키·뷰포트 높이, 스크롤해도 제자리에 딱 붙음) · 우 콘텐츠 */}
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)] xl:items-start">
-          {/* 좌: 미리보기 — 고정 크기 폰(내용이 많아도 안 늘어나고 내부 스크롤), 스티키(NC-Channel 상품 전시 미리보기 기준, 2026-10-27 사용자 요청) */}
-          <div className="flex flex-col xl:sticky xl:top-4">
-          {/* 기본 ↔ 폴백 토글 + 폴백 설명(토글 옆, 같은 줄) — 설명이 아래로 쌓여 디바이스가 밀리지 않게 한 줄 고정(2026-11-05 사용자 요청) */}
+      {/* 2열 — 좌 디바이스(고정 패널·창 높이에 맞춰 높이만 리사이즈) · 우 콘텐츠(이 열만 스크롤). 위/아래 고정 패딩은 py로(2026-11-06 사용자 요청) */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden px-6 py-4 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
+          {/* 좌: 미리보기 — 그리드 셀(가용 높이)을 채워 디바이스 높이만 창에 맞춰 리사이즈. 고정 패널(열 스크롤 없음). */}
+          <div className="flex min-h-0 flex-col">
+          {/* 기본 ↔ 폴백 토글 */}
           <div className="mb-3 flex w-full shrink-0 items-center gap-2">
             <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
               <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-5 py-1.5 text-center', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>기본</button>
@@ -1476,7 +1498,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             </div>
             {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
           </div>
-          <DeviceFrame width={360} bodyHeight={560} headerLabel={data.containerName} slim>
+          {/* 디바이스는 좌측 열(뷰포트 높이) 안에서 fill로 꽉 채워 늘어남 — 바텀 고정·안 잘림(2026-11-06 사용자 요청: 상품 전시 관리처럼). 바디는 내부 스크롤. */}
+          <DeviceFrame width={360} bodyHeight={0} fill headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     liveCorners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
@@ -1517,8 +1540,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           </DeviceFrame>
         </div>
 
-        {/* 우: 기본 정보 + 템플릿 구성 + 구성 검증 — 페이지와 함께 스크롤 */}
-        <div className="space-y-6">
+        {/* 우: 기본 정보 + 템플릿 구성 + 구성 검증 — 이 열만 내부 스크롤(디바이스는 고정) */}
+        <div className="min-h-0 space-y-6 overflow-y-auto pr-1">
 
             {/* 템플릿 기본 정보 */}
             <section className="overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
@@ -1620,7 +1643,6 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                 ‘전체 구성 검증’을 클릭하면 코너 간 조건 충돌 · 코너 상태 변경 영향 · 설정 항목을 확인합니다.
               </p>
             </section>
-          </div>
         </div>
       </div>
 

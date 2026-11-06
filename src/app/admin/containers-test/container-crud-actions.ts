@@ -61,7 +61,8 @@ export async function createContainer(formData: FormData) {
   await prisma.container.update({ where: { id: container.id }, data: { defaultTemplateId: template.id } });
 
   revalidatePath('/admin/containers');
-  redirect(`/admin/containers/${container.id}`);
+  revalidatePath('/admin/containers-test');
+  redirect(`/admin/containers-test/c/${container.id}`); // 생성 후 메인(containers-test) 상세로 — 백업 상세로 새지 않게(2026-11-06 사용자 버그)
 }
 
 // ── 컨테이너 기본/메타 정보 수정 ──
@@ -292,7 +293,7 @@ export async function addTemplate(containerId: string, formData: FormData) {
     ]);
   }
   revalidatePath(`/admin/containers/${containerId}`);
-  redirect(`/admin/templates/${template.id}/builder`);
+  redirect(`/admin/containers-test/t/${template.id}`);
 }
 
 // 템플릿 복사 — 코너 배치(TemplateCorner)까지 통째로 복사해 같은 Container에 새 템플릿 생성
@@ -369,7 +370,7 @@ export async function importTemplate(containerId: string, formData: FormData) {
     })
     .catch(() => {});
   revalidatePath(`/admin/containers/${containerId}`);
-  redirect(`/admin/templates/${created.id}/builder`);
+  redirect(`/admin/containers-test/t/${created.id}`);
 }
 
 // 매핑 템플릿 삭제 — 기본 Template/마지막 1개는 정책상 삭제 불가(컨테이너는 기본 Template 필수)

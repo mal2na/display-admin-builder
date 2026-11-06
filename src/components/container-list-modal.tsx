@@ -67,7 +67,7 @@ export function ContainerListModal({ rows, onClose }: { rows: ContainerListRow[]
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const go = (id: string) => { onClose(); router.push(`/admin/containers/${id}`); };
+  const go = (id: string) => { onClose(); router.push(`/admin/containers-test/c/${id}`); };
 
   if (typeof document === 'undefined') return null;
   return createPortal(

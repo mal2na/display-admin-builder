@@ -1,7 +1,7 @@
 'use client';
 
 import { NavLink } from '@/components/nav-link';
-import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, Archive, ClipboardList, Menu as MenuIcon } from 'lucide-react';
+import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, ClipboardList, Menu as MenuIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 좌측 사이드바 — NC-Channel Product Admin LNB 규격. 폭 236px, 라벤더 var(--bg) 배경.
@@ -15,7 +15,7 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
 
         {/* 전시 관리 */}
         {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">전시 관리</p>}
-        {/* 전시화면 관리 = (구)테스트를 메인으로 승격(2026-10-28 사용자 요청). 기존(/admin/containers)은 백업으로 하단 이동. */}
+        {/* 전시화면 관리 — 메인(백업 완전 삭제됨, 2026-11-06). */}
         <NavLink href="/admin/containers-test" icon={<MonitorSmartphone className="h-4 w-4" />} label="전시화면 관리" collapsed={collapsed} />
         <NavLink href="/admin/corner-types" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리" collapsed={collapsed} />
         <NavLink href="/admin/banner-campaigns" icon={<GalleryHorizontalEnd className="h-4 w-4" />} label="배너 캠페인 관리" collapsed={collapsed} />
@@ -37,12 +37,6 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         <NavLink href="/admin/app-versions" icon={<SmartphoneNfc className="h-4 w-4" />} label="App 버전 관리" collapsed={collapsed} />
         <NavLink href="/admin/app-splash" icon={<ImagePlay className="h-4 w-4" />} label="App 스플래시 관리" collapsed={collapsed} />
         <NavLink href="/admin/app-widgets" icon={<AppWindow className="h-4 w-4" />} label="App 위젯 관리" collapsed={collapsed} alsoActiveFor={['/admin/widget-types']} />
-
-        {/* 백업 — 코너 유형 관리 개편 직전 스냅샷(2026-10-06). 제일 하단에 분리 배치. */}
-        <div className="mt-auto" />
-        {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">백업</p>}
-        <NavLink href="/admin/containers" icon={<Archive className="h-4 w-4" />} label="전시화면 관리 (백업)" collapsed={collapsed} excludeFor={['/admin/containers-test']} />
-        <NavLink href="/admin/corner-types-backup" icon={<Archive className="h-4 w-4" />} label="코너 유형 관리 (백업)" collapsed={collapsed} />
       </nav>
 
       <div className="border-t border-[#dcdfe8] p-3 text-center text-[12px] text-[var(--ink3)]">{collapsed ? 'v0.31' : 'POL-DSP v0.31'}</div>

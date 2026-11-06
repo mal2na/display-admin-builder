@@ -29,9 +29,9 @@ export type TreeContainer = {
 export function ContainerTree({
   containers,
   allRows = [],
-  linkContainerTpl = '/admin/containers/{id}',
-  linkTemplateTpl = '/admin/templates/{id}/builder',
-  newHref = '/admin/containers/new',
+  linkContainerTpl = '/admin/containers-test/c/{id}',
+  linkTemplateTpl = '/admin/containers-test/t/{id}',
+  newHref = '/admin/containers-test/new',
 }: {
   containers: TreeContainer[];
   allRows?: ContainerListRow[];

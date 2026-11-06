@@ -8,8 +8,9 @@ import { createCornerInstanceFromTypeId } from '../templates/actions';
 import { effectiveZone } from '@/lib/display-taxonomy';
 
 export async function addTestTemplate(containerId: string, formData: FormData) {
-  const name = String(formData.get('name') ?? '').trim();
-  if (!name) throw new Error('템플릿명을 입력하세요.');
+  // 템플릿명·조건그룹은 더 이상 모달에서 받지 않는다 — 빌더(템플릿 기본 정보)에서 설정한다(2026-11-06).
+  //  바로 생성하고 빌더로 진입하므로 기본값으로 채운다.
+  const name = String(formData.get('name') ?? '').trim() || '새 템플릿';
   const conditionGroup = String(formData.get('conditionGroup') ?? '').trim() || '로그인';
 
   const template = await prisma.template.create({
