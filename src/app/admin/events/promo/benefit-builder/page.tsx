@@ -18,7 +18,7 @@ export default async function BenefitBuilderRedirect() {
   const templateId = container?.defaultTemplateId ?? container?.templates[0]?.id;
   if (!templateId) {
     // 혜택 홈/템플릿을 못 찾으면 전시화면 관리 목록으로.
-    redirect('/admin/containers');
+    redirect('/admin/containers-test');
   }
   redirect(`/admin/templates/${templateId}/builder?ctx=promo`);
 }

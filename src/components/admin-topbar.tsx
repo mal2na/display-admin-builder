@@ -15,7 +15,7 @@ export function AdminTopbar({ collapsed, onToggleSidebar }: { collapsed: boolean
       {/* 브랜드 + 사이드바 토글 — LNB 영역과 동일 폭 */}
       <div className={cn('flex h-full shrink-0 items-center border-r border-[var(--line2)]', collapsed ? 'w-14 justify-center' : 'w-[236px] gap-2 px-3')}>
         {!collapsed && (
-          <Link href="/admin/containers" className="flex min-w-0 items-center gap-2 font-semibold">
+          <Link href="/admin/containers-test" className="flex min-w-0 items-center gap-2 font-semibold">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <LayoutDashboard className="h-4 w-4" />
             </span>

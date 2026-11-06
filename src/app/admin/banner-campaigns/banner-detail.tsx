@@ -294,7 +294,7 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
                                 {/* 위치 = 전시화면 › 코너 (한 줄) */}
                                 <div className="flex flex-wrap items-center gap-1.5 text-[12.5px]">
                                   <MapPin className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
-                                  <Link href={`/admin/containers/${u.containerId}`} className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline">{u.containerName}</Link>
+                                  <Link href={`/admin/containers-test/c/${u.containerId}`} className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline">{u.containerName}</Link>
                                   {u.containerType && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{u.containerType}</span>}
                                   <span className="text-slate-300">›</span>
                                   <span className="text-slate-700">{u.cornerName}</span>
