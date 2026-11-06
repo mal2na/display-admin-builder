@@ -1473,25 +1473,23 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
     <ProductCatalogCtx.Provider value={data.catalogByType ?? {}}>
     <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
       {/* 스크롤 영역 — 헤더(스크롤 시 함께 올라감) + 2열(좌 디바이스 스티키 · 우 콘텐츠) */}
-      <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5">
-        {/* 헤더 — 전체 폭, 고정 아님(스크롤하면 같이 올라감). 폰트는 다른 화면과 동일 */}
-        <div className="mb-5">
-          <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
-            <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
-            <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
-            <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시화면 관리</Link>
-            <ChevronRight className="h-3.5 w-3.5 opacity-50" /><b className="font-semibold text-[var(--ink)]">{data.containerName}</b>
-          </nav>
-          <div className="mt-1.5 flex items-center gap-2">
-            <h1 className="text-[20px] font-bold leading-[28px] tracking-[-0.3px] text-[var(--ink)]">{data.containerName}</h1>
-          </div>
+      {/* 헤더 — 상단 고정(스크롤해도 유지) · 디바이스 가용 높이를 일정하게 유지하기 위함(2026-11-06 사용자 요청) */}
+      <div className="shrink-0 px-6 pb-2 pt-4">
+        <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
+          <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
+          <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
+          <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시화면 관리</Link>
+          <ChevronRight className="h-3.5 w-3.5 opacity-50" /><b className="font-semibold text-[var(--ink)]">{data.containerName}</b>
+        </nav>
+        <div className="mt-1.5 flex items-center gap-2">
+          <h1 className="text-[20px] font-bold leading-[28px] tracking-[-0.3px] text-[var(--ink)]">{data.containerName}</h1>
         </div>
+      </div>
 
-        {/* 2열 — 좌 디바이스(스티키·뷰포트 높이, 스크롤해도 제자리에 딱 붙음) · 우 콘텐츠 */}
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)] xl:items-start">
-          {/* 좌: 미리보기 — 고정 크기 폰(내용이 많아도 안 늘어나고 내부 스크롤), 스티키(NC-Channel 상품 전시 미리보기 기준, 2026-10-27 사용자 요청) */}
-          {/* 높이 = 뷰포트 − 상단바(56)·하단 액션바(~64)·sticky top(16)·여백 → 디바이스 전체(바텀 네비 포함)가 안 잘리게(2026-11-06 사용자 요청). */}
-          <div className="flex flex-col xl:sticky xl:top-4 xl:h-[calc(100vh-168px)]">
+      {/* 2열 — 좌 디바이스(고정 패널·창 높이에 맞춰 높이만 리사이즈) · 우 콘텐츠(이 열만 스크롤). 위/아래 고정 패딩은 py로(2026-11-06 사용자 요청) */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden px-6 py-4 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
+          {/* 좌: 미리보기 — 그리드 셀(가용 높이)을 채워 디바이스 높이만 창에 맞춰 리사이즈. 고정 패널(열 스크롤 없음). */}
+          <div className="flex min-h-0 flex-col">
           {/* 기본 ↔ 폴백 토글 */}
           <div className="mb-3 flex w-full shrink-0 items-center gap-2">
             <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
@@ -1542,8 +1540,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           </DeviceFrame>
         </div>
 
-        {/* 우: 기본 정보 + 템플릿 구성 + 구성 검증 — 페이지와 함께 스크롤 */}
-        <div className="space-y-6">
+        {/* 우: 기본 정보 + 템플릿 구성 + 구성 검증 — 이 열만 내부 스크롤(디바이스는 고정) */}
+        <div className="min-h-0 space-y-6 overflow-y-auto pr-1">
 
             {/* 템플릿 기본 정보 */}
             <section className="overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
@@ -1645,7 +1643,6 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                 ‘전체 구성 검증’을 클릭하면 코너 간 조건 충돌 · 코너 상태 변경 영향 · 설정 항목을 확인합니다.
               </p>
             </section>
-          </div>
         </div>
       </div>
 
