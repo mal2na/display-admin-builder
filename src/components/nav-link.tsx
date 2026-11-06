@@ -14,6 +14,7 @@ export function NavLink({
   alsoActiveFor,
   excludeFor,
   badge,
+  prefetch,
 }: {
   href: string;
   icon: React.ReactNode;
@@ -22,6 +23,7 @@ export function NavLink({
   alsoActiveFor?: string[];
   excludeFor?: string[];
   badge?: string;
+  prefetch?: boolean;
 }) {
   const pathname = usePathname();
   const excluded = (excludeFor ?? []).some((p) => pathname === p || pathname.startsWith(p + '/'));
@@ -33,6 +35,7 @@ export function NavLink({
   return (
     <Link
       href={href}
+      prefetch={prefetch}
       title={collapsed ? label : undefined}
       className={cn(
         'flex items-center gap-2 rounded-[9px] py-[9px] text-[13px] transition-colors',
