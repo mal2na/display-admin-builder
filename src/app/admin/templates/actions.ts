@@ -20,8 +20,8 @@ import {
 import { pickerItemByKey } from '@/lib/bss-products';
 
 function rp(templateId: string) {
-  revalidatePath(`/admin/templates/${templateId}`);
-  revalidatePath(`/admin/templates/${templateId}/builder`);
+  // 메인 빌더(containers-test/t)로 일원화 — 구 /admin/templates/[id] 라우트는 삭제됨.
+  revalidatePath(`/admin/containers-test/t/${templateId}`);
 }
 
 async function nextOrder(model: 'templateCorner' | 'cornerComponent' | 'componentAtom', where: object) {
