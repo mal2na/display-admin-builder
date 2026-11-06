@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { createContainer } from '../actions';
+import { createContainer } from '../container-crud-actions';
 import { CONTAINER_KINDS, CONTAINER_PLATFORMS } from '@/lib/display-taxonomy';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +34,7 @@ export default async function NewContainerPage() {
     <div className="p-4">
       <div className="mx-auto max-w-4xl space-y-5 rounded-2xl border bg-card p-6 shadow-sm">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Link href="/admin/containers" className="hover:underline">전시화면 관리</Link>
+          <Link href="/admin/containers-test" className="hover:underline">전시화면 관리</Link>
           <ChevronRight className="h-3 w-3" />
           <span className="text-foreground">컨테이너 등록</span>
         </div>
@@ -170,7 +170,7 @@ export default async function NewContainerPage() {
 
         <div className="flex justify-end gap-2">
           <Link
-            href="/admin/containers"
+            href="/admin/containers-test"
             className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium hover:bg-secondary"
           >
             취소

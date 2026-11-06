@@ -15,8 +15,7 @@ function rp(templateId: string, containerId?: string) {
   revalidatePath(`/admin/templates/${templateId}/builder`);
   revalidatePath('/admin/audit-log');
   if (containerId) {
-    revalidatePath(`/admin/containers/${containerId}`);
-    revalidatePath(`/admin/containers/${containerId}/compare`);
+    revalidatePath(`/admin/containers-test/c/${containerId}`);
   }
 }
 

@@ -107,7 +107,7 @@ export async function updateTemplateMeta(templateId: string, formData: FormData)
     ]);
   }
 
-  revalidatePath(`/admin/containers/${current.containerId}`);
+  revalidatePath(`/admin/containers-test/c/${current.containerId}`);
   rp(templateId);
 }
 
@@ -144,8 +144,8 @@ export async function archiveTemplate(templateId: string) {
   await prisma.auditLog.create({
     data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: templateId, afterValue: JSON.stringify({ archived: true, name: t.name }), reason: '템플릿(매핑) 보관', result: 'UPDATED' },
   }).catch(() => {});
-  revalidatePath(`/admin/containers/${t.containerId}`);
-  redirect(`/admin/containers/${t.containerId}`); // 보관 후 컨테이너로 이동
+  revalidatePath(`/admin/containers-test/c/${t.containerId}`);
+  redirect(`/admin/containers-test/c/${t.containerId}`); // 보관 후 컨테이너로 이동
 }
 
 export async function restoreTemplate(templateId: string) {
@@ -155,7 +155,7 @@ export async function restoreTemplate(templateId: string) {
   await prisma.auditLog.create({
     data: { actor: 'marina.kim@sk.com', targetType: 'Template', targetId: templateId, afterValue: JSON.stringify({ restored: true, name: t.name }), reason: '템플릿(매핑) 복구' },
   }).catch(() => {});
-  revalidatePath(`/admin/containers/${t.containerId}`);
+  revalidatePath(`/admin/containers-test/c/${t.containerId}`);
 }
 
 // ── 템플릿 폐기(삭제 대체) 승인 워크플로우 ──────────────────────
@@ -188,8 +188,8 @@ export async function deleteTemplate(templateId: string) {
   await prisma.auditLog.create({
     data: { actor: TEMPLATE_RETIRE_ACTOR, targetType: 'Template', targetId: templateId, beforeValue: JSON.stringify({ name: t.name, status: t.status }), reason: '미승인 템플릿 완전 삭제', result: 'DELETED' },
   }).catch(() => {});
-  revalidatePath(`/admin/containers/${t.containerId}`);
-  redirect(`/admin/containers/${t.containerId}`);
+  revalidatePath(`/admin/containers-test/c/${t.containerId}`);
+  redirect(`/admin/containers-test/c/${t.containerId}`);
 }
 
 // 폐기 요청 (승인된 템플릿: 정상 → 폐기 승인 대기). 사유 필수.
@@ -230,8 +230,8 @@ export async function approveTemplateRetire(templateId: string) {
   await prisma.auditLog.create({
     data: { actor: TEMPLATE_RETIRE_APPROVER, targetType: 'Template', targetId: templateId, afterValue: JSON.stringify({ retireStatus: 'RETIRED', archived: true }), reason: '템플릿 폐기 승인 — 보관 처리(soft-delete)', result: 'RETIRED' },
   }).catch(() => {});
-  revalidatePath(`/admin/containers/${t.containerId}`);
-  redirect(`/admin/containers/${t.containerId}`);
+  revalidatePath(`/admin/containers-test/c/${t.containerId}`);
+  redirect(`/admin/containers-test/c/${t.containerId}`);
 }
 
 // 폐기 반려 (폐기 승인 대기 → 정상). BSS 처리.

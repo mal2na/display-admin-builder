@@ -10,9 +10,9 @@ import { cn } from '@/lib/utils';
 import { Columns, Pencil, Trash2, Check, X, Download, ChevronRight, Star, ExternalLink } from 'lucide-react';
 import { ContainersTestShell } from '../../tree-shell';
 import { AddTemplateButton } from '../../add-template-button';
-import { LoginGroupSelect } from '../../../containers/[id]/login-group-select';
-import { TemplateRowActions } from '../../../containers/[id]/template-row-actions';
-import { setDefaultTemplate } from '../../../containers/actions';
+import { LoginGroupSelect } from '../../login-group-select';
+import { TemplateRowActions } from '../../template-row-actions';
+import { setDefaultTemplate } from '../../container-crud-actions';
 import { duplicateTestTemplate } from '../../actions';
 
 export const dynamic = 'force-dynamic';
@@ -102,7 +102,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
         <div className="mt-8 space-y-9">
           {/* 기본 정보 */}
           <section>
-            <SectionTitle right={<Link href={`/admin/containers/${container.id}/edit`} className={BTN}><Pencil className="h-3.5 w-3.5" /> 정보 수정</Link>}>기본 정보</SectionTitle>
+            <SectionTitle right={<Link href={`/admin/containers-test/c/${container.id}/edit`} className={BTN}><Pencil className="h-3.5 w-3.5" /> 정보 수정</Link>}>기본 정보</SectionTitle>
             <div className="grid grid-cols-1 border-t border-[var(--line2)] sm:grid-cols-2">
               <Row label="컨테이너 ID">{container.id.slice(-10)}</Row>
               <Row label="컨테이너 경로">{container.parent?.name ? `${container.parent.name} > ${container.name}` : `${container.name} (최상위)`}</Row>
