@@ -1490,7 +1490,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
         {/* 2열 — 좌 디바이스(스티키·뷰포트 높이, 스크롤해도 제자리에 딱 붙음) · 우 콘텐츠 */}
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)] xl:items-start">
           {/* 좌: 미리보기 — 고정 크기 폰(내용이 많아도 안 늘어나고 내부 스크롤), 스티키(NC-Channel 상품 전시 미리보기 기준, 2026-10-27 사용자 요청) */}
-          <div className="flex flex-col xl:sticky xl:top-4 xl:h-[calc(100vh-2rem)]">
+          {/* 높이 = 뷰포트 − 상단바(56)·하단 액션바(~64)·sticky top(16)·여백 → 디바이스 전체(바텀 네비 포함)가 안 잘리게(2026-11-06 사용자 요청). */}
+          <div className="flex flex-col xl:sticky xl:top-4 xl:h-[calc(100vh-168px)]">
           {/* 기본 ↔ 폴백 토글 */}
           <div className="mb-3 flex w-full shrink-0 items-center gap-2">
             <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
