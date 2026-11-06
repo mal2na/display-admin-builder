@@ -1490,7 +1490,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
         {/* 2열 — 좌 디바이스(스티키·뷰포트 높이, 스크롤해도 제자리에 딱 붙음) · 우 콘텐츠 */}
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)] xl:items-start">
           {/* 좌: 미리보기 — 고정 크기 폰(내용이 많아도 안 늘어나고 내부 스크롤), 스티키(NC-Channel 상품 전시 미리보기 기준, 2026-10-27 사용자 요청) */}
-          <div className="flex flex-col xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)]">
+          <div className="flex flex-col xl:sticky xl:top-4 xl:h-[calc(100vh-2rem)]">
           {/* 기본 ↔ 폴백 토글 */}
           <div className="mb-3 flex w-full shrink-0 items-center gap-2">
             <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
@@ -1499,7 +1499,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             </div>
             {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
           </div>
-          <DeviceFrame width={360} bodyHeight="min(560px, calc(100vh - 230px))" headerLabel={data.containerName} slim>
+          {/* 디바이스는 좌측 열(뷰포트 높이) 안에서 fill로 꽉 채워 늘어남 — 바텀 고정·안 잘림(2026-11-06 사용자 요청: 상품 전시 관리처럼). 바디는 내부 스크롤. */}
+          <DeviceFrame width={360} bodyHeight={0} fill headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     liveCorners.map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
