@@ -15,6 +15,7 @@ import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, type 
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
+import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
 import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, GalleryHorizontalEnd, Barcode } from 'lucide-react';
@@ -554,20 +555,18 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
       onPreviewPatch({ components: comps.length ? comps : [{ id: 'sel-anchor', name: '칩옵션', componentType: '선택형', atoms: chipAtoms }] });
       return;
     }
-    // 상품형·혜택·오퍼형 등 리스트 — 고정 앵커 행 + CVM 추천 자리 행.
-    const row = (id: string, name: string, img: string | null, label: string, link: string | null, info?: string) => ({
-      id, name, componentType: corner.cornerType,
-      atoms: [
-        { id: `${id}-img`, name: 'IMAGE', atomType: 'IMAGE', content: null, imageUrl: img, altText: label, linkUrl: link },
-        { id: `${id}-txt`, name: 'TEXT', atomType: 'TEXT', content: label, imageUrl: null, altText: null, linkUrl: null },
-        ...(info ? [{ id: `${id}-info`, name: 'INFO', atomType: 'INFO', content: info, imageUrl: null, altText: null, linkUrl: null }] : []),
-      ],
-    });
-    const comps = [
-      ...ancs.map((o, i) => row(`anc-${i}-${o.id}`, o.label || `고정${i + 1}`, o.icon ?? null, o.label || `고정 ${i + 1}`, o.link ?? null)),
-      ...Array.from({ length: rest }, (_, i) => row(`cvm-${i}`, 'CVM 추천', null, 'CVM 추천 자리', null, '개인화 자동')),
-    ];
-    onPreviewPatch({ components: comps });
+    // 상품형·혜택·오퍼형 등 리스트 — 코너 유형 관리와 동일한 카드 UI로 렌더.
+    //  운영자 고정(데이터 있음) = 실카드 그대로, 나머지 빈 자리 = CVM 플레이스홀더(빈 이미지 박스 + 'CVM 추천 자리').
+    const comp = corner.cornerType === '상품형' || corner.cornerType === '콘텐츠 안내형' ? '상품형' : '혜택형';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mk = (its: any[], emptyImages: boolean) => its.length === 0 ? [] : compositionToPreviewCorner({
+      base: corner.cornerType, detail: corner.layoutDetail,
+      composition: [{ componentType: comp as never, count: its.length, image: true, desc: true, items: its }],
+      placeholder: false, emptyImages,
+    }).components;
+    const opComps = mk(ancs.map((o) => ({ title: o.label || '아이템', brand: o.sub, imageUrl: o.icon ?? undefined, linkUrl: o.link ?? undefined })), false);
+    const cvmComps = mk(Array.from({ length: rest }, () => ({ title: 'CVM 추천 자리', brand: '개인화 자동' })), true);
+    onPreviewPatch({ components: [...opComps, ...cvmComps] });
   };
   // CVM 데이터 연동 — 운영자 고정(items) + 나머지 CVM(최대 개수) 자리를 미리보기에 동기화.
   React.useEffect(() => {
@@ -1499,7 +1498,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
 
   return (
     <ProductCatalogCtx.Provider value={data.catalogByType ?? {}}>
-    <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-t-[16px] border border-[var(--line2)] bg-white">
       {/* 스크롤 영역 — 헤더(스크롤 시 함께 올라감) + 2열(좌 디바이스 스티키 · 우 콘텐츠) */}
       {/* 헤더 — 상단 고정(스크롤해도 유지) · 디바이스 가용 높이를 일정하게 유지하기 위함(2026-11-06 사용자 요청) */}
       <div className="shrink-0 px-6 pb-2 pt-4">
@@ -1515,7 +1514,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
       </div>
 
       {/* 2열 — 좌 디바이스(고정 패널·창 높이에 맞춰 높이만 리사이즈) · 우 콘텐츠(이 열만 스크롤). 위/아래 고정 패딩은 py로(2026-11-06 사용자 요청) */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden px-6 py-4 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden px-6 pb-3 pt-2 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
           {/* 좌: 미리보기 — 그리드 셀(가용 높이)을 채워 디바이스 높이만 창에 맞춰 리사이즈. 고정 패널(열 스크롤 없음). */}
           <div className="flex min-h-0 flex-col">
           {/* 기본 ↔ 폴백 토글 */}
