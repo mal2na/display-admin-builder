@@ -967,18 +967,18 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               </div>
               <p className="mb-1.5 mt-3 text-[12px] font-semibold text-[var(--ink3)]">나머지 요청 개수 <span className="font-normal text-[var(--ink4)]">· CVM이 채울 자리 (최소~최대)</span></p>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-[var(--ink4)]">최소</span>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button key={n} type="button" onClick={() => { const mx = Math.max(cvmMax, n); setCvmMin(n); setCvmMax(mx); pushDataPreview(items, mx); }} className={cn('grid h-7 w-7 place-items-center rounded-[6px] text-[12px] font-semibold', n === cvmMin ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line2)] text-[var(--ink3)]')}>{n}</button>
-                  ))}
+                  <input type="number" min={1} max={5} value={cvmMin}
+                    onChange={(e) => { const v = Math.max(1, Math.min(5, Math.floor(Number(e.target.value) || 1))); const mx = Math.max(cvmMax, v); setCvmMin(v); setCvmMax(mx); pushDataPreview(items, mx); }}
+                    className="h-[32px] w-16 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-center text-[13px] tabular-nums focus:border-[var(--ac)] focus:outline-none" />
                 </div>
                 <span className="text-[var(--ink4)]">~</span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-[var(--ink4)]">최대</span>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button key={n} type="button" disabled={n < cvmMin} onClick={() => { setCvmMax(n); pushDataPreview(items, n); }} className={cn('grid h-7 w-7 place-items-center rounded-[6px] text-[12px] font-semibold', n === cvmMax ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line2)] text-[var(--ink3)]', n < cvmMin && 'opacity-30')}>{n}</button>
-                  ))}
+                  <input type="number" min={cvmMin} max={5} value={cvmMax}
+                    onChange={(e) => { const v = Math.max(cvmMin, Math.min(5, Math.floor(Number(e.target.value) || cvmMin))); setCvmMax(v); pushDataPreview(items, v); }}
+                    className="h-[32px] w-16 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-center text-[13px] tabular-nums focus:border-[var(--ac)] focus:outline-none" />
                 </div>
                 <span className="ml-1 text-[11px] text-[var(--ink4)]">CVM 상한 5</span>
               </div>
