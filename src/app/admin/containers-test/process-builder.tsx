@@ -653,7 +653,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                 </Grp>
               )}
               {hasItem && (
-                <Grp color="#00a058" title="아이템(요소)">
+                <Grp color="#00a058" title="컴포넌트(요소)">
                   {isGaro && <FieldChip ko="형태" code="Variants" />}
                   {itemFixed.map((f) => <FieldChip key={f.key} ko={f.ko} code={f.key} />)}
                   {itemOpt.map((f) => <FieldChip key={f.key} ko={f.ko} code={f.key} opt />)}
@@ -708,7 +708,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           {(hasCornerTitle || hasButtonText || availOptions.length > 0) && !cardOnly && (
             <div className="mb-3 flex gap-1 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
               <button type="button" onClick={() => setFillTab('코너')} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', fillTab === '코너' ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>코너 속성</button>
-              <button type="button" onClick={() => setFillTab('아이템')} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', fillTab === '아이템' ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>아이템 <span className="font-normal opacity-70">· {items.length}</span></button>
+              <button type="button" onClick={() => setFillTab('아이템')} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', fillTab === '아이템' ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>컴포넌트 <span className="font-normal opacity-70">· {items.length}</span></button>
             </div>
           )}
           {/* ── 코너 속성 — 코너 타이틀·버튼 텍스트·옵션(배너·칩·CTA). 카드 1장 유형은 항상 노출. ── */}
@@ -850,7 +850,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             </div>
           )}
           {/* ── 아이템 — 실제 노출 항목 리스트(코너 유형 관리의 '아이템'에 대응). ── */}
-          <p className="mb-1.5 text-[12px] font-bold text-[var(--ink2)]">아이템 <span className="font-normal text-[var(--ink4)]">· {itemWord} {items.length}개</span></p>
+          <p className="mb-1.5 text-[12px] font-bold text-[var(--ink2)]">컴포넌트 <span className="font-normal text-[var(--ink4)]">· {itemWord} {items.length}개</span></p>
           {/* 칩 On이면 '현재 칩의 메뉴'임을 알려주고, 칩마다 메뉴가 따로 저장된다. */}
           {chipMode && (
             <div className="mb-1.5 mt-1 flex flex-wrap items-center gap-1.5 text-[12px]">
@@ -1044,7 +1044,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
       <Sec n={6} title="출처 — 이 값이 어디서 오나" help>
         <div className="overflow-hidden rounded-[8px] border border-[var(--line2)] text-[12px]">
           {[
-            ['아이템 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
+            ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
             ['이미지', '상품(EPC) 원장'],
             ['문구', src === 'CVM 콘텐츠 연동' ? 'CVM 완성본' : '빌더 · 상품 원장'],
             ['이동 링크', '빌더'],
