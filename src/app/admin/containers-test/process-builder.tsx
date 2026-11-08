@@ -541,38 +541,37 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
     // 프로필·단일형 배너=1장만, 상태·스와이프 배너=여러 장 모두 반영.
     onPreviewPatch({ components: (isProfile || bannerSingle) ? comps.slice(0, 1) : comps });
   };
-  // CVM 데이터 연동 미리보기 — 운영자 고정 앵커(실제 항목) + 나머지 CVM 추천 자리(placeholder)를 합쳐 반영(2026-11-06).
-  const pushDataPreview = (ancs: FillItem[], n: number) => {
-    const rest = Math.max(0, n);
+  // 미리보기 — 운영자 고정(실제 항목)은 실카드로, 나머지 CVM 보충은 '개별 카드'가 아니라 하단 점선 박스('CVM 추천 n~m칸')로 표현(2026-11-06 사용자 요청).
+  //  min/max 를 넘기면 범위로, min=0 이면 CVM 박스 미표시(운영자 편성).
+  const pushDataPreview = (ancs: FillItem[], cvmMinN: number, cvmMaxN: number) => {
+    const fillMax = Math.max(0, cvmMaxN);
+    const fillMin = Math.max(0, Math.min(cvmMinN, fillMax));
     if (isChip) {
-      // 퀵메뉴(선택형) — 선택형 컴포넌트의 칩 = 고정 앵커 + CVM 자리.
-      const chipAtoms = [
-        ...ancs.map((o, i) => ({ id: `anc-${i}-${o.id}`, name: o.label || `고정${i + 1}`, atomType: 'TEXT', content: o.label || `고정 ${i + 1}`, imageUrl: o.icon ?? null, altText: null, linkUrl: o.link ?? null })),
-        ...Array.from({ length: rest }, (_, i) => ({ id: `cvm-${i}`, name: 'CVM', atomType: 'TEXT', content: 'CVM', imageUrl: null, altText: null, linkUrl: null })),
-      ];
+      // 퀵메뉴(선택형) — 칩 = 운영자 고정만. CVM 보충은 아래 점선 박스로.
+      const chipAtoms = ancs.map((o, i) => ({ id: `anc-${i}-${o.id}`, name: o.label || `고정${i + 1}`, atomType: 'TEXT', content: o.label || `고정 ${i + 1}`, imageUrl: o.icon ?? null, altText: null, linkUrl: o.link ?? null }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const comps = (pv?.components ?? []).map((c: any) => c.componentType === '선택형' ? { ...c, atoms: chipAtoms } : c);
-      onPreviewPatch({ components: comps.length ? comps : [{ id: 'sel-anchor', name: '칩옵션', componentType: '선택형', atoms: chipAtoms }] });
+      onPreviewPatch({ components: comps.length ? comps : [{ id: 'sel-anchor', name: '칩옵션', componentType: '선택형', atoms: chipAtoms }], cvmFillCount: fillMax, cvmFillMin: fillMin });
       return;
     }
-    // 상품형·혜택·오퍼형 등 리스트 — 코너 유형 관리와 동일한 카드 UI로 렌더.
-    //  운영자 고정(데이터 있음) = 실카드 그대로, 나머지 빈 자리 = CVM 플레이스홀더(빈 이미지 박스 + 'CVM 추천 자리').
+    // 상품형·혜택·오퍼형 등 리스트 — 코너 유형 관리와 동일한 카드 UI. 운영자 고정만 실카드, CVM 보충은 점선 박스.
     const comp = corner.cornerType === '상품형' || corner.cornerType === '콘텐츠 안내형' ? '상품형' : '혜택형';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mk = (its: any[], emptyImages: boolean) => its.length === 0 ? [] : compositionToPreviewCorner({
+    const its = ancs.map((o) => ({ title: o.label || '아이템', brand: o.sub, imageUrl: o.icon ?? undefined, linkUrl: o.link ?? undefined }));
+    const opComps = its.length === 0 ? [] : compositionToPreviewCorner({
       base: corner.cornerType, detail: corner.layoutDetail,
       composition: [{ componentType: comp as never, count: its.length, image: true, desc: true, items: its }],
-      placeholder: false, emptyImages,
+      placeholder: false, emptyImages: false,
     }).components;
-    const opComps = mk(ancs.map((o) => ({ title: o.label || '아이템', brand: o.sub, imageUrl: o.icon ?? undefined, linkUrl: o.link ?? undefined })), false);
-    const cvmComps = mk(Array.from({ length: rest }, () => ({ title: 'CVM 추천 자리', brand: '개인화 자동' })), true);
-    onPreviewPatch({ components: [...opComps, ...cvmComps] });
+    onPreviewPatch({ components: opComps, cvmFillCount: fillMax, cvmFillMin: fillMin });
   };
-  // CVM 데이터 연동 — 운영자 고정(items) + 나머지 CVM(최대 개수) 자리를 미리보기에 동기화.
+  // 미리보기 동기화 — 리스트/칩 유형만. 데이터 연동=아이템+CVM 보충 박스, 운영자 편성=아이템만(CVM 박스 없음).
+  //  카드1장(프로필·상태)·바코드·배너는 자체 미리보기 경로라 제외. 콘텐츠 연동은 구좌만 넘김이라 건드리지 않음.
   React.useEffect(() => {
-    if (isData) pushDataPreview(items, cvmMax);
+    if (isProfile || isStatus || isBarcode || isBanner) return;
+    if (isData) pushDataPreview(items, cvmMin, cvmMax);
+    else if (src === '운영자 편성') pushDataPreview(items, 0, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isData, items, cvmMax]);
+  }, [isData, src, items, cvmMin, cvmMax]);
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
@@ -882,8 +881,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                       <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder={isBanner ? '랜딩 링크 (불러오기 시 자동)' : '이동 링크'} className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                     </div>
                   </div>
-                  {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2 py-1.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
-                  <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                  {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex h-[30px] shrink-0 self-center items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
+                  <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 self-center place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
                 </div>
                 );
               }
@@ -969,14 +968,14 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-[var(--ink4)]">최소</span>
                   <input type="number" min={1} max={5} value={cvmMin}
-                    onChange={(e) => { const v = Math.max(1, Math.min(5, Math.floor(Number(e.target.value) || 1))); const mx = Math.max(cvmMax, v); setCvmMin(v); setCvmMax(mx); pushDataPreview(items, mx); }}
+                    onChange={(e) => { const v = Math.max(1, Math.min(5, Math.floor(Number(e.target.value) || 1))); const mx = Math.max(cvmMax, v); setCvmMin(v); setCvmMax(mx); pushDataPreview(items, v, mx); }}
                     className="h-[32px] w-16 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-center text-[13px] tabular-nums focus:border-[var(--ac)] focus:outline-none" />
                 </div>
                 <span className="text-[var(--ink4)]">~</span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-[var(--ink4)]">최대</span>
                   <input type="number" min={cvmMin} max={5} value={cvmMax}
-                    onChange={(e) => { const v = Math.max(cvmMin, Math.min(5, Math.floor(Number(e.target.value) || cvmMin))); setCvmMax(v); pushDataPreview(items, v); }}
+                    onChange={(e) => { const v = Math.max(cvmMin, Math.min(5, Math.floor(Number(e.target.value) || cvmMin))); setCvmMax(v); pushDataPreview(items, cvmMin, v); }}
                     className="h-[32px] w-16 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-center text-[13px] tabular-nums focus:border-[var(--ac)] focus:outline-none" />
                 </div>
                 <span className="ml-1 text-[11px] text-[var(--ink4)]">CVM 상한 5</span>
@@ -1557,7 +1556,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                         <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
                           className={cn('relative cursor-pointer scroll-mt-4 rounded-xl ring-offset-2 transition', c.id === activeSel && 'ring-2 ring-[var(--ac)]')}>
                           {replaced && <span className="absolute right-1 top-1 z-10 rounded-[4px] bg-[#e59a2a] px-1.5 py-0.5 text-[9px] font-bold text-white">운영자 편성 대체</span>}
-                          <CornerBlock corner={c.preview} />
+                          {/* CVM 추천 보충 박스는 'CVM 데이터 연동'일 때만(운영자 편성·콘텐츠 연동은 숨김) — 렌더 시점 게이트로 확실히(2026-11-06). */}
+                          <CornerBlock corner={c.recSource === 'CVM 데이터 연동' ? c.preview : { ...c.preview, cvmFillCount: 0 }} />
                         </div>
                       );
                     })

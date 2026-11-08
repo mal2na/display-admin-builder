@@ -65,7 +65,8 @@ export type PreviewCorner = {
   subTitleIcon?: string | null;
   moreButtonUse?: boolean | null;
   moreButtonLabel?: string | null;
-  cvmFillCount?: number | null; // CVM 보충 — 노출 개수(max)보다 운영자 등록이 적을 때 CVM이 채우는 칸 수(가안)
+  cvmFillCount?: number | null; // CVM 보충 — 노출 개수(max)보다 운영자 등록이 적을 때 CVM이 채우는 칸 수(가안). 범위면 cvmFillMin~cvmFillCount.
+  cvmFillMin?: number | null; // CVM 보충 최소(최소~최대 범위 표기용). 없으면 단일 개수(cvmFillCount)로 표기.
   bigBanner?: boolean | null; // 배치(인스턴스) 옵션 — 상단 빅배너로 강조
   cardShape?: string | null; // 상품형 2.5배열 카드 모양 (정사각형 | 직사각형)
   cardSize?: string | null; // 가로형(CarouselItem) 카드 크기 변형 Small/Medium/Large (2026-10-29(2): 모든 가로형 코너 유형 공통)
@@ -747,8 +748,8 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           {chipTabEl}
           {body}
           {(corner.cvmFillCount ?? 0) > 0 && (
-            <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="노출 개수보다 운영자 등록이 적어, 나머지는 CVM이 고객마다 자동으로 채웁니다(가안).">
-              <Sparkles className="h-3 w-3" /> CVM 자동 보충 {corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
+            <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="이 아래 자리는 CVM이 고객마다 추천으로 채웁니다(가안).">
+              <Sparkles className="h-3 w-3" /> CVM 추천 {corner.cvmFillMin && corner.cvmFillMin !== corner.cvmFillCount ? `${corner.cvmFillMin}~${corner.cvmFillCount}` : corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
             </div>
           )}
           {corner.moreButtonUse && (
@@ -799,8 +800,8 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       {chipTabEl}
       {body}
       {(corner.cvmFillCount ?? 0) > 0 && (
-        <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="노출 개수보다 운영자 등록이 적어, 나머지는 CVM이 고객마다 자동으로 채웁니다(가안).">
-          <Sparkles className="h-3 w-3" /> CVM 자동 보충 {corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
+        <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="이 아래 자리는 CVM이 고객마다 추천으로 채웁니다(가안).">
+          <Sparkles className="h-3 w-3" /> CVM 추천 {corner.cvmFillMin && corner.cvmFillMin !== corner.cvmFillCount ? `${corner.cvmFillMin}~${corner.cvmFillCount}` : corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
         </div>
       )}
       {corner.moreButtonUse && !isBanner && (
