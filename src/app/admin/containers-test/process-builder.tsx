@@ -1319,7 +1319,12 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
 //  상품형 = 모든 배열을 가로형/세로형 2개로. 배너형 = 배너 수로 단일형/스와이프형 2개로(2개 이상=스와이프형).
 function shellLayout(c: Pick<LibCorner, 'cornerType' | 'layout' | 'layoutDetail' | 'bannerCount'>): string {
   const raw = c.layoutDetail ?? c.layout ?? '';
-  if (c.cornerType === '상품형') { if (/세로/.test(raw)) return '세로형'; if (/가로/.test(raw)) return '가로형'; }
+  // 상품형 = 가로형/세로형으로 접되, 카테고리형(상단 칩)은 전용 배열로 구분 유지(2026-11-06).
+  if (c.cornerType === '상품형') {
+    if (/카테고리/.test(raw)) return /세로/.test(raw) ? '세로형(카테고리형)' : '가로형(카테고리형)';
+    if (/세로/.test(raw)) return '세로형';
+    if (/가로/.test(raw)) return '가로형';
+  }
   // 배너형 = 단일형/스와이프형. 카탈로그 typeDetail(배너 단일형/스와이프형) 또는 배너 수로 구분.
   if (c.cornerType === '배너형') return (/스와이프/.test(raw) || c.bannerCount >= 2) ? '스와이프형' : '단일형';
   return displayLayout(c.cornerType, raw) || raw;

@@ -19,6 +19,7 @@ import {
   isComponentAllowedInCorner,
   CORNER_COMPONENT_MAP,
   componentTypesForCorner,
+  defaultComposition,
   type ComponentType,
   type CornerType,
 } from '../src/lib/display-taxonomy';
@@ -1191,6 +1192,44 @@ async function main() {
       // 생성 즉시 이 그룹의 코너들을 이 유형에 연결(코너별 분리라 정확 매핑 — 아래 fallback 백필은 미배치 코너용).
       for (const c of grp) await prisma.corner.update({ where: { id: c.id }, data: { sourceCornerTypeId: created.id } });
       typeIdx += 1;
+    }
+  }
+
+  // ── 상품형·혜택·오퍼형 — 4개 배열 유형 보장 (2026-11-06 사용자 요청) ──
+  //   가로형 · 세로형 · 가로형(카테고리형) · 세로형(카테고리형).
+  //   카테고리형 2종 = 상단 카테고리 칩이 있는 전용 배열(칩 클릭 시 하위 데이터셋 교체).
+  //   코너 유형 관리 리스트 + 전시화면 관리(빌더) 코너 추가가 모두 prisma.cornerType 를 소스로 쓰므로 여기 추가하면 양쪽에 반영된다.
+  {
+    const existingTypes = await prisma.cornerType.findMany({ select: { baseCategory: true, typeDetail: true } });
+    const have = new Set(existingTypes.map((e) => `${e.baseCategory}|${e.typeDetail ?? ''}`));
+    const DETAILS = ['가로형', '세로형', '가로형(카테고리형)', '세로형(카테고리형)'];
+    for (const base of ['상품형', '혜택·오퍼형'] as const) {
+      const comp = base === '상품형' ? '상품형' : '혜택형';
+      for (const detail of DETAILS) {
+        if (have.has(`${base}|${detail}`)) continue;
+        await prisma.cornerType.create({
+          data: {
+            typeId: 'CY' + String(typeIdx).padStart(7, '0'),
+            name: `${base} · ${detail}`,
+            baseCategory: base,
+            componentType: comp,
+            typeDetail: detail,
+            composition: JSON.stringify(defaultComposition(comp, detail, { badge: false })),
+            bigBanner: false,
+            channels: 'FO',
+            platforms: '모바일',
+            active: true,
+            status: 'APPROVED',
+            createdBy: '김마리나',
+            workingVersion: 1,
+            liveVersion: 1,
+            liveAt: new Date(),
+            description: /카테고리/.test(detail) ? '상단 카테고리(칩)를 누르면 하위 아이템이 교체되는 배열' : null,
+          },
+        });
+        have.add(`${base}|${detail}`);
+        typeIdx += 1;
+      }
     }
   }
 
