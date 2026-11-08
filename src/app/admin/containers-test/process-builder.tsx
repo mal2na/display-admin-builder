@@ -303,12 +303,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // 카드 1장 = 코너 1개인 유형(프로필형·상태 안내형) — 코너/아이템 분리 없음. 세그먼트 컨트롤 제거, 코너 세팅 + '한번에 가져오기'만(2026-11-05 사용자 요청).
   const cardOnly = isProfile || isStatus;
   const [fb, setFb] = React.useState<'미노출' | '운영자 편성으로 대체'>(corner.fallback);
-  const [cat, setCat] = React.useState('혜택');
-  const [topN, setTopN] = React.useState(5);
-  // CVM 데이터 연동 — '운영자 고정 앵커'(2026-11-06): 앞 자리는 운영자가 고정, 나머지를 CVM이 중분류 Top-N으로 채운다.
+  const [cat, setCat] = React.useState('혜택'); // 요청 중분류 기본 = 혜택
+  // CVM 데이터 연동 — 운영자 고정(위 아이템 리스트 그대로) + 나머지는 CVM이 중분류에서 채움(최소~최대).
   //  한 구좌=데이터 연동 그대로 유지(새 수급 케이스 아님). 데모라 세션 로컬 상태.
-  const [anchors, setAnchors] = React.useState<FillItem[]>([]);
-  const [anchorLoadOpen, setAnchorLoadOpen] = React.useState(false);
+  const [cvmMin, setCvmMin] = React.useState(3);
+  const [cvmMax, setCvmMax] = React.useState(5);
   // ① 코너 정보 — 코너명만 편집 가능(유형·레이아웃·개수는 코너 유형 관리에서 불러오는 껍데기)
   const router = useRouter();
   const [editName, setEditName] = React.useState(false);
@@ -570,6 +569,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
     ];
     onPreviewPatch({ components: comps });
   };
+  // CVM 데이터 연동 — 운영자 고정(items) + 나머지 CVM(최대 개수) 자리를 미리보기에 동기화.
+  React.useEffect(() => {
+    if (isData) pushDataPreview(items, cvmMax);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isData, items, cvmMax]);
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
@@ -695,8 +699,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
       </Sec>
 
       {/* ③ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
-      {src === '운영자 편성' ? (
-        <Sec n={3} title="채우기 — 항목 등록">
+      {(src === '운영자 편성' || (isData && !isProfile)) ? (
+        <Sec n={3} title={isData ? '운영자 고정 — 먼저 채울 항목 (나머지는 CVM)' : '채우기 — 항목 등록'}>
           {/* 칩 불러오기 모달 — 탭(코너 속성)에서 눌러도 뜨도록 탭 바깥(최상단)에 렌더(2026-11-05 사용자 요청). */}
           {chipLoadOpen && (
             <ChipLoadModal categories={catCategories} current={chips} onClose={() => setChipLoadOpen(false)}
@@ -949,6 +953,44 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           ) : null}
           </>
           )}
+          {/* CVM 데이터 연동 — 위 운영자 고정(아이템) + 나머지는 CVM이 중분류에서 채움(2026-11-06 사용자 확정: 별도 UI 없이 같은 아이템 UI 재사용). */}
+          {isData && (
+            <div className="mt-4 border-t border-[var(--line2)] pt-3">
+              <div className="mb-2 flex items-start gap-1.5 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]">
+                <span className="mt-0.5">ⓘ</span><span>위 <b>운영자 고정</b> 항목은 그대로 두고, <b>나머지 자리는 CVM</b>이 중분류에서 채웁니다(협의 중 조정 가능).</span>
+              </div>
+              <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">요청 중분류 <span className="font-normal text-[var(--ink4)]">· 나머지 자리를 채울 CVM 범위</span></p>
+              <div className="flex flex-wrap gap-1.5">
+                {CVM_CATALOGS.map((c) => (
+                  <button key={c} type="button" onClick={() => setCat(c)} className={cn('rounded-[8px] px-2.5 py-1.5 text-[12px] font-semibold', c === cat ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)] hover:bg-[var(--line)]')}>{c}</button>
+                ))}
+              </div>
+              <p className="mb-1.5 mt-3 text-[12px] font-semibold text-[var(--ink3)]">나머지 요청 개수 <span className="font-normal text-[var(--ink4)]">· CVM이 채울 자리 (최소~최대)</span></p>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] text-[var(--ink4)]">최소</span>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button key={n} type="button" onClick={() => { const mx = Math.max(cvmMax, n); setCvmMin(n); setCvmMax(mx); pushDataPreview(items, mx); }} className={cn('grid h-7 w-7 place-items-center rounded-[6px] text-[12px] font-semibold', n === cvmMin ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line2)] text-[var(--ink3)]')}>{n}</button>
+                  ))}
+                </div>
+                <span className="text-[var(--ink4)]">~</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] text-[var(--ink4)]">최대</span>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button key={n} type="button" disabled={n < cvmMin} onClick={() => { setCvmMax(n); pushDataPreview(items, n); }} className={cn('grid h-7 w-7 place-items-center rounded-[6px] text-[12px] font-semibold', n === cvmMax ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line2)] text-[var(--ink3)]', n < cvmMin && 'opacity-30')}>{n}</button>
+                  ))}
+                </div>
+                <span className="ml-1 text-[11px] text-[var(--ink4)]">CVM 상한 5</span>
+              </div>
+              <p className="mt-1.5 text-[11px] text-[var(--ink4)]">고정 <b className="text-[var(--ink3)]">{items.length}</b> + CVM <b className="text-[var(--ink3)]">{cvmMin}~{cvmMax}</b> = 총 <b className="text-[var(--ac)]">{items.length + cvmMin}~{items.length + cvmMax}</b>칸</p>
+              <details className="mt-3 rounded-[8px] bg-[var(--th)] px-3 py-2 text-[12px] text-[var(--ink3)]">
+                <summary className="cursor-pointer font-semibold">▸ CVM이 주지 않는 것 5가지</summary>
+                <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-[11px] text-[var(--ink4)]">
+                  <li>세그먼트(개별 고객 단위만)</li><li>고객 성향·인사이트(C360·데이터실)</li><li>제휴 콘텐츠(EPC 밖)</li><li>레이아웃·카드 모양(전시 설계)</li><li>문구만 따로 베리에이션</li>
+                </ul>
+              </details>
+            </div>
+          )}
         </Sec>
       ) : isProfile ? (
         <Sec n={3} title="프로필 카드 — 문구 설정">
@@ -970,58 +1012,6 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             <span className="rounded-[4px] bg-white px-1.5 py-0.5">휴대폰 번호</span>
             <span className="text-[var(--ink4)]">— @cvm 바인딩</span>
           </div>
-        </Sec>
-      ) : isData ? (
-        <Sec n={3} title="요청 — CVM에 무엇을 달라고 할지" help>
-          <div className="mb-2 flex items-start gap-1.5 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]">
-            <span className="mt-0.5">ⓘ</span><span><b>운영자가 일부 자리를 고정</b>하고, <b>나머지는 CVM이</b> 중분류 Top-N으로 채웁니다. 고정 없이 전부 CVM도 가능해요(협의 중 조정 가능).</span>
-          </div>
-          {/* 운영자 고정 앵커 — 앞 자리는 운영자가 고정, 나머지는 CVM이 채운다(2026-11-06 사용자 확정). */}
-          <div className="mb-3 rounded-[8px] border border-[var(--line3)] bg-white p-2.5">
-            <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-              <UserCog className="h-3.5 w-3.5 text-[var(--ac)]" />
-              <span className="text-[12px] font-bold text-[var(--ink2)]">운영자 고정</span>
-              <span className="rounded-full bg-[var(--th)] px-1.5 text-[11px] font-bold text-[var(--ink3)]">{anchors.length}칸</span>
-              <span className="text-[11px] font-normal text-[var(--ink4)]">· 이 자리는 CVM 추천에서 제외됩니다</span>
-            </div>
-            {anchors.length > 0 && (
-              <div className="mb-1.5 space-y-1">
-                {anchors.map((o, i) => (
-                  <div key={o.id} className="flex items-center gap-2 rounded-[7px] border border-[var(--line2)] bg-white px-2 py-1">
-                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ac2)] text-[10px] font-bold text-[var(--ac)]">{i + 1}</span>
-                    <span className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-[5px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]"><ItemIcon src={o.icon} iconClass="h-4 w-4" imgClass="h-full w-full object-cover" /></span>
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-[var(--ink2)]">{o.label || '(제목 없음)'}</span>
-                    <button type="button" onClick={() => { const next = anchors.filter((_, j) => j !== i); setAnchors(next); pushDataPreview(next, topN); }} className="grid h-5 w-5 shrink-0 place-items-center rounded-[5px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button type="button" onClick={() => (canLoad ? setAnchorLoadOpen(true) : onToast('이 유형은 불러올 카탈로그가 없어요'))} className="flex w-full items-center justify-center gap-1 rounded-[7px] border border-dashed border-[#cfd2ff] py-1.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[var(--ac2)]"><Plus className="h-3 w-3" /> 고정 항목 불러오기</button>
-          </div>
-          {anchorLoadOpen && (
-            <ProductLoadModal catalog={catalog} cornerType={corner.cornerType} onClose={() => setAnchorLoadOpen(false)}
-              onAdd={(ps) => { const mapped: FillItem[] = ps.map((p, i) => ({ id: `anc-${Date.now()}-${i}`, label: p.title, icon: p.imageUrl ?? null, link: p.landing ?? null, sub: p.brand ?? undefined, mode: 'load' })); const next = [...anchors, ...mapped]; setAnchors(next); pushDataPreview(next, topN); setAnchorLoadOpen(false); onToast(`${ps.length}개 고정`); }} />
-          )}
-          <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">요청 중분류 <span className="font-normal text-[var(--ink4)]">· 나머지 자리를 채울 CVM 범위</span></p>
-          <div className="flex flex-wrap gap-1.5">
-            {CVM_CATALOGS.map((c) => (
-              <button key={c} type="button" onClick={() => setCat(c)} className={cn('rounded-[8px] px-2.5 py-1.5 text-[12px] font-semibold', c === cat ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)] hover:bg-[var(--line)]')}>{c}</button>
-            ))}
-          </div>
-          <p className="mb-1.5 mt-3 text-[12px] font-semibold text-[var(--ink3)]">나머지 요청 개수 <span className="font-normal text-[var(--ink4)]">· CVM이 채울 자리 수</span></p>
-          <div className="flex items-center gap-1.5">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} type="button" onClick={() => { setTopN(n); pushDataPreview(anchors, n); }} className={cn('grid h-7 w-7 place-items-center rounded-[6px] text-[12px] font-semibold', n === topN ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line2)] text-[var(--ink3)]')}>{n}</button>
-            ))}
-            <span className="ml-1 text-[11px] text-[var(--ink4)]">CVM 상한 5</span>
-          </div>
-          <p className="mt-1.5 text-[11px] text-[var(--ink4)]">고정 <b className="text-[var(--ink3)]">{anchors.length}</b> + CVM <b className="text-[var(--ink3)]">{topN}</b> = 총 <b className="text-[var(--ac)]">{anchors.length + topN}</b>칸</p>
-          <details className="mt-3 rounded-[8px] bg-[var(--th)] px-3 py-2 text-[12px] text-[var(--ink3)]">
-            <summary className="cursor-pointer font-semibold">▸ CVM이 주지 않는 것 5가지</summary>
-            <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-[11px] text-[var(--ink4)]">
-              <li>세그먼트(개별 고객 단위만)</li><li>고객 성향·인사이트(C360·데이터실)</li><li>제휴 콘텐츠(EPC 밖)</li><li>레이아웃·카드 모양(전시 설계)</li><li>문구만 따로 베리에이션</li>
-            </ul>
-          </details>
         </Sec>
       ) : (
         <Sec n={3} title="요청 — 구좌만 넘김" help>
@@ -1047,33 +1037,6 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                 </button>
               );
             })}
-          </div>
-        </Sec>
-      )}
-
-      {/* ⑤ 대체 소재 — CVM + 운영자 편성으로 대체일 때 */}
-      {isCvmSrc && fb === '운영자 편성으로 대체' && (
-        <Sec n={5} title="대체 소재 — 대표 아이템(조립 규격)" help>
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-[12px] text-[var(--ink3)]">콘텐츠 묶음 <b className="text-[var(--ink)]">{Math.min(items.length, 3)}</b></span>
-            <span className="rounded-[6px] bg-[var(--ac2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ac)]">✦ 노출 {corner.maxItems ?? 10} = 운영자 {Math.min(items.length, 3)} + CVM 보충 {Math.max((corner.maxItems ?? 10) - Math.min(items.length, 3), 0)} <span className="rounded-[4px] bg-white/70 px-1">가안</span></span>
-          </div>
-          <div className="space-y-1.5">
-            {items.slice(0, 3).map((o, i) => (
-              <div key={o.id} className="rounded-[8px] border border-[var(--line3)] bg-white p-2.5">
-                <div className="flex items-center gap-2">
-                  <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--ink4)]" />
-                  <span className="w-4 shrink-0 text-center text-[12px] text-[var(--ink3)]">{i + 1}</span>
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--ink)]">{o.label}</span>
-                  <button type="button" onClick={() => onToast('항목 삭제 (데모)')} className="text-[var(--ink4)] hover:text-[var(--bad)]"><Trash2 className="h-3.5 w-3.5" /></button>
-                  <button type="button" onClick={() => onToast('수정 (데모)')} className="inline-flex items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2 py-0.5 text-[12px] text-[var(--ink3)] hover:bg-[var(--th)]"><Pencil className="h-3 w-3" /> 수정</button>
-                </div>
-                <div className="ml-6 mt-1.5 flex items-center gap-2">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]"><ImageIcon className="h-4 w-4" /></span>
-                  <span className="text-[11px] text-[var(--ink4)]">평점 {(4 + (i * 0.4) % 1).toFixed(1)} · 예매율 {(21 - i * 2).toFixed(1)}%</span>
-                </div>
-              </div>
-            ))}
           </div>
           {MiNoChul}
         </Sec>
