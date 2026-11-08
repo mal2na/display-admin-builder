@@ -249,7 +249,8 @@ export const CVM_TARGET_HINTS: { key: string; axis: string; note: string }[] = [
 //     · 운영자 편성      — 운영자가 직접 고른 항목을 정한 순서대로. 폴백의 기준이기도 하다.
 //   한 구좌(코너)는 한 방식만 쓴다 — 겸용 금지(2026-10-08 합의: "이 구좌는 CVM 구좌야"라고 정해놓는 게 낫다).
 // ═══════════════════════════════════════════════════════════════════════════
-export const REC_SOURCE_METHODS = ['CVM 데이터 연동', 'CVM 콘텐츠 연동', '운영자 편성'] as const;
+// 노출 순서(2026-11-06 사용자 요청): 운영자 편성 → CVM 데이터 연동 → CVM 콘텐츠 연동(혼동 방지).
+export const REC_SOURCE_METHODS = ['운영자 편성', 'CVM 데이터 연동', 'CVM 콘텐츠 연동'] as const;
 export type RecSourceMethod = (typeof REC_SOURCE_METHODS)[number];
 
 /** CVM 연동(데이터·콘텐츠) 여부 */
