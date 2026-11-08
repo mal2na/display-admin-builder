@@ -387,11 +387,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
     const img = (pv?.components ?? []).flatMap((c: any) => c.atoms ?? []).find((a: any) => (a.atomType === 'IMAGE' || a.atomType === 'ICON') && typeof a.imageUrl === 'string' && a.imageUrl.startsWith('/'))?.imageUrl;
     return img ?? '';
   });
-  // ③ 채우기 항목 — 칩 On 이면 칩마다 별도 메뉴(칩 하나하나 메뉴 연동, 2026-10-28 사용자 요청). 칩 Off 면 단일 리스트(__flat__).
-  const chipMode = !!optOn['칩'] && chips.length > 0;
+  // 카테고리형(상품형·혜택·오퍼형 세로형/가로형(카테고리형)) — 상단 카테고리 칩 + 카테고리별 컴포넌트 리스트(2026-11-06 사용자 요청).
+  const isCategory = (corner.cornerType === '상품형' || corner.cornerType === '혜택·오퍼형') && /카테고리형|칩|카테고리/.test(corner.layoutDetail ?? corner.layout ?? '');
+  // ③ 채우기 항목 — 칩/카테고리 On 이면 카테고리마다 별도 리스트(카테고리별 컴포넌트 연동). 아니면 단일 리스트(__flat__).
+  const chipMode = ((!!optOn['칩'] || isCategory) && chips.length > 0);
   const [activeChip, setActiveChip] = React.useState(0);
   const chipIdx = Math.min(activeChip, Math.max(0, chips.length - 1));
-  const chipKey = chipMode ? `chip:${chips[chipIdx] ?? chipIdx}` : '__flat__';
+  const chipKey = chipMode ? `${isCategory ? 'cat' : 'chip'}:${chips[chipIdx] ?? chipIdx}` : '__flat__';
   // 불러오기 전용(직접입력 없음) 유형 — 콘텐츠 안내형(영화) · 혜택·오퍼형 세로형(제휴 혜택). 이미지+텍스트+보조값을 한 번에 불러온다(2026-11-05 사용자 요청).
   const detailStr = corner.layoutDetail ?? corner.layout ?? '';
   const isBenefitList = (corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형') && /세로/.test(detailStr);
@@ -659,7 +661,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                   {itemOpt.map((f) => <FieldChip key={f.key} ko={f.ko} code={f.key} opt />)}
                 </Grp>
               )}
-              <p className="text-[10.5px] text-[var(--ink4)]"><span className="mr-1.5 inline-block rounded-[4px] border border-[#cfd2ff] bg-[#f3f0ff] px-1 text-[var(--ac)]">옵션</span> 빌더에서 on/off · 나머지는 고정</p>
+              <p className="flex items-center gap-1 text-[10.5px] text-[var(--ink4)]"><span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ac)]" /><span className="font-medium text-[var(--ac)]">옵션</span>은 빌더에서 on/off · 나머지는 고정</p>
             </div>
           );
         })()}
@@ -842,6 +844,27 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           {/* ── 아이템 탭(또는 코너 속성이 없는 유형)에서만 아이템 리스트 노출 ── */}
           {!cardOnly && !isBarcode && (!(hasCornerTitle || hasButtonText || availOptions.length > 0) || fillTab === '아이템') && (
           <>
+          {/* 카테고리형 — 상단 카테고리 칩 관리(불러오기). 칩 선택 시 아래 컴포넌트 리스트가 그 카테고리로 전환(카테고리별 데이터 세팅, 2026-11-06 사용자 요청). */}
+          {isCategory && (
+            <div className="mb-3 rounded-[8px] border border-[var(--line3)] bg-white p-2.5">
+              <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                <span className="text-[12px] font-bold text-[var(--ink2)]">카테고리</span>
+                <span className="rounded-full bg-[var(--th)] px-1.5 text-[11px] font-bold text-[var(--ink3)]">{chips.length}</span>
+                <span className="text-[11px] font-normal text-[var(--ink4)]">· 칩을 눌러 카테고리별 컴포넌트를 구성해요</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {chips.map((c, i) => (
+                  <span key={i} onClick={() => setActiveChip(i)}
+                    className={cn('inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium', i === chipIdx ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line3)] bg-white text-[var(--ink2)]')}>
+                    {c}
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
+                  </span>
+                ))}
+                <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 카테고리 불러오기</button>
+              </div>
+              {chips.length === 0 && <p className="mt-1.5 text-[11px] text-[var(--ink4)]">먼저 카테고리를 불러온 뒤, 칩마다 아래에서 컴포넌트를 등록하세요.</p>}
+            </div>
+          )}
           {/* 배너형 = 배너 캠페인 관리에서 '가져오기'로만 채움 — 안내 + 아래 가져오기 버튼(2026-11-05 사용자 요청). */}
           {isBanner && (
             <div className="mb-2 flex items-start gap-2 rounded-[8px] border border-[var(--line2)] bg-white px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
@@ -854,8 +877,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
           {/* 칩 On이면 '현재 칩의 메뉴'임을 알려주고, 칩마다 메뉴가 따로 저장된다. */}
           {chipMode && (
             <div className="mb-1.5 mt-1 flex flex-wrap items-center gap-1.5 text-[12px]">
-              <span className="font-semibold text-[var(--ink2)]">칩 <span className="text-[var(--ac)]">&lsquo;{chips[chipIdx]}&rsquo;</span>의 메뉴</span>
-              <span className="text-[var(--ink4)]">— 위 칩을 눌러 칩별로 따로 구성</span>
+              <span className="font-semibold text-[var(--ink2)]">{isCategory ? '카테고리' : '칩'} <span className="text-[var(--ac)]">&lsquo;{chips[chipIdx]}&rsquo;</span>의 {isCategory ? '컴포넌트' : '메뉴'}</span>
+              <span className="text-[var(--ink4)]">— 위 {isCategory ? '카테고리' : '칩'}를 눌러 따로 구성</span>
             </div>
           )}
           <div className="space-y-1.5">
@@ -1652,24 +1675,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                 ))}
               </div>
             </section>
-
-            {/* 구성 검증 */}
-            <section className="rounded-[16px] border border-[var(--line2)] bg-white px-5 py-4">
-              <div className="flex items-center gap-2">
-                <h2 className="text-[14px] font-bold text-[var(--ink)]">구성 검증</h2>
-                {!validation ? (
-                  <span className="rounded-full border border-[var(--line2)] bg-[var(--th)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink3)]">미검증</span>
-                ) : errCount > 0 ? (
-                  <span className="rounded-full border border-[#ffd0d2] bg-[#fff0f1] px-2 py-0.5 text-[11px] font-semibold text-[var(--bad)]">오류 {errCount}건</span>
-                ) : (
-                  <span className="rounded-full border border-[#bfe7cf] bg-[#eefaf1] px-2 py-0.5 text-[11px] font-semibold text-[#00a058]">검증 통과</span>
-                )}
-                <button type="button" onClick={runValidate} className="ml-auto rounded-[6px] border border-[var(--line2)] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">{validation ? '다시 검증' : '검증 실행'}</button>
-              </div>
-              <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink4)]">
-                ‘전체 구성 검증’을 클릭하면 코너 간 조건 충돌 · 코너 상태 변경 영향 · 설정 항목을 확인합니다.
-              </p>
-            </section>
+            {/* 구성 검증 섹션은 우측에서 제외 — 하단 바의 '구성 검증' 버튼으로 일원화(2026-11-06 사용자 요청). */}
         </div>
       </div>
 
@@ -1715,7 +1721,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
         <button type="button" onClick={() => validation ? setPanelOpen((v) => !v) : runValidate()}
           className={cn('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium',
             !validation ? 'border-[var(--line2)] bg-[var(--th)] text-[var(--ink3)]' : errCount > 0 ? 'border-[#ffd0d2] bg-[#fff0f1] text-[var(--bad)]' : 'border-[#bfe7cf] bg-[#eefaf1] text-[#00a058]')}>
-          <ShieldCheck className="h-3.5 w-3.5" /> 구성 검증 {!validation ? '미검증' : errCount > 0 ? `오류 ${errCount}건` : '통과'}
+          <ShieldCheck className="h-3.5 w-3.5" /> {!validation ? '구성 검증' : errCount > 0 ? `구성 검증 · 오류 ${errCount}건` : '구성 검증 완료'}
           {validation && <ChevronDown className={cn('h-3.5 w-3.5 transition', panelOpen && 'rotate-180')} />}
         </button>
         {/* 거버넌스 — 상품 전시 등록과 동일: 필수 N/M 완료 + 초기화·임시저장·승인요청(필수 미완료면 승인요청 비활성) */}
