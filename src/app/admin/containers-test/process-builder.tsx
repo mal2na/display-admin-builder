@@ -175,7 +175,7 @@ function ChipLoadModal({ categories, current, onClose, onAdd }: { categories: st
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="flex max-h-[70vh] w-full max-w-sm flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b border-[var(--line2)] px-4 py-3">
-          <h2 className="text-[14px] font-bold text-[var(--ink)]">칩 불러오기</h2>
+          <h2 className="text-[14px] font-bold text-[var(--ink)]">Category</h2>
           <span className="text-[12px] text-[var(--ink4)]">카테고리에서 선택</span>
           <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]" aria-label="닫기"><X className="h-4 w-4" /></button>
         </div>
@@ -737,7 +737,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                           </span>
                         ))}
                         {/* 디폴트는 '+ 칩 불러오기' 버튼만 — 여기서 카테고리를 추가한다(2026-11-05 사용자 요청: 점선 placeholder 제거). */}
-                        <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 칩 불러오기</button>
+                        <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> Category</button>
                       </div>
                       <p className="mt-1.5 text-[11px] text-[var(--ink4)]">점선 <b className="text-[var(--ink3)]">Chip</b>은 빈 자리예요 · <b className="text-[var(--ink3)]">불러오기</b>로 카테고리를 넣으면 반영됩니다. 칩을 누르면 아래 아이템이 그 칩 항목으로 바뀌어요.</p>
                     </div>

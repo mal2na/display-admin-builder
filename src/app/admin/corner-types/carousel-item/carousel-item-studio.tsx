@@ -114,7 +114,7 @@ function defaultSpec(layout?: string): CardHomeSpec {
     cta: { show: true, label: 'CTA' },           // CTA = 옵션 (하단 버튼 텍스트 = 'CTA', 2026-10-29(2) 사용자 요청)
     bannerSrc: '',
     bannerOn: true, // 배너 = 옵션, Default Y(2026-11-04 SB v13)
-    chipOn: true,   // 칩 = 옵션, Default Y(2026-11-04 SB v13)
+    chipOn: false,  // 칩은 옵션에서 제외(2026-11-06) → 카테고리형 전용 배열로 분리. 기본 꺼짐.
     item: isVertical(layout) ? cardHomeItem('ItemTitle') : carousel('ItemTitle'),
   };
 }
@@ -496,10 +496,9 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
   return (
     <div>
-      {/* 옵션(배너·칩·CTA)끼리 2열, 고정(코너 타이틀·버튼 텍스트)끼리 2열(SB v13). */}
+      {/* 옵션(배너·CTA)끼리 2열, 고정(코너 타이틀·버튼 텍스트)끼리 2열(SB v13). 칩은 옵션에서 제외(2026-11-06) → 카테고리형 전용 배열로 분리. */}
       <StudioPairs>
         <ChkRow bare label="배너(Banner)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
-        <ChkRow bare label="칩(Chip)" option checked={spec.chipOn ?? false} onChange={(v) => set({ chipOn: v })} />
         <ChkRow bare label="CTA(CallToAction)" option checked={spec.cta?.show ?? false} onChange={(v) => set({ cta: { ...(spec.cta ?? { label: 'CTA' }), show: v } })} />
       </StudioPairs>
       <StudioPairs>

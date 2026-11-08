@@ -106,10 +106,10 @@ function ImageBox({ atom, className }: { atom?: PreviewAtom; className?: string 
 function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const variant = component.chipVariant ?? (component.atoms.some((a) => a.imageUrl) ? 'home' : 'contents');
-  // 전부 placeholder(Chip1·전체·카테고리 등)면 미리보기엔 '칩 불러오기' 칩 하나만 — 실제 카테고리가 들어오면 전부(2026-11-05 사용자 요청).
+  // 전부 placeholder(Chip1·전체·카테고리 등)면 미리보기엔 'Category' 칩 하나만 — 실제 카테고리가 들어오면 전부(2026-11-06 워딩 변경).
   const CHIP_PH = /^(chip\d*|전체|카테고리|tab\d*|category\d*)$/i;
   const allPh = component.atoms.length > 0 && component.atoms.every((a) => CHIP_PH.test((a.content ?? a.name ?? '').trim()));
-  const atoms = allPh ? [{ ...component.atoms[0], content: '칩 불러오기' }] : component.atoms;
+  const atoms = allPh ? [{ ...component.atoms[0], content: 'Category' }] : component.atoms;
 
   // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
   if (variant === 'home') {

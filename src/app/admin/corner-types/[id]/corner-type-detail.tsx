@@ -322,9 +322,8 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   //  캡션·개수는 세로형에서만 필수(가로형은 선택이라 제외). 캡션2·캡션3·칩·CTA 는 선택/미사용이라 코너 유형에 넣지 않는다.
   const isV = /세로/.test(row.typeDetail);
   const studioItems: { lbl: string; kind: '고정' | 'On/Off' | '옵션'; on: boolean; val?: string }[] | null = (isStudio && studioSpec && it) ? [
-    // 옵션(배너·칩·CTA — 상품형·혜택형 공통). 맨 위(2026-10-28 사용자 확정).
+    // 옵션(배너·CTA — 상품형·혜택형 공통). 칩은 옵션에서 제외(2026-11-06) → 카테고리형 전용 배열로 분리.
     { lbl: '배너(Banner)', kind: '옵션', on: !!studioSpec.bannerOn, val: studioSpec.bannerSrc || undefined },
-    { lbl: '칩(Chip)', kind: '옵션', on: !!studioSpec.chipOn },
     { lbl: 'CTA(CallToAction)', kind: '옵션', on: !!studioSpec.cta?.show, val: studioSpec.cta?.label },
     // 기본정보(코너) — 고정
     { lbl: '코너 타이틀(CornerTitle)', kind: '고정', on: true, val: studioSpec.title },
