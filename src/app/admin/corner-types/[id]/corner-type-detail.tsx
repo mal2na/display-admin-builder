@@ -329,8 +329,8 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
     { lbl: '코너 타이틀(CornerTitle)', kind: '고정', on: true, val: studioSpec.title },
     { lbl: '버튼 텍스트(ButtonText)', kind: '고정', on: true, val: studioSpec.buttonText.label },
     // 코너 정보 속성(아이템) — 고정
-    { lbl: '아이템 이미지(ImageSrc)', kind: '고정', on: true, val: it.imageSrc || undefined },
-    { lbl: '아이템 타이틀(ItemTitle)', kind: '고정', on: true },
+    { lbl: '컴포넌트 이미지(ImageSrc)', kind: '고정', on: true, val: it.imageSrc || undefined },
+    { lbl: '컴포넌트 타이틀(ItemTitle)', kind: '고정', on: true },
     // 가로형(단말 추천) = 가격·할인율·서브텍스트2 / 세로형(요금제 리스트) = 캡션·캡션2. DS 실제 케이스 기준(2026-10-28).
     ...(!isV ? [
       { lbl: '가격(Price)', kind: '고정' as const, on: true, val: it.priceGroup.price },
@@ -446,7 +446,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
                     <ROGroup badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)">{renderGrouped(cornerOptRows)}{renderGrouped(cornerFixedRows)}</ROGroup>
                   )}
                   {itemRows.length > 0 && (
-                    <ROGroup badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
+                    <ROGroup badge="컴" color="#00a058" title="컴포넌트(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
                       {/* 형태(Variants) — 가로형만(세로형 제외, 수정 폼과 동일). */}
                       {!isV && it && <DetailPairs><DetailCell lbl="형태(Variants)"><span className="text-[13px] text-slate-700">{it.variant}</span></DetailCell></DetailPairs>}
                       {renderGrouped(itemRows)}

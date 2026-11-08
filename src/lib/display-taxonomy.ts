@@ -582,8 +582,8 @@ export const CORNER_TYPE_FEATURES = [
 //   · 세부 항목 = 표의 빨간색(필수)만. 파란색(선택)은 코너 유형에 넣지 않는다.
 //   · 필수 = 고정(빌더에서 못 끔). 옵션 = 배너·칩·CTA 3종만(빌더에서 On/Off 지정).
 //   · 코너 정보(corner) = 배너·코너 메인 타이틀·라벨 텍스트·CTA 등 코너 종속.
-//     아이템 정보(item) = 아이템 이미지·아이템 타이틀·가격 등 개별 아이템.
-//   · 명명: 국문명 먼저 + 영문키 병기. 타이틀은 계층 노출(코너 메인 타이틀 / 아이템 타이틀).
+//     아이템 정보(item) = 컴포넌트 이미지·컴포넌트 타이틀·가격 등 개별 아이템.
+//   · 명명: 국문명 먼저 + 영문키 병기. 타이틀은 계층 노출(코너 메인 타이틀 / 컴포넌트 타이틀).
 //   · asIs = DS 빌더(AS-IS) 항목명. 1:1 매핑이 안 되면 note 에 명시.
 //   · 아이템 노출 개수(min~max)·로우 수는 코너 유형 공통. 빌더는 데이터만 연결.
 // ────────────────────────────────────────────────────────────────────────────
@@ -597,11 +597,11 @@ export type CornerTypeSpec = { options: CornerOption[]; minItems?: number; maxIt
 
 // 재사용 필드 — 영문키는 DS(AS-IS) 기준. asIs 생략 시 key 와 동일.
 const FD = (key: string, ko: string, group: 'corner' | 'item', extra?: Partial<CornerFieldDef>): CornerFieldDef => ({ key, ko, group, asIs: extra?.asIs ?? key, note: extra?.note, defaultOn: extra?.defaultOn, dependsOn: extra?.dependsOn });
-// 명칭·영문코드는 SB v13 이미지 기준: 코너 타이틀(CornerTitle) / 아이템 타이틀(ItemTitle) / 서브 텍스트(SubText).
+// 명칭·영문코드는 SB v13 이미지 기준: 코너 타이틀(CornerTitle) / 컴포넌트 타이틀(ItemTitle) / 서브 텍스트(SubText).
 const CORNER_TITLE = FD('CornerTitle', '코너 타이틀', 'corner');
 const LABEL_TEXT = FD('ButtonText', '버튼 텍스트', 'corner');
-const ITEM_IMAGE = FD('ImageSrc', '아이템 이미지', 'item');
-const ITEM_TITLE = FD('ItemTitle', '아이템 타이틀', 'item');
+const ITEM_IMAGE = FD('ImageSrc', '컴포넌트 이미지', 'item');
+const ITEM_TITLE = FD('ItemTitle', '컴포넌트 타이틀', 'item');
 // 가격 그룹 — 옵션(Y/N). 가격 기본 Y, 할인율 기본 N·가격 종속, 기간 기본 Y(2026-11-04 SB v13).
 const PRICE = FD('Price', '가격', 'item', { defaultOn: true });
 const DISCOUNT = FD('DiscountRate', '할인율', 'item', { defaultOn: false, dependsOn: 'Price' });
@@ -673,8 +673,8 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   '콘텐츠 안내형': {
     options: ['CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
-      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, FD('ImageSrc', '아이템 이미지', 'item', { note: '영화 이미지' }),
-        FD('ItemTitle', '아이템 타이틀', 'item', { note: '영화 제목' }), FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' })] },
+      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, FD('ImageSrc', '컴포넌트 이미지', 'item', { note: '영화 이미지' }),
+        FD('ItemTitle', '컴포넌트 타이틀', 'item', { note: '영화 제목' }), FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' })] },
     ],
   },
   // 바코드형 — 멤버십 바코드(신규 최상위, 2026-10-29). CardHome · Variants My · 필수: 바코드명(Title). 값은 런타임 발급.
