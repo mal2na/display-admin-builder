@@ -1204,7 +1204,8 @@ async function main() {
     const have = new Set(existingTypes.map((e) => `${e.baseCategory}|${e.typeDetail ?? ''}`));
     const DETAILS = ['가로형', '세로형', '가로형(카테고리형)', '세로형(카테고리형)'];
     for (const base of ['상품형', '혜택·오퍼형'] as const) {
-      const comp = base === '상품형' ? '상품형' : '혜택형';
+      // 혜택·오퍼형도 카드(상품형 컴포넌트)로 렌더 — 비카테고리 가로형/세로형과 동일 UI + 상단 카테고리 칩(2026-11-09 사용자 요청: 가로형(카테고리형)이 가로형과 같아야).
+      const comp = '상품형';
       for (const detail of DETAILS) {
         if (have.has(`${base}|${detail}`)) continue;
         await prisma.cornerType.create({

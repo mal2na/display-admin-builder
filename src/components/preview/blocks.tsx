@@ -108,8 +108,9 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const variant = component.chipVariant ?? (component.atoms.some((a) => a.imageUrl) ? 'home' : 'contents');
   // 전부 placeholder(Chip1·전체·카테고리 등)면 미리보기엔 'Category' 칩 하나만 — 실제 카테고리가 들어오면 전부(2026-11-06 워딩 변경).
+  //  단, 업무 진입형 퀵메뉴(ChipHome)는 접지 않고 2행 8개를 그대로 보여준다('Chip' 라벨, 2026-11-09 사용자 요청).
   const CHIP_PH = /^(chip\d*|전체|카테고리|tab\d*|category\d*)$/i;
-  const allPh = component.atoms.length > 0 && component.atoms.every((a) => CHIP_PH.test((a.content ?? a.name ?? '').trim()));
+  const allPh = variant !== 'home' && component.atoms.length > 0 && component.atoms.every((a) => CHIP_PH.test((a.content ?? a.name ?? '').trim()));
   const atoms = allPh ? [{ ...component.atoms[0], content: 'Category' }] : component.atoms;
 
   // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
@@ -167,7 +168,8 @@ function ChipsView({ component }: { component: PreviewComponent }) {
     );
   }
 
-  // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩. 카테고리 필터는 항상 한 줄(가로 스크롤). 2026-10-06 사용자 요청(세로형+칩은 칩 한 줄).
+  // ChipContents(기본) — 선택 1개를 강조하는 콘텐츠 필터 칩. 카테고리 필터는 항상 한 줄(가로 스크롤).
+  //  스타일: 선택=연회색 채움(진한 글씨) · 비선택=흰색+연한 보더. 2026-11-09 사용자 확정(검정 선택 아님).
   return (
     <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
       {atoms.map((a, i) => (
@@ -364,8 +366,8 @@ function BenefitRow({ component, reason, parts }: { component: PreviewComponent;
   const cta = first(component.atoms, 'CTA'); // 선택적 CTA (숨김=미사용이면 프리뷰 제외)
   return (
     <div className="flex items-center gap-3 py-2">
-      {/* 로고 = 연회색 타일 위 object-contain — 와이드 워드마크(배달의민족 등)도 잘리지 않고 전체가 보인다. */}
-      {logo && <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl bg-slate-50 object-contain p-1.5" />}
+      {/* 로고 = 타일을 꽉 채우는 object-cover(회색 여백 최소화). 로고 파일이 없는 브랜드는 브랜드 색/이니셜 타일로 폴백(2026-11-09 사용자 요청). */}
+      {logo && <PreviewImage src={logo.imageUrl} alt={logo.altText ?? ''} brand={brand?.content ?? title?.content ?? component.name} className="h-11 w-11 shrink-0 overflow-hidden rounded-2xl bg-slate-50 object-cover" />}
       <div className="min-w-0 flex-1">
         <p className={cn('truncate text-[14px] font-semibold text-slate-900')}>{title?.content ?? component.name}</p>
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}
