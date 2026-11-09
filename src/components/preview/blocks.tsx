@@ -168,12 +168,12 @@ function ChipsView({ component }: { component: PreviewComponent }) {
     );
   }
 
-  // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩. 카테고리 필터는 항상 한 줄(가로 스크롤). 2026-10-06 사용자 요청(세로형+칩은 칩 한 줄).
-  //  스타일: 선택=진한 차콜(흰 글씨) · 비선택=회색 채움(보더 없음). 2026-11-09 사용자 확정(카테고리 칩 UI).
+  // ChipContents(기본) — 선택 1개를 강조하는 콘텐츠 필터 칩. 카테고리 필터는 항상 한 줄(가로 스크롤).
+  //  스타일: 선택=연회색 채움(진한 글씨) · 비선택=흰색+연한 보더. 2026-11-09 사용자 확정(검정 선택 아님).
   return (
     <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
       {atoms.map((a, i) => (
-        <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] ' + (i === sel ? 'bg-[#1a1a1a] font-semibold text-white' : 'bg-[#f1f3f5] font-medium text-[#6b7684]')}>
+        <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] ' + (i === sel ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>
           {a.content ?? a.name}
         </span>
       ))}
