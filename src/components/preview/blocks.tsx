@@ -65,7 +65,8 @@ export type PreviewCorner = {
   subTitleIcon?: string | null;
   moreButtonUse?: boolean | null;
   moreButtonLabel?: string | null;
-  cvmFillCount?: number | null; // CVM 보충 — 노출 개수(max)보다 운영자 등록이 적을 때 CVM이 채우는 칸 수(가안)
+  cvmFillCount?: number | null; // CVM 보충 — 노출 개수(max)보다 운영자 등록이 적을 때 CVM이 채우는 칸 수(가안). 범위면 cvmFillMin~cvmFillCount.
+  cvmFillMin?: number | null; // CVM 보충 최소(최소~최대 범위 표기용). 없으면 단일 개수(cvmFillCount)로 표기.
   bigBanner?: boolean | null; // 배치(인스턴스) 옵션 — 상단 빅배너로 강조
   cardShape?: string | null; // 상품형 2.5배열 카드 모양 (정사각형 | 직사각형)
   cardSize?: string | null; // 가로형(CarouselItem) 카드 크기 변형 Small/Medium/Large (2026-10-29(2): 모든 가로형 코너 유형 공통)
@@ -106,10 +107,10 @@ function ImageBox({ atom, className }: { atom?: PreviewAtom; className?: string 
 function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const variant = component.chipVariant ?? (component.atoms.some((a) => a.imageUrl) ? 'home' : 'contents');
-  // 전부 placeholder(Chip1·전체·카테고리 등)면 미리보기엔 '칩 불러오기' 칩 하나만 — 실제 카테고리가 들어오면 전부(2026-11-05 사용자 요청).
+  // 전부 placeholder(Chip1·전체·카테고리 등)면 미리보기엔 'Category' 칩 하나만 — 실제 카테고리가 들어오면 전부(2026-11-06 워딩 변경).
   const CHIP_PH = /^(chip\d*|전체|카테고리|tab\d*|category\d*)$/i;
   const allPh = component.atoms.length > 0 && component.atoms.every((a) => CHIP_PH.test((a.content ?? a.name ?? '').trim()));
-  const atoms = allPh ? [{ ...component.atoms[0], content: '칩 불러오기' }] : component.atoms;
+  const atoms = allPh ? [{ ...component.atoms[0], content: 'Category' }] : component.atoms;
 
   // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
   if (variant === 'home') {
@@ -747,8 +748,8 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           {chipTabEl}
           {body}
           {(corner.cvmFillCount ?? 0) > 0 && (
-            <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="노출 개수보다 운영자 등록이 적어, 나머지는 CVM이 고객마다 자동으로 채웁니다(가안).">
-              <Sparkles className="h-3 w-3" /> CVM 자동 보충 {corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
+            <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="이 아래 자리는 CVM이 고객마다 추천으로 채웁니다(가안).">
+              <Sparkles className="h-3 w-3" /> CVM 추천 {corner.cvmFillMin && corner.cvmFillMin !== corner.cvmFillCount ? `${corner.cvmFillMin}~${corner.cvmFillCount}` : corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
             </div>
           )}
           {corner.moreButtonUse && (
@@ -799,8 +800,8 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       {chipTabEl}
       {body}
       {(corner.cvmFillCount ?? 0) > 0 && (
-        <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="노출 개수보다 운영자 등록이 적어, 나머지는 CVM이 고객마다 자동으로 채웁니다(가안).">
-          <Sparkles className="h-3 w-3" /> CVM 자동 보충 {corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
+        <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="이 아래 자리는 CVM이 고객마다 추천으로 채웁니다(가안).">
+          <Sparkles className="h-3 w-3" /> CVM 추천 {corner.cvmFillMin && corner.cvmFillMin !== corner.cvmFillCount ? `${corner.cvmFillMin}~${corner.cvmFillCount}` : corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
         </div>
       )}
       {corner.moreButtonUse && !isBanner && (

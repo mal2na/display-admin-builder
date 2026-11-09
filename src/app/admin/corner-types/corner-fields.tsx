@@ -212,7 +212,7 @@ export function CornerFieldList({ cornerType, layout, editable, optionKey, onOpt
       )}
       {/* 아이템(요소) — 형태(Variants) + 고정 2열 + 가격 그룹(가격·할인율·기간) 한 줄. 노출 개수 범위는 코너 유형 관리에서 제거(빌더에서 정함, 2026-11-05 사용자 요청). */}
       {(itemFields.length > 0 || itemOpts.length > 0) && (
-        <GroupBox badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
+        <GroupBox badge="컴" color="#00a058" title="컴포넌트(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
           {/* 형태(Variants) = 이미지 카드 크기(Small/Medium/Large)만 — 아이템 이미지가 있는 가로형 한정. 세로형·리스트형(이미지 없음)은 숨김. */}
           {itemFields.some((f) => f.key === 'ImageSrc') && !/세로/.test((m.layout ?? layout) ?? '') && (
             <FieldTableRow label="이미지 형태" keyName="Variants">

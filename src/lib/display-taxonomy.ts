@@ -154,8 +154,8 @@ export function defaultComposition(
   // 배너형 스와이프형 = 여러 배너(스와이프) → 미리보기도 여러 장으로(2026-11-05 사용자 요청). 단일형은 1장.
   else if (ct === '배너형') blocks.push({ componentType: '배너형', count: /스와이프|swipe/i.test(d) ? 3 : 1 });
   else if (ct) blocks.push({ componentType: ct, count: 1 });
-  // 배열에 '카테고리 탭'이 있고 주 컴포넌트가 선택형이 아니면 상단 탭 블록을 얹는다.
-  if (/카테고리\s*탭/.test(d) && ct !== '선택형' && blocks.length) blocks.unshift({ componentType: '선택형', count: 1 });
+  // 배열에 '카테고리'(카테고리 탭 · 가로/세로형(카테고리형))가 있고 주 컴포넌트가 선택형이 아니면 상단 탭(칩) 블록을 얹는다.
+  if (/카테고리/.test(d) && ct !== '선택형' && blocks.length) blocks.unshift({ componentType: '선택형', count: 1 });
   return blocks;
 }
 
@@ -249,7 +249,8 @@ export const CVM_TARGET_HINTS: { key: string; axis: string; note: string }[] = [
 //     · 운영자 편성      — 운영자가 직접 고른 항목을 정한 순서대로. 폴백의 기준이기도 하다.
 //   한 구좌(코너)는 한 방식만 쓴다 — 겸용 금지(2026-10-08 합의: "이 구좌는 CVM 구좌야"라고 정해놓는 게 낫다).
 // ═══════════════════════════════════════════════════════════════════════════
-export const REC_SOURCE_METHODS = ['CVM 데이터 연동', 'CVM 콘텐츠 연동', '운영자 편성'] as const;
+// 노출 순서(2026-11-06 사용자 요청): 운영자 편성 → CVM 데이터 연동 → CVM 콘텐츠 연동(혼동 방지).
+export const REC_SOURCE_METHODS = ['운영자 편성', 'CVM 데이터 연동', 'CVM 콘텐츠 연동'] as const;
 export type RecSourceMethod = (typeof REC_SOURCE_METHODS)[number];
 
 /** CVM 연동(데이터·콘텐츠) 여부 */
@@ -271,11 +272,11 @@ export const REC_SOURCE_INFO: Record<
 > = {
   'CVM 데이터 연동': {
     tag: '개인화 · 데이터만',
-    how: 'CVM은 아이템과 순서만, 문구·이미지는 상품 원장',
+    how: 'CVM은 컴포넌트와 순서만, 문구·이미지는 상품 원장',
     detail:
-      'CVM은 “이 고객에게 이 아이템을 이 순서로”까지만 내려줍니다. 이미지·설명 문구는 상품(EPC) 원장 값을 전시 어드민이 가져와 조립합니다.',
+      'CVM은 “이 고객에게 이 컴포넌트를 이 순서로”까지만 내려줍니다. 이미지·설명 문구는 상품(EPC) 원장 값을 전시 어드민이 가져와 조립합니다.',
     personalized: true,
-    cvmGives: '아이템 · 순서',
+    cvmGives: '컴포넌트 · 순서',
     weBuild: '문구 · 이미지',
   },
   'CVM 콘텐츠 연동': {
@@ -581,8 +582,8 @@ export const CORNER_TYPE_FEATURES = [
 //   · 세부 항목 = 표의 빨간색(필수)만. 파란색(선택)은 코너 유형에 넣지 않는다.
 //   · 필수 = 고정(빌더에서 못 끔). 옵션 = 배너·칩·CTA 3종만(빌더에서 On/Off 지정).
 //   · 코너 정보(corner) = 배너·코너 메인 타이틀·라벨 텍스트·CTA 등 코너 종속.
-//     아이템 정보(item) = 아이템 이미지·아이템 타이틀·가격 등 개별 아이템.
-//   · 명명: 국문명 먼저 + 영문키 병기. 타이틀은 계층 노출(코너 메인 타이틀 / 아이템 타이틀).
+//     아이템 정보(item) = 컴포넌트 이미지·컴포넌트 타이틀·가격 등 개별 아이템.
+//   · 명명: 국문명 먼저 + 영문키 병기. 타이틀은 계층 노출(코너 메인 타이틀 / 컴포넌트 타이틀).
 //   · asIs = DS 빌더(AS-IS) 항목명. 1:1 매핑이 안 되면 note 에 명시.
 //   · 아이템 노출 개수(min~max)·로우 수는 코너 유형 공통. 빌더는 데이터만 연결.
 // ────────────────────────────────────────────────────────────────────────────
@@ -596,35 +597,51 @@ export type CornerTypeSpec = { options: CornerOption[]; minItems?: number; maxIt
 
 // 재사용 필드 — 영문키는 DS(AS-IS) 기준. asIs 생략 시 key 와 동일.
 const FD = (key: string, ko: string, group: 'corner' | 'item', extra?: Partial<CornerFieldDef>): CornerFieldDef => ({ key, ko, group, asIs: extra?.asIs ?? key, note: extra?.note, defaultOn: extra?.defaultOn, dependsOn: extra?.dependsOn });
-// 명칭·영문코드는 SB v13 이미지 기준: 코너 타이틀(CornerTitle) / 아이템 타이틀(ItemTitle) / 서브 텍스트(SubText).
+// 명칭·영문코드는 SB v13 이미지 기준: 코너 타이틀(CornerTitle) / 컴포넌트 타이틀(ItemTitle) / 서브 텍스트(SubText).
 const CORNER_TITLE = FD('CornerTitle', '코너 타이틀', 'corner');
 const LABEL_TEXT = FD('ButtonText', '버튼 텍스트', 'corner');
-const ITEM_IMAGE = FD('ImageSrc', '아이템 이미지', 'item');
-const ITEM_TITLE = FD('ItemTitle', '아이템 타이틀', 'item');
+const ITEM_IMAGE = FD('ImageSrc', '컴포넌트 이미지', 'item');
+const ITEM_TITLE = FD('ItemTitle', '컴포넌트 타이틀', 'item');
 // 가격 그룹 — 옵션(Y/N). 가격 기본 Y, 할인율 기본 N·가격 종속, 기간 기본 Y(2026-11-04 SB v13).
 const PRICE = FD('Price', '가격', 'item', { defaultOn: true });
 const DISCOUNT = FD('DiscountRate', '할인율', 'item', { defaultOn: false, dependsOn: 'Price' });
 const PERIOD = FD('PricePeriod', '기간', 'item', { defaultOn: true });
 const SUBTEXT = FD('SubText', '서브 텍스트', 'item');
 const SUBTITLE_ITEM = FD('SubTitle', '서브 타이틀', 'item'); // 혜택·오퍼형 세로형 = 브랜드(SubTitle). 미리보기(BenefitRow)와 컬럼 일치(2026-11-05 사용자 요청)
+// 카테고리형 배열의 구조 요소(필수) — 상단 카테고리 칩. 칩을 누르면 하위 아이템 묶음이 통째로 교체된다(멀티 데이터셋).
+//  칩을 '옵션(Y/N)'으로 넣지 않고 전용 배열로 분리한 이유: 옵션 칩은 데이터셋을 하나밖에 못 담는다(2026-11-06 사용자 확정).
+const CATEGORY = FD('Category', '카테고리', 'corner', { asIs: 'Category' });
 
 export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   // 상품형 — SB v13. 가로형: 가격(Y)·할인율(N,가격종속) 옵션 / 세로형: 가격·할인율·기간 옵션 + 캡션 고정. 실제 UI는 스튜디오가 렌더(이 스펙은 썸네일·개수).
+  //  칩은 옵션에서 제외(2026-11-06 사용자 확정) → 카테고리형 전용 배열로 분리(가로형/세로형(카테고리형)).
   상품형: {
-    options: ['배너', '칩', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
+    options: ['배너', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTEXT], optional: [PRICE, DISCOUNT] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE,
         FD('Caption01', '캡션', 'item', { asIs: 'Caption/Caption01' }), FD('Caption02', '캡션2', 'item', { asIs: 'Caption02' })],
         optional: [PRICE, DISCOUNT, PERIOD] },
+      // 카테고리형 — 상단 카테고리 칩(구조·필수) + 가로/세로 아이템. 칩마다 아이템 묶음이 바뀐다(멀티 데이터셋, 2026-11-06).
+      { layout: '가로형(카테고리형)', required: [CATEGORY, CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTEXT], optional: [PRICE, DISCOUNT],
+        note: '상단 카테고리(칩)를 누르면 하위 아이템이 통째로 바뀝니다. 카테고리별 아이템은 전시화면 관리(빌더)에서 등록합니다.' },
+      { layout: '세로형(카테고리형)', required: [CATEGORY, CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE,
+        FD('Caption01', '캡션', 'item', { asIs: 'Caption/Caption01' }), FD('Caption02', '캡션2', 'item', { asIs: 'Caption02' })],
+        optional: [PRICE, DISCOUNT, PERIOD],
+        note: '상단 카테고리(칩)를 누르면 하위 아이템이 통째로 바뀝니다. 카테고리별 아이템은 전시화면 관리(빌더)에서 등록합니다.' },
     ],
   },
   // 혜택·오퍼형 — SB v13. 가로형: 가격·할인율·기간 옵션 / 세로형: 이미지·타이틀·서브텍스트 고정.
+  //  칩은 옵션에서 제외(2026-11-06 사용자 확정) → 카테고리형 전용 배열로 분리(가로형/세로형(카테고리형)).
   '혜택·오퍼형': {
-    options: ['배너', '칩', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
+    options: ['배너', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE], optional: [PRICE, DISCOUNT, PERIOD] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTITLE_ITEM] },
+      { layout: '가로형(카테고리형)', required: [CATEGORY, CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE], optional: [PRICE, DISCOUNT, PERIOD],
+        note: '상단 카테고리(칩)를 누르면 하위 아이템이 통째로 바뀝니다. 카테고리별 아이템은 전시화면 관리(빌더)에서 등록합니다.' },
+      { layout: '세로형(카테고리형)', required: [CATEGORY, CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTITLE_ITEM],
+        note: '상단 카테고리(칩)를 누르면 하위 아이템이 통째로 바뀝니다. 카테고리별 아이템은 전시화면 관리(빌더)에서 등록합니다.' },
     ],
   },
   // 배너형 — 세부 항목 없음(배너 자체가 콘텐츠). 스와이프형만 노출 개수(배너 몇 개). 2026-10-28 사용자 확정.
@@ -639,8 +656,8 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   '업무 진입형': {
     options: [],
     layouts: [
-      // 칩형 = 아이콘 + 라벨(반복 칩). 둘 다 고정(2026-11-05 사용자 요청).
-      { layout: '칩형', required: [FD('Icon', '아이콘', 'item', { asIs: 'Icon' }), FD('Label', '라벨', 'item', { asIs: 'Label' })] },
+      // 카테고리형(구 칩형) = 아이콘 + 라벨(반복 칩). 둘 다 고정. 워딩 '칩형'→'카테고리형(Category)'(2026-11-06 사용자 요청).
+      { layout: '카테고리형', required: [FD('Icon', '아이콘', 'item', { asIs: 'Icon' }), FD('Label', '라벨', 'item', { asIs: 'Label' })] },
       // 리스트형 = 코너 타이틀(카드) + 리스트(반복 아이템). 2026-11-05 사용자 요청.
       { layout: '리스트형', required: [CORNER_TITLE, FD('List', '리스트', 'item', { asIs: 'List' })], minItems: 2, maxItems: 8 },
       { layout: '상태 안내형', required: [CORNER_TITLE, FD('SubTitle', '서브 타이틀', 'corner', { asIs: 'SubTitle' }),
@@ -656,8 +673,8 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   '콘텐츠 안내형': {
     options: ['CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
-      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, FD('ImageSrc', '아이템 이미지', 'item', { note: '영화 이미지' }),
-        FD('ItemTitle', '아이템 타이틀', 'item', { note: '영화 제목' }), FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' })] },
+      { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, FD('ImageSrc', '컴포넌트 이미지', 'item', { note: '영화 이미지' }),
+        FD('ItemTitle', '컴포넌트 타이틀', 'item', { note: '영화 제목' }), FD('Caption01', '캡션·평점', 'item', { asIs: 'Caption/Caption01' })] },
     ],
   },
   // 바코드형 — 멤버십 바코드(신규 최상위, 2026-10-29). CardHome · Variants My · 필수: 바코드명(Title). 값은 런타임 발급.
@@ -724,7 +741,7 @@ export function cornerFieldSpec(cornerType?: string | null, layout?: string | nu
     ?? spec.layouts.find((x) => l.includes(x.layout) || x.layout.includes(l))
     ?? (pickKw(/세로/, /세로/) || pickKw(/가로/, /가로/)
       || pickKw(/메뉴|리스트/, /리스트/)
-      || pickKw(/탭|칩|카테고리/, /칩/)
+      || pickKw(/탭|칩|카테고리/, /카테고리|칩/)
       || pickKw(/아이콘|카드|상태/, /상태/)
       || pickKw(/프로필/, /프로필/)
       || pickKw(/바코드/, /바코드/)
@@ -859,10 +876,10 @@ export function isComponentAllowedInCorner(
 //  콘텐츠/상품 계열(상품형·혜택·오퍼형·콘텐츠 안내형)은 '만들 수 있는 배열' 풀셋을 공유.
 //   상단 카테고리 탭은 별도 배열이 아니라 빌더에서 얹는 선택형 컴포넌트(토글) → 세로형(카테고리탭) 제거.
 export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
-  // 상품형 실제 사용 3종만: 세로형(요금제 리스트)·가로형+배너(단말 추천)·세로형+배너(요금제 히어로). (2026-09-29 사용자 확정 — 가로형(1.5배열)·그리드형 등 미사용 제거)
-  상품형: ['세로형', '가로형+배너', '세로형+배너'],
-  // 혜택·오퍼형은 실제 사용 4종만: 가로형(기프티콘·구독) · 세로형(제휴 혜택 리스트) · 세로형+배너(T Week 소멸) · 세로형+칩(카테고리별 혜택). (2026-09-28 사용자 확정)
-  '혜택·오퍼형': ['가로형', '세로형', '세로형+배너', '세로형+칩'],
+  // 상품형: 세로형·가로형+배너·세로형+배너 + 카테고리형 2종(2026-11-06 신규 — 칩 클릭 시 데이터셋 교체).
+  상품형: ['세로형', '가로형+배너', '세로형+배너', '가로형(카테고리형)', '세로형(카테고리형)'],
+  // 혜택·오퍼형: 가로형·세로형·세로형+배너 + 카테고리형 2종(2026-11-06 신규). 구 '세로형+칩'은 폐기(칩 옵션 제거) → 카테고리형으로 대체.
+  '혜택·오퍼형': ['가로형', '세로형', '세로형+배너', '가로형(카테고리형)', '세로형(카테고리형)'],
   '콘텐츠 안내형': ['가로형'],
   // ── 특이케이스: 목적별 특정 배열만 ──
   // 배너형 = 배너 단일형 / 스와이프형 (2026-09-29 사용자 확정). '이미지형'은 구 표기 → 폐기.
@@ -879,8 +896,8 @@ export function cornerTypeDetails(cornerType: string): readonly string[] {
 // ── 표시명 통일(2026-09) — 저장값(typeDetail)은 유지하고 화면 표기만 '형태 기준'으로 정리. ──
 //  콘텐츠 이름(카테고리 탭·바코드…)을 형태명(탭형·바코드형…)으로. 매처/DB는 원값 그대로라 안전.
 const LAYOUT_LABEL: Record<string, string> = {
-  // 업무 진입형 배열 표기(2026-10-29): 칩형·리스트형·상태 안내형·프로필형.
-  '카테고리 탭': '칩형',
+  // 업무 진입형 배열 표기(2026-11-06): 칩형 → 카테고리형(Category)으로 워딩 변경. 저장값 '카테고리 탭'은 유지.
+  '카테고리 탭': '카테고리형',
   '메뉴 리스트': '리스트형',
   '아이콘/이미지형': '상태 안내형',
   '바코드': '바코드형',
@@ -919,13 +936,16 @@ const LAYOUT_EN: Record<string, string> = {
   '가로형': 'Horizontal', '가로형(2.5배열)': 'Horizontal (2.5)', '가로형(1.5배열)': 'Horizontal (1.5)',
   '세로형': 'Vertical', '세로형(카테고리탭)': 'Vertical (Tab)', '세로형(탭)': 'Vertical (Tab)',
   '가로형+배너': 'Horizontal + Banner', '세로형+배너': 'Vertical + Banner', '세로형+칩': 'Vertical + Chip',
+  // 카테고리형 — 상품형·혜택오퍼형 신규 배열(2026-11-06).
+  '가로형(카테고리형)': 'Horizontal (Category)', '세로형(카테고리형)': 'Vertical (Category)',
   '그리드형': 'Grid', '단일강조(1.5배열)': 'Single (1.5)', '단일 상품': 'Single', '단일강조': 'Single',
-  '카테고리 탭': 'Tab', '탭형': 'Tab', '메뉴 리스트': 'List', '리스트형': 'List', '메뉴형': 'Menu',
-  '아이콘/이미지형': 'Card', '카드형': 'Card', '프로필형': 'Profile',
+  // 업무진입형 '카테고리 탭'(구 칩형) → Category(2026-11-06 사용자 요청).
+  '카테고리 탭': 'Category', '탭형': 'Tab', '메뉴 리스트': 'List', '리스트형': 'List', '메뉴형': 'Menu',
+  '아이콘/이미지형': 'Card', '카드형': 'Card', '프로필형': 'Profile', '카테고리형': 'Category',
   '바코드': 'Barcode', '바코드형': 'Barcode', '이미지형': 'Image', '텍스트 고지형': 'Text Notice',
   '배너 단일형': 'Single', '단일형': 'Single', '스와이프형': 'Swipe',
   '가로형(무비)': 'Horizontal (Movie)', '상태 리스트형': 'Status Card',
-  '칩형(ChipHome)': 'ChipHome', '칩형(ChipContents)': 'ChipContents', '칩형(ChipFilter)': 'ChipFilter', '칩형(ChipPage)': 'ChipPage', '칩형': 'ChipHome',
+  '칩형(ChipHome)': 'ChipHome', '칩형(ChipContents)': 'ChipContents', '칩형(ChipFilter)': 'ChipFilter', '칩형(ChipPage)': 'ChipPage', '칩형': 'Category',
 };
 
 export function cornerTypeEn(base?: string | null): string {

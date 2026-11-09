@@ -322,16 +322,15 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
   //  캡션·개수는 세로형에서만 필수(가로형은 선택이라 제외). 캡션2·캡션3·칩·CTA 는 선택/미사용이라 코너 유형에 넣지 않는다.
   const isV = /세로/.test(row.typeDetail);
   const studioItems: { lbl: string; kind: '고정' | 'On/Off' | '옵션'; on: boolean; val?: string }[] | null = (isStudio && studioSpec && it) ? [
-    // 옵션(배너·칩·CTA — 상품형·혜택형 공통). 맨 위(2026-10-28 사용자 확정).
+    // 옵션(배너·CTA — 상품형·혜택형 공통). 칩은 옵션에서 제외(2026-11-06) → 카테고리형 전용 배열로 분리.
     { lbl: '배너(Banner)', kind: '옵션', on: !!studioSpec.bannerOn, val: studioSpec.bannerSrc || undefined },
-    { lbl: '칩(Chip)', kind: '옵션', on: !!studioSpec.chipOn },
     { lbl: 'CTA(CallToAction)', kind: '옵션', on: !!studioSpec.cta?.show, val: studioSpec.cta?.label },
     // 기본정보(코너) — 고정
     { lbl: '코너 타이틀(CornerTitle)', kind: '고정', on: true, val: studioSpec.title },
     { lbl: '버튼 텍스트(ButtonText)', kind: '고정', on: true, val: studioSpec.buttonText.label },
     // 코너 정보 속성(아이템) — 고정
-    { lbl: '아이템 이미지(ImageSrc)', kind: '고정', on: true, val: it.imageSrc || undefined },
-    { lbl: '아이템 타이틀(ItemTitle)', kind: '고정', on: true },
+    { lbl: '컴포넌트 이미지(ImageSrc)', kind: '고정', on: true, val: it.imageSrc || undefined },
+    { lbl: '컴포넌트 타이틀(ItemTitle)', kind: '고정', on: true },
     // 가로형(단말 추천) = 가격·할인율·서브텍스트2 / 세로형(요금제 리스트) = 캡션·캡션2. DS 실제 케이스 기준(2026-10-28).
     ...(!isV ? [
       { lbl: '가격(Price)', kind: '고정' as const, on: true, val: it.priceGroup.price },
@@ -447,7 +446,7 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
                     <ROGroup badge="코" color="#3617ce" title="코너(카드)" desc="카드 전체에 1개 (배너·타이틀·버튼)">{renderGrouped(cornerOptRows)}{renderGrouped(cornerFixedRows)}</ROGroup>
                   )}
                   {itemRows.length > 0 && (
-                    <ROGroup badge="아" color="#00a058" title="아이템(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
+                    <ROGroup badge="컴" color="#00a058" title="컴포넌트(요소)" desc="리스트에서 반복되는 카드 1개 (이미지·타이틀·가격)">
                       {/* 형태(Variants) — 가로형만(세로형 제외, 수정 폼과 동일). */}
                       {!isV && it && <DetailPairs><DetailCell lbl="형태(Variants)"><span className="text-[13px] text-slate-700">{it.variant}</span></DetailCell></DetailPairs>}
                       {renderGrouped(itemRows)}

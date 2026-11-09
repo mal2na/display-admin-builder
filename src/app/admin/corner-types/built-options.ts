@@ -140,12 +140,19 @@ const BSS_CAT_KO: Record<string, string> = { EAT: '음식', BUY: '쇼핑', PLAY:
 // 대표 제휴 혜택 — 미리보기(composition-preview BENEFIT_ITEMS)와 '동일'하게 맞춘 3종(2026-11-05 사용자 요청: 0 Week ③채우기 = 미리보기와 일치).
 //  혜택·오퍼형 세로형 ③채우기가 이 3종으로 '채워진 채' 시작한다(카탈로그 맨 앞). 불러오기 모달에도 맨 위에 노출.
 const REP_BENEFITS: ProductOption[] = [
-  { key: 'rep-gongcha', title: '인기 음료 6종 50% 할인', brand: '공차', imageUrl: '/assets/brand-gongcha.png', price: null, badge: '할인', category: '음식' },
-  { key: 'rep-tlj', title: '브라우니 1개 증정', brand: '뚜레쥬르', imageUrl: '/assets/brand-tlj.png', price: null, badge: '증정', category: '음식' },
-  { key: 'rep-nol', title: '전시회 40% 할인', brand: 'NOL 티켓', imageUrl: '/assets/brand-nol.png', price: null, badge: '할인', category: '문화·여가' },
+  { key: 'rep-gongcha', title: '인기 음료 6종 50% 할인', brand: '공차', imageUrl: '/assets/brand-gongcha.png', price: null, badge: '할인', category: '카페' },
+  { key: 'rep-tlj', title: '브라우니 1개 증정', brand: '뚜레쥬르', imageUrl: '/assets/brand-tlj.png', price: null, badge: '증정', category: '베이커리' },
+  { key: 'rep-nol', title: '전시회 40% 할인', brand: 'NOL 티켓', imageUrl: '/assets/brand-nol.png', price: null, badge: '할인', category: '문화생활' },
 ];
-// 혜택 카탈로그 — 혜택 = 가입·등급·이용·행동·조건에 따라 추가로 받는 가치(Value 중심). 제휴 할인·멤버십 혜택(음식/쇼핑/문화).
-//  맨 앞 3종은 미리보기와 일치하는 대표 혜택(REP_BENEFITS), 그 뒤로 전체 제휴 브랜드.
+// 카테고리형(세로형/가로형(카테고리형)) '카테고리 불러오기' 2단 모달을 위해, 혜택은 sub 분류(카페·베이커리·외식·쇼핑·문화생활 …)로 노출(2026-11-06 사용자 요청).
+//  BSS sub → 표기 카테고리 정규화. 없으면 sub 원값.
+const BENEFIT_SUB_KO: Record<string, string> = {
+  '카페/아이스크림': '카페', '피자/치킨': '피자·치킨', '영화/공연/전시': '문화생활',
+  '금융/통신': '금융·통신', '생활/건강': '생활·건강', '패션/뷰티': '패션·뷰티', '키즈(ZEM)': '키즈',
+};
+const benefitSubKo = (sub: string) => BENEFIT_SUB_KO[sub] ?? sub;
+// 혜택 카탈로그 — 혜택 = 가입·등급·이용·행동·조건에 따라 추가로 받는 가치(Value 중심). 제휴 할인·멤버십 혜택.
+//  맨 앞 3종은 미리보기와 일치하는 대표 혜택(REP_BENEFITS), 그 뒤로 전체 제휴 브랜드(카페·베이커리·외식·쇼핑·문화생활 … sub 분류).
 function benefitCatalog(): ProductOption[] {
   return [
     ...REP_BENEFITS,
@@ -156,7 +163,7 @@ function benefitCatalog(): ProductOption[] {
       imageUrl: p.logo || null,
       price: null,
       badge: p.badges[0] ?? null,
-      category: BSS_CAT_KO[p.category] ?? '혜택',
+      category: benefitSubKo(p.sub),
     })),
   ];
 }
