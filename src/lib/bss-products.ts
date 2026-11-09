@@ -50,10 +50,29 @@ const SUB_ICON: Record<string, string> = {
   테마파크: 'icon:general/Vip',
 };
 
-// 아이콘 라이브러리에 로고 뱃지가 있는 브랜드는 개별 매핑
+// 브랜드 로고 — T멤버십 혜택브랜드 공식 데이터(인기순 상위 20개)의 실제 로고(자사 CDN). 2026-11-09 사용자 제공 JSON(T멤버십_혜택브랜드) 기준.
+//  매칭되는 브랜드는 실제 로고가 뜨고, 그 외는 아이콘/브랜드 이니셜 폴백. 새 로고는 이 맵에 brand→URL 추가.
 const LOGO_OVERRIDE: Record<string, string> = {
-  세븐일레븐: 'icon:logo/7eleven',
-  CU: 'icon:logo/CU',
+  배스킨라빈스: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202602/1772070181682.png',
+  파리바게뜨: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202110/1635235481847.png',
+  CU: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202407/1720411306460.png',
+  '아웃백 스테이크하우스': 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202110/1635224545687.png',
+  이마트: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202110/1635228970229.png',
+  뚜레쥬르: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202501/1735657309709.png',
+  공차: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202110/1635143713581.png',
+  도미노피자: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202511/1762736813029.png',
+  롯데리아: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202407/1721797048603.png',
+  세븐일레븐: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202401/1705560905763.png',
+  '폴 바셋': 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202211/1667888724269.png',
+  CGV: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202401/1705989931703.png',
+  던킨: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202412/1734920944106.png',
+  메가MGC커피: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202503/1741325122018.png',
+  VIPS: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202610/1792719793084.png',
+  '롯데월드 어드벤처': 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202111/1637324770776.png',
+  '11번가': 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202210/1666164823765.png',
+  피자헛: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202604/1775438638114.png',
+  파파존스피자: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202407/1722325191736.png',
+  SK렌터카: 'https://cdn.sktmembership.co.kr/mps.app/catalogue/brand/202110/1635214032482.png',
   FLO: 'icon:logo/Flo',
   'T 우주 신한카드': 'icon:logo/Tuniverse',
 };
