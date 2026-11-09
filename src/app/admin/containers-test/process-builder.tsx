@@ -511,6 +511,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   };
   // 기본 아이템 — 불러오기 전용 유형: ①미리보기에 보이는 실제 항목 → ②없으면 카탈로그(영화/혜택/배너)로 '채워진 채' 시작. 그 외는 라벨 슬롯.
   const defaultItems = (): FillItem[] => {
+    // 카테고리형 — 활성 카테고리(칩)에 해당하는 카탈로그 항목으로 시드. 카테고리를 바꾸면 그 카테고리 리스트로 교체된다(2026-11-09 사용자 요청: 카페·베이커리·외식 전환 시 변경).
+    if (chipMode && isCategory && catalog.length) {
+      const activeCat = chips[chipIdx];
+      const inCat = catalog.filter((p) => (p.category ?? '') === activeCat);
+      const pickFrom = inCat.length ? inCat : catalog;
+      return pickFrom.slice(0, 3).map((p, i) => ({ id: `seed-${activeCat}-${i}-${p.key}`, label: p.title, icon: p.imageUrl ?? null, link: p.landing ?? `/benefit/${slugLink(p.title)}`, sub: p.brand ?? undefined, mode: 'load' as const }));
+    }
     // 미리보기에 '실제 항목'이 있으면 유형과 무관하게 그걸로 채운다(기프티콘·단말 등 가로형 포함, 2026-11-05 사용자 요청).
     const pv = previewItems();
     if (pv.length) return pv;
@@ -656,13 +663,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   //  카드1장(프로필·상태)·바코드·배너는 자체 미리보기 경로라 제외. 콘텐츠 연동은 구좌만 넘김이라 건드리지 않음.
   React.useEffect(() => {
     if (isProfile || isStatus || isBarcode || isBanner) return;
-    // 운영자가 ③ 항목을 실제로 편집/불러오기 한 키만 재구성한다. 손 안 댄 코너는 기본(placeholder) 미리보기를 그대로 유지(금액·타이틀 보존).
+    // 카테고리형 — 칩(카테고리)을 바꾸면 항상 미리보기 갱신(활성 칩 강조 + 그 카테고리 아이템). 카테고리 항목은 실제 카탈로그 값이라 왕복 손실 없음(2026-11-09 사용자 요청).
+    if (chipMode && isCategory) {
+      if (isData) pushDataPreview(items, cvmMin, cvmMax);
+      else pushDataPreview(items, 0, 0);
+      return;
+    }
+    // 그 외 — 운영자가 ③ 항목을 실제로 편집/불러오기 한 키만 재구성한다. 손 안 댄 코너는 기본(placeholder) 미리보기를 그대로 유지(금액·타이틀 보존).
     //  CVM 데이터 연동의 '추천 보충 박스'는 미리보기 렌더 게이트에서 항상 표시되므로, 여기서 재구성하지 않아도 박스는 나온다.
     if (!dirty[chipKey]) return;
     if (isData) pushDataPreview(items, cvmMin, cvmMax);
     else if (src === '운영자 편성') pushDataPreview(items, 0, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isData, src, items, cvmMin, cvmMax, dirty, chipKey]);
+  }, [isData, src, items, cvmMin, cvmMax, dirty, chipKey, chipIdx]);
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
