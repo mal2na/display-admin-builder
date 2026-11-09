@@ -191,12 +191,41 @@ const PROFILE_CATALOG: ProductOption[] = [
   { key: 'pf-card-basic', title: '내 프로필 카드', brand: '사진 · 이름 · 휴대폰 · 가입현황 CTA · @cvm 자동', imageUrl: lu('CircleUserRound'), price: null, badge: null, category: '프로필' },
   { key: 'pf-card-grade', title: '등급 강조 프로필 카드', brand: '사진 · 이름 · 멤버십 등급 · 가입현황 CTA · @cvm 자동', imageUrl: lu('CircleUserRound'), price: null, badge: null, category: '프로필' },
 ];
+// 상품 대표 이미지 — EPC 카탈로그 상품은 사진이 없어(imageUrl=null) 회색으로 떴다. 리포지토리의 기존 대표 에셋을 카테고리/키워드로 매핑해 화면에 상품 이미지가 뜨게 한다(2026-11-09 사용자 요청).
+//  ※ 실제 상품 사진을 public/assets 에 넣고 개별 imageUrl 을 지정하면 그 상품은 정확한 사진으로 대체된다(대표 이미지는 폴백).
+const PRODUCT_IMG_BY_CAT: Record<string, string> = {
+  '휴대폰': '/assets/ds/device-iphone.png',
+  '태블릿': '/assets/ds/device-iphone.png',
+  '웨어러블': '/assets/ds/hero-device.png',
+  '요금제': '/assets/ds/plan-5gx.png',
+  '로밍': '/assets/ds/plan-5gx.png',
+  '구독·플랫폼': '/assets/ds/sub-tving.png',
+  '앱서비스': '/assets/ds/sub-tving.png',
+  '액세서리': '/assets/ds/product-airpodspro.png',
+  '부가서비스': '/assets/ds/sub-streaming.png',
+  '제휴 서비스': '/assets/ds/sub-streaming.png',
+  '멤버십 클럽': '/assets/ds/sub-streaming.png',
+};
+function epcProductImage(p: ProductOption): string | null {
+  if (p.imageUrl) return p.imageUrl;
+  const t = p.title ?? '';
+  if (/airpods|에어팟|buds|버즈/i.test(t)) return '/assets/ds/product-airpodspro.png';
+  if (/watch|워치/i.test(t)) return '/assets/ds/hero-device.png';
+  if (/ipad|아이패드|갤럭시 탭|galaxy tab/i.test(t)) return '/assets/ds/device-iphone.png';
+  if (/iphone|아이폰/i.test(t)) return '/assets/iphone20-pro.png';
+  if (/netflix|넷플릭스|디즈니|disney|티빙|tving|웨이브|wavve/i.test(t)) return '/assets/ds/sub-streaming.png';
+  if (/youtube|유튜브|google|구글/i.test(t)) return '/assets/ds/sub-tving.png';
+  if (/marshall|마샬|스피커|speaker/i.test(t)) return '/assets/marshall-speaker.png';
+  return (p.category && PRODUCT_IMG_BY_CAT[p.category]) || '/assets/ds/device-iphone.png';
+}
+const withProductImages = (list: ProductOption[]): ProductOption[] => list.map((p) => ({ ...p, imageUrl: epcProductImage(p) }));
+
 // 코너 유형 '채우기' 카탈로그 — 상품형=상품 분류(9)만, 혜택·오퍼형=혜택 분류만, 그 외/미지정=둘 다(2026-10-28 사용자 정의).
 //  "상품형을 클릭하면 상품 정보만 채울 수 있다" — 혜택 브랜드는 상품형에서 제외.
 export async function getProductOptions(cornerType?: string): Promise<ProductOption[]> {
   if (cornerType === '상태 안내형') return STATUS_CATALOG; // 업무 진입형 상태 안내형 전용(2026-11-05)
   if (cornerType === '프로필형') return PROFILE_CATALOG; // 업무 진입형 프로필형 = 고객정보 한번에 가져오기(2026-11-05)
-  if (cornerType === '상품형') return EPC_PRODUCT_CATALOG; // 상품형 = EPC 상품 조회 결과 기반(2026-11-05 사용자 제공 JSON)
+  if (cornerType === '상품형') return withProductImages(EPC_PRODUCT_CATALOG); // 상품형 = EPC 상품 조회 결과 기반 + 대표 이미지 매핑(2026-11-09)
   if (cornerType === '혜택·오퍼형' || cornerType === '혜택형') return benefitCatalog();
   if (cornerType === '업무 진입형') return MENU_CATALOG; // 메뉴 카탈로그(혜택·업무 메뉴)
   if (cornerType === '콘텐츠 안내형') return MOVIE_CATALOG; // 콘텐츠 안내형 = 영화만 불러오기(2026-11-05 사용자 요청)
