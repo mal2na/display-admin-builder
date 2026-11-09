@@ -366,8 +366,8 @@ function BenefitRow({ component, reason, parts }: { component: PreviewComponent;
   const cta = first(component.atoms, 'CTA'); // 선택적 CTA (숨김=미사용이면 프리뷰 제외)
   return (
     <div className="flex items-center gap-3 py-2">
-      {/* 로고 = 연회색 타일 위 object-contain — 와이드 워드마크(배달의민족 등)도 잘리지 않고 전체가 보인다. */}
-      {logo && <ImageBox atom={logo} className="h-11 w-11 shrink-0 rounded-2xl bg-slate-50 object-contain p-1.5" />}
+      {/* 로고 = 타일을 꽉 채우는 object-cover(회색 여백 최소화). 로고 파일이 없는 브랜드는 브랜드 색/이니셜 타일로 폴백(2026-11-09 사용자 요청). */}
+      {logo && <PreviewImage src={logo.imageUrl} alt={logo.altText ?? ''} brand={brand?.content ?? title?.content ?? component.name} className="h-11 w-11 shrink-0 overflow-hidden rounded-2xl bg-slate-50 object-cover" />}
       <div className="min-w-0 flex-1">
         <p className={cn('truncate text-[14px] font-semibold text-slate-900')}>{title?.content ?? component.name}</p>
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}

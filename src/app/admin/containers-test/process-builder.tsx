@@ -15,6 +15,7 @@ import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, type 
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
+import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
 import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
@@ -22,18 +23,21 @@ import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pe
 import * as LucideIcons from 'lucide-react';
 
 // 아이템 아이콘 — 'lucide:<Name>'은 벡터 아이콘, 그 외는 실제 이미지(포스터·로고). 2026-11-05 사용자 요청(메뉴 아이콘을 텍스트에 맞는 벡터로).
-function ItemIcon({ src, iconClass = 'h-4 w-4', imgClass = 'h-5 w-5 object-contain' }: { src?: string | null; iconClass?: string; imgClass?: string }) {
-  if (!src) return <ImageIcon className={iconClass} />;
+function ItemIcon({ src, brand, iconClass = 'h-4 w-4', imgClass = 'h-5 w-5 object-contain' }: { src?: string | null; brand?: string | null; iconClass?: string; imgClass?: string }) {
+  // 로고 파일이 없는 제휴 브랜드 = 브랜드 색/이니셜 타일로 폴백(회색 아이콘 대신, 2026-11-09 사용자 요청). brand 지정 시만.
+  if (!src || src.startsWith('icon:')) {
+    if (brand && brand.trim()) return <PreviewImage src={null} brand={brand} className={cn('h-full w-full', imgClass?.includes('object') ? '' : '')} />;
+    return <ImageIcon className={iconClass} />;
+  }
   if (src.startsWith('lucide:')) {
     // 아웃라인(보더) 대신 'fill 아이콘'으로 — 미리보기 칩의 보라 채운 아이콘과 같은 느낌(2026-11-05 사용자 요청).
     const Cmp = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string; fill?: string; strokeWidth?: number }>>)[src.slice(7)] ?? ImageIcon;
     return <Cmp className={iconClass} fill="currentColor" strokeWidth={1.25} />;
   }
-  // 미리보기 칩 아이콘(퀵메뉴) — 인라인 SVG 마크업이면 그대로, icon: 포맷은 일반 아이콘으로 폴백(2026-11-05 사용자 요청).
+  // 미리보기 칩 아이콘(퀵메뉴) — 인라인 SVG 마크업이면 그대로.
   if (src.includes('<svg')) return <span className={cn('inline-flex', iconClass)} aria-hidden dangerouslySetInnerHTML={{ __html: src }} />;
-  if (src.startsWith('icon:')) return <ImageIcon className={iconClass} />;
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="" className={imgClass} />;
+  // 실제 이미지 — 파일이 없으면(404) 브랜드 타일/슬러그로 폴백(PreviewImage).
+  return <PreviewImage src={src} alt="" brand={brand} className={imgClass} />;
 }
 
 // 보조 설명(hint)을 라벨 옆 ⓘ 툴팁으로 — 인라인 문구 대신(2026-11-05 사용자 요청, 코너 유형 관리와 동일). DS tooltip 토큰.
@@ -212,7 +216,7 @@ function ChipLoadModal({ catalog, current, onClose, onAdd }: { catalog: ProductO
                 <button key={it.key} type="button" onClick={() => toggle(active, it.key)}
                   className={cn('flex w-full items-center gap-2.5 rounded-[8px] px-2 py-1.5 text-left', on ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
                   <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
-                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]"><ItemIcon src={it.imageUrl} iconClass="h-4 w-4" imgClass="h-full w-full object-cover" /></span>
+                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]"><ItemIcon src={it.imageUrl} brand={it.brand || it.title} iconClass="h-4 w-4" imgClass="h-full w-full object-cover" /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] font-medium text-[var(--ink)]">{it.brand || it.title}</span>
                     {it.title && it.title !== it.brand && <span className="block truncate text-[11px] text-[var(--ink4)]">{it.title}</span>}
@@ -315,7 +319,7 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
                   <button key={p.key} type="button" onClick={() => toggle(p.key)} className={cn('flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left', on ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
                     <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
                     <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-[var(--ac2)] text-[var(--ac)]">
-                      <ItemIcon src={p.imageUrl} iconClass="h-5 w-5" imgClass="h-full w-full object-cover" />
+                      <ItemIcon src={p.imageUrl} brand={p.brand || p.title} iconClass="h-5 w-5" imgClass="h-full w-full object-cover" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-semibold text-[var(--ink)]">{p.title}</span>
@@ -639,6 +643,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
       composition: [{ componentType: comp as never, count: its.length, image: true, desc: true, items: its }],
       placeholder: false, emptyImages: false,
     }).components;
+    // 카테고리형(상품형·혜택·오퍼형 가로/세로형(카테고리형)) — 상단 카테고리 칩(선택형)을 항상 유지해서 붙인다.
+    //  재구성 시 칩이 사라지던 버그 수정(2026-11-09 사용자 요청: 카테고리가 미리보기에 떠야 함). 본문은 선택된 카테고리의 아이템.
+    if (chipMode && chips.length) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const chipAtoms: any[] = chips.map((c, i) => ({ id: `catchip-${i}-${c}`, name: c || `Category${i + 1}`, atomType: 'TEXT', content: c || `Category${i + 1}`, imageUrl: null, altText: null, linkUrl: null }));
+      opComps.unshift({ id: 'cat-chip', name: '탭', componentType: '선택형', selectedIndex: chipIdx, chipVariant: 'contents', atoms: chipAtoms } as never);
+    }
     onPreviewPatch({ components: opComps, cvmFillCount: fillMax, cvmFillMin: fillMin });
   };
   // 미리보기 동기화 — 리스트/칩 유형만. 데이터 연동=아이템+CVM 보충 박스, 운영자 편성=아이템만(CVM 박스 없음).
@@ -993,7 +1004,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 행 높이를 꽉 채우고 넓게(배너 비율) + 전체가 보이게 contain(크롭 금지, 얼라인 맞춤). 그 외 정사각 */}
                   <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="이미지 불러오기"
                     className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'w-[132px] self-stretch bg-white' : 'h-10 w-10 bg-[var(--th)]')}>
-                    <ItemIcon src={o.icon} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
+                    <ItemIcon src={o.icon} brand={isBanner ? null : (o.sub || o.label)} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
                   </button>
                   {/* 제목·링크 직접 편집. 배너는 사이즈(스몰배너 672×324 등)도 표기 — 배너 캠페인에서 함께 끌어온다(2026-11-05 사용자 요청). */}
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
