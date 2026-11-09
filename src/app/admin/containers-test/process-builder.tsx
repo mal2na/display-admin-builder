@@ -1659,8 +1659,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
 
       {/* 2열 — 좌 디바이스(sticky·뷰포트 높이 유지) · 우 콘텐츠(페이지 스크롤에 함께 흐름). */}
       <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
-          {/* 좌: 미리보기 — sticky 고정. 뷰포트 높이에 맞춰 축소되되, 큰 모니터에서 폰이 과하게 늘어나지 않게 max 높이 캡(2026-11-09 사용자 요청: 디바이스 맥스값). */}
-          <div className="sticky top-2 flex h-[calc(100vh_-_168px)] max-h-[800px] flex-col">
+          {/* 좌: 미리보기 — sticky 고정. 하단 푸터(구성 검증 바)와 겹치지 않도록 상단 크롬+푸터 높이를 뺀 높이로(2026-11-09 사용자 요청: 바텀 겹침 금지). 큰 모니터에선 max 캡. */}
+          <div className="sticky top-2 flex h-[calc(100vh_-_230px)] max-h-[800px] flex-col">
           {/* 기본 ↔ 폴백 토글 */}
           <div className="mb-3 flex w-full shrink-0 items-center gap-2">
             <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
