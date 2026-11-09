@@ -168,33 +168,63 @@ function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceC
   return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onPreviewPatch={onPreviewPatch} onToast={onToast} />;
 }
 
-// 칩 불러오기 모달 — 카탈로그 카테고리를 칩(카테고리 탭)으로 멀티 셀렉 추가(2026-10-28 사용자 요청: 칩과 상품 둘 다 불러오기).
-function ChipLoadModal({ categories, current, onClose, onAdd }: { categories: string[]; current: string[]; onClose: () => void; onAdd: (cs: string[]) => void }) {
-  const [checked, setChecked] = React.useState<Set<string>>(new Set());
-  const toggle = (c: string) => setChecked((p) => { const n = new Set(p); if (n.has(c)) n.delete(c); else n.add(c); return n; });
+// 카테고리 불러오기 모달(2단) — 좌: 카테고리, 우: 그 카테고리의 브랜드/항목 멀티선택.
+//  카테고리(칩)와 그 안에 담을 컴포넌트를 한 번에 가져온다(2026-11-06 사용자 요청: T멤버십 제휴 브랜드 참조).
+function ChipLoadModal({ catalog, current, onClose, onAdd }: { catalog: ProductOption[]; current: string[]; onClose: () => void; onAdd: (picks: { category: string; items: ProductOption[] }[]) => void }) {
+  const cats = React.useMemo(() => [...new Set(catalog.map((c) => c.category).filter((c): c is string => !!c))], [catalog]);
+  const [active, setActive] = React.useState(cats[0] ?? '');
+  const [sel, setSel] = React.useState<Record<string, Set<string>>>({});
+  const itemsOf = (cat: string) => catalog.filter((c) => c.category === cat);
+  const toggle = (cat: string, key: string) => setSel((p) => { const n = new Set(p[cat] ?? []); n.has(key) ? n.delete(key) : n.add(key); return { ...p, [cat]: n }; });
+  const selCount = (cat: string) => sel[cat]?.size ?? 0;
+  const totalPicked = Object.values(sel).reduce((s, v) => s + v.size, 0);
+  const activeItems = itemsOf(active);
+  const submit = () => onAdd(cats.filter((c) => selCount(c) > 0).map((c) => ({ category: c, items: itemsOf(c).filter((it) => sel[c].has(it.key)) })));
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex max-h-[70vh] w-full max-w-sm flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[72vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b border-[var(--line2)] px-4 py-3">
-          <h2 className="text-[14px] font-bold text-[var(--ink)]">Category</h2>
-          <span className="text-[12px] text-[var(--ink4)]">카테고리에서 선택</span>
+          <h2 className="text-[14px] font-bold text-[var(--ink)]">카테고리 · 컴포넌트 불러오기</h2>
+          <span className="text-[12px] text-[var(--ink4)]">왼쪽 카테고리 → 오른쪽에서 담을 항목 선택</span>
           <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]" aria-label="닫기"><X className="h-4 w-4" /></button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          {categories.length === 0 ? <p className="py-8 text-center text-[13px] text-[var(--ink4)]">카테고리가 없습니다.</p> : categories.map((c) => {
-            const on = checked.has(c); const exists = current.includes(c);
-            return (
-              <button key={c} type="button" disabled={exists} onClick={() => toggle(c)} className={cn('flex w-full items-center gap-2.5 rounded-[8px] px-2 py-2 text-left', exists ? 'opacity-40' : on ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
-                <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
-                <span className="text-[13px] font-medium text-[var(--ink)]">{c}</span>
-                {exists && <span className="ml-auto text-[11px] text-[var(--ink4)]">이미 추가됨</span>}
-              </button>
-            );
-          })}
+        <div className="flex min-h-0 flex-1">
+          {/* 좌: 카테고리 목록 */}
+          <div className="w-[190px] shrink-0 overflow-y-auto border-r border-[var(--line2)] p-2">
+            {cats.length === 0 ? <p className="py-8 text-center text-[12px] text-[var(--ink4)]">카테고리 없음</p> : cats.map((c) => {
+              const exists = current.includes(c); const cnt = selCount(c);
+              return (
+                <button key={c} type="button" onClick={() => setActive(c)}
+                  className={cn('mb-0.5 flex w-full items-center gap-1.5 rounded-[8px] px-2.5 py-2 text-left text-[13px]', active === c ? 'bg-[var(--ac2)] font-semibold text-[var(--ac)]' : 'text-[var(--ink2)] hover:bg-[var(--th)]')}>
+                  <span className="min-w-0 flex-1 truncate">{c}</span>
+                  {cnt > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-[var(--ac)] px-1 text-[10px] font-bold text-white">{cnt}</span>}
+                  {exists && cnt === 0 && <span className="text-[10px] text-[var(--ink4)]">추가됨</span>}
+                </button>
+              );
+            })}
+          </div>
+          {/* 우: 해당 카테고리 항목 멀티선택 */}
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            <p className="px-1 pb-1.5 pt-1 text-[12px] font-semibold text-[var(--ink3)]">{active || '카테고리 선택'} <span className="font-normal text-[var(--ink4)]">· {activeItems.length}개</span></p>
+            {activeItems.length === 0 ? <p className="py-8 text-center text-[13px] text-[var(--ink4)]">항목이 없습니다.</p> : activeItems.map((it) => {
+              const on = sel[active]?.has(it.key) ?? false;
+              return (
+                <button key={it.key} type="button" onClick={() => toggle(active, it.key)}
+                  className={cn('flex w-full items-center gap-2.5 rounded-[8px] px-2 py-1.5 text-left', on ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
+                  <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
+                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]"><ItemIcon src={it.imageUrl} iconClass="h-4 w-4" imgClass="h-full w-full object-cover" /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-medium text-[var(--ink)]">{it.brand || it.title}</span>
+                    {it.title && it.title !== it.brand && <span className="block truncate text-[11px] text-[var(--ink4)]">{it.title}</span>}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="border-t border-[var(--line2)] p-3">
-          <button type="button" disabled={checked.size === 0} onClick={() => onAdd([...checked])}
-            className="h-[42px] w-full rounded-[10px] bg-[var(--ac)] text-[14px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">칩 담기{checked.size > 0 ? ` (${checked.size})` : ''}</button>
+          <button type="button" disabled={totalPicked === 0} onClick={submit}
+            className="h-[42px] w-full rounded-[10px] bg-[var(--ac)] text-[14px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">가져오기{totalPicked > 0 ? ` (${totalPicked})` : ''}</button>
         </div>
       </div>
     </div>
@@ -331,7 +361,6 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
   const catalog = (isStatus ? catalogByType['상태 안내형'] : isProfile ? catalogByType['프로필형'] : catalogByType[corner.cornerType]) ?? [];
   const canLoad = catalog.length > 0;
-  const catCategories = Array.from(new Set(catalog.map((c) => c.category).filter((c): c is string => !!c)));
   // 옵션(배너·칩·CTA) — 코너 유형이 허용하는 옵션을 빌더에서 On/Off 설정(2026-10-28 사용자: "배너·칩·CTA는 옵션, 여기서 설정").
   const optSpec = cornerFieldSpec(corner.cornerType, corner.layoutDetail ?? corner.layout);
   const availOptions = optSpec?.options ?? [];
@@ -707,8 +736,22 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
         <Sec n={3} title={isData ? '운영자 고정 — 먼저 채울 항목 (나머지는 CVM)' : '채우기 — 항목 등록'}>
           {/* 칩 불러오기 모달 — 탭(코너 속성)에서 눌러도 뜨도록 탭 바깥(최상단)에 렌더(2026-11-05 사용자 요청). */}
           {chipLoadOpen && (
-            <ChipLoadModal categories={catCategories} current={chips} onClose={() => setChipLoadOpen(false)}
-              onAdd={(cs) => { setChips((prev) => [...prev, ...cs.filter((c) => !prev.includes(c))]); setChipLoadOpen(false); onToast(`칩 ${cs.length}개 담음`); }} />
+            <ChipLoadModal catalog={catalog} current={chips} onClose={() => setChipLoadOpen(false)}
+              onAdd={(picks) => {
+                // 카테고리(칩) 추가 + 카테고리별 컴포넌트 리스트(itemsByKey)를 한 번에 세팅(2026-11-06).
+                setChips((prev) => [...prev, ...picks.map((p) => p.category).filter((c) => !prev.includes(c))]);
+                setItemsByKey((m) => {
+                  const next = { ...m };
+                  for (const p of picks) {
+                    const key = `${isCategory ? 'cat' : 'chip'}:${p.category}`;
+                    next[key] = p.items.map((it, i) => ({ id: `cat-${p.category}-${i}-${it.key}`, label: it.title || it.brand, icon: it.imageUrl ?? null, link: it.landing ?? null, sub: it.brand, mode: 'load' as const }));
+                  }
+                  return next;
+                });
+                setChipLoadOpen(false);
+                const itemN = picks.reduce((s, p) => s + p.items.length, 0);
+                onToast(`카테고리 ${picks.length}개 · 컴포넌트 ${itemN}개 담음`);
+              }} />
           )}
           {/* ── 코너 속성 / 아이템 탭 — 등록을 나눠서(2026-11-05 사용자 요청). 코너 속성이 없으면(배너형 등) 아이템만 노출. 카드 1장 유형(프로필·상태)은 탭 없음. ── */}
           {(hasCornerTitle || hasButtonText || availOptions.length > 0) && !cardOnly && (
