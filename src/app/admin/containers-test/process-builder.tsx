@@ -318,6 +318,17 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
   );
 }
 
+// ③ 컴포넌트 리스트 행 — dnd-kit 정렬 래퍼(드래그 핸들만 활성화, 2026-11-06 사용자 요청: 우측 패널 순서 변경).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function SortableFillRow({ id, children }: { id: string; children: (h: { setRef: (el: HTMLElement | null) => void; props: any }) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={isDragging ? 'relative z-10 opacity-80 shadow-lg' : ''}>
+      {children({ setRef: setActivatorNodeRef, props: { ...attributes, ...listeners } })}
+    </div>
+  );
+}
+
 function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void }) {
   // 프로필형(업무 진입형) = 고객 정보(이름·휴대폰 등)라 '무조건 CVM 데이터 연동' 고정(2026-11-05 사용자 요청).
   const layoutDetailStr = corner.layoutDetail ?? corner.layout ?? '';
@@ -490,6 +501,17 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   const items = itemsByKey[chipKey] ?? seedForKey;
   const updateItems = (fn: (xs: FillItem[]) => FillItem[]) =>
     setItemsByKey((m) => ({ ...m, [chipKey]: fn(m[chipKey] ?? seedForKey) }));
+  // ③ 컴포넌트 리스트 드래그 정렬(2026-11-06 사용자 요청: 우측 패널 순서 변경).
+  const itemSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const onItemDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    updateItems((prev) => {
+      const oi = prev.findIndex((x) => x.id === active.id);
+      const ni = prev.findIndex((x) => x.id === over.id);
+      return oi >= 0 && ni >= 0 ? arrayMove(prev, oi, ni) : prev;
+    });
+  };
   // 새 행은 세그먼트 기본값을 '불러오기'로(2026-11-05 사용자 요청) → 우측 '불러오기' 버튼이 바로 뜬다. 직접 입력하려면 '직접' 선택.
   const addItem = () => updateItems((xs) => [...xs, { id: `new-${Date.now()}`, label: '', mode: 'load' }]);
   const removeItem = (id: string) => updateItems((xs) => xs.filter((x) => x.id !== id));
@@ -928,15 +950,18 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               <span className="text-[var(--ink4)]">— 위 {isCategory ? '카테고리' : '칩'}를 눌러 따로 구성</span>
             </div>
           )}
+          <DndContext sensors={itemSensors} collisionDetection={closestCorners} onDragEnd={onItemDragEnd}>
+          <SortableContext items={items.map((o) => o.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-1.5">
             {items.length === 0 && <p className="rounded-[8px] border border-dashed border-[var(--line3)] px-3 py-4 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 ' + itemWord + '에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
-            {items.map((o) => {
-              // 이미지 기반 유형(영화·배너·혜택·상품) — 썸네일(불러온 이미지, 클릭 시 교체) + 제목·링크 직접 편집 + 행별 불러오기(2026-11-05 사용자 확정: 각 행 직접 편집+불러오기).
+            {items.map((o) => (
+              <SortableFillRow key={o.id} id={o.id}>{(h) => {
+              // 이미지 기반 유형(영화·배너·혜택·상품) — 썸네일(불러온 이미지, 클릭 시 교체) + 제목·링크 직접 편집 + 행별 불러오기.
               if (!isChip) {
                 return (
-                <div key={o.id} className={cn('flex gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5', isBanner ? 'items-stretch' : 'items-center')}>
-                  {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김(2026-11-05 사용자 요청) */}
-                  {!bannerSingle && <GripVertical className={cn('h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]', isBanner && 'mt-1')} />}
+                <div className={cn('flex gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5', isBanner ? 'items-stretch' : 'items-center')}>
+                  {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김 */}
+                  {!bannerSingle && <span ref={h.setRef} {...h.props} className={cn('shrink-0 cursor-grab touch-none text-[var(--ink4)]', isBanner && 'mt-1')}><GripVertical className="h-4 w-4" /></span>}
                   {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 행 높이를 꽉 채우고 넓게(배너 비율) + 전체가 보이게 contain(크롭 금지, 얼라인 맞춤). 그 외 정사각 */}
                   <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="이미지 불러오기"
                     className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'w-[132px] self-stretch bg-white' : 'h-10 w-10 bg-[var(--th)]')}>
@@ -959,8 +984,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
               // 칩형(퀵메뉴) — 행마다 [직접 등록 | 불러오기] 세그먼트. 직접=아이콘·텍스트·링크 입력, 불러오기=메뉴 관리에서 메뉴를 끌어옴(2026-11-05 사용자 요청: 세그먼트 부활·소스는 메뉴 관리).
               const loaded = o.mode === 'load';
               return (
-              <div key={o.id} className="flex items-center gap-1.5 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
-                <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-[var(--ink4)]" />
+              <div className="flex items-center gap-1.5 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
+                <span ref={h.setRef} {...h.props} className="shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>
                 {/* 세그먼트 — 직접 | 불러오기. 불러오기를 고르면 '모달 즉시 열기/잠금' 대신 우측에 '불러오기' 버튼이 뜬다(2026-11-05 사용자 요청: 켜짐 금지, 우측 버튼). */}
                 <div className="flex shrink-0 gap-0.5 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-[3px] text-[11px] font-semibold">
                   <button type="button" onClick={() => setItemMode(o.id, 'direct')} className={cn('rounded-[6px] px-2 py-1 transition', !loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>직접</button>
@@ -984,8 +1009,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                 <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
               </div>
               );
-            })}
+            }}</SortableFillRow>
+            ))}
           </div>
+          </SortableContext>
+          </DndContext>
           {/* 불러오기 모달 — 유형별 카탈로그에서 멀티 셀렉으로 담기 */}
           {loadForId && (
             <ProductLoadModal catalog={catalog} cornerType={isStatus ? '상태 안내형' : corner.cornerType} onClose={() => setLoadForId(null)}
