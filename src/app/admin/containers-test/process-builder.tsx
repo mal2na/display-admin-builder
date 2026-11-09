@@ -322,8 +322,14 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
                       <ItemIcon src={p.imageUrl} brand={p.brand || p.title} iconClass="h-5 w-5" imgClass="h-full w-full object-cover" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-semibold text-[var(--ink)]">{p.title}</span>
-                      <span className="block truncate text-[11px] text-[var(--ink4)]">{p.category} · {p.brand}{p.price ? ` · ${p.price}` : ''}</span>
+                      {/* 혜택 유형 = 브랜드명(공차)을 위로 크게, 매핑 문구(혜택)를 아래로. 카테고리(카페·베이커리)는 표시하지 않음(2026-11-09 사용자 요청). */}
+                      {cornerType === '혜택·오퍼형' || cornerType === '혜택형' ? (<>
+                        <span className="block truncate text-[13px] font-semibold text-[var(--ink)]">{p.brand || p.title}</span>
+                        <span className="block truncate text-[11px] text-[var(--ink4)]">{p.title}</span>
+                      </>) : (<>
+                        <span className="block truncate text-[13px] font-semibold text-[var(--ink)]">{p.title}</span>
+                        <span className="block truncate text-[11px] text-[var(--ink4)]">{[p.brand, p.price].filter(Boolean).join(' · ')}</span>
+                      </>)}
                     </span>
                   </button>
                 );
