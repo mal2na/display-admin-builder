@@ -108,8 +108,9 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   const sel = component.selectedIndex ?? 0;
   const variant = component.chipVariant ?? (component.atoms.some((a) => a.imageUrl) ? 'home' : 'contents');
   // 전부 placeholder(Chip1·전체·카테고리 등)면 미리보기엔 'Category' 칩 하나만 — 실제 카테고리가 들어오면 전부(2026-11-06 워딩 변경).
+  //  단, 업무 진입형 퀵메뉴(ChipHome)는 접지 않고 2행 8개를 그대로 보여준다('Chip' 라벨, 2026-11-09 사용자 요청).
   const CHIP_PH = /^(chip\d*|전체|카테고리|tab\d*|category\d*)$/i;
-  const allPh = component.atoms.length > 0 && component.atoms.every((a) => CHIP_PH.test((a.content ?? a.name ?? '').trim()));
+  const allPh = variant !== 'home' && component.atoms.length > 0 && component.atoms.every((a) => CHIP_PH.test((a.content ?? a.name ?? '').trim()));
   const atoms = allPh ? [{ ...component.atoms[0], content: 'Category' }] : component.atoms;
 
   // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
@@ -168,10 +169,11 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   }
 
   // ChipContents(기본) — 선택 1개를 진하게 강조하는 콘텐츠 필터 칩. 카테고리 필터는 항상 한 줄(가로 스크롤). 2026-10-06 사용자 요청(세로형+칩은 칩 한 줄).
+  //  스타일: 선택=진한 차콜(흰 글씨) · 비선택=회색 채움(보더 없음). 2026-11-09 사용자 확정(카테고리 칩 UI).
   return (
     <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
       {atoms.map((a, i) => (
-        <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] ' + (i === sel ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>
+        <span key={a.id} className={'flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] ' + (i === sel ? 'bg-[#1a1a1a] font-semibold text-white' : 'bg-[#f1f3f5] font-medium text-[#6b7684]')}>
           {a.content ?? a.name}
         </span>
       ))}

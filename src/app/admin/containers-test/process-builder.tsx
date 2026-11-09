@@ -155,8 +155,8 @@ function Sec({ n, title, help, children }: { n: number; title: string; help?: bo
   );
 }
 
-function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: {
-  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void;
+function CornerDetail({ template, corner, index, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: {
+  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void;
 }) {
   if (!corner) {
     return (
@@ -165,7 +165,7 @@ function CornerDetail({ template, corner, index, onPreviewFallback, onRecSourceC
       </div>
     );
   }
-  return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onPreviewPatch={onPreviewPatch} onToast={onToast} />;
+  return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onFallbackChange={onFallbackChange} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onPreviewPatch={onPreviewPatch} onToast={onToast} />;
 }
 
 // 카테고리 불러오기 모달(2단) — 좌: 카테고리, 우: 그 카테고리의 브랜드/항목 멀티선택.
@@ -259,55 +259,73 @@ function IconPickerModal({ current, onClose, onPick }: { current?: string | null
   );
 }
 
-// '채우기 → 불러오기' 모달 — 유형별 카탈로그(상품형=상품 9분류 · 혜택·오퍼형=혜택 분류)에서 멀티 셀렉으로 담기(2026-10-28 사용자 요청).
+// '채우기 → 불러오기' 모달(2단) — 좌: 분류, 우: 그 분류의 항목 멀티선택(2026-11-09 사용자 요청: 3번 카테고리 모달처럼 좌우 2단으로).
+//  ※ 3번(ChipLoadModal)과의 차이 = 여기서는 '항목만' 담는다(카테고리 탭/칩을 만들지 않음). 좌측 분류는 탐색용 필터일 뿐이고, 담기면 평면 리스트(onAdd(ps))로만 들어간다.
 function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: ProductOption[]; cornerType: string; onClose: () => void; onAdd: (ps: ProductOption[]) => void }) {
   const [q, setQ] = React.useState('');
-  const cats: string[] = ['전체'];
-  for (const o of catalog) { const c = o.category ?? '기타'; if (!cats.includes(c)) cats.push(c); }
-  const [cat, setCat] = React.useState('전체');
+  // 좌측 분류 = '전체' + 카탈로그 실제 카테고리. 전체는 전 항목(검색 가능), 나머지는 해당 분류만.
+  const realCats = React.useMemo(() => { const s: string[] = []; for (const o of catalog) { const c = o.category ?? '기타'; if (!s.includes(c)) s.push(c); } return s; }, [catalog]);
+  const cats = React.useMemo(() => ['전체', ...realCats], [realCats]);
+  const [active, setActive] = React.useState('전체');
   const [checked, setChecked] = React.useState<Set<string>>(new Set());
   const query = q.trim().toLowerCase();
-  const list = catalog.filter((o) => (cat === '전체' || (o.category ?? '기타') === cat) && (!query || `${o.brand} ${o.title}`.toLowerCase().includes(query)));
+  const list = catalog.filter((o) => (active === '전체' || (o.category ?? '기타') === active) && (!query || `${o.brand} ${o.title}`.toLowerCase().includes(query)));
   const toggle = (k: string) => setChecked((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  // 분류별 선택 개수(좌측 배지) — '항목만' 담는 것을 드러내되, 어느 분류에서 몇 개 골랐는지 보이게.
+  const countIn = (c: string) => catalog.filter((o) => (o.category ?? '기타') === c && checked.has(o.key)).length;
   const submit = () => onAdd(catalog.filter((o) => checked.has(o.key)));
   const kindWord = cornerType === '상태 안내형' ? '상태 카드' : cornerType === '프로필형' ? '프로필 카드' : cornerType === '업무 진입형' ? '메뉴' : cornerType === '콘텐츠 안내형' ? '영화' : cornerType === '배너형' ? '배너' : cornerType === '혜택·오퍼형' ? '혜택' : '상품';
   const kindLabel = cornerType === '콘텐츠 안내형' ? '지금 등록된 영화에서 선택' : cornerType === '상태 안내형' ? '완성된 상태 카드를 통째로 선택 — 값은 고객 데이터로 자동' : cornerType === '프로필형' ? '완성된 프로필 카드를 통째로 선택 — 값은 고객 데이터로 자동' : cornerType === '배너형' ? '배너 캠페인 관리에 등록된 배너에서 선택(이미지·문구·랜딩 함께)' : cornerType === '업무 진입형' ? '메뉴 관리에 등록된 메뉴에서 선택' : `${kindWord} 분류에서 선택`;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex h-[78vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-[72vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[14px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b border-[var(--line2)] px-4 py-3">
           <Search className="h-4 w-4 text-[var(--ac)]" />
           <h2 className="text-[14px] font-bold text-[var(--ink)]">{kindWord} 불러오기</h2>
-          <span className="text-[12px] text-[var(--ink4)]">{kindLabel} · 여러 개 체크해 담기</span>
+          <span className="text-[12px] text-[var(--ink4)]">{kindLabel} · 항목만 담기(카테고리 탭 없음)</span>
           <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]" aria-label="닫기"><X className="h-4 w-4" /></button>
         </div>
-        <div className="space-y-2 border-b border-[var(--line2)] p-3">
-          <div className="flex items-center gap-2 rounded-[8px] border border-[var(--line3)] bg-white px-3">
-            <Search className="h-4 w-4 text-[var(--ink4)]" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+        <div className="flex min-h-0 flex-1">
+          {/* 좌: 분류(탐색용 필터) — 3번과 달리 분류를 '담지' 않는다. 선택 개수 배지만 안내. */}
+          <div className="w-[190px] shrink-0 overflow-y-auto border-r border-[var(--line2)] p-2">
+            {cats.map((c) => {
+              const cnt = c === '전체' ? checked.size : countIn(c);
+              return (
+                <button key={c} type="button" onClick={() => setActive(c)}
+                  className={cn('mb-0.5 flex w-full items-center gap-1.5 rounded-[8px] px-2.5 py-2 text-left text-[13px]', active === c ? 'bg-[var(--ac2)] font-semibold text-[var(--ac)]' : 'text-[var(--ink2)] hover:bg-[var(--th)]')}>
+                  <span className="min-w-0 flex-1 truncate">{c}</span>
+                  {cnt > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-[var(--ac)] px-1 text-[10px] font-bold text-white">{cnt}</span>}
+                </button>
+              );
+            })}
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {cats.map((c) => (
-              <button key={c} type="button" onClick={() => setCat(c)} className={cn('rounded-[7px] px-2.5 py-1 text-[12px] font-semibold', c === cat ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)] hover:bg-[var(--line)]')}>{c}</button>
-            ))}
+          {/* 우: 검색 + 항목 멀티선택 */}
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="border-b border-[var(--line2)] p-2.5">
+              <div className="flex items-center gap-2 rounded-[8px] border border-[var(--line3)] bg-white px-3">
+                <Search className="h-4 w-4 text-[var(--ink4)]" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 검색…" className="h-9 flex-1 bg-transparent text-sm outline-none" autoFocus />
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-2">
+              <p className="px-1 pb-1.5 pt-1 text-[12px] font-semibold text-[var(--ink3)]">{active} <span className="font-normal text-[var(--ink4)]">· {list.length}개</span></p>
+              {list.length === 0 ? <p className="py-10 text-center text-[13px] text-[var(--ink4)]">검색 결과가 없습니다.</p> : list.map((p) => {
+                const on = checked.has(p.key);
+                return (
+                  <button key={p.key} type="button" onClick={() => toggle(p.key)} className={cn('flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left', on ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
+                    <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
+                    <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-[var(--ac2)] text-[var(--ac)]">
+                      <ItemIcon src={p.imageUrl} iconClass="h-5 w-5" imgClass="h-full w-full object-cover" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-semibold text-[var(--ink)]">{p.title}</span>
+                      <span className="block truncate text-[11px] text-[var(--ink4)]">{p.category} · {p.brand}{p.price ? ` · ${p.price}` : ''}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          {list.length === 0 ? <p className="py-10 text-center text-[13px] text-[var(--ink4)]">검색 결과가 없습니다.</p> : list.map((p) => {
-            const on = checked.has(p.key);
-            return (
-              <button key={p.key} type="button" onClick={() => toggle(p.key)} className={cn('flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left', on ? 'bg-[var(--ac2)]' : 'hover:bg-[var(--th)]')}>
-                <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
-                <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-[var(--ac2)] text-[var(--ac)]">
-                  <ItemIcon src={p.imageUrl} iconClass="h-5 w-5" imgClass="h-full w-full object-cover" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-semibold text-[var(--ink)]">{p.title}</span>
-                  <span className="block truncate text-[11px] text-[var(--ink4)]">{p.category} · {p.brand}{p.price ? ` · ${p.price}` : ''}</span>
-                </span>
-              </button>
-            );
-          })}
         </div>
         <div className="border-t border-[var(--line2)] p-3">
           <button type="button" disabled={checked.size === 0} onClick={submit}
@@ -329,7 +347,7 @@ function SortableFillRow({ id, children }: { id: string; children: (h: { setRef:
   );
 }
 
-function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void }) {
+function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void }) {
   // 프로필형(업무 진입형) = 고객 정보(이름·휴대폰 등)라 '무조건 CVM 데이터 연동' 고정(2026-11-05 사용자 요청).
   const layoutDetailStr = corner.layoutDetail ?? corner.layout ?? '';
   const isProfile = corner.cornerType === '업무 진입형' && /프로필/.test(layoutDetailStr);
@@ -496,11 +514,17 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
     return (options.length ? options : ['대표 아이템 1', '대표 아이템 2', '대표 아이템 3']).map((o, i) => ({ id: `it-${i}-${o}`, label: o, mode: 'direct' as const }));
   };
   const [itemsByKey, setItemsByKey] = React.useState<Record<string, FillItem[]>>(() => ({ __flat__: defaultItems() }));
+  // ③ 항목을 운영자가 '실제로' 편집/불러오기 했는지(키별). 마운트·클릭만으로는 미리보기를 재구성하지 않고, 편집이 일어난 뒤에만 재구성한다.
+  //  (placeholder 미리보기 → FillItem 왕복이 손실형이라, 건드리지 않으면 코너 기본 미리보기가 그대로 유지돼 '금액이 사라지는' 현상 방지. 2026-11-09 사용자 요청)
+  const [dirty, setDirty] = React.useState<Record<string, boolean>>({});
+  const markDirty = (key = chipKey) => setDirty((d) => (d[key] ? d : { ...d, [key]: true }));
   // 칩 On으로 바꾸면 칩별 리스트는 아직 비어 있다 → 빈 화면처럼 보이지 않게 칩마다 기본 시드로 채워 시작(2026-11-05 사용자 요청: 칩 On 시 데이터 영역 유지). 편집 시 그대로 저장된다.
   const seedForKey = React.useMemo(() => defaultItems(), [chipKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const items = itemsByKey[chipKey] ?? seedForKey;
-  const updateItems = (fn: (xs: FillItem[]) => FillItem[]) =>
+  const updateItems = (fn: (xs: FillItem[]) => FillItem[]) => {
+    markDirty();
     setItemsByKey((m) => ({ ...m, [chipKey]: fn(m[chipKey] ?? seedForKey) }));
+  };
   // ③ 컴포넌트 리스트 드래그 정렬(2026-11-06 사용자 요청: 우측 패널 순서 변경).
   const itemSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const onItemDragEnd = (e: DragEndEvent) => {
@@ -621,10 +645,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
   //  카드1장(프로필·상태)·바코드·배너는 자체 미리보기 경로라 제외. 콘텐츠 연동은 구좌만 넘김이라 건드리지 않음.
   React.useEffect(() => {
     if (isProfile || isStatus || isBarcode || isBanner) return;
+    // 운영자가 ③ 항목을 실제로 편집/불러오기 한 키만 재구성한다. 손 안 댄 코너는 기본(placeholder) 미리보기를 그대로 유지(금액·타이틀 보존).
+    //  CVM 데이터 연동의 '추천 보충 박스'는 미리보기 렌더 게이트에서 항상 표시되므로, 여기서 재구성하지 않아도 박스는 나온다.
+    if (!dirty[chipKey]) return;
     if (isData) pushDataPreview(items, cvmMin, cvmMax);
     else if (src === '운영자 편성') pushDataPreview(items, 0, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isData, src, items, cvmMin, cvmMax]);
+  }, [isData, src, items, cvmMin, cvmMax, dirty, chipKey]);
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
@@ -770,6 +797,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                   }
                   return next;
                 });
+                setDirty((d) => { const n = { ...d }; for (const p of picks) n[`${isCategory ? 'cat' : 'chip'}:${p.category}`] = true; return n; });
                 setChipLoadOpen(false);
                 const itemN = picks.reduce((s, p) => s + p.items.length, 0);
                 onToast(`카테고리 ${picks.length}개 · 컴포넌트 ${itemN}개 담음`);
@@ -1061,6 +1089,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                   <button key={c} type="button" onClick={() => setCat(c)} className={cn('rounded-[8px] px-2.5 py-1.5 text-[12px] font-semibold', c === cat ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)] hover:bg-[var(--line)]')}>{c}</button>
                 ))}
               </div>
+              {/* 직접 입력 — 프리셋에 없는 중분류를 운영자가 직접 적어 CVM에 제안(2026-11-09 사용자 요청). 입력하면 위 프리셋 칩은 자동 해제. */}
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <input value={CVM_CATALOGS.includes(cat) ? '' : cat} onChange={(e) => setCat(e.target.value)}
+                  placeholder="직접 입력 (예: 로밍 혜택 · 멤버십 등급)"
+                  className={cn('h-[32px] min-w-0 flex-1 rounded-[6px] border bg-white px-2.5 text-[13px] focus:border-[var(--ac)] focus:outline-none', CVM_CATALOGS.includes(cat) ? 'border-[var(--line2)]' : 'border-[var(--ac)]')} />
+                {!CVM_CATALOGS.includes(cat) && cat && <span className="shrink-0 rounded-[6px] bg-[var(--ac2)] px-2 py-1 text-[11px] font-semibold text-[var(--ac)]">직접 입력</span>}
+              </div>
               <p className="mb-1.5 mt-3 text-[12px] font-semibold text-[var(--ink3)]">나머지 요청 개수 <span className="font-normal text-[var(--ink4)]">· CVM이 채울 자리 (최소~최대)</span></p>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-1.5">
@@ -1124,7 +1159,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
             {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
               const on = fb === f;
               return (
-                <button key={f} type="button" onClick={() => { setFb(f); onPreviewFallback(true); }} className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px]', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white opacity-80')}>
+                <button key={f} type="button" onClick={() => { setFb(f); onFallbackChange(f); onPreviewFallback(true); }} className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px]', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white opacity-80')}>
                   <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#e59a2a] bg-[#e59a2a]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
                   <span className="min-w-0 flex-1">
                     <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
@@ -1397,6 +1432,7 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
               {/* 코너 상세 — 독립 스크롤 */}
               <div className="min-h-0 overflow-y-auto pr-0.5">
                 <CornerDetail template={t} corner={selected} index={selIndex} onPreviewFallback={onPreviewFallback}
+                  onFallbackChange={(fb) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, fallback: fb } : c)); }}
                   onRecSourceChange={(src) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, recSource: src, isCvm: src.startsWith('CVM') } : c)); }}
                   onOptionsChange={(opts, ctaLabel) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, preview: applyOptsToPreview(c.preview, opts, ctaLabel) } : c)); }}
                   onPreviewPatch={(patch) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, preview: c.preview ? { ...c.preview, ...patch } : c.preview } : c)); }}

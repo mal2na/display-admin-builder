@@ -151,7 +151,12 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
     // 미리보기 텍스트 = 라벨(영어) 기준. 가격만 실제 값 형태 유지(2026-10-29(2) 사용자 요청).
     switch (b.componentType) {
       case '선택형':
-        // 칩 placeholder = Chip1·Chip2…(필드 코드 표기, 2026-11-05 사용자 요청 — 코너 유형 관리·빌더 미리보기 일치).
+        // 업무 진입형 카테고리형(=칩형/퀵메뉴) = ChipHome 2행 8개. 신규 등록·껍데기 미리보기 라벨 코드 'Chip'(2026-11-09 사용자 요청).
+        if (ctx.base === '업무 진입형') {
+          return { ...base, name: 'ChipHome', selectedIndex: 0, chipRows: 2, chipVariant: 'home',
+            atoms: Array.from({ length: 8 }).map(() => atom({ name: 'Chip', atomType: 'TEXT', content: 'Chip', imageUrl: chipIconForLabel('카테고리') })) };
+        }
+        // 그 외(상품형·혜택·오퍼형 카테고리형 상단 탭) = 콘텐츠 칩. placeholder = Chip1·Chip2…(필드 코드 표기, 2026-11-05 사용자 요청).
         return { ...base, name: '탭', selectedIndex: 0, chipVariant: 'contents', atoms: ['Chip1', 'Chip2', 'Chip3', 'Chip4'].map((c) => atom({ name: c, atomType: 'TEXT', content: c })) };
       case '배너형':
         return { ...base, name: '배너', atoms: [
