@@ -601,7 +601,10 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
         <div className="mb-2 flex items-center gap-1 rounded-[8px] bg-[var(--th)] px-2.5 py-2 text-[12px] text-[var(--ink3)]"><Lock className="h-3 w-3" /> 유형·레이아웃·개수는 코너 유형 관리에서 정의 · 수정 불가 · <b className="text-[var(--ink2)]">코너명만 편집</b></div>
         <Row label="코너 유형"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></Row>
         <Row label="배열·레이아웃">{cornerLayoutText(corner.cornerType, corner.layout, corner.layoutDetail) || '—'}</Row>
-        <Row label="코너명">
+        {/* 코너명 — 인라인 Row 컴포넌트(렌더마다 새 함수)로 감싸면 입력 중 리마운트돼 한글 IME가 깨진다 → 리터럴 div로 직접 렌더(2026-11-06). */}
+        <div className="flex items-start gap-3 py-1.5 text-[13px]">
+          <span className="w-[76px] shrink-0 text-[var(--ink3)]">코너명</span>
+          <span className="min-w-0 flex-1 text-[var(--ink)]">
           {editName ? (
             <div className="flex items-center gap-1.5">
               <input value={nameVal} onChange={(e) => setNameVal(e.target.value)} autoFocus
@@ -618,7 +621,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onRecSourceChan
                 className="inline-flex shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2 py-0.5 text-[12px] font-medium text-[var(--ink3)] hover:border-[var(--line3)] hover:bg-[var(--th)]"><Pencil className="h-3 w-3" /> 수정</button>
             </div>
           )}
-        </Row>
+          </span>
+        </div>
         {/* 코너 속성(표시 항목) 요약 — 코너 유형 관리가 정의한 껍데기의 표시 항목을 읽기전용으로(②수급·③채우기에서 뭘 채우는지 먼저 보여줌).
             좁은 패널이라 전체 Y/N 표(오버플로) 대신 그룹별 '칩 요약'으로 — 코너(카드)/아이템(요소) 그룹·고정/옵션 구분은 유지(2026-11-05 사용자 요청). */}
         {(() => {
@@ -1521,9 +1525,9 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   return (
     <ProductCatalogCtx.Provider value={data.catalogByType ?? {}}>
     <div className="relative flex h-full flex-col overflow-hidden rounded-t-[16px] border border-[var(--line2)] bg-white">
-      {/* 스크롤 영역 — 헤더(스크롤 시 함께 올라감) + 2열(좌 디바이스 스티키 · 우 콘텐츠) */}
-      {/* 헤더 — 상단 고정(스크롤해도 유지) · 디바이스 가용 높이를 일정하게 유지하기 위함(2026-11-06 사용자 요청) */}
-      <div className="shrink-0 px-6 pb-2 pt-4">
+      {/* 헤더 + 2열을 한 스크롤 영역에 — 스크롤하면 헤더(타이틀)는 올라가고 디바이스는 sticky로 고정(2026-11-06 사용자 요청: 상품 전시 관리처럼). */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="px-6 pb-2 pt-4">
         <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
           <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
           <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
@@ -1535,10 +1539,10 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
         </div>
       </div>
 
-      {/* 2열 — 좌 디바이스(고정 패널·창 높이에 맞춰 높이만 리사이즈) · 우 콘텐츠(이 열만 스크롤). 위/아래 고정 패딩은 py로(2026-11-06 사용자 요청) */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden px-6 pb-3 pt-2 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
-          {/* 좌: 미리보기 — 그리드 셀(가용 높이)을 채워 디바이스 높이만 창에 맞춰 리사이즈. 고정 패널(열 스크롤 없음). */}
-          <div className="flex min-h-0 flex-col">
+      {/* 2열 — 좌 디바이스(sticky·뷰포트 높이 유지) · 우 콘텐츠(페이지 스크롤에 함께 흐름). */}
+      <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
+          {/* 좌: 미리보기 — sticky로 상단 고정. 헤더가 스크롤로 올라가면 디바이스가 뷰포트를 꽉 채운다(2026-11-06 사용자 요청). */}
+          <div className="sticky top-2 flex h-[calc(100vh_-_168px)] flex-col">
           {/* 기본 ↔ 폴백 토글 */}
           <div className="mb-3 flex w-full shrink-0 items-center gap-2">
             <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
@@ -1579,8 +1583,10 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                         <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
                           className={cn('relative cursor-pointer scroll-mt-4 rounded-xl ring-offset-2 transition', c.id === activeSel && 'ring-2 ring-[var(--ac)]')}>
                           {replaced && <span className="absolute right-1 top-1 z-10 rounded-[4px] bg-[#e59a2a] px-1.5 py-0.5 text-[9px] font-bold text-white">운영자 편성 대체</span>}
-                          {/* CVM 추천 보충 박스는 'CVM 데이터 연동'일 때만(운영자 편성·콘텐츠 연동은 숨김) — 렌더 시점 게이트로 확실히(2026-11-06). */}
-                          <CornerBlock corner={c.recSource === 'CVM 데이터 연동' ? c.preview : { ...c.preview, cvmFillCount: 0 }} />
+                          {/* CVM 추천 보충 박스는 'CVM 데이터 연동'일 때만(운영자 편성·콘텐츠 연동은 숨김). 데이터 연동이면 ③ 설정 전에도 기본 3~5로 즉시 표시(2026-11-06 사용자 요청). */}
+                          <CornerBlock corner={c.recSource === 'CVM 데이터 연동'
+                            ? { ...c.preview, cvmFillCount: (c.preview?.cvmFillCount ?? 0) || 5, cvmFillMin: (c.preview?.cvmFillMin ?? 0) || 3 }
+                            : { ...c.preview, cvmFillCount: 0 }} />
                         </div>
                       );
                     })
@@ -1590,8 +1596,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           </DeviceFrame>
         </div>
 
-        {/* 우: 기본 정보 + 템플릿 구성 + 구성 검증 — 이 열만 내부 스크롤(디바이스는 고정) */}
-        <div className="min-h-0 space-y-6 overflow-y-auto pr-1">
+        {/* 우: 기본 정보 + 템플릿 구성 — 페이지 스크롤에 함께 흐른다(디바이스는 sticky). */}
+        <div className="space-y-6 pr-1">
 
             {/* 템플릿 기본 정보 */}
             <section className="overflow-hidden rounded-[16px] border border-[var(--line2)] bg-white">
@@ -1677,6 +1683,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             </section>
             {/* 구성 검증 섹션은 우측에서 제외 — 하단 바의 '구성 검증' 버튼으로 일원화(2026-11-06 사용자 요청). */}
         </div>
+      </div>
       </div>
 
       {/* 구성 검증 결과 — 하단 시트(order3-create 레퍼런스) */}
