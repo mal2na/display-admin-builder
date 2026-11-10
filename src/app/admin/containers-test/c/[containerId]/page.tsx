@@ -71,7 +71,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
             <p className="mt-1 text-[13px] text-[var(--ink3)]">실제 반영 기준: Container + Template + 고객 상태 + 노출 조건</p>
           </div>
           <div className="flex shrink-0 gap-2">
-            <span className={BTN}><Columns className="h-3.5 w-3.5" /> 조건그룹 비교</span>
+            <Link href={`/admin/containers-test/c/${container.id}/compare`} className={BTN}><Columns className="h-3.5 w-3.5" /> 조건그룹 비교</Link>
             <span className={BTN}>미전시로 전환</span>
           </div>
         </div>
