@@ -1717,15 +1717,17 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
             {list.length === 0 ? <p className="py-8 text-center text-[13px] text-[var(--ink4)]">검색 결과가 없습니다.</p> : list.map((c) => {
               const on = picked.has(c.id);
               return (
-                <button key={c.id} type="button" onClick={() => { toggle(c.id); setFocusId(c.id); }}
-                  className={cn('flex w-full items-start gap-2.5 rounded-[10px] border px-3.5 py-3 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : focusId === c.id ? 'border-[var(--line3)] bg-[var(--th)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
-                  <span className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3" />}</span>
+                // 카드 본문 클릭 = 미리보기(보기)만, 선택(추가 대상)은 체크박스로 분리 — 다시 보려고 눌러도 선택이 꺼지지 않게(2026-11-10 사용자 요청).
+                <div key={c.id} role="button" tabIndex={0} onClick={() => setFocusId(c.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFocusId(c.id); } }}
+                  className={cn('flex w-full cursor-pointer items-start gap-2.5 rounded-[10px] border px-3.5 py-3 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : focusId === c.id ? 'border-[var(--line3)] bg-[var(--th)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
+                  <button type="button" aria-label="이 코너 선택" onClick={(e) => { e.stopPropagation(); toggle(c.id); setFocusId(c.id); }}
+                    className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border transition', on ? 'border-[var(--ac)] bg-[var(--ac)] text-white' : 'border-[var(--line3)] bg-white hover:border-[var(--ac)]')}>{on && <Check className="h-3 w-3" />}</button>
                   {/* 두 줄 — 위: 배열(레이아웃) 굵게 · 아래: 유형 칩. '껍데기…' 안내문구 제거(2026-11-05 사용자 요청). */}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] font-bold text-[var(--ink)]">{layoutLabel(c.shell) || c.shell || c.cornerType}</span>
                     <span className="mt-1 flex"><span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span></span>
                   </span>
-                </button>
+                </div>
               );
             })}
           </div>
