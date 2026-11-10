@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { CornerFieldList } from './corner-fields';
-import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, VISIBLE_CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, baseLayout, displayLayout, cornerTypeHasOptions, cornerFieldSpec, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource } from '@/lib/display-taxonomy';
+import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, VISIBLE_CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, baseLayout, displayLayout, cornerTypeHasOptions, cornerFieldSpec, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource, PRODUCT_PRICE_CATEGORIES, PRODUCT_PRICE_FIELDS, PRODUCT_PRICE_DEFAULTS, parsePriceSpec, serializePriceSpec, type ProductPriceSpec, type ProductPriceCategory, type ProductPriceField } from '@/lib/display-taxonomy';
 
 // 배너·칩·CTA 가 옵션인 유형(상품형·혜택·오퍼형·콘텐츠 안내형)은 '세로형+배너'·'세로형+칩'을 '세로형'으로 접어 통합 표기(2026-10-28 사용자 요청: 7종 적용).
 //  옵션이 없는 유형(배너형·업무진입형·상태안내형·고정필수)은 그대로 둔다. displayLayout 이 유형별로 판정.
@@ -66,6 +66,7 @@ export type CornerTypeRow = {
   useImage: boolean;
   usePrice: boolean;
   useDesc: boolean;
+  priceSpec?: string | null; // 상품형 — 상품 카테고리별 가격 노출 규격 JSON({카테고리:[가격필드]})
   // 타입-레벨 기본값(빌더 상속)
   defaultMinItems: number | null;
   defaultMaxItems: number | null;
@@ -125,6 +126,7 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   useImage: true,
   usePrice: true,
   useDesc: true,
+  priceSpec: null,
   defaultMinItems: null,
   defaultMaxItems: null,
   defaultSortStrategy: null,
@@ -1011,16 +1013,10 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
 
   return (
     <div>
+      {/* 등록 버튼은 상단이 아니라 조회결과 테이블 하단으로 이동(2026-11-10 사용자 요청: 등록은 무조건 테이블 하단). */}
       <PageHeader
         trail={['전시 관리', '코너 유형 관리']}
         title="코너 유형 관리"
-        action={
-          <Link href="/admin/corner-types/new">
-            <Button size="sm">
-              <Plus className="mr-1 h-4 w-4" /> 등록
-            </Button>
-          </Link>
-        }
       />
 
       {/* ── 최상위 분기: 전시 / 프로모션 / 상품 (DS 포털식 세그먼트) ── */}
@@ -1247,6 +1243,15 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
           )}
         </div>
       )}
+
+      {/* 등록 — 조회결과 테이블 하단에 고정(2026-11-10 사용자 요청). */}
+      <div className="mt-4 flex justify-end">
+        <Link href="/admin/corner-types/new">
+          <Button size="sm">
+            <Plus className="mr-1 h-4 w-4" /> 등록
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -1359,6 +1364,18 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     useImage: row.useImage,
     usePrice: row.usePrice,
     useDesc: row.useDesc,
+  });
+  // 상품형 — 상품 카테고리별 가격 노출 규격(코너 정의에서 셋업, 빌더는 선택). 2026-11-10 회의.
+  const [priceSpec, setPriceSpec] = useState<ProductPriceSpec>(() => parsePriceSpec(row.priceSpec));
+  const togglePriceCategory = (cat: ProductPriceCategory) => setPriceSpec((p) => {
+    const n = { ...p };
+    if (n[cat]) delete n[cat]; else n[cat] = [...(PRODUCT_PRICE_DEFAULTS[cat] ?? [])];
+    return n;
+  });
+  const togglePriceField = (cat: ProductPriceCategory, f: ProductPriceField) => setPriceSpec((p) => {
+    const cur = p[cat] ?? [];
+    const next = cur.includes(f) ? cur.filter((x) => x !== f) : [...cur, f];
+    return { ...p, [cat]: next };
   });
   // 세부 항목 토글 — 종속 규칙(타이틀↔서브, 가격↔배지) 공용. 플랫/그룹 UI가 함께 씀.
   const toggleFeature = (key: keyof typeof features, on: boolean) => setFeatures((prev) => {
@@ -2035,6 +2052,41 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           basicInfo={<div className="border-t border-[#dce0e5]">{basicPickers}{metaFields}</div>}
           registerResult={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}
         />
+        {/* 상품 카테고리 · 가격 노출 규격 — 같은 상품형이라도 들어가는 상품(요금제·단말기 등)에 따라 가격 노출이 다르다(2026-11-10 회의). 코너 정의에서 카테고리별로 담을 가격 필드를 정하고, 빌더는 그중 선택. */}
+        <input type="hidden" name="priceSpec" value={serializePriceSpec(priceSpec)} />
+        <section className="mt-3 overflow-hidden rounded-xl border border-indigo-200">
+          <div className="border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-[#2a11a4]">상품 카테고리 · 가격 노출 규격 <span className="font-normal text-indigo-400">· 이 코너가 담을 상품/가격 (빌더는 이 중 선택)</span></div>
+          <div className="flex items-start gap-1.5 border-b bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>같은 상품형이라도 들어가는 상품에 따라 가격 노출 방식이 달라져요. 카테고리별로 <b>담을 가격 필드</b>를 정해두면 빌더에선 그중 노출할 것만 고릅니다. 필드는 상품(EPC) 가격 정책 확정 전 대표안(TBD).</span>
+          </div>
+          <div className="divide-y">
+            {PRODUCT_PRICE_CATEGORIES.map((cat) => {
+              const on = !!priceSpec[cat];
+              return (
+                <div key={cat} className="px-3 py-2.5">
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input type="checkbox" checked={on} onChange={() => togglePriceCategory(cat)} className="h-4 w-4 accent-[#3617ce]" />
+                    <span className="text-[13px] font-semibold text-slate-700">{cat}</span>
+                    {on ? <span className="text-[11px] text-slate-400">· 담을 가격 필드 {(priceSpec[cat] ?? []).length}개</span> : <span className="text-[11px] text-slate-300">· 이 코너에 매핑 안 함</span>}
+                  </label>
+                  {on && (
+                    <div className="mt-2 flex flex-wrap gap-1.5 pl-6">
+                      {PRODUCT_PRICE_FIELDS.map((f) => {
+                        const fon = (priceSpec[cat] ?? []).includes(f);
+                        return (
+                          <button key={f} type="button" onClick={() => togglePriceField(cat, f)}
+                            className={cn('rounded-full border px-2.5 py-1 text-[12px] font-medium transition', fon ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-400 hover:border-indigo-300')}>
+                            {f}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
       </div>
       )}
 

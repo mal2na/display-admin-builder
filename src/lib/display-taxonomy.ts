@@ -309,6 +309,51 @@ export type CvmCatalog = (typeof CVM_CATALOGS)[number];
 /** 중분류별 Top-N 상한. CVM은 카탈로그당 5개까지 내려준다. */
 export const CVM_TOP_N_MAX = 5;
 
+// ───────── 상품형 — 상품 카테고리별 가격 노출 규격 (2026-11-10 회의 반영) ─────────
+//  회의 결론: 같은 상품형이라도 들어가는 상품 데이터(카테고리)에 따라 레이아웃·가격 노출 방식이 달라진다.
+//  → 가격을 어떤 식으로 노출할지(정가/할인가/선약 적용가/플러스 할인/할인율 등)를 '코너(유형) 정의'에서 카테고리별로 미리 셋업하고,
+//    빌더(전시화면 관리)에서는 그중 실제 노출할 것만 선택한다("원장이 들고 있을 정보와 코너가 들고 있을 정보가 다르다").
+//  카테고리 = 상품 서비스 구성도/EPC 원장 기준 8종. 필드 목록은 상품(EPC) 가격 정책 확정 전 대표안(TBD) — 구조만 먼저 잡는다.
+export const PRODUCT_PRICE_CATEGORIES = ['요금제', '부가서비스', '구독', '보험', '단말기', '악세사리', '인터넷', 'IPTV'] as const;
+export type ProductPriceCategory = (typeof PRODUCT_PRICE_CATEGORIES)[number];
+
+/** 가격 노출 필드(규격) 공통 풀 — 카테고리별로 담을 것을 코너 정의에서 체크. */
+export const PRODUCT_PRICE_FIELDS = ['정가', '출고가', '할인가', '선약(약정) 적용가', '플러스 할인가', '할인율', '월정액', '월 분할가', '결합 할인가', '색상'] as const;
+export type ProductPriceField = (typeof PRODUCT_PRICE_FIELDS)[number];
+
+/** 카테고리별 기본 적용 필드(대표안). 코너 유형 정의에서 조정 가능. */
+export const PRODUCT_PRICE_DEFAULTS: Record<ProductPriceCategory, ProductPriceField[]> = {
+  '요금제': ['월정액', '선약(약정) 적용가', '할인율'],
+  '부가서비스': ['월정액', '할인가', '할인율'],
+  '구독': ['월정액', '할인가', '할인율'],
+  '보험': ['월정액'],
+  '단말기': ['출고가', '할인가', '선약(약정) 적용가', '월 분할가', '색상'],
+  '악세사리': ['정가', '할인가', '할인율'],
+  '인터넷': ['월정액', '결합 할인가', '할인율'],
+  'IPTV': ['월정액', '결합 할인가', '할인율'],
+};
+
+/** priceSpec = 코너가 '매핑 가능한 상품 카테고리 → 담을 가격 필드' 맵. 빈 객체면 미설정. */
+export type ProductPriceSpec = Partial<Record<ProductPriceCategory, ProductPriceField[]>>;
+export function parsePriceSpec(raw?: string | null): ProductPriceSpec {
+  if (!raw) return {};
+  try {
+    const o = JSON.parse(raw);
+    if (!o || typeof o !== 'object') return {};
+    const out: ProductPriceSpec = {};
+    for (const cat of PRODUCT_PRICE_CATEGORIES) {
+      const v = (o as Record<string, unknown>)[cat];
+      if (Array.isArray(v)) out[cat] = v.filter((f): f is ProductPriceField => (PRODUCT_PRICE_FIELDS as readonly string[]).includes(f));
+    }
+    return out;
+  } catch { return {}; }
+}
+export function serializePriceSpec(spec: ProductPriceSpec): string {
+  const clean: ProductPriceSpec = {};
+  for (const cat of PRODUCT_PRICE_CATEGORIES) if (spec[cat]) clean[cat] = spec[cat];
+  return JSON.stringify(clean);
+}
+
 /** CVM이 주지 않는 것 — 요청해도 받을 수 없으니 어드민이 룰로 풀거나 데이터실에 따로 받아야 한다. */
 export const CVM_OUT_OF_SCOPE: { item: string; why: string; instead: string }[] = [
   {
