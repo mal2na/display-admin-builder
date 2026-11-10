@@ -458,6 +458,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const isData = src === 'CVM 데이터 연동';
   // CVM 콘텐츠 연동(③가 '구좌만 넘김')에서 폴백을 '운영자 편성으로 대체'로 고르면, CVM이 비었을 때 대신 노출할 운영자 편성 항목을 등록해야 한다 → ⑤ 채우기 UI를 띄운다(2026-11-10 사용자 요청).
   const fillForFallback = isCvmSrc && !isData && fb === '운영자 편성으로 대체' && !isProfile && !isStatus && !isBarcode;
+  // 섹션 번호 — CVM 코너는 ③ 폴백(채우기 위로)이 끼어 번호가 하나씩 밀린다(2026-11-10 사용자 요청: 폴백이 채우기 결과를 좌우하므로 위로). 번호 공백 방지.
+  const nFill = isCvmSrc ? 4 : 3; // 채우기/요청/프로필/고정
+  const nSrc = isCvmSrc ? 5 : 4;  // 출처
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
@@ -909,9 +912,30 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
         </div>
       </Sec>
 
-      {/* ③ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
+      {/* ③ 폴백 — CVM 수급일 때. 폴백 선택(미노출/운영자 편성 대체)이 아래 '채우기' 내용을 좌우하므로 채우기 위에 둔다(2026-11-10 사용자 요청). */}
+      {isCvmSrc && (
+        <Sec n={3} title="폴백 — CVM 응답이 비었을 때" help>
+          <div className="space-y-1.5">
+            {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
+              const on = fb === f;
+              return (
+                <button key={f} type="button" onClick={() => { setFb(f); onFallbackChange(f); onPreviewFallback(true); }} className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px]', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white opacity-80')}>
+                  <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#e59a2a] bg-[#e59a2a]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
+                  <span className="min-w-0 flex-1">
+                    <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
+                    <span className="block text-[var(--ink4)]">{f === '미노출' ? 'CVM이 비면 이 코너는 노출되지 않아요.' : '등록한 운영자 편성 항목을 대신 노출해요.'}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {MiNoChul}
+        </Sec>
+      )}
+
+      {/* ④ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
       {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
-        <Sec n={3} title={fillForFallback ? '운영자 편성 대체 — CVM이 비면 노출할 항목' : isData ? '운영자 고정 — 먼저 채울 항목 (나머지는 CVM)' : '채우기 — 항목 등록'}>
+        <Sec n={nFill} title={fillForFallback ? '운영자 편성 대체 — CVM이 비면 노출할 항목' : isData ? '운영자 고정 — 먼저 채울 항목 (나머지는 CVM)' : '채우기 — 항목 등록'}>
           {fillForFallback && (
             <div className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#fff8ef] px-3 py-2 text-[12px] leading-relaxed text-[#b67a12]">
               <span className="mt-0.5">⚠</span><span>이 코너는 <b>CVM 콘텐츠 연동</b>이라 평소엔 CVM 완성본이 노출됩니다. <b>CVM 응답이 비면</b> 아래에 등록한 운영자 편성 항목이 대신 노출돼요(폴백 미리보기에서 확인).</span>
@@ -1309,7 +1333,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           )}
         </Sec>
       ) : isProfile ? (
-        <Sec n={3} title="프로필 카드 — 문구 설정">
+        <Sec n={nFill} title="프로필 카드 — 문구 설정">
           <div className="mb-2 flex items-start gap-1.5 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]">
             <span className="mt-0.5">ⓘ</span><span><b>고객명·휴대폰 번호·프로필 이미지</b>는 고객 정보로 자동 표시(@cvm)됩니다. 아래 문구만 설정하세요.</span>
           </div>
@@ -1330,36 +1354,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           </div>
         </Sec>
       ) : (
-        <Sec n={3} title="요청 — 구좌만 넘김" help>
+        <Sec n={nFill} title="요청 — 구좌만 넘김" help>
           <p className="rounded-[8px] bg-[var(--ac2)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
             <b className="text-[var(--ac)]">CVM 콘텐츠 연동</b> = 구좌(자리)만 넘깁니다. 이미지·문구·랜딩까지 <b>CVM이 완성본을 내려주고</b> 전시 어드민은 받은 그대로 노출합니다. 별도 요청 범위(③) 설정은 없습니다.
           </p>
         </Sec>
       )}
 
-      {/* ④ 폴백 — CVM 수급일 때 */}
-      {isCvmSrc && (
-        <Sec n={4} title="폴백 — CVM 응답이 비었을 때" help>
-          <div className="space-y-1.5">
-            {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
-              const on = fb === f;
-              return (
-                <button key={f} type="button" onClick={() => { setFb(f); onFallbackChange(f); onPreviewFallback(true); }} className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px]', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white opacity-80')}>
-                  <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#e59a2a] bg-[#e59a2a]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
-                  <span className="min-w-0 flex-1">
-                    <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
-                    <span className="block text-[var(--ink4)]">{f === '미노출' ? 'CVM이 비면 이 코너는 노출되지 않아요.' : '등록한 운영자 편성 항목을 대신 노출해요.'}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {MiNoChul}
-        </Sec>
-      )}
-
       {/* ⑥ 출처 — 이 값이 어디서 오나 */}
-      <Sec n={5} title="출처 — 이 값이 어디서 오나" help>
+      <Sec n={nSrc} title="출처 — 이 값이 어디서 오나" help>
         <div className="overflow-hidden rounded-[8px] border border-[var(--line2)] text-[12px]">
           {[
             ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
