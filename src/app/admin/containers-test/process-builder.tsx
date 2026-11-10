@@ -86,6 +86,25 @@ function aiBenefitCopy(category: string | null | undefined, seed: number): strin
   return pool[((seed % pool.length) + pool.length) % pool.length];
 }
 
+// 코너 타이틀 AI 추천 — 코너 유형(+활성 카테고리)에 맞는 영역 제목 초안을 하나씩 생성(2026-11-10 사용자 요청).
+// 코너 타이틀은 코너 구성(운영자 소유) 영역이라 CVM이 주는 값이 아니다 → 운영자용 초안 도우미. 매핑된 아이템과 무관한 '영역 이름'을 빠르게 잡는 용도.
+const AI_CORNER_TITLE_POOL: Record<string, string[]> = {
+  '상품형': ['지금 딱 맞는 추천 상품', '이번 달 인기 상품', '나를 위한 맞춤 추천', '놓치면 아쉬운 특가', '요즘 많이 찾는 상품'],
+  '혜택·오퍼형': ['나를 위한 맞춤 혜택', '이번 주 놓치면 아쉬운 혜택', '오늘의 멤버십 혜택', '지금 받을 수 있는 혜택', '자주 가는 곳 할인'],
+  '혜택형': ['나를 위한 맞춤 혜택', '오늘의 멤버십 혜택', '지금 받을 수 있는 혜택', '자주 가는 곳 할인'],
+  '배너형': ['지금 주목할 소식', '이번 주 기획전', '놓치지 마세요', '한정 기간 이벤트'],
+  '콘텐츠 안내형': ['지금 뜨는 콘텐츠', '취향 저격 추천', '이번 주 인기작', '오늘의 추천 콘텐츠'],
+  '업무 진입형': ['자주 쓰는 메뉴', '바로가기', '많이 찾는 서비스', '빠른 업무 처리'],
+};
+const AI_CORNER_TITLE_DEFAULT = ['맞춤 추천 영역', '이번 주 추천', '지금 주목할 소식', '나를 위한 추천'];
+function aiCornerTitle(cornerType: string, category: string | null | undefined, seed: number): string {
+  const pool = AI_CORNER_TITLE_POOL[cornerType] || AI_CORNER_TITLE_DEFAULT;
+  const base = pool[((seed % pool.length) + pool.length) % pool.length];
+  // 카테고리 칩이 켜져 있으면 '카페 추천 혜택'처럼 앞에 카테고리를 붙여 더 구체적인 초안으로.
+  const catKey = category && Object.keys(AI_BENEFIT_POOL).find((k) => category.includes(k));
+  return catKey ? `${category} 맞춤${cornerType === '상품형' ? ' 상품' : ' 혜택'}` : base;
+}
+
 // 배너·칩·CTA 옵션 토글 → 선택 코너 미리보기에 반영(코너 유형 미리보기와 동일, 2026-11-05 사용자 요청).
 // CTA On이면 버튼 라벨은 입력값, 비어 있으면 무조건 'CTA'를 기본으로 박는다(2026-11-05 사용자 요청).
 function applyOptsToPreview(preview: PCorner['preview'], opts: Record<string, boolean>, ctaLabel?: string): PCorner['preview'] {
@@ -619,6 +638,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
     const category = chipMode ? chips[chipIdx] : undefined;
     setItemLabel(o.id, aiBenefitCopy(category, s));
   };
+  // 코너 타이틀 AI 추천 — 코너 유형(+활성 카테고리)에 맞는 영역 제목을 하나 생성(눌러서 다른 후보). 운영자 초안이며 CVM이 주는 값 아님(코너 타이틀=코너 구성).
+  const [titleSeed, setTitleSeed] = React.useState(Math.floor(Math.random() * 6));
+  const genAiTitle = () => {
+    const category = chipMode ? chips[chipIdx] : undefined;
+    const t = aiCornerTitle(corner.cornerType, category, titleSeed);
+    setTitleSeed((s) => s + 1);
+    setCornerTitleVal(t);
+    onPreviewPatch({ mainTitle: t || 'CornerTitle' });
+  };
   const setItemMode = (id: string, mode: FillItem['mode']) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, mode } : x)));
   const setItemIcon = (id: string, icon: string) => editItems(id, { icon });
   const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
@@ -899,7 +927,14 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               {hasCornerTitle && (
                 <label className="mb-2 block">
                   <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">코너 타이틀 <span className="font-normal text-[var(--ink4)]">CornerTitle</span></span>
-                  <input value={cornerTitleVal} onChange={(e) => { setCornerTitleVal(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'CornerTitle' }); }} placeholder="코너 제목 입력" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                  {/* 코너 유형에 맞는 영역 제목 초안을 하나 생성(눌러서 다른 후보). 운영자 초안 — CVM이 주는 값이 아니다(코너 타이틀=코너 구성). 2026-11-10 사용자 요청. */}
+                  <div className="flex items-center gap-1">
+                    <input value={cornerTitleVal} onChange={(e) => { setCornerTitleVal(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'CornerTitle' }); }} placeholder="코너 제목 입력 (비어 있으면 AI 추천)" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    <button type="button" onClick={genAiTitle} title="코너 유형에 맞는 영역 제목을 하나 생성해요 (초안 · 눌러서 다른 후보)"
+                      className="flex h-[32px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]">
+                      <Sparkles className="h-3 w-3" /> AI 추천
+                    </button>
+                  </div>
                 </label>
               )}
               {hasButtonText && (
@@ -1090,12 +1125,10 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                         </button>
                       )}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <div className="flex h-[28px] min-w-0 flex-1 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="이동 링크(랜딩)">
-                        <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
-                        <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder={isBanner ? '랜딩 링크 (불러오기 시 자동)' : '이동 링크'} className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
-                      </div>
-                      <LinkTypeRadio o={o} />
+                    {/* 불러오기(카탈로그/원장) 행은 링크를 소스가 소유 → 내부/외부 라디오 없음(2026-11-10 사용자 확인). 배너=캠페인, 상품/혜택=원장이 링크·과금 성격을 들고 온다. */}
+                    <div className="flex h-[28px] min-w-0 flex-1 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="이동 링크(랜딩)">
+                      <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+                      <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder={isBanner ? '랜딩 링크 (불러오기 시 자동)' : '이동 링크'} className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                     </div>
                   </div>
                   {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex h-[30px] shrink-0 self-center items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
@@ -1126,7 +1159,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="이동 링크"
                     className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                 </div>
-                <LinkTypeRadio o={o} />
+                {/* 직접 입력 링크만 내부/외부 선택. 불러오기 모드는 메뉴 관리가 링크를 소유 → 라디오 숨김(2026-11-10 사용자 확인). */}
+                {!loaded && <LinkTypeRadio o={o} />}
                 {/* 불러오기 모드일 때만 우측에 '불러오기' 버튼 → 메뉴 관리 모달 */}
                 {loaded && <button type="button" onClick={() => setLoadForId(o.id)} title="메뉴 관리에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 py-1.5 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3 w-3" /> 불러오기</button>}
                 <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
