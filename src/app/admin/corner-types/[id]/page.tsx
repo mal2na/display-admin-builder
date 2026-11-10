@@ -62,10 +62,20 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
 
   // 상세 '상세 정보' — 이 껍데기(형제 유형 전부)로 '실제 만든 코너' + 그 코너가 올라간 전시화면(클릭 시 빌더).
   //  배치된(화면에 올라간) 코너만 — 미배치 코너는 제외(전시화면 맵핑이 목적). 2026-10-06 사용자 요청(빠짐없이).
-  const usageByCorner = shellUsageCorners
-    .filter((c) => c.templateCorners.length > 0)
+  //  적용 화면 썸네일 = 실제 적용 이미지(홈 스크린샷 크롭). 코너와 같은 이름의 케이스 유형 sampleImageUrl에서 가져오고,
+  //  없으면 미리보기로 폴백(2026-11-10 사용자 요청: 예시 말고 실제 적용 이미지).
+  const placedShell = shellUsageCorners.filter((c) => c.templateCorners.length > 0);
+  const shotTypes = placedShell.length
+    ? await prisma.cornerType.findMany({ where: { name: { in: placedShell.map((c) => c.name) }, sampleImageUrl: { not: null } }, select: { name: true, baseCategory: true, sampleImageUrl: true } })
+    : [];
+  const shotFor = (c: { name: string; cornerType: string }) => {
+    const t = shotTypes.find((x) => x.name === c.name && x.baseCategory === c.cornerType) ?? shotTypes.find((x) => x.name === c.name);
+    return t?.sampleImageUrl?.split('\n')[0]?.trim() || null;
+  };
+  const usageByCorner = placedShell
     .map((c) => ({
       cornerName: c.name,
+      realImageUrl: shotFor(c),
       // 코너 유형 = 껍데기 → 상세 미리보기의 메뉴 라벨은 실제값 대신 '메뉴N'(2026-10-28 사용자 요청).
       preview: { ...cornerToPreviewCorner(c), shell: true },
       screens: c.templateCorners.map((tc) => ({ templateId: tc.template.id, container: tc.template.container.name, template: tc.template.name })),
