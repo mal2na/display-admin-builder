@@ -107,7 +107,17 @@ function aiCornerTitle(cornerType: string, category: string | null | undefined, 
 
 // 이동 링크 행 — 링크는 원장/캠페인에 '연결된' 값이라 기본 읽기 전용, '수정'을 눌러야 편집(2026-11-10 사용자 요청: 문구는 열어두고 수정은 링크에만).
 //  모듈 스코프 컴포넌트로 둬 입력 중 리마운트(IME) 방지.
-function LinkEditRow({ link, editing, onToggle, onChange, source }: { link?: string | null; editing: boolean; onToggle: () => void; onChange: (v: string) => void; source: '캠페인' | '원장' }) {
+function LinkEditRow({ link, editing, onToggle, onChange, source, locked }: { link?: string | null; editing: boolean; onToggle: () => void; onChange: (v: string) => void; source: '캠페인' | '원장' | '콘텐츠'; locked?: boolean }) {
+  // locked = 수정 자체 불가(콘텐츠 안내형=iframe 연결). 읽기 전용 표시만, 수정 버튼 없음.
+  if (locked) {
+    return (
+      <div className="flex h-[28px] min-w-0 items-center gap-1 rounded-[6px] bg-[var(--th)] px-2 text-[12px] text-[var(--ink3)]" title="연결 링크 — 콘텐츠 연결(iframe)이라 수정 불가">
+        <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+        <span className="min-w-0 flex-1 truncate">{link || '연결 링크 (콘텐츠 연결)'}</span>
+        <span className="shrink-0 rounded-[4px] bg-white px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink4)]">콘텐츠 연결</span>
+      </div>
+    );
+  }
   if (editing) {
     return (
       <div className="flex h-[28px] min-w-0 items-center gap-1 rounded-[6px] border border-[var(--ac)] px-2" title="이동 링크(랜딩)">
@@ -534,6 +544,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const isBenefitType = corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형';
   // 배너형 = '배너 캠페인 관리'에서 가져오기 전용(직접 입력 없음). 가져오기 버튼으로 등록된 배너를 담는다(2026-11-05 사용자 요청).
   const isBanner = corner.cornerType === '배너형';
+  // 콘텐츠 안내형 = 아이프레임 연결 가능성이 커 링크 수정 자체가 불가(읽기 전용, 수정 버튼 없음). 2026-11-10 사용자 요청.
+  const isContentGuide = corner.cornerType === '콘텐츠 안내형';
   // 배너 단일형 = 배너 1장 → 순서 변경 없음(드래그 핸들 제거). 스와이프형만 여러 장 재정렬(2026-11-05 사용자 요청).
   const bannerSingle = isBanner && !/스와이프|swipe/i.test(detailStr);
   // '직접 추가'(운영자가 라벨·아이콘·링크를 직접 입력)는 업무 진입형 칩형(퀵메뉴)에만. 나머지는 전부 불러오기(로드)만(2026-11-05 사용자 확정).
@@ -1209,8 +1221,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                         </button>
                       )}
                     </div>
-                    {/* 이동 링크 — 원장 연결 → 기본 읽기 전용, '수정' 눌러야 편집(직접 추가 행은 바로 편집). */}
-                    <LinkEditRow link={o.link} editing={linkEdit} onToggle={() => toggleRowEdit(o.id)} onChange={(v) => setItemLink(o.id, v)} source="원장" />
+                    {/* 이동 링크 — 원장 연결 → 기본 읽기 전용, '수정' 눌러야 편집(직접 추가 행은 바로 편집). 콘텐츠 안내형은 iframe 연결이라 수정 자체 불가(locked). */}
+                    <LinkEditRow link={o.link} editing={linkEdit} onToggle={() => toggleRowEdit(o.id)} onChange={(v) => setItemLink(o.id, v)} source={isContentGuide ? '콘텐츠' : '원장'} locked={isContentGuide} />
                   </div>
                   {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex h-[30px] shrink-0 self-center items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
                   <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 self-center place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
