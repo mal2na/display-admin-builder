@@ -188,8 +188,8 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
     // 가이드는 저장된 조합(실데이터 포함)이 아니라 유형 기본 조합(generic)으로 — 상품명·가격·설명 '슬롯 라벨'만 보이게.
     //  배지는 어느 코너 유형에도 컬럼으로 없다(레거시 useBadge 무시) → 미리보기에서 제외(2026-11-05 사용자 요청). 상태안내형 배지는 별도(b.badge 비의존).
     composition: defaultComposition(row.componentType, row.typeDetail, { image: row.useImage, price: row.usePrice, badge: false, desc: row.useDesc }),
-    placeholder: false, // 실제 샘플 콘텐츠(실로고·실제 문구·실제 이미지)로 — '실제 화면'처럼 보이게(2026-11-10 사용자 요청: 필드코드/빈자리 금지)
-    emptyImages: false,
+    placeholder: true, // 코너 유형 관리 미리보기는 '껍데기'(필드코드·빈 이미지 슬롯)만 — 유형 정의이므로 구조만 보여준다(2026-11-10 사용자 요청: 실데이터 금지).
+    emptyImages: true,
   });
   // 코너 헤더(타이틀)가 없는 완결형·탭/칩·배너 유형은 '더보기(CTA)'도 없다(탭형 등).
   const noMore = noTitle;
