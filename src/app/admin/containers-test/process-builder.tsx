@@ -65,6 +65,26 @@ const APPEND_LOAD = '__append__'; // '메뉴 추가' = 카탈로그에서 골라
 // 라벨 → 딥링크 슬러그(링크를 비워두지 않고 세트로 채우기용, 2026-11-05 사용자 요청). 한글/영숫자 유지, 나머지는 '-'.
 const slugLink = (s: string) => (s || '').trim().toLowerCase().replace(/[^\w가-힣]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'item';
 
+// AI 추천(데모) — 혜택 문구가 비어 있거나 매핑 안 된 경우, 브랜드·카테고리에 맞는 '원본' 혜택 문구를 하나씩 생성(2026-11-10 사용자 요청).
+//  ※ 실제 브랜드 슬로건/카피 복제가 아니라, 카테고리 특성에 맞춘 일반 혜택 문구 템플릿. 운영자가 보고 다듬는 '초안' 용도.
+const AI_BENEFIT_POOL: Record<string, string[]> = {
+  '카페': ['시즌 음료 2,000원 할인', '아메리카노 사이즈업 무료', '음료 2잔 주문 시 1잔 무료', '1,000원당 100원 적립', '디저트 세트 15% 할인'],
+  '아이스크림': ['싱글레귤러 1,000원 할인', '파인트 20% 할인', '2개 구매 시 1개 무료', '멤버십 결제 10% 적립'],
+  '베이커리': ['오늘의 빵 20% 할인', '1만원 이상 1,000원 즉시 할인', '시그니처 메뉴 1+1', '케이크 예약 10% 할인', '멤버십 적립 2배'],
+  '외식': ['전 메뉴 10% 즉시 할인', '2인 세트 15% 할인', '디저트 메뉴 무료 제공', '식사 금액 5% 적립', '평일 런치 20% 할인'],
+  '피자·치킨': ['라지 피자 30% 할인', '사이드 메뉴 무료 추가', '1+1 교환 쿠폰', '배달비 무료', '세트 주문 시 음료 증정'],
+  '쇼핑': ['첫 구매 10% 쿠폰', '3만원 이상 3,000원 할인', '멤버십 적립 2배', '무료 배송 쿠폰', '시즌 특가 최대 50%'],
+  '문화생활': ['영화 예매 2,000원 할인', '전시 관람권 30% 할인', '2인 예매 시 팝콘 무료', '주말 공연 10% 할인', '멤버십 우선 예매'],
+  '교통': ['대여 요금 15% 할인', '첫 이용 5,000원 할인', '주중 최대 20% 할인', '포인트 2배 적립', '편도 이용권 10% 할인'],
+  '편의점': ['1,000원당 100원 할인', '행사 상품 1+1', '도시락 10% 할인', '멤버십 포인트 적립', '음료 2+1 쿠폰'],
+};
+const AI_BENEFIT_DEFAULT = ['멤버십 전용 10% 할인', '첫 이용 2,000원 할인', '1+1 혜택 쿠폰', '결제 금액 5% 적립', '시즌 한정 특가', '2인 이용 시 추가 혜택'];
+function aiBenefitCopy(category: string | null | undefined, seed: number): string {
+  const key = Object.keys(AI_BENEFIT_POOL).find((k) => (category ?? '').includes(k));
+  const pool = (key && AI_BENEFIT_POOL[key]) || AI_BENEFIT_DEFAULT;
+  return pool[((seed % pool.length) + pool.length) % pool.length];
+}
+
 // 배너·칩·CTA 옵션 토글 → 선택 코너 미리보기에 반영(코너 유형 미리보기와 동일, 2026-11-05 사용자 요청).
 // CTA On이면 버튼 라벨은 입력값, 비어 있으면 무조건 'CTA'를 기본으로 박는다(2026-11-05 사용자 요청).
 function applyOptsToPreview(preview: PCorner['preview'], opts: Record<string, boolean>, ctaLabel?: string): PCorner['preview'] {
@@ -467,6 +487,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   // 불러오기 전용(직접입력 없음) 유형 — 콘텐츠 안내형(영화) · 혜택·오퍼형 세로형(제휴 혜택). 이미지+텍스트+보조값을 한 번에 불러온다(2026-11-05 사용자 요청).
   const detailStr = corner.layoutDetail ?? corner.layout ?? '';
   const isBenefitList = (corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형') && /세로/.test(detailStr);
+  const isBenefitType = corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형';
   // 배너형 = '배너 캠페인 관리'에서 가져오기 전용(직접 입력 없음). 가져오기 버튼으로 등록된 배너를 담는다(2026-11-05 사용자 요청).
   const isBanner = corner.cornerType === '배너형';
   // 배너 단일형 = 배너 1장 → 순서 변경 없음(드래그 핸들 제거). 스와이프형만 여러 장 재정렬(2026-11-05 사용자 요청).
@@ -574,6 +595,14 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   };
   const setItemLabel = (id: string, label: string) => editItems(id, { label });
   const setItemLink = (id: string, link: string) => editItems(id, { link });
+  // AI 추천(데모) — 혜택 문구를 브랜드/카테고리에 맞게 하나씩 생성. 클릭할 때마다 다른 후보로 순환(2026-11-10 사용자 요청).
+  const [aiSeed, setAiSeed] = React.useState<Record<string, number>>({});
+  const genAiCopy = (o: FillItem) => {
+    const s = aiSeed[o.id] ?? Math.floor(Math.random() * 6);
+    setAiSeed((p) => ({ ...p, [o.id]: s + 1 }));
+    const category = chipMode ? chips[chipIdx] : undefined;
+    setItemLabel(o.id, aiBenefitCopy(category, s));
+  };
   const setItemMode = (id: string, mode: FillItem['mode']) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, mode } : x)));
   const setItemIcon = (id: string, icon: string) => editItems(id, { icon });
   const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
@@ -1035,7 +1064,16 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   {/* 제목·링크 직접 편집. 배너는 사이즈(스몰배너 672×324 등)도 표기 — 배너 캠페인에서 함께 끌어온다(2026-11-05 사용자 요청). */}
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     {isBanner && o.sub && <span className="w-fit rounded-[4px] bg-[var(--th)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink3)]">{o.sub}</span>}
-                    <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder={isBanner ? '배너 타이틀' : `${itemWord} 제목`} className="h-[28px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    {/* 혜택 유형 = 제목 입력 옆 'AI 추천' — 브랜드·카테고리에 맞는 혜택 문구 초안을 하나씩 생성(2026-11-10 사용자 요청). 매핑 안 된 혜택 문구를 빠르게 채우고 다듬는 용도. */}
+                    <div className="flex items-center gap-1">
+                      <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder={isBanner ? '배너 타이틀' : isBenefitType ? '혜택 문구 (비어 있으면 AI 추천)' : `${itemWord} 제목`} className="h-[28px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                      {isBenefitType && (
+                        <button type="button" onClick={() => genAiCopy(o)} title={`${o.sub || o.label || '이 브랜드'}에 맞는 혜택 문구를 하나 생성해요 (초안 · 눌러서 다른 후보)`}
+                          className="flex h-[28px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]">
+                          <Sparkles className="h-3 w-3" /> AI 추천
+                        </button>
+                      )}
+                    </div>
                     <div className="flex h-[28px] items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="이동 링크(랜딩)">
                       <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
                       <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder={isBanner ? '랜딩 링크 (불러오기 시 자동)' : '이동 링크'} className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
