@@ -1367,16 +1367,51 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   });
   // 상품형 — 상품 카테고리별 가격 노출 규격(코너 정의에서 셋업, 빌더는 선택). 2026-11-10 회의.
   const [priceSpec, setPriceSpec] = useState<ProductPriceSpec>(() => parsePriceSpec(row.priceSpec));
-  const togglePriceCategory = (cat: ProductPriceCategory) => setPriceSpec((p) => {
-    const n = { ...p };
-    if (n[cat]) delete n[cat]; else n[cat] = [...(PRODUCT_PRICE_DEFAULTS[cat] ?? [])];
-    return n;
-  });
+  // 상품 카테고리는 코너당 하나(라디오) — 같은 상품형이어도 담는 상품 카테고리는 단일(2026-11-10 사용자 요청). 선택 시 그 카테고리만, 다시 누르면 해제.
+  const setPriceCategory = (cat: ProductPriceCategory) => setPriceSpec((p) => (p[cat] ? {} : { [cat]: [...(PRODUCT_PRICE_DEFAULTS[cat] ?? [])] }));
   const togglePriceField = (cat: ProductPriceCategory, f: ProductPriceField) => setPriceSpec((p) => {
     const cur = p[cat] ?? [];
     const next = cur.includes(f) ? cur.filter((x) => x !== f) : [...cur, f];
     return { ...p, [cat]: next };
   });
+  const priceCatSel = PRODUCT_PRICE_CATEGORIES.find((c) => priceSpec[c]) ?? null; // 선택된 단일 카테고리
+  // '가격' 속성 밑에 붙는 패널 — 상품 카테고리(라디오·단일) + 그 카테고리가 담을 가격 필드(2026-11-10 사용자 요청: 가격 밑으로, 라디오).
+  const pricePanel = (
+    <div className="mt-2 overflow-hidden rounded-lg border border-indigo-200">
+      <input type="hidden" name="priceSpec" value={serializePriceSpec(priceSpec)} />
+      <div className="border-b border-indigo-100 bg-indigo-50/60 px-3 py-2 text-[11px] font-semibold text-[#2a11a4]">상품 카테고리 · 가격 노출 규격 <span className="font-normal text-indigo-400">· 코너당 1개 (빌더는 이 중 노출할 가격만 선택)</span></div>
+      <div className="flex items-start gap-1.5 border-b bg-amber-50 px-3 py-1.5 text-[11px] leading-relaxed text-amber-700">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>들어가는 상품(요금제·단말기 등)에 따라 가격 노출이 달라져요. 카테고리 1개를 고르고 <b>담을 가격 필드</b>를 정하면 빌더에선 그중 노출할 것만 고릅니다. 필드는 상품(EPC) 정책 확정 전 대표안(TBD).</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5 px-3 py-2.5">
+        {PRODUCT_PRICE_CATEGORIES.map((cat) => {
+          const on = priceCatSel === cat;
+          return (
+            <label key={cat} className={cn('inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium transition', on ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-500 hover:border-indigo-300')}>
+              <input type="radio" name="priceCat" checked={on} onChange={() => setPriceCategory(cat)} className="h-3.5 w-3.5 accent-[#3617ce]" />
+              {cat}
+            </label>
+          );
+        })}
+      </div>
+      {priceCatSel && (
+        <div className="border-t border-indigo-100 px-3 py-2.5">
+          <p className="mb-1.5 text-[11px] font-semibold text-slate-500"><b className="text-[#3617ce]">{priceCatSel}</b> · 담을 가격 필드 {(priceSpec[priceCatSel] ?? []).length}개</p>
+          <div className="flex flex-wrap gap-1.5">
+            {PRODUCT_PRICE_FIELDS.map((f) => {
+              const fon = (priceSpec[priceCatSel] ?? []).includes(f);
+              return (
+                <button key={f} type="button" onClick={() => togglePriceField(priceCatSel, f)}
+                  className={cn('rounded-full border px-2.5 py-1 text-[12px] font-medium transition', fon ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-400 hover:border-indigo-300')}>
+                  {f}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
   // 세부 항목 토글 — 종속 규칙(타이틀↔서브, 가격↔배지) 공용. 플랫/그룹 UI가 함께 씀.
   const toggleFeature = (key: keyof typeof features, on: boolean) => setFeatures((prev) => {
     const next = { ...prev, [key]: on };
@@ -2051,42 +2086,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           layout={detail}
           basicInfo={<div className="border-t border-[#dce0e5]">{basicPickers}{metaFields}</div>}
           registerResult={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}
+          afterPrice={pricePanel}
         />
-        {/* 상품 카테고리 · 가격 노출 규격 — 같은 상품형이라도 들어가는 상품(요금제·단말기 등)에 따라 가격 노출이 다르다(2026-11-10 회의). 코너 정의에서 카테고리별로 담을 가격 필드를 정하고, 빌더는 그중 선택. */}
-        <input type="hidden" name="priceSpec" value={serializePriceSpec(priceSpec)} />
-        <section className="mt-3 overflow-hidden rounded-xl border border-indigo-200">
-          <div className="border-b border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-semibold text-[#2a11a4]">상품 카테고리 · 가격 노출 규격 <span className="font-normal text-indigo-400">· 이 코너가 담을 상품/가격 (빌더는 이 중 선택)</span></div>
-          <div className="flex items-start gap-1.5 border-b bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>같은 상품형이라도 들어가는 상품에 따라 가격 노출 방식이 달라져요. 카테고리별로 <b>담을 가격 필드</b>를 정해두면 빌더에선 그중 노출할 것만 고릅니다. 필드는 상품(EPC) 가격 정책 확정 전 대표안(TBD).</span>
-          </div>
-          <div className="divide-y">
-            {PRODUCT_PRICE_CATEGORIES.map((cat) => {
-              const on = !!priceSpec[cat];
-              return (
-                <div key={cat} className="px-3 py-2.5">
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <input type="checkbox" checked={on} onChange={() => togglePriceCategory(cat)} className="h-4 w-4 accent-[#3617ce]" />
-                    <span className="text-[13px] font-semibold text-slate-700">{cat}</span>
-                    {on ? <span className="text-[11px] text-slate-400">· 담을 가격 필드 {(priceSpec[cat] ?? []).length}개</span> : <span className="text-[11px] text-slate-300">· 이 코너에 매핑 안 함</span>}
-                  </label>
-                  {on && (
-                    <div className="mt-2 flex flex-wrap gap-1.5 pl-6">
-                      {PRODUCT_PRICE_FIELDS.map((f) => {
-                        const fon = (priceSpec[cat] ?? []).includes(f);
-                        return (
-                          <button key={f} type="button" onClick={() => togglePriceField(cat, f)}
-                            className={cn('rounded-full border px-2.5 py-1 text-[12px] font-medium transition', fon ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-400 hover:border-indigo-300')}>
-                            {f}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
       </div>
       )}
 

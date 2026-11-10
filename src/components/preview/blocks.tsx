@@ -111,8 +111,8 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   //  단, 업무 진입형 퀵메뉴(ChipHome)는 접지 않고 2행 8개를 그대로 보여준다('Chip' 라벨, 2026-11-09 사용자 요청).
   const CHIP_PH = /^(chip\d*|전체|카테고리|tab\d*|category\d*)$/i;
   const allPh = variant !== 'home' && component.atoms.length > 0 && component.atoms.every((a) => CHIP_PH.test((a.content ?? a.name ?? '').trim()));
-  //  → 상품형 미리보기와 톤 통일: placeholder면 'Chip' 3개(첫 칩 선택)로 그린다(2026-11-10 사용자 요청).
-  const atoms = allPh ? [0, 1, 2].map((k) => ({ ...component.atoms[0], id: `${component.atoms[0].id}-ph${k}`, content: 'Chip' })) : component.atoms;
+  //  → 카테고리형 상단 탭 placeholder는 '카테고리' 3개(첫 칩 선택)로 그린다(2026-11-10 사용자 요청: Chip 아니라 카테고리로 표기). 업무 진입형 퀵메뉴(home)는 위에서 제외되어 'Chip' 유지.
+  const atoms = allPh ? [0, 1, 2].map((k) => ({ ...component.atoms[0], id: `${component.atoms[0].id}-ph${k}`, content: '카테고리' })) : component.atoms;
 
   // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
   if (variant === 'home') {
