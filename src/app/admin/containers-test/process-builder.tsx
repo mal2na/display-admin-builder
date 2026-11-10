@@ -1134,26 +1134,29 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                     { id: 'i', name: 'img', atomType: 'IMAGE', content: null, imageUrl: o.icon ?? null, altText: o.label ?? null, linkUrl: null },
                   ],
                 };
-                // ③ 화면 자체가 편집 상태 → 문구(제목)는 항상 편집 가능. '수정'은 원장/캠페인에 연결된 '링크'에만(실수 방지). 2026-11-10 사용자 요청.
-                const linkEdit = !!rowEdit[o.id];
+                // 배너는 이미지·문구·랜딩이 전부 배너 캠페인 소유 → 여기선 수정 불가(문구·링크 모두 읽기 전용). 교체는 '불러오기'로만(2026-11-10 사용자 요청).
                 return (
                 <div className="space-y-2 rounded-[9px] border border-[var(--line2)] bg-white p-2">
                   <div className="flex items-start gap-2">
                     {!bannerSingle && <span ref={h.setRef} {...h.props} className="mt-1 shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>}
-                    {/* 띠 배너 미리보기 — 클릭하면 배너 캠페인에서 소재 교체 */}
-                    <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="배너 캠페인에서 불러오기" className="min-w-0 flex-1 text-left">
+                    {/* 띠 배너 미리보기 — 작은 썸네일 크기로 고정(미리보기보다 작게). 클릭하면 배너 캠페인에서 소재 교체. 2026-11-10 사용자 요청. */}
+                    <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="배너 캠페인에서 불러오기" className="w-[200px] max-w-full shrink-0 text-left">
                       <BannerCard component={bannerComp} sizeDetail={corner.layoutDetail} />
                     </button>
-                    <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                    <button type="button" onClick={() => tryRemove(o)} className="ml-auto grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
                   </div>
-                  {/* 사이즈 배지 + 배너 타이틀(항상 편집 가능) */}
+                  {/* 사이즈 배지 + 배너 타이틀(읽기 전용 — 배너 캠페인 관리에서만 수정) */}
                   <div className="flex items-center gap-1">
                     {o.sub && <span className="shrink-0 rounded-[4px] bg-[var(--th)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink3)]">{o.sub}</span>}
-                    <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder="배너 타이틀" className="h-[28px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    <span className="min-w-0 flex-1 truncate px-1 text-[13px] font-medium text-[var(--ink)]">{o.label || <span className="font-normal text-[var(--ink4)]">배너 타이틀</span>}</span>
                     {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="배너 캠페인에서 불러오기" className="flex h-[28px] shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
                   </div>
-                  {/* 랜딩 링크 — 배너 캠페인에 연결됨 → 기본 읽기 전용, '수정' 눌러야 편집 */}
-                  <LinkEditRow link={o.link} editing={linkEdit} onToggle={() => toggleRowEdit(o.id)} onChange={(v) => setItemLink(o.id, v)} source="캠페인" />
+                  {/* 랜딩 링크 — 배너 캠페인 소유(읽기 전용). 수정은 배너 캠페인 관리에서만. */}
+                  <div className="flex h-[26px] min-w-0 items-center gap-1 rounded-[6px] bg-[var(--th)] px-2 text-[12px] text-[var(--ink3)]" title="랜딩 링크 — 배너 캠페인 관리에서만 수정">
+                    <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+                    <span className="min-w-0 flex-1 truncate">{o.link || '랜딩 링크 (배너 캠페인에서 설정)'}</span>
+                    <span className="shrink-0 rounded-[4px] bg-white px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink4)]">캠페인 전용</span>
+                  </div>
                 </div>
                 );
               }
