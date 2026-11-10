@@ -395,6 +395,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const options = cornerOptions(corner.preview);
   const isCvmSrc = src.startsWith('CVM');
   const isData = src === 'CVM 데이터 연동';
+  // CVM 콘텐츠 연동(③가 '구좌만 넘김')에서 폴백을 '운영자 편성으로 대체'로 고르면, CVM이 비었을 때 대신 노출할 운영자 편성 항목을 등록해야 한다 → ⑤ 채우기 UI를 띄운다(2026-11-10 사용자 요청).
+  const fillForFallback = isCvmSrc && !isData && fb === '운영자 편성으로 대체' && !isProfile && !isStatus && !isBarcode;
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
@@ -679,9 +681,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
     //  CVM 데이터 연동의 '추천 보충 박스'는 미리보기 렌더 게이트에서 항상 표시되므로, 여기서 재구성하지 않아도 박스는 나온다.
     if (!dirty[chipKey]) return;
     if (isData) pushDataPreview(items, cvmMin, cvmMax);
-    else if (src === '운영자 편성') pushDataPreview(items, 0, 0);
+    else if (src === '운영자 편성' || fillForFallback) pushDataPreview(items, 0, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isData, src, items, cvmMin, cvmMax, dirty, chipKey, chipIdx]);
+  }, [isData, src, items, cvmMin, cvmMax, dirty, chipKey, chipIdx, fillForFallback]);
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
@@ -811,8 +813,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
       </Sec>
 
       {/* ③ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
-      {(src === '운영자 편성' || (isData && !isProfile)) ? (
-        <Sec n={3} title={isData ? '운영자 고정 — 먼저 채울 항목 (나머지는 CVM)' : '채우기 — 항목 등록'}>
+      {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
+        <Sec n={3} title={fillForFallback ? '운영자 편성 대체 — CVM이 비면 노출할 항목' : isData ? '운영자 고정 — 먼저 채울 항목 (나머지는 CVM)' : '채우기 — 항목 등록'}>
+          {fillForFallback && (
+            <div className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#fff8ef] px-3 py-2 text-[12px] leading-relaxed text-[#b67a12]">
+              <span className="mt-0.5">⚠</span><span>이 코너는 <b>CVM 콘텐츠 연동</b>이라 평소엔 CVM 완성본이 노출됩니다. <b>CVM 응답이 비면</b> 아래에 등록한 운영자 편성 항목이 대신 노출돼요(폴백 미리보기에서 확인).</span>
+            </div>
+          )}
           {/* 칩 불러오기 모달 — 탭(코너 속성)에서 눌러도 뜨도록 탭 바깥(최상단)에 렌더(2026-11-05 사용자 요청). */}
           {chipLoadOpen && (
             <ChipLoadModal catalog={catalog} current={chips} onClose={() => setChipLoadOpen(false)}
@@ -1204,7 +1211,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
       )}
 
       {/* ⑥ 출처 — 이 값이 어디서 오나 */}
-      <Sec n={6} title="출처 — 이 값이 어디서 오나" help>
+      <Sec n={5} title="출처 — 이 값이 어디서 오나" help>
         <div className="overflow-hidden rounded-[8px] border border-[var(--line2)] text-[12px]">
           {[
             ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
