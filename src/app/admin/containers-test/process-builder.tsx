@@ -59,7 +59,8 @@ const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '
 // 코너 '채우기 → 불러오기' 카탈로그 — 유형별(상품형=상품, 혜택·오퍼형=혜택). ProcessBuilder가 Provider로 내려준다(2026-10-28 사용자 요청).
 const ProductCatalogCtx = React.createContext<Record<string, ProductOption[]>>({});
 // ③ 채우기 아이템(칩형 메뉴 등) — 아이콘·텍스트·링크를 '불러오기(메뉴에서 한 번에)' 또는 '직접입력'으로 채운다(2026-11-05 사용자 요청).
-type FillItem = { id: string; label: string; icon?: string | null; link?: string; sub?: string; mode: 'direct' | 'load' };
+// linkType — 이동 링크를 '내부(앱 내 노출)'로 띄울지 '외부(아웃링크, 외부 브라우저)'로 띄울지. 과금 팝업 호출 기준(2026-11-10 회의: 내부=비과금·외부=과금, 미등록 링크는 과금). 기본 외부.
+type FillItem = { id: string; label: string; icon?: string | null; link?: string; linkType?: 'internal' | 'external'; sub?: string; mode: 'direct' | 'load' };
 const EMPTY_ITEMS: FillItem[] = [];
 const APPEND_LOAD = '__append__'; // '메뉴 추가' = 카탈로그에서 골라 현재 메뉴에 덧붙이기(2026-10-28 사용자 요청)
 // 라벨 → 딥링크 슬러그(링크를 비워두지 않고 세트로 채우기용, 2026-11-05 사용자 요청). 한글/영숫자 유지, 나머지는 '-'.
@@ -595,6 +596,21 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   };
   const setItemLabel = (id: string, label: string) => editItems(id, { label });
   const setItemLink = (id: string, link: string) => editItems(id, { link });
+  const setItemLinkType = (id: string, linkType: 'internal' | 'external') => editItems(id, { linkType });
+  // 이동 링크 내부/외부 세그먼트 라디오 — 2택이라 토글보다 라디오가 명확(2026-11-10 사용자 요청). 기본값 외부(아웃링크).
+  const LinkTypeRadio = ({ o }: { o: FillItem }) => {
+    const v = o.linkType ?? 'external';
+    return (
+      <div className="flex shrink-0 overflow-hidden rounded-[6px] border border-[var(--line2)] text-[11px]" title="내부=앱 안에서 노출(비과금) · 외부=아웃링크로 외부 브라우저(과금)">
+        {(['internal', 'external'] as const).map((t) => (
+          <button key={t} type="button" onClick={() => setItemLinkType(o.id, t)}
+            className={cn('px-2 py-1 font-medium transition', v === t ? (t === 'external' ? 'bg-[#fff1e6] text-[#b67a12]' : 'bg-[var(--ac2)] text-[var(--ac)]') : 'bg-white text-[var(--ink4)] hover:text-[var(--ink2)]')}>
+            {t === 'internal' ? '내부' : '외부'}
+          </button>
+        ))}
+      </div>
+    );
+  };
   // AI 추천(데모) — 혜택 문구를 브랜드/카테고리에 맞게 하나씩 생성. 클릭할 때마다 다른 후보로 순환(2026-11-10 사용자 요청).
   const [aiSeed, setAiSeed] = React.useState<Record<string, number>>({});
   const genAiCopy = (o: FillItem) => {
@@ -1074,9 +1090,12 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                         </button>
                       )}
                     </div>
-                    <div className="flex h-[28px] items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="이동 링크(랜딩)">
-                      <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
-                      <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder={isBanner ? '랜딩 링크 (불러오기 시 자동)' : '이동 링크'} className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                    <div className="flex items-center gap-1">
+                      <div className="flex h-[28px] min-w-0 flex-1 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="이동 링크(랜딩)">
+                        <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+                        <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder={isBanner ? '랜딩 링크 (불러오기 시 자동)' : '이동 링크'} className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                      </div>
+                      <LinkTypeRadio o={o} />
                     </div>
                   </div>
                   {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex h-[30px] shrink-0 self-center items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
@@ -1107,6 +1126,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="이동 링크"
                     className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                 </div>
+                <LinkTypeRadio o={o} />
                 {/* 불러오기 모드일 때만 우측에 '불러오기' 버튼 → 메뉴 관리 모달 */}
                 {loaded && <button type="button" onClick={() => setLoadForId(o.id)} title="메뉴 관리에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 py-1.5 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3 w-3" /> 불러오기</button>}
                 <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
