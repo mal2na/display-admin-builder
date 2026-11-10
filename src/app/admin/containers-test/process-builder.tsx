@@ -929,7 +929,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               );
             })}
           </div>
-          {MiNoChul}
+          {/* 미노출 조건은 '미노출'을 고른 경우에만 — 운영자 편성 대체면 코너가 숨지 않으므로 불필요(2026-11-10 사용자 요청). */}
+          {fb === '미노출' && MiNoChul}
         </Sec>
       )}
 
