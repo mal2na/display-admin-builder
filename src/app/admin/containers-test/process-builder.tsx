@@ -1104,13 +1104,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               // 이미지 기반 유형(영화·배너·혜택·상품) — 썸네일(불러온 이미지, 클릭 시 교체) + 제목·링크 직접 편집 + 행별 불러오기.
               if (!isChip) {
                 return (
-                <div className={cn('flex gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5', isBanner ? 'items-stretch' : 'items-center')}>
+                <div className="flex items-center gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
                   {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김 */}
-                  {!bannerSingle && <span ref={h.setRef} {...h.props} className={cn('shrink-0 cursor-grab touch-none text-[var(--ink4)]', isBanner && 'mt-1')}><GripVertical className="h-4 w-4" /></span>}
-                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 행 높이를 꽉 채우고 넓게(배너 비율) + 전체가 보이게 contain(크롭 금지, 얼라인 맞춤). 그 외 정사각 */}
+                  {!bannerSingle && <span ref={h.setRef} {...h.props} className="shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>}
+                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 실제 소재 비율(672×324 ≈ 2:1)의 가로형 박스로(2026-11-10 사용자 요청: 가로로 길게). 그 외 정사각 */}
                   <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="이미지 불러오기"
-                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'w-[132px] self-stretch bg-white' : 'h-10 w-10 bg-[var(--th)]')}>
-                    <ItemIcon src={o.icon} brand={isBanner ? null : (o.sub || o.label)} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
+                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'h-[56px] w-[116px] bg-white' : 'h-10 w-10 bg-[var(--th)]')}>
+                    <ItemIcon src={o.icon} brand={isBanner ? null : (o.sub || o.label)} iconClass="h-5 w-5" imgClass={isBanner ? 'h-full w-full object-cover' : 'h-full w-full object-contain'} />
                   </button>
                   {/* 제목·링크 직접 편집. 배너는 사이즈(스몰배너 672×324 등)도 표기 — 배너 캠페인에서 함께 끌어온다(2026-11-05 사용자 요청). */}
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -1126,10 +1126,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                       )}
                     </div>
                     {/* 불러오기(카탈로그/원장) 행은 링크를 소스가 소유 → 내부/외부 라디오 없음(2026-11-10 사용자 확인). 배너=캠페인, 상품/혜택=원장이 링크·과금 성격을 들고 온다. */}
-                    <div className="flex h-[28px] min-w-0 flex-1 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="이동 링크(랜딩)">
-                      <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
-                      <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder={isBanner ? '랜딩 링크 (불러오기 시 자동)' : '이동 링크'} className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
-                    </div>
+                    {isBanner ? (
+                      /* 배너 랜딩 링크는 배너 캠페인 관리에서 이미 설정된 값 → 여기선 읽기 전용(편집 불가). 2026-11-10 사용자 요청. */
+                      <div className="flex h-[26px] min-w-0 items-center gap-1 rounded-[6px] bg-[var(--th)] px-2 text-[12px] text-[var(--ink3)]" title="랜딩 링크 — 배너 캠페인 관리에서 설정됨(편집 불가)">
+                        <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+                        <span className="min-w-0 flex-1 truncate">{o.link || '랜딩 링크 (배너 캠페인에서 설정)'}</span>
+                        <span className="shrink-0 rounded-[4px] bg-white px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink4)]">캠페인 설정</span>
+                      </div>
+                    ) : (
+                      <div className="flex h-[28px] min-w-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="이동 링크(랜딩)">
+                        <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+                        <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="이동 링크" className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                      </div>
+                    )}
                   </div>
                   {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex h-[30px] shrink-0 self-center items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
                   <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 self-center place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
