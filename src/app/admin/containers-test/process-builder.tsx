@@ -14,7 +14,7 @@ import { addCornersFromTypes, reorderTestCorners, setTestCornerZone, removeCorne
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
+import { DeviceFrame, CornerBlock, BannerCard, type PreviewComponent } from '@/components/preview/blocks';
 import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
@@ -59,11 +59,82 @@ const EXPOSE_OPTS = ['항상 노출', '조건 노출', '로그인 시 노출', '
 // 코너 '채우기 → 불러오기' 카탈로그 — 유형별(상품형=상품, 혜택·오퍼형=혜택). ProcessBuilder가 Provider로 내려준다(2026-10-28 사용자 요청).
 const ProductCatalogCtx = React.createContext<Record<string, ProductOption[]>>({});
 // ③ 채우기 아이템(칩형 메뉴 등) — 아이콘·텍스트·링크를 '불러오기(메뉴에서 한 번에)' 또는 '직접입력'으로 채운다(2026-11-05 사용자 요청).
-type FillItem = { id: string; label: string; icon?: string | null; link?: string; sub?: string; mode: 'direct' | 'load' };
+// linkType — 이동 링크를 '내부(앱 내 노출)'로 띄울지 '외부(아웃링크, 외부 브라우저)'로 띄울지. 과금 팝업 호출 기준(2026-11-10 회의: 내부=비과금·외부=과금, 미등록 링크는 과금). 기본 외부.
+type FillItem = { id: string; label: string; icon?: string | null; link?: string; linkType?: 'internal' | 'external'; sub?: string; mode: 'direct' | 'load' };
 const EMPTY_ITEMS: FillItem[] = [];
 const APPEND_LOAD = '__append__'; // '메뉴 추가' = 카탈로그에서 골라 현재 메뉴에 덧붙이기(2026-10-28 사용자 요청)
 // 라벨 → 딥링크 슬러그(링크를 비워두지 않고 세트로 채우기용, 2026-11-05 사용자 요청). 한글/영숫자 유지, 나머지는 '-'.
 const slugLink = (s: string) => (s || '').trim().toLowerCase().replace(/[^\w가-힣]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'item';
+
+// AI 추천(데모) — 혜택 문구가 비어 있거나 매핑 안 된 경우, 브랜드·카테고리에 맞는 '원본' 혜택 문구를 하나씩 생성(2026-11-10 사용자 요청).
+//  ※ 실제 브랜드 슬로건/카피 복제가 아니라, 카테고리 특성에 맞춘 일반 혜택 문구 템플릿. 운영자가 보고 다듬는 '초안' 용도.
+const AI_BENEFIT_POOL: Record<string, string[]> = {
+  '카페': ['시즌 음료 2,000원 할인', '아메리카노 사이즈업 무료', '음료 2잔 주문 시 1잔 무료', '1,000원당 100원 적립', '디저트 세트 15% 할인'],
+  '아이스크림': ['싱글레귤러 1,000원 할인', '파인트 20% 할인', '2개 구매 시 1개 무료', '멤버십 결제 10% 적립'],
+  '베이커리': ['오늘의 빵 20% 할인', '1만원 이상 1,000원 즉시 할인', '시그니처 메뉴 1+1', '케이크 예약 10% 할인', '멤버십 적립 2배'],
+  '외식': ['전 메뉴 10% 즉시 할인', '2인 세트 15% 할인', '디저트 메뉴 무료 제공', '식사 금액 5% 적립', '평일 런치 20% 할인'],
+  '피자·치킨': ['라지 피자 30% 할인', '사이드 메뉴 무료 추가', '1+1 교환 쿠폰', '배달비 무료', '세트 주문 시 음료 증정'],
+  '쇼핑': ['첫 구매 10% 쿠폰', '3만원 이상 3,000원 할인', '멤버십 적립 2배', '무료 배송 쿠폰', '시즌 특가 최대 50%'],
+  '문화생활': ['영화 예매 2,000원 할인', '전시 관람권 30% 할인', '2인 예매 시 팝콘 무료', '주말 공연 10% 할인', '멤버십 우선 예매'],
+  '교통': ['대여 요금 15% 할인', '첫 이용 5,000원 할인', '주중 최대 20% 할인', '포인트 2배 적립', '편도 이용권 10% 할인'],
+  '편의점': ['1,000원당 100원 할인', '행사 상품 1+1', '도시락 10% 할인', '멤버십 포인트 적립', '음료 2+1 쿠폰'],
+};
+const AI_BENEFIT_DEFAULT = ['멤버십 전용 10% 할인', '첫 이용 2,000원 할인', '1+1 혜택 쿠폰', '결제 금액 5% 적립', '시즌 한정 특가', '2인 이용 시 추가 혜택'];
+function aiBenefitCopy(category: string | null | undefined, seed: number): string {
+  const key = Object.keys(AI_BENEFIT_POOL).find((k) => (category ?? '').includes(k));
+  const pool = (key && AI_BENEFIT_POOL[key]) || AI_BENEFIT_DEFAULT;
+  return pool[((seed % pool.length) + pool.length) % pool.length];
+}
+
+// 코너 타이틀 AI 추천 — 코너 유형(+활성 카테고리)에 맞는 영역 제목 초안을 하나씩 생성(2026-11-10 사용자 요청).
+// 코너 타이틀은 코너 구성(운영자 소유) 영역이라 CVM이 주는 값이 아니다 → 운영자용 초안 도우미. 매핑된 아이템과 무관한 '영역 이름'을 빠르게 잡는 용도.
+const AI_CORNER_TITLE_POOL: Record<string, string[]> = {
+  '상품형': ['지금 딱 맞는 추천 상품', '이번 달 인기 상품', '나를 위한 맞춤 추천', '놓치면 아쉬운 특가', '요즘 많이 찾는 상품'],
+  '혜택·오퍼형': ['나를 위한 맞춤 혜택', '이번 주 놓치면 아쉬운 혜택', '오늘의 멤버십 혜택', '지금 받을 수 있는 혜택', '자주 가는 곳 할인'],
+  '혜택형': ['나를 위한 맞춤 혜택', '오늘의 멤버십 혜택', '지금 받을 수 있는 혜택', '자주 가는 곳 할인'],
+  '배너형': ['지금 주목할 소식', '이번 주 기획전', '놓치지 마세요', '한정 기간 이벤트'],
+  '콘텐츠 안내형': ['지금 뜨는 콘텐츠', '취향 저격 추천', '이번 주 인기작', '오늘의 추천 콘텐츠'],
+  '업무 진입형': ['자주 쓰는 메뉴', '바로가기', '많이 찾는 서비스', '빠른 업무 처리'],
+};
+const AI_CORNER_TITLE_DEFAULT = ['맞춤 추천 영역', '이번 주 추천', '지금 주목할 소식', '나를 위한 추천'];
+function aiCornerTitle(cornerType: string, category: string | null | undefined, seed: number): string {
+  const pool = AI_CORNER_TITLE_POOL[cornerType] || AI_CORNER_TITLE_DEFAULT;
+  const base = pool[((seed % pool.length) + pool.length) % pool.length];
+  // 카테고리 칩이 켜져 있으면 '카페 추천 혜택'처럼 앞에 카테고리를 붙여 더 구체적인 초안으로.
+  const catKey = category && Object.keys(AI_BENEFIT_POOL).find((k) => category.includes(k));
+  return catKey ? `${category} 맞춤${cornerType === '상품형' ? ' 상품' : ' 혜택'}` : base;
+}
+
+// 이동 링크 행 — 링크는 원장/캠페인에 '연결된' 값이라 기본 읽기 전용, '수정'을 눌러야 편집(2026-11-10 사용자 요청: 문구는 열어두고 수정은 링크에만).
+//  모듈 스코프 컴포넌트로 둬 입력 중 리마운트(IME) 방지.
+function LinkEditRow({ link, editing, onToggle, onChange, source, locked }: { link?: string | null; editing: boolean; onToggle: () => void; onChange: (v: string) => void; source: '캠페인' | '원장' | '콘텐츠'; locked?: boolean }) {
+  // locked = 수정 자체 불가(콘텐츠 안내형=iframe 연결). 읽기 전용 표시만, 수정 버튼 없음.
+  if (locked) {
+    return (
+      <div className="flex h-[28px] min-w-0 items-center gap-1 rounded-[6px] bg-[var(--th)] px-2 text-[12px] text-[var(--ink3)]" title="연결 링크 — 콘텐츠 연결(iframe)이라 수정 불가">
+        <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+        <span className="min-w-0 flex-1 truncate">{link || '연결 링크 (콘텐츠 연결)'}</span>
+        <span className="shrink-0 rounded-[4px] bg-white px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink4)]">콘텐츠 연결</span>
+      </div>
+    );
+  }
+  if (editing) {
+    return (
+      <div className="flex h-[28px] min-w-0 items-center gap-1 rounded-[6px] border border-[var(--ac)] px-2" title="이동 링크(랜딩)">
+        <Link2 className="h-3 w-3 shrink-0 text-[var(--ac)]" />
+        <input value={link ?? ''} onChange={(e) => onChange(e.target.value)} placeholder="이동 링크" autoFocus className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+        <button type="button" onClick={onToggle} title="편집 잠금" className="flex shrink-0 items-center gap-0.5 rounded-[4px] bg-[var(--ac2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ac)]"><Check className="h-3 w-3" /> 완료</button>
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-[28px] min-w-0 items-center gap-1 rounded-[6px] bg-[var(--th)] px-2 text-[12px] text-[var(--ink3)]" title={`이동 링크 — ${source}에서 연결됨(수정하려면 '수정')`}>
+      <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+      <span className="min-w-0 flex-1 truncate">{link || `이동 링크 (${source}에서 연결)`}</span>
+      <button type="button" onClick={onToggle} title="링크 수정" className="flex shrink-0 items-center gap-0.5 rounded-[4px] border border-[var(--line2)] bg-white px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink3)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Pencil className="h-3 w-3" /> 수정</button>
+    </div>
+  );
+}
 
 // 배너·칩·CTA 옵션 토글 → 선택 코너 미리보기에 반영(코너 유형 미리보기와 동일, 2026-11-05 사용자 요청).
 // CTA On이면 버튼 라벨은 입력값, 비어 있으면 무조건 'CTA'를 기본으로 박는다(2026-11-05 사용자 요청).
@@ -395,6 +466,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const options = cornerOptions(corner.preview);
   const isCvmSrc = src.startsWith('CVM');
   const isData = src === 'CVM 데이터 연동';
+  // CVM 콘텐츠 연동(③가 '구좌만 넘김')에서 폴백을 '운영자 편성으로 대체'로 고르면, CVM이 비었을 때 대신 노출할 운영자 편성 항목을 등록해야 한다 → ⑤ 채우기 UI를 띄운다(2026-11-10 사용자 요청).
+  const fillForFallback = isCvmSrc && !isData && fb === '운영자 편성으로 대체' && !isProfile && !isStatus && !isBarcode;
+  // 섹션 번호 — CVM 코너는 ③ 폴백(채우기 위로)이 끼어 번호가 하나씩 밀린다(2026-11-10 사용자 요청: 폴백이 채우기 결과를 좌우하므로 위로). 번호 공백 방지.
+  const nFill = isCvmSrc ? 4 : 3; // 채우기/요청/프로필/고정
+  const nSrc = isCvmSrc ? 5 : 4;  // 출처
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
@@ -465,8 +541,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   // 불러오기 전용(직접입력 없음) 유형 — 콘텐츠 안내형(영화) · 혜택·오퍼형 세로형(제휴 혜택). 이미지+텍스트+보조값을 한 번에 불러온다(2026-11-05 사용자 요청).
   const detailStr = corner.layoutDetail ?? corner.layout ?? '';
   const isBenefitList = (corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형') && /세로/.test(detailStr);
+  const isBenefitType = corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형';
   // 배너형 = '배너 캠페인 관리'에서 가져오기 전용(직접 입력 없음). 가져오기 버튼으로 등록된 배너를 담는다(2026-11-05 사용자 요청).
   const isBanner = corner.cornerType === '배너형';
+  // 콘텐츠 안내형 = 아이프레임 연결 가능성이 커 링크 수정 자체가 불가(읽기 전용, 수정 버튼 없음). 2026-11-10 사용자 요청.
+  const isContentGuide = corner.cornerType === '콘텐츠 안내형';
   // 배너 단일형 = 배너 1장 → 순서 변경 없음(드래그 핸들 제거). 스와이프형만 여러 장 재정렬(2026-11-05 사용자 요청).
   const bannerSingle = isBanner && !/스와이프|swipe/i.test(detailStr);
   // '직접 추가'(운영자가 라벨·아이콘·링크를 직접 입력)는 업무 진입형 칩형(퀵메뉴)에만. 나머지는 전부 불러오기(로드)만(2026-11-05 사용자 확정).
@@ -572,8 +651,43 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   };
   const setItemLabel = (id: string, label: string) => editItems(id, { label });
   const setItemLink = (id: string, link: string) => editItems(id, { link });
+  const setItemLinkType = (id: string, linkType: 'internal' | 'external') => editItems(id, { linkType });
+  // 이동 링크 내부/외부 세그먼트 라디오 — 2택이라 토글보다 라디오가 명확(2026-11-10 사용자 요청). 기본값 외부(아웃링크).
+  const LinkTypeRadio = ({ o }: { o: FillItem }) => {
+    const v = o.linkType ?? 'external';
+    return (
+      <div className="flex shrink-0 overflow-hidden rounded-[6px] border border-[var(--line2)] text-[11px]" title="내부=앱 안에서 노출(비과금) · 외부=아웃링크로 외부 브라우저(과금)">
+        {(['internal', 'external'] as const).map((t) => (
+          <button key={t} type="button" onClick={() => setItemLinkType(o.id, t)}
+            className={cn('px-2 py-1 font-medium transition', v === t ? (t === 'external' ? 'bg-[#fff1e6] text-[#b67a12]' : 'bg-[var(--ac2)] text-[var(--ac)]') : 'bg-white text-[var(--ink4)] hover:text-[var(--ink2)]')}>
+            {t === 'internal' ? '내부' : '외부'}
+          </button>
+        ))}
+      </div>
+    );
+  };
+  // AI 추천(데모) — 혜택 문구를 브랜드/카테고리에 맞게 하나씩 생성. 클릭할 때마다 다른 후보로 순환(2026-11-10 사용자 요청).
+  const [aiSeed, setAiSeed] = React.useState<Record<string, number>>({});
+  const genAiCopy = (o: FillItem) => {
+    const s = aiSeed[o.id] ?? Math.floor(Math.random() * 6);
+    setAiSeed((p) => ({ ...p, [o.id]: s + 1 }));
+    const category = chipMode ? chips[chipIdx] : undefined;
+    setItemLabel(o.id, aiBenefitCopy(category, s));
+  };
+  // 코너 타이틀 AI 추천 — 코너 유형(+활성 카테고리)에 맞는 영역 제목을 하나 생성(눌러서 다른 후보). 운영자 초안이며 CVM이 주는 값 아님(코너 타이틀=코너 구성).
+  const [titleSeed, setTitleSeed] = React.useState(Math.floor(Math.random() * 6));
+  const genAiTitle = () => {
+    const category = chipMode ? chips[chipIdx] : undefined;
+    const t = aiCornerTitle(corner.cornerType, category, titleSeed);
+    setTitleSeed((s) => s + 1);
+    setCornerTitleVal(t);
+    onPreviewPatch({ mainTitle: t || 'CornerTitle' });
+  };
   const setItemMode = (id: string, mode: FillItem['mode']) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, mode } : x)));
   const setItemIcon = (id: string, icon: string) => editItems(id, { icon });
+  // 링크로 연결된(불러오기) 항목은 기본 읽기 전용 → '수정'을 눌러야 편집 가능(2026-11-10 사용자 요청). 실수로 원장/캠페인 값을 건드리지 않게.
+  const [rowEdit, setRowEdit] = React.useState<Record<string, boolean>>({});
+  const toggleRowEdit = (id: string) => setRowEdit((s) => ({ ...s, [id]: !s[id] }));
   const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
   const [iconForId, setIconForId] = React.useState<string | null>(null); // 아이콘 선택 모달 대상 항목 id(2026-11-05 사용자 요청)
   // 삭제 — 데이터 있는 항목은 확인 모달, 빈 항목은 바로 삭제(2026-11-05 사용자 요청).
@@ -679,9 +793,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
     //  CVM 데이터 연동의 '추천 보충 박스'는 미리보기 렌더 게이트에서 항상 표시되므로, 여기서 재구성하지 않아도 박스는 나온다.
     if (!dirty[chipKey]) return;
     if (isData) pushDataPreview(items, cvmMin, cvmMax);
-    else if (src === '운영자 편성') pushDataPreview(items, 0, 0);
+    else if (src === '운영자 편성' || fillForFallback) pushDataPreview(items, 0, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isData, src, items, cvmMin, cvmMax, dirty, chipKey, chipIdx]);
+  }, [isData, src, items, cvmMin, cvmMax, dirty, chipKey, chipIdx, fillForFallback]);
 
   const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex items-start gap-3 py-1.5 text-[13px]">
@@ -810,9 +924,36 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
         </div>
       </Sec>
 
-      {/* ③ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
-      {(src === '운영자 편성' || (isData && !isProfile)) ? (
-        <Sec n={3} title={isData ? '운영자 고정 — 먼저 채울 항목 (나머지는 CVM)' : '채우기 — 항목 등록'}>
+      {/* ③ 폴백 — CVM 수급일 때. 폴백 선택(미노출/운영자 편성 대체)이 아래 '채우기' 내용을 좌우하므로 채우기 위에 둔다(2026-11-10 사용자 요청). */}
+      {isCvmSrc && (
+        <Sec n={3} title="폴백 — CVM 응답이 비었을 때" help>
+          <div className="space-y-1.5">
+            {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
+              const on = fb === f;
+              return (
+                <button key={f} type="button" onClick={() => { setFb(f); onFallbackChange(f); onPreviewFallback(true); }} className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px]', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white opacity-80')}>
+                  <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#e59a2a] bg-[#e59a2a]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
+                  <span className="min-w-0 flex-1">
+                    <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
+                    <span className="block text-[var(--ink4)]">{f === '미노출' ? 'CVM이 비면 이 코너는 노출되지 않아요.' : '등록한 운영자 편성 항목을 대신 노출해요.'}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {/* 미노출 조건은 '미노출'을 고른 경우에만 — 운영자 편성 대체면 코너가 숨지 않으므로 불필요(2026-11-10 사용자 요청). */}
+          {fb === '미노출' && MiNoChul}
+        </Sec>
+      )}
+
+      {/* ④ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
+      {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
+        <Sec n={nFill} title={fillForFallback ? '운영자 편성 대체 — CVM이 비면 노출할 항목' : isData ? '운영자 고정 — 먼저 채울 항목 (나머지는 CVM)' : '채우기 — 항목 등록'}>
+          {fillForFallback && (
+            <div className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#fff8ef] px-3 py-2 text-[12px] leading-relaxed text-[#b67a12]">
+              <span className="mt-0.5">⚠</span><span>이 코너는 <b>CVM 콘텐츠 연동</b>이라 평소엔 CVM 완성본이 노출됩니다. <b>CVM 응답이 비면</b> 아래에 등록한 운영자 편성 항목이 대신 노출돼요(폴백 미리보기에서 확인).</span>
+            </div>
+          )}
           {/* 칩 불러오기 모달 — 탭(코너 속성)에서 눌러도 뜨도록 탭 바깥(최상단)에 렌더(2026-11-05 사용자 요청). */}
           {chipLoadOpen && (
             <ChipLoadModal catalog={catalog} current={chips} onClose={() => setChipLoadOpen(false)}
@@ -847,7 +988,14 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               {hasCornerTitle && (
                 <label className="mb-2 block">
                   <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">코너 타이틀 <span className="font-normal text-[var(--ink4)]">CornerTitle</span></span>
-                  <input value={cornerTitleVal} onChange={(e) => { setCornerTitleVal(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'CornerTitle' }); }} placeholder="코너 제목 입력" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                  {/* 코너 유형에 맞는 영역 제목 초안을 하나 생성(눌러서 다른 후보). 운영자 초안 — CVM이 주는 값이 아니다(코너 타이틀=코너 구성). 2026-11-10 사용자 요청. */}
+                  <div className="flex items-center gap-1">
+                    <input value={cornerTitleVal} onChange={(e) => { setCornerTitleVal(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'CornerTitle' }); }} placeholder="코너 제목 입력 (비어 있으면 AI 추천)" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    <button type="button" onClick={genAiTitle} title="코너 유형에 맞는 영역 제목을 하나 생성해요 (초안 · 눌러서 다른 후보)"
+                      className="flex h-[32px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]">
+                      <Sparkles className="h-3 w-3" /> AI 추천
+                    </button>
+                  </div>
                 </label>
               )}
               {hasButtonText && (
@@ -1014,25 +1162,67 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
             {items.length === 0 && <p className="rounded-[8px] border border-dashed border-[var(--line3)] px-3 py-4 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 ' + itemWord + '에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
             {items.map((o) => (
               <SortableFillRow key={o.id} id={o.id}>{(h) => {
-              // 이미지 기반 유형(영화·배너·혜택·상품) — 썸네일(불러온 이미지, 클릭 시 교체) + 제목·링크 직접 편집 + 행별 불러오기.
-              if (!isChip) {
+              // 배너 — 미리보기와 동일한 '띠 배너'(문구+이미지 합성)로 통째로 노출(2026-11-10 사용자 요청). 소재·문구·랜딩은 배너 캠페인 소유 → 기본 읽기 전용, '수정'을 눌러야 편집.
+              if (isBanner) {
+                const bannerComp: PreviewComponent = {
+                  id: String(o.id), name: o.label || '배너', componentType: '배너형',
+                  atoms: [
+                    { id: 't', name: 'title', atomType: 'TEXT', content: o.label || '배너 타이틀', imageUrl: null, altText: null, linkUrl: null },
+                    { id: 'i', name: 'img', atomType: 'IMAGE', content: null, imageUrl: o.icon ?? null, altText: o.label ?? null, linkUrl: null },
+                  ],
+                };
+                // 배너는 이미지·문구·랜딩이 전부 배너 캠페인 소유 → 여기선 수정 불가(문구·링크 모두 읽기 전용). 교체는 '불러오기'로만(2026-11-10 사용자 요청).
                 return (
-                <div className={cn('flex gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5', isBanner ? 'items-stretch' : 'items-center')}>
-                  {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김 */}
-                  {!bannerSingle && <span ref={h.setRef} {...h.props} className={cn('shrink-0 cursor-grab touch-none text-[var(--ink4)]', isBanner && 'mt-1')}><GripVertical className="h-4 w-4" /></span>}
-                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 행 높이를 꽉 채우고 넓게(배너 비율) + 전체가 보이게 contain(크롭 금지, 얼라인 맞춤). 그 외 정사각 */}
+                <div className="space-y-2 rounded-[9px] border border-[var(--line2)] bg-white p-2">
+                  <div className="flex items-start gap-2">
+                    {!bannerSingle && <span ref={h.setRef} {...h.props} className="mt-1 shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>}
+                    {/* 띠 배너 미리보기 — 작은 썸네일 크기로 고정(미리보기보다 작게). 클릭하면 배너 캠페인에서 소재 교체. 2026-11-10 사용자 요청. */}
+                    <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="배너 캠페인에서 불러오기" className="w-[200px] max-w-full shrink-0 text-left">
+                      <BannerCard component={bannerComp} sizeDetail={corner.layoutDetail} />
+                    </button>
+                    <button type="button" onClick={() => tryRemove(o)} className="ml-auto grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                  </div>
+                  {/* 사이즈 배지 + 배너 타이틀(읽기 전용 — 배너 캠페인 관리에서만 수정) */}
+                  <div className="flex items-center gap-1">
+                    {o.sub && <span className="shrink-0 rounded-[4px] bg-[var(--th)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink3)]">{o.sub}</span>}
+                    <span className="min-w-0 flex-1 truncate px-1 text-[13px] font-medium text-[var(--ink)]">{o.label || <span className="font-normal text-[var(--ink4)]">배너 타이틀</span>}</span>
+                    {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="배너 캠페인에서 불러오기" className="flex h-[28px] shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
+                  </div>
+                  {/* 랜딩 링크 — 배너 캠페인 소유(읽기 전용). 수정은 배너 캠페인 관리에서만. */}
+                  <div className="flex h-[26px] min-w-0 items-center gap-1 rounded-[6px] bg-[var(--th)] px-2 text-[12px] text-[var(--ink3)]" title="랜딩 링크 — 배너 캠페인 관리에서만 수정">
+                    <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+                    <span className="min-w-0 flex-1 truncate">{o.link || '랜딩 링크 (배너 캠페인에서 설정)'}</span>
+                    <span className="shrink-0 rounded-[4px] bg-white px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink4)]">캠페인 전용</span>
+                  </div>
+                </div>
+                );
+              }
+              // 이미지 기반 유형(영화·혜택·상품) — 썸네일(불러온 이미지, 클릭 시 교체) + 제목·링크 + 행별 불러오기.
+              //  ③ 화면이 편집 상태 → 문구(제목)는 항상 편집 가능. '수정'은 원장에 연결된 '링크'에만(2026-11-10 사용자 요청).
+              if (!isChip) {
+                const connected = o.mode === 'load';
+                const linkEdit = !connected || !!rowEdit[o.id]; // 직접 추가 행은 링크도 바로 편집
+                return (
+                <div className="flex items-center gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
+                  <span ref={h.setRef} {...h.props} className="shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>
+                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 정사각 */}
                   <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="이미지 불러오기"
-                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'w-[132px] self-stretch bg-white' : 'h-10 w-10 bg-[var(--th)]')}>
-                    <ItemIcon src={o.icon} brand={isBanner ? null : (o.sub || o.label)} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
+                    className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)] transition hover:border-[var(--ac)]">
+                    <ItemIcon src={o.icon} brand={o.sub || o.label} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
                   </button>
-                  {/* 제목·링크 직접 편집. 배너는 사이즈(스몰배너 672×324 등)도 표기 — 배너 캠페인에서 함께 끌어온다(2026-11-05 사용자 요청). */}
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    {isBanner && o.sub && <span className="w-fit rounded-[4px] bg-[var(--th)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink3)]">{o.sub}</span>}
-                    <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder={isBanner ? '배너 타이틀' : `${itemWord} 제목`} className="h-[28px] w-full rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                    <div className="flex h-[28px] items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="이동 링크(랜딩)">
-                      <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
-                      <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder={isBanner ? '랜딩 링크 (불러오기 시 자동)' : '이동 링크'} className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                    {/* 제목(문구)은 항상 편집 가능. 혜택 유형은 옆에 'AI 추천' — 브랜드·카테고리 맞춤 문구 초안. */}
+                    <div className="flex items-center gap-1">
+                      <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder={isBenefitType ? '혜택 문구 (비어 있으면 AI 추천)' : `${itemWord} 제목`} className="h-[28px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                      {isBenefitType && (
+                        <button type="button" onClick={() => genAiCopy(o)} title={`${o.sub || o.label || '이 브랜드'}에 맞는 혜택 문구를 하나 생성해요 (초안 · 눌러서 다른 후보)`}
+                          className="flex h-[28px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]">
+                          <Sparkles className="h-3 w-3" /> AI 추천
+                        </button>
+                      )}
                     </div>
+                    {/* 이동 링크 — 원장 연결 → 기본 읽기 전용, '수정' 눌러야 편집(직접 추가 행은 바로 편집). 콘텐츠 안내형은 iframe 연결이라 수정 자체 불가(locked). */}
+                    <LinkEditRow link={o.link} editing={linkEdit} onToggle={() => toggleRowEdit(o.id)} onChange={(v) => setItemLink(o.id, v)} source={isContentGuide ? '콘텐츠' : '원장'} locked={isContentGuide} />
                   </div>
                   {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex h-[30px] shrink-0 self-center items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
                   <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 self-center place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
@@ -1062,6 +1252,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="이동 링크"
                     className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                 </div>
+                {/* 직접 입력 링크만 내부/외부 선택. 불러오기 모드는 메뉴 관리가 링크를 소유 → 라디오 숨김(2026-11-10 사용자 확인). */}
+                {!loaded && <LinkTypeRadio o={o} />}
                 {/* 불러오기 모드일 때만 우측에 '불러오기' 버튼 → 메뉴 관리 모달 */}
                 {loaded && <button type="button" onClick={() => setLoadForId(o.id)} title="메뉴 관리에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 py-1.5 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3 w-3" /> 불러오기</button>}
                 <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
@@ -1154,7 +1346,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           )}
         </Sec>
       ) : isProfile ? (
-        <Sec n={3} title="프로필 카드 — 문구 설정">
+        <Sec n={nFill} title="프로필 카드 — 문구 설정">
           <div className="mb-2 flex items-start gap-1.5 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]">
             <span className="mt-0.5">ⓘ</span><span><b>고객명·휴대폰 번호·프로필 이미지</b>는 고객 정보로 자동 표시(@cvm)됩니다. 아래 문구만 설정하세요.</span>
           </div>
@@ -1175,36 +1367,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           </div>
         </Sec>
       ) : (
-        <Sec n={3} title="요청 — 구좌만 넘김" help>
+        <Sec n={nFill} title="요청 — 구좌만 넘김" help>
           <p className="rounded-[8px] bg-[var(--ac2)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
             <b className="text-[var(--ac)]">CVM 콘텐츠 연동</b> = 구좌(자리)만 넘깁니다. 이미지·문구·랜딩까지 <b>CVM이 완성본을 내려주고</b> 전시 어드민은 받은 그대로 노출합니다. 별도 요청 범위(③) 설정은 없습니다.
           </p>
         </Sec>
       )}
 
-      {/* ④ 폴백 — CVM 수급일 때 */}
-      {isCvmSrc && (
-        <Sec n={4} title="폴백 — CVM 응답이 비었을 때" help>
-          <div className="space-y-1.5">
-            {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
-              const on = fb === f;
-              return (
-                <button key={f} type="button" onClick={() => { setFb(f); onFallbackChange(f); onPreviewFallback(true); }} className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px]', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white opacity-80')}>
-                  <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#e59a2a] bg-[#e59a2a]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
-                  <span className="min-w-0 flex-1">
-                    <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
-                    <span className="block text-[var(--ink4)]">{f === '미노출' ? 'CVM이 비면 이 코너는 노출되지 않아요.' : '등록한 운영자 편성 항목을 대신 노출해요.'}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {MiNoChul}
-        </Sec>
-      )}
-
       {/* ⑥ 출처 — 이 값이 어디서 오나 */}
-      <Sec n={6} title="출처 — 이 값이 어디서 오나" help>
+      <Sec n={nSrc} title="출처 — 이 값이 어디서 오나" help>
         <div className="overflow-hidden rounded-[8px] border border-[var(--line2)] text-[12px]">
           {[
             ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],

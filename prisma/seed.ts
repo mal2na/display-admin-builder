@@ -1234,6 +1234,13 @@ async function main() {
     }
   }
 
+  // 카테고리별 혜택(혜택 홈 · 상단 카테고리 칩 + 혜택 리스트) = 혜택·오퍼형 세로형(카테고리형)의 실제 적용 코너.
+  //  기존 '세로형+칩' 케이스 유형 대신 카테고리형 배열에 연결 → 상세 '적용 화면'에 실제 화면이 나온다(2026-11-10 사용자 요청).
+  {
+    const vCat = await prisma.cornerType.findFirst({ where: { baseCategory: '혜택·오퍼형', typeDetail: '세로형(카테고리형)' }, select: { id: true } });
+    if (vCat) await prisma.corner.updateMany({ where: { name: '카테고리별 혜택', cornerType: '혜택·오퍼형' }, data: { sourceCornerTypeId: vCat.id } });
+  }
+
   // ── 이벤트·미션 전용 코너 유형 (BO EVT Architecture "코너 유형 정의") — 3계열 14종 ──
   //   전시 8종과 별개. 코너 유형 관리에서 [이벤트/미션] 상위 분기 하위로 노출된다.
   let evIdx = 1;

@@ -18,7 +18,7 @@ import { type PreviewCorner } from '@/components/preview/blocks';
 export type HistoryRow = { id: string; changedAt: string; actor: string; result: string; reason: string | null };
 export type UsageRow = { container: string | null; template: string | null; corner: string; templateId?: string | null };
 // 상세 '상세 정보' — 실제 만든 코너 1개 + 그 코너가 올라간 전시화면들(클릭 시 빌더)
-export type UsageByCorner = { cornerName: string; preview: PreviewCorner; screens: { templateId: string; container: string; template: string }[] };
+export type UsageByCorner = { cornerName: string; realImageUrl?: string | null; preview: PreviewCorner; screens: { templateId: string; container: string; template: string }[] };
 // 배너형 코너 유형 미리보기 — 실제 쓰이는 배너(콤포즈) 1개
 export type BannerPreview = { id: string; title: string; fields: ComposeFields };
 
@@ -481,7 +481,11 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
           {usageByCorner.map((u, i) => (
             <div key={i} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
               <div className="pointer-events-none flex h-[180px] w-[220px] shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[#eef0f6]">
-                <DevicePreview corner={u.preview} fit="contain" align="center-middle" />
+                {u.realImageUrl
+                  // 실제 적용 이미지(홈 스크린샷) 우선 — 없을 때만 미리보기(2026-11-10 사용자 요청).
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={u.realImageUrl} alt={u.cornerName} className="h-full w-full object-contain" />
+                  : <DevicePreview corner={u.preview} fit="contain" align="center-middle" />}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="mb-2 text-[12.5px] font-semibold text-slate-800">{u.cornerName}</p>

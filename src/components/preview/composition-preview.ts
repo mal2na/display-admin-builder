@@ -81,10 +81,6 @@ const GIFTICON_ITEMS: { img: string; name: string; discount: string; price: stri
 // 콘텐츠 안내형 무비 3편 (토이스토리 · 인크레더블 · 둠스데이) — public/assets 실제 포스터.
 const MOVIE_POOL = ['/assets/movie-toystory.jpg', '/assets/movie-incredibles.jpg', '/assets/movie-avengers.jpg'];
 const MOVIES: [string, string][] = [['토이스토리 5', '평점 4.8 · 예매율 32.1%'], ['인크레더블', '평점 4.6 · 예매율 18.4%'], ['어벤져스: 둠스데이', '2026.12 개봉 예정']];
-const LOGO_POOL = [
-  '/assets/ds/logo-gongcha.png', '/assets/ds/logo-baskin.png', '/assets/ds/logo-paulbassett.png',
-  '/assets/ds/logo-tlj.png', '/assets/ds/logo-nol.png', '/assets/ds/logo-domino.png', '/assets/ds/logo-tmap.png',
-];
 const pick = (arr: string[], i: number) => arr[(i - 1 + arr.length * 100) % arr.length];
 // 혜택·오퍼형 대표 제휴 3종 (AROMATICA · 디퓨저 · NONFICTION)
 // 이미지는 public/assets/ds/ 에 아래 파일명으로 넣어주면 그대로 노출됨(첨부 사진).
@@ -182,7 +178,8 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
         ] };
       case '혜택형':
         return { ...base, name: '혜택', atoms: [
-          atom({ name: '로고', atomType: 'ICON', imageUrl: pick(LOGO_POOL, i) }),
+          // 껍데기 미리보기 = 로고 대신 회색 ImageSrc 박스(상품형 미리보기와 톤 통일, 2026-11-10 사용자 요청).
+          atom({ name: 'ImageSrc', atomType: 'IMAGE' }),
           atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: 'ItemTitle' }),
           atom({ name: '브랜드', atomType: 'INFO', content: 'SubTitle' }),
         ] };
@@ -195,7 +192,7 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
         // 혜택·오퍼형 세로형 = 로고+혜택문구+브랜드(BenefitRow). 그 외 = 카드(이미지+상품명+가격+설명).
         if (isBenefitList) {
           return { ...base, name: '혜택', atoms: [
-            atom({ name: '로고', atomType: 'ICON', imageUrl: pick(LOGO_POOL, i) }),
+            atom({ name: 'ImageSrc', atomType: 'IMAGE' }),
             atom({ name: '혜택 문구', atomType: 'BENEFIT_TEXT', content: 'ItemTitle' }),
             atom({ name: '브랜드', atomType: 'INFO', content: 'SubTitle' }),
           ] };

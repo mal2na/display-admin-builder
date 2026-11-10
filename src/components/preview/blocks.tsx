@@ -111,7 +111,8 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   //  단, 업무 진입형 퀵메뉴(ChipHome)는 접지 않고 2행 8개를 그대로 보여준다('Chip' 라벨, 2026-11-09 사용자 요청).
   const CHIP_PH = /^(chip\d*|전체|카테고리|tab\d*|category\d*)$/i;
   const allPh = variant !== 'home' && component.atoms.length > 0 && component.atoms.every((a) => CHIP_PH.test((a.content ?? a.name ?? '').trim()));
-  const atoms = allPh ? [{ ...component.atoms[0], content: 'Category' }] : component.atoms;
+  //  → 상품형 미리보기와 톤 통일: placeholder면 'Chip' 3개(첫 칩 선택)로 그린다(2026-11-10 사용자 요청).
+  const atoms = allPh ? [0, 1, 2].map((k) => ({ ...component.atoms[0], id: `${component.atoms[0].id}-ph${k}`, content: 'Chip' })) : component.atoms;
 
   // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
   if (variant === 'home') {
@@ -367,7 +368,10 @@ function BenefitRow({ component, reason, parts }: { component: PreviewComponent;
   return (
     <div className="flex items-center gap-3 py-2">
       {/* 로고 = 타일을 꽉 채우는 object-cover(회색 여백 최소화). 로고 파일이 없는 브랜드는 브랜드 색/이니셜 타일로 폴백(2026-11-09 사용자 요청). */}
-      {logo && <PreviewImage src={logo.imageUrl} alt={logo.altText ?? ''} brand={brand?.content ?? title?.content ?? component.name} className="h-11 w-11 shrink-0 overflow-hidden rounded-2xl bg-slate-50 object-cover" />}
+      {/* 껍데기 미리보기(이미지 미지정) = 상품형과 같은 회색 이미지 박스(2026-11-10 사용자 요청). */}
+      {logo && !logo.imageUrl ? (
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><ImageIcon className="h-4 w-4 opacity-60" /></div>
+      ) : logo && <PreviewImage src={logo.imageUrl} alt={logo.altText ?? ''} brand={brand?.content ?? title?.content ?? component.name} className="h-11 w-11 shrink-0 overflow-hidden rounded-2xl bg-slate-50 object-cover" />}
       <div className="min-w-0 flex-1">
         <p className={cn('truncate text-[14px] font-semibold text-slate-900')}>{title?.content ?? component.name}</p>
         {brand && <p className="truncate text-[12px] text-slate-400">{brand.content}</p>}
