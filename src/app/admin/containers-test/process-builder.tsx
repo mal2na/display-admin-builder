@@ -14,7 +14,7 @@ import { addCornersFromTypes, reorderTestCorners, setTestCornerZone, removeCorne
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DeviceFrame, CornerBlock } from '@/components/preview/blocks';
+import { DeviceFrame, CornerBlock, BannerCard, type PreviewComponent } from '@/components/preview/blocks';
 import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
@@ -103,6 +103,27 @@ function aiCornerTitle(cornerType: string, category: string | null | undefined, 
   // 카테고리 칩이 켜져 있으면 '카페 추천 혜택'처럼 앞에 카테고리를 붙여 더 구체적인 초안으로.
   const catKey = category && Object.keys(AI_BENEFIT_POOL).find((k) => category.includes(k));
   return catKey ? `${category} 맞춤${cornerType === '상품형' ? ' 상품' : ' 혜택'}` : base;
+}
+
+// 이동 링크 행 — 링크는 원장/캠페인에 '연결된' 값이라 기본 읽기 전용, '수정'을 눌러야 편집(2026-11-10 사용자 요청: 문구는 열어두고 수정은 링크에만).
+//  모듈 스코프 컴포넌트로 둬 입력 중 리마운트(IME) 방지.
+function LinkEditRow({ link, editing, onToggle, onChange, source }: { link?: string | null; editing: boolean; onToggle: () => void; onChange: (v: string) => void; source: '캠페인' | '원장' }) {
+  if (editing) {
+    return (
+      <div className="flex h-[28px] min-w-0 items-center gap-1 rounded-[6px] border border-[var(--ac)] px-2" title="이동 링크(랜딩)">
+        <Link2 className="h-3 w-3 shrink-0 text-[var(--ac)]" />
+        <input value={link ?? ''} onChange={(e) => onChange(e.target.value)} placeholder="이동 링크" autoFocus className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+        <button type="button" onClick={onToggle} title="편집 잠금" className="flex shrink-0 items-center gap-0.5 rounded-[4px] bg-[var(--ac2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ac)]"><Check className="h-3 w-3" /> 완료</button>
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-[28px] min-w-0 items-center gap-1 rounded-[6px] bg-[var(--th)] px-2 text-[12px] text-[var(--ink3)]" title={`이동 링크 — ${source}에서 연결됨(수정하려면 '수정')`}>
+      <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
+      <span className="min-w-0 flex-1 truncate">{link || `이동 링크 (${source}에서 연결)`}</span>
+      <button type="button" onClick={onToggle} title="링크 수정" className="flex shrink-0 items-center gap-0.5 rounded-[4px] border border-[var(--line2)] bg-white px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink3)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Pencil className="h-3 w-3" /> 수정</button>
+    </div>
+  );
 }
 
 // 배너·칩·CTA 옵션 토글 → 선택 코너 미리보기에 반영(코너 유형 미리보기와 동일, 2026-11-05 사용자 요청).
@@ -649,6 +670,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   };
   const setItemMode = (id: string, mode: FillItem['mode']) => updateItems((xs) => xs.map((x) => (x.id === id ? { ...x, mode } : x)));
   const setItemIcon = (id: string, icon: string) => editItems(id, { icon });
+  // 링크로 연결된(불러오기) 항목은 기본 읽기 전용 → '수정'을 눌러야 편집 가능(2026-11-10 사용자 요청). 실수로 원장/캠페인 값을 건드리지 않게.
+  const [rowEdit, setRowEdit] = React.useState<Record<string, boolean>>({});
+  const toggleRowEdit = (id: string) => setRowEdit((s) => ({ ...s, [id]: !s[id] }));
   const [loadForId, setLoadForId] = React.useState<string | null>(null); // 불러오기 모달 대상 항목 id
   const [iconForId, setIconForId] = React.useState<string | null>(null); // 아이콘 선택 모달 대상 항목 id(2026-11-05 사용자 요청)
   // 삭제 — 데이터 있는 항목은 확인 모달, 빈 항목은 바로 삭제(2026-11-05 사용자 요청).
@@ -1101,23 +1125,55 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
             {items.length === 0 && <p className="rounded-[8px] border border-dashed border-[var(--line3)] px-3 py-4 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 ' + itemWord + '에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
             {items.map((o) => (
               <SortableFillRow key={o.id} id={o.id}>{(h) => {
-              // 이미지 기반 유형(영화·배너·혜택·상품) — 썸네일(불러온 이미지, 클릭 시 교체) + 제목·링크 직접 편집 + 행별 불러오기.
+              // 배너 — 미리보기와 동일한 '띠 배너'(문구+이미지 합성)로 통째로 노출(2026-11-10 사용자 요청). 소재·문구·랜딩은 배너 캠페인 소유 → 기본 읽기 전용, '수정'을 눌러야 편집.
+              if (isBanner) {
+                const bannerComp: PreviewComponent = {
+                  id: String(o.id), name: o.label || '배너', componentType: '배너형',
+                  atoms: [
+                    { id: 't', name: 'title', atomType: 'TEXT', content: o.label || '배너 타이틀', imageUrl: null, altText: null, linkUrl: null },
+                    { id: 'i', name: 'img', atomType: 'IMAGE', content: null, imageUrl: o.icon ?? null, altText: o.label ?? null, linkUrl: null },
+                  ],
+                };
+                // ③ 화면 자체가 편집 상태 → 문구(제목)는 항상 편집 가능. '수정'은 원장/캠페인에 연결된 '링크'에만(실수 방지). 2026-11-10 사용자 요청.
+                const linkEdit = !!rowEdit[o.id];
+                return (
+                <div className="space-y-2 rounded-[9px] border border-[var(--line2)] bg-white p-2">
+                  <div className="flex items-start gap-2">
+                    {!bannerSingle && <span ref={h.setRef} {...h.props} className="mt-1 shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>}
+                    {/* 띠 배너 미리보기 — 클릭하면 배너 캠페인에서 소재 교체 */}
+                    <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="배너 캠페인에서 불러오기" className="min-w-0 flex-1 text-left">
+                      <BannerCard component={bannerComp} sizeDetail={corner.layoutDetail} />
+                    </button>
+                    <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                  </div>
+                  {/* 사이즈 배지 + 배너 타이틀(항상 편집 가능) */}
+                  <div className="flex items-center gap-1">
+                    {o.sub && <span className="shrink-0 rounded-[4px] bg-[var(--th)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink3)]">{o.sub}</span>}
+                    <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder="배너 타이틀" className="h-[28px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="배너 캠페인에서 불러오기" className="flex h-[28px] shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
+                  </div>
+                  {/* 랜딩 링크 — 배너 캠페인에 연결됨 → 기본 읽기 전용, '수정' 눌러야 편집 */}
+                  <LinkEditRow link={o.link} editing={linkEdit} onToggle={() => toggleRowEdit(o.id)} onChange={(v) => setItemLink(o.id, v)} source="캠페인" />
+                </div>
+                );
+              }
+              // 이미지 기반 유형(영화·혜택·상품) — 썸네일(불러온 이미지, 클릭 시 교체) + 제목·링크 + 행별 불러오기.
+              //  ③ 화면이 편집 상태 → 문구(제목)는 항상 편집 가능. '수정'은 원장에 연결된 '링크'에만(2026-11-10 사용자 요청).
               if (!isChip) {
+                const connected = o.mode === 'load';
+                const linkEdit = !connected || !!rowEdit[o.id]; // 직접 추가 행은 링크도 바로 편집
                 return (
                 <div className="flex items-center gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
-                  {/* 배너 단일형은 순서 변경 없음 → 드래그 핸들 숨김 */}
-                  {!bannerSingle && <span ref={h.setRef} {...h.props} className="shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>}
-                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 배너는 실제 소재 비율(672×324 ≈ 2:1)의 가로형 박스로(2026-11-10 사용자 요청: 가로로 길게). 그 외 정사각 */}
+                  <span ref={h.setRef} {...h.props} className="shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>
+                  {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 정사각 */}
                   <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="이미지 불러오기"
-                    className={cn('grid shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] text-[var(--ink4)] transition hover:border-[var(--ac)]', isBanner ? 'h-[56px] w-[116px] bg-white' : 'h-10 w-10 bg-[var(--th)]')}>
-                    <ItemIcon src={o.icon} brand={isBanner ? null : (o.sub || o.label)} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
+                    className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)] transition hover:border-[var(--ac)]">
+                    <ItemIcon src={o.icon} brand={o.sub || o.label} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
                   </button>
-                  {/* 제목·링크 직접 편집. 배너는 사이즈(스몰배너 672×324 등)도 표기 — 배너 캠페인에서 함께 끌어온다(2026-11-05 사용자 요청). */}
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    {isBanner && o.sub && <span className="w-fit rounded-[4px] bg-[var(--th)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink3)]">{o.sub}</span>}
-                    {/* 혜택 유형 = 제목 입력 옆 'AI 추천' — 브랜드·카테고리에 맞는 혜택 문구 초안을 하나씩 생성(2026-11-10 사용자 요청). 매핑 안 된 혜택 문구를 빠르게 채우고 다듬는 용도. */}
+                    {/* 제목(문구)은 항상 편집 가능. 혜택 유형은 옆에 'AI 추천' — 브랜드·카테고리 맞춤 문구 초안. */}
                     <div className="flex items-center gap-1">
-                      <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder={isBanner ? '배너 타이틀' : isBenefitType ? '혜택 문구 (비어 있으면 AI 추천)' : `${itemWord} 제목`} className="h-[28px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                      <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder={isBenefitType ? '혜택 문구 (비어 있으면 AI 추천)' : `${itemWord} 제목`} className="h-[28px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
                       {isBenefitType && (
                         <button type="button" onClick={() => genAiCopy(o)} title={`${o.sub || o.label || '이 브랜드'}에 맞는 혜택 문구를 하나 생성해요 (초안 · 눌러서 다른 후보)`}
                           className="flex h-[28px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]">
@@ -1125,20 +1181,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                         </button>
                       )}
                     </div>
-                    {/* 불러오기(카탈로그/원장) 행은 링크를 소스가 소유 → 내부/외부 라디오 없음(2026-11-10 사용자 확인). 배너=캠페인, 상품/혜택=원장이 링크·과금 성격을 들고 온다. */}
-                    {isBanner ? (
-                      /* 배너 랜딩 링크는 배너 캠페인 관리에서 이미 설정된 값 → 여기선 읽기 전용(편집 불가). 2026-11-10 사용자 요청. */
-                      <div className="flex h-[26px] min-w-0 items-center gap-1 rounded-[6px] bg-[var(--th)] px-2 text-[12px] text-[var(--ink3)]" title="랜딩 링크 — 배너 캠페인 관리에서 설정됨(편집 불가)">
-                        <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
-                        <span className="min-w-0 flex-1 truncate">{o.link || '랜딩 링크 (배너 캠페인에서 설정)'}</span>
-                        <span className="shrink-0 rounded-[4px] bg-white px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink4)]">캠페인 설정</span>
-                      </div>
-                    ) : (
-                      <div className="flex h-[28px] min-w-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="이동 링크(랜딩)">
-                        <Link2 className="h-3 w-3 shrink-0 text-[var(--ink4)]" />
-                        <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="이동 링크" className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
-                      </div>
-                    )}
+                    {/* 이동 링크 — 원장 연결 → 기본 읽기 전용, '수정' 눌러야 편집(직접 추가 행은 바로 편집). */}
+                    <LinkEditRow link={o.link} editing={linkEdit} onToggle={() => toggleRowEdit(o.id)} onChange={(v) => setItemLink(o.id, v)} source="원장" />
                   </div>
                   {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex h-[30px] shrink-0 self-center items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}
                   <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 self-center place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
