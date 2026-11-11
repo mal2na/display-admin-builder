@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { CornerFieldList } from './corner-fields';
-import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, VISIBLE_CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, baseLayout, displayLayout, cornerTypeHasOptions, cornerFieldSpec, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource, PRODUCT_PRICE_CATEGORIES, PRODUCT_PRICE_FIELDS, PRODUCT_PRICE_DEFAULTS, parsePriceSpec, serializePriceSpec, type ProductPriceSpec, type ProductPriceCategory, type ProductPriceField } from '@/lib/display-taxonomy';
+import { OPERATION_PLATFORMS, CORNER_TYPE_FEATURES, CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage, CORNER_TYPES, VISIBLE_CORNER_TYPES, cornerTypePurpose, cornerTypeChipClass, componentTypesForCorner, cornerTypeDetails, layoutLabel, layoutBi, baseLayout, displayLayout, cornerTypeHasOptions, cornerFieldSpec, cornerTypeEn, componentLabel, componentLayoutDetails, PRODUCT_SORT_OPTIONS, REC_SOURCE_METHODS, REC_SOURCE_INFO, CVM_TARGET_HINTS, normalizeRecSource, parseComposition, defaultComposition, type Composition, type ComponentType, CHIP_BASE, isCvmSource, PRODUCT_PRICE_CATEGORIES, PRODUCT_PRICE_FIELDS, PRODUCT_PRICE_DEFAULTS, parsePriceSpec, serializePriceSpec, priceSpecSampleLines, type ProductPriceSpec, type ProductPriceCategory, type ProductPriceField } from '@/lib/display-taxonomy';
 
 // 배너·칩·CTA 가 옵션인 유형(상품형·혜택·오퍼형·콘텐츠 안내형)은 '세로형+배너'·'세로형+칩'을 '세로형'으로 접어 통합 표기(2026-10-28 사용자 요청: 7종 적용).
 //  옵션이 없는 유형(배너형·업무진입형·상태안내형·고정필수)은 그대로 둔다. displayLayout 이 유형별로 판정.
@@ -1764,7 +1764,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       </div>
       </section>
       {/* 초기 설정값으로 돌리기 — 유형 정의 기본값(옵션 전체 사용·노출 개수·형태)으로 ② 코너 정보·속성 복원(2026-10-29(2) 사용자 요청: 모든 코너 미리보기 밑에). */}
-      <button type="button" onClick={() => { try { localStorage.removeItem(`ctopt:${row.id}`); localStorage.removeItem(`ctvar:${row.id}`); } catch { /* noop */ } setCornerVariant('Small'); setResetNonce((n) => n + 1); }}
+      <button type="button" onClick={() => { try { localStorage.removeItem(`ctopt:${row.id}`); localStorage.removeItem(`ctvar:${row.id}`); } catch { /* noop */ } setCornerVariant('Small'); setPriceSpec({}); setResetNonce((n) => n + 1); }}
         className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#dce0e5] bg-white px-3 py-2 text-[12px] font-semibold text-[#454f59] transition hover:bg-[#f8f9fb]">
         <RotateCcw className="h-3.5 w-3.5" /> 초기 설정값으로 돌리기
       </button>
@@ -2091,6 +2091,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           basicInfo={<div className="border-t border-[#dce0e5]">{basicPickers}{metaFields}</div>}
           registerResult={<span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[11px] font-semibold text-[#454f59]">등록 결과 · <b className="text-[#3617ce]">{derivedName}</b></span>}
           afterPrice={pricePanel}
+          // 가격 노출 규격 → 미리보기 가격 교체(비면 기본 99,999원). '초기 설정값으로 돌리기'가 priceSpec도 비움(2026-11-11 사용자 요청).
+          priceLines={priceOn ? priceSpecSampleLines(priceSpec) : undefined}
+          onReset={() => setPriceSpec({})}
         />
       </div>
       )}

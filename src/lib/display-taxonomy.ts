@@ -339,8 +339,28 @@ export const PRODUCT_PRICE_DEFAULTS: Record<ProductPriceCategory, ProductPriceFi
   '인터넷·IPTV': ['월정액', '결합 할인가', '할인율'],
 };
 
+/** 가격 필드 → 미리보기 샘플 문구. 코너 유형 미리보기에서 '가격 노출 규격'을 눈으로 확인할 때만 쓰는 예시값(실값은 상품 EPC 원장). 2026-11-11 사용자 요청. */
+export const PRODUCT_PRICE_SAMPLE: Record<ProductPriceField, string> = {
+  '정가': '정가 110,000원',
+  '출고가': '출고가 1,200,000원',
+  '할인가': '할인가 99,000원',
+  '선약(약정) 적용가': '약정 59,000원',
+  '플러스 할인가': '플러스 49,000원',
+  '할인율': '10% 할인',
+  '월정액': '월 99,999원',
+  '월 분할가': '월 25,000원',
+  '결합 할인가': '결합가 45,000원',
+};
+
 /** priceSpec = 코너가 '매핑 가능한 상품 카테고리 → 담을 가격 필드' 맵. 빈 객체면 미설정. */
 export type ProductPriceSpec = Partial<Record<ProductPriceCategory, ProductPriceField[]>>;
+
+/** 선택된 priceSpec(단일 카테고리)의 가격 필드를 미리보기 샘플 문구 줄로. 비면 빈 배열 → 미리보기는 기본 단일 가격. */
+export function priceSpecSampleLines(spec: ProductPriceSpec): string[] {
+  const cat = PRODUCT_PRICE_CATEGORIES.find((c) => spec[c]);
+  if (!cat) return [];
+  return (spec[cat] ?? []).map((f) => PRODUCT_PRICE_SAMPLE[f]);
+}
 export function parsePriceSpec(raw?: string | null): ProductPriceSpec {
   if (!raw) return {};
   try {

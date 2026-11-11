@@ -231,12 +231,13 @@ const H_VARIANT: Record<string, { w: number; aspect: string }> = {
   Medium: { w: 112, aspect: 'aspect-[4/5]' },
   Large: { w: 170, aspect: 'aspect-square' },
 };
-function ItemCard({ s, w }: { s: CarouselItemSpec; w?: number }) {
+function ItemCard({ s, w, priceLines }: { s: CarouselItemSpec; w?: number; priceLines?: string[] | null }) {
   const pg = s.priceGroup; const cap = s.caption;
   const line1 = [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null].filter(Boolean);
   const line2 = [cap.caption03.show ? cap.caption03.value : null].filter(Boolean);
   const v = H_VARIANT[s.variant] ?? H_VARIANT.Small;
   const width = w ?? v.w; // Small/Medium/Large — 폭은 Small/Large만 변경, Medium은 세로(이미지 비율)로만
+  const hasSpec = !!(priceLines && priceLines.length > 0); // 가격 노출 규격 선택됨
   return (
     <div className="flex shrink-0 flex-col gap-1.5" style={{ width }}>
       <div className={cn('flex w-full items-center justify-center rounded-[12px] bg-[#eef0f3] text-[#b3b9c0]', v.aspect)}>
@@ -245,14 +246,19 @@ function ItemCard({ s, w }: { s: CarouselItemSpec; w?: number }) {
       <div className="flex flex-col gap-0.5">
         {s.subTitle.show && <span className="text-[11px] text-[#8b949e]">{s.subTitle.value}</span>}
         <span className="text-[13px] font-bold leading-tight text-[#1a1a1a]">{s.title}</span>
-        {pg.show && (<>
+        {pg.show && (hasSpec ? (
+          // 가격 노출 규격 — 선택한 필드를 샘플 값으로. 첫 줄은 대표(굵게), 나머지는 작은 회색(2026-11-11 사용자 요청).
+          <div className="flex flex-col gap-0.5">
+            {priceLines!.map((ln, i) => <span key={i} className={cn('leading-tight', i === 0 ? 'text-[13px] font-bold text-[#1a1a1a]' : 'text-[11px] text-[#697582]')}>{ln}</span>)}
+          </div>
+        ) : (<>
           {pg.priceCaption.show && <span className="text-[11px] text-[#8b949e]">{pg.priceCaption.value}</span>}
           <span className="flex items-baseline gap-1">
             {pg.discountRate.show && <span className="text-[13px] font-bold text-[#3617ce]">{pg.discountRate.value}</span>}
             <span className="text-[13px] font-bold text-[#1a1a1a]">{pg.price}</span>
           </span>
           {pg.pricePeriod.show && <span className="text-[11px] text-[#8b949e]">{pg.pricePeriod.value}</span>}
-        </>)}
+        </>))}
         {s.subText01.show && <span className="text-[11px] text-[#8b949e]">{s.subText01.value}</span>}
         {s.subText02.show && <span className="text-[11px] text-[#8b949e]">{s.subText02.value}</span>}
         {line1.length > 0 && <span className="text-[11px] text-[#8b949e]">{line1.join(' · ')}</span>}
@@ -285,9 +291,10 @@ function Barcode() {
 }
 
 // ── 미리보기: CardHomeItem 행(세로형) — 이미지 좌 + 텍스트 우, Barcode 베리에이션 지원 ──
-function ItemRow({ s }: { s: CarouselItemSpec }) {
+function ItemRow({ s, priceLines }: { s: CarouselItemSpec; priceLines?: string[] | null }) {
   const pg = s.priceGroup; const cap = s.caption;
   const caps = [cap.show ? cap.value : null, cap.caption02.show ? cap.caption02.value : null, cap.caption03.show ? cap.caption03.value : null].filter(Boolean);
+  const hasSpec = !!(priceLines && priceLines.length > 0);
   if (s.variant === 'Barcode') return <Barcode />;
   return (
     <div className="flex w-full items-start gap-3">
@@ -297,13 +304,17 @@ function ItemRow({ s }: { s: CarouselItemSpec }) {
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         {s.subTitle.show && <span className="truncate text-[11px] text-[#8b949e]">{s.subTitle.value}</span>}
         <span className="truncate text-[14px] font-bold leading-tight text-[#1a1a1a]">{s.title}</span>
-        {pg.show && (
+        {pg.show && (hasSpec ? (
+          <span className="flex flex-col gap-0.5">
+            {priceLines!.map((ln, i) => <span key={i} className={cn('truncate leading-tight', i === 0 ? 'text-[14px] font-bold text-[#1a1a1a]' : 'text-[12px] text-[#697582]')}>{ln}</span>)}
+          </span>
+        ) : (
           <span className="flex items-baseline gap-1">
             {pg.discountRate.show && <span className="text-[14px] font-bold text-[#3617ce]">{pg.discountRate.value}</span>}
             <span className="text-[14px] font-bold text-[#1a1a1a]">{pg.price}</span>
             {pg.pricePeriod.show && <span className="text-[12px] font-medium text-[#697582]">{pg.pricePeriod.value}</span>}
           </span>
-        )}
+        ))}
         {(caps.length > 0 || s.count.show) && <span className="truncate text-[11px] text-[#8b949e]">{caps.join(' | ')}{s.count.show ? ` ${s.count.value}` : ''}</span>}
         {s.badgeGroup.show && (
           <span className="mt-0.5 flex flex-wrap gap-1">
@@ -318,7 +329,7 @@ function ItemRow({ s }: { s: CarouselItemSpec }) {
 }
 
 // ── 미리보기: CardHome(전체 카드) — 배너 풀블리드 · 가로형=캐러셀 / 세로형=세로 리스트. 클릭으로 코너 정보/속성 전환(읽기 전용이면 비활성) ──
-function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec; sel?: 'card' | 'item'; onCard?: () => void; onItem?: () => void; layout?: string }) {
+function CardPreview({ spec, sel, onCard, onItem, layout, priceLines }: { spec: CardHomeSpec; sel?: 'card' | 'item'; onCard?: () => void; onItem?: () => void; layout?: string; priceLines?: string[] | null }) {
   const ro = !onCard && !onItem; // 읽기 전용(상세 미리보기)
   const vertical = isVertical(layout);
   // 배너 = 옵션(배너·칩·CTA 3종만 옵션). spec.bannerOn 으로 노출 결정(2026-10-28). 레거시 스펙(bannerOn 없음)은 layout 로 방어.
@@ -354,7 +365,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
         <div className="mt-1 flex flex-col px-[28px] pb-2">
           {[0, 1, 2].map((i) => (
             <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
-              <ItemRow s={spec.item} />
+              <ItemRow s={spec.item} priceLines={priceLines} />
             </button>
           ))}
         </div>
@@ -362,7 +373,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       <div className="mt-2 flex gap-2 overflow-x-auto px-[28px] pb-2">
         {[0, 1, 2].map((i) => (
           <button key={i} type="button" disabled={ro} onClick={(e) => { e.stopPropagation(); onItem?.(); }} title={ro ? undefined : '카드 안 컴포넌트 = 코너 속성'} className={itemBtnCls()}>
-            <ItemCard s={spec.item} />
+            <ItemCard s={spec.item} priceLines={priceLines} />
           </button>
         ))}
       </div>
@@ -628,7 +639,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 }
 
 // ── 스튜디오 — 좌: 고정 미리보기 · 우: 1.기본 정보 + 2.코너 정보/속성(클릭 전환) ──
-export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource, layout, itemCount, afterPrice }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode; layout?: string; itemCount?: React.ReactNode; afterPrice?: React.ReactNode }) {
+export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource, layout, itemCount, afterPrice, priceLines, onReset }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode; layout?: string; itemCount?: React.ReactNode; afterPrice?: React.ReactNode; priceLines?: string[] | null; onReset?: () => void }) {
   const [spec, setSpec] = useState<CardHomeSpec>(() => defaultSpec(layout));
   const [sel, setSel] = useState<'card' | 'item'>('card'); // 미리보기 클릭 → 코너 정보(card) / 코너 속성(item)
   useEffect(() => {
@@ -651,7 +662,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
     setSel('card');
   }, [storageKey, layout]);
   const save = (next: CardHomeSpec) => { setSpec(next); try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignore */ } };
-  const reset = () => save(defaultSpec(layout)); // 레이아웃별 초기 설정값으로 되돌리기
+  const reset = () => { save(defaultSpec(layout)); onReset?.(); }; // 레이아웃별 초기 설정값 + 가격 노출 규격(부모 priceSpec)까지 비움(2026-11-11 사용자 요청)
 
   return (
     <div className="flex flex-wrap items-start gap-5">
@@ -662,7 +673,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
           <div className="px-4 py-3.5"><h3 className="text-[20px] font-bold leading-[1.3] text-slate-900">코너 미리보기</h3></div>
           <div className="bg-[#f3f4f7] px-4 pb-4 pt-4">
             {/* 클릭 불가(표시 전용) — 코너↔속성 선택 제거(2026-10-29(2) 사용자 요청). 우측 사용/미사용만 제어. */}
-            <CardPreview spec={spec} layout={layout} />
+            <CardPreview spec={spec} layout={layout} priceLines={priceLines} />
           </div>
         </section>
         <button type="button" onClick={reset}
