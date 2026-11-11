@@ -429,7 +429,7 @@ function ProductLoadModal({ catalog, cornerType, onClose, onAdd }: { catalog: Pr
 function SortableFillRow({ id, children }: { id: string; children: (h: { setRef: (el: HTMLElement | null) => void; props: any }) => React.ReactNode }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id });
   return (
-    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={isDragging ? 'relative z-10 opacity-80 shadow-lg' : ''}>
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn('border-b border-[var(--line2)] bg-white last:border-b-0', isDragging && 'relative z-10 opacity-80 shadow-lg')}>
       {children({ setRef: setActivatorNodeRef, props: { ...attributes, ...listeners } })}
     </div>
   );
@@ -1154,19 +1154,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               <span>배너 소재는 <b className="text-[var(--ac)]">배너 캠페인 관리</b>에서 등록해요. 아래 <b>배너 가져오기</b>로 등록된 배너를 담습니다.</span>
             </div>
           )}
-          {/* ── 아이템 — 실제 노출 항목 리스트(코너 유형 관리의 '아이템'에 대응). ── */}
-          <p className="mb-1.5 text-[12px] font-bold text-[var(--ink2)]">컴포넌트 <span className="font-normal text-[var(--ink4)]">· {itemWord} {items.length}개</span></p>
-          {/* 칩 On이면 '현재 칩의 메뉴'임을 알려주고, 칩마다 메뉴가 따로 저장된다. */}
+          {/* ── 아이템 — 실제 노출 항목 리스트. SB(상품 전시 수정) 표 규격: 회색 헤더 + 단일 보더 컨테이너 + 행 구분선(행은 인라인 편집 유지). ── */}
           {chipMode && (
-            <div className="mb-1.5 mt-1 flex flex-wrap items-center gap-1.5 text-[12px]">
+            <div className="mb-1.5 flex flex-wrap items-center gap-1.5 text-[12px]">
               <span className="font-semibold text-[var(--ink2)]">{isCategory ? '카테고리' : '칩'} <span className="text-[var(--ac)]">&lsquo;{chips[chipIdx]}&rsquo;</span>의 {isCategory ? '컴포넌트' : '메뉴'}</span>
               <span className="text-[var(--ink4)]">— 위 {isCategory ? '카테고리' : '칩'}를 눌러 따로 구성</span>
             </div>
           )}
+          <div className="overflow-hidden rounded-[8px] border border-[var(--line2)]">
+          <div className="flex items-center border-b border-[var(--line2)] bg-[var(--th)] px-3 py-2 text-[12px] font-bold text-[var(--ink2)]">컴포넌트 <span className="ml-1 font-normal text-[var(--ink4)]">· {itemWord} {items.length}개</span></div>
           <DndContext sensors={itemSensors} collisionDetection={closestCorners} onDragEnd={onItemDragEnd}>
           <SortableContext items={items.map((o) => o.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-1.5">
-            {items.length === 0 && <p className="rounded-[8px] border border-dashed border-[var(--line3)] px-3 py-4 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 ' + itemWord + '에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
+          <div>
+            {items.length === 0 && <p className="px-3 py-5 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 ' + itemWord + '에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
             {items.map((o) => (
               <SortableFillRow key={o.id} id={o.id}>{(h) => {
               // 배너 — 미리보기와 동일한 '띠 배너'(문구+이미지 합성)로 통째로 노출(2026-11-10 사용자 요청). 소재·문구·랜딩은 배너 캠페인 소유 → 기본 읽기 전용, '수정'을 눌러야 편집.
@@ -1180,7 +1180,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                 };
                 // 배너는 이미지·문구·랜딩이 전부 배너 캠페인 소유 → 여기선 수정 불가(문구·링크 모두 읽기 전용). 교체는 '불러오기'로만(2026-11-10 사용자 요청).
                 return (
-                <div className="space-y-2 rounded-[9px] border border-[var(--line2)] bg-white p-2">
+                <div className="space-y-2 px-2.5 py-2">
                   <div className="flex items-start gap-2">
                     {!bannerSingle && <span ref={h.setRef} {...h.props} className="mt-1 shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>}
                     {/* 띠 배너 미리보기 — 가로로 긴 소재(예 672×324)라 구좌 폭을 꽉 채워 통째로 노출. 클릭하면 배너 캠페인에서 소재 교체. 2026-11-11 사용자 요청. */}
@@ -1210,7 +1210,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                 const connected = o.mode === 'load';
                 const linkEdit = !connected || !!rowEdit[o.id]; // 직접 추가 행은 링크도 바로 편집
                 return (
-                <div className="flex items-center gap-2 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
+                <div className="flex items-center gap-2 px-2.5 py-2">
                   <span ref={h.setRef} {...h.props} className="shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>
                   {/* 썸네일 — 클릭하면 불러오기(이미지 교체). 정사각 */}
                   <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="이미지 불러오기"
@@ -1239,7 +1239,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               // 칩형(퀵메뉴) — 행마다 [직접 등록 | 불러오기] 세그먼트. 직접=아이콘·텍스트·링크 입력, 불러오기=메뉴 관리에서 메뉴를 끌어옴(2026-11-05 사용자 요청: 세그먼트 부활·소스는 메뉴 관리).
               const loaded = o.mode === 'load';
               return (
-              <div className="flex items-center gap-1.5 rounded-[9px] border border-[var(--line2)] bg-white px-2 py-1.5">
+              <div className="flex items-center gap-1.5 px-2.5 py-2">
                 <span ref={h.setRef} {...h.props} className="shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>
                 {/* 세그먼트 — 직접 | 불러오기. 불러오기를 고르면 '모달 즉시 열기/잠금' 대신 우측에 '불러오기' 버튼이 뜬다(2026-11-05 사용자 요청: 켜짐 금지, 우측 버튼). */}
                 <div className="flex shrink-0 gap-0.5 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-[3px] text-[11px] font-semibold">
@@ -1271,6 +1271,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           </div>
           </SortableContext>
           </DndContext>
+          </div>
           {/* 불러오기 모달 — 유형별 카탈로그에서 멀티 셀렉으로 담기 */}
           {loadForId && (
             <ProductLoadModal catalog={catalog} cornerType={isStatus ? '상태 안내형' : corner.cornerType} onClose={() => setLoadForId(null)}
