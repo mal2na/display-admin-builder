@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { FilterPanel, ListHeader, ListBottom, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
 import { PageHeader } from '@/components/page-header';
-import { SplashTabs } from './splash-tabs';
 import { CHIP_BASE } from '@/lib/display-taxonomy';
 
 export type SplashRow = {
@@ -103,7 +102,6 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
         trail={['운영관리', 'App 스플래시 관리']}
         title="App 스플래시 관리"
       />
-      <SplashTabs />
 
       {/* 검색 영역 (1) — 참고 디자인 .ft 폼 테이블 + .sbtn */}
       <div className="mt-6">

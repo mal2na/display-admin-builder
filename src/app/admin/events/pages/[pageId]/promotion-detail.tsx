@@ -95,11 +95,11 @@ const fmtD = (s: string) => (s ? s.slice(0, 10).replace(/-/g, '.') : '');
 type TabKey = 'info' | 'comments' | 'history';
 
 export function PromotionDetail({
-  program: p, pageId, status, builderHref, history, comments,
+  program: p, pageId, status, builderHref, history, comments, initialTab = 'info',
 }: {
-  program: PromotionInfo; pageId: string; status: string; builderHref: string; history: HistoryRow[]; comments: CommentRow[];
+  program: PromotionInfo; pageId: string; status: string; builderHref: string; history: HistoryRow[]; comments: CommentRow[]; initialTab?: TabKey;
 }) {
-  const [tab, setTab] = useState<TabKey>('info');
+  const [tab, setTab] = useState<TabKey>(initialTab);
   const [zoom, setZoom] = useState(1); // 미리보기 배율 (비율 유지)
   const router = useRouter();
   const [deleting, startDelete] = useTransition();

@@ -1,19 +1,44 @@
-// SB BO-AIM-ETC-PG045 App 스플래시 상세정보 · 운영 관리
+// SB BO-AIM-ETC-PG045 App 스플래시 상세정보 · PG047 변경/승인이력(TAB) · 운영 관리
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { SplashDetailView } from '../splash-detail-view';
+import { SplashDetailTabs, type SplashHistoryRow } from '../splash-detail-tabs';
 import { APPLY_STATUS, computeApplyStatus } from '@/lib/widget-taxonomy';
 import { requestApprovalSplash, cancelRequestSplash } from '../actions';
 import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
 
-export default async function SplashDetailPage({ params }: { params: { id: string } }) {
-  const s = await prisma.appSplash.findUnique({ where: { id: params.id } });
+export default async function SplashDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams?: { tab?: string };
+}) {
+  const s = await prisma.appSplash.findUnique({
+    where: { id: params.id },
+    include: { history: { orderBy: { createdAt: 'desc' } } },
+  });
   if (!s) notFound();
   const newer = await prisma.appSplash.count({ where: { osType: s.osType, approvalStatus: 'approved', version: { gt: s.version } } });
   const apply = computeApplyStatus(s.approvalStatus, s.applyStartAt, newer > 0);
+
+  // 변경/승인이력 회차 — 최신순. 최초 등록(가장 오래된) 회차는 변경내용 버튼 비활성.
+  const oldestId = s.history.length ? s.history[s.history.length - 1].id : null;
+  const historyRows: SplashHistoryRow[] = s.history.map((h) => ({
+    id: h.id,
+    status: h.status,
+    version: h.version,
+    requester: h.requester,
+    requestedAt: h.requestedAt?.toISOString() ?? null,
+    requestReason: h.requestReason,
+    manager: h.manager,
+    processedAt: h.processedAt?.toISOString() ?? null,
+    processReason: h.processReason,
+    changeNote: h.changeNote,
+    canDiff: h.id !== oldestId,
+  }));
 
   const footer = (
     <div className="flex items-center justify-between pt-2">
@@ -39,8 +64,10 @@ export default async function SplashDetailPage({ params }: { params: { id: strin
         trail={['운영 관리', 'App 스플래시 관리', 'App 스플래시 상세']}
         title="App 스플래시 상세"
       />
-      <SplashDetailView
-        s={{
+      <SplashDetailTabs
+        splashId={s.id}
+        initialTab={searchParams?.tab === 'history' ? 'history' : 'detail'}
+        detail={{
           version: s.version, osType: s.osType, applyLabel: APPLY_STATUS[apply].label, title: s.title, applyStartAt: s.applyStartAt?.toISOString() ?? null, updateContent: s.updateContent,
           approvalStatus: s.approvalStatus, approvalRequester: s.approvalRequester, approvalManager: s.approvalManager,
           approvalRequestedAt: s.approvalRequestedAt?.toISOString() ?? null, approvalProcessedAt: s.approvalProcessedAt?.toISOString() ?? null,
@@ -50,6 +77,7 @@ export default async function SplashDetailPage({ params }: { params: { id: strin
           createdBy: s.createdBy, createdAt: s.createdAt.toISOString(), updatedBy: s.updatedBy, updatedAt: s.updatedAt.toISOString(),
         }}
         footer={footer}
+        historyRows={historyRows}
       />
     </div>
   );

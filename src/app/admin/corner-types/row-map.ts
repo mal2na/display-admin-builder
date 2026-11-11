@@ -28,6 +28,7 @@ export function toCornerTypeRow(r: any, updatedBy: string | null): CornerTypeRow
     useImage: r.useImage ?? true,
     usePrice: r.usePrice ?? true,
     useDesc: r.useDesc ?? true,
+    priceSpec: r.priceSpec ?? null,
     defaultMinItems: r.defaultMinItems ?? null,
     defaultMaxItems: r.defaultMaxItems ?? null,
     defaultSortStrategy: r.defaultSortStrategy ?? null,

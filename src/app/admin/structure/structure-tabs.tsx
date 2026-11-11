@@ -143,7 +143,7 @@ const DIAGRAM_HTML = `
 <rect class="bx-lv" x="72" y="422" width="204" height="104" rx="8"/>
 <text class="tx t2" x="96" y="456">Container</text>
 <text class="tm t3" x="96" y="480">전체페이지 관리 · 1:1</text>
-<text class="tm t4" x="96" y="502">혜택 홈 · 쇼핑 홈</text>
+<text class="tm t4" x="96" y="502">홈 · 혜택/쇼핑/마이</text>
 <!-- Template → Container (담김) -->
 <path class="ar-a" d="M296 476H280" marker-end="url(#ma)"/>
 
@@ -400,6 +400,42 @@ function IaView() {
               </ul>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-1 flex items-center gap-2 text-[15px] font-extrabold text-slate-900"><span className="inline-block h-[14px] w-[4px] rounded-sm bg-[#3617ce]" />채널 화면 구조</h2>
+        <p className="mb-3 text-[13px] font-medium leading-relaxed text-slate-600">
+          앱 메인 = <b className="text-slate-800">홈</b>(최상위·공통) + 하단 탭바로 전환되는 <b className="text-slate-800">혜택·쇼핑·마이</b>. 각각 전시화면 관리의 <b>Container</b> 1개이며, &lsquo;홈 위 / 탭 아래&rsquo; 관계는 Container 중첩이 아니라 여기 IA에서 정의한다.
+        </p>
+        <div className="rounded-xl border border-[#dce0e5] bg-white p-4">
+          {/* 홈 — 최상위 공통 */}
+          <div className="rounded-lg border border-[#3617ce] bg-[#f1f2ff] px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-md bg-[#3617ce] px-2 py-0.5 text-[11px] font-bold text-white">홈</span>
+              <span className="text-[13px] font-bold text-slate-900">AI 어시스턴트 랜딩 · 최상위 공통</span>
+              <span className="ml-auto font-mono text-[11px] text-[#3617ce]">Container(MAIN) · 기본/로그인/비로그인</span>
+            </div>
+            <p className="mt-1 text-[12px] leading-relaxed text-slate-600">인사말 · 추천(셀프개통 · 질문칩 · 여행상품) · 하단 AI 입력바. 모든 탭 위에 공통으로 얹힌다.</p>
+          </div>
+          {/* 연결 */}
+          <div className="my-1.5 text-center text-[11.5px] font-medium text-slate-400">↓ 스크롤 · 하단 탭바로 본문 전환</div>
+          {/* 탭 3종 */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {([['혜택 홈', '퀵메뉴 · 영화예매 · 0 Week'], ['쇼핑 홈', '단말기 · 요금제 · 구독'], ['마이 홈', '요금 · 포인트 · 결합']] as const).map(([t, s]) => (
+              <div key={t} className="rounded-lg border border-[#dce0e5] bg-white px-3 py-2.5">
+                <p className="text-[13px] font-bold text-slate-900">{t}</p>
+                <p className="mt-0.5 text-[11.5px] text-slate-600">{s}</p>
+                <p className="mt-1 font-mono text-[10.5px] text-[#3617ce]">Container · 기본/로그인/비로그인</p>
+              </div>
+            ))}
+          </div>
+          {/* 하단 탭바 힌트 */}
+          <div className="mt-2 flex items-center justify-center gap-3 rounded-md bg-[#f8f9fb] py-1.5 text-[11.5px] font-medium text-slate-500">
+            <span className="font-semibold text-slate-600">하단 탭바</span>
+            <span className="text-slate-300">·</span>
+            <span>혜택</span><span>쇼핑</span><span>마이</span>
+          </div>
         </div>
       </section>
 

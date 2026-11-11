@@ -344,7 +344,7 @@ function CardPreview({ spec, sel, onCard, onItem, layout }: { spec: CardHomeSpec
       {/* 칩(Chip) 옵션 — 상단 카테고리 탭(2026-10-28 사용자 요청: 배너·칩·CTA 옵션 가로/세로 공통) */}
       {spec.chipOn && (
         <div className="mt-2 flex gap-1.5 overflow-x-auto px-[28px]">
-          {['Chip', 'Chip', 'Chip'].map((c, i) => (
+          {['카테고리', '카테고리', '카테고리'].map((c, i) => (
             <span key={i} className={cn('flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12px]', i === 0 ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>{c}</span>
           ))}
         </div>
@@ -561,7 +561,7 @@ function PriceCols({ pg, vertical, onChange }: { pg: CarouselItemSpec['priceGrou
 }
 
 // ── 코너 속성(CarouselItem 51) 본문 ───────────────────────────
-function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChange: (v: CarouselItemSpec) => void; layout?: string }) {
+function CarouselItemBody({ s, onChange, layout, afterPrice }: { s: CarouselItemSpec; onChange: (v: CarouselItemSpec) => void; layout?: string; afterPrice?: React.ReactNode }) {
   const set = <K extends keyof CarouselItemSpec,>(k: K, v: CarouselItemSpec[K]) => onChange({ ...s, [k]: v });
   // 세로형(CardHomeItem)=Profile/Data/Barcode, 가로형(CarouselItem)=Small/Medium/Large
   const vertical = isVertical(layout);
@@ -589,6 +589,13 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
         <ChkRow label="컴포넌트 타이틀(ItemTitle)" checked disabled />
         {/* 세로형 = 가격 그룹(가격·할인율·기간)을 캡션 위로(2026-11-05 사용자 요청). */}
         {vertical && <PriceCols pg={pg} vertical onChange={setPg} />}
+        {/* 가격 규격 — 별도 박스 대신 코너 속성 테이블의 한 '행'(라벨 | 값)으로 통합(2026-11-11 사용자 요청: 테이블 밑 박스 UI 제거). */}
+        {vertical && afterPrice && (
+          <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)_150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">
+            <div className="flex min-w-0 flex-col justify-start gap-0.5 bg-[#f8f9fb] px-3 py-2.5"><span className="text-[14px] font-medium leading-[1.2] text-[#454f59]">가격 노출 규격</span><span className="text-[10.5px] leading-tight text-[#8b949e]">(PriceSpec)</span></div>
+            <div className="col-span-5 min-w-0 px-3 py-2.5">{afterPrice}</div>
+          </div>
+        )}
         {vertical && (
           <StudioPairs>
             <ChkRow bare label="캡션(Caption01)" checked disabled />
@@ -596,6 +603,13 @@ function CarouselItemBody({ s, onChange, layout }: { s: CarouselItemSpec; onChan
           </StudioPairs>
         )}
         {!vertical && <PriceCols pg={pg} vertical={false} onChange={setPg} />}
+        {/* 가격 규격 — 별도 박스 대신 코너 속성 테이블의 한 '행'(라벨 | 값)으로 통합(2026-11-11 사용자 요청: 테이블 밑 박스 UI 제거). */}
+        {!vertical && afterPrice && (
+          <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)] items-stretch border-b border-[#eef0f3] last:border-b-0">
+            <div className="flex min-w-0 flex-col justify-start gap-0.5 bg-[#f8f9fb] px-3 py-2.5"><span className="text-[14px] font-medium leading-[1.2] text-[#454f59]">가격 노출 규격</span><span className="text-[10.5px] leading-tight text-[#8b949e]">(PriceSpec)</span></div>
+            <div className="col-span-3 min-w-0 px-3 py-2.5">{afterPrice}</div>
+          </div>
+        )}
         {!vertical && (
           <StudioPairs>
             <ChkRow bare label="서브 텍스트(SubText)" checked disabled />
@@ -614,7 +628,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 }
 
 // ── 스튜디오 — 좌: 고정 미리보기 · 우: 1.기본 정보 + 2.코너 정보/속성(클릭 전환) ──
-export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource, layout, itemCount }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode; layout?: string; itemCount?: React.ReactNode }) {
+export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, registerResult, contentSource, layout, itemCount, afterPrice }: { storageKey?: string; basicInfo?: React.ReactNode; registerResult?: React.ReactNode; contentSource?: React.ReactNode; layout?: string; itemCount?: React.ReactNode; afterPrice?: React.ReactNode }) {
   const [spec, setSpec] = useState<CardHomeSpec>(() => defaultSpec(layout));
   const [sel, setSel] = useState<'card' | 'item'>('card'); // 미리보기 클릭 → 코너 정보(card) / 코너 속성(item)
   useEffect(() => {
@@ -683,7 +697,7 @@ export function CornerStudio({ storageKey = 'cornerspec-v1', basicInfo, register
                 <span className="text-[12px] font-bold text-[#454f59]">아이템(요소)</span>
                 <span className="text-[11px] text-[#8b949e]">· 리스트에서 반복되는 카드 1개 (상품 이미지·타이틀·가격)</span>
               </div>
-              <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} />
+              <CarouselItemBody s={spec.item} onChange={(ni) => save({ ...spec, item: ni })} layout={layout} afterPrice={afterPrice} />
               {/* 노출 개수 — 아이템(요소) 하위(2026-10-29(2) 사용자 요청). 상위 폼의 minItems/maxItems와 연동. */}
               {itemCount}
             </div>

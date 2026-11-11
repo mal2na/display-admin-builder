@@ -460,6 +460,7 @@ export async function saveCommentReplies(
     },
   });
   revalidatePath(`/admin/events/pages/${pageId}`);
+  revalidatePath('/admin/comments'); // 전역 댓글·리뷰 관리 목록도 갱신(진입점 2개 공용)
 }
 
 // ── 프로모션 본문 빌더 통합 — 본문을 전시 빌더 엔진(Template→Corner)으로 구성 ──

@@ -1,4 +1,4 @@
-import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles, ImageIcon } from 'lucide-react';
+import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, User, Lock, GripVertical, Sparkles, ImageIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 
@@ -111,8 +111,8 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   //  단, 업무 진입형 퀵메뉴(ChipHome)는 접지 않고 2행 8개를 그대로 보여준다('Chip' 라벨, 2026-11-09 사용자 요청).
   const CHIP_PH = /^(chip\d*|전체|카테고리|tab\d*|category\d*)$/i;
   const allPh = variant !== 'home' && component.atoms.length > 0 && component.atoms.every((a) => CHIP_PH.test((a.content ?? a.name ?? '').trim()));
-  //  → 상품형 미리보기와 톤 통일: placeholder면 'Chip' 3개(첫 칩 선택)로 그린다(2026-11-10 사용자 요청).
-  const atoms = allPh ? [0, 1, 2].map((k) => ({ ...component.atoms[0], id: `${component.atoms[0].id}-ph${k}`, content: 'Chip' })) : component.atoms;
+  //  → 카테고리형 상단 탭 placeholder는 '카테고리' 3개(첫 칩 선택)로 그린다(2026-11-10 사용자 요청: Chip 아니라 카테고리로 표기). 업무 진입형 퀵메뉴(home)는 위에서 제외되어 'Chip' 유지.
+  const atoms = allPh ? [0, 1, 2].map((k) => ({ ...component.atoms[0], id: `${component.atoms[0].id}-ph${k}`, content: '카테고리' })) : component.atoms;
 
   // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
   if (variant === 'home') {
@@ -854,28 +854,7 @@ export function DeviceFrame({
         <div style={fill ? undefined : { height: bodyHeight }} className={cn('overflow-y-auto', fill && 'min-h-0 flex-1', slim ? 'space-y-3 bg-[#e9ebf4] px-2 py-2.5' : 'space-y-4 bg-slate-200 px-5 py-4')}>
           {children}
         </div>
-        {/* 하단 네비 — 좌측 플로팅 컴포즈 버튼(T+) + 혜택(활성·채운 배지)·쇼핑·마이. T우주 앱 기준. slim=teal. */}
-        <div className="flex shrink-0 items-center border-t bg-white px-3 py-1.5 text-[11px]">
-          <div className={cn('-translate-y-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-b shadow-sm ring-1', slim ? 'from-teal-100 to-teal-50 ring-teal-100' : 'from-indigo-100 to-indigo-50 ring-indigo-100')}>
-            <span className={cn('relative text-[15px] font-bold leading-none', slim ? 'text-teal-600' : 'text-indigo-600')}>
-              T<span className="absolute -right-2 -top-0.5 text-[9px] font-bold">+</span>
-            </span>
-          </div>
-          <div className="flex flex-1 items-center justify-around">
-            <span className={cn('flex flex-col items-center gap-1 font-semibold', slim ? 'text-teal-600' : 'text-indigo-600')}>
-              <span className={cn('flex h-6 w-6 items-center justify-center rounded-full text-white shadow-sm', slim ? 'bg-teal-500' : 'bg-indigo-600')}>
-                <Percent className="h-3.5 w-3.5" />
-              </span>
-              혜택
-            </span>
-            <span className="flex flex-col items-center gap-1 text-slate-400">
-              <ShoppingBag className="h-5 w-5" /> 쇼핑
-            </span>
-            <span className="flex flex-col items-center gap-1 text-slate-400">
-              <User className="h-5 w-5" /> 마이
-            </span>
-          </div>
-        </div>
+        {/* 하단 네비(혜택/쇼핑/마이·T⁺) 제거 — 미리보기에서 탭 UI는 빼기로(2026-11-11 사용자 요청). 탭 전환은 IA 레이어의 몫. */}
       </div>
     </div>
   );

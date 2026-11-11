@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PageTabs } from '@/components/page-tabs';
 import Link from 'next/link';
-import { Search, Download, ShieldAlert, ShieldOff, Flag, ExternalLink } from 'lucide-react';
+import { Download, ShieldAlert, ShieldOff, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { PageHeader } from '@/components/page-header';
@@ -31,24 +32,20 @@ const TABS = [
 ] as const;
 type TabKey = typeof TABS[number]['key'];
 
-export function CommentAdmin({ promoHref = '/admin/events' }: { promoHref?: string }) {
+export type GlobalCommentRow = {
+  id: string; no: number; ch: string; promoId: string; promoName: string; promoPageId: string | null;
+  type: string; content: string; likes: number; at: string;
+  status: '노출' | '미노출' | '검수 중'; reply: string; replyBy: string; replyCount: number; replyAt: string; answered: string;
+};
+
+export function CommentAdmin({ comments }: { comments: GlobalCommentRow[] }) {
   const [tab, setTab] = useState<TabKey>('comment');
-  const [detailOpen, setDetailOpen] = useState(false); // 상세 진입 시 상단 탭 숨김
   return (
     <div className="px-12 py-9 pb-28">
-      {detailOpen ? (
-        <PageHeader trail={['운영 관리', '댓글·리뷰 관리', '댓글 상세']} title="댓글 상세" />
-      ) : (
-        <PageHeader trail={['운영 관리', '댓글·리뷰 관리']} title="댓글·리뷰 관리" />
-      )}
-
-      {/* 탭 — 목록에서만 표시(상세 진입 시 숨김) */}
-      {!detailOpen && (
-        <PageTabs tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => { setTab(k as typeof tab); setDetailOpen(false); }} />
-      )}
-
+      <PageHeader trail={['운영 관리', '댓글·리뷰 관리']} title="댓글·리뷰 관리" />
+      <PageTabs tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => setTab(k as typeof tab)} />
       <div>
-        {tab === 'comment' && <CommentsTab onDetail={setDetailOpen} promoHref={promoHref} />}
+        {tab === 'comment' && <CommentsTab comments={comments} />}
         {tab === 'review' && <ReviewsTab />}
         {tab === 'block' && <BlockTab />}
       </div>
@@ -56,28 +53,12 @@ export function CommentAdmin({ promoHref = '/admin/events' }: { promoHref?: stri
   );
 }
 
-// ── 댓글 관리 (목록 ↔ 상세) ──
-type Comment = { no: number; ch: string; promo: string; type: string; content: string; likes: number; at: string; reply: string; replyBy: string; replyCount: number; replyAt: string; answered: string; visible: string };
-const COMMENTS: Comment[] = [
-  { no: 1119, ch: '35D29519FKDIEL', promo: 'ENV123456', type: '문의', content: '어떻게 참여하는건가요?', likes: 11, at: '2026.08.18 16:24', reply: '소개페이지를 SNS로 연결하시면 됩니다.', replyBy: '홍길동(P123456)', replyCount: 3, replyAt: '2026.08.18 18:46', answered: '답변완료', visible: '노출' },
-  { no: 1118, ch: '35D29519A0X1Q2', promo: 'ENV123455', type: '반응', content: '20% 쿠폰 감사합니다', likes: 0, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '미노출' },
-  { no: 1117, ch: '35D29519B1Y2R3', promo: 'ENV123454', type: '반응', content: '쿠폰 주세요', likes: 0, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '미노출' },
-  { no: 1116, ch: '35D29519C2Z3S4', promo: 'ENV123453', type: '반응', content: '감사합니다', likes: 0, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '검수 중' },
-  { no: 1115, ch: '35D29519D3A4T5', promo: 'ENV123452', type: '반응', content: '너무 갖고싶어요', likes: 0, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '미노출' },
-  { no: 1114, ch: '35D29519E4B5U6', promo: 'ENV123451', type: '반응', content: '감사요', likes: 0, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '노출' },
-  { no: 1113, ch: '35D29519F5C6V7', promo: 'ENV123450', type: '반응', content: '나도 줘요', likes: 0, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '노출' },
-  { no: 1112, ch: '35D29519G6D7W8', promo: 'ENV123449', type: '반응', content: '저도 주세요', likes: 1, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '미노출' },
-  { no: 1111, ch: '35D29519H7E8X9', promo: 'ENV123448', type: '반응', content: '주세요 쿠폰', likes: 5, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '미노출' },
-  { no: 1110, ch: '35D29519I8F9Y0', promo: 'ENV123447', type: '반응', content: '감사합니다', likes: 1, at: '2026.08.18 16:24', reply: '', replyBy: '', replyCount: 0, replyAt: '', answered: '답변대기', visible: '미노출' },
-];
-
-function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => void; promoHref: string }) {
-  const [sel, setSel] = useState<Comment | null>(null);
-  const [checked, setChecked] = useState<Set<number>>(new Set());
-  const open = (c: Comment) => { setSel(c); onDetail(true); };
-  if (sel) return <CommentDetail comment={sel} onBack={() => { setSel(null); onDetail(false); }} promoHref={promoHref} />;
-
-  const toggle = (no: number) => setChecked((s) => { const n = new Set(s); n.has(no) ? n.delete(no) : n.add(no); return n; });
+// ── 댓글 관리 (전역 목록) — 행 클릭 → 댓글 상세 페이지(프로모션 정보 포함) ──
+function CommentsTab({ comments }: { comments: GlobalCommentRow[] }) {
+  const router = useRouter();
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const rows = useMemo(() => comments, [comments]);
+  const toggle = (id: string) => setChecked((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   return (
     <div>
       {/* 검색 — 참고 디자인 .ft 폼 테이블 + .sbtn */}
@@ -113,32 +94,37 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
         />
       </div>
 
-      <ListHeader title="조회결과" count={COMMENTS.length} />
-      {/* 목록 — 디자인 시스템(전체페이지 관리 테이블): 헤더 #f8f9fb·보더 #e8ecef·13px 레귤러 */}
+      <ListHeader title="조회결과" count={rows.length} />
+      {/* 목록 — 디자인 시스템(전체페이지 관리 테이블). SB EVTMSN 컬럼: 노출상태는 등록일시 뒤, 답글 등록일시 포함. */}
       <div className="overflow-x-auto border-t border-[#dce0e5]">
-        <table className="w-full min-w-[1140px] text-[13px] font-normal">
+        <table className="w-full min-w-[1240px] text-[13px] font-normal">
           <thead>
             <tr className={cn(THEAD_TR_CLS)}>
-              <th className="w-8"></th><th>번호</th><th className="text-left">멤버십 채널 ID</th><th>프로모션 ID</th><th>댓글유형</th><th className="text-left">댓글내용</th><th>노출여부</th><th>좋아요 수</th><th>등록일시</th><th className="text-left">답글내용</th><th>답글 등록자</th><th>총 답글 수</th><th>답변여부</th>
+              <th className="w-8"></th><th>No.</th><th className="text-left">멤버십 채널 ID</th><th>프로모션 ID</th><th>댓글유형</th><th className="text-left">댓글내용</th><th>좋아요</th><th>등록일시</th><th>노출상태</th><th className="text-left">답글내용</th><th>답글 등록자</th><th>총 답글 수</th><th>답글 등록일시</th><th>답변여부</th>
             </tr>
           </thead>
           <tbody>
-            {COMMENTS.map((c) => (
-              <tr key={c.no} className={cn(TBODY_TR_CLS, 'cursor-pointer text-center')} onClick={() => open(c)}>
-                <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={checked.has(c.no)} onChange={() => toggle(c.no)} className="h-4 w-4 accent-indigo-600" /></td>
+            {rows.length === 0 ? (
+              <tr><td colSpan={14} className="px-3 py-16 text-center text-slate-400">조회된 댓글이 없습니다.</td></tr>
+            ) : rows.map((c) => (
+              <tr key={c.id} className={cn(TBODY_TR_CLS, 'cursor-pointer text-center')} onClick={() => router.push(`/admin/comments/${c.id}`)}>
+                <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={checked.has(c.id)} onChange={() => toggle(c.id)} className="h-4 w-4 accent-indigo-600" /></td>
                 <td className="px-3 py-2.5 text-slate-600">{c.no}</td>
                 <td className="px-3 py-2.5 text-left"><span className="font-mono text-[11px] text-slate-500">{c.ch.slice(0, 10)}…</span></td>
                 <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                  <Link href={promoHref} className="text-indigo-600 underline hover:text-indigo-800" title="프로모션 상세로 이동">{c.promo}</Link>
+                  {c.promoPageId ? (
+                    <Link href={`/admin/events/pages/${c.promoPageId}`} className="font-mono text-[11px] text-indigo-600 underline hover:text-indigo-800" title="프로모션 상세로 이동">{c.promoId.slice(0, 10)}…</Link>
+                  ) : <span className="font-mono text-[11px] text-slate-400">{c.promoId.slice(0, 10)}…</span>}
                 </td>
                 <td className="px-3 py-2.5"><Pill>{c.type}</Pill></td>
                 <td className="max-w-[220px] truncate px-3 py-2.5 text-left text-slate-700">{c.content}</td>
-                <td className="px-3 py-2.5"><YNCell label={c.visible} /></td>
                 <td className="px-3 py-2.5 text-slate-600">{c.likes}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.at}</td>
+                <td className="px-3 py-2.5"><Pill>{c.status}</Pill></td>
                 <td className="max-w-[220px] truncate px-3 py-2.5 text-left text-slate-500">{c.reply || '-'}</td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.replyBy || '-'}</td>
                 <td className="px-3 py-2.5 text-slate-500">{c.replyCount || '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">{c.replyAt || '-'}</td>
                 <td className="px-3 py-2.5"><YNCell label={c.answered} /></td>
               </tr>
             ))}
@@ -147,104 +133,10 @@ function CommentsTab({ onDetail, promoHref }: { onDetail: (open: boolean) => voi
       </div>
 
       {/* 하단 — 전 메뉴 공통: 표와 32px · 가운데 페이저 · 우측 액션 */}
-      <ListBottom page={1} totalPages={5} onPageChange={() => {}}>
+      <ListBottom page={1} totalPages={1} onPageChange={() => {}}>
         <Button variant="primary" size="sm" disabled={checked.size === 0}>노출여부 변경{checked.size > 0 ? ` (${checked.size})` : ''}</Button>
         <Button variant="outline" size="sm"><Download className="mr-1 h-3.5 w-3.5" /> 엑셀 다운로드</Button>
       </ListBottom>
-    </div>
-  );
-}
-
-// ── 폼 테이블 소품 (라벨셀 + 값셀 격자) ──
-function FT({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)] overflow-hidden rounded-lg border-l border-t border-slate-200 text-[13px]">{children}</div>;
-}
-function L({ children, span }: { children?: React.ReactNode; span?: string }) {
-  // 패딩은 공용 FieldRow 와 동일하게 — 라벨 12/16, 값 10/16 (2026-10-08 상세 화면 통일)
-  return <div className={cn('flex items-center border-b border-r border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-600', span)}>{children}</div>;
-}
-function C({ children, span }: { children?: React.ReactNode; span?: string }) {
-  return <div className={cn('flex items-center gap-2 border-b border-r border-slate-200 bg-white px-4 py-2.5', span)}>{children}</div>;
-}
-const roBox = 'h-8 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-[13px] text-slate-600 flex items-center';
-
-function CommentDetail({ comment, onBack, promoHref }: { comment: Comment; onBack: () => void; promoHref: string }) {
-  return (
-    <div className="space-y-6">
-      {/* 1. 프로모션 정보 */}
-      <section>
-        <p className="mb-2.5 text-[15px] font-bold">• 프로모션 정보</p>
-        <FT>
-          <L>프로모션 ID</L>
-          <C><Link href={promoHref} className={cn(roBox, 'text-indigo-600 underline hover:text-indigo-800')}>{comment.promo}</Link></C>
-          <L>프로모션 명</L>
-          <C><Link href={promoHref} className={cn(roBox, 'text-indigo-600 underline hover:text-indigo-800')}>룰렛 응모 이벤트</Link></C>
-
-          <L>프로모션 유형</L>
-          <C><span className={cn(roBox, 'w-28 justify-center')}>이벤트</span><span className={cn(roBox, 'w-28 justify-center')}>응모형</span></C>
-          <L>전시여부</L>
-          <C><Radio name="disp" label="사용" checked disabled /><Radio name="disp" label="미사용" disabled /></C>
-
-          <L>전시기간</L>
-          <C><span className={cn(roBox, 'w-32 justify-center')}>26.08.01</span><span className="text-slate-400">~</span><span className={cn(roBox, 'w-32 justify-center')}>26.08.30</span></C>
-          <L>참여기간</L>
-          <C><span className={cn(roBox, 'w-32 justify-center')}>26.08.05</span><span className="text-slate-400">~</span><span className={cn(roBox, 'w-32 justify-center')}>26.08.19</span></C>
-
-          <L>댓글 사용여부</L>
-          <C><Radio name="cuse" label="노출" checked disabled /><Radio name="cuse" label="미노출" disabled /></C>
-          <L> </L>
-          <C> </C>
-
-          <L>댓글 차단여부</L>
-          <C><Radio name="blk" label="사용" disabled /><Radio name="blk" label="미사용" checked disabled /></C>
-          <L>댓글 차단기간</L>
-          <C><span className={cn(roBox, 'w-32 justify-center')}>26.08.05</span><span className="text-slate-400">~</span><span className={cn(roBox, 'w-32 justify-center')}>26.08.19</span></C>
-        </FT>
-      </section>
-
-      {/* 2. 댓글정보 */}
-      <section>
-        <p className="mb-2.5 text-[15px] font-bold">• 댓글정보</p>
-        <FT>
-          <L>멤버십 채널 ID</L>
-          <C><span className={cn(roBox, 'w-full font-mono')}>{comment.ch}…</span></C>
-          <L>댓글유형</L>
-          <C><span className={cn(roBox, 'w-40')}>{comment.type}</span></C>
-
-          <L>등록일시</L>
-          <C><span className={cn(roBox, 'w-48')}>{comment.at}</span></C>
-          <L>좋아요 수</L>
-          <C><span className={cn(roBox, 'w-40')}>{comment.likes}</span></C>
-
-          <L>댓글내용</L>
-          <C span="col-span-3">
-            <div className="min-h-[80px] w-full whitespace-pre-line rounded-md border border-slate-200 bg-slate-50 p-3 text-[13px] text-slate-700">{comment.content}</div>
-          </C>
-          <L>노출여부</L>
-          <C span="col-span-3">
-            <Radio name="vis" label="사용" checked={comment.visible === '노출'} />
-            <Radio name="vis" label="검수중" checked={comment.visible === '검수 중'} />
-            <Radio name="vis" label="미사용" checked={comment.visible === '미노출'} />
-          </C>
-        </FT>
-      </section>
-
-      {/* 3. 답글정보 */}
-      <section>
-        <p className="mb-2.5 text-[15px] font-bold">• 답글정보</p>
-        <FT>
-          <L>답글내용</L>
-          <C span="col-span-3">
-            <textarea className="min-h-[90px] w-full rounded-md border border-slate-200 bg-white p-3 text-[13px] outline-none focus:ring-2 focus:ring-indigo-200" placeholder="답글을 작성해주세요." defaultValue={comment.reply} />
-          </C>
-        </FT>
-        <div className="mt-2 flex justify-end"><Button variant="outline" size="sm">추가</Button></div>
-      </section>
-
-      <div className="flex items-center justify-between border-t pt-4">
-        <Button variant="outline" size="sm" onClick={onBack}>목록</Button>
-        <Button variant="primary" size="sm">저장</Button>
-      </div>
     </div>
   );
 }

@@ -126,6 +126,58 @@ async function main() {
     ),
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // 홈 (Container) — AI 어시스턴트 랜딩. 혜택/쇼핑/마이 탭 위에 공통으로 얹히는 최상위 화면.
+  //   레퍼런스 main-concept1: 인사말 + 추천(셀프개통·질문칩·여행상품) + (하단 AI 입력바).
+  //   탭 전환과 무관하게 공유되는 1개 화면 → 별도 Container. '홈 위 / 혜택·쇼핑·마이 아래 탭'
+  //   관계는 Container 중첩이 아니라 상위 IA(구조도)에서 정의. 맨 먼저 생성 → 트리 최상단.
+  // ═══════════════════════════════════════════════════════════
+  // 홈은 단 2개 구좌 — 둘 다 '배너형 + CVM 콘텐츠 연동' 구좌(2026-11-11 사용자 확정). 인사말·질문칩·여행추천 제거.
+  // ① CVM 배너 구좌(상단) — '지훈님, 주문하신 iPhone20 Pro 도착' 셀프개통 오퍼. 이미지·문구·랜딩까지 CVM이 완성해 내려준다.
+  const homeActComp = await comp('홈 셀프 개통(CVM)', '배너형', [
+    { name: '개통:이미지', atomType: 'IMAGE', imageUrl: '/assets/device-iphone20pro.png', altText: 'iPhone20 Pro' },
+    { name: '개통:문구', atomType: 'TEXT', content: '지훈님, 주문하신\niPhone20 Pro가 도착했어요' },
+    { name: '개통:CTA', atomType: 'CTA', content: '1분 셀프 개통하기' },
+  ]);
+  const homeActivate = await corner(
+    { name: '홈 셀프 개통(CVM)', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형', mainTitle: '지훈님, 주문하신 iPhone20 Pro가 도착했어요', recSource: 'CVM 콘텐츠 연동' },
+    [{ id: homeActComp.id, componentType: '배너형' }],
+  );
+  // ② CVM 배너 구좌(하단) — 하단 배너. CVM 타겟 배너(TM-DSP-018)로 소재·문구·랜딩을 CVM이 내려준다.
+  const homeBannerComp = await comp('홈 하단 배너(CVM)', '배너형', [
+    { name: '배너:이미지', atomType: 'IMAGE', imageUrl: '/assets/rimowa.png', altText: 'RIMOWA 수트케이스' },
+    { name: '배너:문구', atomType: 'TEXT', content: '어떤 여행에도 어울리는 아이콘' },
+    { name: '배너:브랜드', atomType: 'INFO', content: 'RIMOWA 수트케이스' },
+  ]);
+  const homeBanner = await corner(
+    { name: '홈 하단 배너(CVM)', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형', mainTitle: '어떤 여행에도 어울리는 아이콘', recSource: 'CVM 콘텐츠 연동' },
+    [{ id: homeBannerComp.id, componentType: '배너형' }],
+  );
+  const homeCorners = [
+    { cornerId: homeActivate.id, order: 0 },
+    { cornerId: homeBanner.id, order: 1 },
+  ];
+  const homeContainer = await prisma.container.create({
+    data: {
+      name: '홈', containerType: 'MAIN', channel: 'APP', status: 'active',
+      previewUrl: 'https://main-concept1.vercel.app/',
+      metaUse: true,
+      searchTags: '#홈 #AI #어시스턴트 #추천',
+      metaKeywords: '홈,AI,어시스턴트,추천,T우주',
+      metaDescription: 'AI 어시스턴트 홈 — 지훈님을 위한 맞춤 추천을 한 곳에서.',
+      ogTitle: '홈', ogDescription: '지훈님을 위한 AI 홈', ogSiteName: 'T우주',
+    },
+  });
+  // 로그인/비로그인/기본(default) 3종 — 혜택·쇼핑·마이와 동일 포맷
+  await prisma.template.create({
+    data: { containerId: homeContainer.id, name: '홈 로그인', conditionGroup: '로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
+  });
+  // 컨테이너는 로그인/비로그인 2종만(2026-11-11 사용자 요청). 비로그인을 기본(default)으로.
+  const homeBase = await prisma.template.create({
+    data: { containerId: homeContainer.id, name: '홈 비로그인', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
+  });
+  await prisma.container.update({ where: { id: homeContainer.id }, data: { defaultTemplateId: homeBase.id } });
+
   // 1) 상단 퀵메뉴 (탭)
   const topMenu = await comp('혜택 상단 탭', '선택형', [
     { name: '탭:4월 혜택', atomType: 'TEXT', content: '4월 혜택' },
@@ -489,13 +541,9 @@ async function main() {
     { cornerId: cornerTDay.id, order: 6 },
     { cornerId: cornerAirpods.id, order: 7 },
   ];
-  // 비로그인 Template (로그인 판정 후 비로그인 분기)
-  await prisma.template.create({
-    data: { containerId: container.id, name: '혜택 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: beCorners } },
-  });
-  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 안전하게 비로그인 뷰 기준.
+  // 컨테이너는 로그인/비로그인 2종만(2026-11-11 사용자 요청). 비로그인 = 기본(default) — 로그인 판정 전·미분기 폴백.
   const beBase = await prisma.template.create({
-    data: { containerId: container.id, name: '혜택 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: beCorners } },
+    data: { containerId: container.id, name: '혜택 비로그인', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: beCorners } },
   });
   await prisma.container.update({ where: { id: container.id }, data: { defaultTemplateId: beBase.id } });
 
@@ -839,13 +887,9 @@ async function main() {
     { cornerId: shopCornerSwipe.id, order: 7 },
     { cornerId: shopCornerSub.id, order: 8 },
   ];
-  // 비로그인 Template
-  await prisma.template.create({
-    data: { containerId: shopContainer.id, name: '쇼핑 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: shopCornersList } },
-  });
-  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 비로그인 뷰 기준.
+  // 컨테이너는 로그인/비로그인 2종만(2026-11-11 사용자 요청). 비로그인 = 기본(default).
   const shopBase = await prisma.template.create({
-    data: { containerId: shopContainer.id, name: '쇼핑 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: shopCornersList } },
+    data: { containerId: shopContainer.id, name: '쇼핑 비로그인', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: shopCornersList } },
   });
   await prisma.container.update({ where: { id: shopContainer.id }, data: { defaultTemplateId: shopBase.id } });
   await prisma.auditLog.create({
@@ -1027,13 +1071,9 @@ async function main() {
     { cornerId: myCornerSub.id, order: 8 },
     { cornerId: myCornerMenu.id, order: 9 },
   ];
-  // 비로그인 Template
-  await prisma.template.create({
-    data: { containerId: myContainer.id, name: '마이 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: myCornersList } },
-  });
-  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 비로그인 뷰 기준.
+  // 컨테이너는 로그인/비로그인 2종만(2026-11-11 사용자 요청). 비로그인 = 기본(default).
   const myBase = await prisma.template.create({
-    data: { containerId: myContainer.id, name: '마이 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: myCornersList } },
+    data: { containerId: myContainer.id, name: '마이 비로그인', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: myCornersList } },
   });
   await prisma.container.update({ where: { id: myContainer.id }, data: { defaultTemplateId: myBase.id } });
 

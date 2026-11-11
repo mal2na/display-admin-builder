@@ -393,6 +393,8 @@ model CornerType {
   useImage      Boolean @default(true)  // 상품 대표이미지 노출 여부 — 상품형 카드 (정책 상품 Set)
   usePrice      Boolean @default(true)  // 가격 노출 여부 — 상품형 카드 (가격 Atom · 배지가 앞에 붙음)
   useDesc       Boolean @default(true)  // 설명(부가/흐린 글씨) 노출 여부 — 혜택 문구/정보값 Atom (예: '데이터 500')
+  // 상품형 — 상품 카테고리별 가격 노출 규격(JSON: {카테고리: [가격필드…]}). 코너 정의에서 셋업, 빌더는 그중 선택(2026-11-10 회의). 비면 미설정.
+  priceSpec     String?
 
   // 타입-레벨 기본값(템플릿 강화) — 이 유형으로 빌더에서 코너를 만들 때 기본 상속(코너별 수정 가능).
   defaultMinItems       Int?    // 기본 노출 개수(하한)

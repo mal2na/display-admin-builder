@@ -95,6 +95,8 @@ function readForm(formData: FormData) {
     useImage: flag('useImage'),
     usePrice: flag('usePrice'),
     useDesc: flag('useDesc'),
+    priceSpec: opt('priceSpec'), // 상품형 — 상품 카테고리별 가격 노출 규격 JSON
+
     // 타입-레벨 기본값(템플릿 강화) — 빌더에서 이 유형으로 코너 생성 시 상속
     defaultMinItems: num('defaultMinItems'),
     defaultMaxItems: num('defaultMaxItems'),

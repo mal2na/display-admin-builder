@@ -1,13 +1,14 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { YN } from '@/components/ops-ui';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, Pencil, Plus, RotateCcw, Search, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, RotateCcw, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { toggleCommentsExposure, saveCommentReplies } from '../../actions';
+import { toggleCommentsExposure } from '../../actions';
 
 // 노출여부 변경 결과 — 서버 액션 toggleCommentsExposure의 반환 타입 (여기서 정의, actions.ts가 import)
 export type CommentExposureResult = {
@@ -67,8 +68,10 @@ export function CommentManager({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [result, setResult] = useState<CommentExposureResult | null>(null);
   const [alertMsg, setAlertMsg] = useState<{ title: string; body: string } | null>(null);
-  const [panel, setPanel] = useState<CommentRow | null>(null); // 답글 등록 사이드 패널 대상 댓글
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
+  // 행 클릭 → 댓글 상세(별도 페이지). 체크박스 영역 클릭은 제외.
+  const goDetail = (id: string) => router.push(`/admin/events/pages/${pageId}/comments/${id}`);
 
   const filtered = useMemo(() => {
     const a = applied;
@@ -224,48 +227,37 @@ export function CommentManager({
           <thead>
             <tr className="border-b bg-muted/40 text-[12px] text-muted-foreground">
               <Th className="w-10 text-center"><input type="checkbox" checked={allChecked} onChange={toggleAll} className="h-4 w-4 accent-primary align-middle" aria-label="현재 페이지 전체 선택" /></Th>
-              <Th className="w-14 text-center">번호</Th>
+              <Th className="w-14 text-center">No.</Th>
               <Th className="w-32">멤버십 채널 ID</Th>
               <Th className="min-w-[180px]">댓글내용</Th>
               <Th className="w-16 text-center">좋아요</Th>
               <Th className="w-32">등록일시</Th>
+              <Th className="w-24 whitespace-nowrap text-center">노출상태</Th>
               <Th className="min-w-[180px]">답글내용</Th>
               <Th className="w-28">답글 등록자</Th>
-              <Th className="w-16 text-center">총 답글</Th>
+              <Th className="w-16 text-center">총 답글 수</Th>
               <Th className="w-32">답글 등록일시</Th>
               <Th className="w-24 whitespace-nowrap text-center">답변여부</Th>
-              <Th className="w-24 whitespace-nowrap text-center">노출여부</Th>
             </tr>
           </thead>
           <tbody>
             {pageRows.length === 0 ? (
               <tr><td colSpan={12} className="py-16 text-center text-muted-foreground">조회된 댓글이 없습니다.</td></tr>
             ) : pageRows.map((c) => (
-              <tr key={c.id} className={cn('border-b last:border-0 hover:bg-muted/30', selected.has(c.id) && 'bg-primary/5')}>
-                <Td className="text-center"><input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleOne(c.id)} className="h-4 w-4 accent-primary align-middle" aria-label={`${c.no}번 선택`} /></Td>
+              <tr key={c.id} onClick={() => goDetail(c.id)} className={cn('cursor-pointer border-b last:border-0 hover:bg-muted/30', selected.has(c.id) && 'bg-primary/5')}>
+                <Td className="text-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleOne(c.id)} className="h-4 w-4 accent-primary align-middle" aria-label={`${c.no}번 선택`} /></Td>
                 <Td className="text-center tabular-nums text-muted-foreground">{c.no}</Td>
                 <Td className="font-mono text-[12px] text-muted-foreground">{c.memberChannelId}</Td>
-                <Td className="text-foreground">{c.content}</Td>
+                <Td className="text-foreground"><span className="line-clamp-1">{c.content}</span></Td>
                 <Td className="text-center tabular-nums">{c.likeCount}</Td>
                 <Td className="whitespace-nowrap text-[12px] text-muted-foreground">{c.createdAt}</Td>
-                <Td>
-                  {c.replyContent ? (
-                    <span className="inline-flex items-center gap-1">
-                      <span className="line-clamp-1 text-foreground">{c.replyContent}</span>
-                      <button type="button" onClick={() => setPanel(c)} title="답글 관리" className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-secondary"><Pencil className="h-3.5 w-3.5" /></button>
-                    </span>
-                  ) : (
-                    <button type="button" onClick={() => setPanel(c)} title="답글 작성" className="inline-flex items-center gap-1 rounded border border-dashed px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary"><Pencil className="h-3 w-3" /> 답글</button>
-                  )}
-                </Td>
+                <Td className="text-center"><ExposePill status={c.status} /></Td>
+                <Td><span className="line-clamp-1 text-foreground">{c.replyContent ?? '-'}</span></Td>
                 <Td className="text-[12px] text-muted-foreground">{c.replyAuthor ?? '-'}</Td>
                 <Td className="text-center tabular-nums">{c.replyCount}</Td>
                 <Td className="whitespace-nowrap text-[12px] text-muted-foreground">{c.replyAt ?? '-'}</Td>
                 <Td className="text-center">
                   <YN yes={c.answered} label={c.answered ? '답변완료' : '답변대기'} />
-                </Td>
-                <Td className="text-center">
-                  <YN yes={c.exposed} label={c.exposed ? '노출' : '미노출'} />
                 </Td>
               </tr>
             ))}
@@ -276,7 +268,7 @@ export function CommentManager({
       {/* ── 하단: 엑셀 / 페이지네이션 / 노출여부 변경 ── */}
       <div className="mt-4 grid grid-cols-3 items-center gap-2">
         <div className="flex justify-start">
-          <Button type="button" size="sm" variant="outline" onClick={downloadExcel} disabled={filtered.length === 0 || !!panel}>
+          <Button type="button" size="sm" variant="outline" onClick={downloadExcel} disabled={filtered.length === 0}>
             <Download className="h-3.5 w-3.5" /> 엑셀 다운로드
           </Button>
         </div>
@@ -335,98 +327,16 @@ export function CommentManager({
         </Modal>
       )}
 
-      {/* ── 답글 등록 사이드 패널 ── */}
-      {panel && <ReplyPanel key={panel.id} pageId={pageId} comment={panel} onClose={() => setPanel(null)} />}
     </div>
   );
 }
 
-// SB 댓글 상세 · 답글 등록 사이드 패널 — 좌: 댓글정보(읽기전용)+노출여부 / 답글정보(추가·삭제·노출여부) / 저장·취소.
-function ReplyPanel({ pageId, comment, onClose }: { pageId: string; comment: CommentRow; onClose: () => void }) {
-  type Draft = { rid: string; content: string; exposed: boolean; author?: string; createdAt?: string };
-  let seq = 0;
-  const init: Draft[] = comment.replies.length
-    ? comment.replies.map((r) => ({ rid: `e${r.id}`, content: r.content, exposed: r.exposed, author: r.author, createdAt: r.createdAt }))
-    : [{ rid: `n${seq++}`, content: '', exposed: true }];
-  const [commentExposed, setCommentExposed] = useState(comment.exposed);
-  const [replies, setReplies] = useState<Draft[]>(init);
-  const [saving, setSaving] = useState(false);
-  const up = (i: number, patch: Partial<Draft>) => setReplies((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
-  const add = () => setReplies((rs) => [...rs, { rid: `n${Date.now()}${rs.length}`, content: '', exposed: true }]);
-  const del = (i: number) => setReplies((rs) => (rs.length > 1 ? rs.filter((_, j) => j !== i) : [{ rid: `n${Date.now()}`, content: '', exposed: true }]));
-  const save = async () => {
-    setSaving(true);
-    try {
-      await saveCommentReplies(pageId, comment.id, commentExposed, replies.map((r) => ({ content: r.content, exposed: r.exposed })));
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  };
-  const RadioExposed = ({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean) => void; disabled?: boolean }) => (
-    <div className={cn('flex gap-3', disabled && 'opacity-50')}>
-      {([['노출', true], ['미노출', false]] as const).map(([label, val]) => (
-        <label key={label} className={cn('flex items-center gap-1 text-[12px]', disabled && 'cursor-not-allowed')}><input type="radio" checked={on === val} disabled={disabled} onChange={() => onChange(val)} className="accent-primary" /> {label}</label>
-      ))}
-    </div>
-  );
-  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div className="grid grid-cols-[84px_minmax(0,1fr)] items-center gap-2 py-1.5 text-[12px]"><span className="text-muted-foreground">{label}</span><div className="min-w-0 font-medium text-foreground">{children}</div></div>
-  );
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
-      <div className="flex h-full w-full max-w-md flex-col bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b px-5 py-3.5">
-          <h3 className="text-sm font-bold">답글 등록</h3>
-          <button type="button" onClick={onClose} className="rounded p-1 text-muted-foreground hover:bg-secondary"><X className="h-4 w-4" /></button>
-        </div>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4">
-          {/* 댓글정보 (읽기전용 + 노출여부) */}
-          <section>
-            <p className="mb-1.5 text-[12px] font-semibold text-foreground">댓글정보</p>
-            <div className="rounded-lg border bg-muted/20 px-3 py-1.5 divide-y">
-              <Field label="번호"><span className="tabular-nums">{comment.no}</span></Field>
-              <Field label="회원 ID"><span className="font-mono">{comment.memberChannelId}</span></Field>
-              <Field label="등록일시"><span className="text-muted-foreground">{comment.createdAt}</span></Field>
-              <Field label="좋아요 수"><span className="tabular-nums">{comment.likeCount}</span></Field>
-              <Field label="노출여부"><RadioExposed on={commentExposed} onChange={setCommentExposed} /></Field>
-              <Field label="댓글"><span className="whitespace-pre-wrap font-normal text-foreground">{comment.content}</span></Field>
-            </div>
-          </section>
-
-          {/* 답글정보 (추가/삭제/노출여부) */}
-          <section>
-            <div className="mb-1.5 flex items-center justify-between">
-              <p className="text-[12px] font-semibold text-foreground">답글정보 <span className="text-muted-foreground">· 총 {replies.filter((r) => r.content.trim()).length}건</span></p>
-              <button type="button" onClick={add} className="inline-flex items-center gap-0.5 rounded-md border border-primary/40 bg-primary/5 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10"><Plus className="h-3 w-3" /> 답글 추가</button>
-            </div>
-            <div className="space-y-2.5">
-              {replies.map((r, i) => (
-                <div key={r.rid} className="rounded-lg border p-2.5">
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-muted-foreground">답글 {i + 1}{r.author ? ` · ${r.author}` : ''}{r.createdAt ? ` · ${r.createdAt}` : ' · 신규'}</span>
-                    <button type="button" onClick={() => del(i)} className="inline-flex items-center gap-0.5 rounded border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-secondary"><Trash2 className="h-3 w-3" /> 삭제</button>
-                  </div>
-                  <textarea value={r.content} onChange={(e) => up(i, { content: e.target.value })} rows={2} placeholder="답글 내용을 입력해주세요."
-                    className="w-full rounded-md border px-2 py-1.5 text-[12px] outline-none focus:border-primary" />
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <span className="text-[11px] text-muted-foreground">노출여부</span>
-                    {/* 댓글이 미노출이면 답글도 미노출로 고정(단독 노출 방지) */}
-                    <RadioExposed on={commentExposed ? r.exposed : false} onChange={(v) => up(i, { exposed: v })} disabled={!commentExposed} />
-                    {!commentExposed && <span className="text-[10px] text-rose-500">· 댓글 미노출 → 답글도 미노출</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-        <div className="flex items-center justify-end gap-2 border-t px-5 py-3.5">
-          <Button type="button" size="sm" variant="outline" onClick={onClose} disabled={saving}>취소</Button>
-          <Button type="button" size="sm" variant="primary" onClick={save} disabled={saving}>{saving ? '저장 중…' : '저장'}</Button>
-        </div>
-      </div>
-    </div>
-  );
+// 노출상태 배지 — 노출(green) · 미노출(red) · 검수 중(amber). SB PG057 노출상태.
+function ExposePill({ status }: { status: '노출' | '미노출' | '검수 중' }) {
+  const cls = status === '노출' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    : status === '검수 중' ? 'bg-amber-50 text-amber-700 border-amber-200'
+    : 'bg-rose-50 text-rose-600 border-rose-200';
+  return <span className={cn('inline-flex items-center whitespace-nowrap rounded-[6px] border px-2 py-0.5 text-[11px] font-semibold', cls)}>{status}</span>;
 }
 
 function FilterCell({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
@@ -441,15 +351,8 @@ function FilterCell({ label, className, children }: { label: string; className?:
 function Th({ className, children }: { className?: string; children?: React.ReactNode }) {
   return <th className={cn('px-3 py-2.5 text-left font-semibold', className)}>{children}</th>;
 }
-function Td({ className, children }: { className?: string; children?: React.ReactNode }) {
-  return <td className={cn('px-3 py-2.5 align-middle', className)}>{children}</td>;
-}
-
-function StatusPill({ on, onLabel, offLabel, tone }: { on: boolean; onLabel: string; offLabel: string; tone: 'green' | 'amber' | 'rose' }) {
-  const cls = tone === 'green' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-    : tone === 'amber' ? 'bg-amber-50 text-amber-700 border-amber-200'
-    : 'bg-rose-50 text-rose-600 border-rose-200';
-  return <span className={cn('inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold', cls)}>{on ? onLabel : offLabel}</span>;
+function Td({ className, children, onClick }: { className?: string; children?: React.ReactNode; onClick?: (e: React.MouseEvent) => void }) {
+  return <td className={cn('px-3 py-2.5 align-middle', className)} onClick={onClick}>{children}</td>;
 }
 
 function ChangeTable({ title, rows, before, after }: { title: string; rows: { id: string; content: string }[]; before: string; after: string }) {
