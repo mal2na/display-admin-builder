@@ -828,23 +828,22 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
       {/* ① 코너 정보 — 코너명만 편집, 유형·레이아웃·개수는 코너 유형 관리에서 불러온 껍데기 */}
       <Sec n={1} title="코너 기본 정보">
         <div className="mb-2 flex items-center gap-1 rounded-[8px] bg-[var(--th)] px-2.5 py-2 text-[12px] text-[var(--ink3)]"><Lock className="h-3 w-3" /> 유형·레이아웃·개수는 코너 유형 관리에서 정의 · 수정 불가 · <b className="text-[var(--ink2)]">코너명만 편집</b></div>
-        {/* 양 옆 없는 키-값 테이블 — 라벨 열(회색)/값 열. 유형 칩만 칩으로, 나머지는 텍스트(2026-11-11 사용자 요청). */}
-        <div className="border-y border-[var(--line2)] text-[13px]">
-          {/* 유형·배열은 좌우로(2026-11-11 사용자 요청). 라벨 짧게. */}
-          <div className="grid grid-cols-2 border-b border-[var(--line2)]">
-            <div className="grid grid-cols-[48px_minmax(0,1fr)] border-r border-[var(--line2)]">
-              <div className="flex items-center bg-[var(--th)] px-2.5 py-2.5 text-[12px] text-[var(--ink3)]">유형</div>
-              <div className="flex min-w-0 items-center px-2.5 py-2.5"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></div>
+        {/* 코너 유형 관리 상세(RORow/DetailCell)와 동일한 읽기 테이블로 — 그레이 라벨 셀(#f8f9fb·14/500·#454f59)·흰 값 셀·#eef1f4 보더·박스 패딩. 유형·배열은 좌우(2026-11-11 사용자 요청: 2번 이미지처럼). */}
+        <div className="border-y border-[#eef1f4] text-[13px]">
+          <div className="grid grid-cols-2 border-b border-[#eef1f4] [&>*:first-child]:border-r [&>*:first-child]:border-[#eef1f4]">
+            <div className="grid grid-cols-[72px_minmax(0,1fr)] items-stretch">
+              <div className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[14px] font-medium text-[#454f59]">유형</div>
+              <div className="flex min-w-0 items-center bg-white px-3.5 py-2.5"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></div>
             </div>
-            <div className="grid grid-cols-[48px_minmax(0,1fr)]">
-              <div className="flex items-center bg-[var(--th)] px-2.5 py-2.5 text-[12px] text-[var(--ink3)]">배열</div>
-              <div className="flex min-w-0 items-center px-2.5 py-2.5 text-[12px] text-[var(--ink)]">{cornerLayoutText(corner.cornerType, corner.layout, corner.layoutDetail) || '—'}</div>
+            <div className="grid grid-cols-[72px_minmax(0,1fr)] items-stretch">
+              <div className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[14px] font-medium text-[#454f59]">배열</div>
+              <div className="flex min-w-0 items-center bg-white px-3.5 py-2.5 text-[var(--ink)]">{cornerLayoutText(corner.cornerType, corner.layout, corner.layoutDetail) || '—'}</div>
             </div>
           </div>
           {/* 코너명 — 인라인 Row 컴포넌트(렌더마다 새 함수)로 감싸면 입력 중 리마운트돼 한글 IME가 깨진다 → 리터럴 div로 직접 렌더(2026-11-06). */}
-          <div className="grid grid-cols-[84px_minmax(0,1fr)]">
-            <div className="flex items-center bg-[var(--th)] px-3 py-2.5 text-[12px] text-[var(--ink3)]">코너명</div>
-            <div className="px-3 py-2">
+          <div className="grid grid-cols-[72px_minmax(0,1fr)] items-stretch">
+            <div className="flex items-center bg-[#f8f9fb] px-3.5 py-3 text-[14px] font-medium text-[#454f59]">코너명</div>
+            <div className="bg-white px-3.5 py-2">
             {editName ? (
               <div className="flex items-center gap-1.5">
                 <input value={nameVal} onChange={(e) => setNameVal(e.target.value)} autoFocus
