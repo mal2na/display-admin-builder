@@ -1371,8 +1371,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   });
   // 상품형 — 상품 카테고리별 가격 노출 규격(코너 정의에서 셋업, 빌더는 선택). 2026-11-10 회의.
   const [priceSpec, setPriceSpec] = useState<ProductPriceSpec>(() => parsePriceSpec(row.priceSpec));
-  // 상품 카테고리는 코너당 하나(라디오) — 같은 상품형이어도 담는 상품 카테고리는 단일(2026-11-10 사용자 요청). 선택 시 그 카테고리만, 다시 누르면 해제.
-  const setPriceCategory = (cat: ProductPriceCategory) => setPriceSpec((p) => (p[cat] ? {} : { [cat]: [...(PRODUCT_PRICE_DEFAULTS[cat] ?? [])] }));
+  // 상품 카테고리는 코너당 하나 — 드롭다운(단일 선택). 선택 시 그 카테고리 기본 필드 셋, '선택 안 함'이면 해제(2026-11-11 사용자 요청: 라디오 나열 대신 드롭다운으로 행 간소화).
+  const selectPriceCategory = (cat: ProductPriceCategory | '') => setPriceSpec(cat ? { [cat]: [...(PRODUCT_PRICE_DEFAULTS[cat] ?? [])] } : {});
   const togglePriceField = (cat: ProductPriceCategory, f: ProductPriceField) => setPriceSpec((p) => {
     const cur = p[cat] ?? [];
     const next = cur.includes(f) ? cur.filter((x) => x !== f) : [...cur, f];
@@ -1381,36 +1381,35 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const priceCatSel = PRODUCT_PRICE_CATEGORIES.find((c) => priceSpec[c]) ?? null; // 선택된 단일 카테고리
   // 가격 노출 규격 — 별도 박스 대신 코너 속성 '테이블 행'의 값 셀 내용으로(라벨은 스튜디오가 행 라벨로 렌더). 2026-11-11 사용자 요청: 테이블 아래 박스 UI 제거.
   const pricePanel = (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
       <input type="hidden" name="priceSpec" value={serializePriceSpec(priceSpec)} />
-      <p className="text-[11px] leading-relaxed text-slate-400">들어가는 상품(요금제·단말기 등)에 따라 가격 노출이 달라져요. 카테고리 1개를 고르고 <b className="text-slate-500">담을 가격 필드</b>를 정하면 빌더에선 그중 노출할 것만 고릅니다. 필드는 상품(EPC) 정책 확정 전 대표안(TBD).</p>
-      <div className="flex flex-wrap gap-1.5">
-        {PRODUCT_PRICE_CATEGORIES.map((cat) => {
-          const on = priceCatSel === cat;
-          return (
-            <label key={cat} className={cn('inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium transition', on ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-500 hover:border-indigo-300')}>
-              <input type="radio" name="priceCat" checked={on} onChange={() => setPriceCategory(cat)} className="h-3.5 w-3.5 accent-[#3617ce]" />
-              {cat}
-            </label>
-          );
-        })}
+      {/* 카테고리 = 드롭다운(단일) 한 줄 → 행 높이 축소. 선택 시 아래에 담을 가격 필드 칩. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="shrink-0 text-[12px] text-slate-500">상품 카테고리</span>
+        <div className="relative">
+          <select value={priceCatSel ?? ''} onChange={(e) => selectPriceCategory(e.target.value as ProductPriceCategory | '')}
+            className="h-8 appearance-none rounded-[6px] border border-[var(--line3)] bg-white pl-2.5 pr-8 text-[13px] text-[var(--ink)] focus:border-[var(--ac)] focus:outline-none">
+            <option value="">선택 안 함</option>
+            {PRODUCT_PRICE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink4)]" />
+        </div>
+        {priceCatSel && <span className="text-[11px] text-slate-400">담을 가격 필드 {(priceSpec[priceCatSel] ?? []).length}개 · 칩을 눌러 선택</span>}
       </div>
       {priceCatSel && (
-        <div className="border-t border-[var(--line2)] pt-2.5">
-          <p className="mb-1.5 text-[11px] font-semibold text-slate-500"><b className="text-[#3617ce]">{priceCatSel}</b> · 담을 가격 필드 {(priceSpec[priceCatSel] ?? []).length}개</p>
-          <div className="flex flex-wrap gap-1.5">
-            {PRODUCT_PRICE_FIELDS.map((f) => {
-              const fon = (priceSpec[priceCatSel] ?? []).includes(f);
-              return (
-                <button key={f} type="button" onClick={() => togglePriceField(priceCatSel, f)}
-                  className={cn('rounded-full border px-2.5 py-1 text-[12px] font-medium transition', fon ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-400 hover:border-indigo-300')}>
-                  {f}
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex flex-wrap gap-1.5">
+          {PRODUCT_PRICE_FIELDS.map((f) => {
+            const fon = (priceSpec[priceCatSel] ?? []).includes(f);
+            return (
+              <button key={f} type="button" onClick={() => togglePriceField(priceCatSel, f)}
+                className={cn('rounded-full border px-2.5 py-1 text-[12px] font-medium transition', fon ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-400 hover:border-indigo-300')}>
+                {f}
+              </button>
+            );
+          })}
         </div>
       )}
+      <p className="text-[11px] leading-relaxed text-slate-400">들어가는 상품(요금제·단말기 등)에 따라 가격 노출이 달라져요. 카테고리를 고르고 <b className="text-slate-500">담을 가격 필드</b>를 정하면 빌더에선 그중 노출할 것만 고릅니다. 필드는 상품(EPC) 정책 확정 전 대표안(TBD).</p>
     </div>
   );
   // 세부 항목 토글 — 종속 규칙(타이틀↔서브, 가격↔배지) 공용. 플랫/그룹 UI가 함께 씀.
