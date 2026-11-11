@@ -589,11 +589,11 @@ function CarouselItemBody({ s, onChange, layout, afterPrice }: { s: CarouselItem
         <ChkRow label="컴포넌트 타이틀(ItemTitle)" checked disabled />
         {/* 세로형 = 가격 그룹(가격·할인율·기간)을 캡션 위로(2026-11-05 사용자 요청). */}
         {vertical && <PriceCols pg={pg} vertical onChange={setPg} />}
-        {/* 가격 규격 패널 — 전체폭(좌우) 금지, '가격' 컬럼 밑에만 붙는 확장패널(2026-11-11 사용자 요청). */}
+        {/* 가격 규격 — 별도 박스 대신 코너 속성 테이블의 한 '행'(라벨 | 값)으로 통합(2026-11-11 사용자 요청: 테이블 밑 박스 UI 제거). */}
         {vertical && afterPrice && (
           <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)_150px_minmax(0,1fr)] items-start border-b border-[#eef0f3] last:border-b-0">
-            <div className="col-span-2 min-w-0 border-r border-[#eef0f3] px-3 py-2">{afterPrice}</div>
-            <div className="col-span-4" aria-hidden />
+            <div className="flex min-w-0 flex-col justify-start gap-0.5 bg-[#f8f9fb] px-3 py-2.5"><span className="text-[14px] font-medium leading-[1.2] text-[#454f59]">가격 노출 규격</span><span className="text-[10.5px] leading-tight text-[#8b949e]">(PriceSpec)</span></div>
+            <div className="col-span-5 min-w-0 px-3 py-2.5">{afterPrice}</div>
           </div>
         )}
         {vertical && (
@@ -603,11 +603,11 @@ function CarouselItemBody({ s, onChange, layout, afterPrice }: { s: CarouselItem
           </StudioPairs>
         )}
         {!vertical && <PriceCols pg={pg} vertical={false} onChange={setPg} />}
-        {/* 가격 규격 패널 — 전체폭(좌우) 금지, '가격' 컬럼 밑에만 붙는 확장패널(2026-11-11 사용자 요청). */}
+        {/* 가격 규격 — 별도 박스 대신 코너 속성 테이블의 한 '행'(라벨 | 값)으로 통합(2026-11-11 사용자 요청: 테이블 밑 박스 UI 제거). */}
         {!vertical && afterPrice && (
           <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)] items-start border-b border-[#eef0f3] last:border-b-0">
-            <div className="col-span-2 min-w-0 border-r border-[#eef0f3] px-3 py-2">{afterPrice}</div>
-            <div className="col-span-2" aria-hidden />
+            <div className="flex min-w-0 flex-col justify-start gap-0.5 bg-[#f8f9fb] px-3 py-2.5"><span className="text-[14px] font-medium leading-[1.2] text-[#454f59]">가격 노출 규격</span><span className="text-[10.5px] leading-tight text-[#8b949e]">(PriceSpec)</span></div>
+            <div className="col-span-3 min-w-0 px-3 py-2.5">{afterPrice}</div>
           </div>
         )}
         {!vertical && (

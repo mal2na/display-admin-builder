@@ -1379,46 +1379,36 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     return { ...p, [cat]: next };
   });
   const priceCatSel = PRODUCT_PRICE_CATEGORIES.find((c) => priceSpec[c]) ?? null; // 선택된 단일 카테고리
-  // '가격' 속성 밑에 붙는 규격 패널 — 콜랩스 없이 항상 전부 노출(2026-11-11 사용자 요청). 상품 카테고리(라디오·단일) + 담을 가격 필드.
+  // 가격 노출 규격 — 별도 박스 대신 코너 속성 '테이블 행'의 값 셀 내용으로(라벨은 스튜디오가 행 라벨로 렌더). 2026-11-11 사용자 요청: 테이블 아래 박스 UI 제거.
   const pricePanel = (
-    <div className="overflow-hidden rounded-[8px] border border-[var(--line2)] bg-white">
+    <div className="space-y-2.5">
       <input type="hidden" name="priceSpec" value={serializePriceSpec(priceSpec)} />
-      <div className="flex items-center gap-2 bg-[var(--th)] px-3 py-2">
-        <span className="text-[11px] font-bold text-[#3617ce]">가격 노출 규격</span>
-        <span className="min-w-0 flex-1 truncate text-[11px] font-normal text-slate-400">
-          {priceCatSel ? <><b className="text-slate-600">{priceCatSel}</b> · 필드 {(priceSpec[priceCatSel] ?? []).length}개</> : '상품 카테고리를 선택해 담을 가격 필드를 정하세요 (코너당 1개)'}
-        </span>
+      <p className="text-[11px] leading-relaxed text-slate-400">들어가는 상품(요금제·단말기 등)에 따라 가격 노출이 달라져요. 카테고리 1개를 고르고 <b className="text-slate-500">담을 가격 필드</b>를 정하면 빌더에선 그중 노출할 것만 고릅니다. 필드는 상품(EPC) 정책 확정 전 대표안(TBD).</p>
+      <div className="flex flex-wrap gap-1.5">
+        {PRODUCT_PRICE_CATEGORIES.map((cat) => {
+          const on = priceCatSel === cat;
+          return (
+            <label key={cat} className={cn('inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium transition', on ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-500 hover:border-indigo-300')}>
+              <input type="radio" name="priceCat" checked={on} onChange={() => setPriceCategory(cat)} className="h-3.5 w-3.5 accent-[#3617ce]" />
+              {cat}
+            </label>
+          );
+        })}
       </div>
-      {(
-        <div className="space-y-2.5 border-t border-[var(--line2)] px-3 py-2.5">
-          <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-400"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>들어가는 상품(요금제·단말기 등)에 따라 가격 노출이 달라져요. 카테고리 1개를 고르고 <b className="text-slate-500">담을 가격 필드</b>를 정하면 빌더에선 그중 노출할 것만 고릅니다. 필드는 상품(EPC) 정책 확정 전 대표안(TBD).</span></p>
+      {priceCatSel && (
+        <div className="border-t border-[var(--line2)] pt-2.5">
+          <p className="mb-1.5 text-[11px] font-semibold text-slate-500"><b className="text-[#3617ce]">{priceCatSel}</b> · 담을 가격 필드 {(priceSpec[priceCatSel] ?? []).length}개</p>
           <div className="flex flex-wrap gap-1.5">
-            {PRODUCT_PRICE_CATEGORIES.map((cat) => {
-              const on = priceCatSel === cat;
+            {PRODUCT_PRICE_FIELDS.map((f) => {
+              const fon = (priceSpec[priceCatSel] ?? []).includes(f);
               return (
-                <label key={cat} className={cn('inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium transition', on ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-500 hover:border-indigo-300')}>
-                  <input type="radio" name="priceCat" checked={on} onChange={() => setPriceCategory(cat)} className="h-3.5 w-3.5 accent-[#3617ce]" />
-                  {cat}
-                </label>
+                <button key={f} type="button" onClick={() => togglePriceField(priceCatSel, f)}
+                  className={cn('rounded-full border px-2.5 py-1 text-[12px] font-medium transition', fon ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-400 hover:border-indigo-300')}>
+                  {f}
+                </button>
               );
             })}
           </div>
-          {priceCatSel && (
-            <div className="border-t border-[var(--line2)] pt-2.5">
-              <p className="mb-1.5 text-[11px] font-semibold text-slate-500"><b className="text-[#3617ce]">{priceCatSel}</b> · 담을 가격 필드 {(priceSpec[priceCatSel] ?? []).length}개</p>
-              <div className="flex flex-wrap gap-1.5">
-                {PRODUCT_PRICE_FIELDS.map((f) => {
-                  const fon = (priceSpec[priceCatSel] ?? []).includes(f);
-                  return (
-                    <button key={f} type="button" onClick={() => togglePriceField(priceCatSel, f)}
-                      className={cn('rounded-full border px-2.5 py-1 text-[12px] font-medium transition', fon ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-400 hover:border-indigo-300')}>
-                      {f}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
