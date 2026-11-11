@@ -1413,7 +1413,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
 
       {/* ⑥ 출처 — 이 값이 어디서 오나 */}
       <Sec n={nSrc} title="값 출처" help>
-        <div className="overflow-hidden rounded-[8px] border border-[var(--line2)] text-[12px]">
+        <div className="border-y border-[var(--line2)] text-[12px]">
           {[
             ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
             ['이미지', '상품(EPC) 원장'],
