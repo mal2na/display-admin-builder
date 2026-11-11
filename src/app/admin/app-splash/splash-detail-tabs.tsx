@@ -3,8 +3,9 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageTabs } from '@/components/page-tabs';
-import { StatusPill, Pager } from '@/components/ops-ui';
+import { StatusPill, Pager, TABLE_CLS, THEAD_TR_CLS, TBODY_TR_CLS } from '@/components/ops-ui';
 import { fmtDateTime } from '@/lib/widget-taxonomy';
+import { cn } from '@/lib/utils';
 import { SplashDetailView, type SplashView } from './splash-detail-view';
 import { X } from 'lucide-react';
 
@@ -88,52 +89,48 @@ function HistoryTab({ splashId, rows }: { splashId: string; rows: SplashHistoryR
 
   return (
     <div>
-      <div className="overflow-x-auto border-y border-[var(--line2)] bg-white">
-        <table className="w-full min-w-[1040px] text-[14px]">
+      <div className="overflow-x-auto border-t border-[var(--line2)]">
+        <table className={cn(TABLE_CLS, 'min-w-[1040px] whitespace-nowrap')}>
           <thead>
-            <tr className="h-10 border-b border-[var(--line2)] bg-[var(--th)] text-left text-[var(--ink2)] [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-2.5 [&>th]:font-semibold">
-              <th className="w-14">No.</th>
-              <th className="w-24">상태</th>
-              <th className="w-16">Ver.</th>
-              <th>승인 요청자</th>
-              <th>요청 일시</th>
-              <th>요청 사유</th>
-              <th>승인 담당자</th>
-              <th>처리 일시</th>
-              <th>처리 사유</th>
+            <tr className={THEAD_TR_CLS}>
+              <th className="w-14 text-left">No.</th>
+              <th className="w-24 text-left">상태</th>
+              <th className="w-16 text-left">Ver.</th>
+              <th className="text-left">승인 요청자</th>
+              <th className="text-left">요청 일시</th>
+              <th className="text-left">요청 사유</th>
+              <th className="text-left">승인 담당자</th>
+              <th className="text-left">처리 일시</th>
+              <th className="text-left">처리 사유</th>
               <th className="w-24 text-center">변경내용</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-3 py-10 text-center text-muted-foreground">이력이 없습니다.</td>
+                <td colSpan={10} className="px-3 py-10 text-center text-[var(--ink3)]">이력이 없습니다.</td>
               </tr>
             ) : (
               paged.map((r, i) => {
                 const no = rows.length - ((pageSafe - 1) * PER_PAGE + i);
                 const s = HIST_STATUS[r.status] ?? HIST_STATUS.draft;
                 return (
-                  <tr
-                    key={r.id}
-                    onClick={() => go(r)}
-                    className="h-12 cursor-pointer border-b border-[var(--line2)] text-[var(--ink)] last:border-b-0 hover:bg-[var(--th)] [&>td]:px-3 [&>td]:py-2 [&>td]:align-middle"
-                  >
+                  <tr key={r.id} onClick={() => go(r)} className={cn(TBODY_TR_CLS, 'cursor-pointer')}>
                     <td className="text-[var(--ink3)]">{no}</td>
                     <td><StatusPill label={s.label} tone={s.tone} /></td>
                     <td className="text-[var(--ink2)]">{r.status === 'approved' && r.version ? `V.${r.version}` : '-'}</td>
                     <td className="text-[var(--ink2)]">{r.requester ?? '-'}</td>
-                    <td className="text-[12px] text-[var(--ink3)]">{r.requestedAt ? fmtDateTime(r.requestedAt) : '-'}</td>
+                    <td className="text-[var(--ink3)]">{r.requestedAt ? fmtDateTime(r.requestedAt) : '-'}</td>
                     <td className="max-w-[220px] truncate text-[var(--ink2)]" title={r.requestReason ?? ''}>{r.requestReason ?? '-'}</td>
                     <td className="text-[var(--ink2)]">{r.manager ?? '-'}</td>
-                    <td className="text-[12px] text-[var(--ink3)]">{r.processedAt ? fmtDateTime(r.processedAt) : '-'}</td>
+                    <td className="text-[var(--ink3)]">{r.processedAt ? fmtDateTime(r.processedAt) : '-'}</td>
                     <td className="max-w-[180px] truncate text-[var(--ink2)]" title={r.processReason ?? ''}>{r.processReason ?? '-'}</td>
                     <td className="text-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
                         disabled={!r.canDiff}
                         onClick={() => setDiffRow(r)}
-                        className="inline-flex h-7 items-center rounded-[6px] border border-[var(--line3)] bg-white px-2.5 text-[12px] font-medium text-[var(--ink2)] transition hover:bg-[var(--th)] disabled:cursor-not-allowed disabled:border-[var(--line2)] disabled:bg-[var(--th)] disabled:text-[#b3b9c0]"
+                        className="inline-flex h-7 items-center rounded-[6px] border border-[var(--line3)] bg-white px-2.5 text-[12px] font-medium text-[var(--ink2)] transition hover:border-[var(--ac)] hover:text-[var(--ac)] disabled:cursor-not-allowed disabled:border-[var(--line2)] disabled:bg-[var(--th)] disabled:text-[#b3b9c0] disabled:hover:border-[var(--line2)] disabled:hover:text-[#b3b9c0]"
                       >
                         변경내용
                       </button>
@@ -155,8 +152,8 @@ function HistoryTab({ splashId, rows }: { splashId: string; rows: SplashHistoryR
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDiffRow(null)}>
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[18px] font-bold text-[var(--ink)]">변경 상세 내용</h3>
-              <button onClick={() => setDiffRow(null)} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
+              <h3 className="text-[20px] font-bold leading-[28px] tracking-[-0.6px] text-[var(--ink)]">변경 상세 내용</h3>
+              <button onClick={() => setDiffRow(null)} className="text-[var(--ink3)] hover:text-[var(--ink)]"><X className="h-5 w-5" /></button>
             </div>
 
             <div className="overflow-hidden rounded-lg border border-[var(--line2)]">
@@ -179,8 +176,8 @@ function HistoryTab({ splashId, rows }: { splashId: string; rows: SplashHistoryR
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
-              <button onClick={() => setDiffRow(null)} className="inline-flex h-9 items-center rounded-md bg-[var(--ac)] px-5 text-sm font-semibold text-white hover:opacity-90">확인</button>
+            <div className="mt-6 flex justify-end gap-2">
+              <button onClick={() => setDiffRow(null)} className="inline-flex h-[38px] items-center rounded-[6px] bg-[var(--ac)] px-4 text-[14px] font-semibold text-white transition hover:bg-[var(--ac-h)]">확인</button>
             </div>
           </div>
         </div>
