@@ -314,7 +314,7 @@ export const CVM_TOP_N_MAX = 5;
 //  → 가격을 어떤 식으로 노출할지(정가/할인가/선약 적용가/플러스 할인/할인율 등)를 '코너(유형) 정의'에서 카테고리별로 미리 셋업하고,
 //    빌더(전시화면 관리)에서는 그중 실제 노출할 것만 선택한다("원장이 들고 있을 정보와 코너가 들고 있을 정보가 다르다").
 //  카테고리 = 상품 서비스 구성도/EPC 원장 기준 8종. 필드 목록은 상품(EPC) 가격 정책 확정 전 대표안(TBD) — 구조만 먼저 잡는다.
-export const PRODUCT_PRICE_CATEGORIES = ['요금제', '부가서비스', '구독', '보험', '단말기', '악세사리', '인터넷', 'IPTV'] as const;
+export const PRODUCT_PRICE_CATEGORIES = ['요금제', '부가서비스', '구독', '보험', '단말기', '악세사리', '인터넷·IPTV'] as const;
 export type ProductPriceCategory = (typeof PRODUCT_PRICE_CATEGORIES)[number];
 
 /** 가격 노출 필드(규격) 공통 풀 — 카테고리별로 담을 것을 코너 정의에서 체크. */
@@ -329,8 +329,7 @@ export const PRODUCT_PRICE_DEFAULTS: Record<ProductPriceCategory, ProductPriceFi
   '보험': ['월정액'],
   '단말기': ['출고가', '할인가', '선약(약정) 적용가', '월 분할가', '색상'],
   '악세사리': ['정가', '할인가', '할인율'],
-  '인터넷': ['월정액', '결합 할인가', '할인율'],
-  'IPTV': ['월정액', '결합 할인가', '할인율'],
+  '인터넷·IPTV': ['월정액', '결합 할인가', '할인율'],
 };
 
 /** priceSpec = 코너가 '매핑 가능한 상품 카테고리 → 담을 가격 필드' 맵. 빈 객체면 미설정. */

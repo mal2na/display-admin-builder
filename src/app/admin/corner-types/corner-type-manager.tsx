@@ -1383,7 +1383,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   // '가격' 속성 밑에 붙는 패널 — 상품 카테고리(라디오·단일) + 그 카테고리가 담을 가격 필드(2026-11-10 사용자 요청: 가격 밑으로, 라디오).
   // '가격' 바로 밑에 붙는 접이식 규격 패널 — 묵직한 별도 박스 대신 가격의 하위 설정처럼 붙여서 열고 닫는다(2026-11-11 사용자 요청).
   const pricePanel = (
-    <div className="mt-1.5 overflow-hidden rounded-[8px] border border-[var(--line2)] bg-white">
+    <div className="overflow-hidden rounded-[8px] border border-[var(--line2)] bg-white">
       <input type="hidden" name="priceSpec" value={serializePriceSpec(priceSpec)} />
       <button type="button" onClick={() => setPriceOpen((v) => !v)} className="flex w-full items-center gap-2 bg-[var(--th)] px-3 py-2 text-left">
         <span className="text-[11px] font-bold text-[#3617ce]">가격 노출 규격</span>

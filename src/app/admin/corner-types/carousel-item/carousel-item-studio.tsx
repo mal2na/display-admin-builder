@@ -589,7 +589,13 @@ function CarouselItemBody({ s, onChange, layout, afterPrice }: { s: CarouselItem
         <ChkRow label="컴포넌트 타이틀(ItemTitle)" checked disabled />
         {/* 세로형 = 가격 그룹(가격·할인율·기간)을 캡션 위로(2026-11-05 사용자 요청). */}
         {vertical && <PriceCols pg={pg} vertical onChange={setPg} />}
-        {vertical && afterPrice}
+        {/* 가격 규격 패널 — 전체폭(좌우) 금지, '가격' 컬럼 밑에만 붙는 확장패널(2026-11-11 사용자 요청). */}
+        {vertical && afterPrice && (
+          <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)_150px_minmax(0,1fr)] items-start border-b border-[#eef0f3] last:border-b-0">
+            <div className="col-span-2 min-w-0 border-r border-[#eef0f3] px-3 py-2">{afterPrice}</div>
+            <div className="col-span-4" aria-hidden />
+          </div>
+        )}
         {vertical && (
           <StudioPairs>
             <ChkRow bare label="캡션(Caption01)" checked disabled />
@@ -597,7 +603,13 @@ function CarouselItemBody({ s, onChange, layout, afterPrice }: { s: CarouselItem
           </StudioPairs>
         )}
         {!vertical && <PriceCols pg={pg} vertical={false} onChange={setPg} />}
-        {!vertical && afterPrice}
+        {/* 가격 규격 패널 — 전체폭(좌우) 금지, '가격' 컬럼 밑에만 붙는 확장패널(2026-11-11 사용자 요청). */}
+        {!vertical && afterPrice && (
+          <div className="grid grid-cols-[150px_minmax(0,1fr)_150px_minmax(0,1fr)] items-start border-b border-[#eef0f3] last:border-b-0">
+            <div className="col-span-2 min-w-0 border-r border-[#eef0f3] px-3 py-2">{afterPrice}</div>
+            <div className="col-span-2" aria-hidden />
+          </div>
+        )}
         {!vertical && (
           <StudioPairs>
             <ChkRow bare label="서브 텍스트(SubText)" checked disabled />
