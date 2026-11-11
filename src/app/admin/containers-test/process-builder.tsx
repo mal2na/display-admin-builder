@@ -1217,18 +1217,18 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                     className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)] transition hover:border-[var(--ac)]">
                     <ItemIcon src={o.icon} brand={o.sub || o.label} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" />
                   </button>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    {/* 제목(문구)은 항상 편집 가능. 혜택 유형은 옆에 'AI 추천' — 브랜드·카테고리 맞춤 문구 초안. */}
-                    <div className="flex items-center gap-1">
-                      <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder={isBenefitType ? '혜택 문구 (비어 있으면 AI 추천)' : `${itemWord} 제목`} className="h-[28px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                      {isBenefitType && (
-                        <button type="button" onClick={() => genAiCopy(o)} title={`${o.sub || o.label || '이 브랜드'}에 맞는 혜택 문구를 하나 생성해요 (초안 · 눌러서 다른 후보)`}
-                          className="flex h-[28px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]">
-                          <Sparkles className="h-3 w-3" /> AI 추천
-                        </button>
-                      )}
-                    </div>
-                    {/* 이동 링크 — 원장 연결 → 기본 읽기 전용, '수정' 눌러야 편집(직접 추가 행은 바로 편집). 콘텐츠 안내형은 iframe 연결이라 수정 자체 불가(locked). */}
+                  {/* 제목·링크를 좌우 컬럼으로 펼친다 — 넓은 폭을 써서 표 행처럼 가로로 터지게(2026-11-11 사용자 요청). 좁아지면 각 셀이 줄어든다. */}
+                  <div className="flex min-w-0 flex-[1.6] items-center gap-1">
+                    <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder={isBenefitType ? '혜택 문구 (비어 있으면 AI 추천)' : `${itemWord} 제목`} className="h-[30px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    {isBenefitType && (
+                      <button type="button" onClick={() => genAiCopy(o)} title={`${o.sub || o.label || '이 브랜드'}에 맞는 혜택 문구를 하나 생성해요 (초안 · 눌러서 다른 후보)`}
+                        className="flex h-[30px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]">
+                        <Sparkles className="h-3 w-3" /> AI 추천
+                      </button>
+                    )}
+                  </div>
+                  {/* 이동 링크 — 원장 연결 → 기본 읽기 전용, '수정' 눌러야 편집(직접 추가 행은 바로 편집). 콘텐츠 안내형은 iframe 연결이라 수정 자체 불가(locked). */}
+                  <div className="min-w-0 flex-1">
                     <LinkEditRow link={o.link} editing={linkEdit} onToggle={() => toggleRowEdit(o.id)} onChange={(v) => setItemLink(o.id, v)} source={isContentGuide ? '콘텐츠' : '원장'} locked={isContentGuide} />
                   </div>
                   {canLoad && <button type="button" onClick={() => setLoadForId(o.id)} title="카탈로그에서 불러오기" className="flex h-[30px] shrink-0 self-center items-center gap-1 rounded-[7px] border border-[var(--line2)] bg-white px-2.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>}

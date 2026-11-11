@@ -1,4 +1,4 @@
-import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, Percent, ShoppingBag, User, Lock, GripVertical, Sparkles, ImageIcon } from 'lucide-react';
+import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, User, Lock, GripVertical, Sparkles, ImageIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 
@@ -854,28 +854,7 @@ export function DeviceFrame({
         <div style={fill ? undefined : { height: bodyHeight }} className={cn('overflow-y-auto', fill && 'min-h-0 flex-1', slim ? 'space-y-3 bg-[#e9ebf4] px-2 py-2.5' : 'space-y-4 bg-slate-200 px-5 py-4')}>
           {children}
         </div>
-        {/* 하단 네비 — 레퍼런스(main-concept1) T우주 앱 기준: 좌측 플로팅 T⁺(AI 컴포즈·브랜드 바이올렛) + 혜택(활성·초록)·쇼핑·마이. 2026-11-11 사용자 요청. */}
-        <div className="flex shrink-0 items-center gap-1 border-t bg-white px-3 pb-2 pt-2.5 text-[11px]">
-          <div className="-translate-y-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-b from-indigo-100 to-indigo-50 shadow-sm ring-1 ring-indigo-100">
-            <span className="relative text-[15px] font-bold leading-none text-indigo-600">
-              T<span className="absolute -right-2 -top-0.5 text-[9px] font-bold">+</span>
-            </span>
-          </div>
-          <div className="flex flex-1 items-center justify-around">
-            <span className="flex flex-col items-center gap-1 font-semibold text-emerald-600">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
-                <Percent className="h-3.5 w-3.5" />
-              </span>
-              혜택
-            </span>
-            <span className="flex flex-col items-center gap-1 text-slate-400">
-              <ShoppingBag className="h-5 w-5" /> 쇼핑
-            </span>
-            <span className="flex flex-col items-center gap-1 text-slate-400">
-              <User className="h-5 w-5" /> 마이
-            </span>
-          </div>
-        </div>
+        {/* 하단 네비(혜택/쇼핑/마이·T⁺) 제거 — 미리보기에서 탭 UI는 빼기로(2026-11-11 사용자 요청). 탭 전환은 IA 레이어의 몫. */}
       </div>
     </div>
   );

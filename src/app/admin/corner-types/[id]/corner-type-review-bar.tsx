@@ -5,13 +5,12 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { CORNER_TYPE_STATUS_LABEL, CORNER_TYPE_STATUS_COLOR, deriveCornerTypeUsage } from '@/lib/display-taxonomy';
-import { Send, Check, X, AlertTriangle, ShieldCheck, Undo2, Hourglass, Eye, EyeOff, RotateCcw, Rocket, FlaskConical } from 'lucide-react';
+import { Send, Check, X, AlertTriangle, ShieldCheck, Undo2, Hourglass, Eye, EyeOff, Rocket, FlaskConical } from 'lucide-react';
 import {
   requestCornerTypeReview,
   approveCornerType,
   rejectCornerType,
   publishCornerType,
-  reopenCornerType,
 } from './corner-type-review-actions';
 
 export type CornerTypeReviewIssue = { field: string; detail: string };
@@ -70,7 +69,6 @@ export function CornerTypeReviewBar(props: CornerTypeReviewData) {
       if (!r.ok) setMsg({ kind: 'error', text: r.error });
       else setMsg({ kind: 'ok', text: `반영 완료 — v${props.workingVersion} 사용 중` });
     });
-  const onReopen = () => run(async () => { await reopenCornerType(props.id); setMsg(null); });
 
   const gateOk = props.issues.length === 0;
 
@@ -111,11 +109,7 @@ export function CornerTypeReviewBar(props: CornerTypeReviewData) {
               <Rocket className="mr-1 h-3.5 w-3.5" /> 반영
             </Button>
           )}
-          {status === 'APPROVED' && !needsPublish && (
-            <Button size="sm" variant="secondary" onClick={onReopen} disabled={pending} title="수정하려면 새 편집본을 시작합니다(라이브는 사용 중 유지)">
-              <RotateCcw className="mr-1 h-3.5 w-3.5" /> 수정 착수
-            </Button>
-          )}
+          {/* '수정 착수' 제거(2026-11-11 사용자 요청) — 하단 '수정'으로 폼을 열어 저장하면 저장 액션이 자동으로 새 편집본(DRAFT·workingVersion++)을 시작하므로 중복. */}
         </div>
       </div>
 
