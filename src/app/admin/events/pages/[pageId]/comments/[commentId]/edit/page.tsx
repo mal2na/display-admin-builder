@@ -30,7 +30,7 @@ export default async function CommentEditPage({ params }: { params: { pageId: st
   return (
     <div className="px-12 py-9 pb-28">
       <PageHeader trail={['프로모션 관리', '프로모션', '프로모션 상세', '댓글 관리', '댓글 상세', '댓글 수정']} title="댓글 수정" />
-      <CommentEditForm pageId={params.pageId} comment={comment} />
+      <CommentEditForm pageId={params.pageId} comment={comment} backHref={`/admin/events/pages/${params.pageId}?tab=comments`} />
     </div>
   );
 }

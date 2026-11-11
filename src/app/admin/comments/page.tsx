@@ -1,15 +1,44 @@
-// SB-ETC-089 댓글·리뷰 관리 — 댓글/리뷰/차단(신고·차단 이력)을 탭으로 묶은 관리 화면 (시안).
-//  프로모션·상품 상세에 달린 댓글/리뷰를 조회·노출통제·답글하고, 파생되는 신고 접수·사용자 차단을 관리.
+// SB BO-AIM-EVTMSN-PG(댓글관리 목록) 댓글·리뷰 관리 — 전역 댓글 목록(전 프로모션). 행 클릭→댓글 상세(프로모션 정보 포함).
 import { prisma } from '@/lib/prisma';
-import { CommentAdmin } from './comment-admin';
+import { CommentAdmin, type GlobalCommentRow } from './comment-admin';
 
 export const dynamic = 'force-dynamic';
 
+const fmt = (d: Date | null) => (d ? d.toISOString().slice(0, 16).replace('T', ' ') : '');
+const commentType = (content: string) => (/[?？]|문의|어떻게|하나요|되나요|인가요/.test(content) ? '문의' : '반응');
+
 export default async function CommentsPage() {
-  // 시안 링크 대상 = 룰렛 응모 이벤트 상세. ID는 DB마다 다르므로 이름으로 조회(없으면 프로모션 목록).
-  const roulette = await prisma.eventPage
-    .findFirst({ where: { program: { name: { contains: '룰렛' } } }, select: { id: true } })
-    .catch(() => null);
-  const promoHref = roulette ? `/admin/events/pages/${roulette.id}` : '/admin/events';
-  return <CommentAdmin promoHref={promoHref} />;
+  const [rows, pages] = await Promise.all([
+    prisma.eventComment.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, programId: true, memberChannelId: true, content: true, likeCount: true, exposed: true, answered: true,
+        replyContent: true, replyAuthor: true, replyCount: true, replyAt: true, createdAt: true,
+        program: { select: { id: true, name: true } },
+      },
+    }).catch(() => []),
+    prisma.eventPage.findMany({ select: { id: true, programId: true } }).catch(() => []),
+  ]);
+  const pageByProgram = new Map(pages.map((p) => [p.programId, p.id]));
+  const total = rows.length;
+  const comments: GlobalCommentRow[] = rows.map((c, i) => ({
+    id: c.id,
+    no: total - i,
+    ch: c.memberChannelId,
+    promoId: c.program.id,
+    promoName: c.program.name,
+    promoPageId: pageByProgram.get(c.programId) ?? null,
+    type: commentType(c.content),
+    content: c.content,
+    likes: c.likeCount,
+    at: fmt(c.createdAt),
+    status: c.exposed ? '노출' : '미노출',
+    reply: c.replyContent ?? '',
+    replyBy: c.replyAuthor ?? '',
+    replyCount: c.replyCount,
+    replyAt: fmt(c.replyAt),
+    answered: c.answered ? '답변완료' : '답변대기',
+  }));
+
+  return <CommentAdmin comments={comments} />;
 }

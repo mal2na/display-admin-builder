@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { OpsSection, FieldRow, ReadValue } from '@/components/ops-ui';
 import { Plus, Trash2, ChevronLeft, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { saveCommentReplies } from '../../../../../actions';
+import { saveCommentReplies } from '@/app/admin/events/actions';
 
 export type EditComment = {
   id: string;
@@ -36,9 +36,8 @@ function StatusRadio({ value, onChange, name, options }: { value: string; onChan
   );
 }
 
-export function CommentEditForm({ pageId, comment }: { pageId: string; comment: EditComment }) {
+export function CommentEditForm({ pageId, comment, backHref, promotionInfo }: { pageId: string; comment: EditComment; backHref: string; promotionInfo?: React.ReactNode }) {
   const router = useRouter();
-  const backHref = `/admin/events/pages/${pageId}?tab=comments`;
   const [status, setStatus] = useState<CommentStatus>(comment.exposed ? '노출' : '미노출');
   const [replies, setReplies] = useState<ReplyDraft[]>(
     comment.replies.length
@@ -71,6 +70,7 @@ export function CommentEditForm({ pageId, comment }: { pageId: string; comment: 
 
   return (
     <div>
+      {promotionInfo}
       {/* 댓글정보 — 읽기전용 + 노출 상태(편집) */}
       <OpsSection title="댓글정보">
         <div className="grid grid-cols-2">
