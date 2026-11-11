@@ -40,7 +40,6 @@ function readForm(fd: FormData) {
 
 function revalidate(id?: string) {
   revalidatePath('/admin/app-splash');
-  revalidatePath('/admin/app-splash/history');
   if (id) revalidatePath(`/admin/app-splash/${id}`);
 }
 

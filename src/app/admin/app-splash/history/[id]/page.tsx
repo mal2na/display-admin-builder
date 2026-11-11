@@ -1,4 +1,5 @@
 // SB BO-AIM-ETC-PG048 App 스플래시 변경/승인이력 상세 (Only View) · 운영 관리
+//  [id] = AppSplashHistory.id (회차). 해당 회차가 속한 스플래시 내용을 읽기 전용으로 노출.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
@@ -9,14 +10,15 @@ import { PageHeader } from '@/components/page-header';
 export const dynamic = 'force-dynamic';
 
 export default async function SplashHistoryDetailPage({ params }: { params: { id: string } }) {
-  const s = await prisma.appSplash.findUnique({ where: { id: params.id } });
-  if (!s) notFound();
+  const h = await prisma.appSplashHistory.findUnique({ where: { id: params.id }, include: { splash: true } });
+  if (!h) notFound();
+  const s = h.splash;
   const newer = await prisma.appSplash.count({ where: { osType: s.osType, approvalStatus: 'approved', version: { gt: s.version } } });
   const apply = computeApplyStatus(s.approvalStatus, s.applyStartAt, newer > 0);
 
   const footer = (
     <div className="flex items-center justify-start pt-2">
-      <Link href="/admin/app-splash/history" className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">목록</Link>
+      <Link href={`/admin/app-splash/${s.id}?tab=history`} className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">목록</Link>
     </div>
   );
 
