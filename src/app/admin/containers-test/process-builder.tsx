@@ -826,7 +826,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
     <div className="space-y-3">
 
       {/* ① 코너 정보 — 코너명만 편집, 유형·레이아웃·개수는 코너 유형 관리에서 불러온 껍데기 */}
-      <Sec n={1} title="코너 정보">
+      <Sec n={1} title="코너 기본 정보">
         <div className="mb-2 flex items-center gap-1 rounded-[8px] bg-[var(--th)] px-2.5 py-2 text-[12px] text-[var(--ink3)]"><Lock className="h-3 w-3" /> 유형·레이아웃·개수는 코너 유형 관리에서 정의 · 수정 불가 · <b className="text-[var(--ink2)]">코너명만 편집</b></div>
         <Row label="코너 유형"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></Row>
         <Row label="배열·레이아웃">{cornerLayoutText(corner.cornerType, corner.layout, corner.layoutDetail) || '—'}</Row>
@@ -901,7 +901,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
       </Sec>
 
       {/* ② 수급 — 클릭해 전환. 프로필형은 CVM 데이터 연동 고정(잠금). */}
-      <Sec n={2} title="수급 — 이 자리를 누가 채우나" help>
+      <Sec n={2} title="채움 방식 (수급)" help>
         {isProfile && <p className="mb-2 flex items-start gap-1 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]"><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span>프로필형은 <b>어떤 고객정보를 노출할지</b>를 운영자가 정하고(CVM 추천 아님), 값은 런타임 고객 데이터(@cvm)로 자동 표시됩니다. → <b>운영자 편성</b> 고정.</span></p>}
         {isStatus && <p className="mb-2 flex items-center gap-1 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] text-[#2e4fd6]"><Lock className="h-3.5 w-3.5" /> 상태 안내형은 운영자가 <b>상태 카드를 뭉텅이로 편성</b>하고, 값·보조문구는 런타임 고객 데이터(@cvm)로 자동 표시됩니다. → <b>운영자 편성</b> 고정.</p>}
         {isBarcode && <p className="mb-2 flex items-start gap-1 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]"><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span>멤버십 바코드는 회원 인증 기반 <b>런타임 발급</b>이라 추천/편성 대상이 아닙니다. 어드민은 아래 <b>라벨·갱신 주기</b> 정책만 관리합니다.</span></p>}
@@ -933,7 +933,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
 
       {/* ③ 폴백 — CVM 수급일 때. 폴백 선택(미노출/운영자 편성 대체)이 아래 '채우기' 내용을 좌우하므로 채우기 위에 둔다(2026-11-10 사용자 요청). */}
       {isCvmSrc && (
-        <Sec n={3} title="폴백 — CVM 응답이 비었을 때" help>
+        <Sec n={3} title="대체 노출 (폴백)" help>
           <div className="space-y-1.5">
             {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
               const on = fb === f;
@@ -955,7 +955,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
 
       {/* ④ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
       {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
-        <Sec n={nFill} title={fillForFallback ? '운영자 편성 대체 — CVM이 비면 노출할 항목' : isData ? '운영자 고정 — 먼저 채울 항목 (나머지는 CVM)' : '채우기 — 항목 등록'}>
+        <Sec n={nFill} title={fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '내용 채우기'}>
           {fillForFallback && (
             <div className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#fff8ef] px-3 py-2 text-[12px] leading-relaxed text-[#b67a12]">
               <span className="mt-0.5">⚠</span><span>이 코너는 <b>CVM 콘텐츠 연동</b>이라 평소엔 CVM 완성본이 노출됩니다. <b>CVM 응답이 비면</b> 아래에 등록한 운영자 편성 항목이 대신 노출돼요(폴백 미리보기에서 확인).</span>
@@ -1354,7 +1354,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           )}
         </Sec>
       ) : isProfile ? (
-        <Sec n={nFill} title="프로필 카드 — 문구 설정">
+        <Sec n={nFill} title="프로필 항목">
           <div className="mb-2 flex items-start gap-1.5 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]">
             <span className="mt-0.5">ⓘ</span><span><b>고객명·휴대폰 번호·프로필 이미지</b>는 고객 정보로 자동 표시(@cvm)됩니다. 아래 문구만 설정하세요.</span>
           </div>
@@ -1375,7 +1375,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           </div>
         </Sec>
       ) : (
-        <Sec n={nFill} title="요청 — 구좌만 넘김" help>
+        <Sec n={nFill} title="CVM 요청 (구좌만)" help>
           <p className="rounded-[8px] bg-[var(--ac2)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
             <b className="text-[var(--ac)]">CVM 콘텐츠 연동</b> = 구좌(자리)만 넘깁니다. 이미지·문구·랜딩까지 <b>CVM이 완성본을 내려주고</b> 전시 어드민은 받은 그대로 노출합니다. 별도 요청 범위(③) 설정은 없습니다.
           </p>
@@ -1383,7 +1383,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
       )}
 
       {/* ⑥ 출처 — 이 값이 어디서 오나 */}
-      <Sec n={nSrc} title="출처 — 이 값이 어디서 오나" help>
+      <Sec n={nSrc} title="값 출처" help>
         <div className="overflow-hidden rounded-[8px] border border-[var(--line2)] text-[12px]">
           {[
             ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
