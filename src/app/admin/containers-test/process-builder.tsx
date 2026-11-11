@@ -1176,11 +1176,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                 <div className="space-y-2 rounded-[9px] border border-[var(--line2)] bg-white p-2">
                   <div className="flex items-start gap-2">
                     {!bannerSingle && <span ref={h.setRef} {...h.props} className="mt-1 shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>}
-                    {/* 띠 배너 미리보기 — 작은 썸네일 크기로 고정(미리보기보다 작게). 클릭하면 배너 캠페인에서 소재 교체. 2026-11-10 사용자 요청. */}
-                    <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="배너 캠페인에서 불러오기" className="w-[200px] max-w-full shrink-0 text-left">
+                    {/* 띠 배너 미리보기 — 가로로 긴 소재(예 672×324)라 구좌 폭을 꽉 채워 통째로 노출. 클릭하면 배너 캠페인에서 소재 교체. 2026-11-11 사용자 요청. */}
+                    <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="배너 캠페인에서 불러오기" className="min-w-0 flex-1 text-left">
                       <BannerCard component={bannerComp} sizeDetail={corner.layoutDetail} />
                     </button>
-                    <button type="button" onClick={() => tryRemove(o)} className="ml-auto grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                    <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
                   </div>
                   {/* 사이즈 배지 + 배너 타이틀(읽기 전용 — 배너 캠페인 관리에서만 수정) */}
                   <div className="flex items-center gap-1">
@@ -1376,17 +1376,16 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
 
       {/* ⑥ 출처 — 이 값이 어디서 오나 */}
       <Sec n={nSrc} title="출처 — 이 값이 어디서 오나" help>
-        {/* 가로 그리드 — 항목이 '라벨 + 배지' 뿐이라 세로로 쌓지 않고 가로로 펼친다(넓으면 4열 한 줄, 좁으면 2열). 2026-11-11 사용자 요청. */}
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[8px] border border-[var(--line2)] bg-[var(--line2)] text-[12px] lg:grid-cols-4">
+        <div className="overflow-hidden rounded-[8px] border border-[var(--line2)] text-[12px]">
           {[
             ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
             ['이미지', '상품(EPC) 원장'],
             ['문구', src === 'CVM 콘텐츠 연동' ? 'CVM 완성본' : '빌더 · 상품 원장'],
             ['이동 링크', '빌더'],
-          ].map(([k, v]) => (
-            <div key={k} className="flex min-w-0 flex-col gap-1.5 bg-white px-3 py-2.5">
-              <span className="truncate text-[var(--ink3)]">{k}</span>
-              <span className={cn('w-fit max-w-full truncate rounded-[4px] px-1.5 py-0.5 font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'bg-[#e6efff] text-[#2e6ff2]' : 'bg-[#fff0d6] text-[#b67a12]')}>{v}</span>
+          ].map(([k, v], i) => (
+            <div key={k} className={cn('flex items-center gap-3 px-3 py-2', i > 0 && 'border-t border-[var(--line2)]')}>
+              <span className="w-[72px] shrink-0 text-[var(--ink3)]">{k}</span>
+              <span className={cn('rounded-[4px] px-1.5 py-0.5 font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'bg-[#e6efff] text-[#2e6ff2]' : 'bg-[#fff0d6] text-[#b67a12]')}>{v}</span>
             </div>
           ))}
         </div>
