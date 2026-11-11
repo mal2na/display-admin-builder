@@ -214,18 +214,25 @@ const REC_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
 
 const CVM_CATALOGS = ['요금제', '단말', '멤버십', '혜택', '마케팅 프로그램', '업무'];
 
-/* 접이식 섹션 — 번호·제목·(?)·접기 토글(모듈 스코프: 상태 유지) */
-function Sec({ n, title, help, children }: { n: number; title: string; help?: boolean; children: React.ReactNode }) {
+/* 접이식 섹션 — 번호·제목·상태배지·(?)·접기 토글(모듈 스코프: 상태 유지).
+   SB(상품 전시 수정) 섹션 카드 규격: 소프트 보더(line2) · 헤더 → 1px 구분선 → 본문 · 우측 상태배지/토글 슬롯. 2026-11-11. */
+function Sec({ n, title, help, badge, aside, children }: { n: number; title: string; help?: boolean; badge?: React.ReactNode; aside?: React.ReactNode; children: React.ReactNode }) {
   const [open, setOpen] = React.useState(true);
   return (
-    <div className="rounded-[var(--collapse-r)] border border-[var(--line3)] bg-white p-4">
-      <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2">
-        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">{n}</span>
-        <h4 className="flex-1 text-left text-[14px] font-bold text-[var(--ink)]">{title}</h4>
-        {help && <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-[var(--line2)] text-[10px] text-[var(--ink4)]">?</span>}
-        <ChevronDown className={cn('h-4 w-4 shrink-0 text-[var(--ink4)] transition', !open && '-rotate-90')} />
-      </button>
-      {open && <div className="mt-3">{children}</div>}
+    <div className="overflow-hidden rounded-[var(--collapse-r)] border border-[var(--line2)] bg-white">
+      <div className="flex items-center gap-2 px-4 py-3">
+        <button type="button" onClick={() => setOpen((v) => !v)} className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ac)] text-[11px] font-bold text-white">{n}</span>
+          <h4 className="min-w-0 truncate text-left text-[14px] font-bold text-[var(--ink)]">{title}</h4>
+          {badge}
+          {help && <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-[var(--line2)] text-[10px] text-[var(--ink4)]">?</span>}
+        </button>
+        {aside}
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? '접기' : '펼치기'} className="shrink-0">
+          <ChevronDown className={cn('h-4 w-4 text-[var(--ink4)] transition', !open && '-rotate-90')} />
+        </button>
+      </div>
+      {open && <div className="border-t border-[var(--line2)] p-4">{children}</div>}
     </div>
   );
 }
