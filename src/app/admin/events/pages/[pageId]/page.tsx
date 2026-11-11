@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 16) : null);
 const fmt = (d: Date | null) => (d ? d.toISOString().slice(0, 16).replace('T', ' ') : null);
 
-export default async function PromotionDetailPage({ params }: { params: { pageId: string } }) {
+export default async function PromotionDetailPage({ params, searchParams }: { params: { pageId: string }; searchParams?: { tab?: string } }) {
   const page = await prisma.eventPage.findUnique({
     where: { id: params.pageId },
     include: {
@@ -112,6 +112,7 @@ export default async function PromotionDetailPage({ params }: { params: { pageId
       builderHref={`/admin/events/pages/${page.id}/builder`}
       history={history}
       comments={comments}
+      initialTab={searchParams?.tab === 'comments' ? 'comments' : searchParams?.tab === 'history' ? 'history' : 'info'}
     />
   );
 }
