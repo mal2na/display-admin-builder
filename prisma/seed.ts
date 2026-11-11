@@ -172,11 +172,9 @@ async function main() {
   await prisma.template.create({
     data: { containerId: homeContainer.id, name: '홈 로그인', conditionGroup: '로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
   });
-  await prisma.template.create({
-    data: { containerId: homeContainer.id, name: '홈 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
-  });
+  // 컨테이너는 로그인/비로그인 2종만(2026-11-11 사용자 요청). 비로그인을 기본(default)으로.
   const homeBase = await prisma.template.create({
-    data: { containerId: homeContainer.id, name: '홈 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
+    data: { containerId: homeContainer.id, name: '홈 비로그인', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
   });
   await prisma.container.update({ where: { id: homeContainer.id }, data: { defaultTemplateId: homeBase.id } });
 
@@ -543,13 +541,9 @@ async function main() {
     { cornerId: cornerTDay.id, order: 6 },
     { cornerId: cornerAirpods.id, order: 7 },
   ];
-  // 비로그인 Template (로그인 판정 후 비로그인 분기)
-  await prisma.template.create({
-    data: { containerId: container.id, name: '혜택 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: beCorners } },
-  });
-  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 안전하게 비로그인 뷰 기준.
+  // 컨테이너는 로그인/비로그인 2종만(2026-11-11 사용자 요청). 비로그인 = 기본(default) — 로그인 판정 전·미분기 폴백.
   const beBase = await prisma.template.create({
-    data: { containerId: container.id, name: '혜택 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: beCorners } },
+    data: { containerId: container.id, name: '혜택 비로그인', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: beCorners } },
   });
   await prisma.container.update({ where: { id: container.id }, data: { defaultTemplateId: beBase.id } });
 
@@ -893,13 +887,9 @@ async function main() {
     { cornerId: shopCornerSwipe.id, order: 7 },
     { cornerId: shopCornerSub.id, order: 8 },
   ];
-  // 비로그인 Template
-  await prisma.template.create({
-    data: { containerId: shopContainer.id, name: '쇼핑 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: shopCornersList } },
-  });
-  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 비로그인 뷰 기준.
+  // 컨테이너는 로그인/비로그인 2종만(2026-11-11 사용자 요청). 비로그인 = 기본(default).
   const shopBase = await prisma.template.create({
-    data: { containerId: shopContainer.id, name: '쇼핑 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: shopCornersList } },
+    data: { containerId: shopContainer.id, name: '쇼핑 비로그인', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: shopCornersList } },
   });
   await prisma.container.update({ where: { id: shopContainer.id }, data: { defaultTemplateId: shopBase.id } });
   await prisma.auditLog.create({
@@ -1081,13 +1071,9 @@ async function main() {
     { cornerId: myCornerSub.id, order: 8 },
     { cornerId: myCornerMenu.id, order: 9 },
   ];
-  // 비로그인 Template
-  await prisma.template.create({
-    data: { containerId: myContainer.id, name: '마이 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: myCornersList } },
-  });
-  // 기본 Template(default) — 로그인 판정 전 첫 화면·미분기 폴백. 비로그인 뷰 기준.
+  // 컨테이너는 로그인/비로그인 2종만(2026-11-11 사용자 요청). 비로그인 = 기본(default).
   const myBase = await prisma.template.create({
-    data: { containerId: myContainer.id, name: '마이 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: myCornersList } },
+    data: { containerId: myContainer.id, name: '마이 비로그인', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: myCornersList } },
   });
   await prisma.container.update({ where: { id: myContainer.id }, data: { defaultTemplateId: myBase.id } });
 
