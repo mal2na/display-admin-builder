@@ -126,6 +126,75 @@ async function main() {
     ),
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // 홈 (Container) — AI 어시스턴트 랜딩. 혜택/쇼핑/마이 탭 위에 공통으로 얹히는 최상위 화면.
+  //   레퍼런스 main-concept1: 인사말 + 추천(셀프개통·질문칩·여행상품) + (하단 AI 입력바).
+  //   탭 전환과 무관하게 공유되는 1개 화면 → 별도 Container. '홈 위 / 혜택·쇼핑·마이 아래 탭'
+  //   관계는 Container 중첩이 아니라 상위 IA(구조도)에서 정의. 맨 먼저 생성 → 트리 최상단.
+  // ═══════════════════════════════════════════════════════════
+  const homeGreetComp = await comp('홈 인사말', '정보형', [
+    { name: '홈인사:제목', atomType: 'TEXT', content: '안녕하세요 지훈님,' },
+    { name: '홈인사:부제', atomType: 'INFO', content: '오랜만이에요' },
+  ]);
+  const homeGreet = await corner(
+    { name: '홈 인사말', cornerType: '업무 진입형', layoutDetail: '상태 안내형', subTitleIcon: '사용안함' },
+    [{ id: homeGreetComp.id, componentType: '정보형' }],
+  );
+  const homeActComp = await comp('홈 셀프 개통', '행동형', [
+    { name: '개통:이미지', atomType: 'IMAGE', imageUrl: '/assets/device-iphone20pro.png', altText: 'iPhone20 Pro' },
+    { name: '개통:문구', atomType: 'TEXT', content: '지훈님, 주문하신\niPhone20 Pro가 도착했어요' },
+    { name: '개통:CTA', atomType: 'CTA', content: '1분 셀프 개통하기' },
+  ]);
+  const homeActivate = await corner(
+    { name: '홈 셀프 개통', cornerType: '혜택·오퍼형', layoutDetail: '가로형', mainTitle: '지훈님, 주문하신 iPhone20 Pro가 도착했어요', moreButtonUse: false },
+    [{ id: homeActComp.id, componentType: '행동형' }],
+  );
+  const homeAskComp = await comp('홈 추천 질문', '선택형', [
+    { name: '질문:가족결합', atomType: 'TEXT', content: '가족 결합 현황 확인해줘' },
+    { name: '질문:요금', atomType: 'TEXT', content: '이번달 요금이 많이 나온 이유 알려줘' },
+  ]);
+  const homeAsk = await corner(
+    { name: '홈 추천 질문', cornerType: '업무 진입형', layoutDetail: '리스트형', subTitleIcon: '사용안함' },
+    [{ id: homeAskComp.id, componentType: '선택형' }],
+  );
+  const homeRecoComp = await comp('RIMOWA 수트케이스', '상품형', [
+    { name: '여행:이미지', atomType: 'IMAGE', imageUrl: '/assets/rimowa.png', altText: 'RIMOWA 수트케이스' },
+    { name: '여행:제목', atomType: 'TEXT', content: '어떤 여행에도 어울리는 아이콘' },
+    { name: '여행:브랜드', atomType: 'INFO', content: 'RIMOWA 수트케이스' },
+  ]);
+  const homeReco = await corner(
+    { name: '홈 여행 추천', cornerType: '상품형', maxItems: 10, mainTitle: '어떤 여행에도 어울리는 아이콘', layoutDetail: '세로형', sortStrategy: '추천순' },
+    [{ id: homeRecoComp.id, componentType: '상품형' }],
+  );
+  const homeCorners = [
+    { cornerId: homeGreet.id, order: 0 },
+    { cornerId: homeActivate.id, order: 1 },
+    { cornerId: homeAsk.id, order: 2 },
+    { cornerId: homeReco.id, order: 3 },
+  ];
+  const homeContainer = await prisma.container.create({
+    data: {
+      name: '홈', containerType: 'MAIN', channel: 'APP', status: 'active',
+      previewUrl: 'https://main-concept1.vercel.app/',
+      metaUse: true,
+      searchTags: '#홈 #AI #어시스턴트 #추천',
+      metaKeywords: '홈,AI,어시스턴트,추천,T우주',
+      metaDescription: 'AI 어시스턴트 홈 — 지훈님을 위한 맞춤 추천을 한 곳에서.',
+      ogTitle: '홈', ogDescription: '지훈님을 위한 AI 홈', ogSiteName: 'T우주',
+    },
+  });
+  // 로그인/비로그인/기본(default) 3종 — 혜택·쇼핑·마이와 동일 포맷
+  await prisma.template.create({
+    data: { containerId: homeContainer.id, name: '홈 로그인', conditionGroup: '로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
+  });
+  await prisma.template.create({
+    data: { containerId: homeContainer.id, name: '홈 비로그인', conditionGroup: '비로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
+  });
+  const homeBase = await prisma.template.create({
+    data: { containerId: homeContainer.id, name: '홈 기본', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
+  });
+  await prisma.container.update({ where: { id: homeContainer.id }, data: { defaultTemplateId: homeBase.id } });
+
   // 1) 상단 퀵메뉴 (탭)
   const topMenu = await comp('혜택 상단 탭', '선택형', [
     { name: '탭:4월 혜택', atomType: 'TEXT', content: '4월 혜택' },
