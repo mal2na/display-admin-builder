@@ -1383,30 +1383,34 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
   const pricePanel = (
     <div className="space-y-2">
       <input type="hidden" name="priceSpec" value={serializePriceSpec(priceSpec)} />
-      {/* 카테고리 = 드롭다운(단일) 한 줄 → 행 높이 축소. 선택 시 아래에 담을 가격 필드 칩. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="shrink-0 text-[12px] text-slate-500">상품 카테고리</span>
-        <div className="relative">
-          <select value={priceCatSel ?? ''} onChange={(e) => selectPriceCategory(e.target.value as ProductPriceCategory | '')}
-            className="h-8 appearance-none rounded-[6px] border border-[var(--line3)] bg-white pl-2.5 pr-8 text-[13px] text-[var(--ink)] focus:border-[var(--ac)] focus:outline-none">
-            <option value="">선택 안 함</option>
-            {PRODUCT_PRICE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink4)]" />
-        </div>
-        {priceCatSel && <span className="text-[11px] text-slate-400">담을 가격 필드 {(priceSpec[priceCatSel] ?? []).length}개 · 칩을 눌러 선택</span>}
+      {/* 카테고리 = 전부 나열(단일 선택, 클릭하며 전환). 선택하면 아래 흰색 패널에 담을 가격 필드(2026-11-11 사용자 요청). */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-0.5 shrink-0 text-[12px] text-slate-500">상품 카테고리</span>
+        {PRODUCT_PRICE_CATEGORIES.map((cat) => {
+          const on = priceCatSel === cat;
+          return (
+            <button key={cat} type="button" onClick={() => selectPriceCategory(on ? '' : cat)}
+              className={cn('rounded-full border px-2.5 py-1 text-[12px] font-medium transition', on ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-500 hover:border-indigo-300')}>
+              {cat}
+            </button>
+          );
+        })}
       </div>
+      {/* 선택 카테고리의 담을 가격 필드 — 흰색 패널 */}
       {priceCatSel && (
-        <div className="flex flex-wrap gap-1.5">
-          {PRODUCT_PRICE_FIELDS.map((f) => {
-            const fon = (priceSpec[priceCatSel] ?? []).includes(f);
-            return (
-              <button key={f} type="button" onClick={() => togglePriceField(priceCatSel, f)}
-                className={cn('rounded-full border px-2.5 py-1 text-[12px] font-medium transition', fon ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-400 hover:border-indigo-300')}>
-                {f}
-              </button>
-            );
-          })}
+        <div className="rounded-[8px] border border-[var(--line2)] bg-white p-3">
+          <p className="mb-2 text-[11px] font-semibold text-slate-500"><b className="text-[#3617ce]">{priceCatSel}</b> · 담을 가격 필드 {(priceSpec[priceCatSel] ?? []).length}개 <span className="font-normal text-slate-400">· 칩을 눌러 선택</span></p>
+          <div className="flex flex-wrap gap-1.5">
+            {PRODUCT_PRICE_FIELDS.map((f) => {
+              const fon = (priceSpec[priceCatSel] ?? []).includes(f);
+              return (
+                <button key={f} type="button" onClick={() => togglePriceField(priceCatSel, f)}
+                  className={cn('rounded-full border px-2.5 py-1 text-[12px] font-medium transition', fon ? 'border-[#3617ce] bg-indigo-50 text-[#3617ce]' : 'border-[#dce0e5] bg-white text-slate-400 hover:border-indigo-300')}>
+                  {f}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
       <p className="text-[11px] leading-relaxed text-slate-400">들어가는 상품(요금제·단말기 등)에 따라 가격 노출이 달라져요. 카테고리를 고르고 <b className="text-slate-500">담을 가격 필드</b>를 정하면 빌더에선 그중 노출할 것만 고릅니다. 필드는 상품(EPC) 정책 확정 전 대표안(TBD).</p>
