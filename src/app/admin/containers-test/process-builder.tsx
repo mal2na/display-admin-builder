@@ -1422,7 +1422,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           ].map(([k, v], i) => (
             <div key={k} className={cn('flex items-center gap-3 px-3 py-2', i > 0 && 'border-t border-[var(--line2)]')}>
               <span className="w-[72px] shrink-0 text-[var(--ink3)]">{k}</span>
-              <span className={cn('rounded-[4px] px-1.5 py-0.5 font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'bg-[#e6efff] text-[#2e6ff2]' : 'bg-[#fff0d6] text-[#b67a12]')}>{v}</span>
+              {/* 박스 칩 대신 색 텍스트(파란=CVM, 노랑=원장·빌더). 2026-11-11 사용자 요청. */}
+              <span className={cn('font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'text-[#2e6ff2]' : 'text-[#b67a12]')}>{v}</span>
             </div>
           ))}
         </div>
