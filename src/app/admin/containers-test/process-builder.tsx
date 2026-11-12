@@ -234,7 +234,8 @@ function Sec({ n, title, help, hint, badge, aside, children }: { n: number; titl
           <ChevronDown className={cn('h-4 w-4 text-[var(--ink4)] transition', !open && '-rotate-90')} />
         </button>
       </div>
-      {open && <div className="border-t border-[var(--line2)] p-4">{children}</div>}
+      {/* 헤더 아래 구분 보더 제거(2026-11-12 사용자 요청) — 제목 밑 빈 띠·라인 삭제. */}
+      {open && <div className="px-4 pb-4 pt-0.5">{children}</div>}
     </div>
   );
 }
