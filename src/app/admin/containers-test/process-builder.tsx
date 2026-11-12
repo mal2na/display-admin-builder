@@ -234,8 +234,8 @@ function Sec({ n, title, help, hint, badge, aside, children }: { n: number; titl
           <ChevronDown className={cn('h-4 w-4 text-[var(--ink4)] transition', !open && '-rotate-90')} />
         </button>
       </div>
-      {/* 헤더 아래 구분 보더 제거(2026-11-12 사용자 요청) — 제목 밑 빈 띠·라인 삭제. */}
-      {open && <div className="px-4 pb-4 pt-0.5">{children}</div>}
+      {/* 헤더 아래 구분 보더는 제거하되(2026-11-12), 라벨이 너무 붙지 않게 적당한 상단 여백 유지. */}
+      {open && <div className="px-4 pb-4 pt-3">{children}</div>}
     </div>
   );
 }
