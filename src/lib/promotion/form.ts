@@ -125,7 +125,7 @@ export type PromoForm = {
   detailBlocks: DetailBlock[];
   search: '노출' | '미노출';
   tags: string[];
-  keywords: string; ogTitle: string; ogDesc: string;
+  keywords: string; ogTitle: string; ogDesc: string; ogImage: string;
   /* ── 참여ㆍ리워드형 전용 ── */
   ja: JaItem[];
   joinCond: CondNode[];
@@ -179,7 +179,7 @@ export function emptyForm(type: string, jm: JoinMode): PromoForm {
     cta: '사용', ctas: [newCta(type)], detailBlocks: [],
     search: '노출',
     tags: [],
-    keywords: '', ogTitle: '', ogDesc: '',
+    keywords: '', ogTitle: '', ogDesc: '', ogImage: '',
     ja: [newJaItem()],
     joinCond: [],
     cycle: '기간 전체', cycleUnit: '월', maxJoin: '',

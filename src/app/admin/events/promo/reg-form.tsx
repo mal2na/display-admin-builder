@@ -81,6 +81,33 @@ export function RegForm({ type, jm, initial, startView, onCancel, onSaved, onToa
   const openFo = () => { backRef.current = view === 'detail' ? 'detail' : 'form'; setView('fo'); window.scrollTo(0, 0); };
   const openBuilder = () => { backRef.current = view === 'detail' ? 'detail' : 'form'; setView('builder'); window.scrollTo(0, 0); };
 
+  // 하단 CTA 섹션 — 프로토타입 1:1 순서: 참여ㆍ리워드형은 '참여 정보'와 '리워드 정보' 사이에 둔다(2026-11-12).
+  const ctaSect = (
+    <Sect title="하단 CTA 정보">
+      <Row label="하단 CTA 사용여부"><RdPair value={f.cta} opts={['사용', '미사용'] as const} onChange={(v) => set({ cta: v })} /></Row>
+      {f.cta === '사용' && (
+        <>
+          {f.ctas.map((c, i) => (
+            <CtaRows
+              key={c.id} c={c} idx={i} total={f.ctas.length} type={f.type} E={E}
+              onSet={(p) => setCta(c.id, p)}
+              onDel={() => set({ ctas: f.ctas.filter((x) => x.id !== c.id) })}
+              onPickPage={() => setPagePick({ id: c.id })}
+              onPickPageTo={() => setPagePick({ id: c.id, to: true })}
+            />
+          ))}
+          <div className="flex items-center justify-end gap-2 border-b border-[var(--line2)] px-4 py-2.5">
+            <Hint>같은 시점에 노출되는 하단 CTA는 최대 {CTA_AT_ONCE}개 · 전체 최대 {CTA_MAX}개</Hint>
+            <button
+              type="button" className={BTN_SM} disabled={f.ctas.length >= CTA_MAX}
+              onClick={() => set({ ctas: f.ctas.concat(newCta(f.type)) })}
+            >추가</button>
+          </div>
+        </>
+      )}
+    </Sect>
+  );
+
   if (view === 'fo') return <FoPreview f={f} onBack={() => { setView(backRef.current); window.scrollTo(0, 0); }} />;
   if (view === 'builder') return <PromoBuilder f={f} onChange={(blocks) => set({ detailBlocks: blocks })} onBack={() => { setView(backRef.current); window.scrollTo(0, 0); }} />;
   if (view === 'detail') {
@@ -320,6 +347,13 @@ export function RegForm({ type, jm, initial, startView, onCancel, onSaved, onToa
                 <Row label="최대 참여 횟수" req err={E.maxJoin}>
                   <span id="err-maxJoin" />
                   <input type="number" min={1} value={f.maxJoin} onChange={(e) => set({ maxJoin: e.target.value })} placeholder="숫자를 입력해주세요" className={cn(INP, 'w-[150px]')} /> 회
+                  {/* 프로토타입 tipMax 1:1 — 중복 처리 안내 툴팁(2026-11-12) */}
+                  <span className="group/tm relative inline-flex cursor-help items-center">
+                    <span className="grid h-4 w-4 place-items-center rounded-full border border-[var(--line3)] text-[10px] font-bold text-[var(--ink4)]">i</span>
+                    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-max max-w-[280px] -translate-x-1/2 whitespace-normal break-keep rounded-[8px] bg-[#fcfcfd] px-3 py-2 text-left text-[12px] leading-relaxed text-[var(--ink2)] shadow-[0_0_8px_-2px_#0000001f] ring-1 ring-black/5 group-hover/tm:block">
+                      참여 조건을 달성할 때마다 참여 기회가 1회씩 쌓여요. 설정한 횟수를 초과한 참여는 중복 처리돼요.
+                    </span>
+                  </span>
                   <Hint>
                     {f.cycle === '주기별'
                       ? `${({ 일: '매일', 주: '매주', 월: '매월' } as const)[f.cycleUnit]} ${f.maxJoin || 'N'}회까지 참여할 수 있어요`
@@ -342,6 +376,9 @@ export function RegForm({ type, jm, initial, startView, onCancel, onSaved, onToa
                   })}
                 />
               </Sect>
+
+              {/* 프로토타입 1:1 — 참여 정보와 리워드 정보 사이에 하단 CTA */}
+              {ctaSect}
 
               <Sect title="리워드 정보">
                 <div className="border-b border-[var(--line2)] p-4">
@@ -372,30 +409,8 @@ export function RegForm({ type, jm, initial, startView, onCancel, onSaved, onToa
             />
           )}
 
-          {/* ── 하단 CTA ── */}
-          <Sect title="하단 CTA 정보">
-            <Row label="하단 CTA 사용여부"><RdPair value={f.cta} opts={['사용', '미사용'] as const} onChange={(v) => set({ cta: v })} /></Row>
-            {f.cta === '사용' && (
-              <>
-                {f.ctas.map((c, i) => (
-                  <CtaRows
-                    key={c.id} c={c} idx={i} total={f.ctas.length} type={f.type} E={E}
-                    onSet={(p) => setCta(c.id, p)}
-                    onDel={() => set({ ctas: f.ctas.filter((x) => x.id !== c.id) })}
-                    onPickPage={() => setPagePick({ id: c.id })}
-                    onPickPageTo={() => setPagePick({ id: c.id, to: true })}
-                  />
-                ))}
-                <div className="flex items-center justify-end gap-2 border-b border-[var(--line2)] px-4 py-2.5">
-                  <Hint>같은 시점에 노출되는 하단 CTA는 최대 {CTA_AT_ONCE}개 · 전체 최대 {CTA_MAX}개</Hint>
-                  <button
-                    type="button" className={BTN_SM} disabled={f.ctas.length >= CTA_MAX}
-                    onClick={() => set({ ctas: f.ctas.concat(newCta(f.type)) })}
-                  >추가</button>
-                </div>
-              </>
-            )}
-          </Sect>
+          {/* 하단 CTA — 참여ㆍ리워드형은 위(참여↔리워드 사이)에서 렌더하므로 여기선 그 외 유형만 */}
+          {f.type !== '참여ㆍ리워드형' && ctaSect}
 
           {/* ── 검색 및 태그 ── */}
           <Sect title="검색 및 태그 정보">
@@ -446,6 +461,22 @@ export function RegForm({ type, jm, initial, startView, onCancel, onSaved, onToa
                     <input value={f.ogDesc} onChange={(e) => set({ ogDesc: e.target.value })} placeholder="영문 기준 180자, 한글 기준 80자 이내로 등록해주세요" className={INP} />
                     <span className="self-center text-[13px] text-[var(--ink3)]">og:site_name</span>
                     <span className="self-center text-[14px] text-[var(--ink3)]">고정 노출 (TBD)</span>
+                  </div>
+                </Row>
+                {/* 프로토타입 1:1 — 메타 태그 이미지(48×48 업로드) 필드(2026-11-12) */}
+                <Row label="메타 태그 이미지">
+                  <div className="flex w-full flex-wrap items-center gap-3">
+                    <label className="grid h-12 w-12 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-[6px] border border-[var(--line3)] bg-[var(--th)] text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
+                      {f.ogImage
+                        ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={f.ogImage} alt="메타 이미지" className="h-full w-full object-cover" />
+                        : <span className="text-[18px] leading-none">+</span>}
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) set({ ogImage: URL.createObjectURL(file) }); }} />
+                    </label>
+                    <span className="text-[13px] text-[var(--ink3)]">
+                      {f.ogImage ? '이미지 등록됨' : '업로드 된 파일명 : -'}
+                      <span className="ml-2 text-[var(--ink4)]">권장 48 × 48 px · JPG, JPEG, PNG</span>
+                    </span>
+                    {f.ogImage && <button type="button" className={BTN_SM} onClick={() => set({ ogImage: '' })}>삭제</button>}
                   </div>
                 </Row>
               </>

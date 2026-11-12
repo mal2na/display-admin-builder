@@ -26,7 +26,8 @@ export const TYPES: { k: EventType; d: string }[] = [
 export const JM_LABEL: Record<JoinMode, string> = { 직접: '직접 참여(수동)', 행동: '행동 연동(자동)' };
 export const JM_GUIDE: Record<JoinMode, string> = {
   직접: '이벤트 화면에서 응모·설문·룰렛 등을 해야 참여가 완료돼요',
-  행동: '구매·예약·가입·개통 등의 결과로 참여 처리돼요',
+  // 프로토타입 1:1 — 자동 참여 + 조건/지급 연동 + 사후 당첨·지급 제약 안내(2026-11-12)
+  행동: '구매·가입·개통 등이 확인되면 고객이 따로 응모하지 않아도 자동으로 참여돼요. 행동은 참여 조건 또는 지급 조건에 추가하고, 사후 당첨·지급만 가능해요.',
 };
 
 export const JM_OPTS: [JoinMode, string, string][] = [
