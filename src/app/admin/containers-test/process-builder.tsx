@@ -1052,8 +1052,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               <button type="button" onClick={() => setFillTab('아이템')} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', fillTab === '아이템' ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>컴포넌트 <span className="font-normal opacity-70">· {items.length}</span></button>
             </div>
           )}
-          {/* ── 코너 카드 — SB(BO-AIM-DSP-PG557) 폼블록: 배너 설정 · 코너 타이틀 · 버튼 설정 · 카테고리. 2026-11-12 사용자 요청(작업자 SB 정렬). ── */}
-          {(hasCornerTitle || hasButtonText || availOptions.length > 0) && (fillTab === '코너' || cardOnly) && (
+          {/* ── 코너 카드 — SB(BO-AIM-DSP-PG557) 폼블록: 배너 설정 · 코너 타이틀 · 버튼 설정 · 카테고리. 2026-11-12 사용자 요청(작업자 SB 정렬). 카드 1장 유형(상태 안내형)은 타이틀 없이 '카드 가져오기'만(2026-11-12 사용자 요청). ── */}
+          {(hasCornerTitle || hasButtonText || availOptions.length > 0) && fillTab === '코너' && !cardOnly && (
             <div className="mb-1">
               {/* 배너 설정 — 배너 옵션이 있는 유형만 */}
               {availOptions.includes('배너') && (
@@ -1248,6 +1248,12 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               <span className="text-center">배너 이미지</span><span>링크 URL</span><span />
             </div>
           )}
+          {/* 업무 진입형(메뉴) 테이블 컬럼 헤더 — 순서·이동 경로·아이콘·메뉴명·열기 방식·경로 상세·삭제 (2026-11-12 사용자 요청). */}
+          {isChip && items.length > 0 && (
+            <div className="grid grid-cols-[18px_58px_32px_minmax(60px,1fr)_auto_minmax(72px,1.05fr)_20px] items-center gap-1.5 border-b border-[var(--line2)] bg-[var(--th)] px-2.5 py-2 text-[10px] font-semibold text-[var(--ink3)] whitespace-nowrap">
+              <span className="text-center">순서</span><span className="text-center">이동 경로</span><span className="text-center">아이콘</span><span>메뉴명</span><span className="text-center">열기 방식</span><span>경로 상세</span><span />
+            </div>
+          )}
           <DndContext sensors={itemSensors} collisionDetection={closestCorners} onDragEnd={onItemDragEnd}>
           <SortableContext items={items.map((o) => o.id)} strategy={verticalListSortingStrategy}>
           <div>
@@ -1288,36 +1294,39 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                 </div>
                 );
               }
-              // 칩(카테고리형) — 테이블로 합치지 않는다. 직접/불러오기 세그먼트 + 내부/외부 라디오를 분리해 유지(2026-11-11 사용자 요청: 롤백 취소).
+              // 업무 진입형(카테고리형/메뉴) — 테이블 행: 순서·이동 경로(직접/불러오기)·아이콘·메뉴명·열기 방식·경로 상세·삭제. 2026-11-12 사용자 요청(테이블화).
               //  아이콘은 '아이콘 선택' 모달에서 고른 벡터 — brand 프롭을 주면 브랜드 타일(블롭)로 폴백되니 주지 않는다.
               if (isChip) {
                 const loaded = o.mode === 'load';
                 return (
-                <div className="flex items-center gap-1.5 px-2.5 py-2">
-                  <span ref={h.setRef} {...h.props} className="shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>
-                  {/* 직접 | 불러오기 — 불러오기를 고르면 우측 '불러오기' 버튼이 뜬다(메뉴 관리에서). */}
-                  <div className="flex shrink-0 gap-0.5 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-[3px] text-[11px] font-semibold">
-                    <button type="button" onClick={() => setItemMode(o.id, 'direct')} className={cn('rounded-[6px] px-2 py-1 transition', !loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>직접</button>
-                    <button type="button" onClick={() => setItemMode(o.id, 'load')} className={cn('rounded-[6px] px-2 py-1 transition', loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>불러오기</button>
+                <div className="grid grid-cols-[18px_58px_32px_minmax(60px,1fr)_auto_minmax(72px,1.05fr)_20px] items-center gap-1.5 px-2.5 py-2">
+                  {/* 순서 */}
+                  <span ref={h.setRef} {...h.props} className="flex cursor-grab touch-none justify-center text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>
+                  {/* 이동 경로 — 직접 | 불러오기 */}
+                  <div className="flex gap-0.5 rounded-[7px] border border-[var(--line2)] bg-[var(--th)] p-[2px] text-[10px] font-semibold">
+                    <button type="button" onClick={() => setItemMode(o.id, 'direct')} className={cn('flex-1 rounded-[5px] px-1 py-1 transition', !loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>직접</button>
+                    <button type="button" onClick={() => setItemMode(o.id, 'load')} className={cn('flex-1 rounded-[5px] px-1 py-1 transition', loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>조회</button>
                   </div>
                   {/* 아이콘 — 클릭해 아이콘 선택(벡터) */}
                   <button type="button" onClick={() => setIconForId(o.id)} title="아이콘 선택"
-                    className={cn('grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[7px] transition', o.icon ? 'bg-[var(--ac2)] text-[var(--ac)] hover:ring-1 hover:ring-[var(--ac)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
+                    className={cn('grid h-8 w-8 place-items-center justify-self-center overflow-hidden rounded-[7px] transition', o.icon ? 'bg-[var(--ac2)] text-[var(--ac)] hover:ring-1 hover:ring-[var(--ac)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
                     {o.icon ? <ItemIcon src={o.icon} iconClass="h-[18px] w-[18px]" imgClass="h-5 w-5 object-contain" /> : <ImageIcon className="h-4 w-4" />}
                   </button>
-                  {/* 텍스트·링크 — 항상 편집 가능 */}
+                  {/* 메뉴명 */}
                   <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder="메뉴명"
-                    className="h-[32px] min-w-0 flex-1 rounded-[7px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                  <div className="flex h-[32px] min-w-0 basis-[26%] items-center gap-1 rounded-[7px] border border-[var(--line2)] px-2" title="이동 링크">
+                    className="h-[32px] min-w-0 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                  {/* 열기 방식 — 직접: 내부/외부 라디오 · 불러오기: 메뉴 관리에서 불러오기 버튼 */}
+                  <div className="flex justify-center">
+                    {!loaded ? <LinkTypeRadio o={o} /> : <button type="button" onClick={() => setLoadForId(o.id)} title="메뉴 관리에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 py-1.5 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3 w-3" /> 불러오기</button>}
+                  </div>
+                  {/* 경로 상세 — 이동 링크 */}
+                  <div className="flex h-[32px] min-w-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="경로 상세(이동 링크)">
                     <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-                    <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="이동 링크"
+                    <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="/menu/..."
                       className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                   </div>
-                  {/* 직접 입력 링크만 내부/외부 선택. 불러오기 모드는 메뉴 관리가 링크를 소유 → 라디오 숨김. */}
-                  {!loaded && <LinkTypeRadio o={o} />}
-                  {/* 불러오기 모드일 때만 우측에 '불러오기' 버튼 → 메뉴 관리 모달 */}
-                  {loaded && <button type="button" onClick={() => setLoadForId(o.id)} title="메뉴 관리에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 py-1.5 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3 w-3" /> 불러오기</button>}
-                  <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                  {/* 삭제 */}
+                  <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 place-items-center justify-self-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
                 </div>
                 );
               }
@@ -1539,40 +1548,36 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete,
       className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-2 transition',
         isDragging && 'z-10 opacity-80 shadow-lg',
         selected ? 'border-[var(--ac)] bg-[var(--ac2)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
-      {/* 상단 행 — 그립·번호·이름·고정·토글·삭제 */}
+      {/* 상단 행 — 번호·이름·고정 여부·삭제(원형 X). 그립·토글은 하단으로(2026-11-12 사용자 목업). */}
       <div className="flex items-center gap-2">
-        {/* 그립·번호는 바싹 붙인다(핸들↔번호 빈 공간 축소, 2026-11-05 사용자 요청). */}
-        <div className="flex shrink-0 items-center gap-1">
-          <button type="button" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} title="드래그로 순서·밴드 이동"
-            className="flex cursor-grab touch-none items-center rounded p-0.5 text-[var(--ink4)] hover:bg-[var(--th)] active:cursor-grabbing">
-            <GripVertical className="h-3.5 w-3.5" />
-          </button>
-          <span className="w-4 text-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
-        </div>
-        <span className={cn('min-w-0 flex-1 truncate text-[13px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{displayName}</span>
-        {/* 고정(Fixed) 토글 */}
+        <span className="w-4 shrink-0 text-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
+        <span className={cn('min-w-0 flex-1 truncate text-[14px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{displayName}</span>
+        {/* 고정(Fixed) 토글 — 미고정/고정 라벨을 상태대로 */}
         <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFixed(); }} title={fixed ? 'Fixed 고정됨 — 눌러서 해제' : '눌러서 Fixed로 고정'}
           className={cn('inline-flex h-5 shrink-0 items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
             fixed ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink3)]')}>
-          {fixed ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />} 고정
+          {fixed ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />} {fixed ? '고정' : '미고정'}
         </button>
+        {/* 코너 삭제 — 템플릿에서 코너 빼기(원본 코너는 유지). 원형 X 버튼. */}
+        <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="이 템플릿에서 코너 빼기"
+          className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[var(--line2)] text-[var(--ink3)] transition hover:bg-[#fff0f1] hover:text-[var(--bad)]">
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+      {/* 하단 행 — 그립·유형 칩·레이아웃 · (우) 노출 토글 */}
+      <div className="mt-1.5 flex items-center gap-1.5">
+        <button type="button" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} title="드래그로 순서·밴드 이동"
+          className="flex shrink-0 cursor-grab touch-none items-center rounded p-0.5 text-[var(--ink4)] hover:bg-[var(--th)] active:cursor-grabbing">
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
+        <span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span>
+        {layoutText && <span className="whitespace-nowrap text-[11px] text-[var(--ink4)]">{layoutText}</span>}
+        <span className="min-w-0 flex-1" />
         {/* 노출 on/off 토글 */}
         <button type="button" onClick={(e) => { e.stopPropagation(); setOn((v) => !v); }} title={on ? '노출 켜짐' : '노출 꺼짐'}
           className={cn('relative h-[20px] w-[34px] shrink-0 rounded-full transition-colors', on ? 'bg-[var(--ac)]' : 'bg-[var(--line3)]')}>
           <span className={cn('absolute top-[2px] h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-all', on ? 'left-[16px]' : 'left-[2px]')} />
         </button>
-        {/* 코너 삭제 — 템플릿에서 코너 빼기(원본 코너는 유지) */}
-        <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="이 템플릿에서 코너 빼기"
-          className="grid h-5 w-5 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] transition hover:bg-[#fff0f1] hover:text-[var(--bad)]">
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      {/* 하단 행 — 유형 칩 · 레이아웃(전체 폭, 안 잘림) */}
-      {/* 칩·레이아웃 줄 — 번호가 아니라 '제목(텍스트)' 시작선에 맞춘다(그립18+gap4+번호16+gap8=46px). 2026-11-05 사용자 요청. */}
-      <div className="mt-1 flex items-center gap-1.5 pl-[46px]">
-        <span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span>
-        {/* 배열·레이아웃은 칩 옆에 '항상' 작게 표기 — 굵은 제목(코너명)은 편집으로 바뀌어도 이 표기는 유지(2026-11-05 사용자 요청). */}
-        {layoutText && <span className="whitespace-nowrap text-[11px] text-[var(--ink4)]">{layoutText}</span>}
       </div>
     </div>
   );
@@ -1968,9 +1973,10 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
       {/* 헤더 + 2열을 한 스크롤 영역에 — 스크롤하면 헤더(타이틀)는 올라가고 디바이스는 sticky로 고정(2026-11-06 사용자 요청: 상품 전시 관리처럼). */}
       <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="px-6 pb-2 pt-4">
+        {/* 브레드크럼 — 각 단계 클릭 시 상위(뒷) 페이지로 이동(2026-11-12 사용자 요청). 현재 페이지(컨테이너명)만 비링크. */}
         <nav className="flex flex-wrap items-center gap-1.5 text-[13px] leading-[18px] text-[var(--ink3)]">
-          <span>홈</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
-          <span>전시 관리</span><ChevronRight className="h-3.5 w-3.5 opacity-50" />
+          <Link href="/" className="hover:text-[var(--ink)] hover:underline">홈</Link><ChevronRight className="h-3.5 w-3.5 opacity-50" />
+          <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시 관리</Link><ChevronRight className="h-3.5 w-3.5 opacity-50" />
           <Link href="/admin/containers-test" className="hover:text-[var(--ink)] hover:underline">전시화면 관리</Link>
           <ChevronRight className="h-3.5 w-3.5 opacity-50" /><b className="font-semibold text-[var(--ink)]">{data.containerName}</b>
         </nav>
