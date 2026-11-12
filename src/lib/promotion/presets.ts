@@ -6,6 +6,7 @@
  */
 import { emptyForm, newCta, normalize, type PromoForm } from './form';
 import { newLine, newItem, newBlock, newRefCard, type RewardBlock, type RewardItem, type RewardLine, type RefCard } from './pr';
+import { newRow, newGroup, type CondNode, type Picked } from './cond';
 import type { JoinMode } from './reg-start';
 import type { CtaBlock } from './form';
 
@@ -14,11 +15,24 @@ type RawItem = { name: string; cnt?: number; lines: RawLine[] };
 type RawBlock = { way: string; at: string; entry?: string; items: RawItem[] };
 type RawCard = { name: string; thr?: number; lines: RawLine[] };
 type RawCta = { type: string; name: string; url?: string };
+type RawCb = { key: string; prods?: { name: string; type: string }[]; acts?: string[] };
+
+/** 프로토타입 cbJoin(구조화 조건) → 조건 빌더 CondNode[]. 상품 묶음 + 고객 조건만 간단히 옮긴다. */
+function cbToCond(cb: RawCb[]): CondNode[] {
+  return cb.map((c) => {
+    if (c.key === 'prod') {
+      const g = newGroup('prod');
+      g.v = { ...g.v, prods: (c.prods ?? []).map((p) => ({ name: p.name, type: p.type })) as Picked[] };
+      return g;
+    }
+    return newRow(c.key); // grade·ctype 등 고객 조건은 기본값으로
+  });
+}
 type Preset = {
   type: string; name: string; sub: string; ch: string[];
   disp: [string, string]; join?: [string, string]; img: string; cmt: string;
   caution: string; cta: RawCta[]; tags: string[]; src: string;
-  pr?: { cond?: string; way?: string; max?: number; dup?: string; blocks: RawBlock[] };
+  pr?: { cond?: string; way?: string; max?: number; dup?: string; blocks: RawBlock[]; cbJoin?: RawCb[] };
   ref?: {
     invcond?: string; inecond?: string; way?: string; limit?: string; dup?: string; inepay?: string;
     inviter: RawCard[]; invitee: RawCard;
@@ -62,6 +76,7 @@ export function presetForm(p: Preset): PromoForm {
     f.maxJoin = p.pr.max != null ? String(p.pr.max) : '';
     if (p.pr.dup) f.dup = p.pr.dup as PromoForm['dup'];
     f.blocks = p.pr.blocks.map(block);
+    if (p.pr.cbJoin?.length) f.joinCond = cbToCond(p.pr.cbJoin);
   }
   if (p.ref) {
     f.ref = {
@@ -88,6 +103,7 @@ export const PRESETS: Record<string, Preset> = {
     disp: ['2026-09-12T21:00', '2026-10-18T23:59'], join: ['2026-09-12T21:00', '2026-10-18T23:59'], img: 'iphone18_kakaopay.png', cmt: '미사용',
     pr: {
       way: '자동', max: 1, dup: '고객 기준(CI)',
+      cbJoin: [{ key: 'prod', prods: [{ name: 'iPhone 18', type: '단말' }, { name: 'iPhone 18 Pro', type: '단말' }], acts: ['open'] }, { key: 'grade' }],
       blocks: [
         { way: '전원', at: '사후', items: [{ name: '기본 쿠폰 (1,000원 × 5장)', lines: [{ type: '제휴사 쿠폰', method: '자동 지급', code: 'KAKAOPAY_BASE_1000', url: 'https://example.com/kakaopay', btn: '쿠폰 등록하기', text: '카카오페이 1,000원 쿠폰 5장', payAt: '2026-09-19T10:00' }] }] },
         { way: '추첨', at: '사후', items: [{ name: '추가 쿠폰 (10,000원 × 5장)', cnt: 100, lines: [{ type: '제휴사 쿠폰', method: '자동 지급', code: 'KAKAOPAY_BONUS_10000', url: 'https://example.com/kakaopay', btn: '쿠폰 등록하기', text: '카카오페이 10,000원 쿠폰 5장', payAt: '2026-10-24T10:00' }] }] },
