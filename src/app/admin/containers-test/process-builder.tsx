@@ -1205,10 +1205,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                 <div className="space-y-2 px-2.5 py-2">
                   <div className="flex items-start gap-2">
                     {!bannerSingle && <span ref={h.setRef} {...h.props} className="mt-1 shrink-0 cursor-grab touch-none text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>}
-                    {/* 띠 배너 미리보기 — 가로로 긴 소재(예 672×324)라 구좌 폭을 꽉 채워 통째로 노출. 클릭하면 배너 캠페인에서 소재 교체. 2026-11-11 사용자 요청. */}
-                    <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="배너 캠페인에서 불러오기" className="min-w-0 flex-1 text-left">
+                    {/* 띠 배너 미리보기 — 소재 썸네일(작게). 패널 폭을 꽉 채우지 않게 최대 폭 제한. 클릭하면 배너 캠페인에서 소재 교체. 2026-11-12 사용자 요청(크기 축소). */}
+                    <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('불러오기 (데모)'))} title="배너 캠페인에서 불러오기" className="w-full max-w-[220px] shrink-0 text-left [&_>div]:rounded-[10px]">
                       <BannerCard component={bannerComp} sizeDetail={corner.layoutDetail} />
                     </button>
+                    <span className="min-w-0 flex-1" />
                     <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
                   </div>
                   {/* 사이즈 배지 + 배너 타이틀(읽기 전용 — 배너 캠페인 관리에서만 수정) */}
