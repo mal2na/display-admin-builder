@@ -352,10 +352,10 @@ function CardPreview({ spec, sel, onCard, onItem, layout, priceLines }: { spec: 
       <p className="whitespace-pre-line px-[28px] pt-4 text-[16px] font-bold leading-snug text-slate-900">{spec.title}</p>
       {/* 버튼 텍스트(ButtonText) — 타이틀 바로 밑. 혜택·오퍼형(CornerBlock)과 위치·색 통일: mt-0.5·slate-400(2026-10-29(2) 사용자 요청). */}
       {spec.buttonText.show && <p className="mt-0.5 flex items-center gap-0.5 px-[28px] text-[12px] text-slate-400">{spec.buttonText.label} ›</p>}
-      {/* 칩(Chip) 옵션 — 상단 카테고리 탭(2026-10-28 사용자 요청: 배너·칩·CTA 옵션 가로/세로 공통) */}
+      {/* 칩(Chip) 옵션 — 상단 카테고리 탭. placeholder는 영문 'Category'(2026-11-12 사용자 요청: 상품/혜택 카테고리형 통일). */}
       {spec.chipOn && (
         <div className="mt-2 flex gap-1.5 overflow-x-auto px-[28px]">
-          {['카테고리', '카테고리', '카테고리'].map((c, i) => (
+          {['Category', 'Category', 'Category'].map((c, i) => (
             <span key={i} className={cn('flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12px]', i === 0 ? 'bg-[#eceef1] font-semibold text-[#1a1a1a]' : 'border border-[#e8ecef] bg-white font-medium text-[#8b949e]')}>{c}</span>
           ))}
         </div>

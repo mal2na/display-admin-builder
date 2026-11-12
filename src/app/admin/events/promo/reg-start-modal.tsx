@@ -56,10 +56,10 @@ export function RegStartModal({ change, curJoinMode, onPick, onClose }: {
   const res = qaResult(ans);
   const atResult = !!res && step >= path.length;
 
-  /** 지금 선택된 결과 */
+  /** 지금 선택된 결과. 미션/기획전은 전용 유형이 없으므로 카테고리(res)를 그대로 넘겨 React 폼으로 진입(2026-11-12: 프로토타입 iframe 제거). */
   const current: CatKey | EventType | null = mode === 'pick'
     ? (pick.cat === '이벤트' ? pick.type : pick.cat)
-    : (atResult ? qaPick : null);
+    : (atResult ? (qaPick ?? (res as CatKey | EventType | null)) : null);
 
   const needJm = current === '참여ㆍ리워드형';
   const canConfirm = !!current && (!needJm || !!jm);

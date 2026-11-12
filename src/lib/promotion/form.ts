@@ -125,7 +125,7 @@ export type PromoForm = {
   detailBlocks: DetailBlock[];
   search: '노출' | '미노출';
   tags: string[];
-  keywords: string; ogTitle: string; ogDesc: string;
+  keywords: string; ogTitle: string; ogDesc: string; ogImage: string;
   /* ── 참여ㆍ리워드형 전용 ── */
   ja: JaItem[];
   joinCond: CondNode[];
@@ -179,7 +179,7 @@ export function emptyForm(type: string, jm: JoinMode): PromoForm {
     cta: '사용', ctas: [newCta(type)], detailBlocks: [],
     search: '노출',
     tags: [],
-    keywords: '', ogTitle: '', ogDesc: '',
+    keywords: '', ogTitle: '', ogDesc: '', ogImage: '',
     ja: [newJaItem()],
     joinCond: [],
     cycle: '기간 전체', cycleUnit: '월', maxJoin: '',
@@ -192,6 +192,37 @@ export function emptyForm(type: string, jm: JoinMode): PromoForm {
     // 비회원 개인정보 수집·이용 동의는 고정으로 들어간다
     guestTerms: [{ id: GUEST_TERM_FIX, req: initialReq(termById(GUEST_TERM_FIX)!) }],
     ref: emptyRef(),
+  };
+}
+
+/** "26.09.10" / "2026.09.10" / "2026.09.10 11:10" → datetime-local "2026-09-10T00:00" */
+function toLocalDT(s: string | undefined): string {
+  if (!s) return '';
+  const m = s.trim().match(/(\d{2,4})[.\-/](\d{1,2})[.\-/](\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (!m) return '';
+  const y = m[1].length === 2 ? `20${m[1]}` : m[1];
+  const pad = (v: string) => v.padStart(2, '0');
+  return `${y}-${pad(m[2])}-${pad(m[3])}T${pad(m[4] ?? '00')}:${pad(m[5] ?? '00')}`;
+}
+
+/**
+ * 목록 행(PromoRow)으로 상세용 PromoForm을 구성한다(2026-11-12: 프로토타입 iframe 제거·React 상세 연결).
+ *  행에 있는 값(이름·기간·유형·전시·댓글)만 채우고, 유형별 상세(참여·리워드·추천)는 기본값.
+ */
+export function formFromRow(row: {
+  name: string; sub: string; disp: string; join: string; dispSt: string; cmt: string; jm?: JoinMode;
+}): PromoForm {
+  const jm: JoinMode = row.jm ?? (row.sub === '참여ㆍ리워드형' ? '행동' : '직접');
+  const f = normalize(emptyForm(row.sub || '안내형', jm));
+  const [dS, dE] = (row.disp || '').split('~');
+  const [jS, jE] = (row.join || '').split('~');
+  return {
+    ...f,
+    name: (row.name || '').replace(/^\[예시\]\s*/, ''),
+    disp: row.dispSt === '미전시' ? '미전시' : '전시',
+    cmt: row.cmt === '사용' ? '사용' : '미사용',
+    dispS: toLocalDT(dS), dispE: toLocalDT(dE),
+    joinS: toLocalDT(jS), joinE: toLocalDT(jE),
   };
 }
 
