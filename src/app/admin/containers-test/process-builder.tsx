@@ -252,6 +252,41 @@ function YNReadonly({ yes }: { yes: boolean }) {
   );
 }
 
+// SB 코너 카드 폼블록 — 흰 박스 + 굵은 제목(버튼 설정·배너·카테고리 등).
+function FormBlock({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-2 rounded-[8px] border border-[var(--line3)] bg-white p-3">
+      <p className="mb-2.5 text-[12px] font-bold text-[var(--ink2)]">{title}{desc && <span className="ml-1 font-normal text-[var(--ink4)]">· {desc}</span>}</p>
+      <div className="space-y-2.5">{children}</div>
+    </div>
+  );
+}
+// SB 라벨-좌 / 컨트롤-우 행. 라벨 폭 고정(96px).
+function FormRow({ label, en, children }: { label: string; en?: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[84px_minmax(0,1fr)] items-start gap-2">
+      <span className="pt-1.5 text-[11px] font-semibold text-[var(--ink3)]">{label}{en && <span className="ml-0.5 font-normal text-[var(--ink4)]">{en}</span>}</span>
+      <div className="min-w-0">{children}</div>
+    </div>
+  );
+}
+// 인터랙티브 라디오 그룹(가로). SB의 ◉Y ○N, ○네이티브 ○상품… 등.
+function RadioRow<T extends string>({ options, value, onChange }: { options: readonly T[]; value: T; onChange: (v: T) => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
+      {options.map((o) => {
+        const on = o === value;
+        return (
+          <button key={o} type="button" onClick={() => onChange(o)} className="inline-flex items-center gap-1 text-[12px] text-[var(--ink2)]">
+            <span className={cn('grid h-3.5 w-3.5 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)] bg-white')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
+            {o}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // 코너 유형 ID — 코너 유형 관리가 부여하는 식별자(CY+7자리). 데모에선 코너 유형명으로 안정적으로 파생.
 function cornerTypeDisplayId(cornerType: string): string {
   let h = 0;
@@ -535,6 +570,10 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const [ctaLabelVal, setCtaLabelVal] = React.useState(() => (pv?.moreButtonLabel && pv.moreButtonLabel !== 'CTA' ? pv.moreButtonLabel : ''));
   // CTA 링크 — 문구와 별도 입력(2026-11-05 사용자 요청: 인풋 두 개).
   const [ctaLinkVal, setCtaLinkVal] = React.useState(() => ((pv as { moreButtonLink?: string | null } | undefined)?.moreButtonLink ?? ''));
+  // SB(BO-AIM-DSP-PG557) 코너 카드 폼블록용 — 부제 사용(Y/N)·버튼 이동 경로·경로 유형(내부/외부 브라우저). 데모 로컬 상태(미리보기 비연동 필드).
+  const [subtitleOn, setSubtitleOn] = React.useState(() => !!(pv?.subTitle && pv.subTitle !== 'ButtonText'));
+  const [btnRoute, setBtnRoute] = React.useState<'네이티브' | '상품' | '프로모션' | '직접 입력'>('직접 입력');
+  const [btnBrowser, setBtnBrowser] = React.useState<'내부 브라우저' | '외부 브라우저'>('내부 브라우저');
   // ③채우기를 '코너 | 아이템' 탭으로 나눠 등록(2026-11-05 사용자 요청). 코너 속성이 없는 유형(배너형 등)은 아이템만.
   const [fillTab, setFillTab] = React.useState<'코너' | '아이템'>('코너');
   // 칩(카테고리 탭) — 실제로 '불러온 카테고리'만 저장. 나머지 빈 자리는 점선 'Chip' 플레이스홀더로 표시, 불러오기로 채우면 반영(2026-11-05 사용자 요청).
@@ -560,6 +599,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
     const img = (pv?.components ?? []).flatMap((c: any) => c.atoms ?? []).find((a: any) => (a.atomType === 'IMAGE' || a.atomType === 'ICON') && typeof a.imageUrl === 'string' && a.imageUrl.startsWith('/'))?.imageUrl;
     return img ?? '';
   });
+  // SB 배너 설정 — 이미지 소스 선택(배너 캠페인/DS 포탈/로컬). 기본=로컬(PC).
+  const [bannerSource, setBannerSource] = React.useState<'배너 캠페인' | 'DS 포탈' | '로컬(PC)'>('로컬(PC)');
   // 카테고리형(상품형·혜택·오퍼형 세로형/가로형(카테고리형)) — 상단 카테고리 칩 + 카테고리별 컴포넌트 리스트(2026-11-06 사용자 요청).
   const isCategory = (corner.cornerType === '상품형' || corner.cornerType === '혜택·오퍼형') && /카테고리형|칩|카테고리/.test(corner.layoutDetail ?? corner.layout ?? '');
   // ③ 채우기 항목 — 칩/카테고리 On 이면 카테고리마다 별도 리스트(카테고리별 컴포넌트 연동). 아니면 단일 리스트(__flat__).
@@ -1047,93 +1088,96 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               <button type="button" onClick={() => setFillTab('아이템')} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', fillTab === '아이템' ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>컴포넌트 <span className="font-normal opacity-70">· {items.length}</span></button>
             </div>
           )}
-          {/* ── 코너 속성 — 코너 타이틀·버튼 텍스트·옵션(배너·칩·CTA). 카드 1장 유형은 항상 노출. ── */}
+          {/* ── 코너 카드 — SB(BO-AIM-DSP-PG557) 폼블록: 배너 설정 · 코너 타이틀 · 버튼 설정 · 카테고리. 2026-11-12 사용자 요청(작업자 SB 정렬). ── */}
           {(hasCornerTitle || hasButtonText || availOptions.length > 0) && (fillTab === '코너' || cardOnly) && (
-            <div className="mb-1 rounded-[8px] border border-[var(--line3)] bg-[var(--th)] p-2.5">
-              <p className="mb-2 text-[12px] font-bold text-[var(--ink2)]">코너 <span className="font-normal text-[var(--ink4)]">· 코너 전체에 적용</span></p>
+            <div className="mb-1">
+              {/* 배너 설정 — 배너 옵션이 있는 유형만 */}
+              {availOptions.includes('배너') && (
+                <FormBlock title="배너 설정">
+                  <FormRow label="배너 사용">
+                    <RadioRow options={['Y', 'N'] as const} value={optOn['배너'] ? 'Y' : 'N'} onChange={(v) => { const no = { ...optOn, ['배너']: v === 'Y' }; setOptOn(no); onOptionsChange(no, ctaLabelVal); }} />
+                  </FormRow>
+                  {optOn['배너'] && (<>
+                    <FormRow label="이미지 선택">
+                      <RadioRow options={['배너 캠페인', 'DS 포탈', '로컬(PC)'] as const} value={bannerSource} onChange={setBannerSource} />
+                    </FormRow>
+                    <FormRow label="배너 소재">
+                      <button type="button" onClick={() => onToast(`${bannerSource}에서 불러오기 (데모)`)} className="inline-flex h-[32px] items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 불러오기</button>
+                    </FormRow>
+                    <FormRow label="이미지" en="ImageUrl">
+                      <span className="grid h-14 w-20 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-[var(--th)] text-[var(--ink4)]">
+                        {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
+                      </span>
+                    </FormRow>
+                  </>)}
+                </FormBlock>
+              )}
+              {/* 코너 타이틀 */}
               {hasCornerTitle && (
-                <label className="mb-2 block">
-                  <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">코너 타이틀 <span className="font-normal text-[var(--ink4)]">CornerTitle</span></span>
-                  {/* 코너 유형에 맞는 영역 제목 초안을 하나 생성(눌러서 다른 후보). 운영자 초안 — CVM이 주는 값이 아니다(코너 타이틀=코너 구성). 2026-11-10 사용자 요청. */}
-                  <div className="flex items-center gap-1">
-                    <input value={cornerTitleVal} onChange={(e) => { setCornerTitleVal(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'CornerTitle' }); }} placeholder="코너 제목 입력 (비어 있으면 AI 추천)" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                    <button type="button" onClick={genAiTitle} title="코너 유형에 맞는 영역 제목을 하나 생성해요 (초안 · 눌러서 다른 후보)"
-                      className="flex h-[32px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]">
-                      <Sparkles className="h-3 w-3" /> AI 추천
-                    </button>
-                  </div>
-                </label>
-              )}
-              {hasButtonText && (
-                <label className="mb-2 block">
-                  <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">버튼 텍스트 <span className="font-normal text-[var(--ink4)]">ButtonText · 타이틀 아래 보조 문구</span></span>
-                  <input value={buttonTextVal} onChange={(e) => { setButtonTextVal(e.target.value); onPreviewPatch({ subTitle: e.target.value || 'ButtonText' }); }} placeholder="예: 카테고리별 혜택" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                </label>
-              )}
-              {/* 옵션(배너·칩·CTA) — On/Off. CTA는 위 '버튼 텍스트'로 설정하므로 별도 패널 없음 → 길게 쌓이지 않음(2026-11-05 사용자 요청). */}
-              {availOptions.length > 0 && (
-                <div className="border-t border-[var(--line2)] pt-2">
-                  <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink3)]">옵션 <span className="font-normal text-[var(--ink4)]">· 배너·칩·CTA On/Off</span></p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {availOptions.map((o) => (
-                      <button key={o} type="button"
-                        onClick={() => { const no = { ...optOn, [o]: !optOn[o] }; setOptOn(no); onOptionsChange(no, ctaLabelVal); }}
-                        className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold', optOn[o] ? 'bg-[var(--ac)] text-white' : 'border border-[var(--line3)] bg-white text-[var(--ink3)]')}>
-                        {o}<span className={optOn[o] ? 'text-white/80' : 'text-[var(--ink4)]'}>{optOn[o] ? 'On' : 'Off'}</span>
-                      </button>
-                    ))}
-                  </div>
-                  {/* 배너 On(옵션 배너) → 소재 불러오기 3소스: 배너 캠페인 / DS 포탈 / 로컬(2026-11-05 사용자 요청). 주소 직접 입력은 없음. */}
-                  {optOn['배너'] && (
-                    <div className="mt-2 rounded-[7px] border border-[var(--line2)] bg-white p-2">
-                      <div className="mb-1.5 flex items-center gap-1.5">
-                        <span className="grid h-10 w-16 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line2)] bg-white text-[var(--ink4)]">
-                          {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
-                        </span>
-                        <p className="text-[11px] font-semibold text-[var(--ink3)]">배너 이미지 <span className="font-normal text-[var(--ink4)]">· 소재를 불러오세요</span></p>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {([['배너 캠페인', '배너 캠페인 관리'], ['DS 포탈', 'DS 포탈'], ['로컬', '로컬 업로드']] as const).map(([label, src]) => (
-                          <button key={label} type="button" onClick={() => onToast(`${src}에서 불러오기 (데모)`)} className="flex items-center justify-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-1 py-1.5 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3 shrink-0" /> {label}</button>
-                        ))}
-                      </div>
+                <FormBlock title="코너 타이틀">
+                  <FormRow label="코너 타이틀" en="CornerTitle">
+                    {/* 코너 유형에 맞는 영역 제목 초안 생성(눌러서 다른 후보). 운영자 초안 — CVM 값 아님. */}
+                    <div className="flex items-center gap-1">
+                      <button type="button" onClick={genAiTitle} title="코너 유형에 맞는 영역 제목을 하나 생성해요 (초안 · 눌러서 다른 후보)"
+                        className="flex h-[32px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3 w-3" /> AI 추천</button>
+                      <input value={cornerTitleVal} onChange={(e) => { setCornerTitleVal(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'CornerTitle' }); }} placeholder="코너 제목 입력 (비어 있으면 AI 추천)" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
                     </div>
+                  </FormRow>
+                  {hasButtonText && (
+                    <FormRow label="부제 사용">
+                      <RadioRow options={['Y', 'N'] as const} value={subtitleOn ? 'Y' : 'N'} onChange={(v) => { setSubtitleOn(v === 'Y'); if (v === 'N') onPreviewPatch({ subTitle: 'ButtonText' }); else onPreviewPatch({ subTitle: buttonTextVal || 'ButtonText' }); }} />
+                      {subtitleOn && (
+                        <input value={buttonTextVal} onChange={(e) => { setButtonTextVal(e.target.value); onPreviewPatch({ subTitle: e.target.value || 'ButtonText' }); }} placeholder="부제 문구 · 예: 카테고리별 혜택" className="mt-1.5 h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                      )}
+                    </FormRow>
                   )}
-                  {/* 칩 On → 카테고리 탭. 불러온 칩=실선(클릭=아이템 전환·X 삭제), 빈 자리=점선 'Chip'(클릭하면 불러오기). 2026-11-05 사용자 요청. */}
-                  {optOn['칩'] && (
-                    <div className="mt-2 rounded-[7px] border border-[var(--line2)] bg-white p-2">
-                      <div className="mb-1.5 flex items-center gap-1.5">
-                        <span className="text-[11px] font-semibold text-[var(--ink3)]">카테고리 탭</span>
-                        <span className="rounded-full bg-[var(--th)] px-1.5 text-[11px] font-bold text-[var(--ink3)]">{chips.length}/{Math.max(chipSlotCount, chips.length)}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {chips.map((c, i) => (
-                          <span key={i} onClick={() => setActiveChip(i)}
-                            className={cn('inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium', i === chipIdx ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line3)] bg-white text-[var(--ink2)]')}>
-                            {c}
-                            <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
-                          </span>
-                        ))}
-                        {/* 디폴트는 '+ 칩 불러오기' 버튼만 — 여기서 카테고리를 추가한다(2026-11-05 사용자 요청: 점선 placeholder 제거). */}
-                        <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> Category</button>
-                      </div>
-                      <p className="mt-1.5 text-[11px] text-[var(--ink4)]">점선 <b className="text-[var(--ink3)]">Chip</b>은 빈 자리예요 · <b className="text-[var(--ink3)]">불러오기</b>로 카테고리를 넣으면 반영됩니다. 칩을 누르면 아래 아이템이 그 칩 항목으로 바뀌어요.</p>
-                    </div>
-                  )}
-                  {/* CTA On → 하단 더보기 버튼 문구(전체보기 등). 버튼 텍스트(서브 타이틀)와는 별개(2026-11-05 사용자 요청). */}
-                  {optOn['CTA'] && (
-                    <div className="mt-2 rounded-[7px] border border-[var(--line2)] bg-white p-2">
-                      <p className="mb-1.5 text-[11px] font-semibold text-[var(--ink3)]">CTA <span className="font-normal text-[var(--ink4)]">하단 더보기 버튼 · 문구 + 링크</span></p>
-                      <div className="flex gap-1.5">
-                        <input value={ctaLabelVal} onChange={(e) => { setCtaLabelVal(e.target.value); onPreviewPatch({ moreButtonUse: true, moreButtonLabel: e.target.value || 'CTA' }); }} placeholder="문구 (예: 전체보기)" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                </FormBlock>
+              )}
+              {/* 버튼 설정 — 하단 더보기/CTA 버튼(문구·이동 경로·경로 유형·상세 경로) */}
+              {availOptions.includes('CTA') && (
+                <FormBlock title="버튼 설정">
+                  <FormRow label="버튼 사용">
+                    <RadioRow options={['Y', 'N'] as const} value={optOn['CTA'] ? 'Y' : 'N'} onChange={(v) => { const no = { ...optOn, ['CTA']: v === 'Y' }; setOptOn(no); onOptionsChange(no, ctaLabelVal); }} />
+                  </FormRow>
+                  {optOn['CTA'] && (<>
+                    <FormRow label="버튼 텍스트" en="ButtonText">
+                      <input value={ctaLabelVal} onChange={(e) => { setCtaLabelVal(e.target.value); onPreviewPatch({ moreButtonUse: true, moreButtonLabel: e.target.value || 'CTA' }); }} placeholder="예: 전체보기" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    </FormRow>
+                    <FormRow label="이동 경로">
+                      <RadioRow options={['네이티브', '상품', '프로모션', '직접 입력'] as const} value={btnRoute} onChange={setBtnRoute} />
+                    </FormRow>
+                    <FormRow label="경로 유형">
+                      <RadioRow options={['내부 브라우저', '외부 브라우저'] as const} value={btnBrowser} onChange={setBtnBrowser} />
+                    </FormRow>
+                    <FormRow label="상세 경로">
+                      <div className="flex items-center gap-1.5">
+                        {btnRoute !== '직접 입력' && <button type="button" onClick={() => onToast(`${btnRoute} 경로 불러오기 (데모)`)} className="inline-flex h-[32px] shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 불러오기</button>}
                         <div className="flex h-[32px] min-w-0 flex-1 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2">
                           <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-                          <input value={ctaLinkVal} onChange={(e) => { setCtaLinkVal(e.target.value); onPreviewPatch({ moreButtonLink: e.target.value }); }} placeholder="이동 링크" className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                          <input value={ctaLinkVal} onChange={(e) => { setCtaLinkVal(e.target.value); onPreviewPatch({ moreButtonLink: e.target.value }); }} placeholder="예: /event/all" className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                         </div>
                       </div>
+                    </FormRow>
+                  </>)}
+                </FormBlock>
+              )}
+              {/* 카테고리 — 칩 옵션이 있는 유형만. 불러오기로 카테고리 추가, 칩 선택 시 아래 컴포넌트가 전환. */}
+              {availOptions.includes('칩') && (
+                <FormBlock title="카테고리" desc={`${chips.length}/${Math.max(chipSlotCount, chips.length)}`}>
+                  <FormRow label="카테고리 선택">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                      {chips.map((c, i) => (
+                        <span key={i} onClick={() => setActiveChip(i)}
+                          className={cn('inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium', i === chipIdx ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line3)] bg-white text-[var(--ink2)]')}>
+                          {c}
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
+                        </span>
+                      ))}
+                      <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 불러오기</button>
                     </div>
-                  )}
-                </div>
+                    <p className="mt-1.5 text-[11px] text-[var(--ink4)]">칩을 누르면 아래 컴포넌트가 그 카테고리 항목으로 바뀝니다.</p>
+                  </FormRow>
+                </FormBlock>
               )}
             </div>
           )}
