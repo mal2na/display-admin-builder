@@ -166,9 +166,9 @@ export function PromoList({ onToast, onOpenExample, onRegister }: {
             ) : shown.map((r) => (
               <tr
                 key={r.id}
-                title={r.ex ? '클릭하면 설정 예시가 열려요' : undefined}
-                onClick={() => r.ex && onOpenExample(r)}
-                className={cn(TBODY_TR_CLS, 'text-center', r.ex && 'cursor-pointer')}
+                title="클릭하면 상세가 열려요"
+                onClick={() => onOpenExample(r)}
+                className={cn(TBODY_TR_CLS, 'text-center cursor-pointer')}
               >
                 <td className="tabular-nums text-[var(--ink3)]">{r.no}</td>
                 <td className="font-mono tabular-nums">{r.id}</td>

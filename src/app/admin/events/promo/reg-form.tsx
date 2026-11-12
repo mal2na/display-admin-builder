@@ -29,16 +29,20 @@ import {
 import { JM_GUIDE, JM_LABEL } from '@/lib/promotion/reg-start';
 import { termById, initialReq } from '@/lib/promotion/terms';
 
-export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: {
+export function RegForm({ type, jm, initial, startView, onCancel, onSaved, onToast, onChangeType }: {
   type: string;
   jm: '직접' | '행동';
+  /** 상세/수정 진입용 초기 폼(목록 행에서 열 때). 없으면 빈 폼. 2026-11-12 */
+  initial?: PromoForm;
+  /** 진입 화면(목록 행 클릭=상세로 바로). 기본 'form'. */
+  startView?: 'form' | 'detail';
   onCancel: () => void;
   onSaved: () => void;
   onToast: (m: string) => void;
   onChangeType: () => void;
 }) {
   // 초기값에도 연동 규칙을 한 번 걸어 둔다 — 기본 참여 행동이 '버튼 참여'라 참여 CTA 가 바로 붙는다
-  const [f, setF] = React.useState<PromoForm>(() => normalize(emptyForm(type, jm)));
+  const [f, setF] = React.useState<PromoForm>(() => normalize(initial ?? emptyForm(type, jm)));
   const [E, setE] = React.useState<FormErrors>({});
   const [condE, setCondE] = React.useState<Record<string, string>>({});
   const [alertMsg, setAlertMsg] = React.useState<string | null>(null);
@@ -47,8 +51,8 @@ export function RegForm({ type, jm, onCancel, onSaved, onToast, onChangeType }: 
   const [termsOpen, setTermsOpen] = React.useState(false);
   const [pagePick, setPagePick] = React.useState<{ id: number; to?: boolean } | null>(null);
   const [tagInput, setTagInput] = React.useState('');
-  /** 등록 폼 / 저장 후 상세 / FO 미리보기 */
-  const [view, setView] = React.useState<'form' | 'detail' | 'fo' | 'builder'>('form');
+  /** 등록 폼 / 저장 후 상세 / FO 미리보기 (목록 행 진입은 'detail'부터) */
+  const [view, setView] = React.useState<'form' | 'detail' | 'fo' | 'builder'>(startView ?? 'form');
   const backRef = React.useRef<'form' | 'detail'>('form');
 
   // 값이 바뀔 때마다 연동 규칙(룰렛·자동 CTA 등)을 한 번 통과시킨다
