@@ -1272,9 +1272,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   className={cn('grid h-8 w-8 place-items-center overflow-hidden rounded-[6px] transition', o.icon ? 'border border-[var(--line2)] bg-[var(--th)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
                   {o.icon ? <ItemIcon src={o.icon} brand={o.sub || o.label} iconClass="h-4 w-4" imgClass="h-full w-full object-contain" /> : <ImageIcon className="h-4 w-4" />}
                 </button>
-                {/* 타이틀 */}
+                {/* 타이틀 — 콘텐츠 안내형은 제목도 콘텐츠 원장 소유라 수정 불가(불러오기만). 2026-11-12 사용자 요청. */}
                 <div className="flex min-w-0 items-center gap-1">
+                  {isContentGuide ? (
+                    <span className="flex h-[30px] min-w-0 flex-1 items-center truncate rounded-[6px] bg-[var(--th)] px-2 text-[13px] text-[var(--ink2)]" title="제목 — 콘텐츠 연결이라 수정 불가(불러오기로 교체)">{o.label || <span className="text-[var(--ink4)]">콘텐츠 제목</span>}</span>
+                  ) : (
                   <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder={isBenefitType ? '혜택 문구 (비어 있으면 AI 추천)' : `${itemWord} 제목`} className="h-[30px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                  )}
                   {isBenefitType && (
                     <button type="button" onClick={() => genAiCopy(o)} title={`${o.sub || o.label || '이 브랜드'}에 맞는 혜택 문구를 하나 생성해요 (초안 · 눌러서 다른 후보)`}
                       className="grid h-[30px] w-7 shrink-0 place-items-center rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3.5 w-3.5" /></button>
