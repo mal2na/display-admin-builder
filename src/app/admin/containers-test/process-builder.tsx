@@ -1239,19 +1239,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">{isBanner ? '컴포넌트(요소)' : <>컴포넌트 <span className="font-normal text-[var(--ink4)]">· {itemWord} {items.length}개</span></>}</p>
           <div className="border-y border-[var(--line2)]">
           {!isBanner && !isChip && items.length > 0 && (
-            <div className="grid grid-cols-[20px_34px_minmax(0,1.5fr)_minmax(0,1fr)_28px_22px] items-center gap-1.5 border-b border-[var(--line2)] bg-[var(--th)] px-2.5 py-2 text-[10px] font-semibold text-[var(--ink3)] whitespace-nowrap">
-              <span className="text-center">순서</span><span className="text-center">이미지</span><span>타이틀</span><span>링크</span><span className="text-center" title="불러오기"><Search className="mx-auto h-3 w-3" /></span><span />
+            <div className="grid grid-cols-[26px_42px_minmax(0,1.5fr)_minmax(0,1fr)_28px_22px] items-center gap-1.5 border-b border-[var(--line2)] bg-[var(--th)] px-2.5 py-2.5 text-[13px] font-medium text-[var(--ink2)] whitespace-nowrap">
+              <span className="text-center">순서</span><span className="text-center">이미지</span><span>타이틀</span><span>링크</span><span className="text-center" title="불러오기"><Search className="mx-auto h-3.5 w-3.5" /></span><span />
             </div>
           )}
           {/* 배너형 테이블 컬럼 헤더 — 배너 이미지 | 링크 URL (SB 사용자 목업 2026-11-12). */}
           {isBanner && items.length > 0 && (
-            <div className="grid grid-cols-[minmax(150px,170px)_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-[var(--line2)] bg-[var(--th)] px-3 py-2 text-[11px] font-semibold text-[var(--ink3)]">
+            <div className="grid grid-cols-[minmax(150px,170px)_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-[var(--line2)] bg-[var(--th)] px-3 py-2.5 text-[13px] font-medium text-[var(--ink2)]">
               <span className="text-center">배너 이미지</span><span>링크 URL</span><span />
             </div>
           )}
-          {/* 업무 진입형(메뉴) 테이블 컬럼 헤더 — 순서·이동 경로·아이콘·메뉴명·열기 방식·경로 상세·삭제 (2026-11-12 사용자 요청). */}
+          {/* 업무 진입형(메뉴) 테이블 컬럼 헤더 — 순서·이동 경로·아이콘·메뉴명·열기 방식·경로 상세·삭제. 라벨 13px로 다른 테이블과 맞춤(2026-11-12 사용자 요청). */}
           {isChip && items.length > 0 && (
-            <div className="grid grid-cols-[18px_58px_32px_minmax(60px,1fr)_auto_minmax(72px,1.05fr)_20px] items-center gap-1.5 border-b border-[var(--line2)] bg-[var(--th)] px-2.5 py-2 text-[10px] font-semibold text-[var(--ink3)] whitespace-nowrap">
+            <div className="grid grid-cols-[26px_58px_42px_minmax(60px,1fr)_auto_minmax(72px,1.05fr)_20px] items-center gap-1.5 border-b border-[var(--line2)] bg-[var(--th)] px-2.5 py-2.5 text-[13px] font-medium text-[var(--ink2)] whitespace-nowrap">
               <span className="text-center">순서</span><span className="text-center">이동 경로</span><span className="text-center">아이콘</span><span>메뉴명</span><span className="text-center">열기 방식</span><span>경로 상세</span><span />
             </div>
           )}
@@ -1300,7 +1300,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               if (isChip) {
                 const loaded = o.mode === 'load';
                 return (
-                <div className="grid grid-cols-[18px_58px_32px_minmax(60px,1fr)_auto_minmax(72px,1.05fr)_20px] items-center gap-1.5 px-2.5 py-2">
+                <div className="grid grid-cols-[26px_58px_42px_minmax(60px,1fr)_auto_minmax(72px,1.05fr)_20px] items-center gap-1.5 px-2.5 py-2">
                   {/* 순서 */}
                   <span ref={h.setRef} {...h.props} className="flex cursor-grab touch-none justify-center text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>
                   {/* 이동 경로 — 직접 | 불러오기 */}
@@ -1336,7 +1336,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               const connected = o.mode === 'load';
               const linkEdit = !connected || !!rowEdit[o.id];
               return (
-              <div className="grid grid-cols-[20px_34px_minmax(0,1.5fr)_minmax(0,1fr)_28px_22px] items-center gap-1.5 px-2.5 py-2">
+              <div className="grid grid-cols-[26px_42px_minmax(0,1.5fr)_minmax(0,1fr)_28px_22px] items-center gap-1.5 px-2.5 py-2">
                 {/* 순서 */}
                 <span ref={h.setRef} {...h.props} className="flex cursor-grab touch-none justify-center text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>
                 {/* 이미지 — 썸네일(불러온 이미지, 클릭 시 교체) */}
