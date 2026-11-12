@@ -252,23 +252,23 @@ function YNReadonly({ yes }: { yes: boolean }) {
   );
 }
 
-// SB 코너 카드 폼블록 — 굵은 제목 + '양옆 보더 없는' 테이블(border-y만). 2026-11-12 사용자 고정 규칙: 테이블 좌우 보더 없음.
+// 코너 카드 폼블록 — '템플릿 기본 정보'(FieldRow) 테이블과 동일 스타일(2026-11-12 사용자 요청: 전 테이블 통일). 좌우 보더 없음.
 function FormBlock({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
   return (
     <div className="mb-3">
       <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">{title}{desc && <span className="ml-1 font-normal text-[var(--ink4)]">· {desc}</span>}</p>
-      <div className="border-y border-[#eef1f4] [&_>div:last-child]:border-b-0">{children}</div>
+      <div className="border-t border-[var(--line2)]">{children}</div>
     </div>
   );
 }
-// SB 라벨-좌(회색 셀) / 컨트롤-우(흰 셀) 테이블 행. 라벨 폭 넓게(104px). 좌우 보더 없음.
+// 라벨-좌(회색 셀) / 컨트롤-우(흰 셀) 테이블 행 — FieldRow와 동일(라벨 bg-th·14/500·ink2·px-4 py-3, 값 px-4 py-2.5, border-b #dce0e5).
 function FormRow({ label, en, children }: { label: string; en?: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[104px_minmax(0,1fr)] items-stretch border-b border-[#eef1f4]">
-      <div className="flex flex-col justify-center whitespace-nowrap bg-[#f8f9fb] px-3.5 py-2.5 text-[13px] font-medium text-[#454f59]">
+    <div className="grid grid-cols-[120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
+      <div className="flex flex-col justify-center whitespace-nowrap bg-[var(--th)] px-4 py-3 text-[14px] font-medium text-[var(--ink2)]">
         <span>{label}</span>{en && <span className="text-[10px] font-normal text-[var(--ink4)]">{en}</span>}
       </div>
-      <div className="flex min-w-0 flex-col justify-center bg-white px-3.5 py-2">{children}</div>
+      <div className="flex min-w-0 flex-col justify-center bg-white px-4 py-2.5">{children}</div>
     </div>
   );
 }
@@ -894,22 +894,22 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
 
       {/* ① 코너 정보 — 코너명만 편집, 유형·레이아웃·개수는 코너 유형 관리에서 불러온 껍데기 */}
       <Sec n={1} title="코너 기본 정보">
-        {/* 코너 유형 정보 — 4열 테이블(유형·배열 위, ID·코너명 아래). 좌우 보더 없음(고정 규칙). 라벨 폭 일정. SB 사용자 목업(2026-11-12). */}
+        {/* 코너 유형 정보 — '템플릿 기본 정보'(FieldRow)와 동일 테이블 스타일(2026-11-12 사용자 요청: 전 테이블 통일). 유형·배열 위 / ID·코너명 아래. 좌우 보더 없음. */}
         <p className="mb-2 text-[13px] font-bold text-[var(--ink)]">코너 유형 정보</p>
-        <div className="border-y border-[#eef1f4] text-[13px] [&_>div:last-child]:border-b-0">
+        <div className="border-t border-[var(--line2)] text-[14px]">
           {/* row1: 코너 유형 | 배열·레이아웃 */}
-          <div className="grid grid-cols-[108px_minmax(0,1fr)_108px_minmax(0,1fr)] items-stretch border-b border-[#eef1f4]">
-            <div className="flex items-center whitespace-nowrap bg-[#f8f9fb] px-3 py-3 font-medium text-[#454f59]">코너 유형</div>
-            <div className="flex min-w-0 items-center border-r border-[#eef1f4] bg-white px-3.5 py-2.5"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></div>
-            <div className="flex items-center whitespace-nowrap bg-[#f8f9fb] px-3 py-3 font-medium text-[#454f59]">배열·레이아웃</div>
-            <div className="flex min-w-0 items-center bg-white px-3.5 py-2.5 text-[var(--ink)]">{cornerLayoutText(corner.cornerType, corner.layout, corner.layoutDetail) || '—'}</div>
+          <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
+            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형</div>
+            <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></div>
+            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">배열·레이아웃</div>
+            <div className="flex min-w-0 items-center bg-white px-4 py-2.5 text-[13px] text-[var(--ink)]">{cornerLayoutText(corner.cornerType, corner.layout, corner.layoutDetail) || '—'}</div>
           </div>
           {/* row2: 코너 유형 ID(읽기전용) | 코너명(입력·X로 비움, blur 저장). 리터럴 div로 직접 렌더 — IME 유지. */}
-          <div className="grid grid-cols-[108px_minmax(0,1fr)_108px_minmax(0,1fr)] items-stretch">
-            <div className="flex items-center whitespace-nowrap bg-[#f8f9fb] px-3 py-3 font-medium text-[#454f59]">코너 유형 ID</div>
-            <div className="flex min-w-0 items-center border-r border-[#eef1f4] bg-white px-3.5 py-2.5 font-mono text-[12px] text-[var(--ink3)]">{cornerTypeId}</div>
-            <div className="flex items-center whitespace-nowrap bg-[#f8f9fb] px-3 py-3 font-medium text-[#454f59]">코너명</div>
-            <div className="flex min-w-0 items-center bg-white px-3 py-2">
+          <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
+            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형 ID</div>
+            <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5 font-mono text-[12px] text-[var(--ink3)]">{cornerTypeId}</div>
+            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너명</div>
+            <div className="flex min-w-0 items-center bg-white px-4 py-2">
               <div className="relative w-full">
                 <input value={nameVal} onChange={(e) => setNameVal(e.target.value)} onBlur={saveName} placeholder="코너명 입력"
                   className="h-[34px] w-full rounded-[6px] border border-[var(--line3)] pl-2.5 pr-8 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
@@ -940,12 +940,12 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           const Pill = ({ t }: { t: Tok }) => (
             <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-[12px] font-medium', t.opt ? 'border-[#cfd2ff] text-[var(--ac)]' : 'border-[var(--line3)] text-[var(--ink2)]')}>{t.label}</span>
           );
-          const AttrRow = ({ label, toks, desc, last }: { label: string; toks: Tok[]; desc: string; last?: boolean }) => (
-            <div className={cn('grid grid-cols-[108px_minmax(0,1fr)] items-stretch', !last && 'border-b border-[#eef1f4]')}>
-              <div className="flex items-center whitespace-nowrap bg-[#f8f9fb] px-3 py-3 font-medium text-[#454f59]">{label}</div>
-              <div className="min-w-0 bg-white px-3.5 py-3">
+          {/* 긴 설명은 라벨의 ⓘ 툴팁으로(2026-11-12 사용자 요청). '템플릿 기본 정보'와 동일 테이블 스타일. */}
+          const AttrRow = ({ label, toks, desc }: { label: string; toks: Tok[]; desc: string }) => (
+            <div className="grid grid-cols-[120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
+              <div className="flex items-center gap-1 whitespace-nowrap bg-[var(--th)] px-4 py-3 text-[14px] font-medium text-[var(--ink2)]">{label}<Tip text={desc} /></div>
+              <div className="min-w-0 bg-white px-4 py-3">
                 <div className="flex flex-wrap gap-1.5">{toks.map((t, i) => <Pill key={i} t={t} />)}</div>
-                <p className="mt-2 text-[12px] leading-relaxed text-[var(--ink4)]">{desc}</p>
               </div>
             </div>
           );
@@ -955,9 +955,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           return (
             <>
               <p className="mb-2 mt-4 text-[13px] font-bold text-[var(--ink)]">코너 속성</p>
-              <div className="border-y border-[#eef1f4] text-[13px]">
-                {hasCorner && <AttrRow label="코너(카드)" toks={cornerTokens} desc="현재 선택한 코너유형의 레이아웃 옵션과 선택된 옵션을 표시합니다" last={!hasItem} />}
-                {hasItem && <AttrRow label="컴포넌트(요소)" toks={itemTokens} desc="현재 선택한 코너유형의 컴포넌트(요소)와 선택된 컴포넌트(요소)를 표시합니다" last />}
+              <div className="border-t border-[var(--line2)]">
+                {hasCorner && <AttrRow label="코너(카드)" toks={cornerTokens} desc="현재 선택한 코너유형의 레이아웃 옵션과 선택된 옵션을 표시합니다" />}
+                {hasItem && <AttrRow label="컴포넌트(요소)" toks={itemTokens} desc="현재 선택한 코너유형의 컴포넌트(요소)와 선택된 컴포넌트(요소)를 표시합니다" />}
               </div>
             </>
           );
@@ -1511,23 +1511,32 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
 
       {/* ⑥ 출처 — 이 값이 어디서 오나. SB명=컴포넌트(데이터) 출처. */}
       <Sec n={nSrc} title={isData ? '데이터 출처' : '컴포넌트 출처'} hint="코너에서 노출할 데이터의 출처를 확인합니다">
-        {/* 회색 라벨 셀 테이블 — 좌우 보더 없음(2026-11-12 사용자 고정 규칙). */}
-        <div className="border-y border-[#eef1f4] text-[13px] [&_>div:last-child]:border-b-0">
-          {[
+        {/* 회색 라벨 셀 테이블 — 좌우 2열(2026-11-12 사용자 요청: 4개 세로 나열 → 좌우). 좌우 보더 없음. */}
+        {(() => {
+          const cells: [string, string][] = [
             ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
             ['이미지', '상품(EPC) 원장'],
             ['문구', src === 'CVM 콘텐츠 연동' ? 'CVM 완성본' : '빌더 · 상품 원장'],
             ['이동 링크', '빌더'],
-          ].map(([k, v]) => (
-            <div key={k} className="grid grid-cols-[104px_minmax(0,1fr)] items-stretch border-b border-[#eef1f4]">
-              <div className="flex items-center whitespace-nowrap bg-[#f8f9fb] px-3 py-2.5 font-medium text-[#454f59]">{k}</div>
-              {/* 박스 칩 대신 색 텍스트(파란=CVM, 노랑=원장·빌더). 2026-11-11 사용자 요청. */}
-              <div className="flex min-w-0 items-center bg-white px-3.5 py-2.5">
-                <span className={cn('font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'text-[#2e6ff2]' : 'text-[#b67a12]')}>{v}</span>
-              </div>
+          ];
+          const Val = ({ v }: { v: string }) => <span className={cn('font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'text-[#2e6ff2]' : 'text-[#b67a12]')}>{v}</span>;
+          const rows: [string, string][][] = [];
+          for (let i = 0; i < cells.length; i += 2) rows.push(cells.slice(i, i + 2));
+          return (
+            <div className="border-t border-[var(--line2)] text-[14px]">
+              {rows.map((pair, ri) => (
+                <div key={ri} className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
+                  <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">{pair[0][0]}</div>
+                  <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5 text-[13px]"><Val v={pair[0][1]} /></div>
+                  {pair[1] ? (<>
+                    <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">{pair[1][0]}</div>
+                    <div className="flex min-w-0 items-center bg-white px-4 py-2.5 text-[13px]"><Val v={pair[1][1]} /></div>
+                  </>) : <><div className="bg-white" /><div className="bg-white" /></>}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
       </Sec>
     </div>
   );
@@ -1535,8 +1544,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
 
 /* 코너 칩 카드(존 밴드 내부) — 이미지2: 드래그·이름·복사/삭제·유형/레이아웃·고정 토글 */
 /* 코너 순서 변경 행(order3 레퍼런스) — 드래그·번호·이름·유형칩 + 노출 토글 + 삭제. */
-function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete, onToast }: { c: PCorner; no: number; selected: boolean; fixed: boolean; onSelect: () => void; onToggleFixed: () => void; onDelete: () => void; onToast: (m: string) => void }) {
-  const [on, setOn] = React.useState(true); // 노출 on/off 토글
+function CornerChip({ c, no, selected, fixed, on, onToggleOn, onSelect, onToggleFixed, onDelete, onToast }: { c: PCorner; no: number; selected: boolean; fixed: boolean; on: boolean; onToggleOn: () => void; onSelect: () => void; onToggleFixed: () => void; onDelete: () => void; onToast: (m: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.templateCornerId });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const layoutText = cornerLayoutText(c.cornerType, c.layout, c.layoutDetail);
@@ -1548,36 +1556,39 @@ function CornerChip({ c, no, selected, fixed, onSelect, onToggleFixed, onDelete,
       className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-2 transition',
         isDragging && 'z-10 opacity-80 shadow-lg',
         selected ? 'border-[var(--ac)] bg-[var(--ac2)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
-      {/* 상단 행 — 번호·이름·고정 여부·삭제(원형 X). 그립·토글은 하단으로(2026-11-12 사용자 목업). */}
-      <div className="flex items-center gap-2">
-        <span className="w-4 shrink-0 text-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
-        <span className={cn('min-w-0 flex-1 truncate text-[14px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{displayName}</span>
-        {/* 고정(Fixed) 토글 — 미고정/고정 라벨을 상태대로 */}
-        <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFixed(); }} title={fixed ? 'Fixed 고정됨 — 눌러서 해제' : '눌러서 Fixed로 고정'}
-          className={cn('inline-flex h-5 shrink-0 items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
-            fixed ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink3)]')}>
-          {fixed ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />} {fixed ? '고정' : '미고정'}
-        </button>
-        {/* 코너 삭제 — 템플릿에서 코너 빼기(원본 코너는 유지). 원형 X 버튼. */}
-        <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="이 템플릿에서 코너 빼기"
-          className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[var(--line2)] text-[var(--ink3)] transition hover:bg-[#fff0f1] hover:text-[var(--bad)]">
-          <X className="h-3 w-3" />
-        </button>
-      </div>
-      {/* 하단 행 — 그립·유형 칩·레이아웃 · (우) 노출 토글 */}
-      <div className="mt-1.5 flex items-center gap-1.5">
+      {/* 그립을 좌측 레일로(위로 얼라인) + 우측 콘텐츠 2행(2026-11-12 사용자 요청: 순서변경 핸들 위로). */}
+      <div className="flex items-start gap-1.5">
         <button type="button" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} title="드래그로 순서·밴드 이동"
-          className="flex shrink-0 cursor-grab touch-none items-center rounded p-0.5 text-[var(--ink4)] hover:bg-[var(--th)] active:cursor-grabbing">
+          className="mt-[3px] flex shrink-0 cursor-grab touch-none items-center rounded p-0.5 text-[var(--ink4)] hover:bg-[var(--th)] active:cursor-grabbing">
           <GripVertical className="h-3.5 w-3.5" />
         </button>
-        <span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span>
-        {layoutText && <span className="whitespace-nowrap text-[11px] text-[var(--ink4)]">{layoutText}</span>}
-        <span className="min-w-0 flex-1" />
-        {/* 노출 on/off 토글 */}
-        <button type="button" onClick={(e) => { e.stopPropagation(); setOn((v) => !v); }} title={on ? '노출 켜짐' : '노출 꺼짐'}
-          className={cn('relative h-[20px] w-[34px] shrink-0 rounded-full transition-colors', on ? 'bg-[var(--ac)]' : 'bg-[var(--line3)]')}>
-          <span className={cn('absolute top-[2px] h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-all', on ? 'left-[16px]' : 'left-[2px]')} />
-        </button>
+        <div className="min-w-0 flex-1">
+          {/* 상단 행 — 번호·이름·고정 여부·삭제(원형 X) */}
+          <div className="flex items-center gap-2">
+            <span className="w-4 shrink-0 text-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
+            <span className={cn('min-w-0 flex-1 truncate text-[14px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{displayName}</span>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFixed(); }} title={fixed ? 'Fixed 고정됨 — 눌러서 해제' : '눌러서 Fixed로 고정'}
+              className={cn('inline-flex h-5 shrink-0 items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
+                fixed ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink3)]')}>
+              {fixed ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />} {fixed ? '고정' : '미고정'}
+            </button>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="이 템플릿에서 코너 빼기"
+              className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[var(--line2)] text-[var(--ink3)] transition hover:bg-[#fff0f1] hover:text-[var(--bad)]">
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          {/* 하단 행 — 유형 칩·레이아웃 · (우) 노출 토글 */}
+          <div className="mt-1.5 flex items-center gap-1.5 pl-6">
+            <span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span>
+            {layoutText && <span className="whitespace-nowrap text-[11px] text-[var(--ink4)]">{layoutText}</span>}
+            <span className="min-w-0 flex-1" />
+            {/* 노출 on/off 토글 */}
+            <button type="button" onClick={(e) => { e.stopPropagation(); onToggleOn(); }} title={on ? '노출 켜짐' : '노출 꺼짐'}
+              className={cn('relative h-[20px] w-[34px] shrink-0 rounded-full transition-colors', on ? 'bg-[var(--ac)]' : 'bg-[var(--line3)]')}>
+              <span className={cn('absolute top-[2px] h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-all', on ? 'left-[16px]' : 'left-[2px]')} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1601,13 +1612,16 @@ const sameRowList = (a: PCorner[], b: PCorner[]): boolean => {
   return true;
 };
 
-function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSelect, onAddCorner, onToast }: {
+function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSelect, onAddCorner, onToast, hiddenIds, onToggleHidden }: {
   corners: PCorner[]; onCornersChange: (rows: PCorner[]) => void; templateId: string; selCorner: string | null; onSelect: (id: string) => void; onAddCorner: () => void; onToast: (m: string) => void;
+  hiddenIds: Set<string>; onToggleHidden: (tcid: string) => void;
 }) {
   const router = useRouter();
   // 낙관적 로컬 상태 — 드래그 즉시 반영, 서버 저장 후 refresh로 동기화.
   //  등록 순서(order) 그대로 노출한다 — 유형별 재정렬 금지(2026-11-05 사용자 요청: 순서 유지 + 고정은 제자리).
   const [rows, setRows] = React.useState<PCorner[]>(() => corners);
+  // 코너 삭제 확인 모달 대상(2026-11-12 사용자 요청: 시스템 confirm → 디자인 모달).
+  const [deleteTarget, setDeleteTarget] = React.useState<PCorner | null>(null);
   // props가 '같은 내용·다른 참조'로 와도 rows를 새로 만들지 않는다 → 아래 onCornersChange 효과와의 무한 루프 차단(2026-11-05 버그픽스).
   React.useEffect(() => {
     setRows((prev) => (sameRowList(prev, corners) ? prev : corners));
@@ -1651,9 +1665,9 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
     }
   }
 
-  // 코너 삭제 — 템플릿에서 코너 배치 제거(원본 코너는 유지). 낙관적 반영 후 저장.
-  async function removeCorner(c: PCorner) {
-    if (typeof window !== 'undefined' && !window.confirm(`‘${c.name}’ 코너를 이 템플릿에서 뺄까요?\n(코너 유형 관리의 원본 코너는 남습니다)`)) return;
+  // 코너 삭제 — 시스템 confirm 대신 디자인 모달(2026-11-12 사용자 요청). 확인 시 템플릿에서 배치 제거(원본 코너는 유지).
+  async function confirmRemoveCorner(c: PCorner) {
+    setDeleteTarget(null);
     setRows((prev) => prev.filter((r) => r.templateCornerId !== c.templateCornerId));
     try {
       await removeCornerFromTemplate(templateId, c.templateCornerId);
@@ -1701,7 +1715,8 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
                 <div className="space-y-1.5 rounded-r-[8px] border-l-[2px] py-1 pl-2.5 pr-1" style={{ borderColor: meta.hex }}>
                   {seg.items.map((c) => (
                     <CornerChip key={c.templateCornerId} c={c} no={noOf(c.templateCornerId)} selected={c.id === selCorner}
-                      fixed={c.zone === 'fixed'} onSelect={() => onSelect(c.id)} onToggleFixed={() => toggleFixed(c)} onDelete={() => removeCorner(c)} onToast={onToast} />
+                      fixed={c.zone === 'fixed'} on={!hiddenIds.has(c.templateCornerId)} onToggleOn={() => onToggleHidden(c.templateCornerId)}
+                      onSelect={() => onSelect(c.id)} onToggleFixed={() => toggleFixed(c)} onDelete={() => setDeleteTarget(c)} onToast={onToast} />
                   ))}
                 </div>
               </div>
@@ -1709,17 +1724,31 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
           })}
         </div>
       </SortableContext>
+      {/* 코너 삭제 확인 — 디자인 모달(시스템 confirm 대체, 2026-11-12 사용자 요청). */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4" onClick={() => setDeleteTarget(null)}>
+          <div className="w-full max-w-xs rounded-[16px] bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <p className="text-[15px] font-bold text-[var(--ink)]">코너 삭제</p>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--ink3)]"><b className="text-[var(--ink)]">‘{deleteTarget.name}’</b> 코너를 이 템플릿에서 뺄까요?<br /><span className="text-[var(--ink4)]">코너 유형 관리의 원본 코너는 남습니다.</span></p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setDeleteTarget(null)} className="rounded-[8px] border border-[var(--line2)] bg-white px-4 py-2 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">취소</button>
+              <button type="button" onClick={() => confirmRemoveCorner(deleteTarget)} className="rounded-[8px] bg-[var(--bad)] px-4 py-2 text-[13px] font-semibold text-white hover:opacity-90">삭제</button>
+            </div>
+          </div>
+        </div>
+      )}
     </DndContext>
   );
 }
 
 /* ───────── 템플릿 카드(= order3 '컨테이너' 카드) ───────── */
-function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle, onActivate, selCorner, onSelCorner, onAddCorner, onPreviewFallback, onToast }: {
+function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle, onActivate, selCorner, onSelCorner, onAddCorner, onPreviewFallback, onToast, hiddenIds, onToggleHidden }: {
   t: PTemplate; corners: PCorner[]; onCornersChange: React.Dispatch<React.SetStateAction<PCorner[]>>;
   idx: number; open: boolean; active: boolean;
   onToggle: () => void; onActivate: () => void;
   selCorner: string | null; onSelCorner: (id: string) => void;
   onAddCorner: () => void; onPreviewFallback: (on: boolean) => void; onToast: (m: string) => void;
+  hiddenIds: Set<string>; onToggleHidden: (tcid: string) => void;
 }) {
   const selIndex = corners.findIndex((c) => c.id === selCorner);
   const selected = selIndex >= 0 ? corners[selIndex] : null;
@@ -1758,7 +1787,8 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
               <div className="flex min-h-0 flex-col rounded-[12px] border border-[var(--line2)] bg-[var(--th)] p-2.5">
                 <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
                   <BandedCorners corners={corners} onCornersChange={onCornersChange} templateId={t.id} selCorner={selCorner}
-                    onSelect={(id) => { onActivate(); onSelCorner(id); }} onAddCorner={onAddCorner} onToast={onToast} />
+                    onSelect={(id) => { onActivate(); onSelCorner(id); }} onAddCorner={onAddCorner} onToast={onToast}
+                    hiddenIds={hiddenIds} onToggleHidden={onToggleHidden} />
                 </div>
                 <button type="button" onClick={onAddCorner}
                   className="mt-2 flex w-full shrink-0 items-center justify-center gap-1 rounded-[10px] border border-[#cfd2ff] bg-[var(--ac2)] py-2.5 text-[13px] font-bold text-[var(--ac)] hover:bg-[#e6e8ff]">
@@ -1946,6 +1976,9 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   const [liveCorners, setLiveCorners] = React.useState<PCorner[]>(activeTemplate?.corners ?? []);
   React.useEffect(() => { setLiveCorners(activeTemplate?.corners ?? []); }, [activeTemplate?.corners]);
   const totalCorners = liveCorners.length;
+  // 노출 토글(코너 카드)로 숨긴 코너 — 좌측 미리보기에서도 빠진다(2026-11-12 사용자 요청). templateCornerId 기준.
+  const [hiddenIds, setHiddenIds] = React.useState<Set<string>>(new Set());
+  const onToggleHidden = React.useCallback((tcid: string) => setHiddenIds((prev) => { const n = new Set(prev); n.has(tcid) ? n.delete(tcid) : n.add(tcid); return n; }), []);
 
   // 거버넌스 — 상품 전시 등록과 동일하게 '필수 섹션 완료' 상태로 관리(섹션 배지 + 하단 N/M 완료·승인요청). 2026-10-28 사용자 요청.
   const basicDone = !!activeTemplate?.name;
@@ -2000,7 +2033,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           {/* 디바이스는 좌측 열(뷰포트 높이) 안에서 fill로 꽉 채워 늘어남 — 바텀 고정·안 잘림(2026-11-06 사용자 요청: 상품 전시 관리처럼). 바디는 내부 스크롤. */}
           <DeviceFrame width={360} bodyHeight={0} fill headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
-                    liveCorners.map((c) => {
+                    /* 노출 토글로 숨긴 코너는 미리보기에서 제외(2026-11-12 사용자 요청) */
+                    liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
                       const hidden = fbMode && c.isCvm && c.fallback === '미노출';
                       const replaced = fbMode && c.isCvm && c.fallback === '운영자 편성으로 대체';
                       // CVM 콘텐츠 연동 = 구좌만 넘기고 완성본은 CVM이 내려줌 → 미리보기는 '완성본 자리' 구좌로 표시
@@ -2123,6 +2157,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                     onAddCorner={() => setLoadModal(t.id)}
                     onPreviewFallback={setFbMode}
                     onToast={toast}
+                    hiddenIds={hiddenIds}
+                    onToggleHidden={onToggleHidden}
                   />
                 ))}
               </div>
