@@ -278,7 +278,8 @@ export const TBODY_TR_CLS =
 export function OpsSection({ title, children }: { no?: number | string; title: string; children: React.ReactNode }) {
   return (
     <section className="mb-6">
-      <div className="mb-2 flex items-center gap-2">
+      {/* 제목이 표 상단 보더에 바싹 붙지 않게 여백(2026-11-12 사용자 요청) */}
+      <div className="mb-3 flex items-center gap-2">
         <h3 className="text-[15px] font-bold text-[#1a1a1a]">{title}</h3>
       </div>
       <div className="border-t border-[#dce0e5]">{children}</div>

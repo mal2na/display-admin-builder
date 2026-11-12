@@ -14,6 +14,7 @@ import { PromoList } from './promo-list';
 import { RegStartModal } from './reg-start-modal';
 import { RegForm } from './reg-form';
 import { formFromRow, type PromoForm } from '@/lib/promotion/form';
+import { presetFormByKey } from '@/lib/promotion/presets';
 import type { PromoRow } from '@/lib/promotion/model';
 
 type FormState = { type: string; jm: '직접' | '행동'; initial?: PromoForm; startView?: 'form' | 'detail' };
@@ -36,9 +37,9 @@ export function PromoAdmin() {
     setForm({ type, jm: (jm as '직접' | '행동') ?? (type === '참여ㆍ리워드형' ? '행동' : '직접') });
   }
 
-  /** 목록 행 클릭 → 그 행으로 폼을 구성해 상세 화면부터 연다. */
+  /** 목록 행 클릭 → 상세 화면부터. 「예시」 행은 전체 프리셋(서브타이틀·유의사항·리워드·추천 구성)으로, 그 외는 행 값으로 구성. */
   function openDetail(r: PromoRow) {
-    const initial = formFromRow(r);
+    const initial = presetFormByKey(r.ex) ?? formFromRow(r);
     setForm({ type: initial.type, jm: initial.jm, initial, startView: 'detail' });
   }
 

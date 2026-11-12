@@ -196,6 +196,7 @@ export function BannerDetail({ d, history, usage }: { d: BannerDetailData; histo
       <PageHeader
         trail={['전시관리', '배너 캠페인 관리', '배너캠페인 상세']}
         title="배너캠페인 상세"
+        divider={false}
       />
         </div>
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
