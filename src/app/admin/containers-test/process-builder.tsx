@@ -297,8 +297,8 @@ function cornerTypeDisplayId(cornerType: string): string {
   return 'CY' + String(h).padStart(7, '0');
 }
 
-function CornerDetail({ template, corner, index, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: {
-  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void;
+function CornerDetail({ template, corner, index, used, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: {
+  template: PTemplate; corner: PCorner | null; index: number; used: boolean; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void;
 }) {
   if (!corner) {
     return (
@@ -307,7 +307,7 @@ function CornerDetail({ template, corner, index, onPreviewFallback, onFallbackCh
       </div>
     );
   }
-  return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onFallbackChange={onFallbackChange} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onPreviewPatch={onPreviewPatch} onToast={onToast} />;
+  return <CornerDetailBody key={corner.id} template={template} corner={corner} used={used} onPreviewFallback={onPreviewFallback} onFallbackChange={onFallbackChange} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onPreviewPatch={onPreviewPatch} onToast={onToast} />;
 }
 
 // 카테고리 불러오기 모달(2단) — 좌: 카테고리, 우: 그 카테고리의 브랜드/항목 멀티선택.
@@ -495,7 +495,7 @@ function SortableFillRow({ id, children }: { id: string; children: (h: { setRef:
   );
 }
 
-function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void }) {
+function CornerDetailBody({ template, corner, used, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: { template: PTemplate; corner: PCorner; used: boolean; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void }) {
   // 프로필형(업무 진입형) = 고객 정보(이름·휴대폰 등)라 '무조건 CVM 데이터 연동' 고정(2026-11-05 사용자 요청).
   const layoutDetailStr = corner.layoutDetail ?? corner.layout ?? '';
   const isProfile = corner.cornerType === '업무 진입형' && /프로필/.test(layoutDetailStr);
@@ -895,17 +895,10 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
 
       {/* ① 코너 정보 — 코너명만 편집, 유형·레이아웃·개수는 코너 유형 관리에서 불러온 껍데기 */}
       <Sec n={1} title="코너 기본 정보">
-        {/* 코너 유형 정보 — '템플릿 기본 정보'(FieldRow)와 동일 테이블 스타일(2026-11-12 사용자 요청: 전 테이블 통일). 유형·배열 위 / ID·코너명 아래. 좌우 보더 없음. */}
+        {/* 코너 유형 정보 — '템플릿 기본 정보'(FieldRow)와 동일 테이블 스타일. SB(BO-AIM-DSP-PG557): ID·코너명 위 / 유형·배열 / 사용·고정 여부(읽기전용). 좌우 보더 없음(2026-11-15). */}
         <p className="mb-2 text-[13px] font-bold text-[var(--ink)]">코너 유형 정보</p>
         <div className="border-t border-[var(--line2)] text-[14px]">
-          {/* row1: 코너 유형 | 배열·레이아웃 */}
-          <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
-            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형</div>
-            <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></div>
-            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">배열·레이아웃</div>
-            <div className="flex min-w-0 items-center bg-white px-4 py-2.5 text-[13px] text-[var(--ink)]">{cornerLayoutText(corner.cornerType, corner.layout, corner.layoutDetail) || '—'}</div>
-          </div>
-          {/* row2: 코너 유형 ID(읽기전용) | 코너명(입력·X로 비움, blur 저장). 리터럴 div로 직접 렌더 — IME 유지. */}
+          {/* row1: 코너 유형 ID(읽기전용) | 코너명(입력·X로 비움, blur 저장). 리터럴 div로 직접 렌더 — IME 유지. */}
           <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
             <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형 ID</div>
             <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5 font-mono text-[12px] text-[var(--ink3)]">{cornerTypeId}</div>
@@ -918,6 +911,20 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   className="absolute right-2 top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center rounded-full bg-[var(--line3)] text-white hover:bg-[var(--ink4)]"><X className="h-2.5 w-2.5" /></button>}
               </div>
             </div>
+          </div>
+          {/* row2: 코너 유형 | 배열·레이아웃 */}
+          <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
+            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형</div>
+            <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></div>
+            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">배열·레이아웃</div>
+            <div className="flex min-w-0 items-center bg-white px-4 py-2.5 text-[13px] text-[var(--ink)]">{cornerLayoutText(corner.cornerType, corner.layout, corner.layoutDetail) || '—'}</div>
+          </div>
+          {/* row3: 코너 사용 여부 | 코너 고정 여부 — 읽기전용(실제 제어는 좌측 코너 카드의 노출 토글·고정 버튼). SB PG557. */}
+          <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
+            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 사용 여부</div>
+            <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5"><YNReadonly yes={used} /></div>
+            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 고정 여부</div>
+            <div className="flex min-w-0 items-center bg-white px-4 py-2.5"><YNReadonly yes={corner.zone === 'fixed'} /></div>
           </div>
         </div>
         {/* 코너 속성 — 회색 라벨 셀 테이블 + 알약 칩(옵션=보라, 고정=회색). 좌우 보더 없음. SB 사용자 목업(2026-11-12). */}
@@ -1798,7 +1805,7 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
               </div>
               {/* 코너 상세 — 독립 스크롤 */}
               <div className="min-h-0 overflow-y-auto pr-0.5">
-                <CornerDetail template={t} corner={selected} index={selIndex} onPreviewFallback={onPreviewFallback}
+                <CornerDetail template={t} corner={selected} index={selIndex} used={selected ? !hiddenIds.has(selected.templateCornerId) : true} onPreviewFallback={onPreviewFallback}
                   onFallbackChange={(fb) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, fallback: fb } : c)); }}
                   onRecSourceChange={(src) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, recSource: src, isCvm: src.startsWith('CVM') } : c)); }}
                   onOptionsChange={(opts, ctaLabel) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, preview: applyOptsToPreview(c.preview, opts, ctaLabel) } : c)); }}
