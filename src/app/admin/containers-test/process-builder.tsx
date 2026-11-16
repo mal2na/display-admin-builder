@@ -974,8 +974,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
             return (
               <button key={m} type="button" disabled={srcLocked} onClick={() => {
                   setSrc(m); onRecSourceChange(m);
-                  // 운영자 편성은 폴백(대체 노출) 개념이 없다 → 폴백 설정·폴백 미리보기를 기본으로 되돌린다(2026-11-16 사용자 요청).
-                  if (m === '운영자 편성') { setFb('미노출'); onFallbackChange('미노출'); onPreviewFallback(false); }
+                  if (m === '운영자 편성') {
+                    // 운영자 편성은 폴백(대체 노출) 개념이 없다 → 폴백 설정·폴백 미리보기를 기본으로 되돌린다(2026-11-16 사용자 요청).
+                    setFb('미노출'); onFallbackChange('미노출'); onPreviewFallback(false);
+                  } else {
+                    // CVM으로 전환하는 즉시 부모 폴백을 동기화 → 폴백 미리보기가 '전환 직후' 바로 미노출(또는 대체)로 반영(2026-11-16 사용자 요청). 기존엔 폴백 옵션을 눌러야 부모값이 갱신돼 한 박자 늦게 숨겨졌다.
+                    const f = fb === '운영자 편성으로 대체' ? '운영자 편성으로 대체' : '미노출';
+                    if (fb !== f) setFb(f);
+                    onFallbackChange(f);
+                  }
                 }} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]', srcLocked && !on && 'opacity-40')}>
                 <div className="flex items-center gap-2">
                   <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
