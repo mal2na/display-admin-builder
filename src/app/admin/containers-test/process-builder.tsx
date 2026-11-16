@@ -972,7 +972,11 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           {REC_SOURCE_METHODS.map((m) => {
             const info = REC_SOURCE_INFO[m]; const on = m === src; const Icon = REC_ICON[m] ?? Sparkles;
             return (
-              <button key={m} type="button" disabled={srcLocked} onClick={() => { setSrc(m); onRecSourceChange(m); }} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]', srcLocked && !on && 'opacity-40')}>
+              <button key={m} type="button" disabled={srcLocked} onClick={() => {
+                  setSrc(m); onRecSourceChange(m);
+                  // 운영자 편성은 폴백(대체 노출) 개념이 없다 → 폴백 설정·폴백 미리보기를 기본으로 되돌린다(2026-11-16 사용자 요청).
+                  if (m === '운영자 편성') { setFb('미노출'); onFallbackChange('미노출'); onPreviewFallback(false); }
+                }} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]', srcLocked && !on && 'opacity-40')}>
                 <div className="flex items-center gap-2">
                   <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
                   <Icon className={cn('h-3.5 w-3.5', on ? 'text-[var(--ac)]' : 'text-[var(--ink4)]')} />
@@ -1016,9 +1020,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
         </Sec>
       )}
 
-      {/* ④ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청+고정, 콘텐츠 연동=구좌만.
-          단, 폴백이 '미노출'이면 운영자가 채울 내용이 없으므로 채우기/고정 패널을 띄우지 않는다(2026-11-16 사용자 요청: 미노출 케이스엔 안 나와야 함). */}
-      {(src === '운영자 편성' || (isData && !isProfile && fb !== '미노출') || fillForFallback) ? (
+      {/* ④ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청+운영자 고정 앵커(폴백과 무관하게 항상 노출 — 앵커는 정상 노출 시 앞자리 고정, 폴백은 별개. 2026-11-16 사용자 확정), 콘텐츠 연동=구좌만(미노출이면 구좌 안내). */}
+      {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
         <Sec n={nFill} title={fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '코너 콘텐츠 설정'} hint={fillForFallback || isData ? undefined : '코너에서 노출할 데이터'}>
           {fillForFallback && (
             <div className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#fff8ef] px-3 py-2 text-[12px] leading-relaxed text-[#b67a12]">
@@ -1504,12 +1507,6 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
             <span className="rounded-[4px] bg-white px-1.5 py-0.5">휴대폰 번호</span>
             <span className="text-[var(--ink4)]">— @cvm 바인딩</span>
           </div>
-        </Sec>
-      ) : isData ? (
-        <Sec n={nFill} title="CVM 데이터 연동 (미노출)" help>
-          <p className="rounded-[8px] bg-[var(--ac2)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
-            <b className="text-[var(--ac)]">CVM 데이터 연동</b> — CVM이 <b>컴포넌트·순서</b>를 주고, 문구·이미지는 <b>상품(EPC) 원장</b>이 자동으로 채웁니다. 폴백이 <b>미노출</b>이라 CVM 응답이 비면 이 코너는 노출되지 않아, 운영자가 따로 설정·고정할 항목이 없습니다. 운영자 고정 항목(앵커)을 두려면 위 <b>③에서 ‘운영자 편성으로 대체’</b>를 선택하세요.
-          </p>
         </Sec>
       ) : (
         <Sec n={nFill} title="CVM 요청 (구좌만)" help>
