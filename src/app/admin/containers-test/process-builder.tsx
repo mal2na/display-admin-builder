@@ -240,19 +240,6 @@ function Sec({ n, title, help, hint, badge, aside, children }: { n: number; titl
   );
 }
 
-// SB의 Y/N 라디오 표시 — 빌더에선 읽기전용(상태 반영). 선택된 쪽만 채운 라디오.
-function YNReadonly({ yes }: { yes: boolean }) {
-  const Dot = ({ on }: { on: boolean }) => (
-    <span className={cn('grid h-3.5 w-3.5 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)] bg-white')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
-  );
-  return (
-    <div className="flex items-center gap-3 text-[13px] text-[var(--ink2)]">
-      <span className="inline-flex items-center gap-1"><Dot on={yes} /> Y</span>
-      <span className="inline-flex items-center gap-1"><Dot on={!yes} /> N</span>
-    </div>
-  );
-}
-
 // 코너 카드 폼블록 — '템플릿 기본 정보'(FieldRow) 테이블과 동일 스타일(2026-11-12 사용자 요청: 전 테이블 통일). 좌우 보더 없음.
 function FormBlock({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
   return (
@@ -565,6 +552,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const bcAtoms: any[] = pv?.components?.[0]?.atoms ?? [];
   const [barcodeLabel, setBarcodeLabel] = React.useState(() => { const t = bcAtoms.find((a) => a.atomType === 'TEXT')?.content; return (t && !/^Title/.test(String(t))) ? String(t) : 'T멤버십'; });
   const [barcodeRefresh, setBarcodeRefresh] = React.useState(() => { const b = bcAtoms.find((a) => a.atomType === 'BARCODE')?.content; return String(Number(b) || 20); });
+  // 바코드 유형 — 일반 바코드 / 매직 바코드(SB BO-AIM-DSP-PG557 코너 레이아웃). 데모 로컬 상태.
+  const [barcodeKind, setBarcodeKind] = React.useState<'일반 바코드' | '매직 바코드'>('일반 바코드');
   // 버튼 텍스트(ButtonText) = 미리보기의 '서브 타이틀'(타이틀 아래 보조 문구, 예: T 영화예매). CTA(전체보기)와는 별개(2026-11-05 사용자 요청).
   const [buttonTextVal, setButtonTextVal] = React.useState(() => (pv?.subTitle && pv.subTitle !== 'ButtonText' ? pv.subTitle : ''));
   // CTA 라벨(전체보기 등) = 하단 더보기 버튼. CTA 옵션을 켤 때만 입력, 버튼 텍스트와 별개(2026-11-05 사용자 요청).
@@ -604,6 +593,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const [bannerSource, setBannerSource] = React.useState<'배너 캠페인' | 'DS 포탈' | '로컬(PC)'>('로컬(PC)');
   // 배너 설정 '이미지' 클릭 → 소재 선택 모달(2026-11-12 사용자 요청: 이미지 클릭하면 모달).
   const [bannerImgModal, setBannerImgModal] = React.useState(false);
+  // 배너 소재 불러오기 — 소스별 분기(2026-11-16 사용자 요청): 로컬(PC)은 OS 파일 선택창, 배너 캠페인/DS 포탈은 소재 선택 모달.
+  const bannerFileRef = React.useRef<HTMLInputElement | null>(null);
+  const openBannerPicker = () => { if (bannerSource === '로컬(PC)') bannerFileRef.current?.click(); else setBannerImgModal(true); };
+  const onBannerFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const url = URL.createObjectURL(f);
+    setBannerImg(url); onPreviewPatch({ bannerImageUrl: url }); onToast(`로컬 이미지 ‘${f.name}’ 적용`);
+    e.target.value = '';
+  };
   // 카테고리형(상품형·혜택·오퍼형 세로형/가로형(카테고리형)) — 상단 카테고리 칩 + 카테고리별 컴포넌트 리스트(2026-11-06 사용자 요청).
   const isCategory = (corner.cornerType === '상품형' || corner.cornerType === '혜택·오퍼형') && /카테고리형|칩|카테고리/.test(corner.layoutDetail ?? corner.layout ?? '');
   // ③ 채우기 항목 — 칩/카테고리 On 이면 카테고리마다 별도 리스트(카테고리별 컴포넌트 연동). 아니면 단일 리스트(__flat__).
@@ -895,9 +893,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
 
       {/* ① 코너 정보 — 코너명만 편집, 유형·레이아웃·개수는 코너 유형 관리에서 불러온 껍데기 */}
       <Sec n={1} title="코너 기본 정보">
-        {/* 코너 유형 정보 — '템플릿 기본 정보'(FieldRow)와 동일 테이블 스타일(2026-11-12 사용자 요청: 전 테이블 통일). 유형·배열 위 / ID·코너명 아래. 좌우 보더 없음. */}
+        {/* 코너 유형 정보 — '템플릿 기본 정보'(FieldRow)와 동일 테이블. SB(BO-AIM-DSP-PG557): 유형·배열 위 / ID·코너명 아래(2026-11-16 재정렬). 좌우 보더 없음. 행 높이 48px([&>div]:h-12). */}
         <p className="mb-2 text-[13px] font-bold text-[var(--ink)]">코너 유형 정보</p>
-        <div className="border-t border-[var(--line2)] text-[14px]">
+        <div className="border-t border-[var(--line2)] text-[14px] [&>div]:h-12">
           {/* row1: 코너 유형 | 배열·레이아웃 */}
           <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
             <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형</div>
@@ -910,7 +908,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
             <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형 ID</div>
             <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5 font-mono text-[12px] text-[var(--ink3)]">{cornerTypeId}</div>
             <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너명</div>
-            <div className="flex min-w-0 items-center bg-white px-4 py-2">
+            <div className="flex min-w-0 items-center bg-white px-4 py-0">
               <div className="relative w-full">
                 <input value={nameVal} onChange={(e) => setNameVal(e.target.value)} onBlur={saveName} placeholder="코너명 입력"
                   className="h-[34px] w-full rounded-[6px] border border-[var(--line3)] pl-2.5 pr-8 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
@@ -974,7 +972,18 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           {REC_SOURCE_METHODS.map((m) => {
             const info = REC_SOURCE_INFO[m]; const on = m === src; const Icon = REC_ICON[m] ?? Sparkles;
             return (
-              <button key={m} type="button" disabled={srcLocked} onClick={() => { setSrc(m); onRecSourceChange(m); }} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]', srcLocked && !on && 'opacity-40')}>
+              <button key={m} type="button" disabled={srcLocked} onClick={() => {
+                  setSrc(m); onRecSourceChange(m);
+                  if (m === '운영자 편성') {
+                    // 운영자 편성은 폴백(대체 노출) 개념이 없다 → 폴백 설정·폴백 미리보기를 기본으로 되돌린다(2026-11-16 사용자 요청).
+                    setFb('미노출'); onFallbackChange('미노출'); onPreviewFallback(false);
+                  } else {
+                    // CVM으로 전환하는 즉시 부모 폴백을 동기화 → 폴백 미리보기가 '전환 직후' 바로 미노출(또는 대체)로 반영(2026-11-16 사용자 요청). 기존엔 폴백 옵션을 눌러야 부모값이 갱신돼 한 박자 늦게 숨겨졌다.
+                    const f = fb === '운영자 편성으로 대체' ? '운영자 편성으로 대체' : '미노출';
+                    if (fb !== f) setFb(f);
+                    onFallbackChange(f);
+                  }
+                }} className={cn('w-full rounded-[10px] border px-3 py-2.5 text-left transition', on ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]', srcLocked && !on && 'opacity-40')}>
                 <div className="flex items-center gap-2">
                   <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
                   <Icon className={cn('h-3.5 w-3.5', on ? 'text-[var(--ac)]' : 'text-[var(--ink4)]')} />
@@ -1018,7 +1027,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
         </Sec>
       )}
 
-      {/* ④ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청, 콘텐츠 연동=구좌만 */}
+      {/* ④ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청+운영자 고정 앵커(폴백과 무관하게 항상 노출 — 앵커는 정상 노출 시 앞자리 고정, 폴백은 별개. 2026-11-16 사용자 확정), 콘텐츠 연동=구좌만(미노출이면 구좌 안내). */}
       {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
         <Sec n={nFill} title={fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '코너 콘텐츠 설정'} hint={fillForFallback || isData ? undefined : '코너에서 노출할 데이터'}>
           {fillForFallback && (
@@ -1071,12 +1080,13 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                             <button key={s} type="button" onClick={() => setBannerSource(s)} className={cn('rounded-[6px] px-2.5 py-1 transition', bannerSource === s ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink3)] hover:text-[var(--ink2)]')}>{s}</button>
                           ))}
                         </div>
-                        <button type="button" onClick={() => setBannerImgModal(true)} className="inline-flex h-[32px] shrink-0 items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3.5 w-3.5" /> 불러오기</button>
+                        <button type="button" onClick={openBannerPicker} className="inline-flex h-[32px] shrink-0 items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3.5 w-3.5" /> 불러오기</button>
+                        <input ref={bannerFileRef} type="file" accept="image/*" onChange={onBannerFile} className="hidden" />
                       </div>
                     </FormRow>
                     <FormRow label="이미지" en="ImageUrl">
                       {/* 이미지 클릭 → 소재 선택 모달 */}
-                      <button type="button" onClick={() => setBannerImgModal(true)} title="클릭해 배너 소재 선택" className="grid h-14 w-20 place-items-center overflow-hidden rounded-[6px] border border-[var(--line3)] bg-[var(--th)] text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
+                      <button type="button" onClick={openBannerPicker} title={bannerSource === '로컬(PC)' ? '클릭해 로컬 이미지 선택' : '클릭해 배너 소재 선택'} className="grid h-14 w-20 place-items-center overflow-hidden rounded-[6px] border border-[var(--line3)] bg-[var(--th)] text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
                         {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
                       </button>
                     </FormRow>
@@ -1181,21 +1191,24 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           )}
           {/* ── 바코드형 = 라벨·갱신 주기 정책만. 번호는 회원별 런타임 발급(미리보기엔 sample). ── */}
           {isBarcode && (
-            <div className="rounded-[8px] border border-[var(--line3)] bg-white p-2.5">
-              <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-[var(--ink2)]"><Barcode className="h-4 w-4 text-[var(--ac)]" /> 바코드 정책</p>
-              <label className="mb-2 block">
-                <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">바코드명 <span className="font-normal text-[var(--ink4)]">라벨 · 예: T멤버십</span></span>
-                <input value={barcodeLabel} onChange={(e) => { setBarcodeLabel(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'T멤버십' }); }} placeholder="예: T멤버십" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">유효·갱신 주기 <span className="font-normal text-[var(--ink4)]">분 · 바코드 재발급·카운트다운 기준</span></span>
+            <FormBlock title="코너 레이아웃" desc="바코드 유형 · 코너 타이틀 · 갱신 주기">
+              {/* 바코드 유형 — 일반/매직(SB BO-AIM-DSP-PG557 코너 레이아웃). */}
+              <FormRow label="바코드 유형">
+                <RadioRow options={['일반 바코드', '매직 바코드'] as const} value={barcodeKind} onChange={setBarcodeKind} />
+              </FormRow>
+              <FormRow label="코너 타이틀" en="CornerTitle">
+                <input value={barcodeLabel} onChange={(e) => { setBarcodeLabel(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'T멤버십' }); }} placeholder="코너 타이틀에 노출할 바코드명을 입력하세요" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+              </FormRow>
+              <FormRow label="유효 갱신 주기">
                 <div className="flex items-center gap-1.5">
                   <input type="number" min={1} value={barcodeRefresh} onChange={(e) => setBarcodeRefresh(e.target.value)} className="h-[32px] w-20 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
                   <span className="text-[12px] text-[var(--ink4)]">분마다 갱신</span>
                 </div>
-              </label>
-              <p className="mt-2 flex items-start gap-1 rounded-[6px] bg-[var(--th)] px-2 py-1.5 text-[11px] leading-relaxed text-[var(--ink3)]"><Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[var(--ac)]" /> 바코드 번호는 회원 인증 기반 <b className="mx-0.5">런타임 발급</b> — 미리보기엔 sample 번호로 표시됩니다.</p>
-            </div>
+              </FormRow>
+              <div className="px-0 pt-2">
+                <p className="flex items-start gap-1 rounded-[6px] bg-[var(--th)] px-2 py-1.5 text-[11px] leading-relaxed text-[var(--ink3)]"><Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[var(--ac)]" /> 바코드 번호는 회원 인증 기반 <b className="mx-0.5">런타임 발급</b> — 미리보기엔 sample 번호로 표시됩니다.</p>
+              </div>
+            </FormBlock>
           )}
           {/* ── 아이템 탭(또는 코너 속성이 없는 유형)에서만 아이템 리스트 노출 ── */}
           {!cardOnly && !isBarcode && (!(hasCornerTitle || hasButtonText || availOptions.length > 0) || fillTab === '아이템') && (
@@ -1514,11 +1527,26 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
       <Sec n={nSrc} title={isData ? '데이터 출처' : '컴포넌트 출처'} hint="코너에서 노출할 데이터의 출처를 확인합니다">
         {/* 회색 라벨 셀 테이블 — 좌우 2열(2026-11-12 사용자 요청: 4개 세로 나열 → 좌우). 좌우 보더 없음. */}
         {(() => {
+          {/* 출처 값은 코너 유형별로 다르다(SB PG557, 2026-11-16). 이미지·문구·이동 링크 소유 주체가 유형마다 다름. */}
+          const isCvmContent = src === 'CVM 콘텐츠 연동';
+          const imgSrc = isBarcode ? '시스템(런타임 발급)'
+            : corner.cornerType === '업무 진입형' ? '아이콘 라이브러리'
+            : isBanner ? (isCvmContent ? 'CVM 완성본' : '배너 캠페인')
+            : isContentGuide ? '콘텐츠 원장'
+            : '상품(EPC) 원장';
+          const copySrc = isCvmContent ? 'CVM 완성본'
+            : corner.cornerType === '업무 진입형' ? '운영자 직접입력'
+            : isBanner ? '배너 캠페인'
+            : '빌더 · 상품 원장';
+          const linkSrc = corner.cornerType === '업무 진입형' ? '직접입력 · 메뉴 불러오기'
+            : isBanner ? '배너 캠페인'
+            : isContentGuide ? '콘텐츠 연결'
+            : '빌더';
           const cells: [string, string][] = [
             ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
-            ['이미지', '상품(EPC) 원장'],
-            ['문구', src === 'CVM 콘텐츠 연동' ? 'CVM 완성본' : '빌더 · 상품 원장'],
-            ['이동 링크', '빌더'],
+            ['이미지', imgSrc],
+            ['문구', copySrc],
+            ['이동 링크', linkSrc],
           ];
           const Val = ({ v }: { v: string }) => <span className={cn('font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'text-[#2e6ff2]' : 'text-[#b67a12]')}>{v}</span>;
           const rows: [string, string][][] = [];
