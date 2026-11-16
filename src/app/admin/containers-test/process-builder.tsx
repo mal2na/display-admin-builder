@@ -240,19 +240,6 @@ function Sec({ n, title, help, hint, badge, aside, children }: { n: number; titl
   );
 }
 
-// SB의 Y/N 라디오 표시 — 빌더에선 읽기전용(상태 반영). 선택된 쪽만 채운 라디오.
-function YNReadonly({ yes }: { yes: boolean }) {
-  const Dot = ({ on }: { on: boolean }) => (
-    <span className={cn('grid h-3.5 w-3.5 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)] bg-white')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
-  );
-  return (
-    <div className="flex items-center gap-3 text-[13px] text-[var(--ink2)]">
-      <span className="inline-flex items-center gap-1"><Dot on={yes} /> Y</span>
-      <span className="inline-flex items-center gap-1"><Dot on={!yes} /> N</span>
-    </div>
-  );
-}
-
 // 코너 카드 폼블록 — '템플릿 기본 정보'(FieldRow) 테이블과 동일 스타일(2026-11-12 사용자 요청: 전 테이블 통일). 좌우 보더 없음.
 function FormBlock({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
   return (
@@ -297,8 +284,8 @@ function cornerTypeDisplayId(cornerType: string): string {
   return 'CY' + String(h).padStart(7, '0');
 }
 
-function CornerDetail({ template, corner, index, used, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: {
-  template: PTemplate; corner: PCorner | null; index: number; used: boolean; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void;
+function CornerDetail({ template, corner, index, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: {
+  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void;
 }) {
   if (!corner) {
     return (
@@ -307,7 +294,7 @@ function CornerDetail({ template, corner, index, used, onPreviewFallback, onFall
       </div>
     );
   }
-  return <CornerDetailBody key={corner.id} template={template} corner={corner} used={used} onPreviewFallback={onPreviewFallback} onFallbackChange={onFallbackChange} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onPreviewPatch={onPreviewPatch} onToast={onToast} />;
+  return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onFallbackChange={onFallbackChange} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onPreviewPatch={onPreviewPatch} onToast={onToast} />;
 }
 
 // 카테고리 불러오기 모달(2단) — 좌: 카테고리, 우: 그 카테고리의 브랜드/항목 멀티선택.
@@ -495,7 +482,7 @@ function SortableFillRow({ id, children }: { id: string; children: (h: { setRef:
   );
 }
 
-function CornerDetailBody({ template, corner, used, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: { template: PTemplate; corner: PCorner; used: boolean; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void }) {
+function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void }) {
   // 프로필형(업무 진입형) = 고객 정보(이름·휴대폰 등)라 '무조건 CVM 데이터 연동' 고정(2026-11-05 사용자 요청).
   const layoutDetailStr = corner.layoutDetail ?? corner.layout ?? '';
   const isProfile = corner.cornerType === '업무 진입형' && /프로필/.test(layoutDetailStr);
@@ -565,6 +552,8 @@ function CornerDetailBody({ template, corner, used, onPreviewFallback, onFallbac
   const bcAtoms: any[] = pv?.components?.[0]?.atoms ?? [];
   const [barcodeLabel, setBarcodeLabel] = React.useState(() => { const t = bcAtoms.find((a) => a.atomType === 'TEXT')?.content; return (t && !/^Title/.test(String(t))) ? String(t) : 'T멤버십'; });
   const [barcodeRefresh, setBarcodeRefresh] = React.useState(() => { const b = bcAtoms.find((a) => a.atomType === 'BARCODE')?.content; return String(Number(b) || 20); });
+  // 바코드 유형 — 일반 바코드 / 매직 바코드(SB BO-AIM-DSP-PG557 코너 레이아웃). 데모 로컬 상태.
+  const [barcodeKind, setBarcodeKind] = React.useState<'일반 바코드' | '매직 바코드'>('일반 바코드');
   // 버튼 텍스트(ButtonText) = 미리보기의 '서브 타이틀'(타이틀 아래 보조 문구, 예: T 영화예매). CTA(전체보기)와는 별개(2026-11-05 사용자 요청).
   const [buttonTextVal, setButtonTextVal] = React.useState(() => (pv?.subTitle && pv.subTitle !== 'ButtonText' ? pv.subTitle : ''));
   // CTA 라벨(전체보기 등) = 하단 더보기 버튼. CTA 옵션을 켤 때만 입력, 버튼 텍스트와 별개(2026-11-05 사용자 요청).
@@ -604,6 +593,15 @@ function CornerDetailBody({ template, corner, used, onPreviewFallback, onFallbac
   const [bannerSource, setBannerSource] = React.useState<'배너 캠페인' | 'DS 포탈' | '로컬(PC)'>('로컬(PC)');
   // 배너 설정 '이미지' 클릭 → 소재 선택 모달(2026-11-12 사용자 요청: 이미지 클릭하면 모달).
   const [bannerImgModal, setBannerImgModal] = React.useState(false);
+  // 배너 소재 불러오기 — 소스별 분기(2026-11-16 사용자 요청): 로컬(PC)은 OS 파일 선택창, 배너 캠페인/DS 포탈은 소재 선택 모달.
+  const bannerFileRef = React.useRef<HTMLInputElement | null>(null);
+  const openBannerPicker = () => { if (bannerSource === '로컬(PC)') bannerFileRef.current?.click(); else setBannerImgModal(true); };
+  const onBannerFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const url = URL.createObjectURL(f);
+    setBannerImg(url); onPreviewPatch({ bannerImageUrl: url }); onToast(`로컬 이미지 ‘${f.name}’ 적용`);
+    e.target.value = '';
+  };
   // 카테고리형(상품형·혜택·오퍼형 세로형/가로형(카테고리형)) — 상단 카테고리 칩 + 카테고리별 컴포넌트 리스트(2026-11-06 사용자 요청).
   const isCategory = (corner.cornerType === '상품형' || corner.cornerType === '혜택·오퍼형') && /카테고리형|칩|카테고리/.test(corner.layoutDetail ?? corner.layout ?? '');
   // ③ 채우기 항목 — 칩/카테고리 On 이면 카테고리마다 별도 리스트(카테고리별 컴포넌트 연동). 아니면 단일 리스트(__flat__).
@@ -895,15 +893,22 @@ function CornerDetailBody({ template, corner, used, onPreviewFallback, onFallbac
 
       {/* ① 코너 정보 — 코너명만 편집, 유형·레이아웃·개수는 코너 유형 관리에서 불러온 껍데기 */}
       <Sec n={1} title="코너 기본 정보">
-        {/* 코너 유형 정보 — '템플릿 기본 정보'(FieldRow)와 동일 테이블 스타일. SB(BO-AIM-DSP-PG557): ID·코너명 위 / 유형·배열 / 사용·고정 여부(읽기전용). 좌우 보더 없음(2026-11-15). */}
+        {/* 코너 유형 정보 — '템플릿 기본 정보'(FieldRow)와 동일 테이블. SB(BO-AIM-DSP-PG557): 유형·배열 위 / ID·코너명 아래(2026-11-16 재정렬). 좌우 보더 없음. 행 높이 48px([&>div]:h-12). */}
         <p className="mb-2 text-[13px] font-bold text-[var(--ink)]">코너 유형 정보</p>
-        <div className="border-t border-[var(--line2)] text-[14px]">
-          {/* row1: 코너 유형 ID(읽기전용) | 코너명(입력·X로 비움, blur 저장). 리터럴 div로 직접 렌더 — IME 유지. */}
+        <div className="border-t border-[var(--line2)] text-[14px] [&>div]:h-12">
+          {/* row1: 코너 유형 | 배열·레이아웃 */}
+          <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
+            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형</div>
+            <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></div>
+            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">배열·레이아웃</div>
+            <div className="flex min-w-0 items-center bg-white px-4 py-2.5 text-[13px] text-[var(--ink)]">{cornerLayoutText(corner.cornerType, corner.layout, corner.layoutDetail) || '—'}</div>
+          </div>
+          {/* row2: 코너 유형 ID(읽기전용) | 코너명(입력·X로 비움, blur 저장). 리터럴 div로 직접 렌더 — IME 유지. */}
           <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
             <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형 ID</div>
             <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5 font-mono text-[12px] text-[var(--ink3)]">{cornerTypeId}</div>
             <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너명</div>
-            <div className="flex min-w-0 items-center bg-white px-4 py-2">
+            <div className="flex min-w-0 items-center bg-white px-4 py-0">
               <div className="relative w-full">
                 <input value={nameVal} onChange={(e) => setNameVal(e.target.value)} onBlur={saveName} placeholder="코너명 입력"
                   className="h-[34px] w-full rounded-[6px] border border-[var(--line3)] pl-2.5 pr-8 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
@@ -911,20 +916,6 @@ function CornerDetailBody({ template, corner, used, onPreviewFallback, onFallbac
                   className="absolute right-2 top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center rounded-full bg-[var(--line3)] text-white hover:bg-[var(--ink4)]"><X className="h-2.5 w-2.5" /></button>}
               </div>
             </div>
-          </div>
-          {/* row2: 코너 유형 | 배열·레이아웃 */}
-          <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
-            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형</div>
-            <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5"><span className={cornerTypeChipClass(corner.cornerType)}>{corner.cornerType}</span></div>
-            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">배열·레이아웃</div>
-            <div className="flex min-w-0 items-center bg-white px-4 py-2.5 text-[13px] text-[var(--ink)]">{cornerLayoutText(corner.cornerType, corner.layout, corner.layoutDetail) || '—'}</div>
-          </div>
-          {/* row3: 코너 사용 여부 | 코너 고정 여부 — 읽기전용(실제 제어는 좌측 코너 카드의 노출 토글·고정 버튼). SB PG557. */}
-          <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
-            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 사용 여부</div>
-            <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5"><YNReadonly yes={used} /></div>
-            <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 고정 여부</div>
-            <div className="flex min-w-0 items-center bg-white px-4 py-2.5"><YNReadonly yes={corner.zone === 'fixed'} /></div>
           </div>
         </div>
         {/* 코너 속성 — 회색 라벨 셀 테이블 + 알약 칩(옵션=보라, 고정=회색). 좌우 보더 없음. SB 사용자 목업(2026-11-12). */}
@@ -1078,12 +1069,13 @@ function CornerDetailBody({ template, corner, used, onPreviewFallback, onFallbac
                             <button key={s} type="button" onClick={() => setBannerSource(s)} className={cn('rounded-[6px] px-2.5 py-1 transition', bannerSource === s ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink3)] hover:text-[var(--ink2)]')}>{s}</button>
                           ))}
                         </div>
-                        <button type="button" onClick={() => setBannerImgModal(true)} className="inline-flex h-[32px] shrink-0 items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3.5 w-3.5" /> 불러오기</button>
+                        <button type="button" onClick={openBannerPicker} className="inline-flex h-[32px] shrink-0 items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3.5 w-3.5" /> 불러오기</button>
+                        <input ref={bannerFileRef} type="file" accept="image/*" onChange={onBannerFile} className="hidden" />
                       </div>
                     </FormRow>
                     <FormRow label="이미지" en="ImageUrl">
                       {/* 이미지 클릭 → 소재 선택 모달 */}
-                      <button type="button" onClick={() => setBannerImgModal(true)} title="클릭해 배너 소재 선택" className="grid h-14 w-20 place-items-center overflow-hidden rounded-[6px] border border-[var(--line3)] bg-[var(--th)] text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
+                      <button type="button" onClick={openBannerPicker} title={bannerSource === '로컬(PC)' ? '클릭해 로컬 이미지 선택' : '클릭해 배너 소재 선택'} className="grid h-14 w-20 place-items-center overflow-hidden rounded-[6px] border border-[var(--line3)] bg-[var(--th)] text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
                         {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
                       </button>
                     </FormRow>
@@ -1188,21 +1180,24 @@ function CornerDetailBody({ template, corner, used, onPreviewFallback, onFallbac
           )}
           {/* ── 바코드형 = 라벨·갱신 주기 정책만. 번호는 회원별 런타임 발급(미리보기엔 sample). ── */}
           {isBarcode && (
-            <div className="rounded-[8px] border border-[var(--line3)] bg-white p-2.5">
-              <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-[var(--ink2)]"><Barcode className="h-4 w-4 text-[var(--ac)]" /> 바코드 정책</p>
-              <label className="mb-2 block">
-                <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">바코드명 <span className="font-normal text-[var(--ink4)]">라벨 · 예: T멤버십</span></span>
-                <input value={barcodeLabel} onChange={(e) => { setBarcodeLabel(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'T멤버십' }); }} placeholder="예: T멤버십" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-semibold text-[var(--ink3)]">유효·갱신 주기 <span className="font-normal text-[var(--ink4)]">분 · 바코드 재발급·카운트다운 기준</span></span>
+            <FormBlock title="코너 레이아웃" desc="바코드 유형 · 코너 타이틀 · 갱신 주기">
+              {/* 바코드 유형 — 일반/매직(SB BO-AIM-DSP-PG557 코너 레이아웃). */}
+              <FormRow label="바코드 유형">
+                <RadioRow options={['일반 바코드', '매직 바코드'] as const} value={barcodeKind} onChange={setBarcodeKind} />
+              </FormRow>
+              <FormRow label="코너 타이틀" en="CornerTitle">
+                <input value={barcodeLabel} onChange={(e) => { setBarcodeLabel(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'T멤버십' }); }} placeholder="코너 타이틀에 노출할 바코드명을 입력하세요" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+              </FormRow>
+              <FormRow label="유효 갱신 주기">
                 <div className="flex items-center gap-1.5">
                   <input type="number" min={1} value={barcodeRefresh} onChange={(e) => setBarcodeRefresh(e.target.value)} className="h-[32px] w-20 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
                   <span className="text-[12px] text-[var(--ink4)]">분마다 갱신</span>
                 </div>
-              </label>
-              <p className="mt-2 flex items-start gap-1 rounded-[6px] bg-[var(--th)] px-2 py-1.5 text-[11px] leading-relaxed text-[var(--ink3)]"><Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[var(--ac)]" /> 바코드 번호는 회원 인증 기반 <b className="mx-0.5">런타임 발급</b> — 미리보기엔 sample 번호로 표시됩니다.</p>
-            </div>
+              </FormRow>
+              <div className="px-0 pt-2">
+                <p className="flex items-start gap-1 rounded-[6px] bg-[var(--th)] px-2 py-1.5 text-[11px] leading-relaxed text-[var(--ink3)]"><Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[var(--ac)]" /> 바코드 번호는 회원 인증 기반 <b className="mx-0.5">런타임 발급</b> — 미리보기엔 sample 번호로 표시됩니다.</p>
+              </div>
+            </FormBlock>
           )}
           {/* ── 아이템 탭(또는 코너 속성이 없는 유형)에서만 아이템 리스트 노출 ── */}
           {!cardOnly && !isBarcode && (!(hasCornerTitle || hasButtonText || availOptions.length > 0) || fillTab === '아이템') && (
@@ -1805,7 +1800,7 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
               </div>
               {/* 코너 상세 — 독립 스크롤 */}
               <div className="min-h-0 overflow-y-auto pr-0.5">
-                <CornerDetail template={t} corner={selected} index={selIndex} used={selected ? !hiddenIds.has(selected.templateCornerId) : true} onPreviewFallback={onPreviewFallback}
+                <CornerDetail template={t} corner={selected} index={selIndex} onPreviewFallback={onPreviewFallback}
                   onFallbackChange={(fb) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, fallback: fb } : c)); }}
                   onRecSourceChange={(src) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, recSource: src, isCvm: src.startsWith('CVM') } : c)); }}
                   onOptionsChange={(opts, ctaLabel) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, preview: applyOptsToPreview(c.preview, opts, ctaLabel) } : c)); }}
