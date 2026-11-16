@@ -1516,11 +1516,26 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
       <Sec n={nSrc} title={isData ? '데이터 출처' : '컴포넌트 출처'} hint="코너에서 노출할 데이터의 출처를 확인합니다">
         {/* 회색 라벨 셀 테이블 — 좌우 2열(2026-11-12 사용자 요청: 4개 세로 나열 → 좌우). 좌우 보더 없음. */}
         {(() => {
+          {/* 출처 값은 코너 유형별로 다르다(SB PG557, 2026-11-16). 이미지·문구·이동 링크 소유 주체가 유형마다 다름. */}
+          const isCvmContent = src === 'CVM 콘텐츠 연동';
+          const imgSrc = isBarcode ? '시스템(런타임 발급)'
+            : corner.cornerType === '업무 진입형' ? '아이콘 라이브러리'
+            : isBanner ? (isCvmContent ? 'CVM 완성본' : '배너 캠페인')
+            : isContentGuide ? '콘텐츠 원장'
+            : '상품(EPC) 원장';
+          const copySrc = isCvmContent ? 'CVM 완성본'
+            : corner.cornerType === '업무 진입형' ? '운영자 직접입력'
+            : isBanner ? '배너 캠페인'
+            : '빌더 · 상품 원장';
+          const linkSrc = corner.cornerType === '업무 진입형' ? '직접입력 · 메뉴 불러오기'
+            : isBanner ? '배너 캠페인'
+            : isContentGuide ? '콘텐츠 연결'
+            : '빌더';
           const cells: [string, string][] = [
             ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
-            ['이미지', '상품(EPC) 원장'],
-            ['문구', src === 'CVM 콘텐츠 연동' ? 'CVM 완성본' : '빌더 · 상품 원장'],
-            ['이동 링크', '빌더'],
+            ['이미지', imgSrc],
+            ['문구', copySrc],
+            ['이동 링크', linkSrc],
           ];
           const Val = ({ v }: { v: string }) => <span className={cn('font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'text-[#2e6ff2]' : 'text-[#b67a12]')}>{v}</span>;
           const rows: [string, string][][] = [];
