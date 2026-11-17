@@ -19,7 +19,7 @@ import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
 import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
-import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, AlertTriangle, Barcode } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Minus, Maximize2, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, AlertTriangle, Barcode } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 // 아이템 아이콘 — 'lucide:<Name>'은 벡터 아이콘, 그 외는 실제 이미지(포스터·로고). 2026-11-05 사용자 요청(메뉴 아이콘을 텍스트에 맞는 벡터로).
@@ -244,6 +244,14 @@ function Sec({ n, title, help, hint, badge, aside, children }: { n: number; titl
 // 코너 카드 버튼 — 이동 경로 / 열기 방식 선택지(SB PG557 상품형 가로형, 2026-11-17 사용자 요청).
 type BtnRoute = '페이지' | '상품' | '프로모션' | '직접 입력';
 type BtnOpen = '현재 화면' | '내부 브라우저' | '외부 브라우저';
+// 미리보기 디바이스 프리셋 — 디바이스 선택 드롭다운(SB 디바이스 프레임, 2026-11-17 사용자 요청).
+const DEVICE_PRESETS = [
+  { label: 'iPhone 15 Pro', w: 393, h: 852 },
+  { label: 'iPhone SE', w: 375, h: 667 },
+  { label: 'Galaxy S24', w: 360, h: 800 },
+  { label: 'Pixel 8', w: 412, h: 915 },
+  { label: 'iPad mini', w: 744, h: 1133 },
+] as const;
 function FormBlock({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
   return (
     <div className="mb-3">
@@ -2171,6 +2179,51 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   // Figma BO 공통 textfield 토큰 — h38·r6·inset-x 14·본문 14·border #c4c9cf·포커스 border #b3b9c0+ring 2 #dce0e5
   const inputCls = 'h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-[14px] text-[14px] text-[var(--ink)] placeholder:text-[var(--ink5)] focus:border-[var(--focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]';
 
+  // 미리보기 컨트롤 — 디바이스 선택·줌·전체화면(SB 디바이스 프레임, 2026-11-17 사용자 요청).
+  const [deviceIdx, setDeviceIdx] = React.useState(0);
+  const device = DEVICE_PRESETS[deviceIdx];
+  const [zoom, setZoom] = React.useState(100);
+  const [fullscreen, setFullscreen] = React.useState(false);
+  // 미리보기 본문(코너 매핑) — 디바이스 프레임·전체화면 모달에서 공용. 선택/폴백/숨김 로직 포함.
+  const previewBody = activeTemplate && liveCorners.length > 0 ? (
+    liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
+      const hidden = fbMode && c.isCvm && c.fallback === '미노출';
+      const replaced = fbMode && c.isCvm && c.fallback === '운영자 편성으로 대체';
+      const cvmContent = c.recSource === 'CVM 콘텐츠 연동' && !hidden && !replaced;
+      if (cvmContent) {
+        return (
+          <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
+            className={cn('cursor-pointer scroll-mt-4 rounded-xl border border-dashed border-[#b9a7ff] bg-[#f3f0ff] px-3 py-5 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
+            <Sparkles className="mx-auto mb-1 h-4 w-4 text-[var(--ac)]" />
+            <p className="text-[12px] font-bold text-[var(--ac)]">CVM 완성본 자리</p>
+            <p className="text-[11px] text-[var(--ink4)]">구좌만 — 이미지·문구·랜딩은 CVM이 내려줘요</p>
+          </div>
+        );
+      }
+      if (hidden) {
+        return (
+          <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
+            className={cn('cursor-pointer scroll-mt-4 rounded-xl border border-dashed border-[#f2c47a] bg-[#fff8ef] px-3 py-4 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
+            <EyeOff className="mx-auto mb-1 h-4 w-4 text-[#b67a12]" />
+            <p className="text-[11px] font-semibold text-[#b67a12]">{c.name} · 미노출</p>
+            <p className="text-[10px] text-[#c99a4e]">CVM이 비어 노출되지 않아요</p>
+          </div>
+        );
+      }
+      return (
+        <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
+          className={cn('relative cursor-pointer scroll-mt-4 rounded-xl ring-offset-2 transition', c.id === activeSel && 'ring-2 ring-[var(--ac)]')}>
+          {replaced && <span className="absolute right-1 top-1 z-10 rounded-[4px] bg-[#e59a2a] px-1.5 py-0.5 text-[9px] font-bold text-white">운영자 편성 대체</span>}
+          <CornerBlock corner={c.recSource === 'CVM 데이터 연동'
+            ? { ...c.preview, cvmFillCount: (c.preview?.cvmFillCount ?? 0) || 5, cvmFillMin: (c.preview?.cvmFillMin ?? 0) || 3 }
+            : { ...c.preview, cvmFillCount: 0 }} />
+        </div>
+      );
+    })
+  ) : (
+    <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
+  );
+
   return (
     <ProductCatalogCtx.Provider value={data.catalogByType ?? {}}>
     <div className="relative flex h-full flex-col overflow-hidden rounded-t-[16px] border border-[var(--line2)] bg-white">
@@ -2193,16 +2246,36 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
       <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
           {/* 좌: 미리보기 — sticky 고정. 하단 푸터(구성 검증 바)와 겹치지 않도록 상단 크롬+푸터 높이를 뺀 높이로(2026-11-09 사용자 요청: 바텀 겹침 금지). 큰 모니터에선 max 캡. */}
           <div className="sticky top-2 flex h-[calc(100vh_-_230px)] max-h-[800px] flex-col">
-          {/* 기본 ↔ 폴백 토글 */}
-          <div className="mb-3 flex w-full shrink-0 items-center gap-2">
-            <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
-              <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-5 py-1.5 text-center', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>기본</button>
-              <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-5 py-1.5 text-center', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
+          {/* 미리보기 컨트롤 — 디바이스 선택·줌·전체화면 + 기본/폴백(SB 디바이스 프레임, 2026-11-17 사용자 요청) */}
+          <div className="mb-2 flex w-full shrink-0 flex-col gap-2">
+            {/* 1행 — 디바이스 선택 · 줌 · 전체화면 */}
+            <div className="flex items-center gap-1.5">
+              <div className="relative">
+                <select value={deviceIdx} onChange={(e) => setDeviceIdx(Number(e.target.value))} className="h-[30px] appearance-none rounded-[8px] border border-[var(--line2)] bg-white pl-2.5 pr-7 text-[12px] font-medium text-[var(--ink2)] focus:border-[var(--ac)] focus:outline-none">
+                  {DEVICE_PRESETS.map((d, i) => <option key={d.label} value={i}>{d.label} · {d.w}×{d.h}</option>)}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink4)]" />
+              </div>
+              <div className="ml-auto flex items-center gap-0.5 rounded-[8px] border border-[var(--line2)] bg-white px-1">
+                <button type="button" onClick={() => setZoom((z) => Math.max(50, z - 10))} title="축소" className="grid h-6 w-6 place-items-center text-[var(--ink3)] hover:text-[var(--ac)]"><Minus className="h-3.5 w-3.5" /></button>
+                <span className="w-9 text-center text-[12px] font-semibold tabular-nums text-[var(--ink2)]">{zoom}%</span>
+                <button type="button" onClick={() => setZoom((z) => Math.min(150, z + 10))} title="확대" className="grid h-6 w-6 place-items-center text-[var(--ink3)] hover:text-[var(--ac)]"><Plus className="h-3.5 w-3.5" /></button>
+              </div>
+              <button type="button" onClick={() => setFullscreen(true)} title="전체화면으로 보기" className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] border border-[var(--line2)] bg-white text-[var(--ink3)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Maximize2 className="h-3.5 w-3.5" /></button>
             </div>
-            {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
+            {/* 2행 — 기본/폴백 토글 */}
+            <div className="flex items-center gap-2">
+              <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
+                <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-5 py-1 text-center', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>기본</button>
+                <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-5 py-1 text-center', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
+              </div>
+              {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
+            </div>
           </div>
-          {/* 디바이스는 좌측 열(뷰포트 높이) 안에서 fill로 꽉 채워 늘어남 — 바텀 고정·안 잘림(2026-11-06 사용자 요청: 상품 전시 관리처럼). 바디는 내부 스크롤. */}
-          <DeviceFrame width={360} bodyHeight={0} fill headerLabel={data.containerName} slim>
+          {/* 디바이스는 좌측 열(뷰포트 높이) 안에서 fill로 꽉 채워 늘어남 — 바텀 고정·안 잘림. 줌은 scale 래퍼로(2026-11-17 사용자 요청). 바디는 내부 스크롤. */}
+          <div className="min-h-0 flex-1 overflow-auto">
+          <div className="flex h-full flex-col" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}>
+          <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     /* 노출 토글로 숨긴 코너는 미리보기에서 제외(2026-11-12 사용자 요청) */
                     liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
@@ -2245,7 +2318,30 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
                   )}
           </DeviceFrame>
+          </div>
+          </div>
         </div>
+
+        {/* 전체화면 미리보기 — 같은 previewBody 재사용 + 기본/폴백(2026-11-17 사용자 요청) */}
+        {fullscreen && (
+          <div className="fixed inset-0 z-[60] flex flex-col bg-[#0b0f1a]/80 p-6" onClick={() => setFullscreen(false)}>
+            <div className="mx-auto mb-3 flex w-full max-w-[560px] items-center gap-2 text-white" onClick={(e) => e.stopPropagation()}>
+              <span className="truncate text-[13px] font-semibold">{data.containerName} · {device.label} · {device.w}×{device.h}</span>
+              <div className="ml-auto flex items-center gap-2">
+                <div className="flex rounded-[8px] bg-white/10 p-0.5 text-[12px] font-semibold">
+                  <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-3 py-1', !fbMode ? 'bg-white text-[var(--ac)]' : 'text-white/80')}>기본</button>
+                  <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3 py-1', fbMode ? 'bg-white text-[#b67a12]' : 'text-white/80')}>폴백</button>
+                </div>
+                <button type="button" onClick={() => setFullscreen(false)} title="닫기" className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"><X className="h-4 w-4" /></button>
+              </div>
+            </div>
+            <div className="flex min-h-0 flex-1 justify-center overflow-auto py-1">
+              <div className="h-full shrink-0" style={{ width: device.w }} onClick={(e) => e.stopPropagation()}>
+                <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim>{previewBody}</DeviceFrame>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 우: 기본 정보 + 템플릿 구성 — 페이지 스크롤에 함께 흐른다(디바이스는 sticky). */}
         <div className="space-y-6 pr-1">
