@@ -690,7 +690,7 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   // 상품형 — SB v13. 가로형: 가격(Y)·할인율(N,가격종속) 옵션 / 세로형: 가격·할인율·기간 옵션 + 캡션 고정. 실제 UI는 스튜디오가 렌더(이 스펙은 썸네일·개수).
   //  칩은 옵션에서 제외(2026-11-06 사용자 확정) → 카테고리형 전용 배열로 분리(가로형/세로형(카테고리형)).
   상품형: {
-    options: ['배너', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
+    options: ['CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTEXT], optional: [PRICE, DISCOUNT] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE,
@@ -708,7 +708,7 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   // 혜택·오퍼형 — SB v13. 가로형: 가격·할인율·기간 옵션 / 세로형: 이미지·타이틀·서브텍스트 고정.
   //  칩은 옵션에서 제외(2026-11-06 사용자 확정) → 카테고리형 전용 배열로 분리(가로형/세로형(카테고리형)).
   '혜택·오퍼형': {
-    options: ['배너', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
+    options: ['CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE], optional: [PRICE, DISCOUNT, PERIOD] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTITLE_ITEM] },
@@ -760,13 +760,13 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   },
 };
 
-// 배열명에서 옵션 접미사(+배너·+칩·+CTA, (배너)·(칩))를 떼어낸 '기준 배열명'.
-//  배너·칩·CTA 가 옵션이 되면서 '세로형+배너'와 '세로형'은 같은 배열(세로형)로 합쳐진다(2026-10-28 사용자 요청).
+// 배열명에서 옵션 접미사(+칩·+CTA, (칩))를 떼어낸 '기준 배열명'.
+//  2026-11-17: 배너는 옵션에서 폐지 → '+배너'(상단 이미지형)는 더 이상 접지 않고 별도 배열로 노출한다(상품형·혜택오퍼형). 칩·CTA만 접는다.
 export function baseLayout(typeDetail?: string | null): string {
   if (!typeDetail) return '';
   return typeDetail
-    .replace(/\s*[+＋]\s*(배너|칩|CTA)/g, '')
-    .replace(/\s*[(（]\s*(배너|칩|CTA)\s*[)）]/g, '')
+    .replace(/\s*[+＋]\s*(칩|CTA)/g, '')
+    .replace(/\s*[(（]\s*(칩|CTA)\s*[)）]/g, '')
     .trim();
 }
 
@@ -950,10 +950,10 @@ export function isComponentAllowedInCorner(
 //  콘텐츠/상품 계열(상품형·혜택·오퍼형·콘텐츠 안내형)은 '만들 수 있는 배열' 풀셋을 공유.
 //   상단 카테고리 탭은 별도 배열이 아니라 빌더에서 얹는 선택형 컴포넌트(토글) → 세로형(카테고리탭) 제거.
 export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
-  // 상품형: 세로형·가로형+배너·세로형+배너 + 카테고리형 2종(2026-11-06 신규 — 칩 클릭 시 데이터셋 교체).
-  상품형: ['세로형', '가로형+배너', '세로형+배너', '가로형(카테고리형)', '세로형(카테고리형)'],
-  // 혜택·오퍼형: 가로형·세로형·세로형+배너 + 카테고리형 2종(2026-11-06 신규). 구 '세로형+칩'은 폐기(칩 옵션 제거) → 카테고리형으로 대체.
-  '혜택·오퍼형': ['가로형', '세로형', '세로형+배너', '가로형(카테고리형)', '세로형(카테고리형)'],
+  // 상품형: 가로/세로 × (기본 · 상단 이미지형 · 카테고리형). '가로형+배너'·'세로형+배너' = 상단 이미지형(배너 옵션 폐지 → 별도 배열, 2026-11-17).
+  상품형: ['가로형', '세로형', '가로형+배너', '세로형+배너', '가로형(카테고리형)', '세로형(카테고리형)'],
+  // 혜택·오퍼형: 가로/세로 × (기본 · 상단 이미지형 · 카테고리형). 상단 이미지형='가로형+배너'·'세로형+배너'(2026-11-17). 구 '세로형+칩' 폐기→카테고리형.
+  '혜택·오퍼형': ['가로형', '세로형', '가로형+배너', '세로형+배너', '가로형(카테고리형)', '세로형(카테고리형)'],
   '콘텐츠 안내형': ['가로형'],
   // ── 특이케이스: 목적별 특정 배열만 ──
   // 배너형 = 배너 단일형 / 스와이프형 (2026-09-29 사용자 확정). '이미지형'은 구 표기 → 폐기.
@@ -970,6 +970,9 @@ export function cornerTypeDetails(cornerType: string): readonly string[] {
 // ── 표시명 통일(2026-09) — 저장값(typeDetail)은 유지하고 화면 표기만 '형태 기준'으로 정리. ──
 //  콘텐츠 이름(카테고리 탭·바코드…)을 형태명(탭형·바코드형…)으로. 매처/DB는 원값 그대로라 안전.
 const LAYOUT_LABEL: Record<string, string> = {
+  // 상단 이미지형(2026-11-17): 배너 옵션 폐지 → '+배너'를 '상단 이미지형'으로 표기. 저장값 '가로형+배너'·'세로형+배너'는 유지(미리보기 배너는 저장값 기준).
+  '가로형+배너': '가로형(상단 이미지형)',
+  '세로형+배너': '세로형(상단 이미지형)',
   // 업무 진입형 배열 표기(2026-11-06): 칩형 → 카테고리형(Category)으로 워딩 변경. 저장값 '카테고리 탭'은 유지.
   '카테고리 탭': '카테고리형',
   '메뉴 리스트': '리스트형',
@@ -1009,7 +1012,7 @@ export const CORNER_TYPE_EN: Record<string, string> = {
 const LAYOUT_EN: Record<string, string> = {
   '가로형': 'Horizontal', '가로형(2.5배열)': 'Horizontal (2.5)', '가로형(1.5배열)': 'Horizontal (1.5)',
   '세로형': 'Vertical', '세로형(카테고리탭)': 'Vertical (Tab)', '세로형(탭)': 'Vertical (Tab)',
-  '가로형+배너': 'Horizontal + Banner', '세로형+배너': 'Vertical + Banner', '세로형+칩': 'Vertical + Chip',
+  '가로형+배너': 'Horizontal (Top Image)', '세로형+배너': 'Vertical (Top Image)', '세로형+칩': 'Vertical + Chip',
   // 카테고리형 — 상품형·혜택오퍼형 신규 배열(2026-11-06).
   '가로형(카테고리형)': 'Horizontal (Category)', '세로형(카테고리형)': 'Vertical (Category)',
   '그리드형': 'Grid', '단일강조(1.5배열)': 'Single (1.5)', '단일 상품': 'Single', '단일강조': 'Single',
