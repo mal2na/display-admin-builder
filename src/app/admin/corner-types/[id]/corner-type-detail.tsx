@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Pencil, Check, Minus, ExternalLink } from 'lucide-react';
+import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Check, Minus, ExternalLink } from 'lucide-react';
 import { CornerTypeForm, DevicePreview, cornerRowPreview, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo, type BannerCampaignOption, type ProductOption } from '../corner-type-manager';
 import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL, componentTypesForCorner } from '@/lib/display-taxonomy';
 import { CornerFieldList } from '../corner-fields';
@@ -157,7 +157,7 @@ export function CornerTypeDetail({ row, history, builtOptions, registered = [], 
       {/* 코너 유형 정보 — 기본은 읽기 전용. '수정'을 누르면 편집 폼(등록과 동일 UI). */}
       {tab === 'info' && (editing
         ? <CornerTypeForm row={row} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} onClose={() => { setEditing(false); router.refresh(); }} />
-        : <CornerTypeReadOnly row={row} onEdit={() => setEditing(true)} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} usageByCorner={usageByCorner} />)}
+        : <CornerTypeReadOnly row={row} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} usageByCorner={usageByCorner} />)}
 
       {tab === 'history' && (
         <div className="overflow-x-auto rounded-lg border">
@@ -291,7 +291,7 @@ function ROSection({ title, aside, bodyClass, children, defaultOpen = true, coll
   );
 }
 
-export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePreviews = [], usageByCorner = [] }: { row: CornerTypeRow; onEdit: () => void; bannerPreviews?: BannerPreview[]; usagePreviews?: PreviewCorner[]; usageByCorner?: UsageByCorner[] }) {
+export function CornerTypeReadOnly({ row, bannerPreviews = [], usagePreviews = [], usageByCorner = [] }: { row: CornerTypeRow; bannerPreviews?: BannerPreview[]; usagePreviews?: PreviewCorner[]; usageByCorner?: UsageByCorner[] }) {
   const platforms = row.platforms.split(',').filter(Boolean);
   const hasDefaults = row.defaultMinItems != null || row.defaultMaxItems != null || row.defaultSortStrategy || row.defaultRecSource || row.defaultMoreButton;
   const isBanner = row.baseCategory === '배너형' && bannerPreviews.length > 0;
@@ -567,12 +567,11 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
         </div>
       </div>
 
-      {/* 하단 액션 — 좌: 목록, 우: 수정(2026-10-29(2) 사용자 요청). */}
+      {/* 하단 액션 — 목록만. 코너 유형 관리는 조회 전용이라 '수정' 제거(2026-11-17 사용자 요청: 리드만 가능). 정의 변경은 SB 스튜디오. */}
       <div className="flex items-center justify-between gap-2 border-t border-[#eef1f4] pt-4">
         <Link href="/admin/corner-types" className="inline-flex h-[38px] items-center gap-1.5 rounded-[8px] border border-[#c4c9cf] bg-white px-4 text-[13px] font-semibold text-slate-600 transition hover:bg-[#f8f9fb]">
           <ChevronLeft className="h-4 w-4" /> 목록
         </Link>
-        <Button size="sm" variant="secondary" onClick={onEdit}><Pencil className="mr-1 h-3.5 w-3.5" /> 수정</Button>
       </div>
     </div>
   );

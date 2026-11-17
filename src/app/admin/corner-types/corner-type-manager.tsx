@@ -201,8 +201,8 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
     ...c,
     bigBanner: row.bigBanner || topImageLayout,
     showImage: row.useImage, showPrice: row.usePrice, showBadge: false, showDesc: row.useDesc,
-    // CTA 버튼 문구는 껍데기 placeholder — 코너 유형 미리보기는 저장된 문구(전체보기 등) 대신 항상 'CTA'(2026-10-29(2) 사용자 요청: 전 유형 CTA).
-    moreButtonUse: noMore ? false : row.useMoreButton, moreButtonLabel: 'CTA',
+    // 코너 유형 미리보기는 CTA(더보기) 껍데기 버튼을 노출하지 않는다(2026-11-17 사용자 요청: 미리보기 CTA 전부 제거). CTA는 빌더에서 운영자가 켠다.
+    moreButtonUse: false, moreButtonLabel: 'CTA',
   };
 }
 
@@ -1574,7 +1574,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     // 배너 히어로는 상품 이미지와 독립(bannerImageUrl) — 상품 이미지 OFF에도 배너 유지
     const isBannerArr = d.includes('배너');
     const heroImg = base === '상품형' ? (d.includes('세로형') ? '/assets/ds/plan-hero-expire.png' : '/assets/ds/hero-device.png') : '/assets/ds/hero-plan.png';
-    return { ...c, bigBanner: isBannerArr, bannerImageUrl: isBannerArr ? heroImg : undefined, moreButtonUse: features.useMoreButton, moreButtonLabel: 'CTA' };
+    return { ...c, bigBanner: isBannerArr, bannerImageUrl: isBannerArr ? heroImg : undefined, moreButtonUse: false, moreButtonLabel: 'CTA' };
   };
 
   // bulk 컴포넌트 속성 패널(DS 그룹형 토글) — 미리보기 우측(고정)에 배치. 모든 배열에 공통 적용.
@@ -1737,7 +1737,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           const availOpts = cornerFieldSpec(base, detailValid)?.options ?? [];
           const optBanner = availOpts.includes('배너') ? cornerOpts['배너'] : undefined;
           const optChip = availOpts.includes('칩') ? cornerOpts['칩'] : undefined;
-          const optCta = availOpts.includes('CTA') ? cornerOpts['CTA'] : undefined;
           const previewC = {
             ...compositionToPreviewCorner({
               base, detail: detailValid, composition: shownBlocks,
@@ -1756,9 +1755,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             showPrice: priceOn,
             showBadge: eff('useBadge'),
             showDesc: descOn,
-            // CTA(더보기) — CTA 옵션이 있는 유형에서만. 업무 진입형·바코드형·배너형은 CTA 옵션이 없어 더보기 미표시.
-            moreButtonUse: availOpts.includes('CTA') ? (optCta ?? eff('useMoreButton')) : false,
-            moreButtonLabel: 'CTA', // 껍데기 placeholder — 전 유형 'CTA' 고정(2026-10-29(2) 사용자 요청)
+            // 코너 유형 미리보기는 CTA(더보기) 껍데기 버튼을 노출하지 않는다(2026-11-17 사용자 요청: 미리보기 CTA 전부 제거).
+            moreButtonUse: false,
+            moreButtonLabel: 'CTA',
             // 수급 방식(CVM/운영자 편성)을 미리보기에도 반영 — 빌더와 동일하게 'CVM 개인화 · 미리보기는 폴백' 배지 노출(2026-10-06).
             recSource: recSource || undefined,
             // 형태(Variants) — 가로형만 카드 크기(Small/Medium/Large) 미리보기 반영. 세로형(Profile/Data/Barcode)은 크기 개념 아님.
@@ -2495,9 +2494,8 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     );
   }
 
-  // 공통 프레임: 코너 타이틀/서브타이틀 헤더 + 본문 (+ 더보기)
-  // 더보기 = 세부 항목 토글(useMore)로 제어. 미지정(모달 등)이면 상품형 기본 노출.
-  const showMore = useMore ?? isProduct;
+  // 공통 프레임: 코너 타이틀/서브타이틀 헤더 + 본문. 코너 유형 미리보기는 CTA(더보기) 껍데기 버튼을 노출하지 않는다(2026-11-17 사용자 요청). useMore는 보존(호출부 호환)하되 미반영.
+  const showMore = false && (useMore ?? isProduct);
   // 상단 탭바(카테고리 탭/고정형 탭)·아이콘형 상태카드는 코너 타이틀·서브타이틀이 없다 → 헤더 슬롯 생략
   const noHeader = isBanner || has('카테고리 탭') || has('고정형(탭)') || has('칩') || has('아이콘형', '이미지형', '팝업', '띠', '텍스트배너');
   // 세부 항목 토글(타이틀/서브타이틀 사용여부)에 따라 헤더 슬롯을 켜고 끈다
