@@ -268,11 +268,12 @@ export function normalizeRecSource(m: string): string {
 //  좁은 패널에 긴 문장을 깔면 글이 잘게 부서져 읽히지 않는다 → 화면엔 how, 자세한 건 detail 로.
 export const REC_SOURCE_INFO: Record<
   string,
-  { tag: string; how: string; detail: string; personalized: boolean; cvmGives: string; weBuild: string }
+  { tag: string; how: string; sub: string; detail: string; personalized: boolean; cvmGives: string; weBuild: string }
 > = {
   'CVM 데이터 연동': {
     tag: '개인화 · 데이터만',
     how: 'CVM은 컴포넌트와 순서만, 문구·이미지는 상품 원장',
+    sub: '운영자 지정 영역과 CVM 추천 영역을 혼합해요',
     detail:
       'CVM은 “이 고객에게 이 컴포넌트를 이 순서로”까지만 내려줍니다. 이미지·설명 문구는 상품(EPC) 원장 값을 전시 어드민이 가져와 조립합니다.',
     personalized: true,
@@ -282,20 +283,22 @@ export const REC_SOURCE_INFO: Record<
   'CVM 콘텐츠 연동': {
     tag: '개인화 · 구좌 위임',
     how: '자리만 넘기고 완성본을 받아 그대로 노출',
+    sub: '운영자는 구좌만 지정하고 항목은 CVM이 추천',
     detail:
       '자리(구좌)만 뚫어 CVM에 넘깁니다. 이미지·문구·랜딩까지 CVM이 만들어 내려주고 전시 어드민은 받은 그대로 노출합니다. 같은 오퍼를 배너·MMS 등 여러 채널에 일관되게 내보낼 때 씁니다.',
     personalized: true,
-    cvmGives: '완성본 전부',
+    cvmGives: 'ALL',
     weBuild: '자리 · 규격',
   },
   '운영자 편성': {
     tag: '운영자 직접 구성',
     how: '운영자가 고른 항목을 정한 순서대로',
+    sub: '운영자가 노출 항목과 순서를 설정해요',
     detail:
       '운영자가 상품·혜택을 직접 골라 정한 순서대로 보여줍니다(기획전·시즌 등). CVM 연동이 비었을 때 대체안으로도 쓰입니다.',
     personalized: false,
     cvmGives: '없음',
-    weBuild: '전부',
+    weBuild: 'ALL',
   },
 };
 
@@ -687,7 +690,7 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   // 상품형 — SB v13. 가로형: 가격(Y)·할인율(N,가격종속) 옵션 / 세로형: 가격·할인율·기간 옵션 + 캡션 고정. 실제 UI는 스튜디오가 렌더(이 스펙은 썸네일·개수).
   //  칩은 옵션에서 제외(2026-11-06 사용자 확정) → 카테고리형 전용 배열로 분리(가로형/세로형(카테고리형)).
   상품형: {
-    options: ['배너', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
+    options: ['CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTEXT], optional: [PRICE, DISCOUNT] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE,
@@ -705,7 +708,7 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   // 혜택·오퍼형 — SB v13. 가로형: 가격·할인율·기간 옵션 / 세로형: 이미지·타이틀·서브텍스트 고정.
   //  칩은 옵션에서 제외(2026-11-06 사용자 확정) → 카테고리형 전용 배열로 분리(가로형/세로형(카테고리형)).
   '혜택·오퍼형': {
-    options: ['배너', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
+    options: ['CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE], optional: [PRICE, DISCOUNT, PERIOD] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTITLE_ITEM] },
@@ -757,13 +760,13 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   },
 };
 
-// 배열명에서 옵션 접미사(+배너·+칩·+CTA, (배너)·(칩))를 떼어낸 '기준 배열명'.
-//  배너·칩·CTA 가 옵션이 되면서 '세로형+배너'와 '세로형'은 같은 배열(세로형)로 합쳐진다(2026-10-28 사용자 요청).
+// 배열명에서 옵션 접미사(+칩·+CTA, (칩))를 떼어낸 '기준 배열명'.
+//  2026-11-17: 배너는 옵션에서 폐지 → '+배너'(상단 이미지형)는 더 이상 접지 않고 별도 배열로 노출한다(상품형·혜택오퍼형). 칩·CTA만 접는다.
 export function baseLayout(typeDetail?: string | null): string {
   if (!typeDetail) return '';
   return typeDetail
-    .replace(/\s*[+＋]\s*(배너|칩|CTA)/g, '')
-    .replace(/\s*[(（]\s*(배너|칩|CTA)\s*[)）]/g, '')
+    .replace(/\s*[+＋]\s*(칩|CTA)/g, '')
+    .replace(/\s*[(（]\s*(칩|CTA)\s*[)）]/g, '')
     .trim();
 }
 
@@ -947,9 +950,9 @@ export function isComponentAllowedInCorner(
 //  콘텐츠/상품 계열(상품형·혜택·오퍼형·콘텐츠 안내형)은 '만들 수 있는 배열' 풀셋을 공유.
 //   상단 카테고리 탭은 별도 배열이 아니라 빌더에서 얹는 선택형 컴포넌트(토글) → 세로형(카테고리탭) 제거.
 export const CORNER_TYPE_DETAILS: Record<CornerType, readonly string[]> = {
-  // 상품형: 세로형·가로형+배너·세로형+배너 + 카테고리형 2종(2026-11-06 신규 — 칩 클릭 시 데이터셋 교체).
-  상품형: ['세로형', '가로형+배너', '세로형+배너', '가로형(카테고리형)', '세로형(카테고리형)'],
-  // 혜택·오퍼형: 가로형·세로형·세로형+배너 + 카테고리형 2종(2026-11-06 신규). 구 '세로형+칩'은 폐기(칩 옵션 제거) → 카테고리형으로 대체.
+  // 상품형: 가로/세로 × (기본 · 상단 이미지형 · 카테고리형). '가로형+배너'·'세로형+배너' = 상단 이미지형(배너 옵션 폐지 → 별도 배열, 2026-11-17).
+  상품형: ['가로형', '세로형', '가로형+배너', '세로형+배너', '가로형(카테고리형)', '세로형(카테고리형)'],
+  // 혜택·오퍼형: 등록된 케이스만(2026-11-17 사용자 요청). 가로형·세로형·세로형+배너(상단 이미지형)·카테고리형 2종. '가로형+배너'는 등록 프리셋이 없어 제외.
   '혜택·오퍼형': ['가로형', '세로형', '세로형+배너', '가로형(카테고리형)', '세로형(카테고리형)'],
   '콘텐츠 안내형': ['가로형'],
   // ── 특이케이스: 목적별 특정 배열만 ──
@@ -964,9 +967,69 @@ export function cornerTypeDetails(cornerType: string): readonly string[] {
   return (CORNER_TYPE_DETAILS as Record<string, readonly string[]>)[cornerType] ?? [];
 }
 
+// ── 프리셋 노출 조건(구성 설명) — 코너 상세에 '이 프리셋이 언제·어떻게 노출되나'를 함께 표기(2026-11-17 사용자 요청, SB 참고).
+//  회의(2026-11-17)·전시 구조(CVM 수급·폴백·카테고리형·상단 이미지형) 기반 초안 — FO 기획 확정 시 보정.
+export type CornerExposure = { when: string; notes: string[] };
+export const CORNER_EXPOSURE_CONDITIONS: Record<CornerType, CornerExposure> = {
+  상품형: {
+    when: '추천·노출할 상품(요금제·단말·부가서비스·구독 등)이 있을 때.',
+    notes: [
+      'CVM 데이터 연동: CVM이 중분류 Top-N(아이템 ID+순서)을 내려주면 그 순서로 노출. 이미지·문구·가격은 상품(EPC) 원장이 소유.',
+      '운영자 편성: 운영자가 지정한 상품 아이디만 고정 노출(대체 전시 기준).',
+      '폴백: CVM 응답이 비면 미노출이 기본. 등록된 항목이 있으면 운영자 편성으로 대체.',
+      '카테고리형: 상단 카테고리 칩 선택 시 하위 상품 묶음이 통째로 교체.',
+      '상단 이미지형: 상단 대표 이미지(상품 원장 소재) + 상품 리스트.',
+    ],
+  },
+  '혜택·오퍼형': {
+    when: '제공 가능한 혜택·오퍼(멤버십·제휴·기프티콘·구독 혜택 등)가 있을 때.',
+    notes: [
+      'CVM 콘텐츠 연동: 이미지·문구·랜딩까지 CVM이 만들어 내려주고 받은 그대로 노출(멀티채널 일관).',
+      'CVM 데이터 연동/운영자 편성: 노출할 혜택 아이템을 CVM 추천 또는 운영자가 지정.',
+      '폴백: CVM 응답이 비면 미노출이 기본. 운영자 편성 대체 가능.',
+      '카테고리형: 상단 카테고리 칩 선택 시 하위 혜택 묶음이 통째로 교체. 하단 CTA(더보기)로 상세 진입.',
+    ],
+  },
+  배너형: {
+    when: '배너 캠페인 관리에 노출 기간이 유효한 배너 소재가 있을 때.',
+    notes: [
+      '소재·문구·랜딩은 배너 캠페인 관리가 소유 — 코너에서 직접 만들지 않음.',
+      '단일형: 배너 1개. 스와이프형: 여러 배너를 순서로 묶어 노출(빌더에서 조합).',
+      'CVM 타겟 배너: 고객 타겟이 맞을 때만 해당 배너 노출(선택).',
+    ],
+  },
+  '업무 진입형': {
+    when: '화면 진입 메뉴·바로가기를 노출할 때(대개 항상 고정).',
+    notes: [
+      '카테고리형(칩)·리스트형: 메뉴 항목을 반복 노출. 아이콘·라벨·링크는 코너 프리셋/메뉴 원장이 소유.',
+      '프로필형·상태 안내형: 고객 상태(로그인·본인인증 케이스 등)에 따라 단일 카드 내용이 분기.',
+      '값(이름·등급 등)은 런타임 고객 정보(@cvm:key)로 채움.',
+    ],
+  },
+  '콘텐츠 안내형': {
+    when: '안내·추천할 콘텐츠(영화·공연·이용 가이드 등)가 있을 때.',
+    notes: [
+      '제목·설명·랜딩은 콘텐츠 원장이 소유 — 빌더는 불러오기로 교체(직접 수정 불가).',
+      '영화 등: 포스터 + 제목 + 캡션(평점·예매율). 가격 없음.',
+    ],
+  },
+  바코드형: {
+    when: '멤버십 바코드 발급 대상일 때(로그인·멤버십 보유).',
+    notes: [
+      '바코드 값은 런타임 발급 — 코너는 멤버십 바코드 영역(규격)만 정의.',
+    ],
+  },
+};
+export function cornerExposure(cornerType: string): CornerExposure | null {
+  return (CORNER_EXPOSURE_CONDITIONS as Record<string, CornerExposure>)[cornerType] ?? null;
+}
+
 // ── 표시명 통일(2026-09) — 저장값(typeDetail)은 유지하고 화면 표기만 '형태 기준'으로 정리. ──
 //  콘텐츠 이름(카테고리 탭·바코드…)을 형태명(탭형·바코드형…)으로. 매처/DB는 원값 그대로라 안전.
 const LAYOUT_LABEL: Record<string, string> = {
+  // 상단 이미지형(2026-11-17): 배너 옵션 폐지 → '+배너'를 '상단 이미지형'으로 표기. 저장값 '가로형+배너'·'세로형+배너'는 유지(미리보기 배너는 저장값 기준).
+  '가로형+배너': '가로형(상단 이미지형)',
+  '세로형+배너': '세로형(상단 이미지형)',
   // 업무 진입형 배열 표기(2026-11-06): 칩형 → 카테고리형(Category)으로 워딩 변경. 저장값 '카테고리 탭'은 유지.
   '카테고리 탭': '카테고리형',
   '메뉴 리스트': '리스트형',
@@ -1006,7 +1069,7 @@ export const CORNER_TYPE_EN: Record<string, string> = {
 const LAYOUT_EN: Record<string, string> = {
   '가로형': 'Horizontal', '가로형(2.5배열)': 'Horizontal (2.5)', '가로형(1.5배열)': 'Horizontal (1.5)',
   '세로형': 'Vertical', '세로형(카테고리탭)': 'Vertical (Tab)', '세로형(탭)': 'Vertical (Tab)',
-  '가로형+배너': 'Horizontal + Banner', '세로형+배너': 'Vertical + Banner', '세로형+칩': 'Vertical + Chip',
+  '가로형+배너': 'Horizontal (Top Image)', '세로형+배너': 'Vertical (Top Image)', '세로형+칩': 'Vertical + Chip',
   // 카테고리형 — 상품형·혜택오퍼형 신규 배열(2026-11-06).
   '가로형(카테고리형)': 'Horizontal (Category)', '세로형(카테고리형)': 'Vertical (Category)',
   '그리드형': 'Grid', '단일강조(1.5배열)': 'Single (1.5)', '단일 상품': 'Single', '단일강조': 'Single',

@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronRight, ChevronLeft, ChevronDown, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Check, X, Search, ChevronRight, ChevronLeft, ChevronDown, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles, Lock } from 'lucide-react';
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -195,15 +195,14 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   });
   // 코너 헤더(타이틀)가 없는 완결형·탭/칩·배너 유형은 '더보기(CTA)'도 없다(탭형 등).
   const noMore = noTitle;
-  // 배너·CTA는 카드형 유형(상품형·혜택·오퍼형·콘텐츠 안내형)의 공통 옵션 — 상품형 스튜디오는 상단 배너 슬롯을 보여주는데
-  // 혜택·오퍼형/콘텐츠 안내형(CornerBlock)은 bigBanner일 때만 보여 얼라인이 안 맞았다. 타입 프리뷰에선 상단 배너 슬롯을 함께 노출(2026-11-11 사용자 요청).
-  const bannerOptionType = ['혜택·오퍼형', '콘텐츠 안내형'].includes(row.baseCategory);
+  // 상단 이미지(배너)는 '상단 이미지형' 배열(저장값 '+배너')에서만 노출한다(2026-11-17 사용자 요청: 그냥 세로형·세로형(카테고리형) 등엔 상단 이미지 제거). 유형 전체 강제 노출 폐기.
+  const topImageLayout = (row.typeDetail ?? '').includes('배너');
   return {
     ...c,
-    bigBanner: row.bigBanner || bannerOptionType,
+    bigBanner: row.bigBanner || topImageLayout,
     showImage: row.useImage, showPrice: row.usePrice, showBadge: false, showDesc: row.useDesc,
-    // CTA 버튼 문구는 껍데기 placeholder — 코너 유형 미리보기는 저장된 문구(전체보기 등) 대신 항상 'CTA'(2026-10-29(2) 사용자 요청: 전 유형 CTA).
-    moreButtonUse: noMore ? false : row.useMoreButton, moreButtonLabel: 'CTA',
+    // 코너 유형 미리보기 CTA(더보기)는 기본 숨김(2026-11-17). 단 혜택·오퍼형 세로형(카테고리형)은 CTA까지 노출(2026-11-17 사용자 요청). 그 외는 빌더에서 운영자가 켠다.
+    moreButtonUse: row.baseCategory === '혜택·오퍼형' && /세로/.test(row.typeDetail ?? '') && /카테고리/.test(row.typeDetail ?? ''), moreButtonLabel: 'CTA',
   };
 }
 
@@ -1309,6 +1308,21 @@ function Switch({ checked, onChange, disabled }: { checked: boolean; onChange: (
   );
 }
 
+// ── 미팅 2026-11-17 결론 — 코너 유형 관리는 'DB(코너 원장) 조회'로 성격이 바뀐다.
+//    코너 정의(문구 기본값·노출 개수·형태/배열·배너/CTA 옵션·가격 규격)는 SB 스튜디오 프리셋 → BO FE 코드가 소유하고, 여기서는 '조회만' 한다.
+//    정의 편집 폼 전체를 조회 전용(fieldset disabled)으로 잠그고 저장을 숨긴다. 값/코드는 보존 — 기획 내부 합의 후 이 플래그만 내리면 원복.
+//    근거: corner-composition-ds-owned, three-modules-linked, PG-DSP-WFL.
+const CTM_READONLY = true;
+// 코너 정의 폼 상단 조회 전용 안내 배너.
+function CornerTypeReadonlyNotice() {
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-3.5 py-2.5 text-[12px] leading-relaxed text-[#454f59]">
+      <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#697582]" />
+      <span><b className="text-[#1a1a1a]">조회 전용</b> — 코너 정의(노출 개수·형태·배너/CTA 옵션·가격 규격 등)는 <b>SB 스튜디오 프리셋 → BO FE 코드</b>가 소유합니다. 여기서는 등록된 코너 원장을 <b>조회</b>만 하고, 변경은 SB 스튜디오에서 합니다. <span className="text-[#8b949e]">(미팅 2026-11-17)</span></span>
+    </div>
+  );
+}
+
 export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], onClose, bulk = false, bulkArrays, submitAction }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; onClose: () => void; bulk?: boolean; bulkArrays?: string[]; submitAction?: (fd: FormData) => void | Promise<void> }) {
   const isNew = !row.id;
   // 등록(신규)은 스텝퍼로 단계별 설정 — 프로모션 등록처럼(2026-09-30 사용자 요청). 수정은 전체를 한 화면에.
@@ -1560,7 +1574,7 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     // 배너 히어로는 상품 이미지와 독립(bannerImageUrl) — 상품 이미지 OFF에도 배너 유지
     const isBannerArr = d.includes('배너');
     const heroImg = base === '상품형' ? (d.includes('세로형') ? '/assets/ds/plan-hero-expire.png' : '/assets/ds/hero-device.png') : '/assets/ds/hero-plan.png';
-    return { ...c, bigBanner: isBannerArr, bannerImageUrl: isBannerArr ? heroImg : undefined, moreButtonUse: features.useMoreButton, moreButtonLabel: 'CTA' };
+    return { ...c, bigBanner: isBannerArr, bannerImageUrl: isBannerArr ? heroImg : undefined, moreButtonUse: false, moreButtonLabel: 'CTA' };
   };
 
   // bulk 컴포넌트 속성 패널(DS 그룹형 토글) — 미리보기 우측(고정)에 배치. 모든 배열에 공통 적용.
@@ -1723,7 +1737,6 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
           const availOpts = cornerFieldSpec(base, detailValid)?.options ?? [];
           const optBanner = availOpts.includes('배너') ? cornerOpts['배너'] : undefined;
           const optChip = availOpts.includes('칩') ? cornerOpts['칩'] : undefined;
-          const optCta = availOpts.includes('CTA') ? cornerOpts['CTA'] : undefined;
           const previewC = {
             ...compositionToPreviewCorner({
               base, detail: detailValid, composition: shownBlocks,
@@ -1742,9 +1755,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
             showPrice: priceOn,
             showBadge: eff('useBadge'),
             showDesc: descOn,
-            // CTA(더보기) — CTA 옵션이 있는 유형에서만. 업무 진입형·바코드형·배너형은 CTA 옵션이 없어 더보기 미표시.
-            moreButtonUse: availOpts.includes('CTA') ? (optCta ?? eff('useMoreButton')) : false,
-            moreButtonLabel: 'CTA', // 껍데기 placeholder — 전 유형 'CTA' 고정(2026-10-29(2) 사용자 요청)
+            // 코너 유형 미리보기는 CTA(더보기) 껍데기 버튼을 노출하지 않는다(2026-11-17 사용자 요청: 미리보기 CTA 전부 제거).
+            moreButtonUse: false,
+            moreButtonLabel: 'CTA',
             // 수급 방식(CVM/운영자 편성)을 미리보기에도 반영 — 빌더와 동일하게 'CVM 개인화 · 미리보기는 폴백' 배지 노출(2026-10-06).
             recSource: recSource || undefined,
             // 형태(Variants) — 가로형만 카드 크기(Small/Medium/Large) 미리보기 반영. 세로형(Profile/Data/Barcode)은 크기 개념 아님.
@@ -1917,6 +1930,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       className="space-y-5"
     >
       {bulk && <input type="hidden" name="bulkArraysJson" value={JSON.stringify(selectedArrays)} />}
+      {/* 미팅 2026-11-17 — 코너 정의는 조회 전용. 폼 본문 전체를 disabled fieldset으로 잠근다(값·코드 보존, 플래그로 원복). */}
+      <fieldset disabled={CTM_READONLY} className="m-0 min-w-0 space-y-5 border-0 p-0">
+      {CTM_READONLY && <CornerTypeReadonlyNotice />}
       {/* 폼 내부 제목 제거 — 페이지 상단 브레드크럼으로 대체(2026-10-01 사용자 요청). bulk(배열 일괄 수정)만 제목 유지. */}
       {bulk && (
         <div className="flex items-center gap-2 border-b pb-3">
@@ -2111,14 +2127,18 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* 유형 샘플 이미지 제거(2026-09-28) — 컴포넌트 조합의 실시간 미리보기(미리보기·조합 결과)로 통일. 중복 방지. */}
 
+      </fieldset>
       <div className="flex items-center justify-between gap-2 border-t pt-3">
         {/* 하단 좌측 '목록'(뒤로가기) — 상단 브레드크럼 제거분 대체(2026-10-29(2) 사용자 요청) */}
         <Link href="/admin/corner-types" className="inline-flex items-center gap-1 rounded-md border border-[#dce0e5] bg-white px-3 py-1.5 text-[13px] font-medium text-[#454f59] hover:bg-[#f8f9fb]">
           <ChevronLeft className="h-4 w-4" /> 목록
         </Link>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="secondary" size="sm" onClick={onClose}>취소</Button>
-        {wizard ? (
+          {/* 조회 전용(미팅 2026-11-17) — 저장/등록·단계 이동 숨김, 닫기만 유지 */}
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>{CTM_READONLY ? '닫기' : '취소'}</Button>
+        {CTM_READONLY ? (
+          <span className="inline-flex items-center gap-1 rounded-md bg-[#f1f3f5] px-2.5 py-1 text-[12px] font-medium text-[#697582]"><Lock className="h-3 w-3" /> 조회 전용</span>
+        ) : wizard ? (
           <>
             {step > 0 && <Button type="button" variant="secondary" size="sm" onClick={() => setStep((s) => Math.max(0, s - 1))}>이전</Button>}
             {step < lastStep
@@ -2474,9 +2494,8 @@ export function TypeDetailPreview({ base, component, detail, bigBanner = false, 
     );
   }
 
-  // 공통 프레임: 코너 타이틀/서브타이틀 헤더 + 본문 (+ 더보기)
-  // 더보기 = 세부 항목 토글(useMore)로 제어. 미지정(모달 등)이면 상품형 기본 노출.
-  const showMore = useMore ?? isProduct;
+  // 공통 프레임: 코너 타이틀/서브타이틀 헤더 + 본문. 코너 유형 미리보기는 CTA(더보기) 껍데기 버튼을 노출하지 않는다(2026-11-17 사용자 요청). useMore는 보존(호출부 호환)하되 미반영.
+  const showMore = false && (useMore ?? isProduct);
   // 상단 탭바(카테고리 탭/고정형 탭)·아이콘형 상태카드는 코너 타이틀·서브타이틀이 없다 → 헤더 슬롯 생략
   const noHeader = isBanner || has('카테고리 탭') || has('고정형(탭)') || has('칩') || has('아이콘형', '이미지형', '팝업', '띠', '텍스트배너');
   // 세부 항목 토글(타이틀/서브타이틀 사용여부)에 따라 헤더 슬롯을 켜고 끈다

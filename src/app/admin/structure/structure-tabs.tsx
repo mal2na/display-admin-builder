@@ -63,166 +63,198 @@ const DIAGRAM_CSS = `
 
 const DIAGRAM_HTML = `
 <div>
-  <p class="eyebrow">NEXT채널 어드민 · 전시/관리 영역 · 구조도 v0.9</p>
-  <p class="thesis"><b>디자인 시스템</b>이 코너 껍데기(원천 템플릿·규격)를 소유하고, 이를 코너 유형으로 등록·승인해요.<br>
-빌더에서는 승인된 <b>코너 유형을 가져와</b> Template에 쌓고, Corner에서 내용을 수정해요.<br>
-<b>상품</b>(EPC+전시상품 정보 · BSS·상품전시 어드민)과 <b>배너</b>(배너 캠페인 관리)는 빌더의 Corner로 바로 불러와요.<br>
-<b>화면</b>은 전체페이지 관리에서 Container를 등록한 뒤, Container › Template › Corner 순서로 만들어요.<br>
-어드민이 관리하는 건 <b>코너·템플릿·컨테이너</b>뿐이에요. 아톰·컴포넌트는 관리하지 않아요.<br>
+  <p class="eyebrow">NEXT채널 어드민 · 전시/관리 영역 · 구조도 v1.0 (2026-11-17)</p>
+  <p class="thesis"><b>DS 포탈</b>이 컴포넌트(원천 템플릿·규격·조합)를 소유하고, <b>SB 스튜디오</b>에서 이를 가져와 <b>코너 프리셋</b>(화면+기획 설계)을 구성해요.<br>
+프리셋 기반으로 <b>BO FE 코드를 개발</b>하면 <b>코너 원장(DB)</b>에 등록되고, <b>코너 유형 관리</b>는 이 원장을 <b>조회</b>만 해요(정의 변경은 SB 스튜디오).<br>
+빌더에서는 등록된 <b>코너 유형을 불러와</b> Template에 쌓고, Corner에서 <b>콘텐츠 맵핑·개인화 설정</b>을 적용해요. <b>상품</b>(EPC+전시상품 정보)과 <b>배너</b>(배너 캠페인 관리)는 Corner로 바로 불러와요.<br>
+<b>화면</b>은 전체페이지 관리에서 Container를 등록한 뒤, Container › Template › Corner 순서로 만들어요. 어드민이 관리하는 건 <b>코너·템플릿·컨테이너</b>뿐이에요(아톰·컴포넌트는 관리 안 함).<br>
 <b>CVM</b>(점선)은 선택이에요. 개인화 요소(상품·혜택·업무·문구·레이아웃·배치 순서)는 빌더의 Corner에서 적용해요.</p>
 </div>
 
 <section class="card diagram" aria-label="전시관리 구조도">
-<svg viewBox="0 0 1260 760" role="img" aria-labelledby="dg-t">
-<title id="dg-t">외부 시스템, 기준 정보, 전시/관리 세 단으로 나뉜 전시 어드민 구조. 원천 소스를 코너 유형에 맵핑·승인한 뒤 Container에 등록.</title>
+<svg viewBox="0 0 1260 940" role="img" aria-labelledby="dg-t">
+<title id="dg-t">DS 포탈의 원천 템플릿을 SB 스튜디오에서 코너 프리셋으로 구성하고, BO FE 개발 후 코너 원장이 등록되며, 코너 유형 관리가 이 원장을 조회하는 전시 어드민 구조.</title>
 <defs>
   <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
   <marker id="ma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker>
 </defs>
 
 <!-- ───── 1단: 외부 시스템 ───── -->
-<rect class="z-ext" x="20" y="20" width="1220" height="140" rx="12"/>
-<text class="tx tier" x="44" y="76">외부 시스템</text>
-<text class="tm t3" x="44" y="98">전시 어드민 밖에서</text>
-<text class="tm t3" x="44" y="116">재료와 데이터를 제공</text>
+<rect class="z-ext" x="20" y="20" width="1220" height="132" rx="12"/>
+<text class="tx tier" x="44" y="60">외부 시스템</text>
+<text class="tm t4" x="44" y="86">전시 어드민 밖에서</text>
+<text class="tm t4" x="44" y="104">재료와 데이터를 제공</text>
 
-<rect class="bx-ext" x="600" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="618" y="74">EPC+전시상품 정보</text>
-<text class="tm t3" x="618" y="96">BSS·상품전시 어드민에서</text>
-<text class="tm t3" x="618" y="114">정보 끌어와서 노출</text>
+<!-- DS 포탈 — 컴포넌트(원천 템플릿) 소유 -->
+<rect class="bx-ext" x="236" y="36" width="188" height="100" rx="8"/>
+<text class="tx t2" x="256" y="68">DS 포탈</text>
+<text class="tm t3" x="256" y="92">컴포넌트 소유</text>
+<text class="tm t4" x="256" y="112">원천 템플릿 · 규격 · 조합</text>
 
-<!-- 디자인 시스템 — 코너 유형 관리로만 연결(① 원천 템플릿 등록). 코너 껍데기(틀)를 소유. -->
-<rect class="bx-ext" x="250" y="44" width="200" height="96" rx="8"/>
-<text class="tx t2" x="270" y="76">디자인 시스템</text>
-<text class="tm t3" x="270" y="100">코너 껍데기(틀) 소유</text>
-<text class="tm t3" x="270" y="118">원천 템플릿 · 규격 · 조합</text>
+<!-- SB 스튜디오 — DS 포탈 템플릿으로 코너 프리셋 구성 -->
+<rect class="bx-ext" x="452" y="36" width="242" height="100" rx="8"/>
+<text class="tx t2" x="472" y="68">SB 스튜디오</text>
+<text class="tm t3" x="472" y="92">DS 포탈 템플릿으로</text>
+<text class="tm t4" x="472" y="112">코너 프리셋 구성 (화면+기획 설계)</text>
+<!-- 1 DS 포탈 → SB 스튜디오 -->
+<path class="ar-a" d="M424 86H448" marker-end="url(#ma)"/>
+<circle class="num" cx="438" cy="86" r="9"/><text class="numt" x="438" y="90" text-anchor="middle">1</text>
 
-<rect class="bx-ext" x="1040" y="44" width="180" height="96" rx="8"/>
-<text class="tx t2" x="1058" y="76">CVM</text>
-<rect class="opt-tag" x="1100" y="62" width="44" height="20" rx="10"/><text class="tm t4" x="1122" y="76" text-anchor="middle">선택</text>
-<text class="tm t3" x="1058" y="100">추천 엔진</text>
-<text class="tm t3" x="1058" y="118">코너 개인화 · 배치 순서</text>
+<!-- EPC+전시상품 정보 -->
+<rect class="bx-ext" x="724" y="36" width="188" height="100" rx="8"/>
+<text class="tx t2" x="744" y="68">EPC+전시상품 정보</text>
+<text class="tm t3" x="744" y="92">BSS·상품전시 어드민에서</text>
+<text class="tm t4" x="744" y="112">정보 끌어와서 노출</text>
 
-<!-- 범례: 실선(기본·필수) vs 점선(CVM 선택) -->
-<text class="tm t4" x="810" y="58" font-weight="700">범례</text>
-<line x1="810" y1="76" x2="844" y2="76" stroke="var(--accent)" stroke-width="2.5"/>
-<text class="tm t4" x="852" y="80">실선 = 기본·필수 흐름</text>
-<line x1="810" y1="100" x2="844" y2="100" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 3"/>
-<text class="tm t4" x="852" y="104">점선 = CVM(선택) 적용</text>
+<!-- CVM (선택) -->
+<rect class="bx-ext" x="1042" y="36" width="178" height="100" rx="8"/>
+<text class="tx t2" x="1060" y="68">CVM</text>
+<rect class="opt-tag" x="1108" y="54" width="44" height="20" rx="10"/><text class="tm t4" x="1130" y="68" text-anchor="middle">선택</text>
+<text class="tm t3" x="1060" y="92">추천 엔진</text>
+<text class="tm t4" x="1060" y="112">코너 개인화 · 배치 순서</text>
+
+<!-- ───── 2단: 코너 개발·등록 ───── -->
+<rect class="z-ext" x="20" y="168" width="1220" height="120" rx="12"/>
+<text class="tx t2" x="44" y="206">코너 개발·등록</text>
+<text class="tm t4" x="44" y="232">SB 프리셋 기반</text>
+<text class="tm t4" x="44" y="250">BO FE 개발 · 원장 등록</text>
+
+<!-- 디자인 스튜디오 + BO FE 코드 개발 -->
+<rect class="bx" x="256" y="186" width="162" height="82" rx="8"/>
+<text class="tx t2" x="337" y="218" text-anchor="middle">디자인 스튜디오</text>
+<text class="tm t4" x="337" y="244" text-anchor="middle">코너 컴포넌트 라이브러리화</text>
+<text class="ta t1" x="438" y="234" text-anchor="middle">+</text>
+<rect class="bx" x="458" y="186" width="170" height="82" rx="8"/>
+<text class="tx t2" x="478" y="216">BO FE 코드 개발</text>
+<text class="tm t4" x="478" y="240">코너 프리셋 기반</text>
+<text class="tm t4" x="478" y="258">BO FE 코드 개발</text>
+
+<!-- 코너 원장 -->
+<rect class="bx" x="704" y="184" width="150" height="86" rx="8"/>
+<text class="tx t2" x="724" y="216">코너 원장</text>
+<text class="tm t4" x="724" y="240">개발 완료 후</text>
+<text class="tm t4" x="724" y="258">코너 원장 등록</text>
+
+<!-- 2 SB 스튜디오 → 코너 개발 (프리셋으로 개발) -->
+<path class="ar-a" d="M572 136V182" marker-end="url(#ma)"/>
+<circle class="num" cx="572" cy="159" r="9"/><text class="numt" x="572" y="163" text-anchor="middle">2</text>
+<text class="ta t4" x="590" y="163">코너 프리셋으로 개발</text>
+<!-- 3 개발 → 코너 원장 (원장 등록) -->
+<path class="ar-a" d="M630 227H700" marker-end="url(#ma)"/>
+<circle class="num" cx="665" cy="209" r="9"/><text class="numt" x="665" y="213" text-anchor="middle">3</text>
 
 <!-- ───── 전시 어드민 경계 ───── -->
-<rect class="z-adm" x="20" y="186" width="1220" height="556" rx="12"/>
-<rect class="lbl-bg" x="36" y="176" width="96" height="20"/>
-<text class="ta tier" x="42" y="191">전시 어드민</text>
+<rect class="z-adm" x="20" y="306" width="1220" height="552" rx="12"/>
+<rect class="lbl-bg" x="36" y="296" width="96" height="20"/>
+<text class="ta tier" x="42" y="311">전시 어드민</text>
 
-<!-- 2단: 기준 정보 (라벨 제거, 2026-10-07) -->
+<!-- 4 코너 원장 → 코너 유형 관리 (조회) -->
+<path class="ar-a" d="M774 270V320H400V338" marker-end="url(#ma)"/>
+<circle class="num" cx="586" cy="320" r="9"/><text class="numt" x="586" y="324" text-anchor="middle">4</text>
+<text class="ta t4" x="600" y="316">코너 원장 조회</text>
 
-<rect class="bx" x="190" y="212" width="250" height="96" rx="8"/>
-<text class="tx t2" x="208" y="248">코너 유형 관리</text>
-<text class="tm t3" x="208" y="276">코너 유형 승인</text>
+<!-- 전체페이지 관리 -->
+<rect class="bx" x="40" y="340" width="186" height="92" rx="8"/>
+<text class="tx t2" x="58" y="372">전체페이지 관리</text>
+<text class="tm t3" x="58" y="396">페이지(Container) 원장</text>
+<text class="tm t4" x="58" y="416">URL · 메타 · 상태 · IA 트리</text>
 
-<rect class="bx" x="920" y="212" width="180" height="96" rx="8"/>
-<text class="tx t2" x="938" y="244">배너 캠페인 관리</text>
-<text class="tm t3" x="938" y="268">규격별 배너 소재 Asset</text>
-<text class="tm t3" x="938" y="286">기간 · 랜딩 · 승인</text>
+<!-- 코너 유형 관리 (조회 전용) -->
+<rect class="bx" x="244" y="340" width="232" height="92" rx="8"/>
+<text class="tx t2" x="262" y="372">코너 유형 관리</text>
+<text class="tm t3" x="262" y="396">코너 원장 조회 · 코너 유형 승인</text>
 
-<!-- 전체페이지 관리 → Container (페이지=화면 원장. 「빌더 화면」 유형이면 Container를 빌더가 1:1로 불러옴) -->
-<rect class="bx" x="36" y="212" width="150" height="96" rx="8"/>
-<text class="tx t2" x="50" y="244">전체페이지 관리</text>
-<text class="tm t3" x="50" y="268">페이지(Container) 원장</text>
-<text class="tm t4" x="50" y="288">URL · 메타 · 상태 · IA 트리</text>
+<!-- 배너 캠페인 관리 -->
+<rect class="bx" x="880" y="340" width="180" height="92" rx="8"/>
+<text class="tx t2" x="898" y="372">배너 캠페인 관리</text>
+<text class="tm t3" x="898" y="396">규격별 배너 소재 Asset</text>
+<text class="tm t4" x="898" y="416">기간 · 랜딩 · 승인</text>
 
 <!-- 3단: 전시/관리 -->
-<rect class="bx-main" x="40" y="342" width="1180" height="306" rx="12"/>
-<text class="ta t1" x="60" y="372">전시/관리</text>
+<rect class="bx-main" x="40" y="474" width="1180" height="316" rx="12"/>
+<text class="ta t1" x="60" y="504">전시/관리</text>
 
-<rect class="bx-build" x="56" y="388" width="1148" height="146" rx="10"/>
-<text class="tx t2" x="74" y="412">신규 화면 빌더</text>
+<rect class="bx-build" x="56" y="520" width="1148" height="152" rx="10"/>
+<text class="tx t2" x="74" y="544">신규 화면 빌더</text>
 
-<!-- Container(가장 큼) ← Template(중간) ← Corner(두 개로 쪼개짐). 왼쪽이 상위(큰 단위가 작은 단위를 담음) -->
-<rect class="bx-lv" x="72" y="422" width="204" height="104" rx="8"/>
-<text class="tx t2" x="96" y="456">Container</text>
-<text class="tm t3" x="96" y="480">전체페이지 관리 · 1:1</text>
-<text class="tm t4" x="96" y="502">홈 · 혜택/쇼핑/마이</text>
-<!-- Template → Container (담김) -->
-<path class="ar-a" d="M296 476H280" marker-end="url(#ma)"/>
+<rect class="bx-lv" x="72" y="554" width="204" height="106" rx="8"/>
+<text class="tx t2" x="96" y="588">Container</text>
+<text class="tm t3" x="96" y="612">전체페이지 관리 · 1:1</text>
+<text class="tm t4" x="96" y="634">홈 · 혜택/쇼핑/마이</text>
+<path class="ar-a" d="M296 606H280" marker-end="url(#ma)"/>
 
-<rect class="bx-lv" x="298" y="436" width="166" height="76" rx="8"/>
-<text class="tx t2" x="316" y="464">Template</text>
-<text class="tm t3" x="316" y="486">코너 쌓기 · 배치 순서</text>
-<text class="tm t4" x="316" y="504">로그인 · 비로그인</text>
-<!-- Corner → Template (쌓임) -->
-<path class="ar-a" d="M482 476H466" marker-end="url(#ma)"/>
+<rect class="bx-lv" x="298" y="568" width="166" height="78" rx="8"/>
+<text class="tx t2" x="316" y="596">Template</text>
+<text class="tm t3" x="316" y="618">코너 쌓기 · 배치 순서</text>
+<text class="tm t4" x="316" y="636">로그인 · 비로그인</text>
+<path class="ar-a" d="M482 606H466" marker-end="url(#ma)"/>
 
-<rect class="bx-lv" x="484" y="422" width="704" height="104" rx="8"/>
-<rect class="bx" x="500" y="432" width="116" height="38" rx="8"/><text class="tx t2" x="558" y="456" text-anchor="middle">Corner</text>
-<rect class="bx" x="500" y="478" width="116" height="38" rx="8"/><text class="tx t2" x="558" y="502" text-anchor="middle">Corner</text>
-<text class="tm t3" x="636" y="452">등록된 코너 유형을 불러온 후 빌더에서 컨텐츠 맵핑 · 개인화 설정 등 적용</text>
-<rect class="bx" x="636" y="468" width="100" height="20" rx="10"/><text class="tx t4" x="686" y="482" text-anchor="middle">기본 · 어드민 설정</text>
-<rect class="chip-opt" x="742" y="468" width="80" height="20" rx="10"/><text class="tm t4" x="782" y="482" text-anchor="middle">A · 가로형</text>
-<rect class="chip-opt" x="828" y="468" width="72" height="20" rx="10"/><text class="tm t4" x="864" y="482" text-anchor="middle">B · 탭형</text>
-<text class="tm t4" x="908" y="482">선택 · CVM</text>
-<text class="tm t4" x="636" y="506">아톰·컴포넌트는 어드민 관리 대상 아님 · 코너·템플릿·컨테이너만 어드민에서 관리</text>
+<rect class="bx-lv" x="484" y="554" width="704" height="106" rx="8"/>
+<rect class="bx" x="500" y="564" width="116" height="38" rx="8"/><text class="tx t2" x="558" y="588" text-anchor="middle">Corner</text>
+<rect class="bx" x="500" y="610" width="116" height="38" rx="8"/><text class="tx t2" x="558" y="634" text-anchor="middle">Corner</text>
+<text class="tm t3" x="636" y="584">등록된 코너 유형을 불러온 후 빌더에서 컨텐츠 맵핑 · 개인화 설정 등 적용</text>
+<rect class="bx" x="636" y="600" width="100" height="20" rx="10"/><text class="tx t4" x="686" y="614" text-anchor="middle">기본 · 어드민 설정</text>
+<rect class="chip-opt" x="742" y="600" width="80" height="20" rx="10"/><text class="tm t4" x="782" y="614" text-anchor="middle">A · 가로형</text>
+<rect class="chip-opt" x="828" y="600" width="72" height="20" rx="10"/><text class="tm t4" x="864" y="614" text-anchor="middle">B · 탭형</text>
+<text class="tm t4" x="908" y="614">선택 · CVM</text>
+<text class="tm t4" x="636" y="638">아톰·컴포넌트는 어드민 관리 대상 아님 · 코너·템플릿·컨테이너만 어드민에서 관리</text>
 
 <!-- 빌더 ↔ 관리 -->
-<path class="ar-a" d="M300 534V566" marker-end="url(#ma)"/>
-<text class="ta t4" x="310" y="556">저장</text>
-<path class="ar-a" d="M420 566V536" marker-end="url(#ma)"/>
-<text class="ta t4" x="430" y="556">빌더로 수정</text>
-<circle class="num" cx="274" cy="550" r="10"/><text class="numt" x="274" y="554" text-anchor="middle">5</text>
+<path class="ar-a" d="M300 660V692" marker-end="url(#ma)"/>
+<text class="ta t4" x="310" y="682">저장</text>
+<path class="ar-a" d="M420 692V662" marker-end="url(#ma)"/>
+<text class="ta t4" x="430" y="682">빌더로 수정</text>
+<circle class="num" cx="274" cy="676" r="9"/><text class="numt" x="274" y="680" text-anchor="middle">8</text>
 
-<rect class="bx-build" x="56" y="570" width="1148" height="62" rx="10"/>
-<text class="tx t2" x="74" y="606">기존 화면 관리</text>
-<text class="tm t3" x="190" y="606">화면 목록 · 전시 상태 · 승인 · 미전시 전환 · 폐기 · 버전</text>
+<rect class="bx-build" x="56" y="696" width="1148" height="58" rx="10"/>
+<text class="tx t2" x="74" y="730">기존 화면 관리</text>
+<text class="tm t3" x="190" y="730">화면 목록 · 전시 상태 · 승인 · 미전시 전환 · 폐기 · 버전</text>
 
 <!-- 별도: 프로모션 -->
-<rect class="bx-sub" x="40" y="668" width="1180" height="58" rx="10"/>
-<text class="tx t2" x="60" y="703">프로모션 관리</text>
-<text class="tm t3" x="170" y="703">프로모션 빌더를 전시/관리와 별개로 제공</text>
+<rect class="bx-sub" x="40" y="794" width="1180" height="56" rx="10"/>
+<text class="tx t2" x="60" y="827">프로모션 관리</text>
+<text class="tm t3" x="170" y="827">프로모션 빌더를 전시/관리와 별개로 제공</text>
 
 <!-- ───── 화살표 ───── -->
-<!-- ⓟ 전체페이지 관리 → Container (페이지 등록 · 「빌더 화면」 1:1) -->
-<path class="ar-a" d="M111 320V422" marker-end="url(#ma)"/>
-<text class="ta t4" x="40" y="335">페이지 등록</text>
-<!-- ① 디자인 시스템 → 코너 유형 관리 (원천 템플릿 등록) — 직선 -->
-<path class="ar-a" d="M350 140V208" marker-end="url(#ma)"/>
-<circle class="num" cx="350" cy="174" r="10"/><text class="numt" x="350" y="178" text-anchor="middle">1</text>
-<text class="ta t4" x="334" y="178" text-anchor="end">원천 템플릿 등록</text>
-<!-- ② 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음) -->
-<path class="ar-a" d="M322 308V436" marker-end="url(#ma)"/>
-<circle class="num" cx="322" cy="322" r="10"/><text class="numt" x="322" y="326" text-anchor="middle">2</text>
-<text class="ta t4" x="306" y="326" text-anchor="end">승인된 코너 유형을 Template에 쌓음</text>
-<!-- ③ 코너 유형 관리 → Corner (유형 가져와 내용 수정) — 코너 유형 관리 오른쪽으로 뺀 뒤 하단으로 내림(2026-10-07). -->
-<path class="ar-a" d="M440 260H540V422" marker-end="url(#ma)"/>
-<circle class="num" cx="540" cy="366" r="10"/><text class="numt" x="540" y="370" text-anchor="middle">3</text>
-<text class="ta t4" x="556" y="370" text-anchor="start">유형 가져와 내용 수정</text>
-<!-- ③ 상품원장 → Corner (상품 불러오기) — 라벨은 번호 옆 -->
-<path class="ar-a" d="M690 140V422" marker-end="url(#ma)"/>
-<circle class="num" cx="690" cy="366" r="10"/><text class="numt" x="690" y="370" text-anchor="middle">3</text>
-<text class="ta t4" x="706" y="370" text-anchor="start">상품 불러오기</text>
-<!-- ③ 배너 캠페인 → Corner (배너 불러오기) — 라벨은 번호 옆 -->
-<path class="ar-a" d="M1010 308V422" marker-end="url(#ma)"/>
-<circle class="num" cx="1010" cy="366" r="10"/><text class="numt" x="1010" y="370" text-anchor="middle">3</text>
-<text class="ta t4" x="1026" y="370" text-anchor="start">배너 불러오기</text>
-<!-- ④ CVM → Template (개인화 요소 적용, 선택 · 점선) -->
-<path class="ar-opt" d="M1130 140V325H400V436" marker-end="url(#m)"/>
-<circle class="num" cx="1130" cy="230" r="10"/><text class="numt" x="1130" y="234" text-anchor="middle">4</text>
-<text class="tm t4" x="1146" y="250" font-weight="700">개인화 요소(선택)</text>
-<text class="tm t4" x="1146" y="268">· 코너 내 상품·혜택·업무</text>
-<text class="tm t4" x="1146" y="284">· 문구</text>
-<text class="tm t4" x="1146" y="300">· 코너 레이아웃</text>
-<text class="tm t4" x="1146" y="316">· 코너 배치 순서</text>
+<!-- 전체페이지 관리 → Container (페이지 등록 · 「빌더 화면」 1:1) -->
+<path class="ar-a" d="M111 432V554" marker-end="url(#ma)"/>
+<text class="ta t4" x="40" y="462">페이지 등록</text>
+<!-- 5 코너 유형 관리 → Template (승인된 코너 유형을 Template에 쌓음) -->
+<path class="ar-a" d="M330 432V568" marker-end="url(#ma)"/>
+<circle class="num" cx="330" cy="458" r="9"/><text class="numt" x="330" y="462" text-anchor="middle">5</text>
+<text class="ta t4" x="346" y="462">승인된 코너 유형을 Template에 쌓음</text>
+<!-- 6 코너 유형 관리 → Corner (유형 가져와 내용 수정) -->
+<path class="ar-a" d="M476 386H600V554" marker-end="url(#ma)"/>
+<circle class="num" cx="600" cy="500" r="9"/><text class="numt" x="600" y="504" text-anchor="middle">6</text>
+<text class="ta t4" x="616" y="504">유형 가져와 내용 수정</text>
+<!-- 6 EPC → Corner (상품 불러오기) -->
+<path class="ar-a" d="M820 136V554" marker-end="url(#ma)"/>
+<circle class="num" cx="820" cy="500" r="9"/><text class="numt" x="820" y="504" text-anchor="middle">6</text>
+<text class="ta t4" x="836" y="504">상품 불러오기</text>
+<!-- 6 배너 캠페인 → Corner (배너 불러오기) -->
+<path class="ar-a" d="M970 432V554" marker-end="url(#ma)"/>
+<circle class="num" cx="970" cy="500" r="9"/><text class="numt" x="970" y="504" text-anchor="middle">6</text>
+<text class="ta t4" x="986" y="504">배너 불러오기</text>
+<!-- 7 CVM → Corner (개인화 요소 적용, 선택 · 점선) -->
+<path class="ar-opt" d="M1131 136V462H450V568" marker-end="url(#m)"/>
+<circle class="num" cx="1131" cy="250" r="9"/><text class="numt" x="1131" y="254" text-anchor="middle">7</text>
+<text class="tm t4" x="1147" y="250" font-weight="700">개인화 요소(선택)</text>
+<text class="tm t4" x="1147" y="268">· 코너 내 상품·혜택·업무</text>
+<text class="tm t4" x="1147" y="284">· 문구</text>
+<text class="tm t4" x="1147" y="300">· 코너 레이아웃</text>
+<text class="tm t4" x="1147" y="316">· 코너 배치 순서</text>
 </svg>
 </section>
 
 <section>
   <h2>순서</h2>
   <ol class="steps">
-    <li class="card"><span class="n">1</span><b>등록 · 승인</b><span>디자인 시스템이 소유한 코너 껍데기(원천 템플릿·규격)를 코너 유형 관리에 등록하고 승인해요.</span></li>
-    <li class="card"><span class="n">2</span><b>Container 등록 · 쌓기</b><span>Container는 전체페이지 관리에서 등록하고, 승인된 코너 유형을 Template에 쌓아 Corner를 구성해요.</span></li>
-    <li class="card"><span class="n">3</span><b>빌더에서 가져와 수정</b><span>코너 유형 관리의 승인된 유형을 빌더로 가져와 Corner에서 내용(문구·노출 등)을 수정해요. 상품과 배너는 Corner로 바로 불러와요. 아톰·컴포넌트는 어드민 관리 대상이 아니에요.</span></li>
-    <li class="card"><span class="n">4</span><b>CVM 설정 (선택)</b><span>개인화 요소(코너 내 상품·혜택·업무·문구·레이아웃·배치 순서)를 빌더의 Corner에서 적용해요.</span></li>
-    <li class="card"><span class="n">5</span><b>관리</b><span>저장한 화면은 기존 화면 관리에서 운영하고, 수정할 땐 빌더로 진입</span></li>
+    <li class="card"><span class="n">1</span><b>프리셋 구성</b><span>DS 포탈의 컴포넌트(원천 템플릿·규격)를 SB 스튜디오에서 가져와 코너 프리셋(화면+기획 설계)을 구성해요.</span></li>
+    <li class="card"><span class="n">2·3</span><b>개발 · 원장 등록</b><span>프리셋 기반으로 BO FE 코드를 개발하면 코너 원장(DB)에 등록돼요(디자인 스튜디오는 코너 컴포넌트를 라이브러리화).</span></li>
+    <li class="card"><span class="n">4</span><b>코너 원장 조회</b><span>코너 유형 관리는 등록된 코너 원장을 조회만 해요(정의 변경은 SB 스튜디오). 수정 불가 · 리스트 성격.</span></li>
+    <li class="card"><span class="n">5·6</span><b>쌓기 · 가져와 수정</b><span>Container는 전체페이지 관리에서 등록. 승인된 코너 유형을 Template에 쌓고, Corner로 가져와 콘텐츠 맵핑·개인화를 적용해요. 상품(EPC)·배너(캠페인)는 Corner로 바로 불러와요.</span></li>
+    <li class="card"><span class="n">7</span><b>CVM 설정 (선택)</b><span>개인화 요소(코너 내 상품·혜택·업무·문구·레이아웃·배치 순서)를 빌더의 Corner에서 적용해요.</span></li>
+    <li class="card"><span class="n">8</span><b>관리</b><span>저장한 화면은 기존 화면 관리에서 운영하고, 수정할 땐 빌더로 진입해요.</span></li>
   </ol>
 </section>
 

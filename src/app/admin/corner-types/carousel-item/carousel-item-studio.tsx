@@ -332,8 +332,8 @@ function ItemRow({ s, priceLines }: { s: CarouselItemSpec; priceLines?: string[]
 function CardPreview({ spec, sel, onCard, onItem, layout, priceLines }: { spec: CardHomeSpec; sel?: 'card' | 'item'; onCard?: () => void; onItem?: () => void; layout?: string; priceLines?: string[] | null }) {
   const ro = !onCard && !onItem; // 읽기 전용(상세 미리보기)
   const vertical = isVertical(layout);
-  // 배너 = 옵션(배너·칩·CTA 3종만 옵션). spec.bannerOn 으로 노출 결정(2026-10-28). 레거시 스펙(bannerOn 없음)은 layout 로 방어.
-  const hasBanner = spec.bannerOn ?? (layout == null || /배너/.test(layout));
+  // 상단 이미지(배너) = 배열로만 결정(2026-11-17: 옵션 폐지). '상단 이미지형'(저장값 '+배너')일 때만. 그 외(세로형·카테고리형 등)엔 상단 이미지 없음 — 레거시 bannerOn은 무시.
+  const hasBanner = /배너/.test(layout ?? '');
   // 세로형 = 행 구분선(divide-y)만 · 박스 테두리 없음(2026-10-19 사용자 요청). 선택 표시는 ring/bg로(테두리는 divide 색과 충돌).
   //  가로형 = 캐러셀 카드 → 선택 테두리 박스 유지.
   const itemBtnCls = () => vertical
@@ -507,9 +507,8 @@ function CornerInfoBody({ spec, onChange }: { spec: CardHomeSpec; onChange: (s: 
   const set = (p: Partial<CardHomeSpec>) => onChange({ ...spec, ...p });
   return (
     <div>
-      {/* 옵션(배너·CTA)끼리 2열, 고정(코너 타이틀·버튼 텍스트)끼리 2열(SB v13). 칩은 옵션에서 제외(2026-11-06) → 카테고리형 전용 배열로 분리. */}
+      {/* 옵션 = CTA만(2026-11-17: 배너 옵션 폐지 → '상단 이미지형' 배열로 분리). 상단 이미지 유무는 배열(가로형/세로형 vs 상단 이미지형)로 정한다. 칩도 카테고리형 배열. */}
       <StudioPairs>
-        <ChkRow bare label="배너(Banner)" option checked={spec.bannerOn ?? false} onChange={(v) => set({ bannerOn: v })} />
         <ChkRow bare label="CTA(CallToAction)" option checked={spec.cta?.show ?? false} onChange={(v) => set({ cta: { ...(spec.cta ?? { label: 'CTA' }), show: v } })} />
       </StudioPairs>
       <StudioPairs>
