@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Check, X, Search, ChevronRight, ChevronLeft, ChevronDown, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Check, X, Search, ChevronRight, ChevronLeft, ChevronDown, RotateCcw, Info, Copy, Pencil, LayoutGrid, List, GripVertical, Sparkles, Lock } from 'lucide-react';
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -1309,6 +1309,21 @@ function Switch({ checked, onChange, disabled }: { checked: boolean; onChange: (
   );
 }
 
+// ── 미팅 2026-11-17 결론 — 코너 유형 관리는 'DB(코너 원장) 조회'로 성격이 바뀐다.
+//    코너 정의(문구 기본값·노출 개수·형태/배열·배너/CTA 옵션·가격 규격)는 SB 스튜디오 프리셋 → BO FE 코드가 소유하고, 여기서는 '조회만' 한다.
+//    정의 편집 폼 전체를 조회 전용(fieldset disabled)으로 잠그고 저장을 숨긴다. 값/코드는 보존 — 기획 내부 합의 후 이 플래그만 내리면 원복.
+//    근거: corner-composition-ds-owned, three-modules-linked, PG-DSP-WFL.
+const CTM_READONLY = true;
+// 코너 정의 폼 상단 조회 전용 안내 배너.
+function CornerTypeReadonlyNotice() {
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-3.5 py-2.5 text-[12px] leading-relaxed text-[#454f59]">
+      <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#697582]" />
+      <span><b className="text-[#1a1a1a]">조회 전용</b> — 코너 정의(노출 개수·형태·배너/CTA 옵션·가격 규격 등)는 <b>SB 스튜디오 프리셋 → BO FE 코드</b>가 소유합니다. 여기서는 등록된 코너 원장을 <b>조회</b>만 하고, 변경은 SB 스튜디오에서 합니다. <span className="text-[#8b949e]">(미팅 2026-11-17)</span></span>
+    </div>
+  );
+}
+
 export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], onClose, bulk = false, bulkArrays, submitAction }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; onClose: () => void; bulk?: boolean; bulkArrays?: string[]; submitAction?: (fd: FormData) => void | Promise<void> }) {
   const isNew = !row.id;
   // 등록(신규)은 스텝퍼로 단계별 설정 — 프로모션 등록처럼(2026-09-30 사용자 요청). 수정은 전체를 한 화면에.
@@ -1917,6 +1932,9 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
       className="space-y-5"
     >
       {bulk && <input type="hidden" name="bulkArraysJson" value={JSON.stringify(selectedArrays)} />}
+      {/* 미팅 2026-11-17 — 코너 정의는 조회 전용. 폼 본문 전체를 disabled fieldset으로 잠근다(값·코드 보존, 플래그로 원복). */}
+      <fieldset disabled={CTM_READONLY} className="m-0 min-w-0 space-y-5 border-0 p-0">
+      {CTM_READONLY && <CornerTypeReadonlyNotice />}
       {/* 폼 내부 제목 제거 — 페이지 상단 브레드크럼으로 대체(2026-10-01 사용자 요청). bulk(배열 일괄 수정)만 제목 유지. */}
       {bulk && (
         <div className="flex items-center gap-2 border-b pb-3">
@@ -2111,14 +2129,18 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
 
       {/* 유형 샘플 이미지 제거(2026-09-28) — 컴포넌트 조합의 실시간 미리보기(미리보기·조합 결과)로 통일. 중복 방지. */}
 
+      </fieldset>
       <div className="flex items-center justify-between gap-2 border-t pt-3">
         {/* 하단 좌측 '목록'(뒤로가기) — 상단 브레드크럼 제거분 대체(2026-10-29(2) 사용자 요청) */}
         <Link href="/admin/corner-types" className="inline-flex items-center gap-1 rounded-md border border-[#dce0e5] bg-white px-3 py-1.5 text-[13px] font-medium text-[#454f59] hover:bg-[#f8f9fb]">
           <ChevronLeft className="h-4 w-4" /> 목록
         </Link>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="secondary" size="sm" onClick={onClose}>취소</Button>
-        {wizard ? (
+          {/* 조회 전용(미팅 2026-11-17) — 저장/등록·단계 이동 숨김, 닫기만 유지 */}
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>{CTM_READONLY ? '닫기' : '취소'}</Button>
+        {CTM_READONLY ? (
+          <span className="inline-flex items-center gap-1 rounded-md bg-[#f1f3f5] px-2.5 py-1 text-[12px] font-medium text-[#697582]"><Lock className="h-3 w-3" /> 조회 전용</span>
+        ) : wizard ? (
           <>
             {step > 0 && <Button type="button" variant="secondary" size="sm" onClick={() => setStep((s) => Math.max(0, s - 1))}>이전</Button>}
             {step < lastStep

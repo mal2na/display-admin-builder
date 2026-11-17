@@ -252,11 +252,25 @@ const DEVICE_PRESETS = [
   { label: 'Pixel 8', w: 412, h: 915 },
   { label: 'iPad mini', w: 744, h: 1133 },
 ] as const;
-function FormBlock({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+// ── 미팅 2026-11-17 결론 — 코너는 SB 스튜디오 프리셋 → BO FE 코드 개발물(고정). 빌더는 배치·아이템 선택·공통 속성(타이틀·CTA)만 편집한다.
+//    코너마다 다른 임의 콘텐츠 속성(배너 이미지·대체텍스트, 카테고리/메뉴 아이콘, 개별 링크, 서브 텍스트)은 상품(EPC) 원장·코너 프리셋이 소유 → 조회 전용.
+//    값과 코드는 그대로 두고 상호작용만 잠근다(기획 내부 합의 후 이 플래그만 내리면 원복). 근거: corner-composition-ds-owned, PI-DSP-CMP.
+const LOCK_PRESET = true;
+const LOCK_HINT = '코너 프리셋·원장이 정의 · 조회 전용 (미팅 2026-11-17)';
+// 조회 전용 배지 — 블록 제목 옆 자물쇠 칩.
+function LockChip() {
+  return <span title={LOCK_HINT} className="inline-flex items-center gap-1 rounded-[4px] bg-[var(--th)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink4)]"><Lock className="h-2.5 w-2.5" />조회 전용</span>;
+}
+// 조회 전용 래퍼 — 자식을 그대로(값 보존) 보여주되 상호작용만 차단하고 톤다운.
+function Locked({ on, children }: { on?: boolean; children: React.ReactNode }) {
+  if (!on) return <>{children}</>;
+  return <div aria-disabled className="pointer-events-none select-none opacity-60">{children}</div>;
+}
+function FormBlock({ title, desc, locked, children }: { title: string; desc?: string; locked?: boolean; children: React.ReactNode }) {
   return (
     <div className="mb-3">
-      <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">{title}{desc && <span className="ml-1 font-normal text-[var(--ink4)]">· {desc}</span>}</p>
-      <div className="border-t border-[var(--line2)]">{children}</div>
+      <p className="mb-1.5 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><span>{title}{desc && <span className="ml-1 font-normal text-[var(--ink4)]">· {desc}</span>}</span>{locked && <LockChip />}</p>
+      <div className="border-t border-[var(--line2)]"><Locked on={locked}>{children}</Locked></div>
     </div>
   );
 }
@@ -1092,7 +1106,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
             <div className="mb-1">
               {/* 배너 설정 — 배너 옵션이 있는 유형만 */}
               {availOptions.includes('배너') && (
-                <FormBlock title="배너(상단 이미지)">
+                <FormBlock title="배너(상단 이미지)" locked={LOCK_PRESET}>
                   <FormRow label="사용 여부" req>
                     <RadioRow options={['Y', 'N'] as const} value={optOn['배너'] ? 'Y' : 'N'} onChange={(v) => { const no = { ...optOn, ['배너']: v === 'Y' }; setOptOn(no); onOptionsChange(no, ctaLabelVal); }} />
                   </FormRow>
@@ -1222,9 +1236,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                                 <button type="button" onClick={() => patchCat(c, { mode: 'direct' })} className={cn('flex-1 rounded-[5px] px-1 py-1 transition', !loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>직접</button>
                                 <button type="button" onClick={() => patchCat(c, { mode: 'load' })} className={cn('flex-1 rounded-[5px] px-1 py-1 transition', loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>조회</button>
                               </div>
-                              {/* 아이콘 */}
-                              <button type="button" onClick={() => setCatIconFor(c)} title="아이콘 선택"
-                                className={cn('grid h-8 w-8 place-items-center justify-self-center overflow-hidden rounded-[7px] transition', m.icon ? 'bg-[var(--ac2)] text-[var(--ac)] hover:ring-1 hover:ring-[var(--ac)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
+                              {/* 아이콘 — 조회 전용(미팅 2026-11-17: 아이콘은 코너 프리셋 정의) */}
+                              <button type="button" disabled={LOCK_PRESET} onClick={() => setCatIconFor(c)} title={LOCK_PRESET ? LOCK_HINT : '아이콘 선택'}
+                                className={cn('grid h-8 w-8 place-items-center justify-self-center overflow-hidden rounded-[7px] transition', m.icon ? 'bg-[var(--ac2)] text-[var(--ac)] hover:ring-1 hover:ring-[var(--ac)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]', LOCK_PRESET && 'pointer-events-none opacity-60')}>
                                 {m.icon ? <ItemIcon src={m.icon} iconClass="h-[18px] w-[18px]" imgClass="h-5 w-5 object-contain" /> : <ImageIcon className="h-4 w-4" />}
                               </button>
                               {/* 메뉴명 — 카테고리명(수정 시 아래 컴포넌트 매핑도 함께 이동) */}
@@ -1253,7 +1267,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                               {/* 경로 상세 */}
                               <div className="flex h-[32px] min-w-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="경로 상세(이동 링크)">
                                 <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-                                <input value={m.link} onChange={(e) => patchCat(c, { link: e.target.value })} placeholder="/category/..." className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                                <input value={m.link} readOnly={LOCK_PRESET} onChange={(e) => patchCat(c, { link: e.target.value })} placeholder="/category/..." title={LOCK_PRESET ? LOCK_HINT : undefined} className={cn('h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none', LOCK_PRESET && 'pointer-events-none text-[var(--ink3)]')} />
                               </div>
                               {/* 삭제 */}
                               <button type="button" onClick={() => setChips((cs) => cs.filter((_, j) => j !== i))} className="grid h-6 w-6 place-items-center justify-self-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
@@ -1440,9 +1454,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                     <button type="button" onClick={() => setItemMode(o.id, 'direct')} className={cn('flex-1 rounded-[5px] px-1 py-1 transition', !loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>직접</button>
                     <button type="button" onClick={() => setItemMode(o.id, 'load')} className={cn('flex-1 rounded-[5px] px-1 py-1 transition', loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>조회</button>
                   </div>
-                  {/* 아이콘 — 클릭해 아이콘 선택(벡터) */}
-                  <button type="button" onClick={() => setIconForId(o.id)} title="아이콘 선택"
-                    className={cn('grid h-8 w-8 place-items-center justify-self-center overflow-hidden rounded-[7px] transition', o.icon ? 'bg-[var(--ac2)] text-[var(--ac)] hover:ring-1 hover:ring-[var(--ac)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
+                  {/* 아이콘 — 조회 전용(미팅 2026-11-17: 아이콘은 코너 프리셋 정의) */}
+                  <button type="button" disabled={LOCK_PRESET} onClick={() => setIconForId(o.id)} title={LOCK_PRESET ? LOCK_HINT : '아이콘 선택'}
+                    className={cn('grid h-8 w-8 place-items-center justify-self-center overflow-hidden rounded-[7px] transition', o.icon ? 'bg-[var(--ac2)] text-[var(--ac)] hover:ring-1 hover:ring-[var(--ac)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]', LOCK_PRESET && 'pointer-events-none opacity-60')}>
                     {o.icon ? <ItemIcon src={o.icon} iconClass="h-[18px] w-[18px]" imgClass="h-5 w-5 object-contain" /> : <ImageIcon className="h-4 w-4" />}
                   </button>
                   {/* 메뉴명 */}
@@ -1455,8 +1469,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   {/* 경로 상세 — 이동 링크 */}
                   <div className="flex h-[32px] min-w-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="경로 상세(이동 링크)">
                     <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-                    <input value={o.link ?? ''} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="/menu/..."
-                      className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                    <input value={o.link ?? ''} readOnly={LOCK_PRESET} onChange={(e) => setItemLink(o.id, e.target.value)} placeholder="/menu/..." title={LOCK_PRESET ? LOCK_HINT : undefined}
+                      className={cn('h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none', LOCK_PRESET && 'pointer-events-none text-[var(--ink3)]')} />
                   </div>
                   {/* 삭제 */}
                   <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 place-items-center justify-self-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
@@ -1521,7 +1535,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                 </div>
                 {/* 링크 */}
                 <div className="min-w-0">
-                  <LinkEditRow link={o.link} editing={linkEdit} onToggle={() => toggleRowEdit(o.id)} onChange={(v) => setItemLink(o.id, v)} source={isContentGuide ? '콘텐츠' : '원장'} locked={isContentGuide} />
+                  <LinkEditRow link={o.link} editing={linkEdit} onToggle={() => toggleRowEdit(o.id)} onChange={(v) => setItemLink(o.id, v)} source={isContentGuide ? '콘텐츠' : '원장'} locked={isContentGuide || LOCK_PRESET} />
                 </div>
                 {/* 불러오기 — 아이콘 버튼(좁은 패널) */}
                 <div className="flex justify-center">
