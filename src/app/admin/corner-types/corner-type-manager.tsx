@@ -201,8 +201,8 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
     ...c,
     bigBanner: row.bigBanner || topImageLayout,
     showImage: row.useImage, showPrice: row.usePrice, showBadge: false, showDesc: row.useDesc,
-    // 코너 유형 미리보기는 CTA(더보기) 껍데기 버튼을 노출하지 않는다(2026-11-17 사용자 요청: 미리보기 CTA 전부 제거). CTA는 빌더에서 운영자가 켠다.
-    moreButtonUse: false, moreButtonLabel: 'CTA',
+    // 코너 유형 미리보기 CTA(더보기)는 기본 숨김(2026-11-17). 단 혜택·오퍼형 세로형(카테고리형)은 CTA까지 노출(2026-11-17 사용자 요청). 그 외는 빌더에서 운영자가 켠다.
+    moreButtonUse: row.baseCategory === '혜택·오퍼형' && /세로/.test(row.typeDetail ?? '') && /카테고리/.test(row.typeDetail ?? ''), moreButtonLabel: 'CTA',
   };
 }
 
