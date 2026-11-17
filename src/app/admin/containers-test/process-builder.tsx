@@ -241,6 +241,9 @@ function Sec({ n, title, help, hint, badge, aside, children }: { n: number; titl
 }
 
 // 코너 카드 폼블록 — '템플릿 기본 정보'(FieldRow) 테이블과 동일 스타일(2026-11-12 사용자 요청: 전 테이블 통일). 좌우 보더 없음.
+// 코너 카드 버튼 — 이동 경로 / 열기 방식 선택지(SB PG557 상품형 가로형, 2026-11-17 사용자 요청).
+type BtnRoute = '페이지' | '상품' | '프로모션' | '직접 입력';
+type BtnOpen = '현재 화면' | '내부 브라우저' | '외부 브라우저';
 function FormBlock({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
   return (
     <div className="mb-3">
@@ -250,11 +253,11 @@ function FormBlock({ title, desc, children }: { title: string; desc?: string; ch
   );
 }
 // 라벨-좌(회색 셀) / 컨트롤-우(흰 셀) 테이블 행 — FieldRow와 동일(라벨 bg-th·14/500·ink2·px-4 py-3, 값 px-4 py-2.5, border-b #dce0e5).
-function FormRow({ label, en, children }: { label: string; en?: string; children: React.ReactNode }) {
+function FormRow({ label, en, req, children }: { label: string; en?: string; req?: boolean; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
       <div className="flex flex-col justify-center whitespace-nowrap bg-[var(--th)] px-4 py-3 text-[14px] font-medium text-[var(--ink2)]">
-        <span>{label}</span>{en && <span className="text-[10px] font-normal text-[var(--ink4)]">{en}</span>}
+        <span>{label}{req && <span className="text-[var(--bad)]"> *</span>}</span>{en && <span className="text-[10px] font-normal text-[var(--ink4)]">{en}</span>}
       </div>
       <div className="flex min-w-0 flex-col justify-center bg-white px-4 py-2.5">{children}</div>
     </div>
@@ -560,10 +563,14 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const [ctaLabelVal, setCtaLabelVal] = React.useState(() => (pv?.moreButtonLabel && pv.moreButtonLabel !== 'CTA' ? pv.moreButtonLabel : ''));
   // CTA 링크 — 문구와 별도 입력(2026-11-05 사용자 요청: 인풋 두 개).
   const [ctaLinkVal, setCtaLinkVal] = React.useState(() => ((pv as { moreButtonLink?: string | null } | undefined)?.moreButtonLink ?? ''));
-  // SB(BO-AIM-DSP-PG557) 코너 카드 폼블록용 — 부제 사용(Y/N)·버튼 이동 경로·경로 유형(내부/외부 브라우저). 데모 로컬 상태(미리보기 비연동 필드).
-  const [subtitleOn, setSubtitleOn] = React.useState(() => !!(pv?.subTitle && pv.subTitle !== 'ButtonText'));
-  const [btnRoute, setBtnRoute] = React.useState<'네이티브' | '상품' | '프로모션' | '직접 입력'>('직접 입력');
-  const [btnBrowser, setBtnBrowser] = React.useState<'내부 브라우저' | '외부 브라우저'>('내부 브라우저');
+  // SB(BO-AIM-DSP-PG557) 코너 카드 버튼 — 이동 경로(페이지·상품·프로모션·직접 입력) / 열기 방식(현재 화면·내부·외부 브라우저). 데모 로컬 상태(미리보기 비연동 필드, 2026-11-17 사용자 SB).
+  // 텍스트 버튼(버튼 텍스트 속성) — 버튼 텍스트 = buttonTextVal 공용.
+  const [txtRoute, setTxtRoute] = React.useState<BtnRoute>('페이지');
+  const [txtOpen, setTxtOpen] = React.useState<BtnOpen>('현재 화면');
+  const [txtLink, setTxtLink] = React.useState('');
+  // 하단 CTA 버튼
+  const [btnRoute, setBtnRoute] = React.useState<BtnRoute>('페이지');
+  const [btnOpen, setBtnOpen] = React.useState<BtnOpen>('현재 화면');
   // ③채우기를 '코너 | 아이템' 탭으로 나눠 등록(2026-11-05 사용자 요청). 코너 속성이 없는 유형(배너형 등)은 아이템만.
   const [fillTab, setFillTab] = React.useState<'코너' | '아이템'>('코너');
   // 칩(카테고리 탭) — 실제로 '불러온 카테고리'만 저장. 나머지 빈 자리는 점선 'Chip' 플레이스홀더로 표시, 불러오기로 채우면 반영(2026-11-05 사용자 요청).
@@ -988,15 +995,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
                   <Icon className={cn('h-3.5 w-3.5', on ? 'text-[var(--ac)]' : 'text-[var(--ink4)]')} />
                   <b className="text-[13px] text-[var(--ink)]">{m}</b>
-                  {/* 설명 문구는 ⓘ 툴팁으로(인라인 제거, 2026-11-05 사용자 요청) */}
-                  <Tip text={info.how} />
+                  {/* 설명 문구는 타이틀 옆 인라인 부제로(SB PG557, 2026-11-17 사용자 요청) */}
+                  <span className="min-w-0 truncate text-[11px] font-normal text-[var(--ink4)]">{info.sub}</span>
                 </div>
-                {/* 박스 칩은 유형 칩과 헷갈려 → 색 텍스트로(파란=CVM이 줌, 노랑=우리가 채움). 2026-11-11 사용자 요청. */}
+                {/* 수급 분담 — CVM / 운영자 각각 채우는 범위(SB PG557: 라벨 CVM·운영자, 2026-11-17 사용자 요청). */}
                 <div className="ml-6 mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px]">
-                  <span className="text-[var(--ink4)]">CVM이 줌</span>
+                  <span className="text-[var(--ink4)]">CVM</span>
                   <b className="text-[#2e6ff2]">{info.cvmGives}</b>
                   <span className="text-[var(--line2)]">·</span>
-                  <span className="text-[var(--ink4)]">우리가 채움</span>
+                  <span className="text-[var(--ink4)]">운영자</span>
                   <b className="text-[#b67a12]">{info.weBuild}</b>
                 </div>
               </button>
@@ -1045,7 +1052,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   const next = { ...m };
                   for (const p of picks) {
                     const key = `${isCategory ? 'cat' : 'chip'}:${p.category}`;
-                    next[key] = p.items.map((it, i) => ({ id: `cat-${p.category}-${i}-${it.key}`, label: it.title || it.brand, icon: it.imageUrl ?? null, link: it.landing ?? null, sub: it.brand, mode: 'load' as const }));
+                    next[key] = p.items.map((it, i) => ({ id: `cat-${p.category}-${i}-${it.key}`, label: it.title || it.brand || '', icon: it.imageUrl ?? null, link: it.landing ?? undefined, sub: it.brand ?? undefined, mode: 'load' as const }));
                   }
                   return next;
                 });
@@ -1067,8 +1074,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
             <div className="mb-1">
               {/* 배너 설정 — 배너 옵션이 있는 유형만 */}
               {availOptions.includes('배너') && (
-                <FormBlock title="배너 설정">
-                  <FormRow label="배너 사용">
+                <FormBlock title="배너(상단 이미지)">
+                  <FormRow label="사용 여부" req>
                     <RadioRow options={['Y', 'N'] as const} value={optOn['배너'] ? 'Y' : 'N'} onChange={(v) => { const no = { ...optOn, ['배너']: v === 'Y' }; setOptOn(no); onOptionsChange(no, ctaLabelVal); }} />
                   </FormRow>
                   {optOn['배너'] && (<>
@@ -1104,40 +1111,55 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                       <input value={cornerTitleVal} onChange={(e) => { setCornerTitleVal(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'CornerTitle' }); }} placeholder="코너 제목 입력 (비어 있으면 AI 추천)" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
                     </div>
                   </FormRow>
-                  {hasButtonText && (
-                    <FormRow label="부제 사용">
-                      <RadioRow options={['Y', 'N'] as const} value={subtitleOn ? 'Y' : 'N'} onChange={(v) => { setSubtitleOn(v === 'Y'); if (v === 'N') onPreviewPatch({ subTitle: 'ButtonText' }); else onPreviewPatch({ subTitle: buttonTextVal || 'ButtonText' }); }} />
-                      {subtitleOn && (
-                        <input value={buttonTextVal} onChange={(e) => { setButtonTextVal(e.target.value); onPreviewPatch({ subTitle: e.target.value || 'ButtonText' }); }} placeholder="부제 문구 · 예: 카테고리별 혜택" className="mt-1.5 h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                      )}
-                    </FormRow>
-                  )}
                 </FormBlock>
               )}
-              {/* 버튼 설정 — 하단 더보기/CTA 버튼(문구·이동 경로·경로 유형·상세 경로) */}
+              {/* 텍스트 버튼 설정 — 코너 타이틀 옆/아래 텍스트 링크 버튼(버튼 텍스트 속성). 사용 토글 없이 항상 노출(SB PG557 상품형, 2026-11-17 사용자 요청). */}
+              {hasButtonText && (
+                <FormBlock title="텍스트 버튼 설정">
+                  <FormRow label="버튼 텍스트" en="ButtonText" req>
+                    <input value={buttonTextVal} onChange={(e) => { setButtonTextVal(e.target.value); onPreviewPatch({ subTitle: e.target.value || 'ButtonText' }); }} placeholder="예: 기프티콘" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                  </FormRow>
+                  <FormRow label="이동 경로" req>
+                    <RadioRow options={['페이지', '상품', '프로모션', '직접 입력'] as const} value={txtRoute} onChange={setTxtRoute} />
+                  </FormRow>
+                  <FormRow label="경로 상세" req>
+                    <div className="flex items-center gap-1.5">
+                      {txtRoute !== '직접 입력' && <button type="button" onClick={() => onToast(`${txtRoute} 경로 불러오기 (데모)`)} className="inline-flex h-[32px] shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 불러오기</button>}
+                      <div className="flex h-[32px] min-w-0 flex-1 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2">
+                        <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
+                        <input value={txtLink} onChange={(e) => setTxtLink(e.target.value)} placeholder="예: /product/apple" className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                      </div>
+                    </div>
+                  </FormRow>
+                  <FormRow label="열기 방식" req>
+                    <RadioRow options={['현재 화면', '내부 브라우저', '외부 브라우저'] as const} value={txtOpen} onChange={setTxtOpen} />
+                  </FormRow>
+                </FormBlock>
+              )}
+              {/* 하단 CTA 버튼 설정 — 코너 하단 더보기/CTA 버튼. 사용 여부(Y/N) + 문구·이동 경로·경로 상세·열기 방식(SB PG557, 2026-11-17 사용자 요청). */}
               {availOptions.includes('CTA') && (
-                <FormBlock title="버튼 설정">
-                  <FormRow label="버튼 사용">
+                <FormBlock title="하단 CTA 버튼 설정">
+                  <FormRow label="사용 여부" req>
                     <RadioRow options={['Y', 'N'] as const} value={optOn['CTA'] ? 'Y' : 'N'} onChange={(v) => { const no = { ...optOn, ['CTA']: v === 'Y' }; setOptOn(no); onOptionsChange(no, ctaLabelVal); }} />
                   </FormRow>
                   {optOn['CTA'] && (<>
-                    <FormRow label="버튼 텍스트" en="ButtonText">
-                      <input value={ctaLabelVal} onChange={(e) => { setCtaLabelVal(e.target.value); onPreviewPatch({ moreButtonUse: true, moreButtonLabel: e.target.value || 'CTA' }); }} placeholder="예: 전체보기" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    <FormRow label="버튼 텍스트" en="ButtonText" req>
+                      <input value={ctaLabelVal} onChange={(e) => { setCtaLabelVal(e.target.value); onPreviewPatch({ moreButtonUse: true, moreButtonLabel: e.target.value || 'CTA' }); }} placeholder="예: T 다이렉트 샵 보러가기" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
                     </FormRow>
-                    <FormRow label="이동 경로">
-                      <RadioRow options={['네이티브', '상품', '프로모션', '직접 입력'] as const} value={btnRoute} onChange={setBtnRoute} />
+                    <FormRow label="이동 경로" req>
+                      <RadioRow options={['페이지', '상품', '프로모션', '직접 입력'] as const} value={btnRoute} onChange={setBtnRoute} />
                     </FormRow>
-                    <FormRow label="경로 유형">
-                      <RadioRow options={['내부 브라우저', '외부 브라우저'] as const} value={btnBrowser} onChange={setBtnBrowser} />
-                    </FormRow>
-                    <FormRow label="상세 경로">
+                    <FormRow label="경로 상세" req>
                       <div className="flex items-center gap-1.5">
                         {btnRoute !== '직접 입력' && <button type="button" onClick={() => onToast(`${btnRoute} 경로 불러오기 (데모)`)} className="inline-flex h-[32px] shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 불러오기</button>}
                         <div className="flex h-[32px] min-w-0 flex-1 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2">
                           <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-                          <input value={ctaLinkVal} onChange={(e) => { setCtaLinkVal(e.target.value); onPreviewPatch({ moreButtonLink: e.target.value }); }} placeholder="예: /event/all" className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                          <input value={ctaLinkVal} onChange={(e) => { setCtaLinkVal(e.target.value); onPreviewPatch({ moreButtonLink: e.target.value }); }} placeholder="예: /skt/tdirect/shop" className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                         </div>
                       </div>
+                    </FormRow>
+                    <FormRow label="열기 방식" req>
+                      <RadioRow options={['현재 화면', '내부 브라우저', '외부 브라우저'] as const} value={btnOpen} onChange={setBtnOpen} />
                     </FormRow>
                   </>)}
                 </FormBlock>
