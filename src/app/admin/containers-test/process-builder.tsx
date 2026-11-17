@@ -630,6 +630,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const isBenefitType = corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형';
   // 배너형 = '배너 캠페인 관리'에서 가져오기 전용(직접 입력 없음). 가져오기 버튼으로 등록된 배너를 담는다(2026-11-05 사용자 요청).
   const isBanner = corner.cornerType === '배너형';
+  // 상품형 = 컴포넌트(아이템) 테이블을 가격 규격 컬럼으로(No·이미지·타이틀·할인율·가격·기간·서브 텍스트·경로 상세·상품 조회·삭제). 할인율/가격/기간은 상품(EPC) 원장 값(상품 조회) — 데모는 플레이스홀더. SB PG557(2026-11-17 사용자 요청).
+  const isProduct = corner.cornerType === '상품형';
   // 콘텐츠 안내형 = 아이프레임 연결 가능성이 커 링크 수정 자체가 불가(읽기 전용, 수정 버튼 없음). 2026-11-10 사용자 요청.
   const isContentGuide = corner.cornerType === '콘텐츠 안내형';
   // 배너 단일형 = 배너 1장 → 순서 변경 없음(드래그 핸들 제거). 스와이프형만 여러 장 재정렬(2026-11-05 사용자 요청).
@@ -1353,10 +1355,16 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           )}
           {/* 컴포넌트 라벨 + 양 옆 없는 테이블(border-y). 비배너형은 컬럼 헤더(순서·이미지·컴포넌트 타이틀·이동 링크·불러오기·삭제). 2026-11-11 사용자 요청. */}
           <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">{isBanner ? '컴포넌트(요소)' : <>컴포넌트 <span className="font-normal text-[var(--ink4)]">· {itemWord} {items.length}개</span></>}</p>
-          <div className="border-y border-[var(--line2)]">
-          {!isBanner && !isChip && items.length > 0 && (
+          <div className={cn('border-y border-[var(--line2)]', isProduct && 'overflow-x-auto')}>
+          {!isBanner && !isChip && !isProduct && items.length > 0 && (
             <div className="grid grid-cols-[26px_42px_minmax(0,1.5fr)_minmax(0,1fr)_28px_22px] items-center gap-1.5 border-b border-[var(--line2)] bg-[var(--th)] px-2.5 py-2.5 text-[13px] font-medium text-[var(--ink2)] whitespace-nowrap">
               <span className="text-center">순서</span><span className="text-center">이미지</span><span>타이틀</span><span>링크</span><span className="text-center" title="불러오기"><Search className="mx-auto h-3.5 w-3.5" /></span><span />
+            </div>
+          )}
+          {/* 상품형 테이블 컬럼 헤더 — No·이미지·컴포넌트 타이틀·할인율·가격·기간·서브 텍스트·경로 상세·(액션). SB PG557(2026-11-17 사용자 요청). */}
+          {isProduct && items.length > 0 && (
+            <div className="grid grid-cols-[30px_46px_132px_52px_112px_56px_118px_124px_118px] items-center gap-1.5 border-b border-[var(--line2)] bg-[var(--th)] px-2.5 py-2.5 text-[13px] font-medium text-[var(--ink2)] whitespace-nowrap">
+              <span className="text-center">No.</span><span className="text-center">이미지</span><span>컴포넌트 타이틀</span><span>할인율</span><span>가격</span><span>기간</span><span>서브 텍스트</span><span>경로 상세</span><span />
             </div>
           )}
           {/* 배너형 테이블 컬럼 헤더 — 배너 이미지 | 링크 URL (SB 사용자 목업 2026-11-12). */}
@@ -1375,7 +1383,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           <SortableContext items={items.map((o) => o.id)} strategy={verticalListSortingStrategy}>
           <div>
             {items.length === 0 && <p className="px-3 py-5 text-center text-[12px] text-[var(--ink4)]">아직 {itemWord}가 없어요 · &lsquo;{itemWord} 추가&rsquo;로 {canLoad ? (loadOnly ? '등록된 ' + itemWord + '에서 담으세요' : '카탈로그에서 끌어오세요') : '추가하세요'}</p>}
-            {items.map((o) => (
+            {items.map((o, idx) => (
               <SortableFillRow key={o.id} id={o.id}>{(h) => {
               // 배너형 — 2열 테이블 행: [배너 이미지=진짜 배너 합성 미리보기(클릭→불러오기) | 타이틀·링크(읽기전용)] + 배너 조회/삭제. 문구는 불필요, 타이틀만(2026-11-12 사용자 확정).
               if (isBanner) {
@@ -1444,6 +1452,37 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   </div>
                   {/* 삭제 */}
                   <button type="button" onClick={() => tryRemove(o)} className="grid h-6 w-6 place-items-center justify-self-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                </div>
+                );
+              }
+              // 상품형 — 가격 규격 테이블 행: No·이미지·컴포넌트 타이틀(편집)·할인율·가격·기간·서브 텍스트·경로 상세·상품 조회·삭제.
+              //  할인율/가격/기간은 상품(EPC) 원장 값 → '상품 조회'로 불러옴. 데모는 플레이스홀더 표시(편집 불가). SB PG557(2026-11-17 사용자 요청).
+              if (isProduct) {
+                return (
+                <div className="grid grid-cols-[30px_46px_132px_52px_112px_56px_118px_124px_118px] items-center gap-1.5 px-2.5 py-2.5">
+                  {/* No. — 드래그 핸들(번호 표시) */}
+                  <span ref={h.setRef} {...h.props} className="flex cursor-grab touch-none justify-center text-[13px] font-semibold text-[var(--ink3)]">{idx + 1}</span>
+                  {/* 이미지 — 클릭해 상품 조회(불러오기) */}
+                  <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('상품 조회 (데모)'))} title="상품 이미지 불러오기"
+                    className={cn('grid h-14 w-11 place-items-center overflow-hidden rounded-[6px] transition', o.icon ? 'border border-[var(--line2)] bg-[var(--th)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
+                    {o.icon ? <ItemIcon src={o.icon} brand={o.sub || o.label} iconClass="h-5 w-5" imgClass="h-full w-full object-contain" /> : <ImageIcon className="h-4 w-4" />}
+                  </button>
+                  {/* 컴포넌트 타이틀 — 편집 가능(상품형은 문구/노출 편집) */}
+                  <input value={o.label} onChange={(e) => setItemLabel(o.id, e.target.value)} placeholder="컴포넌트 타이틀"
+                    className="h-[32px] min-w-0 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                  {/* 할인율 · 가격 · 기간 — 상품(EPC) 원장 값(상품 조회) */}
+                  <span className="text-[13px] text-[var(--ink3)]" title="상품(EPC) 원장 값">00 %</span>
+                  <span className="text-[13px] text-[var(--ink3)]" title="상품(EPC) 원장 값">000,000,000원</span>
+                  <span className="text-[13px] text-[var(--ink3)]" title="상품(EPC) 원장 값">00개월</span>
+                  {/* 서브 텍스트 — 2줄 */}
+                  <span className="text-[12px] leading-tight text-[var(--ink3)]">{o.sub || 'TEXT TEXT TEXT TEXT'}</span>
+                  {/* 경로 상세 */}
+                  <span className="min-w-0 truncate text-[12px] text-[var(--ink3)]" title={o.link ?? ''}>{o.link || '/path'}</span>
+                  {/* 상품 조회 / 삭제 */}
+                  <div className="flex shrink-0 items-center justify-end gap-1">
+                    <button type="button" onClick={() => (canLoad ? setLoadForId(o.id) : onToast('상품 조회 (데모)'))} className="whitespace-nowrap rounded-full border border-[var(--line3)] px-2 py-1 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]">상품 조회</button>
+                    <button type="button" onClick={() => tryRemove(o)} className="whitespace-nowrap rounded-full border border-[var(--line3)] px-2 py-1 text-[11px] font-medium text-[var(--ink2)] hover:border-[var(--bad)] hover:text-[var(--bad)]">삭제</button>
+                  </div>
                 </div>
                 );
               }
@@ -1685,7 +1724,7 @@ function CornerChip({ c, no, selected, fixed, on, onToggleOn, onSelect, onToggle
   const displayName = c.name.startsWith(typePrefix) ? c.name.slice(typePrefix.length) : c.name;
   return (
     <div ref={setNodeRef} style={style} id={`chip-${c.id}`} onClick={onSelect}
-      className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-2 transition',
+      className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-1.5 transition',
         isDragging && 'z-10 opacity-80 shadow-lg',
         selected ? 'border-[var(--ac)] bg-[var(--ac2)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
       {/* 그립을 좌측 레일로(위로 얼라인) + 우측 콘텐츠 2행(2026-11-12 사용자 요청: 순서변경 핸들 위로). */}
@@ -1698,7 +1737,7 @@ function CornerChip({ c, no, selected, fixed, on, onToggleOn, onSelect, onToggle
           {/* 상단 행 — 번호·이름·고정 여부·삭제(원형 X) */}
           <div className="flex items-center gap-2">
             <span className="w-4 shrink-0 text-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
-            <span className={cn('min-w-0 flex-1 truncate text-[14px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{displayName}</span>
+            <span className={cn('min-w-0 flex-1 truncate text-[13px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{displayName}</span>
             <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFixed(); }} title={fixed ? 'Fixed 고정됨 — 눌러서 해제' : '눌러서 Fixed로 고정'}
               className={cn('inline-flex h-5 shrink-0 items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
                 fixed ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink3)]')}>
@@ -1710,7 +1749,7 @@ function CornerChip({ c, no, selected, fixed, on, onToggleOn, onSelect, onToggle
             </button>
           </div>
           {/* 하단 행 — 유형 칩·레이아웃 · (우) 노출 토글 */}
-          <div className="mt-1.5 flex items-center gap-1.5 pl-6">
+          <div className="mt-1 flex items-center gap-1.5 pl-6">
             <span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span>
             {layoutText && <span className="whitespace-nowrap text-[11px] text-[var(--ink4)]">{layoutText}</span>}
             <span className="min-w-0 flex-1" />
