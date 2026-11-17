@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Check, Minus, ExternalLink } from 'lucide-react';
 import { CornerTypeForm, DevicePreview, cornerRowPreview, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo, type BannerCampaignOption, type ProductOption } from '../corner-type-manager';
-import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL, componentTypesForCorner } from '@/lib/display-taxonomy';
+import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL, componentTypesForCorner, cornerExposure } from '@/lib/display-taxonomy';
 import { CornerFieldList } from '../corner-fields';
 import { CornerSpecPreview, loadCornerSpec } from '../carousel-item/carousel-item-studio';
 import { CornerTypeReviewBar, cornerTypeReviewIssues } from './corner-type-review-bar';
@@ -378,6 +378,24 @@ export function CornerTypeReadOnly({ row, bannerPreviews = [], usagePreviews = [
       <RORow label="코너 유형 설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description || '—'}</span></RORow>
       </ROTable>
       </ROSection>
+
+      {/* 노출 조건 — 이 프리셋이 언제·어떻게 노출되나(구성 설명). 회의·전시 구조 기반 초안(2026-11-17 사용자 요청, SB 참고). */}
+      {cornerExposure(row.baseCategory) && (() => {
+        const ex = cornerExposure(row.baseCategory)!;
+        return (
+          <ROSection title={<>노출 조건 <span className="text-[11px] font-normal text-slate-400">· 이 프리셋이 언제·어떻게 노출되나 (초안)</span></>}>
+            <div className="rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-4 py-3">
+              <p className="text-[13px] leading-relaxed text-slate-700"><span className="mr-1 rounded-[4px] bg-[#edeaff] px-1.5 py-0.5 text-[11px] font-semibold text-[#3617ce]">언제</span>{ex.when}</p>
+              <ul className="mt-2.5 space-y-1.5">
+                {ex.notes.map((n, i) => (
+                  <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-slate-600"><span className="mt-[2px] text-[#3617ce]">›</span><span>{n}</span></li>
+                ))}
+              </ul>
+              <p className="mt-3 text-[11px] text-slate-400">※ 회의(2026-11-17)·전시 구조 기반 초안이에요. FO 기획(노출 조건·바인딩) 확정 시 보정합니다.</p>
+            </div>
+          </ROSection>
+        );
+      })()}
 
       {/* 코너 정보 · 속성 — 전 페이지 공통 섹션명(2026-10-28 사용자 요청). 상품형은 스튜디오 항목, 그 외는 CornerFieldList. */}
       {(studioItems || cornerFieldSpec(row.baseCategory, row.typeDetail)) && (
