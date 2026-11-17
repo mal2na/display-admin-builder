@@ -586,7 +586,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   // CTA 링크 — 문구와 별도 입력(2026-11-05 사용자 요청: 인풋 두 개).
   const [ctaLinkVal, setCtaLinkVal] = React.useState(() => ((pv as { moreButtonLink?: string | null } | undefined)?.moreButtonLink ?? ''));
   // SB(BO-AIM-DSP-PG557) 코너 카드 버튼 — 이동 경로(페이지·상품·프로모션·직접 입력) / 열기 방식(현재 화면·내부·외부 브라우저). 데모 로컬 상태(미리보기 비연동 필드, 2026-11-17 사용자 SB).
-  // 텍스트 버튼(버튼 텍스트 속성) — 버튼 텍스트 = buttonTextVal 공용.
+  // 서브 CTA(상단 CTA) — 코너 타이틀 옆 CTA. 하단 CTA와 함께 'CTA 2개' 케이스(카테고리형 한정, 2026-11-17 사용자 요청). 버튼 텍스트 = buttonTextVal 공용.
+  const [subCtaOn, setSubCtaOn] = React.useState(true);
   const [txtRoute, setTxtRoute] = React.useState<BtnRoute>('페이지');
   const [txtOpen, setTxtOpen] = React.useState<BtnOpen>('현재 화면');
   const [txtLink, setTxtLink] = React.useState('');
@@ -1150,11 +1151,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   </FormRow>
                 </FormBlock>
               )}
-              {/* 텍스트 버튼 설정 — 코너 타이틀 옆/아래 텍스트 링크 버튼(버튼 텍스트 속성). 사용 토글 없이 항상 노출(SB PG557 상품형, 2026-11-17 사용자 요청). */}
-              {hasButtonText && (
-                <FormBlock title="텍스트 버튼 설정">
+              {/* 서브 CTA 설정 — 코너 타이틀 옆 CTA(예: '카테고리별 혜택 ›'). CTA 2개 케이스라 카테고리형에만 노출(2026-11-17 사용자 요청). 버튼 텍스트 = 미리보기 서브타이틀. */}
+              {isCategory && (
+                <FormBlock title="서브 CTA 설정">
+                  <FormRow label="사용 여부" req>
+                    <RadioRow options={['Y', 'N'] as const} value={subCtaOn ? 'Y' : 'N'} onChange={(v) => setSubCtaOn(v === 'Y')} />
+                  </FormRow>
+                  {subCtaOn && (<>
                   <FormRow label="버튼 텍스트" en="ButtonText" req>
-                    <input value={buttonTextVal} onChange={(e) => { setButtonTextVal(e.target.value); onPreviewPatch({ subTitle: e.target.value || 'ButtonText' }); }} placeholder="예: 기프티콘" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    <input value={buttonTextVal} onChange={(e) => { setButtonTextVal(e.target.value); onPreviewPatch({ subTitle: e.target.value || 'ButtonText' }); }} placeholder="예: 카테고리별 혜택" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
                   </FormRow>
                   <FormRow label="이동 경로" req>
                     <RadioRow options={['페이지', '상품', '프로모션', '직접 입력'] as const} value={txtRoute} onChange={setTxtRoute} />
@@ -1164,18 +1169,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                       {txtRoute !== '직접 입력' && <button type="button" onClick={() => onToast(`${txtRoute} 경로 불러오기 (데모)`)} className="inline-flex h-[32px] shrink-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 불러오기</button>}
                       <div className="flex h-[32px] min-w-0 flex-1 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2">
                         <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
-                        <input value={txtLink} onChange={(e) => setTxtLink(e.target.value)} placeholder="예: /product/apple" className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                        <input value={txtLink} onChange={(e) => setTxtLink(e.target.value)} placeholder="예: /benefit/category" className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
                       </div>
                     </div>
                   </FormRow>
                   <FormRow label="열기 방식" req>
                     <RadioRow options={['현재 화면', '내부 브라우저', '외부 브라우저'] as const} value={txtOpen} onChange={setTxtOpen} />
                   </FormRow>
+                  </>)}
                 </FormBlock>
               )}
               {/* 하단 CTA 버튼 설정 — 코너 하단 더보기/CTA 버튼. 사용 여부(Y/N) + 문구·이동 경로·경로 상세·열기 방식(SB PG557, 2026-11-17 사용자 요청). */}
               {availOptions.includes('CTA') && (
-                <FormBlock title="하단 CTA 버튼 설정">
+                <FormBlock title="하단 CTA 설정">
                   <FormRow label="사용 여부" req>
                     <RadioRow options={['Y', 'N'] as const} value={optOn['CTA'] ? 'Y' : 'N'} onChange={(v) => { const no = { ...optOn, ['CTA']: v === 'Y' }; setOptOn(no); onOptionsChange(no, ctaLabelVal); }} />
                   </FormRow>
