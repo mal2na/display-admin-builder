@@ -332,8 +332,8 @@ function ItemRow({ s, priceLines }: { s: CarouselItemSpec; priceLines?: string[]
 function CardPreview({ spec, sel, onCard, onItem, layout, priceLines }: { spec: CardHomeSpec; sel?: 'card' | 'item'; onCard?: () => void; onItem?: () => void; layout?: string; priceLines?: string[] | null }) {
   const ro = !onCard && !onItem; // 읽기 전용(상세 미리보기)
   const vertical = isVertical(layout);
-  // 상단 이미지(배너) = 배열로 결정(2026-11-17: 옵션 폐지). '상단 이미지형'(저장값 '+배너')일 때만 상단 이미지. 레거시 bannerOn=true 스펙도 방어.
-  const hasBanner = /배너/.test(layout ?? '') || spec.bannerOn === true;
+  // 상단 이미지(배너) = 배열로만 결정(2026-11-17: 옵션 폐지). '상단 이미지형'(저장값 '+배너')일 때만. 그 외(세로형·카테고리형 등)엔 상단 이미지 없음 — 레거시 bannerOn은 무시.
+  const hasBanner = /배너/.test(layout ?? '');
   // 세로형 = 행 구분선(divide-y)만 · 박스 테두리 없음(2026-10-19 사용자 요청). 선택 표시는 ring/bg로(테두리는 divide 색과 충돌).
   //  가로형 = 캐러셀 카드 → 선택 테두리 박스 유지.
   const itemBtnCls = () => vertical

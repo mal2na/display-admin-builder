@@ -195,12 +195,11 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   });
   // 코너 헤더(타이틀)가 없는 완결형·탭/칩·배너 유형은 '더보기(CTA)'도 없다(탭형 등).
   const noMore = noTitle;
-  // 배너·CTA는 카드형 유형(상품형·혜택·오퍼형·콘텐츠 안내형)의 공통 옵션 — 상품형 스튜디오는 상단 배너 슬롯을 보여주는데
-  // 혜택·오퍼형/콘텐츠 안내형(CornerBlock)은 bigBanner일 때만 보여 얼라인이 안 맞았다. 타입 프리뷰에선 상단 배너 슬롯을 함께 노출(2026-11-11 사용자 요청).
-  const bannerOptionType = ['혜택·오퍼형', '콘텐츠 안내형'].includes(row.baseCategory);
+  // 상단 이미지(배너)는 '상단 이미지형' 배열(저장값 '+배너')에서만 노출한다(2026-11-17 사용자 요청: 그냥 세로형·세로형(카테고리형) 등엔 상단 이미지 제거). 유형 전체 강제 노출 폐기.
+  const topImageLayout = (row.typeDetail ?? '').includes('배너');
   return {
     ...c,
-    bigBanner: row.bigBanner || bannerOptionType,
+    bigBanner: row.bigBanner || topImageLayout,
     showImage: row.useImage, showPrice: row.usePrice, showBadge: false, showDesc: row.useDesc,
     // CTA 버튼 문구는 껍데기 placeholder — 코너 유형 미리보기는 저장된 문구(전체보기 등) 대신 항상 'CTA'(2026-10-29(2) 사용자 요청: 전 유형 CTA).
     moreButtonUse: noMore ? false : row.useMoreButton, moreButtonLabel: 'CTA',
