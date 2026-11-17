@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Pencil, Check, Minus, ExternalLink } from 'lucide-react';
 import { CornerTypeForm, DevicePreview, cornerRowPreview, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo, type BannerCampaignOption, type ProductOption } from '../corner-type-manager';
-import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL } from '@/lib/display-taxonomy';
+import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL, componentTypesForCorner } from '@/lib/display-taxonomy';
 import { CornerFieldList } from '../corner-fields';
 import { CornerSpecPreview, loadCornerSpec } from '../carousel-item/carousel-item-studio';
 import { CornerTypeReviewBar, cornerTypeReviewIssues } from './corner-type-review-bar';
@@ -357,6 +357,11 @@ export function CornerTypeReadOnly({ row, onEdit, bannerPreviews = [], usagePrev
       <RORow label="코너 유형">
         <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold">{cornerTypeBi(row.baseCategory)}</span>
         {cornerTypePurpose(row.baseCategory) && <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{cornerTypePurpose(row.baseCategory)}</p>}
+      </RORow>
+      {/* 프리셋 제약 마킹 — 이 코너 유형에 등록 가능한 컴포넌트(아이템) 유형. 빌더 '불러오기'가 이 유형만 허용(PI-DSP-CMP-003). 2026-11-17 사용자 요청. */}
+      <RORow label="등록 가능 아이템">
+        <span className="text-[12px] font-medium text-slate-700">{componentTypesForCorner(row.baseCategory).join(' · ') || '—'}</span>
+        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">이 프리셋엔 위 컴포넌트 유형만 등록할 수 있어요. 빌더 ‘불러오기’도 이 유형으로 제한돼요. <span className="text-slate-400">(PI-DSP-CMP-003)</span></p>
       </RORow>
       <RORow label="배열·레이아웃">
         {/* 상품형은 배너가 옵션 → '세로형+배너'를 '세로형'으로 접어 표시(2026-10-28 사용자 요청). */}
