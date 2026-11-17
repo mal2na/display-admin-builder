@@ -577,8 +577,6 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   //  placeholder(Chip/전체/카테고리 등 필드코드)는 실제 칩이 아니므로 제외하고, 미리보기 선택형 아톰의 '진짜 카테고리'만 초기값으로.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chipComp0 = (pv?.components ?? []).find((c: any) => c.componentType === '선택형');
-  // 칩 슬롯 수 = 미리보기 선택형 아톰 수(없으면 4). 점선 placeholder 개수의 기준.
-  const chipSlotCount = (chipComp0?.atoms?.length ?? 0) > 0 ? chipComp0!.atoms.length : 4;
   const [chips, setChips] = React.useState<string[]>(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const labels = (chipComp0?.atoms ?? []).map((a: any) => (a.content || a.name || '').trim())
@@ -606,9 +604,19 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const onBannerFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return;
     const url = URL.createObjectURL(f);
-    setBannerImg(url); onPreviewPatch({ bannerImageUrl: url }); onToast(`로컬 이미지 ‘${f.name}’ 적용`);
+    setBannerImg(url); setBannerFileName(f.name); onPreviewPatch({ bannerImageUrl: url }); onToast(`로컬 이미지 ‘${f.name}’ 적용`);
     e.target.value = '';
   };
+  // 배너 — 업로드 파일명 캡션 + 대체텍스트(alt). 이미지/아이콘 대체텍스트 필수(PI-DSP-CMP-004). SB PG557(2026-11-17 사용자 요청).
+  const [bannerFileName, setBannerFileName] = React.useState('');
+  const [bannerAlt, setBannerAlt] = React.useState('');
+  // 카테고리 설정(상품형·혜택 카테고리형) — 카테고리별 메뉴 메타(아이콘·링크·이동경로·열기방식). SB PG557 '카테고리 설정' 테이블(2026-11-17 사용자 요청).
+  const [catOn, setCatOn] = React.useState(true);
+  type CatMeta = { icon: string | null; link: string; linkType: 'internal' | 'external'; mode: 'direct' | 'load' };
+  const [catMeta, setCatMeta] = React.useState<Record<string, CatMeta>>({});
+  const [catIconFor, setCatIconFor] = React.useState<string | null>(null);
+  const catMetaOf = (c: string): CatMeta => catMeta[c] ?? { icon: null, link: '', linkType: 'internal', mode: 'direct' };
+  const patchCat = (c: string, patch: Partial<CatMeta>) => setCatMeta((m) => ({ ...m, [c]: { ...catMetaOf(c), ...patch } }));
   // 카테고리형(상품형·혜택·오퍼형 세로형/가로형(카테고리형)) — 상단 카테고리 칩 + 카테고리별 컴포넌트 리스트(2026-11-06 사용자 요청).
   const isCategory = (corner.cornerType === '상품형' || corner.cornerType === '혜택·오퍼형') && /카테고리형|칩|카테고리/.test(corner.layoutDetail ?? corner.layout ?? '');
   // ③ 채우기 항목 — 칩/카테고리 On 이면 카테고리마다 별도 리스트(카테고리별 컴포넌트 연동). 아니면 단일 리스트(__flat__).
@@ -1079,23 +1087,28 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                     <RadioRow options={['Y', 'N'] as const} value={optOn['배너'] ? 'Y' : 'N'} onChange={(v) => { const no = { ...optOn, ['배너']: v === 'Y' }; setOptOn(no); onOptionsChange(no, ctaLabelVal); }} />
                   </FormRow>
                   {optOn['배너'] && (<>
-                    {/* 배너 소재 — 소스(배너 캠페인/DS 포탈/로컬) 세그먼트 + 불러오기, 한 줄(2026-11-12 사용자 요청). */}
-                    <FormRow label="배너 소재">
+                    {/* 이미지 선택 — 업로드(OS 파일 선택) / 라이브러리(소재 모달). SB PG557(2026-11-17 사용자 요청). */}
+                    <FormRow label="이미지 선택" req>
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="inline-flex rounded-[7px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-medium">
-                          {(['배너 캠페인', 'DS 포탈', '로컬(PC)'] as const).map((s) => (
-                            <button key={s} type="button" onClick={() => setBannerSource(s)} className={cn('rounded-[6px] px-2.5 py-1 transition', bannerSource === s ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink3)] hover:text-[var(--ink2)]')}>{s}</button>
-                          ))}
-                        </div>
-                        <button type="button" onClick={openBannerPicker} className="inline-flex h-[32px] shrink-0 items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3.5 w-3.5" /> 불러오기</button>
+                        <button type="button" onClick={() => bannerFileRef.current?.click()} className="inline-flex h-[32px] items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><ImageIcon className="h-3.5 w-3.5" /> 이미지 파일 업로드</button>
+                        <button type="button" onClick={() => { setBannerSource('배너 캠페인'); setBannerImgModal(true); }} className="inline-flex h-[32px] items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3.5 w-3.5" /> 라이브러리에서 선택</button>
                         <input ref={bannerFileRef} type="file" accept="image/*" onChange={onBannerFile} className="hidden" />
                       </div>
                     </FormRow>
-                    <FormRow label="이미지" en="ImageUrl">
-                      {/* 이미지 클릭 → 소재 선택 모달 */}
-                      <button type="button" onClick={openBannerPicker} title={bannerSource === '로컬(PC)' ? '클릭해 로컬 이미지 선택' : '클릭해 배너 소재 선택'} className="grid h-14 w-20 place-items-center overflow-hidden rounded-[6px] border border-[var(--line3)] bg-[var(--th)] text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
-                        {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
-                      </button>
+                    <FormRow label="배너" en="ImageSrc">
+                      <div className="flex items-center gap-3">
+                        <button type="button" onClick={openBannerPicker} title="클릭해 이미지 선택" className="grid h-14 w-20 shrink-0 place-items-center overflow-hidden rounded-[6px] border border-[var(--line3)] bg-[var(--th)] text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]">
+                          {bannerImg ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={bannerImg} alt="배너" className="h-full w-full object-cover" /> : <ImageIcon className="h-4 w-4" />}
+                        </button>
+                        {bannerFileName && <span className="min-w-0 truncate text-[12px] text-[var(--ink4)]">업로드 된 파일명 : {bannerFileName}</span>}
+                      </div>
+                    </FormRow>
+                    {/* 대체 텍스트(alt) — 이미지 대체텍스트 필수(PI-DSP-CMP-004). AI 추천 초안. */}
+                    <FormRow label="대체 텍스트(alt)" req>
+                      <div className="flex items-center gap-1">
+                        <button type="button" onClick={() => { const v = `${cornerTitleVal || corner.name || '배너'} 이미지`; setBannerAlt(v); onToast('대체텍스트 초안을 생성했어요'); }} className="flex h-[32px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3 w-3" /> AI 추천</button>
+                        <input value={bannerAlt} onChange={(e) => setBannerAlt(e.target.value)} placeholder="이미지를 설명하는 대체텍스트 (필수)" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                      </div>
                     </FormRow>
                   </>)}
                 </FormBlock>
@@ -1164,22 +1177,90 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                   </>)}
                 </FormBlock>
               )}
-              {/* 카테고리 — 칩 옵션이 있는 유형만. 불러오기로 카테고리 추가, 칩 선택 시 아래 컴포넌트가 전환. */}
-              {availOptions.includes('칩') && (
-                <FormBlock title="카테고리" desc={`${chips.length}/${Math.max(chipSlotCount, chips.length)}`}>
-                  <FormRow label="카테고리 선택">
-                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                      {chips.map((c, i) => (
-                        <span key={i} onClick={() => setActiveChip(i)}
-                          className={cn('inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium', i === chipIdx ? 'border-[var(--ac)] bg-[var(--ac2)] text-[var(--ac)]' : 'border-[var(--line3)] bg-white text-[var(--ink2)]')}>
-                          {c}
-                          <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
-                        </span>
-                      ))}
-                      <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-[#cfd2ff] px-2.5 py-1 text-[12px] font-semibold text-[var(--ac)]"><Plus className="h-3 w-3" /> 불러오기</button>
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-[var(--ink4)]">칩을 누르면 아래 컴포넌트가 그 카테고리 항목으로 바뀝니다.</p>
+              {/* 카테고리 설정 — 카테고리형(상품형·혜택 카테고리형 isCategory, 또는 칩 옵션). 사용 여부 + 카테고리 선택(불러오기) + 메뉴 테이블(순서·이동경로·아이콘·메뉴명·열기방식·경로상세). SB PG557(2026-11-17 사용자 요청). */}
+              {(isCategory || availOptions.includes('칩')) && (
+                <FormBlock title="카테고리 설정">
+                  <FormRow label="사용 여부" req>
+                    <RadioRow options={['Y', 'N'] as const} value={catOn ? 'Y' : 'N'} onChange={(v) => setCatOn(v === 'Y')} />
                   </FormRow>
+                  {catOn && (<>
+                    <FormRow label="카테고리 선택" req>
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex h-[28px] items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>
+                        {chips.map((c, i) => (
+                          <span key={i} onClick={() => setActiveChip(i)}
+                            className={cn('inline-flex cursor-pointer items-center gap-1 rounded-[6px] border px-2 py-1 text-[12px] font-medium', i === chipIdx ? 'border-[#f2c47a] bg-[#fff8ef] text-[#b67a12]' : 'border-[var(--line3)] bg-white text-[var(--ink2)]')}>
+                            {c}
+                            <button type="button" onClick={(e) => { e.stopPropagation(); setChips((cs) => cs.filter((_, j) => j !== i)); }} className="text-[var(--ink4)] hover:text-[var(--bad)]"><X className="h-3 w-3" /></button>
+                          </span>
+                        ))}
+                      </div>
+                    </FormRow>
+                    {/* 메뉴 테이블 — 카테고리별 아이콘·링크·이동경로·열기방식(업무 진입형 메뉴 테이블과 동일 규격). */}
+                    {chips.length > 0 && (
+                      <div className="mt-2 border-y border-[var(--line2)]">
+                        <div className="grid grid-cols-[26px_58px_42px_minmax(60px,1fr)_auto_minmax(72px,1.05fr)_20px] items-center gap-1.5 border-b border-[var(--line2)] bg-[var(--th)] px-2.5 py-2.5 text-[13px] font-medium text-[var(--ink2)] whitespace-nowrap">
+                          <span className="text-center">순서</span><span className="text-center">이동 경로</span><span className="text-center">아이콘</span><span>메뉴명</span><span className="text-center">열기 방식</span><span>경로 상세</span><span />
+                        </div>
+                        {chips.map((c, i) => {
+                          const m = catMetaOf(c); const loaded = m.mode === 'load';
+                          return (
+                            <div key={i} className="grid grid-cols-[26px_58px_42px_minmax(60px,1fr)_auto_minmax(72px,1.05fr)_20px] items-center gap-1.5 px-2.5 py-2">
+                              <span className="flex justify-center text-[var(--ink4)]"><GripVertical className="h-4 w-4" /></span>
+                              {/* 이동 경로 — 직접 | 조회 */}
+                              <div className="flex gap-0.5 rounded-[7px] border border-[var(--line2)] bg-[var(--th)] p-[2px] text-[10px] font-semibold">
+                                <button type="button" onClick={() => patchCat(c, { mode: 'direct' })} className={cn('flex-1 rounded-[5px] px-1 py-1 transition', !loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>직접</button>
+                                <button type="button" onClick={() => patchCat(c, { mode: 'load' })} className={cn('flex-1 rounded-[5px] px-1 py-1 transition', loaded ? 'bg-white text-[var(--ac)] shadow-sm ring-1 ring-[#cfd2ff]' : 'text-[var(--ink4)] hover:text-[var(--ink2)]')}>조회</button>
+                              </div>
+                              {/* 아이콘 */}
+                              <button type="button" onClick={() => setCatIconFor(c)} title="아이콘 선택"
+                                className={cn('grid h-8 w-8 place-items-center justify-self-center overflow-hidden rounded-[7px] transition', m.icon ? 'bg-[var(--ac2)] text-[var(--ac)] hover:ring-1 hover:ring-[var(--ac)]' : 'border border-dashed border-[var(--line3)] bg-white text-[var(--ink4)] hover:border-[var(--ac)] hover:text-[var(--ac)]')}>
+                                {m.icon ? <ItemIcon src={m.icon} iconClass="h-[18px] w-[18px]" imgClass="h-5 w-5 object-contain" /> : <ImageIcon className="h-4 w-4" />}
+                              </button>
+                              {/* 메뉴명 — 카테고리명(수정 시 아래 컴포넌트 매핑도 함께 이동) */}
+                              <input value={c} onChange={(e) => {
+                                  const nn = e.target.value;
+                                  setChips((cs) => cs.map((x, j) => (j === i ? nn : x)));
+                                  const oldKey = `cat:${c}`, newKey = `cat:${nn}`;
+                                  setItemsByKey((mm) => { if (!(oldKey in mm)) return mm; const n = { ...mm }; n[newKey] = n[oldKey]; delete n[oldKey]; return n; });
+                                  setCatMeta((mm) => { const n = { ...mm }; n[nn] = catMetaOf(c); if (nn !== c) delete n[c]; return n; });
+                                }} placeholder="카테고리명"
+                                className="h-[32px] min-w-0 rounded-[6px] border border-[var(--line2)] px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                              {/* 열기 방식 — 직접: 내부/외부 · 조회: 불러오기 */}
+                              <div className="flex justify-center">
+                                {!loaded ? (
+                                  <div className="flex items-center gap-2 whitespace-nowrap text-[11px] text-[var(--ink2)]">
+                                    {(['내부', '외부'] as const).map((t) => { const on = (t === '내부' ? 'internal' : 'external') === m.linkType; return (
+                                      <button key={t} type="button" onClick={() => patchCat(c, { linkType: t === '내부' ? 'internal' : 'external' })} className="inline-flex shrink-0 items-center gap-1">
+                                        <span className={cn('grid h-3.5 w-3.5 place-items-center rounded-full border', on ? 'border-[var(--ac)] bg-[var(--ac)]' : 'border-[var(--line3)] bg-white')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>{t}
+                                      </button>
+                                    ); })}
+                                  </div>
+                                ) : (
+                                  <button type="button" onClick={() => setChipLoadOpen(true)} title="메뉴 관리에서 불러오기" className="flex shrink-0 items-center gap-1 rounded-[7px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 py-1.5 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Search className="h-3 w-3" /> 불러오기</button>
+                                )}
+                              </div>
+                              {/* 경로 상세 */}
+                              <div className="flex h-[32px] min-w-0 items-center gap-1 rounded-[6px] border border-[var(--line2)] px-2" title="경로 상세(이동 링크)">
+                                <Link2 className="h-3.5 w-3.5 shrink-0 text-[var(--ink4)]" />
+                                <input value={m.link} onChange={(e) => patchCat(c, { link: e.target.value })} placeholder="/category/..." className="h-full min-w-0 flex-1 bg-transparent text-[12px] focus:outline-none" />
+                              </div>
+                              {/* 삭제 */}
+                              <button type="button" onClick={() => setChips((cs) => cs.filter((_, j) => j !== i))} className="grid h-6 w-6 place-items-center justify-self-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div className="mt-2 flex justify-end">
+                      <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex items-center gap-1 rounded-[6px] bg-[var(--ac)] px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-[var(--ac-h)]"><Plus className="h-3.5 w-3.5" /> 추가</button>
+                    </div>
+                  </>)}
+                  {/* 카테고리 아이콘 선택 모달 */}
+                  {catIconFor && (
+                    <IconPickerModal current={catMetaOf(catIconFor).icon} onClose={() => setCatIconFor(null)}
+                      onPick={(ic) => { patchCat(catIconFor, { icon: ic }); setCatIconFor(null); onToast('아이콘을 적용했습니다.'); }} />
+                  )}
                 </FormBlock>
               )}
             </div>
