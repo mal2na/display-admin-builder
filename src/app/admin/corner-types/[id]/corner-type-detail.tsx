@@ -382,7 +382,7 @@ export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPrevie
       </RORow>
       )}
       {/* 코너 유형 설명 — DB 설명이 비면 유형별 원장 출처·카테고리 기본 설명(2026-11-18 사용자 요청: 노출 조건 대신 여기로). */}
-      <RORow label="코너 유형 설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description || cornerTypeSourceNote(row.baseCategory) || '—'}</span></RORow>
+      <RORow label="코너 유형 설명"><span className="text-[13px] font-normal leading-relaxed text-[#1a1a1a]">{row.description || cornerTypeSourceNote(row.baseCategory) || '—'}</span></RORow>
       </ROTable>
       </ROSection>
 
