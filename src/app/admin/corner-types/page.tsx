@@ -7,7 +7,7 @@ import { cornerToPreviewCorner, PLACED_CORNER_INCLUDE, PLACED_CORNER_ORDER } fro
 export const dynamic = 'force-dynamic';
 
 export default async function CornerTypesPage() {
-  const [rows, auditRows, builtOptions, placedCorners] = await Promise.all([
+  const [rows, auditRows, builtOptions, placedCorners, madeCorners] = await Promise.all([
     // 배너형도 정식 코너 유형(2026-09-28) → 목록에 노출. 배너 소재·문구는 배너 캠페인 관리가 소유.
     prisma.cornerType.findMany({ orderBy: { typeId: 'asc' } }),
     prisma.auditLog.findMany({
@@ -23,7 +23,10 @@ export default async function CornerTypesPage() {
       include: PLACED_CORNER_INCLUDE,
       orderBy: PLACED_CORNER_ORDER,
     }),
+    // 적용 화면(이 유형으로 실제 만든 코너) 유무 — 미사용 코너 유형을 메인 목록에서 숨기기 위함(2026-11-18 사용자 요청). 배치 여부 무관.
+    prisma.corner.findMany({ where: { sourceCornerTypeId: { not: null } }, select: { sourceCornerTypeId: true } }),
   ]);
+  const usedTypeIds = new Set(madeCorners.map((c) => c.sourceCornerTypeId));
   // 최근 수정자 = 해당 코너 유형의 가장 최근 감사 로그 변경자 (없으면 등록자)
   const lastActor = new Map<string, string>();
   for (const a of auditRows) if (a.targetId && !lastActor.has(a.targetId)) lastActor.set(a.targetId, a.actor);
@@ -33,7 +36,7 @@ export default async function CornerTypesPage() {
     if (c.sourceCornerTypeId && !previewByType.has(c.sourceCornerTypeId)) previewByType.set(c.sourceCornerTypeId, cornerToPreviewCorner(c));
   }
 
-  const types: CornerTypeRow[] = rows.map((r) => ({ ...toCornerTypeRow(r, lastActor.get(r.id) ?? null), previewCorner: previewByType.get(r.id) ?? null }));
+  const types: CornerTypeRow[] = rows.map((r) => ({ ...toCornerTypeRow(r, lastActor.get(r.id) ?? null), previewCorner: previewByType.get(r.id) ?? null, used: usedTypeIds.has(r.id) }));
 
   return (
     <div className="px-12 py-9 pb-28">

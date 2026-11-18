@@ -348,6 +348,24 @@ export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPrevie
   ] : null;
 
   // 정보(읽기 전용) 블록 — 단일/멀티 레이아웃에서 공용. 프로모션 상세 .fsec/.ftable 규격.
+  // 노출 조건(구성 설명 초안) — 재사용 추출. 백업(editable)은 상단, 메인(!editable)은 맨 아래(2026-11-18 사용자 요청).
+  const exposureContent = cornerExposure(row.baseCategory) ? (() => {
+    const ex = cornerExposure(row.baseCategory)!;
+    return (
+      <ROSection title={<>노출 조건 <span className="text-[11px] font-normal text-slate-400">· 이 프리셋이 언제·어떻게 노출되나 (초안)</span></>}>
+        <div className="rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-4 py-3">
+          <p className="text-[13px] leading-relaxed text-slate-700"><span className="mr-1 rounded-[4px] bg-[#edeaff] px-1.5 py-0.5 text-[11px] font-semibold text-[#3617ce]">언제</span>{ex.when}</p>
+          <ul className="mt-2.5 space-y-1.5">
+            {ex.notes.map((n, i) => (
+              <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-slate-600"><span className="mt-[2px] text-[#3617ce]">›</span><span>{n}</span></li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[11px] text-slate-400">※ 회의(2026-11-17)·전시 구조 기반 초안이에요. FO 기획(노출 조건·바인딩) 확정 시 보정합니다.</p>
+        </div>
+      </ROSection>
+    );
+  })() : null;
+
   const infoContent = (
     <div className="space-y-6">
       <ROSection title="코너 기본 정보">
@@ -358,11 +376,13 @@ export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPrevie
         <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold">{cornerTypeBi(row.baseCategory)}</span>
         {cornerTypePurpose(row.baseCategory) && <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{cornerTypePurpose(row.baseCategory)}</p>}
       </RORow>
-      {/* 프리셋 제약 마킹 — 이 코너 유형에 등록 가능한 컴포넌트(아이템) 유형. 빌더 '불러오기'가 이 유형만 허용(PI-DSP-CMP-003). 2026-11-17 사용자 요청. */}
+      {/* 등록 가능 아이템(컴포넌트 출처) — 백업(editable)만. 메인은 제외(2026-11-18 사용자 요청: 컴포넌트 출처 다 제외). PI-DSP-CMP-003. */}
+      {editable && (
       <RORow label="등록 가능 아이템">
         <span className="text-[12px] font-medium text-slate-700">{componentTypesForCorner(row.baseCategory).join(' · ') || '—'}</span>
         <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">이 프리셋엔 위 컴포넌트 유형만 등록할 수 있어요. 빌더 ‘불러오기’도 이 유형으로 제한돼요. <span className="text-slate-400">(PI-DSP-CMP-003)</span></p>
       </RORow>
+      )}
       <RORow label="배열·레이아웃">
         {/* 상품형은 배너가 옵션 → '세로형+배너'를 '세로형'으로 접어 표시(2026-10-28 사용자 요청). */}
         <span className="font-medium">{layoutBi(displayLayout(row.baseCategory, row.typeDetail)) || layoutLabel(displayLayout(row.baseCategory, row.typeDetail)) || '—'}</span>
@@ -379,26 +399,11 @@ export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPrevie
       </ROTable>
       </ROSection>
 
-      {/* 노출 조건 — 이 프리셋이 언제·어떻게 노출되나(구성 설명). 회의·전시 구조 기반 초안(2026-11-17 사용자 요청, SB 참고). */}
-      {cornerExposure(row.baseCategory) && (() => {
-        const ex = cornerExposure(row.baseCategory)!;
-        return (
-          <ROSection title={<>노출 조건 <span className="text-[11px] font-normal text-slate-400">· 이 프리셋이 언제·어떻게 노출되나 (초안)</span></>}>
-            <div className="rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-4 py-3">
-              <p className="text-[13px] leading-relaxed text-slate-700"><span className="mr-1 rounded-[4px] bg-[#edeaff] px-1.5 py-0.5 text-[11px] font-semibold text-[#3617ce]">언제</span>{ex.when}</p>
-              <ul className="mt-2.5 space-y-1.5">
-                {ex.notes.map((n, i) => (
-                  <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-slate-600"><span className="mt-[2px] text-[#3617ce]">›</span><span>{n}</span></li>
-                ))}
-              </ul>
-              <p className="mt-3 text-[11px] text-slate-400">※ 회의(2026-11-17)·전시 구조 기반 초안이에요. FO 기획(노출 조건·바인딩) 확정 시 보정합니다.</p>
-            </div>
-          </ROSection>
-        );
-      })()}
+      {/* 노출 조건 — 백업(editable)만 여기(상단). 메인은 맨 아래로 이동(2026-11-18 사용자 요청: 메인 간소화, 백업 건들지 않음). */}
+      {editable && exposureContent}
 
-      {/* 코너 정보 · 속성 — 전 페이지 공통 섹션명(2026-10-28 사용자 요청). 상품형은 스튜디오 항목, 그 외는 CornerFieldList. */}
-      {(studioItems || cornerFieldSpec(row.baseCategory, row.typeDetail)) && (
+      {/* 코너 속성 — 백업(editable)만. 메인은 제외(2026-11-18 사용자 요청: 코너 속성 다 빼도 될듯). 상품형은 스튜디오 항목, 그 외는 CornerFieldList. */}
+      {editable && (studioItems || cornerFieldSpec(row.baseCategory, row.typeDetail)) && (
         studioItems ? (
           // 상품형 — 라벨(코드·옵션/고정 배지) | 사용 상태·값 테이블(2026-10-29(2) 사용자 요청).
           <ROSection title={<>코너 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></>}>
@@ -582,6 +587,8 @@ export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPrevie
           {infoContent}
           {variationsContent}
           {usageContent}
+          {/* 노출 조건 — 메인(!editable)은 맨 아래(2026-11-18 사용자 요청). 백업은 상단(infoContent 내부). */}
+          {!editable && exposureContent}
         </div>
       </div>
 

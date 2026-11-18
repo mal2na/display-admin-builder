@@ -45,6 +45,7 @@ export type CornerTypeRow = {
   id: string;
   typeId: string;
   name: string;
+  used?: boolean; // 적용 화면(이 유형으로 만든 코너) 유무 — 미사용은 메인 목록에서 숨김(2026-11-18). 백업(?edit=1)은 전부 노출.
   baseCategory: string;
   componentType: string | null;
   typeDetail: string | null;
@@ -914,7 +915,7 @@ function LayoutGroupCard({ cases, onOpen }: { cases: CornerTypeRow[]; onOpen: ()
   );
 }
 
-export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRow[]; builtOptions: BuiltCornerOption[] }) {
+export function CornerTypeManager({ types: allTypes, builtOptions }: { types: CornerTypeRow[]; builtOptions: BuiltCornerOption[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -937,6 +938,8 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   // 수정 가능 백업 모드(2026-11-18) — '?edit=1'이면 상세로 이동할 때도 유지해 상세가 편집 폼을 연다.
   const editMode = sp.get('edit') === '1';
   const editQ = editMode ? '?edit=1' : '';
+  // 메인 목록은 '적용 화면 없는(미사용)' 코너 유형을 숨긴다(2026-11-18 사용자 요청). 백업(?edit=1)은 전부 노출.
+  const types = editMode ? allTypes : allTypes.filter((t) => t.used !== false);
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
   const [view, setView] = useState<'card' | 'list'>(sp.get('view') === 'card' ? 'card' : 'list'); // 기본=리스트(2026-09-29 사용자 결정), 카드 보기 옵션
 
@@ -997,6 +1000,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   // 필터 상태 → URL 쿼리 동기화 (기본값은 생략). 상세 진입 후 뒤로 오면 이 쿼리로 복원된다.
   useEffect(() => {
     const p = new URLSearchParams();
+    if (editMode) p.set('edit', '1'); // 수정 가능 백업 모드 유지(2026-11-18) — 필터 동기화가 edit을 떨구지 않게.
     if (domain !== '전시') p.set('domain', domain);
     if (base !== '전체') p.set('base', base);
     if (detail !== '전체') p.set('detail', detail);
