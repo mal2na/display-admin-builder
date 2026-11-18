@@ -12,9 +12,10 @@ export default async function AppVersionNewPage() {
   return (
     <div className="px-12 py-9 pb-28">
       <PageHeader
-        trail={['운영 관리', 'App 버전 관리', 'App 버전 신규 등록']}
-        title="App 버전 신규 등록"
+        trail={['운영관리', 'App 버전 관리', 'App 버전 등록']}
+        title="App 버전 등록"
       />
+      <div className="mt-6" />
       <VersionForm mode="new" action={createVersion} versionOptions={versionOptions} />
     </div>
   );

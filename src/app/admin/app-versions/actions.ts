@@ -26,7 +26,6 @@ function readForm(fd: FormData) {
     recommendVersion: str(fd, 'recommendVersion'),
     forceVersion: str(fd, 'forceVersion'), // '없음' 옵션이면 클라이언트가 빈 값 전송
     detailContent: str(fd, 'detailContent'),
-    versionContent: str(fd, 'versionContent'),
     recommendPopupTitle: str(fd, 'recommendPopupTitle'),
     recommendPopupContent: str(fd, 'recommendPopupContent'),
     recommendPopupImageUrl: str(fd, 'recommendPopupImageUrl'),
@@ -48,42 +47,54 @@ function composeVersion(fd: FormData): string {
 
 function revalidate(id?: string) {
   revalidatePath('/admin/app-versions');
-  if (id) {
-    revalidatePath(`/admin/app-versions/${id}`);
-    revalidatePath(`/admin/app-versions/${id}/history`);
-  }
+  if (id) revalidatePath(`/admin/app-versions/${id}`);
 }
 
-// 등록
+// 등록 (SB PG579) — 저장(draft) 상태로. 저장 성공 → 목록.
 export async function createVersion(fd: FormData) {
   const data = readForm(fd);
   const version = composeVersion(fd);
-  const row = await prisma.appVersion.create({
+  await prisma.appVersion.create({
     data: {
       ...data, version, createdBy: OPERATOR, updatedBy: OPERATOR,
       approvalStatus: 'draft',
-      history: { create: { version, status: 'draft', requester: OPERATOR, requestedAt: new Date(), changeNote: '신규 등록' } },
+      history: { create: { version, status: 'draft', changeNote: '신규 등록' } },
     },
   });
-  revalidate(row.id);
-  redirect(`/admin/app-versions/${row.id}`);
+  revalidatePath('/admin/app-versions');
+  redirect('/admin/app-versions');
 }
 
-// 수정 (버전은 Key라 변경 불가)
+// 수정 (SB PG582) — 대상App·OS·버전은 Key라 변경 불가. 저장(draft) → 목록.
 export async function updateVersion(id: string, fd: FormData) {
   const data = readForm(fd);
   await prisma.appVersion.update({
     where: { id },
     data: {
-      ...data, updatedBy: OPERATOR,
-      history: { create: { version: str(fd, 'version'), status: 'draft', requester: OPERATOR, requestedAt: new Date(), changeNote: '수정' } },
+      ...data, updatedBy: OPERATOR, approvalStatus: 'draft',
+      history: { create: { version: str(fd, 'version'), status: 'draft', changeNote: '수정' } },
+    },
+  });
+  revalidatePath('/admin/app-versions');
+  redirect('/admin/app-versions');
+}
+
+// 상세에서 승인요청 (SB PG581 버튼 CASE)
+export async function requestApprovalVersion(id: string) {
+  const v = await prisma.appVersion.findUnique({ where: { id } });
+  const now = new Date();
+  await prisma.appVersion.update({
+    where: { id },
+    data: {
+      approvalStatus: 'requested', approvalRequester: OPERATOR, approvalRequestedAt: now,
+      history: { create: { version: v?.version, status: 'requested', requester: OPERATOR, requestedAt: now, changeNote: '승인요청' } },
     },
   });
   revalidate(id);
   redirect(`/admin/app-versions/${id}`);
 }
 
-// 승인요청 취소 (변경/승인이력 탭)
+// 승인요청 취소 (상세 버튼 CASE)
 export async function cancelRequestVersion(id: string) {
   const v = await prisma.appVersion.findUnique({ where: { id } });
   const now = new Date();
@@ -95,4 +106,5 @@ export async function cancelRequestVersion(id: string) {
     },
   });
   revalidate(id);
+  redirect(`/admin/app-versions/${id}`);
 }
