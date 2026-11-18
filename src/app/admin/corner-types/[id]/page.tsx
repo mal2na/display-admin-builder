@@ -9,7 +9,9 @@ import { baseLayout } from '@/lib/display-taxonomy';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CornerTypeDetailPage({ params }: { params: { id: string } }) {
+export default async function CornerTypeDetailPage({ params, searchParams }: { params: { id: string }; searchParams?: { edit?: string } }) {
+  // 수정 가능 백업(2026-11-18) — '?edit=1'이면 상세가 '수정' 버튼·편집 폼을 연다. 메인(파라미터 없음)은 조회 전용.
+  const editable = searchParams?.edit === '1';
   // 코너 유형을 먼저 가져와 유형별 '채우기' 카탈로그(상품형=상품 분류만)를 좁힌다(2026-10-28 사용자 정의).
   const ct = await prisma.cornerType.findUnique({ where: { id: params.id } });
   if (!ct) notFound();
@@ -149,7 +151,7 @@ export default async function CornerTypeDetailPage({ params }: { params: { id: s
 
   return (
     <div className="px-12 py-9 pb-28">
-      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} usage={usage} usageByCorner={usageByCorner} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} siblings={siblings} />
+      <CornerTypeDetail row={row} history={history} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} usage={usage} usageByCorner={usageByCorner} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} siblings={siblings} editable={editable} />
     </div>
   );
 }

@@ -6,9 +6,9 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Check, Minus, ExternalLink } from 'lucide-react';
+import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Check, Minus, ExternalLink, Pencil } from 'lucide-react';
 import { CornerTypeForm, DevicePreview, cornerRowPreview, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo, type BannerCampaignOption, type ProductOption } from '../corner-type-manager';
-import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL, componentTypesForCorner, cornerExposure } from '@/lib/display-taxonomy';
+import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL, componentTypesForCorner, cornerTypeSourceNote } from '@/lib/display-taxonomy';
 import { CornerFieldList } from '../corner-fields';
 import { CornerSpecPreview, loadCornerSpec } from '../carousel-item/carousel-item-studio';
 import { CornerTypeReviewBar, cornerTypeReviewIssues } from './corner-type-review-bar';
@@ -29,7 +29,7 @@ const RESULT_COLOR: Record<string, string> = {
   DELETED: 'bg-rose-100 text-rose-700',
 };
 
-export function CornerTypeDetail({ row, history, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], usage = [], usageByCorner = [], bannerPreviews = [], usagePreviews = [], siblings = [] }: { row: CornerTypeRow; history: HistoryRow[]; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; usage?: UsageRow[]; usageByCorner?: UsageByCorner[]; bannerPreviews?: BannerPreview[]; usagePreviews?: PreviewCorner[]; siblings?: { id: string; name: string }[] }) {
+export function CornerTypeDetail({ row, history, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], usage = [], usageByCorner = [], bannerPreviews = [], usagePreviews = [], siblings = [], editable = false }: { row: CornerTypeRow; history: HistoryRow[]; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; usage?: UsageRow[]; usageByCorner?: UsageByCorner[]; bannerPreviews?: BannerPreview[]; usagePreviews?: PreviewCorner[]; siblings?: { id: string; name: string }[]; editable?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState<'info' | 'history'>('info');
   const [usageOpen, setUsageOpen] = useState(true); // (레거시 상단 블록용 — 현재 미표시)
@@ -156,8 +156,8 @@ export function CornerTypeDetail({ row, history, builtOptions, registered = [], 
 
       {/* 코너 유형 정보 — 기본은 읽기 전용. '수정'을 누르면 편집 폼(등록과 동일 UI). */}
       {tab === 'info' && (editing
-        ? <CornerTypeForm row={row} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} onClose={() => { setEditing(false); router.refresh(); }} />
-        : <CornerTypeReadOnly row={row} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} usageByCorner={usageByCorner} />)}
+        ? <CornerTypeForm editable={editable} row={row} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} onClose={() => { setEditing(false); router.refresh(); }} />
+        : <CornerTypeReadOnly row={row} editable={editable} onEdit={() => setEditing(true)} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} usageByCorner={usageByCorner} />)}
 
       {tab === 'history' && (
         <div className="overflow-x-auto rounded-lg border">
@@ -291,7 +291,7 @@ function ROSection({ title, aside, bodyClass, children, defaultOpen = true, coll
   );
 }
 
-export function CornerTypeReadOnly({ row, bannerPreviews = [], usagePreviews = [], usageByCorner = [] }: { row: CornerTypeRow; bannerPreviews?: BannerPreview[]; usagePreviews?: PreviewCorner[]; usageByCorner?: UsageByCorner[] }) {
+export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPreviews = [], usagePreviews = [], usageByCorner = [] }: { row: CornerTypeRow; editable?: boolean; onEdit?: () => void; bannerPreviews?: BannerPreview[]; usagePreviews?: PreviewCorner[]; usageByCorner?: UsageByCorner[] }) {
   const platforms = row.platforms.split(',').filter(Boolean);
   const hasDefaults = row.defaultMinItems != null || row.defaultMaxItems != null || row.defaultSortStrategy || row.defaultRecSource || row.defaultMoreButton;
   const isBanner = row.baseCategory === '배너형' && bannerPreviews.length > 0;
@@ -348,6 +348,7 @@ export function CornerTypeReadOnly({ row, bannerPreviews = [], usagePreviews = [
   ] : null;
 
   // 정보(읽기 전용) 블록 — 단일/멀티 레이아웃에서 공용. 프로모션 상세 .fsec/.ftable 규격.
+  // 노출 조건 섹션 폐지(2026-11-18 사용자 요청) — 유형별로 다 똑같아 '코너 유형 설명'(원장 출처·카테고리)으로 통합.
   const infoContent = (
     <div className="space-y-6">
       <ROSection title="코너 기본 정보">
@@ -358,11 +359,13 @@ export function CornerTypeReadOnly({ row, bannerPreviews = [], usagePreviews = [
         <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold">{cornerTypeBi(row.baseCategory)}</span>
         {cornerTypePurpose(row.baseCategory) && <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{cornerTypePurpose(row.baseCategory)}</p>}
       </RORow>
-      {/* 프리셋 제약 마킹 — 이 코너 유형에 등록 가능한 컴포넌트(아이템) 유형. 빌더 '불러오기'가 이 유형만 허용(PI-DSP-CMP-003). 2026-11-17 사용자 요청. */}
+      {/* 등록 가능 아이템(컴포넌트 출처) — 백업(editable)만. 메인은 제외(2026-11-18 사용자 요청: 컴포넌트 출처 다 제외). PI-DSP-CMP-003. */}
+      {editable && (
       <RORow label="등록 가능 아이템">
         <span className="text-[12px] font-medium text-slate-700">{componentTypesForCorner(row.baseCategory).join(' · ') || '—'}</span>
         <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">이 프리셋엔 위 컴포넌트 유형만 등록할 수 있어요. 빌더 ‘불러오기’도 이 유형으로 제한돼요. <span className="text-slate-400">(PI-DSP-CMP-003)</span></p>
       </RORow>
+      )}
       <RORow label="배열·레이아웃">
         {/* 상품형은 배너가 옵션 → '세로형+배너'를 '세로형'으로 접어 표시(2026-10-28 사용자 요청). */}
         <span className="font-medium">{layoutBi(displayLayout(row.baseCategory, row.typeDetail)) || layoutLabel(displayLayout(row.baseCategory, row.typeDetail)) || '—'}</span>
@@ -372,33 +375,20 @@ export function CornerTypeReadOnly({ row, bannerPreviews = [], usagePreviews = [
       <RORow label="사용 여부">
         <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', row.active ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground')}>{row.active ? '사용' : '미사용'}</span>
       </RORow>
+      {/* 승인상태 — 백업(editable)만. 메인은 제외(2026-11-18 사용자 요청: 승인상태도 빼줘). */}
+      {editable && (
       <RORow label="승인상태">
         <span className="rounded-full bg-[#e8ecef] px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
       </RORow>
-      <RORow label="코너 유형 설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description || '—'}</span></RORow>
+      )}
+      {/* 코너 유형 설명 — DB 설명이 비면 유형별 원장 출처·카테고리 기본 설명(2026-11-18 사용자 요청: 노출 조건 대신 여기로). */}
+      <RORow label="코너 유형 설명"><span className="text-[13px] font-normal leading-relaxed text-[#1a1a1a]">{row.description || cornerTypeSourceNote(row.baseCategory) || '—'}</span></RORow>
       </ROTable>
       </ROSection>
 
-      {/* 노출 조건 — 이 프리셋이 언제·어떻게 노출되나(구성 설명). 회의·전시 구조 기반 초안(2026-11-17 사용자 요청, SB 참고). */}
-      {cornerExposure(row.baseCategory) && (() => {
-        const ex = cornerExposure(row.baseCategory)!;
-        return (
-          <ROSection title={<>노출 조건 <span className="text-[11px] font-normal text-slate-400">· 이 프리셋이 언제·어떻게 노출되나 (초안)</span></>}>
-            <div className="rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-4 py-3">
-              <p className="text-[13px] leading-relaxed text-slate-700"><span className="mr-1 rounded-[4px] bg-[#edeaff] px-1.5 py-0.5 text-[11px] font-semibold text-[#3617ce]">언제</span>{ex.when}</p>
-              <ul className="mt-2.5 space-y-1.5">
-                {ex.notes.map((n, i) => (
-                  <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-slate-600"><span className="mt-[2px] text-[#3617ce]">›</span><span>{n}</span></li>
-                ))}
-              </ul>
-              <p className="mt-3 text-[11px] text-slate-400">※ 회의(2026-11-17)·전시 구조 기반 초안이에요. FO 기획(노출 조건·바인딩) 확정 시 보정합니다.</p>
-            </div>
-          </ROSection>
-        );
-      })()}
 
-      {/* 코너 정보 · 속성 — 전 페이지 공통 섹션명(2026-10-28 사용자 요청). 상품형은 스튜디오 항목, 그 외는 CornerFieldList. */}
-      {(studioItems || cornerFieldSpec(row.baseCategory, row.typeDetail)) && (
+      {/* 코너 속성 — 백업(editable)만. 메인은 제외(2026-11-18 사용자 요청: 코너 속성 다 빼도 될듯). 상품형은 스튜디오 항목, 그 외는 CornerFieldList. */}
+      {editable && (studioItems || cornerFieldSpec(row.baseCategory, row.typeDetail)) && (
         studioItems ? (
           // 상품형 — 라벨(코드·옵션/고정 배지) | 사용 상태·값 테이블(2026-10-29(2) 사용자 요청).
           <ROSection title={<>코너 속성 <span className="text-[11px] font-normal text-slate-400">· 이 코너 유형이 쓰는 표시 항목</span></>}>
@@ -585,11 +575,14 @@ export function CornerTypeReadOnly({ row, bannerPreviews = [], usagePreviews = [
         </div>
       </div>
 
-      {/* 하단 액션 — 목록만. 코너 유형 관리는 조회 전용이라 '수정' 제거(2026-11-17 사용자 요청: 리드만 가능). 정의 변경은 SB 스튜디오. */}
+      {/* 하단 액션 — 목록. 코너 유형 관리는 조회 전용(2026-11-17: 리드만). 단 수정 가능 백업(editable=true, ?edit=1)에서만 '수정' 노출 — 소통·비교용. */}
       <div className="flex items-center justify-between gap-2 border-t border-[#eef1f4] pt-4">
-        <Link href="/admin/corner-types" className="inline-flex h-[38px] items-center gap-1.5 rounded-[8px] border border-[#c4c9cf] bg-white px-4 text-[13px] font-semibold text-slate-600 transition hover:bg-[#f8f9fb]">
+        <Link href={editable ? '/admin/corner-types?edit=1' : '/admin/corner-types'} className="inline-flex h-[38px] items-center gap-1.5 rounded-[8px] border border-[#c4c9cf] bg-white px-4 text-[13px] font-semibold text-slate-600 transition hover:bg-[#f8f9fb]">
           <ChevronLeft className="h-4 w-4" /> 목록
         </Link>
+        {editable && onEdit && (
+          <Button size="sm" variant="secondary" onClick={onEdit}><Pencil className="mr-1 h-3.5 w-3.5" /> 수정</Button>
+        )}
       </div>
     </div>
   );
