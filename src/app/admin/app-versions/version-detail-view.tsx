@@ -5,7 +5,26 @@
 import { useState } from 'react';
 import { OpsSection, FieldRow, ReadValue, StatusPill } from '@/components/ops-ui';
 import { VERSION_APPROVAL, fmtDateTime } from '@/lib/widget-taxonomy';
-import { ImageIcon, X } from 'lucide-react';
+import { ImageIcon, X, Info } from 'lucide-react';
+
+// 라벨 옆 ⓘ 툴팁 (SB 6/7 — 권장/강제 업데이트 기준버전)
+function InfoTip({ text }: { text: string }) {
+  return (
+    <span className="group relative ml-1 inline-flex align-middle">
+      <Info className="h-3.5 w-3.5 text-slate-400" />
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 w-60 -translate-x-1/2 rounded-md bg-slate-800 px-2.5 py-1.5 text-[11px] leading-snug text-white opacity-0 shadow-lg transition group-hover:opacity-100">{text}</span>
+    </span>
+  );
+}
+// 라벨 + ⓘ 를 함께 넣는 FieldRow (label에 ReactNode 미지원이라 값 영역 상단에 라벨 보조로 둘 수 없어 커스텀 행 사용)
+function TipRow({ label, tip, children }: { label: string; tip: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[140px_1fr] items-stretch border-b border-[#dce0e5]">
+      <div className="flex items-center bg-[var(--th)] px-4 py-3 text-[14px] font-medium text-[var(--ink2)]">{label}<InfoTip text={tip} /></div>
+      <div className="px-4 py-2.5">{children}</div>
+    </div>
+  );
+}
 
 export type VersionView = {
   targetApp: string; osType: string; updateDate: string | null; version: string; applyLabel: string;
@@ -36,18 +55,24 @@ export function VersionDetailView({ v, footer }: { v: VersionView; footer?: Reac
 
   return (
     <div>
+      {/* 승인 정보 (공통UI) — 배지 + 세로 구분선 + 요청자/담당자(이름·일시). SB PG581 2 */}
       <OpsSection title="승인 정보">
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#dce0e5] bg-[var(--th)] px-4 py-3">
-          <StatusPill label={ap.label} tone={ap.tone} />
-          {showApply && <StatusPill label={v.applyLabel} tone={APPLY_TONE[v.applyLabel] ?? 'neutral'} />}
-        </div>
-        <div className="grid grid-cols-2">
-          <FieldRow label="승인 요청자">
-            <ReadValue value={v.approvalRequester ? `${v.approvalRequester}${v.approvalRequestedAt ? `  ·  ${fmtDateTime(v.approvalRequestedAt)}` : ''}` : '-'} />
-          </FieldRow>
-          <FieldRow label="승인 담당자">
-            <ReadValue value={v.approvalManager ? `${v.approvalManager}${v.approvalProcessedAt ? `  ·  ${fmtDateTime(v.approvalProcessedAt)}` : ''}` : '-'} />
-          </FieldRow>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-[#dce0e5] bg-[var(--th)] px-4 py-4">
+          <div className="flex shrink-0 items-center gap-2">
+            <StatusPill label={ap.label} tone={ap.tone} />
+            {showApply && <StatusPill label={v.applyLabel} tone={APPLY_TONE[v.applyLabel] ?? 'neutral'} />}
+          </div>
+          <div className="hidden h-9 w-px self-center bg-[#dce0e5] sm:block" />
+          <div className="grid gap-1.5 text-[13px]">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-0.5">
+              <span className="text-[var(--ink2)]">승인 요청자 : <b className="font-semibold text-[var(--ink)]">{v.approvalRequester ?? '-'}</b></span>
+              <span className="tabular-nums text-[var(--ink3)]">{v.approvalRequestedAt ? fmtDateTime(v.approvalRequestedAt) : '-'}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-0.5">
+              <span className="text-[var(--ink2)]">승인 담당자 : <b className="font-semibold text-[var(--ink)]">{v.approvalManager ?? '-'}</b></span>
+              <span className="tabular-nums text-[var(--ink3)]">{v.approvalProcessedAt ? fmtDateTime(v.approvalProcessedAt) : '-'}</span>
+            </div>
+          </div>
         </div>
       </OpsSection>
 
@@ -58,8 +83,8 @@ export function VersionDetailView({ v, footer }: { v: VersionView; footer?: Reac
           <FieldRow label="App 버전"><ReadValue value={v.version} /></FieldRow>
           <FieldRow label="업데이트 일시"><ReadValue value={fmtDateTime(v.updateDate)} /></FieldRow>
           <div className="col-span-2"><FieldRow label="상세내용"><ReadValue value={v.detailContent ?? '-'} /></FieldRow></div>
-          <FieldRow label="권장 업데이트 기준버전"><ReadValue value={v.recommendVersion ?? '없음'} /></FieldRow>
-          <FieldRow label="강제 업데이트 기준버전"><ReadValue value={v.forceVersion ?? '없음'} /></FieldRow>
+          <TipRow label="권장 업데이트 기준버전" tip="선택한 버전보다 낮은 버전을 사용하는 고객에게 권장 업데이트 팝업이 노출됩니다."><ReadValue value={v.recommendVersion ?? '없음'} /></TipRow>
+          <TipRow label="강제 업데이트 기준버전" tip="선택한 버전보다 낮은 버전을 사용하는 고객은 업데이트 후에만 App을 이용할 수 있습니다."><ReadValue value={v.forceVersion ?? '없음'} /></TipRow>
           <FieldRow label="권장 업데이트 팝업 (제목/내용)">
             <div className="space-y-1"><ReadValue value={v.recommendPopupTitle ?? '-'} /><ReadValue value={v.recommendPopupContent ?? '-'} /></div>
           </FieldRow>
