@@ -1024,6 +1024,19 @@ export function cornerExposure(cornerType: string): CornerExposure | null {
   return (CORNER_EXPOSURE_CONDITIONS as Record<string, CornerExposure>)[cornerType] ?? null;
 }
 
+// 코너 유형 설명(원장 출처·카테고리) — 유형별로 '무엇을 어디서 들고 오나'를 설명에 통합(2026-11-18 사용자 요청: 노출 조건 섹션 대신 설명으로). 코너 유형 설명(DB)이 비면 이 기본값을 노출.
+export const CORNER_TYPE_SOURCE_NOTE: Record<CornerType, string> = {
+  상품형: '상품(EPC) 원장에서 상품형으로 등록된 상품만 들고와 노출해요 — 디바이스·요금제·부가서비스·구독·보험·인터넷/IPTV 등.',
+  '혜택·오퍼형': '혜택·오퍼 원장에 등록된 혜택만 들고와 노출해요 — 멤버십·제휴·기프티콘·구독 혜택 등.',
+  배너형: '배너 캠페인 관리에 등록된 배너 소재만 불러와 노출해요(소재·문구·랜딩은 캠페인 소유).',
+  '업무 진입형': '업무 진입 메뉴(아이콘·라벨·링크)를 노출해요 — 메뉴/바로가기·고객 상태 카드.',
+  '콘텐츠 안내형': '콘텐츠 원장에 등록된 콘텐츠만 불러와 노출해요 — 영화·공연·이용 가이드 등.',
+  바코드형: '멤버십 바코드 영역을 노출해요 — 바코드 값은 런타임 발급.',
+};
+export function cornerTypeSourceNote(cornerType: string): string {
+  return (CORNER_TYPE_SOURCE_NOTE as Record<string, string>)[cornerType] ?? '';
+}
+
 // ── 표시명 통일(2026-09) — 저장값(typeDetail)은 유지하고 화면 표기만 '형태 기준'으로 정리. ──
 //  콘텐츠 이름(카테고리 탭·바코드…)을 형태명(탭형·바코드형…)으로. 매처/DB는 원값 그대로라 안전.
 const LAYOUT_LABEL: Record<string, string> = {

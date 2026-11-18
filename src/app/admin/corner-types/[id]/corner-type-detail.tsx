@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Check, Minus, ExternalLink, Pencil } from 'lucide-react';
 import { CornerTypeForm, DevicePreview, cornerRowPreview, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo, type BannerCampaignOption, type ProductOption } from '../corner-type-manager';
-import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL, componentTypesForCorner, cornerExposure } from '@/lib/display-taxonomy';
+import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL, componentTypesForCorner, cornerTypeSourceNote } from '@/lib/display-taxonomy';
 import { CornerFieldList } from '../corner-fields';
 import { CornerSpecPreview, loadCornerSpec } from '../carousel-item/carousel-item-studio';
 import { CornerTypeReviewBar, cornerTypeReviewIssues } from './corner-type-review-bar';
@@ -348,24 +348,7 @@ export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPrevie
   ] : null;
 
   // 정보(읽기 전용) 블록 — 단일/멀티 레이아웃에서 공용. 프로모션 상세 .fsec/.ftable 규격.
-  // 노출 조건(구성 설명 초안) — 재사용 추출. 백업(editable)은 상단, 메인(!editable)은 맨 아래(2026-11-18 사용자 요청).
-  const exposureContent = cornerExposure(row.baseCategory) ? (() => {
-    const ex = cornerExposure(row.baseCategory)!;
-    return (
-      <ROSection title={<>노출 조건 <span className="text-[11px] font-normal text-slate-400">· 이 프리셋이 언제·어떻게 노출되나 (초안)</span></>}>
-        <div className="rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-4 py-3">
-          <p className="text-[13px] leading-relaxed text-slate-700"><span className="mr-1 rounded-[4px] bg-[#edeaff] px-1.5 py-0.5 text-[11px] font-semibold text-[#3617ce]">언제</span>{ex.when}</p>
-          <ul className="mt-2.5 space-y-1.5">
-            {ex.notes.map((n, i) => (
-              <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-slate-600"><span className="mt-[2px] text-[#3617ce]">›</span><span>{n}</span></li>
-            ))}
-          </ul>
-          <p className="mt-3 text-[11px] text-slate-400">※ 회의(2026-11-17)·전시 구조 기반 초안이에요. FO 기획(노출 조건·바인딩) 확정 시 보정합니다.</p>
-        </div>
-      </ROSection>
-    );
-  })() : null;
-
+  // 노출 조건 섹션 폐지(2026-11-18 사용자 요청) — 유형별로 다 똑같아 '코너 유형 설명'(원장 출처·카테고리)으로 통합.
   const infoContent = (
     <div className="space-y-6">
       <ROSection title="코너 기본 정보">
@@ -392,15 +375,17 @@ export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPrevie
       <RORow label="사용 여부">
         <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', row.active ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground')}>{row.active ? '사용' : '미사용'}</span>
       </RORow>
+      {/* 승인상태 — 백업(editable)만. 메인은 제외(2026-11-18 사용자 요청: 승인상태도 빼줘). */}
+      {editable && (
       <RORow label="승인상태">
         <span className="rounded-full bg-[#e8ecef] px-2 py-0.5 text-[11px] font-medium text-slate-600">{CORNER_TYPE_STATUS_LABEL[row.status] ?? row.status}</span>
       </RORow>
-      <RORow label="코너 유형 설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description || '—'}</span></RORow>
+      )}
+      {/* 코너 유형 설명 — DB 설명이 비면 유형별 원장 출처·카테고리 기본 설명(2026-11-18 사용자 요청: 노출 조건 대신 여기로). */}
+      <RORow label="코너 유형 설명"><span className="text-[12px] leading-relaxed text-muted-foreground">{row.description || cornerTypeSourceNote(row.baseCategory) || '—'}</span></RORow>
       </ROTable>
       </ROSection>
 
-      {/* 노출 조건 — 백업(editable)만 여기(상단). 메인은 맨 아래로 이동(2026-11-18 사용자 요청: 메인 간소화, 백업 건들지 않음). */}
-      {editable && exposureContent}
 
       {/* 코너 속성 — 백업(editable)만. 메인은 제외(2026-11-18 사용자 요청: 코너 속성 다 빼도 될듯). 상품형은 스튜디오 항목, 그 외는 CornerFieldList. */}
       {editable && (studioItems || cornerFieldSpec(row.baseCategory, row.typeDetail)) && (
@@ -587,8 +572,6 @@ export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPrevie
           {infoContent}
           {variationsContent}
           {usageContent}
-          {/* 노출 조건 — 메인(!editable)은 맨 아래(2026-11-18 사용자 요청). 백업은 상단(infoContent 내부). */}
-          {!editable && exposureContent}
         </div>
       </div>
 

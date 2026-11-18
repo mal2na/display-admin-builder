@@ -62,7 +62,7 @@ const carousel = (title: string): CarouselItemSpec => ({
   imageSrc: '',
   title,
   subTitle: { show: false, value: 'SubTitle' },
-  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'PriceCaption' }, discountRate: { show: false, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
+  priceGroup: { show: true, price: '99,999원', priceCaption: { show: false, value: 'PriceCaption' }, discountRate: { show: true, value: '99%' }, pricePeriod: { show: false, value: '/Period' } },
   subText01: { show: false, value: 'SubText01' },
   subText02: { show: true, value: 'SubText' },
   caption: { show: false, value: 'Caption01', icon: { show: false }, caption02: { show: false, value: 'Caption02' }, caption03: { show: false, value: 'Caption03' } },
