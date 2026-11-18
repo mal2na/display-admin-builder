@@ -37,6 +37,10 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         <NavLink href="/admin/app-versions" icon={<SmartphoneNfc className="h-4 w-4" />} label="App 버전 관리" collapsed={collapsed} />
         <NavLink href="/admin/app-splash" icon={<ImagePlay className="h-4 w-4" />} label="App 스플래시 관리" collapsed={collapsed} />
         <NavLink href="/admin/app-widgets" icon={<AppWindow className="h-4 w-4" />} label="App 위젯 관리" collapsed={collapsed} alsoActiveFor={['/admin/widget-types']} />
+
+        {/* 백업 — 소통·비교용. 코너 유형 관리는 메인이 조회 전용(2026-11-17)이라, '수정 가능' 버전을 '?edit=1'로 맨 밑에 따로 둔다(2026-11-18 사용자 요청). */}
+        {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">백업 (소통용)</p>}
+        <NavLink href="/admin/corner-types?edit=1" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리 (수정)" collapsed={collapsed} />
       </nav>
 
       <div className="border-t border-[#dcdfe8] p-3 text-center text-[12px] text-[var(--ink3)]">{collapsed ? 'v0.31' : 'POL-DSP v0.31'}</div>

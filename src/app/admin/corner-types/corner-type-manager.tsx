@@ -934,6 +934,9 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
   const [field, setField] = useState<'typeId' | 'createdBy'>(sp.get('field') === 'createdBy' ? 'createdBy' : 'typeId');
   const [q, setQ] = useState(sp.get('q') ?? '');
   const [perPage, setPerPage] = useState(Number(sp.get('pp')) || 10);
+  // 수정 가능 백업 모드(2026-11-18) — '?edit=1'이면 상세로 이동할 때도 유지해 상세가 편집 폼을 연다.
+  const editMode = sp.get('edit') === '1';
+  const editQ = editMode ? '?edit=1' : '';
   const [page, setPage] = useState(Number(sp.get('p')) || 1);
   const [view, setView] = useState<'card' | 'list'>(sp.get('view') === 'card' ? 'card' : 'list'); // 기본=리스트(2026-09-29 사용자 결정), 카드 보기 옵션
 
@@ -1179,7 +1182,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
                               key={detail || '기본'}
                               cases={cases}
                               // 항상 대표(첫) 케이스 상세로 직행 — 상세 상단의 '형제 케이스 탭'으로 나머지 케이스를 전환(중간 고르기 페이지 없음).
-                              onOpen={() => router.push(`/admin/corner-types/${cases[0].id}`)}
+                              onOpen={() => router.push(`/admin/corner-types/${cases[0].id}${editQ}`)}
                             />
                           ))}
                         </div>
@@ -1215,7 +1218,7 @@ export function CornerTypeManager({ types, builtOptions }: { types: CornerTypeRo
               {pageRows.length === 0 ? (
                 <tr><td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">검색 결과가 없습니다.</td></tr>
               ) : pageRows.map((t, i) => (
-                <tr key={t.id} className={cn(TBODY_TR_CLS, 'cursor-pointer last:border-0')} onClick={() => router.push(`/admin/corner-types/${t.id}`)}>
+                <tr key={t.id} className={cn(TBODY_TR_CLS, 'cursor-pointer last:border-0')} onClick={() => router.push(`/admin/corner-types/${t.id}${editQ}`)}>
                   <td className="px-3 py-2.5 align-middle tabular-nums text-slate-500">{(curPage - 1) * perPage + i + 1}</td>
                   <td className="whitespace-nowrap px-3 py-2.5 align-middle font-mono text-[12px] text-slate-500">{t.typeId}</td>
                   <td className="px-3 py-2.5">
@@ -1311,8 +1314,7 @@ function Switch({ checked, onChange, disabled }: { checked: boolean; onChange: (
 // ── 미팅 2026-11-17 결론 — 코너 유형 관리는 'DB(코너 원장) 조회'로 성격이 바뀐다.
 //    코너 정의(문구 기본값·노출 개수·형태/배열·배너/CTA 옵션·가격 규격)는 SB 스튜디오 프리셋 → BO FE 코드가 소유하고, 여기서는 '조회만' 한다.
 //    정의 편집 폼 전체를 조회 전용(fieldset disabled)으로 잠그고 저장을 숨긴다. 값/코드는 보존 — 기획 내부 합의 후 이 플래그만 내리면 원복.
-//    근거: corner-composition-ds-owned, three-modules-linked, PG-DSP-WFL.
-const CTM_READONLY = true;
+//    근거: corner-composition-ds-owned, three-modules-linked, PG-DSP-WFL. 기본 조회 전용, '?edit=1' 백업만 editable(2026-11-18).
 // 코너 정의 폼 상단 조회 전용 안내 배너.
 function CornerTypeReadonlyNotice() {
   return (
@@ -1323,7 +1325,9 @@ function CornerTypeReadonlyNotice() {
   );
 }
 
-export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], onClose, bulk = false, bulkArrays, submitAction }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; onClose: () => void; bulk?: boolean; bulkArrays?: string[]; submitAction?: (fd: FormData) => void | Promise<void> }) {
+export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], onClose, bulk = false, bulkArrays, submitAction, editable = false }: { row: CornerTypeRow; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; onClose: () => void; bulk?: boolean; bulkArrays?: string[]; submitAction?: (fd: FormData) => void | Promise<void>; editable?: boolean }) {
+  // 조회 전용(기본) vs 수정 가능 백업(editable). 코너 유형 관리 메인은 조회 전용, '?edit=1' 백업만 편집(2026-11-18 사용자 요청).
+  const readOnly = !editable;
   const isNew = !row.id;
   // 등록(신규)은 스텝퍼로 단계별 설정 — 프로모션 등록처럼(2026-09-30 사용자 요청). 수정은 전체를 한 화면에.
   const [step, setStep] = useState(0);
@@ -1931,8 +1935,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
     >
       {bulk && <input type="hidden" name="bulkArraysJson" value={JSON.stringify(selectedArrays)} />}
       {/* 미팅 2026-11-17 — 코너 정의는 조회 전용. 폼 본문 전체를 disabled fieldset으로 잠근다(값·코드 보존, 플래그로 원복). */}
-      <fieldset disabled={CTM_READONLY} className="m-0 min-w-0 space-y-5 border-0 p-0">
-      {CTM_READONLY && <CornerTypeReadonlyNotice />}
+      <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-5 border-0 p-0">
+      {readOnly && <CornerTypeReadonlyNotice />}
       {/* 폼 내부 제목 제거 — 페이지 상단 브레드크럼으로 대체(2026-10-01 사용자 요청). bulk(배열 일괄 수정)만 제목 유지. */}
       {bulk && (
         <div className="flex items-center gap-2 border-b pb-3">
@@ -2135,8 +2139,8 @@ export function CornerTypeForm({ row, builtOptions, registered = [], bannerCampa
         </Link>
         <div className="flex items-center gap-2">
           {/* 조회 전용(미팅 2026-11-17) — 저장/등록·단계 이동 숨김, 닫기만 유지 */}
-          <Button type="button" variant="secondary" size="sm" onClick={onClose}>{CTM_READONLY ? '닫기' : '취소'}</Button>
-        {CTM_READONLY ? (
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>{readOnly ? '닫기' : '취소'}</Button>
+        {readOnly ? (
           <span className="inline-flex items-center gap-1 rounded-md bg-[#f1f3f5] px-2.5 py-1 text-[12px] font-medium text-[#697582]"><Lock className="h-3 w-3" /> 조회 전용</span>
         ) : wizard ? (
           <>

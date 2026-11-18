@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Check, Minus, ExternalLink } from 'lucide-react';
+import { ChevronLeft, Info, History, Layers, Box, ChevronRight, ChevronDown, Check, Minus, ExternalLink, Pencil } from 'lucide-react';
 import { CornerTypeForm, DevicePreview, cornerRowPreview, type CornerTypeRow, type BuiltCornerOption, type RegisteredCombo, type BannerCampaignOption, type ProductOption } from '../corner-type-manager';
 import { cornerTypePurpose, layoutLabel, cornerTypeBi, layoutBi, displayLayout, cornerTypeHasOptions, cornerFieldSpec, CORNER_TYPE_STATUS_LABEL, componentTypesForCorner, cornerExposure } from '@/lib/display-taxonomy';
 import { CornerFieldList } from '../corner-fields';
@@ -29,7 +29,7 @@ const RESULT_COLOR: Record<string, string> = {
   DELETED: 'bg-rose-100 text-rose-700',
 };
 
-export function CornerTypeDetail({ row, history, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], usage = [], usageByCorner = [], bannerPreviews = [], usagePreviews = [], siblings = [] }: { row: CornerTypeRow; history: HistoryRow[]; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; usage?: UsageRow[]; usageByCorner?: UsageByCorner[]; bannerPreviews?: BannerPreview[]; usagePreviews?: PreviewCorner[]; siblings?: { id: string; name: string }[] }) {
+export function CornerTypeDetail({ row, history, builtOptions, registered = [], bannerCampaigns = [], productOptions = [], usage = [], usageByCorner = [], bannerPreviews = [], usagePreviews = [], siblings = [], editable = false }: { row: CornerTypeRow; history: HistoryRow[]; builtOptions: BuiltCornerOption[]; registered?: RegisteredCombo[]; bannerCampaigns?: BannerCampaignOption[]; productOptions?: ProductOption[]; usage?: UsageRow[]; usageByCorner?: UsageByCorner[]; bannerPreviews?: BannerPreview[]; usagePreviews?: PreviewCorner[]; siblings?: { id: string; name: string }[]; editable?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState<'info' | 'history'>('info');
   const [usageOpen, setUsageOpen] = useState(true); // (레거시 상단 블록용 — 현재 미표시)
@@ -156,8 +156,8 @@ export function CornerTypeDetail({ row, history, builtOptions, registered = [], 
 
       {/* 코너 유형 정보 — 기본은 읽기 전용. '수정'을 누르면 편집 폼(등록과 동일 UI). */}
       {tab === 'info' && (editing
-        ? <CornerTypeForm row={row} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} onClose={() => { setEditing(false); router.refresh(); }} />
-        : <CornerTypeReadOnly row={row} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} usageByCorner={usageByCorner} />)}
+        ? <CornerTypeForm editable={editable} row={row} builtOptions={builtOptions} registered={registered} bannerCampaigns={bannerCampaigns} productOptions={productOptions} onClose={() => { setEditing(false); router.refresh(); }} />
+        : <CornerTypeReadOnly row={row} editable={editable} onEdit={() => setEditing(true)} bannerPreviews={bannerPreviews} usagePreviews={usagePreviews} usageByCorner={usageByCorner} />)}
 
       {tab === 'history' && (
         <div className="overflow-x-auto rounded-lg border">
@@ -291,7 +291,7 @@ function ROSection({ title, aside, bodyClass, children, defaultOpen = true, coll
   );
 }
 
-export function CornerTypeReadOnly({ row, bannerPreviews = [], usagePreviews = [], usageByCorner = [] }: { row: CornerTypeRow; bannerPreviews?: BannerPreview[]; usagePreviews?: PreviewCorner[]; usageByCorner?: UsageByCorner[] }) {
+export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPreviews = [], usagePreviews = [], usageByCorner = [] }: { row: CornerTypeRow; editable?: boolean; onEdit?: () => void; bannerPreviews?: BannerPreview[]; usagePreviews?: PreviewCorner[]; usageByCorner?: UsageByCorner[] }) {
   const platforms = row.platforms.split(',').filter(Boolean);
   const hasDefaults = row.defaultMinItems != null || row.defaultMaxItems != null || row.defaultSortStrategy || row.defaultRecSource || row.defaultMoreButton;
   const isBanner = row.baseCategory === '배너형' && bannerPreviews.length > 0;
@@ -585,11 +585,14 @@ export function CornerTypeReadOnly({ row, bannerPreviews = [], usagePreviews = [
         </div>
       </div>
 
-      {/* 하단 액션 — 목록만. 코너 유형 관리는 조회 전용이라 '수정' 제거(2026-11-17 사용자 요청: 리드만 가능). 정의 변경은 SB 스튜디오. */}
+      {/* 하단 액션 — 목록. 코너 유형 관리는 조회 전용(2026-11-17: 리드만). 단 수정 가능 백업(editable=true, ?edit=1)에서만 '수정' 노출 — 소통·비교용. */}
       <div className="flex items-center justify-between gap-2 border-t border-[#eef1f4] pt-4">
-        <Link href="/admin/corner-types" className="inline-flex h-[38px] items-center gap-1.5 rounded-[8px] border border-[#c4c9cf] bg-white px-4 text-[13px] font-semibold text-slate-600 transition hover:bg-[#f8f9fb]">
+        <Link href={editable ? '/admin/corner-types?edit=1' : '/admin/corner-types'} className="inline-flex h-[38px] items-center gap-1.5 rounded-[8px] border border-[#c4c9cf] bg-white px-4 text-[13px] font-semibold text-slate-600 transition hover:bg-[#f8f9fb]">
           <ChevronLeft className="h-4 w-4" /> 목록
         </Link>
+        {editable && onEdit && (
+          <Button size="sm" variant="secondary" onClick={onEdit}><Pencil className="mr-1 h-3.5 w-3.5" /> 수정</Button>
+        )}
       </div>
     </div>
   );
