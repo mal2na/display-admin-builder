@@ -2226,8 +2226,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
 
       {/* 2열 — 좌 디바이스(고정 크기·sticky) · 우 콘텐츠. 디바이스 폭이 좁아진 만큼 좌측 열을 좁혀 템플릿 정보에 공간을 준다(2026-11-19 사용자 요청). */}
       <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(300px,23vw,348px)_minmax(0,1fr)]">
-          {/* 좌: 미리보기 — sticky 고정. 디바이스는 프리셋 크기(높이 최대 800)로 고정, 바디는 내부 스크롤. */}
-          <div className="sticky top-2 flex flex-col">
+          {/* 좌: 미리보기 — sticky 고정. 높이는 창에 따라 줄고(반응형) 최대 800px, 바디는 내부 스크롤. */}
+          <div className="sticky top-2 flex h-[calc(100vh_-_230px)] max-h-[800px] flex-col">
           {/* 미리보기 컨트롤 — 한 줄 압축 바(2026-11-18 사용자 요청: 디바이스·폴백 다 겹쳐 터지던 2행 → 1행 정리).
               좌: 기본/폴백(주 보기 모드) · 우: 디바이스·줌·전체화면(보조). 좁아지면 wrap으로 접힌다. */}
           <div className="mb-2 w-full shrink-0">
@@ -2251,9 +2251,9 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             {/* 폴백 안내 — 바 아래 얇은 캡션으로(2026-11-18: 컨트롤 줄을 깔끔히) */}
             {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="mt-1 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
           </div>
-          {/* 디바이스는 프리셋 크기로 고정 — 폭은 좁아진 열에 맞춰 리플로우(max-w-full), 높이는 최대 800px(바디 내부 스크롤). */}
-          <div className="min-h-0">
-          <DeviceFrame width={device.w} bodyHeight={Math.min(device.h, 800) - 46} headerLabel={data.containerName} slim>
+          {/* 디바이스는 좌측 열(반응형 높이·max 800) 안에서 fill로 채움 — 폭은 좁아진 열에 맞춰 리플로우(max-w-full), 바디 내부 스크롤. */}
+          <div className="min-h-0 flex-1 overflow-hidden">
+          <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     /* 노출 토글로 숨긴 코너는 미리보기에서 제외(2026-11-12 사용자 요청) */
                     liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
