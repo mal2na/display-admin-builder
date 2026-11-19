@@ -245,12 +245,15 @@ function Sec({ n, title, help, hint, badge, aside, children }: { n: number; titl
 type BtnRoute = '페이지' | '상품' | '프로모션' | '직접 입력';
 type BtnOpen = '현재 화면' | '내부 브라우저' | '외부 브라우저';
 // 미리보기 디바이스 프리셋 — 디바이스 선택 드롭다운(SB 디바이스 프레임, 2026-11-17 사용자 요청).
+//  최소/최대 폭 = FO 반응형 한계(min 320 · max 768)로 양끝 확인용(2026-11-19 사용자 요청).
 const DEVICE_PRESETS = [
+  { label: '최소 폭 (min)', w: 320, h: 640 },
   { label: 'iPhone 15 Pro', w: 393, h: 852 },
   { label: 'iPhone SE', w: 375, h: 667 },
   { label: 'Galaxy S24', w: 360, h: 800 },
   { label: 'Pixel 8', w: 412, h: 915 },
   { label: 'iPad mini', w: 744, h: 1133 },
+  { label: '최대 폭 (max)', w: 768, h: 1024 },
 ] as const;
 // ── 미팅 2026-11-17 결론 — 코너는 SB 스튜디오 프리셋 → BO FE 코드 개발물(고정). 빌더는 배치·아이템 선택·공통 속성(타이틀·CTA)만 편집한다.
 //    코너마다 다른 임의 콘텐츠 속성(배너 이미지·대체텍스트, 카테고리/메뉴 아이콘, 개별 링크, 서브 텍스트)은 상품(EPC) 원장·코너 프리셋이 소유 → 조회 전용.
@@ -2157,7 +2160,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   const inputCls = 'h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-[14px] text-[14px] text-[var(--ink)] placeholder:text-[var(--ink5)] focus:border-[var(--focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]';
 
   // 미리보기 컨트롤 — 디바이스 선택·줌·전체화면(SB 디바이스 프레임, 2026-11-17 사용자 요청).
-  const [deviceIdx, setDeviceIdx] = React.useState(0);
+  const [deviceIdx, setDeviceIdx] = React.useState(1); // 기본 iPhone 15 Pro (0=최소 폭)
   const device = DEVICE_PRESETS[deviceIdx];
   const [zoom, setZoom] = React.useState(100);
   const [fullscreen, setFullscreen] = React.useState(false);
