@@ -2251,8 +2251,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             {/* 폴백 안내 — 바 아래 얇은 캡션으로(2026-11-18: 컨트롤 줄을 깔끔히) */}
             {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="mt-1 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
           </div>
-          {/* 디바이스는 좌측 열(반응형 높이·max 800) 안에서 fill로 채움 — 폭은 좁아진 열에 맞춰 리플로우(max-w-full), 바디 내부 스크롤. */}
-          <div className="min-h-0 flex-1 overflow-hidden">
+          {/* 디바이스는 좌측 열(반응형 높이·max 800) 안에서 fill로 채움 — 래퍼가 flex 컬럼이어야 fill의 flex-1이 먹어 바디가 내부 스크롤되고 프레임 바닥이 안 잘림(2026-11-19 버그수정). */}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     /* 노출 토글로 숨긴 코너는 미리보기에서 제외(2026-11-12 사용자 요청) */
