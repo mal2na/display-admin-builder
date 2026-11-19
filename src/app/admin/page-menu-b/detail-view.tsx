@@ -145,7 +145,7 @@ export function DetailView({ id }: { id: string }) {
 
               <MaskSect p={p} />
 
-              <Sect title="검색 및 AI 노출 정보">
+              <Sect title="메타 태그 정보 (SEO/GEO)">
                 <FTable>
                   <FRow k="태그 사용여부">{p.tagUse ? '사용' : '사용안함'}</FRow>
                   {p.tagUse && (
