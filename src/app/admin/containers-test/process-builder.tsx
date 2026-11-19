@@ -547,7 +547,6 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const fillForFallback = isCvmSrc && !isData && fb === '운영자 편성으로 대체' && !isProfile && !isStatus && !isBarcode;
   // 섹션 번호 — CVM 코너는 ③ 폴백(채우기 위로)이 끼어 번호가 하나씩 밀린다(2026-11-10 사용자 요청: 폴백이 채우기 결과를 좌우하므로 위로). 번호 공백 방지.
   const nFill = isCvmSrc ? 4 : 3; // 채우기/요청/프로필/고정
-  const nSrc = isCvmSrc ? 5 : 4;  // 출처
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
@@ -1693,50 +1692,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
         </Sec>
       )}
 
-      {/* ⑥ 출처 — 이 값이 어디서 오나. SB명=컴포넌트(데이터) 출처. */}
-      <Sec n={nSrc} title={isData ? '데이터 출처' : '컴포넌트 출처'} hint="코너에서 노출할 데이터의 출처를 확인합니다">
-        {/* 회색 라벨 셀 테이블 — 좌우 2열(2026-11-12 사용자 요청: 4개 세로 나열 → 좌우). 좌우 보더 없음. */}
-        {(() => {
-          {/* 출처 값은 코너 유형별로 다르다(SB PG557, 2026-11-16). 이미지·문구·이동 링크 소유 주체가 유형마다 다름. */}
-          const isCvmContent = src === 'CVM 콘텐츠 연동';
-          const imgSrc = isBarcode ? '시스템(런타임 발급)'
-            : corner.cornerType === '업무 진입형' ? '아이콘 라이브러리'
-            : isBanner ? (isCvmContent ? 'CVM 완성본' : '배너 캠페인')
-            : isContentGuide ? '콘텐츠 원장'
-            : '상품(EPC) 원장';
-          const copySrc = isCvmContent ? 'CVM 완성본'
-            : corner.cornerType === '업무 진입형' ? '운영자 직접입력'
-            : isBanner ? '배너 캠페인'
-            : '빌더 · 상품 원장';
-          const linkSrc = corner.cornerType === '업무 진입형' ? '직접입력 · 메뉴 불러오기'
-            : isBanner ? '배너 캠페인'
-            : isContentGuide ? '콘텐츠 연결'
-            : '빌더';
-          const cells: [string, string][] = [
-            ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
-            ['이미지', imgSrc],
-            ['문구', copySrc],
-            ['이동 링크', linkSrc],
-          ];
-          const Val = ({ v }: { v: string }) => <span className={cn('font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'text-[#2e6ff2]' : 'text-[#b67a12]')}>{v}</span>;
-          const rows: [string, string][][] = [];
-          for (let i = 0; i < cells.length; i += 2) rows.push(cells.slice(i, i + 2));
-          return (
-            <div className="border-t border-[var(--line2)] text-[14px]">
-              {rows.map((pair, ri) => (
-                <div key={ri} className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
-                  <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">{pair[0][0]}</div>
-                  <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5 text-[13px]"><Val v={pair[0][1]} /></div>
-                  {pair[1] ? (<>
-                    <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">{pair[1][0]}</div>
-                    <div className="flex min-w-0 items-center bg-white px-4 py-2.5 text-[13px]"><Val v={pair[1][1]} /></div>
-                  </>) : <><div className="bg-white" /><div className="bg-white" /></>}
-                </div>
-              ))}
-            </div>
-          );
-        })()}
-      </Sec>
+      {/* ⑥ 출처(컴포넌트/데이터 출처) 섹션 제거 — 2026-11-19 사용자 요청. 값·로직은 상단 수급(②)·채우기(③)로 충분. */}
     </div>
   );
 }
@@ -1978,7 +1934,8 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
       {open && (
         <div className="space-y-4 p-4">
           <div>
-            <p className="mb-2 text-[13px] font-semibold text-[var(--ink2)]">코너 구성 <span className="text-[var(--ink4)]">{corners.length}개</span></p>
+            {/* 타이틀↔카드 간격 확보(2026-11-19 사용자 요청: 너무 붙어 있음) — 폰트 키우고 아래 여백 확대 */}
+            <p className="mb-3.5 text-[14px] font-bold text-[var(--ink)]">코너 구성 <span className="font-semibold text-[var(--ink4)]">{corners.length}개</span></p>
             {/* order3 레퍼런스: 좌측 순서변경 박스만 그레이 배경 + 해상도 기준 고정 높이(내부 스크롤) + 코너 추가 하단 고정.
                코너가 0개여도 밴드(Fixed·Dynamic)는 항상 표시 — 각 밴드에 '추가 가능' 노출(2026-10-21). */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[360px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
