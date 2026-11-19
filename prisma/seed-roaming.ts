@@ -1,4 +1,5 @@
 // 로밍국가 관리 시드 — 대표 국가(일본 풀세트) + 다양한 국가. FORCE_SEED=1 로 재시드.
+//  seed.ts 체인에서 seedRoaming()으로 호출(배포 재시드), 또는 `tsx prisma/seed-roaming.ts` 단독 실행.
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
@@ -51,7 +52,7 @@ const JP_LEASE = svc({ serviceInfo: '', autoBand: '전 지역', dataRoamingYn: f
 
 const CONTINENTS = ['아시아', '유럽', '미주', '오세아니아', '중동', '아프리카'];
 
-async function main() {
+export async function seedRoaming() {
   const existing = await prisma.roamingCountry.count();
   if (existing > 0 && !process.env.FORCE_SEED) {
     console.log(`↷ 로밍국가가 이미 있어 건너뜁니다 (${existing}건). 재시드하려면 FORCE_SEED=1`);
@@ -146,4 +147,7 @@ async function main() {
   console.log(`✅ 로밍국가 시드 완료 — 총 ${total}건`);
 }
 
-main().then(() => prisma.$disconnect()).catch(async (e) => { console.error(e); await prisma.$disconnect(); process.exit(1); });
+// 단독 실행 시에만 자체 디스커넥트. seed.ts가 import하면 seedRoaming()만 호출.
+if (process.argv[1] && process.argv[1].includes('seed-roaming')) {
+  seedRoaming().then(() => prisma.$disconnect()).catch(async (e) => { console.error(e); await prisma.$disconnect(); process.exit(1); });
+}

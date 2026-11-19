@@ -1,7 +1,7 @@
 'use client';
 
 import { NavLink } from '@/components/nav-link';
-import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, ClipboardList, Menu as MenuIcon } from 'lucide-react';
+import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, ClipboardList, Menu as MenuIcon, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 좌측 사이드바 — NC-Channel Product Admin LNB 규격. 폭 236px, 라벤더 var(--bg) 배경.
@@ -37,6 +37,7 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         <NavLink href="/admin/app-versions" icon={<SmartphoneNfc className="h-4 w-4" />} label="App 버전 관리" collapsed={collapsed} />
         <NavLink href="/admin/app-splash" icon={<ImagePlay className="h-4 w-4" />} label="App 스플래시 관리" collapsed={collapsed} />
         <NavLink href="/admin/app-widgets" icon={<AppWindow className="h-4 w-4" />} label="App 위젯 관리" collapsed={collapsed} alsoActiveFor={['/admin/widget-types']} />
+        <NavLink href="/admin/roaming-countries" icon={<Globe className="h-4 w-4" />} label="로밍국가 관리" collapsed={collapsed} />
 
         {/* 백업 — 소통·비교용. 메인이 조회 전용(2026-11-17)이라 '수정 가능' 버전을 '?edit=1'로 분리. 메뉴 바로 밑이면 오클릭돼 LNB 맨 아래(mt-auto)로 띄운다(2026-11-18 사용자 요청). */}
         <div className="mt-auto pt-2">

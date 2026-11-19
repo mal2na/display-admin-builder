@@ -1772,6 +1772,7 @@ main()
   .then(() => patchVariantDemo())
   .then(() => seedBannerCampaigns())
   .then(() => linkBannerCampaignUsage())
+  .then(() => import('./seed-roaming').then((m) => m.seedRoaming()))
   .then(() => prisma.$disconnect())
   .catch(async (e) => {
     console.error(e);
