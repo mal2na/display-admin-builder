@@ -834,6 +834,7 @@ export function DeviceFrame({
   children,
   slim = false,
   fill = false,
+  fillBox = false,
 }: {
   width: number;
   bodyHeight: number | string;
@@ -843,10 +844,13 @@ export function DeviceFrame({
   slim?: boolean;
   /** 부모 컬럼 높이를 flex로 꽉 채움(order3 .pv-panel .phone flex:1). 바디가 남은 높이를 차지하고 내부 스크롤. 너비는 유지. */
   fill?: boolean;
+  /** 부모가 height+aspect-ratio 박스를 쥐고, 프레임은 그 박스를 100% 채운다(너비 고정 안 함). 2026-11-19 디바이스 미리보기 정식 스펙: 너비는 비율로 자동. */
+  fillBox?: boolean;
 }) {
+  const boxed = fill || fillBox;
   return (
-    <div style={{ width }} className={cn('mx-auto max-w-full', fill && 'flex min-h-0 flex-1 flex-col')}>
-      <div className={cn('overflow-hidden shadow-xl', fill && 'flex min-h-0 flex-1 flex-col', slim ? 'rounded-[30px] border-[3px] border-[#1d1e2c] bg-white' : 'rounded-[2.2rem] border-[10px] border-slate-900 bg-slate-100')}>
+    <div style={fillBox ? undefined : { width }} className={cn(fillBox ? 'flex h-full w-full flex-col' : 'mx-auto max-w-full', fill && 'flex min-h-0 flex-1 flex-col')}>
+      <div className={cn('overflow-hidden shadow-xl', boxed && 'flex min-h-0 flex-1 flex-col', slim ? 'rounded-[30px] border-[3px] border-[#1d1e2c] bg-white' : 'rounded-[2.2rem] border-[10px] border-slate-900 bg-slate-100')}>
         {slim ? (
           // 미니멀 상단 — OS 상태바(9:41) 제거, 앱 헤더(뒤로/공유·메뉴)만(2026-11-19 사용자 요청: 상품 레퍼런스처럼 깔끔히)
           <div className="flex shrink-0 items-center justify-between border-b border-[var(--line2)] bg-white px-3.5 py-2.5 text-slate-500">
@@ -862,7 +866,7 @@ export function DeviceFrame({
             <div className="shrink-0 border-b bg-white px-4 py-2 text-sm font-semibold text-slate-700">{headerLabel}</div>
           </>
         )}
-        <div style={fill ? undefined : { height: bodyHeight }} className={cn('overflow-y-auto', fill && 'min-h-0 flex-1', slim ? 'space-y-3 bg-[#e9ebf4] px-2 py-2.5' : 'space-y-4 bg-slate-200 px-5 py-4')}>
+        <div style={boxed ? undefined : { height: bodyHeight }} className={cn('overflow-y-auto', boxed && 'min-h-0 flex-1', slim ? 'space-y-3 bg-[#e9ebf4] px-2 py-2.5' : 'space-y-4 bg-slate-200 px-5 py-4')}>
           {children}
         </div>
         {/* 하단 네비(혜택/쇼핑/마이·T⁺) 제거 — 미리보기에서 탭 UI는 빼기로(2026-11-11 사용자 요청). 탭 전환은 IA 레이어의 몫. */}

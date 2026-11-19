@@ -709,6 +709,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   };
   // 기본 아이템 — 불러오기 전용 유형: ①미리보기에 보이는 실제 항목 → ②없으면 카탈로그(영화/혜택/배너)로 '채워진 채' 시작. 그 외는 라벨 슬롯.
   const defaultItems = (): FillItem[] => {
+    // 배너형 — '깡통(껍데기) 불러오기'라 ③ 콘텐츠 설정은 비어서 시작한다(2026-11-19 사용자 요청). 배너 소재는 '배너 캠페인'에서 등록하고,
+    //  운영자가 '배너 불러오기/조회'로 직접 담는다(미팅 2026-11-17: 배너 이미지·링크는 조회 전용, 어드민은 선택만). 처음부터 데이터가 차 있으면 안 됨.
+    if (isBanner) return [];
     // 카테고리형 — 활성 카테고리(칩)에 해당하는 카탈로그 항목으로 시드. 카테고리를 바꾸면 그 카테고리 리스트로 교체된다(2026-11-09 사용자 요청: 카페·베이커리·외식 전환 시 변경).
     if (chipMode && isCategory && catalog.length) {
       const activeCat = chips[chipIdx];
@@ -2166,28 +2169,36 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   const device = DEVICE_PRESETS[deviceIdx];
   // 미리보기는 좌측 열(좁힘)에 맞춰 리플로우 — 사이즈 조절(줌) 제거(2026-11-19 사용자 요청).
   const [fullscreen, setFullscreen] = React.useState(false);
-  // 디바이스 높이 — 실제 스크롤 컨테이너(안쪽 overflow-y-auto)에서 컨트롤바·바텀패딩을 빼 clamp(414~800).
-  //  window 기준으로 재면 열이 컨테이너보다 커져 sticky(네비 고정)가 깨지고 터짐/잘림이 생긴다 → 컨테이너 기준으로 측정. 바텀(푸터)과 10px 간격(2026-11-19 사용자 요청).
-  const deviceLaneRef = React.useRef<HTMLDivElement>(null);
-  const [deviceH, setDeviceH] = React.useState(600);
+  // 디바이스 높이 — CSS 변수로 관리(하드코딩 금지, 2026-11-19 정식 스펙).
+  //  height = clamp(414px, calc(var(--sc-h) − var(--seg-h) − var(--gap) − var(--dev-bottom)), 800px)
+  //  너비는 aspect-ratio(기기 비율)로 자동 계산 — 고정하지 않음. transform:scale 금지, 프레임 overflow로 하단 잘라내기 금지.
+  //  가용 높이 = 스크롤 컨테이너(상단 탭바·하단 액션바 사이 메인 영역) clientHeight − 세그먼티드 컨트롤 행 − 간격 − 하단 여백.
+  //   고정값 아닌 --sc-h(컨테이너)·--seg-h(컨트롤 행)는 ResizeObserver로 실측해 변수에 주입. window(100vh/100dvh) 대신 실제 스크롤 컨테이너 기준이라 sticky가 유지된다.
+  const stickyRef = React.useRef<HTMLDivElement>(null); // 좌측 컬럼(컨트롤 행 + 디바이스) = sticky 래퍼, 변수 보유
+  const segRef = React.useRef<HTMLDivElement>(null);    // 세그먼티드 컨트롤 행(기본/폴백·디바이스)
   React.useEffect(() => {
-    const MIN = 414, MAX = 800, PAD = 10;
-    let sc: HTMLElement | null = null;
-    const recalc = () => {
-      const lane = deviceLaneRef.current; if (!lane) return;
-      if (!sc) { let p = lane.parentElement; while (p) { const o = getComputedStyle(p).overflowY; if (o === 'auto' || o === 'scroll') break; p = p.parentElement; } sc = p; }
-      const scH = sc ? sc.clientHeight : window.innerHeight;
-      // 고정(pinned) 상태 기준 남은 높이 = 컨테이너 − (sticky top-2 + 컨트롤바 높이) − 바텀 10px.
-      //  현재 laneTop(스크롤 위치)이 아니라 pinned 기준으로 재야 디바이스가 컨테이너를 꽉 채우고(바텀 10px), 열이 컨테이너를 안 넘어 sticky가 유지된다.
-      const ctrlH = (lane.previousElementSibling as HTMLElement | null)?.getBoundingClientRect().height ?? 40;
-      const avail = scH - 16 - ctrlH - PAD; // 16 = sticky top-2 + 프레임 보더 등 오프셋 보정(바텀 실측 10px)
-      setDeviceH(Math.max(MIN, Math.min(MAX, Math.round(avail))));
-    };
-    recalc();
-    const t = setTimeout(recalc, 100);
-    window.addEventListener('resize', recalc);
-    window.addEventListener('scroll', recalc, true);
-    return () => { clearTimeout(t); window.removeEventListener('resize', recalc); window.removeEventListener('scroll', recalc, true); };
+    let ro: ResizeObserver | null = null;
+    let raf = 0;
+    const onResize = () => wire();
+    function wire() {
+      const wrap = stickyRef.current, seg = segRef.current;
+      // 아직 DOM이 안 붙었으면 다음 프레임에 재시도(마운트 타이밍에 ref가 비어도 결국 변수를 채운다).
+      if (!wrap || !seg) { raf = requestAnimationFrame(wire); return; }
+      // 스크롤 컨테이너 = 가장 가까운 overflow-y auto/scroll 조상(= 헤더+2열을 담은 .overflow-y-auto)
+      let sc: HTMLElement | null = wrap.parentElement;
+      while (sc) { const o = getComputedStyle(sc).overflowY; if (o === 'auto' || o === 'scroll') break; sc = sc.parentElement; }
+      const apply = () => {
+        wrap.style.setProperty('--sc-h', `${sc ? sc.clientHeight : window.innerHeight}px`);
+        wrap.style.setProperty('--seg-h', `${Math.round(seg.getBoundingClientRect().height)}px`);
+      };
+      apply();
+      ro = new ResizeObserver(apply);
+      if (sc) ro.observe(sc);
+      ro.observe(seg);
+    }
+    wire();
+    window.addEventListener('resize', onResize);
+    return () => { cancelAnimationFrame(raf); ro?.disconnect(); window.removeEventListener('resize', onResize); };
   }, []);
   // 미리보기 본문(코너 매핑) — 디바이스 프레임·전체화면 모달에서 공용. 선택/폴백/숨김 로직 포함.
   const previewBody = activeTemplate && liveCorners.length > 0 ? (
@@ -2247,13 +2258,15 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
         </div>
       </div>
 
-      {/* 2열 — 좌 디바이스(고정 크기·sticky) · 우 콘텐츠. 디바이스 폭이 좁아진 만큼 좌측 열을 좁혀 템플릿 정보에 공간을 준다(2026-11-19 사용자 요청). */}
-      <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(300px,23vw,348px)_minmax(0,1fr)]">
-          {/* 좌: 미리보기 — sticky 고정. 기본/폴백은 상단, 디바이스 높이는 아래 레인에서 실측(바텀=푸터, clamp 414~800). */}
-          <div className="sticky top-2 flex flex-col">
-          {/* 미리보기 컨트롤 — 한 줄 압축 바(2026-11-18 사용자 요청: 디바이스·폴백 다 겹쳐 터지던 2행 → 1행 정리).
-              좌: 기본/폴백(주 보기 모드) · 우: 디바이스·줌·전체화면(보조). 좁아지면 wrap으로 접힌다. */}
-          <div className="mb-2 w-full shrink-0">
+      {/* 2열 — 좌 디바이스(sticky) · 우 콘텐츠. 좌측 열은 max-content = 디바이스 폭에 딱 맞춤(옆 빈 공간 0) → 나머지는 전부 템플릿 정보로(2026-11-19 사용자 요청). */}
+      <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[max-content_minmax(0,1fr)]">
+          {/* 좌: 미리보기 — sticky 래퍼(컨트롤 행 + 디바이스). position:sticky; top:0; align-self:flex-start.
+              스크롤하면 타이틀은 올라가고 이 래퍼가 스크롤 컨테이너 상단에 고정 → 세그먼티드 컨트롤이 위에 딱 붙는다.
+              --gap=컨트롤↔디바이스 간격, --dev-bottom=디바이스 하단 여백(10px). --sc-h/--seg-h는 위 effect가 실측 주입. */}
+          <div ref={stickyRef} className="sticky top-0 flex flex-col self-start" style={{ '--gap': '8px', '--dev-bottom': '10px', '--dev-safe': '8px' } as React.CSSProperties}>
+          {/* 미리보기 컨트롤(세그먼티드 행) — 한 줄 압축 바.
+              좌: 기본/폴백(주 보기 모드) · 우: 디바이스·전체화면(보조). 좁아지면 wrap으로 접힌다. */}
+          <div ref={segRef} className="w-full shrink-0">
             <div className="flex w-full flex-wrap items-center gap-x-2 gap-y-1.5">
               {/* 기본/폴백 — 주 보기 토글 */}
               <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
@@ -2273,9 +2286,21 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             </div>
             {/* 폴백 안내 캡션 제거(2026-11-19 사용자 요청: 디바이스가 내려와 불편) — 폴백 여부는 토글 색/디바이스로 충분 */}
           </div>
-          {/* 디바이스 레인 — 실측 높이(clamp 414~800)로 바텀=푸터에 붙임. fill로 프레임이 레인을 꽉 채우고 바디 내부 스크롤(터짐/잘림 없음). */}
-          <div ref={deviceLaneRef} style={{ height: deviceH }} className="flex min-h-0 flex-col overflow-hidden">
-          <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim>
+          {/* 디바이스 박스 — 높이=clamp(414px, 가용, 800px), 너비=aspect-ratio(기기 비율)로 자동. 하단 여백 --dev-bottom.
+              프레임(fillBox)이 이 박스를 100% 채우고 바디만 내부 스크롤 → 프레임은 안 잘리고 네비는 위에 붙는다. */}
+          <div
+            className="mx-auto"
+            style={{
+              // 높이=clamp(414, 가용, 800). 너비는 같은 --dev-h에 기기 비율을 곱해 산출(ratio 유도 — 하드코딩 아님).
+              //  aspect-ratio 키워드는 블록 stretch/콘텐츠 max-content에 밀려 비율이 깨지므로 calc로 결정적 산출.
+              '--dev-h': 'clamp(414px, calc(var(--sc-h, 100dvh) - var(--seg-h, 40px) - var(--gap) - var(--dev-bottom) - var(--dev-safe)), 800px)',
+              height: 'var(--dev-h)',
+              width: `calc(var(--dev-h) * ${device.w} / ${device.h})`,
+              marginTop: 'var(--gap)',
+              marginBottom: 'var(--dev-bottom)',
+            } as React.CSSProperties}
+          >
+          <DeviceFrame width={device.w} bodyHeight={0} fillBox headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     /* 노출 토글로 숨긴 코너는 미리보기에서 제외(2026-11-12 사용자 요청) */
                     liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
