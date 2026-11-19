@@ -46,9 +46,25 @@ export async function updateRoaming(id: string, fd: FormData) {
     const json = str(fd, `svc_${key}`);
     if (json !== null) data[key] = json;
   }
-  await prisma.roamingCountry.update({
-    where: { id },
-    data: { ...data, history: { create: { seq: (lastSeq._max.seq ?? 0) + 1, status: 'draft', changeNote: '수정' } } },
+  // 관련사이트 — JSON 배열로 전달되면 전량 교체(PG571-PU01)
+  const sitesJson = str(fd, 'sites');
+  let siteRows: { siteName: string; link: string | null; imageUrl: string | null; imageAlt: string | null; exposeYn: boolean }[] = [];
+  if (sitesJson) {
+    try {
+      const arr = JSON.parse(sitesJson) as { siteName?: string; link?: string; imageUrl?: string; imageAlt?: string; exposeYn?: boolean }[];
+      siteRows = arr.filter((s) => (s.siteName ?? '').trim()).map((s) => ({ siteName: (s.siteName ?? '').trim(), link: s.link?.trim() || null, imageUrl: s.imageUrl?.trim() || null, imageAlt: s.imageAlt?.trim() || null, exposeYn: s.exposeYn !== false }));
+    } catch { /* ignore */ }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.roamingCountry.update({
+      where: { id },
+      data: { ...data, history: { create: { seq: (lastSeq._max.seq ?? 0) + 1, status: 'draft', changeNote: '수정' } } },
+    });
+    if (sitesJson !== null) {
+      await tx.roamingRelatedSite.deleteMany({ where: { countryId: id } });
+      if (siteRows.length) await tx.roamingRelatedSite.createMany({ data: siteRows.map((s, i) => ({ ...s, countryId: id, seq: i + 1 })) });
+    }
   });
   revalidate(id);
   redirect(`/admin/roaming-countries/${id}`);
