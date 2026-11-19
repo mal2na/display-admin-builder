@@ -40,18 +40,25 @@ export default async function SplashDetailPage({
     canDiff: h.id !== oldestId,
   }));
 
+  // 상태별 버튼 노출(SB PG575 버튼 CASE):
+  //  저장(draft): 목록 / 수정·승인요청 · 승인대기(requested): 목록 / 승인요청취소 · 승인완료·반려·요청취소: 목록 / 수정
+  const st = s.approvalStatus;
+  const showEdit = st !== 'requested';           // 승인대기만 수정 불가
+  const showRequest = st === 'draft';            // 저장 상태에서만 승인요청
+  const showCancelReq = st === 'requested';      // 승인대기에서만 승인요청취소
   const footer = (
     <div className="flex items-center justify-between pt-2">
       <Link href="/admin/app-splash" className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">목록</Link>
       <div className="flex items-center gap-2">
-        <Link href={`/admin/app-splash/${s.id}/edit`} className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">수정</Link>
-        {s.approvalStatus === 'requested' ? (
-          <form action={cancelRequestSplash.bind(null, s.id)}>
-            <button type="submit" className="inline-flex h-9 items-center rounded-md border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-700 hover:bg-amber-100">요청취소</button>
-          </form>
-        ) : (
+        {showEdit && <Link href={`/admin/app-splash/${s.id}/edit`} className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">수정</Link>}
+        {showRequest && (
           <form action={requestApprovalSplash.bind(null, s.id)}>
             <button type="submit" className="inline-flex h-9 items-center rounded-md bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">승인요청</button>
+          </form>
+        )}
+        {showCancelReq && (
+          <form action={cancelRequestSplash.bind(null, s.id)}>
+            <button type="submit" className="inline-flex h-9 items-center rounded-md bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">승인요청 취소</button>
           </form>
         )}
       </div>

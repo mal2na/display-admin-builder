@@ -5,8 +5,9 @@ import { SplashList, type SplashRow } from './splash-list';
 
 export const dynamic = 'force-dynamic';
 
+// SB PG573 1-3 승인상태 라벨 — 저장(draft)·승인대기(requested)·승인완료·반려·요청취소
 const APPROVAL_LABEL: Record<string, string> = {
-  draft: '임시저장', requested: '승인요청', approved: '승인완료', rejected: '반려', cancelled: '요청취소',
+  draft: '저장', requested: '승인대기', approved: '승인완료', rejected: '반려', cancelled: '요청취소',
 };
 
 function iso(d: Date | null | undefined): string | null {

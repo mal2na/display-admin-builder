@@ -547,7 +547,6 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const fillForFallback = isCvmSrc && !isData && fb === '운영자 편성으로 대체' && !isProfile && !isStatus && !isBarcode;
   // 섹션 번호 — CVM 코너는 ③ 폴백(채우기 위로)이 끼어 번호가 하나씩 밀린다(2026-11-10 사용자 요청: 폴백이 채우기 결과를 좌우하므로 위로). 번호 공백 방지.
   const nFill = isCvmSrc ? 4 : 3; // 채우기/요청/프로필/고정
-  const nSrc = isCvmSrc ? 5 : 4;  // 출처
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
@@ -1693,50 +1692,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
         </Sec>
       )}
 
-      {/* ⑥ 출처 — 이 값이 어디서 오나. SB명=컴포넌트(데이터) 출처. */}
-      <Sec n={nSrc} title={isData ? '데이터 출처' : '컴포넌트 출처'} hint="코너에서 노출할 데이터의 출처를 확인합니다">
-        {/* 회색 라벨 셀 테이블 — 좌우 2열(2026-11-12 사용자 요청: 4개 세로 나열 → 좌우). 좌우 보더 없음. */}
-        {(() => {
-          {/* 출처 값은 코너 유형별로 다르다(SB PG557, 2026-11-16). 이미지·문구·이동 링크 소유 주체가 유형마다 다름. */}
-          const isCvmContent = src === 'CVM 콘텐츠 연동';
-          const imgSrc = isBarcode ? '시스템(런타임 발급)'
-            : corner.cornerType === '업무 진입형' ? '아이콘 라이브러리'
-            : isBanner ? (isCvmContent ? 'CVM 완성본' : '배너 캠페인')
-            : isContentGuide ? '콘텐츠 원장'
-            : '상품(EPC) 원장';
-          const copySrc = isCvmContent ? 'CVM 완성본'
-            : corner.cornerType === '업무 진입형' ? '운영자 직접입력'
-            : isBanner ? '배너 캠페인'
-            : '빌더 · 상품 원장';
-          const linkSrc = corner.cornerType === '업무 진입형' ? '직접입력 · 메뉴 불러오기'
-            : isBanner ? '배너 캠페인'
-            : isContentGuide ? '콘텐츠 연결'
-            : '빌더';
-          const cells: [string, string][] = [
-            ['컴포넌트 · 순서', isCvmSrc ? 'CVM' : '운영자 편성'],
-            ['이미지', imgSrc],
-            ['문구', copySrc],
-            ['이동 링크', linkSrc],
-          ];
-          const Val = ({ v }: { v: string }) => <span className={cn('font-semibold', v === 'CVM' || v === 'CVM 완성본' ? 'text-[#2e6ff2]' : 'text-[#b67a12]')}>{v}</span>;
-          const rows: [string, string][][] = [];
-          for (let i = 0; i < cells.length; i += 2) rows.push(cells.slice(i, i + 2));
-          return (
-            <div className="border-t border-[var(--line2)] text-[14px]">
-              {rows.map((pair, ri) => (
-                <div key={ri} className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
-                  <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">{pair[0][0]}</div>
-                  <div className="flex min-w-0 items-center border-r border-[#dce0e5] bg-white px-4 py-2.5 text-[13px]"><Val v={pair[0][1]} /></div>
-                  {pair[1] ? (<>
-                    <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">{pair[1][0]}</div>
-                    <div className="flex min-w-0 items-center bg-white px-4 py-2.5 text-[13px]"><Val v={pair[1][1]} /></div>
-                  </>) : <><div className="bg-white" /><div className="bg-white" /></>}
-                </div>
-              ))}
-            </div>
-          );
-        })()}
-      </Sec>
+      {/* ⑥ 출처(컴포넌트/데이터 출처) 섹션 제거 — 2026-11-19 사용자 요청. 값·로직은 상단 수급(②)·채우기(③)로 충분. */}
     </div>
   );
 }
@@ -1978,7 +1934,8 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
       {open && (
         <div className="space-y-4 p-4">
           <div>
-            <p className="mb-2 text-[13px] font-semibold text-[var(--ink2)]">코너 구성 <span className="text-[var(--ink4)]">{corners.length}개</span></p>
+            {/* 타이틀↔카드 간격 확보(2026-11-19 사용자 요청: 너무 붙어 있음) — 폰트 키우고 아래 여백 확대 */}
+            <p className="mb-3.5 text-[14px] font-bold text-[var(--ink)]">코너 구성 <span className="font-semibold text-[var(--ink4)]">{corners.length}개</span></p>
             {/* order3 레퍼런스: 좌측 순서변경 박스만 그레이 배경 + 해상도 기준 고정 높이(내부 스크롤) + 코너 추가 하단 고정.
                코너가 0개여도 밴드(Fixed·Dynamic)는 항상 표시 — 각 밴드에 '추가 가능' 노출(2026-10-21). */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[360px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
@@ -2266,31 +2223,33 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
       <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
           {/* 좌: 미리보기 — sticky 고정. 하단 푸터(구성 검증 바)와 겹치지 않도록 상단 크롬+푸터 높이를 뺀 높이로(2026-11-09 사용자 요청: 바텀 겹침 금지). 큰 모니터에선 max 캡. */}
           <div className="sticky top-2 flex h-[calc(100vh_-_230px)] max-h-[800px] flex-col">
-          {/* 미리보기 컨트롤 — 디바이스 선택·줌·전체화면 + 기본/폴백(SB 디바이스 프레임, 2026-11-17 사용자 요청) */}
-          <div className="mb-2 flex w-full shrink-0 flex-col gap-2">
-            {/* 1행 — 디바이스 선택 · 줌 · 전체화면 */}
-            <div className="flex items-center gap-1.5">
-              <div className="relative">
-                <select value={deviceIdx} onChange={(e) => setDeviceIdx(Number(e.target.value))} className="h-[30px] appearance-none rounded-[8px] border border-[var(--line2)] bg-white pl-2.5 pr-7 text-[12px] font-medium text-[var(--ink2)] focus:border-[var(--ac)] focus:outline-none">
-                  {DEVICE_PRESETS.map((d, i) => <option key={d.label} value={i}>{d.label} · {d.w}×{d.h}</option>)}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink4)]" />
+          {/* 미리보기 컨트롤 — 한 줄 압축 바(2026-11-18 사용자 요청: 디바이스·폴백 다 겹쳐 터지던 2행 → 1행 정리).
+              좌: 기본/폴백(주 보기 모드) · 우: 디바이스·줌·전체화면(보조). 좁아지면 wrap으로 접힌다. */}
+          <div className="mb-2 w-full shrink-0">
+            <div className="flex w-full flex-wrap items-center gap-x-2 gap-y-1.5">
+              {/* 기본/폴백 — 주 보기 토글 */}
+              <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
+                <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-3.5 py-1 text-center', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>기본</button>
+                <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3.5 py-1 text-center', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
               </div>
-              <div className="ml-auto flex items-center gap-0.5 rounded-[8px] border border-[var(--line2)] bg-white px-1">
-                <button type="button" onClick={() => setZoom((z) => Math.max(50, z - 10))} title="축소" className="grid h-6 w-6 place-items-center text-[var(--ink3)] hover:text-[var(--ac)]"><Minus className="h-3.5 w-3.5" /></button>
-                <span className="w-9 text-center text-[12px] font-semibold tabular-nums text-[var(--ink2)]">{zoom}%</span>
-                <button type="button" onClick={() => setZoom((z) => Math.min(150, z + 10))} title="확대" className="grid h-6 w-6 place-items-center text-[var(--ink3)] hover:text-[var(--ac)]"><Plus className="h-3.5 w-3.5" /></button>
+              {/* 보조 컨트롤 묶음 — 디바이스·줌·전체화면 */}
+              <div className="ml-auto flex items-center gap-1.5">
+                <div className="relative">
+                  <select value={deviceIdx} onChange={(e) => setDeviceIdx(Number(e.target.value))} title={`${device.w}×${device.h}`} className="h-[30px] max-w-[122px] appearance-none truncate rounded-[8px] border border-[var(--line2)] bg-white pl-2.5 pr-7 text-[12px] font-medium text-[var(--ink2)] focus:border-[var(--ac)] focus:outline-none">
+                    {DEVICE_PRESETS.map((d, i) => <option key={d.label} value={i}>{d.label}</option>)}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink4)]" />
+                </div>
+                <div className="flex items-center gap-0.5 rounded-[8px] border border-[var(--line2)] bg-white px-1">
+                  <button type="button" onClick={() => setZoom((z) => Math.max(50, z - 10))} title="축소" className="grid h-6 w-6 place-items-center text-[var(--ink3)] hover:text-[var(--ac)]"><Minus className="h-3.5 w-3.5" /></button>
+                  <span className="w-8 text-center text-[12px] font-semibold tabular-nums text-[var(--ink2)]">{zoom}%</span>
+                  <button type="button" onClick={() => setZoom((z) => Math.min(150, z + 10))} title="확대" className="grid h-6 w-6 place-items-center text-[var(--ink3)] hover:text-[var(--ac)]"><Plus className="h-3.5 w-3.5" /></button>
+                </div>
+                <button type="button" onClick={() => setFullscreen(true)} title="전체화면으로 보기" className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] border border-[var(--line2)] bg-white text-[var(--ink3)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Maximize2 className="h-3.5 w-3.5" /></button>
               </div>
-              <button type="button" onClick={() => setFullscreen(true)} title="전체화면으로 보기" className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] border border-[var(--line2)] bg-white text-[var(--ink3)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Maximize2 className="h-3.5 w-3.5" /></button>
             </div>
-            {/* 2행 — 기본/폴백 토글 */}
-            <div className="flex items-center gap-2">
-              <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[13px] font-semibold">
-                <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-5 py-1 text-center', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>기본</button>
-                <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-5 py-1 text-center', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
-              </div>
-              {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
-            </div>
+            {/* 폴백 안내 — 바 아래 얇은 캡션으로(2026-11-18: 컨트롤 줄을 깔끔히) */}
+            {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="mt-1 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
           </div>
           {/* 디바이스는 좌측 열(뷰포트 높이) 안에서 fill로 꽉 채워 늘어남 — 바텀 고정·안 잘림. 줌은 scale 래퍼로(2026-11-17 사용자 요청). 바디는 내부 스크롤. */}
           <div className="min-h-0 flex-1 overflow-auto">

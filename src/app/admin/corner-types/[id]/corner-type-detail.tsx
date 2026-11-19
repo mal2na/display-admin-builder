@@ -382,7 +382,20 @@ export function CornerTypeReadOnly({ row, editable = false, onEdit, bannerPrevie
       </RORow>
       )}
       {/* 코너 유형 설명 — DB 설명이 비면 유형별 원장 출처·카테고리 기본 설명(2026-11-18 사용자 요청: 노출 조건 대신 여기로). */}
-      <RORow label="코너 유형 설명"><span className="text-[13px] font-normal leading-relaxed text-[#1a1a1a]">{row.description || cornerTypeSourceNote(row.baseCategory) || '—'}</span></RORow>
+      {/* 코너 유형 설명 — DB 설명 있으면 그대로, 없으면 유형별 원장 출처 불릿(짧고 명확, 2026-11-18 사용자 요청). */}
+      <RORow label="코너 유형 설명">
+        {row.description ? (
+          <span className="text-[13px] font-normal leading-relaxed text-[#1a1a1a]">{row.description}</span>
+        ) : cornerTypeSourceNote(row.baseCategory).length > 0 ? (
+          <ul className="space-y-1">
+            {cornerTypeSourceNote(row.baseCategory).map((l, i) => (
+              <li key={i} className="flex gap-1.5 text-[13px] font-normal leading-relaxed text-[#1a1a1a]"><span className="mt-[1px] shrink-0 text-[#3617ce]">·</span><span>{l}</span></li>
+            ))}
+          </ul>
+        ) : (
+          <span className="text-[13px] text-[#1a1a1a]">—</span>
+        )}
+      </RORow>
       </ROTable>
       </ROSection>
 

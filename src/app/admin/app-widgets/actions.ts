@@ -19,64 +19,84 @@ function dt(fd: FormData, k: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+// 폼 → 저장 데이터. 위젯배너정보는 배너캠페인(targetCampaignId) 링크 + 명칭 스냅샷.
 function readForm(fd: FormData) {
+  const noEnd = fd.get('noEnd') === 'true';
   return {
-    osType: str(fd, 'osType') ?? 'Android',
-    exposeYn: fd.get('exposeYn') === 'true',
     widgetTypeId: str(fd, 'widgetTypeId'),
+    exposeYn: fd.get('exposeYn') === 'true',
     publishStart: dt(fd, 'publishStart'),
-    publishEnd: dt(fd, 'publishEnd'),
+    publishEnd: noEnd ? null : dt(fd, 'publishEnd'),
     bannerName: str(fd, 'bannerName') ?? '',
-    bgColorCode: str(fd, 'bgColorCode'),
-    bannerImageUrl: str(fd, 'bannerImageUrl'),
-    bannerImageAlt: str(fd, 'bannerImageAlt'),
-    linkType: str(fd, 'linkType') ?? 'internal',
-    linkUrl: str(fd, 'linkUrl'),
-    statCode: str(fd, 'statCode'),
-    landingPosition: str(fd, 'landingPosition'),
-    targetCampaignId: str(fd, 'targetCampaignId'),
-    note: str(fd, 'note'),
+    targetCampaignId: str(fd, 'bannerCampaignId'), // 배너캠페인 링크(상세에서 조인해 배너정보 노출)
   };
 }
 
-function revalidate() {
+function revalidate(id?: string) {
   revalidatePath('/admin/app-widgets');
+  if (id) revalidatePath(`/admin/app-widgets/${id}`);
 }
 
-// 승인요청 시 함께 세팅할 필드
-function approvalPatch(fd: FormData) {
-  return fd.get('intent') === 'approve'
-    ? { approvalStatus: 'requested', approvalRequester: OPERATOR, approvalRequestedAt: new Date() }
-    : {};
-}
-
-// 등록 — 저장 후 상세로 이동
+// 등록 (SB PG049) — 저장 → 상세, 승인상태 '임시저장(draft)'
 export async function createAppWidget(fd: FormData) {
   const data = readForm(fd);
   const max = await prisma.appWidget.aggregate({ _max: { displayOrder: true } });
   const row = await prisma.appWidget.create({
-    data: { ...data, ...approvalPatch(fd), displayOrder: (max._max.displayOrder ?? 0) + 1, createdBy: OPERATOR, updatedBy: OPERATOR },
+    data: {
+      ...data, osType: 'Android', linkType: 'internal',
+      displayOrder: (max._max.displayOrder ?? 0) + 1,
+      approvalStatus: 'draft', createdBy: OPERATOR, updatedBy: OPERATOR,
+      history: { create: { seq: 1, status: 'draft', changeNote: '신규 등록' } },
+    },
   });
-  revalidate();
+  revalidate(row.id);
   redirect(`/admin/app-widgets/${row.id}`);
 }
 
-// 수정
+// 수정 (SB PG051) — 저장 → 상세, 승인상태 '임시저장'
 export async function updateAppWidget(id: string, fd: FormData) {
   const data = readForm(fd);
-  await prisma.appWidget.update({ where: { id }, data: { ...data, ...approvalPatch(fd), updatedBy: OPERATOR } });
-  revalidate();
+  const lastSeq = await prisma.appWidgetHistory.aggregate({ where: { widgetId: id }, _max: { seq: true } });
+  await prisma.appWidget.update({
+    where: { id },
+    data: {
+      ...data, approvalStatus: 'draft', updatedBy: OPERATOR,
+      history: { create: { seq: (lastSeq._max.seq ?? 0) + 1, status: 'draft', changeNote: '수정' } },
+    },
+  });
+  revalidate(id);
   redirect(`/admin/app-widgets/${id}`);
 }
 
-// 승인요청
+// 상세에서 승인요청 (SB PG476 버튼 CASE)
 export async function requestApprovalAppWidget(id: string) {
+  const now = new Date();
+  const lastSeq = await prisma.appWidgetHistory.aggregate({ where: { widgetId: id }, _max: { seq: true } });
   await prisma.appWidget.update({
     where: { id },
-    data: { approvalStatus: 'requested', approvalRequester: OPERATOR, approvalRequestedAt: new Date() },
+    data: {
+      approvalStatus: 'requested', approvalRequester: OPERATOR, approvalRequestedAt: now,
+      history: { create: { seq: (lastSeq._max.seq ?? 0) + 1, status: 'requested', requester: OPERATOR, requestedAt: now, changeNote: '승인요청' } },
+    },
   });
-  revalidate();
-  revalidatePath(`/admin/app-widgets/${id}`);
+  revalidate(id);
+  redirect(`/admin/app-widgets/${id}`);
+}
+
+// 승인요청 취소
+export async function cancelRequestAppWidget(id: string) {
+  const w = await prisma.appWidget.findUnique({ where: { id } });
+  const now = new Date();
+  const lastSeq = await prisma.appWidgetHistory.aggregate({ where: { widgetId: id }, _max: { seq: true } });
+  await prisma.appWidget.update({
+    where: { id },
+    data: {
+      approvalStatus: 'draft',
+      history: { create: { seq: (lastSeq._max.seq ?? 0) + 1, status: 'cancelled', requester: w?.approvalRequester ?? OPERATOR, requestedAt: w?.approvalRequestedAt, processedAt: now, processReason: '요청취소', changeNote: '요청취소' } },
+    },
+  });
+  revalidate(id);
+  redirect(`/admin/app-widgets/${id}`);
 }
 
 // 노출순서 저장 — [{id, order}]
@@ -89,6 +109,5 @@ export async function reorderAppWidgets(orders: { id: string; order: number }[])
 
 // Redis Reload — 배포 공통 프로세스 확정 전 임시(no-op)
 export async function redisReloadAppWidgets() {
-  // 실제 배포/캐시 동기화는 공통 프로세스 확정 후 연결 예정
   return { ok: true, at: new Date().toISOString() };
 }

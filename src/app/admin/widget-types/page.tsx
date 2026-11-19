@@ -1,7 +1,6 @@
 // 위젯 유형 관리 목록 · 운영 관리
 import { prisma } from '@/lib/prisma';
 import { WidgetTypeList, type TypeRow } from './widget-type-list';
-import { WidgetTabs } from '../app-widgets/widget-tabs';
 import { PageHeader } from '@/components/page-header';
 
 export const dynamic = 'force-dynamic';
@@ -15,10 +14,9 @@ export default async function WidgetTypesPage() {
   return (
     <div className="px-12 py-9 pb-28">
       <PageHeader
-        trail={['운영 관리', 'App 위젯 관리']}
-        title="App 위젯 관리"
+        trail={['운영관리', '위젯 유형 관리']}
+        title="위젯 유형 관리"
       />
-      <WidgetTabs />
       <WidgetTypeList rows={data} />
     </div>
   );

@@ -18,10 +18,10 @@ import {
   type Page, type DevSetting,
 } from '@/lib/page-menu/model';
 
+// SB PG551 — 탭 3개(상세정보/인증현황/변경·승인이력). 개발설정은 상세정보 내 섹션.
 const DTABS = [
   { key: 'info', label: '상세정보' },
-  { key: 'dev', label: '개발설정' },
-  { key: 'bff', label: 'BFF 연결' },
+  { key: 'auth', label: '인증현황' },
   { key: 'hist', label: '변경/승인이력' },
 ];
 
@@ -145,7 +145,7 @@ export function DetailView({ id }: { id: string }) {
 
               <MaskSect p={p} />
 
-              <Sect title="검색 및 AI 노출 정보">
+              <Sect title="메타 태그 정보 (SEO/GEO)">
                 <FTable>
                   <FRow k="태그 사용여부">{p.tagUse ? '사용' : '사용안함'}</FRow>
                   {p.tagUse && (
@@ -178,28 +178,32 @@ export function DetailView({ id }: { id: string }) {
             </>
           )}
 
+          {/* 8. 개발 설정 (SB PG551 — 상세정보 내 섹션, Read only) */}
+          {!isG && (
+            <Sect title="개발 설정">
+              <FTable>
+                <FRow2 k1="마스킹/업무인증 동시적용 여부" v1={devOf(p).both ? 'Y' : 'N'} k2="Web JOB 코드" v2={devOf(p).wjob || '—'} />
+                <FRow2 k1="모바일 Web JOB 코드" v1={devOf(p).mjob || '—'} k2="App JOB 코드" v2={devOf(p).ajob || '—'} />
+                <FRow k="가이드 URL">{devOf(p).guide || '—'}</FRow>
+              </FTable>
+            </Sect>
+          )}
+
           <Sect title="담당자 정보">
             <FTable><FRow2 k1="등록자" v1="김혜윤(P217326)" k2="등록일시" v2={p.created} /></FTable>
           </Sect>
         </>
       )}
 
-      {dtab === 'dev' && <DevTab p={p} />}
-      {dtab === 'bff' && <BffTab p={p} />}
+      {dtab === 'auth' && <BffTab p={p} />}
       {dtab === 'hist' && (
         <Sect title="변경/승인이력">
           <div className="border-t border-[var(--line2)] py-20 text-center text-[var(--ink3)]">이력 화면은 이번 범위에 포함하지 않습니다.</div>
         </Sect>
       )}
 
-      {dtab === 'dev' || dtab === 'bff' ? (
-        <FormActions left={<button type="button" className={BTN} onClick={() => pm.go('list')}>목록</button>}>
-          <button type="button" className={BTN_PRI} onClick={() => pm.confirmBox(
-            '저장하시겠습니까?',
-            `입력한 ${dtab === 'dev' ? '개발 설정' : 'BFF 연결'} 내용으로 저장됩니다.`,
-            () => pm.toast(`${dtab === 'dev' ? '개발 설정' : 'BFF 연결'} 저장되었습니다`),
-          )}>저장</button>
-        </FormActions>
+      {dtab === 'auth' || dtab === 'hist' ? (
+        <FormActions left={<button type="button" className={BTN} onClick={() => pm.go('list')}>목록</button>}>{null}</FormActions>
       ) : (
         // 하단 바 — [목록] · 반영/수정 메타 · 오른쪽 승인 액션. 좁은 폭에서는 줄바꿈된다.
         <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-[var(--line2)] pt-6">
@@ -392,14 +396,14 @@ function BffTab({ p }: { p: Page }) {
   const [, force] = React.useState(0);
 
   return (
-    <Sect title="BFF 연결" right={
+    <Sect title="인증 현황" right={
       <button type="button" className={BTN} onClick={() => {
         const b = BFF_SAMPLE.filter((x) => !d.bff.some((y) => y.id === x.id))[0];
         if (!b) { pm.toast('추가할 수 있는 BFF가 없습니다 (프로토타입 샘플 3건)'); return; }
         d.bff.push(b); pm.toast(`${b.id} 매핑 추가`); force((n) => n + 1);
       }}>BFF 매핑 추가</button>
     }>
-      <p className="mb-2 text-[14px] font-semibold">BFF 연결 목록 <span className="text-[var(--ac)]">{d.bff.length}건</span></p>
+      <p className="mb-2 text-[14px] font-semibold">BFF 인증 현황 목록 <span className="text-[var(--ac)]">{d.bff.length}건</span></p>
       <div className="overflow-x-auto border-t border-[var(--line2)]">
         <table className={cn(TABLE_CLS, 'min-w-[1400px] text-[13px]')}>
           <thead><tr className={THEAD_TR_CLS}>{BFF_COLS.map((c) => <th key={c} className="whitespace-nowrap text-left">{c}</th>)}</tr></thead>
@@ -411,7 +415,7 @@ function BffTab({ p }: { p: Page }) {
                 <td>{i + 1}</td><td>{b.kind}</td><td className="font-mono">{b.id}</td><td>{b.api}</td>
                 <td className="font-mono">{b.url}</td><td>{b.scope}</td>
                 <td>{b.mg}</td><td>{b.md}</td><td>{b.mo}</td><td>{b.ag}</td><td>{b.ad}</td><td>{b.ao}</td>
-                <td><button type="button" className={BTN_SM} onClick={() => { d.bff.splice(i, 1); force((n) => n + 1); }}>삭제</button></td>
+                <td><button type="button" className={BTN_SM} onClick={() => pm.confirmBox('BFF 매핑 취소하시겠습니까?', '해당 행의 BFF 정보가 삭제됩니다.', () => { d.bff.splice(i, 1); force((n) => n + 1); })}>BFF 매핑 취소</button></td>
               </tr>
             ))}
           </tbody>

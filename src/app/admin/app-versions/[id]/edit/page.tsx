@@ -31,9 +31,10 @@ export default async function AppVersionEditPage({ params }: { params: { id: str
   return (
     <div className="px-12 py-9 pb-28">
       <PageHeader
-        trail={['운영 관리', 'App 버전 관리', 'App 버전 관리 수정']}
-        title="App 버전 관리 수정"
+        trail={['운영관리', 'App 버전 관리', 'App 버전 수정']}
+        title="App 버전 수정"
       />
+      <div className="mt-6" />
       <VersionForm
         mode="edit"
         action={updateVersion.bind(null, v.id)}
@@ -42,7 +43,7 @@ export default async function AppVersionEditPage({ params }: { params: { id: str
         value={{
           targetApp: v.targetApp, osType: v.osType, updateDate: v.updateDate?.toISOString() ?? null, version: v.version,
           recommendVersion: v.recommendVersion, forceVersion: v.forceVersion,
-          detailContent: v.detailContent, versionContent: v.versionContent,
+          detailContent: v.detailContent,
           recommendPopupTitle: v.recommendPopupTitle, recommendPopupContent: v.recommendPopupContent, recommendPopupImageUrl: v.recommendPopupImageUrl, recommendPopupImageAlt: v.recommendPopupImageAlt,
           forcePopupTitle: v.forcePopupTitle, forcePopupContent: v.forcePopupContent, forcePopupImageUrl: v.forcePopupImageUrl, forcePopupImageAlt: v.forcePopupImageAlt,
         }}

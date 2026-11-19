@@ -130,6 +130,32 @@ export function FormView({ isCreate }: { isCreate: boolean }) {
     pm.confirmBox('저장하시겠습니까?', '입력한 내용으로 저장됩니다.', apply);
   };
 
+  /* ── 임시저장 (SB PG555/552) — 필수값 미입력도 저장, 페이지명만 필수. 승인상태 '임시저장' ── */
+  const doTempSave = () => {
+    if (!e.name.trim()) { pm.toast('페이지명을 입력해 주세요'); return; }
+    if (e._sub && !e.parent) { pm.toast('상위 메뉴를 선택해 주세요'); return; }
+    pm.confirmBox('임시저장하시겠습니까?', '등록된 내용이 임시저장됩니다.', () => {
+      if (isCreate) {
+        const r = mkPage({ name: e.name, parent: e.parent, url: e.url });
+        if (!r.ok || !r.p) { pm.toast(r.msg ?? ''); return; }
+        SAVE_KEYS.forEach((k) => { if (k !== 'name' && k !== 'url') (r.p as Record<string, unknown>)[k] = (e as Record<string, unknown>)[k]; });
+        const nb = ensureCt(r.p);
+        r.p.state = 'draft';
+        pm.setEditing(null); pm.goDetail(r.id!);
+        pm.toast(`${r.id}${nb ? ` · ${r.p.ct}` : ''} 임시저장`);
+        return;
+      }
+      const o = orig!;
+      const urlChanged = o.fixed && o.url !== e.url;
+      SAVE_KEYS.forEach((k) => { (o as Record<string, unknown>)[k] = (e as Record<string, unknown>)[k]; });
+      if (urlChanged) o.fixed = false;
+      if (e.parent !== o.parent) { const r = movePage(o, e.parent); if (!r.ok) { pm.toast(r.msg); return; } }
+      o.state = 'draft'; afterEdit(o);
+      pm.setEditing(null); pm.goDetail(o.id);
+      pm.toast('임시저장되었습니다');
+    });
+  };
+
   const confirmMove = (p: Page, np: string | null, onOk: () => void) => {
     const mi = moveImpact(p, np);
     const dest = np ? crumb(byId(np)) : '최상위';
@@ -360,7 +386,7 @@ export function FormView({ isCreate }: { isCreate: boolean }) {
             </FTable>
           </Sect>
 
-          <Sect title="검색 및 AI 노출 정보">
+          <Sect title="메타 태그 정보 (SEO/GEO)">
             <FTable>
               <FRow k="태그 사용여부"><Yn val={e.tagUse} on={(v) => set({ tagUse: v })} /></FRow>
               {e.tagUse && (
@@ -474,6 +500,7 @@ export function FormView({ isCreate }: { isCreate: boolean }) {
           '취소하시겠습니까?', '취소 시 입력한 정보는 모두 삭제됩니다.',
           () => { pm.setEditing(null); if (isCreate) pm.go('list'); else pm.goDetail(orig!.id); },
         )}>취소</button>
+        <button type="button" className={BTN} onClick={doTempSave}>임시저장</button>
         <button type="button" className={BTN_PRI} onClick={doSave}>저장</button>
       </FormActions>
 

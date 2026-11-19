@@ -5,8 +5,9 @@ import { VersionList, type VersionRow } from './version-list';
 
 export const dynamic = 'force-dynamic';
 
+// SB PG578 1-4 승인상태 라벨 — 저장(draft)·승인대기(requested)·승인완료·반려·요청취소
 const APPROVAL_LABEL: Record<string, string> = {
-  draft: '임시저장', requested: '승인요청', approved: '승인완료', rejected: '반려', cancelled: '요청취소',
+  draft: '저장', requested: '승인대기', approved: '승인완료', rejected: '반려', cancelled: '요청취소',
 };
 
 const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);

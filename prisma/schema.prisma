@@ -1063,3 +1063,101 @@ model MenuHistory {
 
   @@index([seq])
 }
+
+// ─────────────────────────────────────────────────────────────
+// 운영 관리 — 로밍국가 관리 (SB BO-AIM-DSP-PG560/561~572 + PU01) · 정책 AIM
+//   국가별 로밍 정보(국가정보 + WCDMA/GSM/LTE/CDMA/임대로밍 서비스타입별 콘텐츠)를 관리.
+//   기본정보(대륙/국가명/코드/MCC/GMT)는 시스템 연동값(읽기전용). 서비스타입 콘텐츠는 JSON 저장.
+// ─────────────────────────────────────────────────────────────
+model RoamingCountry {
+  id          String  @id @default(cuid())
+  // 기본 정보 (시스템 연동값)
+  continent   String  // 대륙명
+  nameKo      String  // 국가명(국문)
+  nameEn      String  // 국가명(영문)
+  countryCode String  // 국가코드 (JPN)
+  mccCode     String? // MCC 코드 (440,441)
+  gmt         String? // GMT시간
+  timeDiff    String? // 시차시간
+
+  // 국가 설정 (국가정보 탭)
+  searchYn          Boolean @default(true)  // 로밍국가 검색 허용 여부
+  detailYn          Boolean @default(false) // 로밍국가 상세 설정 여부
+  adjacentCountries String? // 인접로밍가능 국가 (text)
+  currencyCode      String? // 통화코드 (JPY(100))
+
+  // 국가정보 탭 — 이미지/장애공지 (관련사이트는 별도 테이블)
+  countryImageUrl String? // 국가 대표이미지
+  countryImageAlt String?
+  bgImageUrl      String? // 배경 이미지
+  bgImageAlt      String?
+  countryImage2Url String? // 국가 이미지
+  countryImage2Alt String?
+  buttonImageUrl  String? // 버튼 이미지
+  buttonImageAlt  String?
+  faultNoticeYn   Boolean @default(false) // 장애공지 여부
+  faultNoticeStart DateTime?
+  faultNoticeEnd   DateTime?
+  faultNoticeContent String?
+
+  // 서비스타입별 콘텐츠 (JSON) — 서비스정보/통화방법/부가서비스/데이터설정/이용가능지역안내
+  wcdma String? // WCDMA JSON
+  gsm   String? // GSM JSON
+  lte   String? // LTE JSON
+  cdma  String? // CDMA JSON
+  lease String? // 임대로밍 JSON
+
+  // 승인 정보
+  approvalStatus      String    @default("draft") // draft | requested | approved | rejected | cancelled
+  approvalRequester   String?
+  approvalManager     String?
+  approvalRequestedAt DateTime?
+  approvalProcessedAt DateTime?
+
+  createdBy String?
+  updatedBy String?
+
+  sites   RoamingRelatedSite[]
+  history RoamingCountryHistory[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([continent])
+  @@index([countryCode])
+}
+
+// 로밍국가 관련사이트 (PG571-PU01)
+model RoamingRelatedSite {
+  id        String @id @default(cuid())
+  countryId String
+  country   RoamingCountry @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  siteName  String  // 사이트명
+  link      String? // 링크(URL)
+  imageUrl  String? // 이미지
+  imageAlt  String?
+  exposeYn  Boolean @default(true) // 게시여부
+  seq       Int     @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([countryId])
+}
+
+// 로밍국가 변경/승인 이력 (PG559)
+model RoamingCountryHistory {
+  id        String @id @default(cuid())
+  countryId String
+  country   RoamingCountry @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  seq       Int
+  version   Int?
+  status    String // draft | requested | approved | rejected | cancelled
+  requester String?
+  manager   String?
+  requestedAt   DateTime?
+  requestReason String?
+  processedAt   DateTime?
+  processReason String?
+  changeNote    String?
+  createdAt DateTime @default(now())
+
+  @@index([countryId])
+}

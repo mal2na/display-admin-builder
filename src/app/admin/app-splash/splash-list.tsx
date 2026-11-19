@@ -27,8 +27,8 @@ export type SplashRow = {
 // 상태 배지 색 — 프로토타입 상태 팔레트 쌍
 const APPROVAL_TONE: Record<string, string> = {
   승인완료: 'bg-[#C8F6E1] text-[#038E52]',
-  승인요청: 'bg-[#D9E9FF] text-[#2E7AFF]',
-  임시저장: 'bg-[#DCE0E5] text-[#454F59]',
+  승인대기: 'bg-[#D9E9FF] text-[#2E7AFF]',
+  저장: 'bg-[#DCE0E5] text-[#454F59]',
   반려: 'bg-[#FFDCDC] text-[#ED3B3E]',
   요청취소: 'bg-[#FFE4C4] text-[#D66400]',
 };
@@ -61,7 +61,11 @@ type Filter = {
   dateField: string; from: string; to: string;
   searchField: string; q: string;
 };
-const DEFAULT_FILTER: Filter = { os: '전체', apply: '전체', approval: '전체', dateField: '등록일', from: '', to: '', searchField: '버전', q: '' };
+// 기간 기본값 — 당일 ~ 이전 1년 (SB 1-4)
+function ymd(d: Date): string { const p = (n: number) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
+const TODAY = new Date();
+const YEAR_AGO = new Date(); YEAR_AGO.setFullYear(YEAR_AGO.getFullYear() - 1);
+const DEFAULT_FILTER: Filter = { os: '전체', apply: '전체', approval: '전체', dateField: '등록일자', from: ymd(YEAR_AGO), to: ymd(TODAY), searchField: '버전', q: '' };
 
 export function SplashList({ rows }: { rows: SplashRow[] }) {
   const router = useRouter();
@@ -72,7 +76,7 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
 
   const filtered = useMemo(() => {
     const f = applied;
-    const dateOf = (r: SplashRow) => f.dateField === '최근수정일' ? r.updatedAt : f.dateField === '적용시작일' ? r.applyStartAt : r.createdAt;
+    const dateOf = (r: SplashRow) => f.dateField === '최근수정일자' ? r.updatedAt : f.dateField === '적용시작일자' ? r.applyStartAt : r.createdAt;
     return rows.filter((r) => {
       if (f.os !== '전체' && r.osType !== f.os) return false;
       if (f.apply !== '전체' && r.applyState !== f.apply) return false;
@@ -115,7 +119,7 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
               ['기간', (
                 <span key="dt" className="rng">
                   {/* 기준 셀렉트는 라벨이 짧아 폭을 줄인다 — 줄여야 기간이 첫 줄에 함께 들어간다 */}
-                  <select value={draft.dateField} onChange={(e) => set({ dateField: e.target.value })} className={cn(selectCls, '!min-w-[140px]')}>{['등록일', '최근수정일', '적용시작일'].map((o) => <option key={o}>{o}</option>)}</select>
+                  <select value={draft.dateField} onChange={(e) => set({ dateField: e.target.value })} className={cn(selectCls, '!min-w-[140px]')}>{['등록일자', '최근수정일자', '적용시작일자'].map((o) => <option key={o}>{o}</option>)}</select>
                   <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} className={inputCls} />
                   <span className="text-[var(--ink3)]">~</span>
                   <input type="date" value={draft.to} onChange={(e) => set({ to: e.target.value })} className={inputCls} />
@@ -123,7 +127,7 @@ export function SplashList({ rows }: { rows: SplashRow[] }) {
               )],
             ],
             [
-              ['승인상태', <select key="av" value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={selectCls}>{['전체', '승인완료', '승인요청', '임시저장', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>],
+              ['승인상태', <select key="av" value={draft.approval} onChange={(e) => set({ approval: e.target.value })} className={selectCls}>{['전체', '승인완료', '승인대기', '저장', '반려', '요청취소'].map((o) => <option key={o}>{o}</option>)}</select>],
               ['구분검색', (
                 <span key="q" className="rng">
                   <select value={draft.searchField} onChange={(e) => set({ searchField: e.target.value, q: '' })} className={selectCls}>{['버전', '제목', '등록자', '최근수정자'].map((o) => <option key={o}>{o}</option>)}</select>

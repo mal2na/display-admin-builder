@@ -9,7 +9,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { FilterPanel, ListHeader } from '@/components/ops-ui';
 import { Tag, Hint, BTN, BTN_PRI, BTN_SM, FormActions } from './ui';
-import { UseChip, FoChip, TypeChip, CtLink, BlockMark } from './chips';
+import { UseChip, FoChip, TypeChip, StateChip, CtLink, BlockMark } from './chips';
 import { PathPicker, type PickerSpec } from './path-picker';
 import { usePm } from './ctx';
 import {
@@ -100,13 +100,13 @@ export function IaView({ ia, setIa }: { ia: IaState; setIa: (s: IaState) => void
   return (
     <>
       <FilterPanel
-        rows={[[['메뉴명', (
+        rows={[[['페이지명', (
           <input
             key="q"
             value={ia.q}
             onChange={(e) => set({ q: e.target.value })}
             onKeyDown={(e) => { if (e.key === 'Enter') set({ applied: ia.q.trim() }); }}
-            placeholder="메뉴명을 입력해주세요"
+            placeholder="페이지명을 입력하세요"
             className="inp h-[38px] w-[260px] max-w-full rounded-[var(--r-field)] border border-[var(--line3)] px-[14px] text-[14px]"
           />
         ), 3]]]}
@@ -145,11 +145,13 @@ export function IaView({ ia, setIa }: { ia: IaState; setIa: (s: IaState) => void
 
       <div className="flex min-h-0 items-start gap-4">
         <div className="min-w-0 flex-1 overflow-x-auto border-t border-[var(--line2)]">
-          <div className="grid min-w-[760px] grid-cols-[1fr_120px_140px_140px] border-b border-[var(--line2)] bg-[var(--th)] text-[13px] font-semibold text-[var(--ink2)]">
-            <div className="px-3 py-2.5">메뉴명</div>
+          {/* SB PG549 컬럼: 페이지명 · 승인상태 · 등록유형 · 사용여부 · 등록일시 */}
+          <div className="grid min-w-[820px] grid-cols-[1fr_120px_130px_110px_150px] border-b border-[var(--line2)] bg-[var(--th)] text-[13px] font-semibold text-[var(--ink2)]">
+            <div className="px-3 py-2.5">페이지명</div>
+            <div className="px-3 py-2.5 text-center">승인 상태</div>
+            <div className="px-3 py-2.5 text-center">등록 유형</div>
             <div className="px-3 py-2.5 text-center">사용 여부</div>
-            <div className="px-3 py-2.5 text-center">FO 메뉴 노출</div>
-            <div className="px-3 py-2.5 text-center">등록일</div>
+            <div className="px-3 py-2.5 text-center">등록 일시</div>
           </div>
           {rows.map((p) => {
             const d = depth(p);
@@ -166,7 +168,7 @@ export function IaView({ ia, setIa }: { ia: IaState; setIa: (s: IaState) => void
                   onDrop(p, e.clientY < r.top + r.height / 2);
                 }}
                 onClick={() => set({ sel: p.id })}
-                className={cn('grid min-w-[760px] cursor-pointer grid-cols-[1fr_120px_140px_140px] items-center border-b border-[var(--line2)] text-[14px] hover:bg-[var(--th)]',
+                className={cn('grid min-w-[820px] cursor-pointer grid-cols-[1fr_120px_130px_110px_150px] items-center border-b border-[var(--line2)] text-[14px] hover:bg-[var(--th)]',
                   ia.sel === p.id && 'bg-[var(--ac2)]')}
               >
                 <div className="flex min-w-0 items-center gap-1.5 py-2.5 pr-3" style={{ paddingLeft: 12 + (d - 1) * 20 }}>
@@ -180,8 +182,9 @@ export function IaView({ ia, setIa }: { ia: IaState; setIa: (s: IaState) => void
                   )}
                   {editTag(p)}
                 </div>
+                <div className="flex justify-center py-2.5"><StateChip p={p} /></div>
+                <div className="flex justify-center py-2.5"><TypeChip p={p} /></div>
                 <div className="flex justify-center py-2.5"><UseChip p={p} /></div>
-                <div className="flex justify-center py-2.5"><FoChip p={p} /></div>
                 <div className="py-2.5 text-center text-[var(--ink2)]">{p.created}</div>
               </div>
             );
@@ -199,6 +202,7 @@ export function IaView({ ia, setIa }: { ia: IaState; setIa: (s: IaState) => void
         </>
       }>
         {!edit && <button type="button" className={BTN} onClick={() => pm.toast('엑셀 다운로드 (목업)')}>엑셀 다운로드</button>}
+        {!edit && <button type="button" className={BTN_PRI} onClick={() => pm.go('create')}>등록</button>}
         {edit && (
           <>
             <Hint>IA 구조 수정 중 · 저장하지 않은 변경 {dirty.length}건 — 저장하면 해당 페이지가 임시저장 상태가 됩니다</Hint>
