@@ -2164,9 +2164,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   // 미리보기 컨트롤 — 디바이스 선택·줌·전체화면(SB 디바이스 프레임, 2026-11-17 사용자 요청).
   const [deviceIdx, setDeviceIdx] = React.useState(1); // 기본 iPhone 15 Pro (0=최소 폭)
   const device = DEVICE_PRESETS[deviceIdx];
-  // 미리보기는 참고 디바이스 폭(≈334px)에 맞춰 축소 표시 — 사이즈 조절(줌)은 제거(2026-11-19 사용자 요청).
-  const PREVIEW_W = 334;
-  const fit = Math.min(1, PREVIEW_W / device.w);
+  // 미리보기는 좌측 열(좁힘)에 맞춰 리플로우 — 사이즈 조절(줌) 제거(2026-11-19 사용자 요청).
   const [fullscreen, setFullscreen] = React.useState(false);
   // 미리보기 본문(코너 매핑) — 디바이스 프레임·전체화면 모달에서 공용. 선택/폴백/숨김 로직 포함.
   const previewBody = activeTemplate && liveCorners.length > 0 ? (
@@ -2226,10 +2224,10 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
         </div>
       </div>
 
-      {/* 2열 — 좌 디바이스(sticky·뷰포트 높이 유지) · 우 콘텐츠(페이지 스크롤에 함께 흐름). */}
-      <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
-          {/* 좌: 미리보기 — sticky 고정. 하단 푸터(구성 검증 바)와 겹치지 않도록 상단 크롬+푸터 높이를 뺀 높이로(2026-11-09 사용자 요청: 바텀 겹침 금지). 큰 모니터에선 max 캡. */}
-          <div className="sticky top-2 flex h-[calc(100vh_-_230px)] max-h-[800px] flex-col">
+      {/* 2열 — 좌 디바이스(고정 크기·sticky) · 우 콘텐츠. 디바이스 폭이 좁아진 만큼 좌측 열을 좁혀 템플릿 정보에 공간을 준다(2026-11-19 사용자 요청). */}
+      <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(300px,23vw,348px)_minmax(0,1fr)]">
+          {/* 좌: 미리보기 — sticky 고정. 디바이스는 프리셋 크기(높이 최대 800)로 고정, 바디는 내부 스크롤. */}
+          <div className="sticky top-2 flex flex-col">
           {/* 미리보기 컨트롤 — 한 줄 압축 바(2026-11-18 사용자 요청: 디바이스·폴백 다 겹쳐 터지던 2행 → 1행 정리).
               좌: 기본/폴백(주 보기 모드) · 우: 디바이스·줌·전체화면(보조). 좁아지면 wrap으로 접힌다. */}
           <div className="mb-2 w-full shrink-0">
@@ -2253,10 +2251,9 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             {/* 폴백 안내 — 바 아래 얇은 캡션으로(2026-11-18: 컨트롤 줄을 깔끔히) */}
             {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="mt-1 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
           </div>
-          {/* 디바이스는 좌측 열(뷰포트 높이) 안에서 fill로 꽉 채워 늘어남 — 바텀 고정·안 잘림. 줌은 scale 래퍼로(2026-11-17 사용자 요청). 바디는 내부 스크롤. */}
-          <div className="min-h-0 flex-1 overflow-auto">
-          <div className="flex h-full flex-col" style={{ transform: `scale(${fit})`, transformOrigin: 'top center' }}>
-          <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim>
+          {/* 디바이스는 프리셋 크기로 고정 — 폭은 좁아진 열에 맞춰 리플로우(max-w-full), 높이는 최대 800px(바디 내부 스크롤). */}
+          <div className="min-h-0">
+          <DeviceFrame width={device.w} bodyHeight={Math.min(device.h, 800) - 46} headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     /* 노출 토글로 숨긴 코너는 미리보기에서 제외(2026-11-12 사용자 요청) */
                     liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
@@ -2299,7 +2296,6 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
                   )}
           </DeviceFrame>
-          </div>
           </div>
         </div>
 

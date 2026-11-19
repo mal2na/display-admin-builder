@@ -1,4 +1,4 @@
-import { Signal, Wifi, BatteryFull, ChevronRight, ChevronDown, User, Lock, GripVertical, Sparkles, ImageIcon } from 'lucide-react';
+import { Signal, Wifi, BatteryFull, ChevronRight, ChevronLeft, ChevronDown, User, Lock, GripVertical, Sparkles, ImageIcon, Share, Menu } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 
@@ -847,15 +847,21 @@ export function DeviceFrame({
   return (
     <div style={{ width }} className={cn('mx-auto max-w-full', fill && 'flex min-h-0 flex-1 flex-col')}>
       <div className={cn('overflow-hidden shadow-xl', fill && 'flex min-h-0 flex-1 flex-col', slim ? 'rounded-[30px] border-[3px] border-[#1d1e2c] bg-white' : 'rounded-[2.2rem] border-[10px] border-slate-900 bg-slate-100')}>
-        <div className={cn('flex shrink-0 items-center justify-between font-semibold text-slate-900', slim ? 'bg-white px-4 py-1.5 text-[11px]' : 'bg-slate-100 px-5 py-2 text-xs')}>
-          <span>9:41</span>
-          <div className="flex items-center gap-1">
-            <Signal className="h-3.5 w-3.5" />
-            <Wifi className="h-3.5 w-3.5" />
-            <BatteryFull className="h-3.5 w-3.5" />
+        {slim ? (
+          // 미니멀 상단 — OS 상태바(9:41) 제거, 앱 헤더(뒤로/공유·메뉴)만(2026-11-19 사용자 요청: 상품 레퍼런스처럼 깔끔히)
+          <div className="flex shrink-0 items-center justify-between border-b border-[var(--line2)] bg-white px-3.5 py-2.5 text-slate-500">
+            <ChevronLeft className="h-[18px] w-[18px]" />
+            <div className="flex items-center gap-3"><Share className="h-[17px] w-[17px]" /><Menu className="h-[18px] w-[18px]" /></div>
           </div>
-        </div>
-        <div className={cn('shrink-0 border-b bg-white font-semibold text-slate-700', slim ? 'px-3 py-2 text-[13px]' : 'px-4 py-2 text-sm')}>{headerLabel}</div>
+        ) : (
+          <>
+            <div className="flex shrink-0 items-center justify-between bg-slate-100 px-5 py-2 text-xs font-semibold text-slate-900">
+              <span>9:41</span>
+              <div className="flex items-center gap-1"><Signal className="h-3.5 w-3.5" /><Wifi className="h-3.5 w-3.5" /><BatteryFull className="h-3.5 w-3.5" /></div>
+            </div>
+            <div className="shrink-0 border-b bg-white px-4 py-2 text-sm font-semibold text-slate-700">{headerLabel}</div>
+          </>
+        )}
         <div style={fill ? undefined : { height: bodyHeight }} className={cn('overflow-y-auto', fill && 'min-h-0 flex-1', slim ? 'space-y-3 bg-[#e9ebf4] px-2 py-2.5' : 'space-y-4 bg-slate-200 px-5 py-4')}>
           {children}
         </div>
