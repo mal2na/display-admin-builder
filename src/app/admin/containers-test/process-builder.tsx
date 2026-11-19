@@ -2166,6 +2166,29 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   const device = DEVICE_PRESETS[deviceIdx];
   // 미리보기는 좌측 열(좁힘)에 맞춰 리플로우 — 사이즈 조절(줌) 제거(2026-11-19 사용자 요청).
   const [fullscreen, setFullscreen] = React.useState(false);
+  // 디바이스 높이 — 실제 스크롤 컨테이너(안쪽 overflow-y-auto)에서 컨트롤바·바텀패딩을 빼 clamp(414~800).
+  //  window 기준으로 재면 열이 컨테이너보다 커져 sticky(네비 고정)가 깨지고 터짐/잘림이 생긴다 → 컨테이너 기준으로 측정. 바텀(푸터)과 10px 간격(2026-11-19 사용자 요청).
+  const deviceLaneRef = React.useRef<HTMLDivElement>(null);
+  const [deviceH, setDeviceH] = React.useState(600);
+  React.useEffect(() => {
+    const MIN = 414, MAX = 800, PAD = 10;
+    let sc: HTMLElement | null = null;
+    const recalc = () => {
+      const lane = deviceLaneRef.current; if (!lane) return;
+      if (!sc) { let p = lane.parentElement; while (p) { const o = getComputedStyle(p).overflowY; if (o === 'auto' || o === 'scroll') break; p = p.parentElement; } sc = p; }
+      const scH = sc ? sc.clientHeight : window.innerHeight;
+      // 고정(pinned) 상태 기준 남은 높이 = 컨테이너 − (sticky top-2 + 컨트롤바 높이) − 바텀 10px.
+      //  현재 laneTop(스크롤 위치)이 아니라 pinned 기준으로 재야 디바이스가 컨테이너를 꽉 채우고(바텀 10px), 열이 컨테이너를 안 넘어 sticky가 유지된다.
+      const ctrlH = (lane.previousElementSibling as HTMLElement | null)?.getBoundingClientRect().height ?? 40;
+      const avail = scH - 16 - ctrlH - PAD; // 16 = sticky top-2 + 프레임 보더 등 오프셋 보정(바텀 실측 10px)
+      setDeviceH(Math.max(MIN, Math.min(MAX, Math.round(avail))));
+    };
+    recalc();
+    const t = setTimeout(recalc, 100);
+    window.addEventListener('resize', recalc);
+    window.addEventListener('scroll', recalc, true);
+    return () => { clearTimeout(t); window.removeEventListener('resize', recalc); window.removeEventListener('scroll', recalc, true); };
+  }, []);
   // 미리보기 본문(코너 매핑) — 디바이스 프레임·전체화면 모달에서 공용. 선택/폴백/숨김 로직 포함.
   const previewBody = activeTemplate && liveCorners.length > 0 ? (
     liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
@@ -2226,8 +2249,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
 
       {/* 2열 — 좌 디바이스(고정 크기·sticky) · 우 콘텐츠. 디바이스 폭이 좁아진 만큼 좌측 열을 좁혀 템플릿 정보에 공간을 준다(2026-11-19 사용자 요청). */}
       <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(300px,23vw,348px)_minmax(0,1fr)]">
-          {/* 좌: 미리보기 — sticky 고정. 스크롤 시 기본/폴백은 상단, 디바이스 바닥은 푸터까지(바텀 붙임). 최소 414(찌그러짐 방지). (2026-11-19 사용자 요청) */}
-          <div className="sticky top-2 flex h-[calc(100vh_-_96px)] min-h-[414px] flex-col">
+          {/* 좌: 미리보기 — sticky 고정. 기본/폴백은 상단, 디바이스 높이는 아래 레인에서 실측(바텀=푸터, clamp 414~800). */}
+          <div className="sticky top-2 flex flex-col">
           {/* 미리보기 컨트롤 — 한 줄 압축 바(2026-11-18 사용자 요청: 디바이스·폴백 다 겹쳐 터지던 2행 → 1행 정리).
               좌: 기본/폴백(주 보기 모드) · 우: 디바이스·줌·전체화면(보조). 좁아지면 wrap으로 접힌다. */}
           <div className="mb-2 w-full shrink-0">
@@ -2248,11 +2271,10 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                 <button type="button" onClick={() => setFullscreen(true)} title="전체화면으로 보기" className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] border border-[var(--line2)] bg-white text-[var(--ink3)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Maximize2 className="h-3.5 w-3.5" /></button>
               </div>
             </div>
-            {/* 폴백 안내 — 바 아래 얇은 캡션으로(2026-11-18: 컨트롤 줄을 깔끔히) */}
-            {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="mt-1 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
+            {/* 폴백 안내 캡션 제거(2026-11-19 사용자 요청: 디바이스가 내려와 불편) — 폴백 여부는 토글 색/디바이스로 충분 */}
           </div>
-          {/* 디바이스는 좌측 열(반응형 높이·max 800) 안에서 fill로 채움 — 래퍼가 flex 컬럼이어야 fill의 flex-1이 먹어 바디가 내부 스크롤되고 프레임 바닥이 안 잘림(2026-11-19 버그수정). */}
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* 디바이스 레인 — 실측 높이(clamp 414~800)로 바텀=푸터에 붙임. fill로 프레임이 레인을 꽉 채우고 바디 내부 스크롤(터짐/잘림 없음). */}
+          <div ref={deviceLaneRef} style={{ height: deviceH }} className="flex min-h-0 flex-col overflow-hidden">
           <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     /* 노출 토글로 숨긴 코너는 미리보기에서 제외(2026-11-12 사용자 요청) */
