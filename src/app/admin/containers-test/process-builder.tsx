@@ -1713,7 +1713,7 @@ function CornerChip({ c, no, selected, fixed, on, onToggleOn, onSelect, onToggle
   const displayName = c.name.startsWith(typePrefix) ? c.name.slice(typePrefix.length) : c.name;
   return (
     <div ref={setNodeRef} style={style} id={`chip-${c.id}`} onClick={onSelect}
-      className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-1.5 transition',
+      className={cn('cursor-pointer rounded-[10px] border bg-white px-3.5 py-3 transition',
         isDragging && 'z-10 opacity-80 shadow-lg',
         selected ? 'border-[var(--ac)] bg-[var(--ac2)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
       {/* 그립을 좌측 레일로(위로 얼라인) + 우측 콘텐츠 2행(2026-11-12 사용자 요청: 순서변경 핸들 위로). */}
@@ -2226,8 +2226,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
 
       {/* 2열 — 좌 디바이스(고정 크기·sticky) · 우 콘텐츠. 디바이스 폭이 좁아진 만큼 좌측 열을 좁혀 템플릿 정보에 공간을 준다(2026-11-19 사용자 요청). */}
       <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(300px,23vw,348px)_minmax(0,1fr)]">
-          {/* 좌: 미리보기 — sticky 고정. 높이는 창에 따라 줄되 최소 414 ~ 최대 800(그 아래로 찌그러지지 않게, 2026-11-19 사용자 요청). */}
-          <div className="sticky top-2 flex h-[calc(100vh_-_230px)] min-h-[414px] max-h-[800px] flex-col">
+          {/* 좌: 미리보기 — sticky 고정. 스크롤 시 기본/폴백은 상단, 디바이스 바닥은 푸터까지(바텀 붙임). 최소 414(찌그러짐 방지). (2026-11-19 사용자 요청) */}
+          <div className="sticky top-2 flex h-[calc(100vh_-_96px)] min-h-[414px] flex-col">
           {/* 미리보기 컨트롤 — 한 줄 압축 바(2026-11-18 사용자 요청: 디바이스·폴백 다 겹쳐 터지던 2행 → 1행 정리).
               좌: 기본/폴백(주 보기 모드) · 우: 디바이스·줌·전체화면(보조). 좁아지면 wrap으로 접힌다. */}
           <div className="mb-2 w-full shrink-0">
