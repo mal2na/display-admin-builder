@@ -369,7 +369,7 @@ export async function importTemplate(containerId: string, formData: FormData) {
       },
     })
     .catch(() => {});
-  revalidatePath(`/admin/containers/${containerId}`);
+  revalidatePath(`/admin/containers-test/c/${containerId}`);
   redirect(`/admin/containers-test/t/${created.id}`);
 }
 
