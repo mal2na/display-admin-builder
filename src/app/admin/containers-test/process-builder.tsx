@@ -978,15 +978,17 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
             ...itemFixed.map((f) => ({ label: f.ko })),
             ...itemOpt.map((f) => ({ label: f.ko, opt: true })),
           ];
-          const Pill = ({ t }: { t: Tok }) => (
-            <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-[12px] font-medium', t.opt ? 'border-[#cfd2ff] text-[var(--ac)]' : 'border-[var(--line3)] text-[var(--ink2)]')}>{t.label}</span>
-          );
-          {/* 긴 설명은 라벨의 ⓘ 툴팁으로(2026-11-12 사용자 요청). '템플릿 기본 정보'와 동일 테이블 스타일. */}
+          {/* 칩 UI 대신 그냥 텍스트로(2026-11-19 사용자 요청) — 옵션은 보라, 고정은 기본색, 중점(·)으로 구분. */}
           const AttrRow = ({ label, toks, desc }: { label: string; toks: Tok[]; desc: string }) => (
             <div className="grid grid-cols-[120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
               <div className="flex items-center gap-1 whitespace-nowrap bg-[var(--th)] px-4 py-3 text-[14px] font-medium text-[var(--ink2)]">{label}<Tip text={desc} /></div>
-              <div className="min-w-0 bg-white px-4 py-3">
-                <div className="flex flex-wrap gap-1.5">{toks.map((t, i) => <Pill key={i} t={t} />)}</div>
+              <div className="min-w-0 bg-white px-4 py-3 text-[14px] leading-relaxed">
+                {toks.map((t, i) => (
+                  <span key={i}>
+                    {i > 0 && <span className="px-1.5 text-[var(--ink4)]">·</span>}
+                    <span className={t.opt ? 'font-medium text-[var(--ac)]' : 'text-[var(--ink)]'}>{t.label}</span>
+                  </span>
+                ))}
               </div>
             </div>
           );
@@ -2162,7 +2164,9 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   // 미리보기 컨트롤 — 디바이스 선택·줌·전체화면(SB 디바이스 프레임, 2026-11-17 사용자 요청).
   const [deviceIdx, setDeviceIdx] = React.useState(1); // 기본 iPhone 15 Pro (0=최소 폭)
   const device = DEVICE_PRESETS[deviceIdx];
-  const [zoom, setZoom] = React.useState(100);
+  // 미리보기는 참고 디바이스 폭(≈334px)에 맞춰 축소 표시 — 사이즈 조절(줌)은 제거(2026-11-19 사용자 요청).
+  const PREVIEW_W = 334;
+  const fit = Math.min(1, PREVIEW_W / device.w);
   const [fullscreen, setFullscreen] = React.useState(false);
   // 미리보기 본문(코너 매핑) — 디바이스 프레임·전체화면 모달에서 공용. 선택/폴백/숨김 로직 포함.
   const previewBody = activeTemplate && liveCorners.length > 0 ? (
@@ -2235,18 +2239,13 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                 <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-3.5 py-1 text-center', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>기본</button>
                 <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3.5 py-1 text-center', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
               </div>
-              {/* 보조 컨트롤 묶음 — 디바이스·줌·전체화면 */}
+              {/* 보조 컨트롤 묶음 — 디바이스·전체화면 (줌=사이즈 조절은 제거, 2026-11-19 사용자 요청) */}
               <div className="ml-auto flex items-center gap-1.5">
                 <div className="relative">
                   <select value={deviceIdx} onChange={(e) => setDeviceIdx(Number(e.target.value))} title={`${device.w}×${device.h}`} className="h-[30px] max-w-[122px] appearance-none truncate rounded-[8px] border border-[var(--line2)] bg-white pl-2.5 pr-7 text-[12px] font-medium text-[var(--ink2)] focus:border-[var(--ac)] focus:outline-none">
                     {DEVICE_PRESETS.map((d, i) => <option key={d.label} value={i}>{d.label}</option>)}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink4)]" />
-                </div>
-                <div className="flex items-center gap-0.5 rounded-[8px] border border-[var(--line2)] bg-white px-1">
-                  <button type="button" onClick={() => setZoom((z) => Math.max(50, z - 10))} title="축소" className="grid h-6 w-6 place-items-center text-[var(--ink3)] hover:text-[var(--ac)]"><Minus className="h-3.5 w-3.5" /></button>
-                  <span className="w-8 text-center text-[12px] font-semibold tabular-nums text-[var(--ink2)]">{zoom}%</span>
-                  <button type="button" onClick={() => setZoom((z) => Math.min(150, z + 10))} title="확대" className="grid h-6 w-6 place-items-center text-[var(--ink3)] hover:text-[var(--ac)]"><Plus className="h-3.5 w-3.5" /></button>
                 </div>
                 <button type="button" onClick={() => setFullscreen(true)} title="전체화면으로 보기" className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] border border-[var(--line2)] bg-white text-[var(--ink3)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Maximize2 className="h-3.5 w-3.5" /></button>
               </div>
@@ -2256,7 +2255,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           </div>
           {/* 디바이스는 좌측 열(뷰포트 높이) 안에서 fill로 꽉 채워 늘어남 — 바텀 고정·안 잘림. 줌은 scale 래퍼로(2026-11-17 사용자 요청). 바디는 내부 스크롤. */}
           <div className="min-h-0 flex-1 overflow-auto">
-          <div className="flex h-full flex-col" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}>
+          <div className="flex h-full flex-col" style={{ transform: `scale(${fit})`, transformOrigin: 'top center' }}>
           <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     /* 노출 토글로 숨긴 코너는 미리보기에서 제외(2026-11-12 사용자 요청) */
