@@ -25,6 +25,8 @@ export function toCornerTypeRow(r: any, updatedBy: string | null): CornerTypeRow
     useNoDisplay: r.useNoDisplay,
     useMoreButton: r.useMoreButton,
     useBadge: r.useBadge ?? false,
+    useBarcode: r.useBarcode ?? false, // 멤버십 바코드 옵션 — 혜택형 세로형(상단 이미지형)에서 On/Off(2026-11-19)
+    presetDesignId: r.presetDesignId ?? null, // SB 프리셋 설계 ID — 미리보기 설계도 렌더(2026-11-19)
     useImage: r.useImage ?? true,
     usePrice: r.usePrice ?? true,
     useDesc: r.useDesc ?? true,

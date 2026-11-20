@@ -1,6 +1,7 @@
 import { Signal, Wifi, BatteryFull, ChevronRight, ChevronLeft, ChevronDown, User, Lock, GripVertical, Sparkles, ImageIcon, Share, Menu } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
+import { PresetDesignCard, hasPresetDesign } from './preset-design-card';
 
 // 빌더 아이콘 선택 모달이 넣는 'lucide:Name' 아이콘을 미리보기에서도 그린다(2026-11-05 사용자 요청: 미리보기에서 바꾸면 반영).
 function PreviewChipIcon({ src, className }: { src?: string | null; className?: string }) {
@@ -85,6 +86,8 @@ export type PreviewCorner = {
   showBadge?: boolean | null;
   showDesc?: boolean | null;
   emptyImages?: boolean | null; // 신규 등록 가이드 폼 — 이미지/배너 영역을 빈 자리로만 보여줌(여기 채우세요)
+  withBarcode?: boolean | null; // 혜택형 세로형(상단 이미지형) 바코드 옵션(useBarcode) — 켜면 본문 하단에 멤버십 바코드 블록 추가(2026-11-19)
+  presetDesignId?: string | null; // SB 프리셋 설계 ID — 있으면 PresetDesignCard로 설계도 그대로 렌더(2026-11-19)
 };
 
 const byType = (atoms: PreviewAtom[], ...types: string[]) => atoms.filter((a) => types.includes(a.atomType));
@@ -551,6 +554,10 @@ function ComponentView({ component, mode, cardShape, cardSize, reason, titleLine
 
 /** 한 Corner를 화면 영역으로 렌더 (프리뷰/빌더 공용) */
 export function CornerBlock({ corner }: { corner: PreviewCorner }) {
+  // SB 프리셋 설계도가 지정된 코너(혜택형)는 스캐폴드 대신 설계도를 '그대로' 렌더(2026-11-19 사용자 요청).
+  if (corner.presetDesignId && hasPresetDesign(corner.presetDesignId)) {
+    return <PresetDesignCard designId={corner.presetDesignId} />;
+  }
   const isBanner = corner.cornerType === '배너형';
   // 영화(콘텐츠 안내형)만 세로 포스터 비율 — 상품형 등은 1:1(2026-11-05 사용자 요청).
   const isMovie = corner.cornerType === '콘텐츠 안내형';
@@ -705,7 +712,9 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
   // 바코드 카드는 세로 패딩만 +2(레퍼런스 py:32). 그 외는 표준 카드 패딩.
   const hasBarcode = corner.components.some((c) => c.atoms.some((a) => a.atomType === 'BARCODE'));
   const stdPad = hasBarcode ? CARD_PAD_BARCODE : CARD_PAD;
-  const wrapClass = isBanner ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#e8ecef] ${CHIP_CARD_PAD} ${CARD_FLOAT_SHADOW}` : `${CARD_RADIUS} bg-white ${stdPad} ${CARD_FLOAT_SHADOW}`);
+  // 실제 프리셋 디자인 이미지만 보여주는 경우(컴포넌트 없음 + sampleImageUrl) = 이미지가 곧 카드라 래퍼 패딩·그림자 없이 플러시로(2026-11-19).
+  const isSampleImageOnly = corner.components.length === 0 && !!corner.sampleImageUrl && isRenderableImg(corner.sampleImageUrl.split('\n')[0]);
+  const wrapClass = isBanner || isSampleImageOnly ? '' : (isChipHomeOnly ? `${CARD_RADIUS} bg-[#e8ecef] ${CHIP_CARD_PAD} ${CARD_FLOAT_SHADOW}` : `${CARD_RADIUS} bg-white ${stdPad} ${CARD_FLOAT_SHADOW}`);
 
   // 코너 부속 배너 — DS 포털처럼 항상 코너 상단에 고정(상/하단 선택 없음).
   // 빅배너 = 배치 옵션. 첨부 배너 이미지가 있으면 그걸, 없으면 코너 첫 이미지 Atom을 상단 히어로로 승격.
@@ -744,6 +753,15 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     )
   ) : null;
 
+  // 혜택형 바코드 옵션(useBarcode) — 본문 하단에 멤버십 바코드 블록(T 멤버십 라벨 · 바코드 줄무늬 · 번호). 값은 런타임 발급.
+  const barcodeEl = corner.withBarcode ? (
+    <div className="mt-1 rounded-xl border border-slate-200 bg-white px-3 py-3">
+      <div className="mb-1.5 text-[10px] font-semibold tracking-wide text-slate-400">T 멤버십</div>
+      <div className="h-10 w-full rounded bg-[repeating-linear-gradient(90deg,#1a1a1a_0,#1a1a1a_2px,transparent_2px,transparent_4px)]" />
+      <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-500"><span>1234 5678 9012</span><span className="font-medium text-[#3617ce]">바코드 발급(런타임)</span></div>
+    </div>
+  ) : null;
+
   // 히어로가 있으면 카드는 패딩 없이(overflow-hidden) 배너를 꼭대기 full-bleed로, 본문만 패딩.
   if (bannerEl && !isBanner) {
     return (
@@ -758,6 +776,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           )}
           {chipTabEl}
           {body}
+          {barcodeEl}
           {(corner.cvmFillCount ?? 0) > 0 && (
             <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="이 아래 자리는 CVM이 고객마다 추천으로 채웁니다(가안).">
               <Sparkles className="h-3 w-3" /> CVM 추천 {corner.cvmFillMin && corner.cvmFillMin !== corner.cvmFillCount ? `${corner.cvmFillMin}~${corner.cvmFillCount}` : corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
@@ -810,6 +829,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       )}
       {chipTabEl}
       {body}
+      {barcodeEl}
       {(corner.cvmFillCount ?? 0) > 0 && (
         <div className="flex items-center justify-center gap-1 rounded-md border border-dashed border-violet-300 bg-violet-50/50 px-2 py-1.5 text-[10px] font-medium text-violet-600" title="이 아래 자리는 CVM이 고객마다 추천으로 채웁니다(가안).">
           <Sparkles className="h-3 w-3" /> CVM 추천 {corner.cvmFillMin && corner.cvmFillMin !== corner.cvmFillCount ? `${corner.cvmFillMin}~${corner.cvmFillCount}` : corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>

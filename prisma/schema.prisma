@@ -390,6 +390,8 @@ model CornerType {
   useNoDisplay  Boolean @default(true)
   useMoreButton Boolean @default(true)
   useBadge      Boolean @default(false) // 배지(상태/신규/할인 등) 노출 여부 — 상품·혜택 카드에서. 켜면 코너 스캐폴드에 BADGE 아톰 추가·미리보기 표시
+  useBarcode    Boolean @default(false) // 멤버십 바코드 노출 여부 — 혜택형 세로형(상단 이미지형)에서 On/Off(2026-11-19 바코드 흡수). 켜면 하단 멤버십 바코드 블록 추가
+  presetDesignId String? // SB 프리셋 설계 ID(예: CN-DSP-0019) — 있으면 미리보기를 SB 익스포트 JSON 설계도 그대로 렌더(혜택형, 2026-11-19)
   useImage      Boolean @default(true)  // 상품 대표이미지 노출 여부 — 상품형 카드 (정책 상품 Set)
   usePrice      Boolean @default(true)  // 가격 노출 여부 — 상품형 카드 (가격 Atom · 배지가 앞에 붙음)
   useDesc       Boolean @default(true)  // 설명(부가/흐린 글씨) 노출 여부 — 혜택 문구/정보값 Atom (예: '데이터 500')

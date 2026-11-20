@@ -17,7 +17,8 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">전시 관리</p>}
         {/* 전시화면 관리 — 메인(백업 완전 삭제됨, 2026-11-06). */}
         <NavLink href="/admin/containers-test" icon={<MonitorSmartphone className="h-4 w-4" />} label="전시화면 관리" collapsed={collapsed} />
-        <NavLink href="/admin/corner-types" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리" collapsed={collapsed} />
+        <NavLink href="/admin/corner-types" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리" collapsed={collapsed} excludeFor={['/admin/corner-types/preset']} />
+        <NavLink href="/admin/corner-types/preset" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리(프리셋)" collapsed={collapsed} />
         <NavLink href="/admin/banner-campaigns" icon={<GalleryHorizontalEnd className="h-4 w-4" />} label="배너 캠페인 관리" collapsed={collapsed} />
         <NavLink href="/admin/messages" icon={<MessageSquareText className="h-4 w-4" />} label="문구 관리" collapsed={collapsed} badge="테스트" />
 

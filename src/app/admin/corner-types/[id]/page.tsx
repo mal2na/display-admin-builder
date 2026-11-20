@@ -105,6 +105,8 @@ export default async function CornerTypeDetailPage({ params, searchParams }: { p
     useNoDisplay: ct.useNoDisplay,
     useMoreButton: ct.useMoreButton,
     useBadge: ct.useBadge ?? false,
+    useBarcode: ct.useBarcode ?? false, // 멤버십 바코드 옵션 — 혜택형 세로형(상단 이미지형)(2026-11-19)
+    presetDesignId: ct.presetDesignId ?? null, // SB 프리셋 설계 ID — 미리보기 설계도 렌더(2026-11-19)
     useImage: ct.useImage ?? true,
     usePrice: ct.usePrice ?? true,
     useDesc: ct.useDesc ?? true,
