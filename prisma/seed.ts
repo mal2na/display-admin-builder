@@ -20,6 +20,7 @@ import {
   CORNER_COMPONENT_MAP,
   componentTypesForCorner,
   defaultComposition,
+  layoutLabel,
   type ComponentType,
   type CornerType,
 } from '../src/lib/display-taxonomy';
@@ -1279,6 +1280,118 @@ async function main() {
   {
     const vCat = await prisma.cornerType.findFirst({ where: { baseCategory: '혜택·오퍼형', typeDetail: '세로형(카테고리형)' }, select: { id: true } });
     if (vCat) await prisma.corner.updateMany({ where: { name: '카테고리별 혜택', cornerType: '혜택·오퍼형' }, data: { sourceCornerTypeId: vCat.id } });
+  }
+
+  // ── 혜택형 — SB 혜택 프리셋 22개 중 '순수 혜택'(T멤버십 제공분)만 추려 모양 기준으로 묶은 3종 (2026-11-19 사용자 요청) ──
+  //   혜택·오퍼형은 손대지 않고 독립 baseCategory '혜택형'으로 신규. 상품형(단말·요금·데이터·구독)·이벤트/프로모션형(미션·룰렛·경품)·경계(구독·데이터쿠폰·기념일)는 제외.
+  //   혜택 6개 = 0011(브랜드 상시할인)·0018(쿠폰 기한임박)·0019(레인보우 포인트)·0020(모아쿠폰 소멸)·0024(혜택 조합)·0025(등급 혜택).
+  //   바코드(0011)는 세로형+배너에 흡수 → useBarcode 옵션(On/Off). 출처 프리셋 ID를 description에 박아 추적.
+  {
+    // design = SB 프리셋 설계 ID(대표). 미리보기를 SB 익스포트 JSON 설계도 그대로 렌더(src/lib/benefit-preset-designs.json, 2026-11-19 사용자 요청).
+    type HB = { detail: string; comp: '혜택형' | '상품형' | '정보형'; bigBanner: boolean; useBarcode?: boolean; min: number; max: number; presets: string; desc: string; design?: string };
+    const HYETAEK: HB[] = [
+      { detail: '세로형', comp: '혜택형', bigBanner: false, min: 1, max: 3,
+        presets: 'CN-DSP-0020·0024·0025',
+        desc: '상단 이미지 없는 기본 혜택 카드(1~3개). 모아쿠폰 소멸·단골 브랜드 혜택 조합·등급 혜택.',
+        design: 'CN-DSP-0025' },
+      { detail: '세로형+배너', comp: '혜택형', bigBanner: true, useBarcode: true, min: 1, max: 3,
+        presets: 'CN-DSP-0011·0018 (0011 바코드)',
+        desc: '상단 대표 이미지(배너) + 혜택 카드. 혜택 브랜드 상시 할인·쿠폰 기한 임박. (0011=바코드 결합)',
+        design: 'CN-DSP-0011' },
+      { detail: '리스트형', comp: '정보형', bigBanner: false, min: 2, max: 8,
+        presets: 'CN-DSP-0019',
+        desc: '좌 라벨 / 우 값 적립·내역 리스트(레인보우 포인트 소멸 현황).',
+        design: 'CN-DSP-0019' },
+    ];
+    // 대표 적용 코너 배치 — '혜택 로그인' 템플릿(비기본)에 얹는다. 기본(비로그인) 홈 미리보기는 건드리지 않는다.
+    //  used=true(미사용 숨김 해제) + 실제 코너 미리보기 확보. 프리셋이 실제 혜택 홈에서 온 것이라 배치가 사실에 부합.
+    let hbOrder = 8; // 혜택 로그인 기존 8개 코너 뒤
+    const brandCard = (nm: string, brand: string, text: string, img: string): Parameters<typeof comp>[2] => [
+      { name: `${nm}:로고`, atomType: 'ICON', imageUrl: img, altText: `${brand} 로고` },
+      { name: `${nm}:혜택문구`, atomType: 'BENEFIT_TEXT', content: text },
+      { name: `${nm}:브랜드`, atomType: 'INFO', content: brand },
+    ];
+    for (const h of HYETAEK) {
+      const type = await prisma.cornerType.create({
+        data: {
+          typeId: 'CY' + String(typeIdx).padStart(7, '0'),
+          name: `혜택형 · ${layoutLabel(h.detail)}`,
+          baseCategory: '혜택형',
+          componentType: h.comp,
+          typeDetail: h.detail,
+          bigBanner: h.bigBanner,
+          useBarcode: h.useBarcode ?? false,
+          presetDesignId: h.design ?? null, // SB 프리셋 설계 ID — 미리보기를 설계도 그대로 렌더(2026-11-19)
+          composition: JSON.stringify(defaultComposition(h.comp, h.detail, { badge: false })),
+          description: `[출처 프리셋] ${h.presets}\n${h.desc}`,
+          defaultMinItems: h.min,
+          defaultMaxItems: h.max,
+          channels: 'FO',
+          platforms: '모바일',
+          active: true,
+          status: 'APPROVED',
+          createdBy: 'marina.kim@sk.com',
+          workingVersion: 1,
+          liveVersion: 1,
+          liveAt: new Date(),
+        },
+      });
+      typeIdx += 1;
+
+      // 배열별 대표 컴포넌트 — 혜택형/상품형=카드, 정보형=적립 내역 리스트.
+      const comps: { id: string; componentType: ComponentType }[] = [];
+      if (h.detail === '리스트형') {
+        const listComp = await comp('레인보우 포인트 적립 내역', '정보형', [
+          { name: '적립:보유', atomType: 'INFO', content: '보유 레인보우 포인트 · 1,240P' },
+          { name: '적립:소멸', atomType: 'INFO', content: '이번 달 소멸 예정 · 300P' },
+          { name: '적립:최근', atomType: 'INFO', content: '최근 적립 · 영화 예매 120P' },
+        ]);
+        comps.push({ id: listComp.id, componentType: '정보형' });
+      } else if (h.detail === '세로형(상품카드)') {
+        const one = await comp('T 안심보상 상품카드', '상품형', [
+          { name: '안심보상:이미지', atomType: 'IMAGE', imageUrl: '/assets/ds/plan-hero-expire.png', altText: 'T 안심보상' },
+          { name: '안심보상:타이틀', atomType: 'BENEFIT_TEXT', content: '약정 종료 고객 전용 보상' },
+          { name: '안심보상:가격', atomType: 'PRICE', content: '월 4,900원' },
+        ]);
+        comps.push({ id: one.id, componentType: '상품형' });
+      } else if (h.detail === '가로형') {
+        for (const [nm, brand, text, img] of [
+          ['기기지원1', 'iPhone 20', '약정 종료 · 최대 50만원 지원', '/assets/ds/hero-device.png'],
+          ['기기지원2', 'Galaxy S26', '기기 변경 지원금', '/assets/device-iphone20pro.png'],
+          ['기기지원3', 'iPad Pro', '결합 추가 지원', '/assets/device-iphone20pro.png'],
+        ] as const) {
+          const cc = await comp(`${nm} 카드`, '상품형', brandCard(nm, brand, text, img));
+          comps.push({ id: cc.id, componentType: '상품형' });
+        }
+      } else {
+        // 세로형 / 세로형+배너 — 브랜드 혜택 카드 3장
+        for (const [nm, brand, text, img] of [
+          ['공차', '공차', '인기 음료 6종 50% 할인', '/assets/brand-gongcha.png'],
+          ['뚜레쥬르', '뚜레쥬르', '브라우니 1개 증정', '/assets/brand-tlj.png'],
+          ['NOL', 'NOL 티켓', '전시회 40% 할인', '/assets/brand-nol.png'],
+        ] as const) {
+          const cc = await comp(`${nm} 혜택`, '상품형', brandCard(nm, brand, text, img));
+          comps.push({ id: cc.id, componentType: '상품형' });
+        }
+      }
+
+      const cn = await corner(
+        {
+          name: type.name,
+          cornerType: '혜택형',
+          layoutDetail: h.detail,
+          bigBanner: h.bigBanner,
+          minItems: h.min,
+          maxItems: h.max,
+          mainTitle: h.detail === '리스트형' ? '내 포인트 · 쿠폰 현황' : '지훈님을 위한 맞춤 혜택',
+          recSource: '운영자 편성',
+        },
+        comps,
+      );
+      await prisma.corner.update({ where: { id: cn.id }, data: { sourceCornerTypeId: type.id } });
+      await prisma.templateCorner.create({ data: { templateId: template.id, cornerId: cn.id, order: hbOrder } });
+      hbOrder += 1;
+    }
   }
 
   // ── 이벤트·미션 전용 코너 유형 (BO EVT Architecture "코너 유형 정의") — 3계열 14종 ──

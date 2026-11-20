@@ -1,0 +1,1730 @@
+{
+ "CN-DSP-0001": {
+  "name": "[CN-DSP-0001] [혜택][T월드]데이터 부족-클럽T로밍_클럽 멤버십",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "label": "T 로밍 요금제",
+    "title": "여행 중이신 유진님\n데이터 넉넉히 사용하세요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "CellTitle",
+     "props": {
+      "title": "나의 데이터",
+      "subTitle": "인터넷 연결 불안정 · 방문 점검 예정",
+      "showSubTitle": "false",
+      "showRightItem": "false",
+      "showTitleRightItem": "false",
+      "showIconItem": "false"
+     },
+     "children": []
+    },
+    {
+     "cid": "GraphBarHorizontalPeriod",
+     "props": {
+      "percent": "10",
+      "endLabel": "잔여 {잔여량}GB",
+      "startLabel": "전체 {전체량}GB",
+      "markerLabel": "{남은 데이터}GB"
+     },
+     "children": []
+    },
+    {
+     "cid": "DividerInset",
+     "props": null,
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "{혜택 내용}",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "{혜택 프로그램}"
+       }
+      ],
+      "showCount": "false",
+      "showButton": "false",
+      "showPeriod": "false",
+      "showDiscount": "false",
+      "textPriceGroup": "false",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/1c718cc300726e3026f821b2bb552dd511efe633c5c4580a19e09eef27c36183.png",
+      "showDimMultiply": "false",
+      "showSubTitle": "true",
+      "showCaption": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "product"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "혜택 받기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0002": {
+  "name": "[CN-DSP-0002][혜택][T멤버십]돈 버는 교통-미션",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "대중교통을 이용 중이신 유진님\n포인트 받아가세요",
+    "showButtonText": "false",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "variant": "contentWithBanner"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "돈 버는 교통",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/7a05b56480f9dad78baac202e8e5dd5c4973246e13f547e910e592279be211d2.png",
+      "subTitle": "최대 10P",
+      "buttonLabel": "포인트 받기",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "showButton": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0004": {
+  "name": "[CN-DSP-0004] [혜택][T우주]구독-매직 바코드_브랜드 근처",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "label": "나의 구독",
+    "title": "{브랜드} 근처이신가요? \n매직 바코드 미리 띄워드려요",
+    "headerItemIcon": "Normal/Location",
+    "headerItemIconColor": "fg/brand-solid",
+    "headerItemDescription": "{거리}m ∙ 걸어서 {시간}분",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "showDisplayCardHeaderItem": "true",
+    "variant": "contentWithBanner"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "{혜택 내용}",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/51f9874d64b851bb335ef59b2519c7a0bf2d8c372893ffa320f3343f09288608.png",
+      "subTitle": "{브랜드}",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "1,000원당 100원 할인",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "혜택 브랜드",
+      "showDimMultiply": "false",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "showButton": "true",
+      "variant": "barcode"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0006": {
+  "name": "[CN-DSP-0006] [혜택][T우주]구독-외부 앱_브랜드 근처",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "label": "나의 구독",
+    "title": "{브랜드} 근처이신가요? \n{구독 상품} 혜택 사용해보세요",
+    "headerItemIcon": "Normal/Location",
+    "headerItemIconColor": "fg/brand-solid",
+    "headerItemDescription": "{거리}m ∙ 걸어서 {시간}분",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "showDisplayCardHeaderItem": "true",
+    "variant": "contentWithBanner"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "{혜택 설명}",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/1854b4792fc9dc1f88959a182efe56cb5082b31589d6062b89ccd4ad9c9fae70.png",
+      "subTitle": "{브랜드}",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "사용하기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0009": {
+  "name": "[CN-DSP-0009][혜택][T월드]클럽T로밍-귀국 직후 공항",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "여행 잘 다녀오셨나요? \n공항에서 쓸 수 있는 혜택이에요",
+    "headerItemIcon": "Normal/Location",
+    "showButtonText": "false",
+    "headerItemIconColor": "fg/brand-solid",
+    "headerItemDescription": "반경 {거리}m",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showDisplayCardHeaderItem": "true",
+    "variant": "contentWithBanner"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "{혜택 내용}",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "{거리}m · {브랜드}",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "{혜택 내용}",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "{거리}m · {브랜드}",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "{혜택 내용}",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "{거리}m · {브랜드}",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0010": {
+  "name": "[CN-DSP-0010][혜택][T멤버십]출석체크-미션_출석 보상 직전",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "이틀만 더 출석하면\n20일 보상 200P 받아요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardTitle",
+     "props": {
+      "title01": "출석",
+      "title02": "18일차",
+      "showTitle02": "true"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardRewardProgress",
+     "props": {
+      "stepItems": [
+       {
+        "id": "r00000001",
+        "label": "0일",
+        "point": "0",
+        "value": "0P"
+       },
+       {
+        "id": "r00000002",
+        "label": "10일",
+        "point": "10",
+        "value": "100P"
+       },
+       {
+        "id": "r00000003",
+        "label": "20일",
+        "point": "20",
+        "value": "200P"
+       },
+       {
+        "id": "r00000004",
+        "label": "한달",
+        "point": "30",
+        "value": "300P"
+       }
+      ]
+     },
+     "children": []
+    },
+    {
+     "cid": "DividerInset",
+     "props": null,
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "200P",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "20일 출석 보상",
+      "buttonLabel": "출석하기",
+      "showDimMultiply": "true",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/7a05b56480f9dad78baac202e8e5dd5c4973246e13f547e910e592279be211d2.png",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "showButton": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0011": {
+  "name": "[CN-DSP-0011][혜택][T멤버십]혜택 브랜드-상시 할인만",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "label": "혜택 브랜드",
+    "title": "{브랜드} 근처이신가요?\n바코드 미리 띄워드려요",
+    "headerItemIcon": "Normal/Location",
+    "headerItemIconColor": "fg/brand-solid",
+    "headerItemDescription": "{거리}m ∙ 걸어서 {시간}분",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "showDisplayCardHeaderItem": "true",
+    "variant": "contentWithBanner"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "{혜택 내용}",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/51f9874d64b851bb335ef59b2519c7a0bf2d8c372893ffa320f3343f09288608.png",
+      "subTitle": "{브랜드}",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "1,000원당 100원 할인",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "혜택 브랜드",
+      "showDimMultiply": "false",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "showButton": "true",
+      "variant": "barcode"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0012": {
+  "name": "[CN-DSP-0012][혜택][공통]이벤트-경품 배송지 미입력",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "경품 당첨 축하드려요\n{11}월 {8}일까지 배송지를 알려주세요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "디오스 오브제컬렉션 식기세척기",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "룰렛 당첨",
+      "showButton": "false",
+      "showDimMultiply": "false",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "배송지 입력",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0014": {
+  "name": "[CN-DSP-0014][혜택][T우주]구독-미활성화",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "OTT 구독하신 유진님\n구독이 아직 활성화되지 않았어요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contentWithBanner"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "YouTube Premium + OTT",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "T 로밍"
+       }
+      ],
+      "showCount": "false",
+      "showButton": "false",
+      "pricePeriod": "/1개월",
+      "showCaption": "false",
+      "showDiscount": "false",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/3db9746227f3568d693f0d63aee02035e1d45817a5508efc474c23aa51fef936.png",
+      "showDimMultiply": "false",
+      "showSubTitle": "true",
+      "showPeriod": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "product"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "사용하기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0016": {
+  "name": "[CN-DSP-0016] [혜택][T월드]데이터 부족-리필 쿠폰",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "데이터 부족하신 유진님\n사용 가능한 리필 쿠폰이 있어요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "CellTitle",
+     "props": {
+      "title": "나의 데이터",
+      "subTitle": "인터넷 연결 불안정 · 방문 점검 예정",
+      "showSubTitle": "false",
+      "showRightItem": "false",
+      "showTitleRightItem": "false",
+      "showIconItem": "false"
+     },
+     "children": []
+    },
+    {
+     "cid": "GraphBarHorizontalPeriod",
+     "props": null,
+     "children": []
+    },
+    {
+     "cid": "DividerInset",
+     "props": null,
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "T장기고객 리필 쿠폰",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "2026. 3. 1 - 2027. 1. 31"
+       }
+      ],
+      "showCount": "false",
+      "showButton": "false",
+      "showPeriod": "false",
+      "showDiscount": "false",
+      "textPriceGroup": "false",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/1c718cc300726e3026f821b2bb552dd511efe633c5c4580a19e09eef27c36183.png",
+      "showDimMultiply": "false",
+      "showSubTitle": "true",
+      "showCaption": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "product"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "리필하기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0017": {
+  "name": "[CN-DSP-0017][혜택][T멤버십]T 장기고객-가입 기념일 데이터",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "가입 기념일 축하드려요, 3년 기념 데이터 받아가세요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "가입기념일 데이터 3GB",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "장기고객 3년 혜택"
+       }
+      ],
+      "showCount": "false",
+      "showButton": "false",
+      "showPeriod": "false",
+      "showDiscount": "false",
+      "textPriceGroup": "false",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/1c718cc300726e3026f821b2bb552dd511efe633c5c4580a19e09eef27c36183.png",
+      "showDimMultiply": "false",
+      "showSubTitle": "true",
+      "showCaption": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "product"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "사용하기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0018": {
+  "name": "[CN-DSP-0018][혜택][T멤버십]쿠폰-쿠폰 기한 임박",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "받으신 쿠폰 사용 전이시네요!\n10월 30일까지 쓸 수 있어요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contentWithBanner"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "아메리카노(ICED) 무료 쿠폰 2장",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "빽다방",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/1854b4792fc9dc1f88959a182efe56cb5082b31589d6062b89ccd4ad9c9fae70.png",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "사용하기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0019": {
+  "name": "[CN-DSP-0019][혜택][T월드]레인보우 포인트-포인트 소멸",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "모아둔 포인트가\n10월 30일에 사라져요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "CellRightTable",
+     "props": {
+      "title": "전체 누적",
+      "titleColor": "fg/neutral-mute",
+      "description": "1,240점",
+      "showIconItem": "false",
+      "showTitleRightItem": "false",
+      "variant": "16reg"
+     },
+     "children": []
+    },
+    {
+     "cid": "CellRightTable",
+     "props": {
+      "title": "이번달 적립 예정",
+      "titleColor": "fg/neutral-mute",
+      "description": "340점",
+      "showIconItem": "false",
+      "showTitleRightItem": "false",
+      "variant": "16reg"
+     },
+     "children": []
+    },
+    {
+     "cid": "DividerInset",
+     "props": {
+      "variant": "dot"
+     },
+     "children": []
+    },
+    {
+     "cid": "CellRightTable",
+     "props": {
+      "title": "이번달 소멸 예정",
+      "titleColor": "fg/neutral-mute",
+      "description": "740점",
+      "showIconItem": "false",
+      "showTitleRightItem": "false",
+      "variant": "16reg"
+     },
+     "children": []
+    },
+    {
+     "cid": "CellDescription",
+     "props": {
+      "icon": "Normal/Caution",
+      "size": "14",
+      "iconFill": "true",
+      "description": "요금, AS 비용, 통화료 결제에 사용할 수 있어요",
+      "showIconItem": "true",
+      "showRightItem": "false",
+      "descriptionColor": "fg/brand-contrast",
+      "showTitleRightItem": "false"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0020": {
+  "name": "[CN-DSP-0020][혜택][T월드]T 모아쿠폰-쿠폰 소멸",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "모아둔 기기 할인 쿠폰이\n10월 30일에 사라져요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "3,0000원 쿠폰",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "T 모아 쿠폰",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/07c63dd329e8d00ab151ab6e9b88b647b74d9ad62d97de0b132927be30e9234c.png",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "CellDescription",
+     "props": {
+      "icon": "Normal/Caution",
+      "size": "14",
+      "iconFill": "true",
+      "description": "T 다이렉트샵과 T 월드 매장에서 사용할 수 있어요.",
+      "showIconItem": "true",
+      "showRightItem": "false",
+      "descriptionColor": "fg/brand-contrast",
+      "showTitleRightItem": "false"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "사용하기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0021": {
+  "name": "[CN-DSP-0021][혜택][T월드]클럽T로밍-로밍 가입 후 출국 전",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "로밍 이용 예정인\n유진님을 위한 혜택",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "오프라인 LDF PAY 10,000원 증정",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "롯데면세점",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/55c05033b5aa87d3f8c47fa9500ab5bf364ee7b73c130912afee1c287591bade.png",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "마티나 골드 라운지 8,000원 할인",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "더 라운지",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/f6d63a8f2aea0109a82b75bcb99bb97b8e9aa052ce76ab85421f7bd312d82a9c.png",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "인천공항 프라이빗 밴 특가",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "MOVV",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/2e6e35c5a8b5620e355df2612a35c3cd3922439132ee7ab8917a130ae77c03c2.png",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0022": {
+  "name": "[CN-DSP-0022][혜택][T월드]T끼리 데이터 선물하기-월말 데이터 선물",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "데이터 부족한 월말\n가족, 지인에게 데이터 선물 어때요?",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "지인 가족 각 2회씩, 최대 4GB",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "T 끼리 바로선물"
+       }
+      ],
+      "showCount": "false",
+      "showButton": "false",
+      "pricePeriod": "/1개월",
+      "showDiscount": "false",
+      "textPriceGroup": "false",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/1c718cc300726e3026f821b2bb552dd511efe633c5c4580a19e09eef27c36183.png",
+      "showDimMultiply": "false",
+      "showSubTitle": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "product"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "2회 최대 2GB",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "가족끼리 자동선물"
+       }
+      ],
+      "showCount": "false",
+      "showButton": "false",
+      "pricePeriod": "/1개월",
+      "showDiscount": "false",
+      "textPriceGroup": "false",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/1c718cc300726e3026f821b2bb552dd511efe633c5c4580a19e09eef27c36183.png",
+      "showDimMultiply": "false",
+      "showSubTitle": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "product"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "선물하기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0023": {
+  "name": "[CN-DSP-0023][혜택][T월드]가족나눔데이터-데이터 나눠주기",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "이번 달 가족 나눔 데이터\n1GB가 새로 채워졌어요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "매월 1일 1GB 제공",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "가족나눔데이터"
+       }
+      ],
+      "showCount": "false",
+      "showButton": "false",
+      "showPeriod": "false",
+      "showDiscount": "false",
+      "textPriceGroup": "false",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/1c718cc300726e3026f821b2bb552dd511efe633c5c4580a19e09eef27c36183.png",
+      "showDimMultiply": "false",
+      "showSubTitle": "true",
+      "showCaption": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "product"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "데이터 나눠주기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0024": {
+  "name": "[CN-DSP-0024][혜택][T멤버십]혜택 조합-단골 브랜드 모아보기",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "파리바게뜨 자주 이용하시는 유진님\n받을 수 있는 혜택들 모아봤어요",
+    "showButtonText": "false",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "10,000원 할인",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "VIP PICK",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "1,000원당 100원 할인",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "혜택 브랜드",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "1천원당 200원 할인 · 200P 적립",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "T day",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "IndicatorItem",
+     "props": {
+      "size": "medium",
+      "count": "3"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0025": {
+  "name": "[CN-DSP-0025][혜택][T멤버십]등급 혜택-단골 브랜드 모아보기",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "자주 보시는 CGV,\nVIP 관람 혜택을 모아봤어요",
+    "showButtonText": "false",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "무료 관람 연 3회",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "VIP PICK",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "1+1 관람 연 9회",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "VIP PICK",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "DisplayCardItem",
+     "props": {
+      "title": "IMAX · 4DX 특별관 할인",
+      "captions": [
+       {
+        "id": "r91cec97b",
+        "label": "Caption01"
+       },
+       {
+        "id": "rb1556e14",
+        "label": "Caption02"
+       },
+       {
+        "id": "r62c46a62",
+        "label": "Caption03"
+       }
+      ],
+      "subTitle": "VIP PICK PLUS",
+      "showButton": "false",
+      "showDimMultiply": "true",
+      "showSubTitle": "true",
+      "showDiscount": "true",
+      "showPeriod": "true",
+      "showCaption": "true",
+      "showCount": "true",
+      "showBadge": "true",
+      "showIcon": "true",
+      "variant": "benefit"
+     },
+     "children": []
+    },
+    {
+     "cid": "IndicatorItem",
+     "props": {
+      "size": "medium",
+      "count": "3"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0026": {
+  "name": "[CN-DSP-0026][혜택][T멤버십]룰렛-미션",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "남은 룰렛 기회로\n당첨을 노려보세요!",
+    "showDisplayCardHeaderItem": "false",
+    "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/12057d594e3221d41b2fac0c303219d552dcbfccb95a575829c5be6cf6ec4e58.png",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contentWithBanner"
+   },
+   "children": [
+    {
+     "cid": "CellRightTable",
+     "props": {
+      "title": "남은 응모 기회",
+      "titleColor": "fg/neutral-subtle",
+      "description": "2회",
+      "showIconItem": "false",
+      "showTitleRightItem": "false",
+      "variant": "16reg"
+     },
+     "children": []
+    },
+    {
+     "cid": "CellRightTable",
+     "props": {
+      "title": "추가 응모 기회",
+      "titleColor": "fg/neutral-subtle",
+      "description": "1회",
+      "showIconItem": "false",
+      "showTitleRightItem": "false",
+      "variant": "16reg"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "참여하기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0027": {
+  "name": "[CN-DSP-0027][혜택][T월드]T 안심보상-약정 종료",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "약정 곧 끝나는 유진님\n사용하던 기기로 보상받아 구매하세요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contents"
+   },
+   "children": [
+    {
+     "cid": "CellProduct",
+     "props": {
+      "price": "최대 930,000원",
+      "title": "iPhone 18 Pro",
+      "subText": "휴대용 미니 공기청정기 allo AP500",
+      "showGift": "false",
+      "subTitle": "예상 보상가",
+      "showButton": "false",
+      "showHelpText": "false",
+      "thumbnailSquareShowDimMultiply": "true",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/16633aa264b6ce486526309a627fd300e17a02151c081d8a79364e534d218f06.png",
+      "showThumbnailSquare": "true",
+      "showCloseButton": "true",
+      "showSubTitle": "true",
+      "showPrice": "true",
+      "variant": "display"
+     },
+     "children": []
+    },
+    {
+     "cid": "Button",
+     "props": {
+      "size": "medium",
+      "label": "내 보상가 확인하기",
+      "showIcon": "false",
+      "variant": "outlineSecondary"
+     },
+     "children": []
+    }
+   ]
+  }
+ },
+ "CN-DSP-0028": {
+  "name": "[CN-DSP-0028][혜택][T다이렉트샵]기기 지원금-약정 종료",
+  "tree": {
+   "cid": "DisplayCard",
+   "props": {
+    "title": "약정 곧 끝나는 유진님\n지원금 받고 구매할 수 있어요",
+    "showDisplayCardHeaderItem": "false",
+    "showSubTitle": "true",
+    "showButton": "true",
+    "showBadge": "true",
+    "showDimMultiply": "false",
+    "showIcon": "true",
+    "showButtonText": "true",
+    "variant": "contentWithBanner"
+   },
+   "children": [
+    {
+     "cid": "CarouselItem",
+     "props": {
+      "title": "iPhone 18 Pro 128G",
+      "showCount": "false",
+      "showCaption": "false",
+      "priceCaption": "공통지원금 확대",
+      "showSubTitle": "false",
+      "showBadgeGroup": "false",
+      "showPricePeriod": "false",
+      "showCaption01IconItem": "false",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/2a6c25a2e635af16d2ea47facffa4d2da291324a9924c6d1851d3aa9c27d6220.png",
+      "showTextPriceGroup": "true",
+      "showPriceCaption": "true",
+      "showDiscountRate": "true"
+     },
+     "children": []
+    },
+    {
+     "cid": "CarouselItem",
+     "props": {
+      "title": "갤럭시 Z Fold8 128G",
+      "showCaption": "false",
+      "priceCaption": "공통지원금 확대",
+      "showSubTitle": "false",
+      "showBadgeGroup": "false",
+      "showPricePeriod": "false",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/d35d3458fde2218a2f9b76a1505aca9e3c3f432ab6585eb798544515a6775902.png",
+      "showTextPriceGroup": "true",
+      "showPriceCaption": "true",
+      "showDiscountRate": "true",
+      "showCaption01IconItem": "true",
+      "showCount": "true"
+     },
+     "children": []
+    },
+    {
+     "cid": "CarouselItem",
+     "props": {
+      "title": "iPhone Duo 128G",
+      "showCaption": "false",
+      "priceCaption": "공통지원금 확대",
+      "showSubTitle": "false",
+      "showBadgeGroup": "false",
+      "showPricePeriod": "false",
+      "imageSrc": "https://gisectvuptpnvponozwr.supabase.co/storage/v1/object/public/image-samples/figma/99bbedf0a6476a0f413c2d048147e53d6f9f123ddb974df5f605f4c2f6689070.png",
+      "showTextPriceGroup": "true",
+      "showPriceCaption": "true",
+      "showDiscountRate": "true",
+      "showCaption01IconItem": "true",
+      "showCount": "true"
+     },
+     "children": []
+    }
+   ]
+  }
+ }
+}

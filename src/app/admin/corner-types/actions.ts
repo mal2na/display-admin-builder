@@ -92,6 +92,7 @@ function readForm(formData: FormData) {
     useNoDisplay: flag('useNoDisplay'),
     useMoreButton: flag('useMoreButton'),
     useBadge: flag('useBadge'),
+    useBarcode: flag('useBarcode'), // 멤버십 바코드 옵션 — 혜택형 세로형(상단 이미지형) On/Off(2026-11-19)
     useImage: flag('useImage'),
     usePrice: flag('usePrice'),
     useDesc: flag('useDesc'),

@@ -64,6 +64,8 @@ export type CornerTypeRow = {
   useNoDisplay: boolean;
   useMoreButton: boolean;
   useBadge: boolean;
+  useBarcode: boolean; // 멤버십 바코드 옵션 — 혜택형 세로형(상단 이미지형)에서 On/Off(2026-11-19)
+  presetDesignId?: string | null; // SB 프리셋 설계 ID — 미리보기를 설계도 그대로 렌더(2026-11-19)
   useImage: boolean;
   usePrice: boolean;
   useDesc: boolean;
@@ -124,6 +126,7 @@ export const EMPTY_CORNER_TYPE: CornerTypeRow = {
   useNoDisplay: true,
   useMoreButton: true,
   useBadge: false,
+  useBarcode: false,
   useImage: true,
   usePrice: true,
   useDesc: true,
@@ -175,6 +178,22 @@ function domainGovernances(domain: Domain, present: string[]): string[] {
 // CornerTypeRow → 미리보기 PreviewCorner = '껍데기 가이드'(placeholder 슬롯: 타이틀·디스크립션·상품명·가격·설명·이미지·더보기).
 //  코너 = 껍데기(규격)라 실데이터가 아니라 '가이드'로 그린다(2026-10-06 코너 유형 관리 대공사 방향). 목록·상세·수정 공용.
 export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
+  // SB 프리셋 설계도(presetDesignId)가 지정돼 있으면 설계도를 '그대로' 렌더(2026-11-19 사용자 요청) — JSON 익스포트 기반.
+  if (row.presetDesignId) {
+    return {
+      id: row.id, name: row.name, cornerType: row.baseCategory, title: null,
+      maxItems: row.defaultMaxItems ?? null, components: [],
+      presetDesignId: row.presetDesignId, layoutDetail: row.typeDetail,
+    };
+  }
+  // 실제 SB 프리셋 디자인 이미지(sampleImageUrl)가 있으면 스캐폴드 대신 '이미지 그대로' 노출(2026-11-19 사용자 요청).
+  if (row.sampleImageUrl && row.sampleImageUrl.trim()) {
+    return {
+      id: row.id, name: row.name, cornerType: row.baseCategory, title: null,
+      maxItems: row.defaultMaxItems ?? null, components: [],
+      sampleImageUrl: row.sampleImageUrl, layoutDetail: row.typeDetail,
+    };
+  }
   // 카드 자체가 완결형인 유형은 코너 타이틀·디스크립션이 없다 → 미리보기에서 완전 제외.
   //  배너형·바코드형, 칩/탭형(업무 진입형 칩 등), 아이콘/이미지/팝업/띠/텍스트배너/프로필/바코드/상태 레이아웃.
   const dStr = row.typeDetail ?? '';
@@ -201,6 +220,8 @@ export function cornerRowPreview(row: CornerTypeRow): PreviewCorner {
   return {
     ...c,
     bigBanner: row.bigBanner || topImageLayout,
+    // 혜택형 세로형(상단 이미지형) 바코드 옵션(useBarcode) — 켜면 본문 하단에 멤버십 바코드 블록(2026-11-19).
+    withBarcode: row.baseCategory === '혜택형' && row.useBarcode === true && topImageLayout,
     showImage: row.useImage, showPrice: row.usePrice, showBadge: false, showDesc: row.useDesc,
     // 코너 유형 미리보기 CTA(더보기)는 기본 숨김(2026-11-17). 단 혜택·오퍼형 세로형(카테고리형)은 CTA까지 노출(2026-11-17 사용자 요청). 그 외는 빌더에서 운영자가 켠다.
     moreButtonUse: row.baseCategory === '혜택·오퍼형' && /세로/.test(row.typeDetail ?? '') && /카테고리/.test(row.typeDetail ?? ''), moreButtonLabel: 'CTA',

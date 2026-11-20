@@ -245,12 +245,15 @@ function Sec({ n, title, help, hint, badge, aside, children }: { n: number; titl
 type BtnRoute = '페이지' | '상품' | '프로모션' | '직접 입력';
 type BtnOpen = '현재 화면' | '내부 브라우저' | '외부 브라우저';
 // 미리보기 디바이스 프리셋 — 디바이스 선택 드롭다운(SB 디바이스 프레임, 2026-11-17 사용자 요청).
+//  최소/최대 폭 = FO 반응형 한계(min 320 · max 768)로 양끝 확인용(2026-11-19 사용자 요청).
 const DEVICE_PRESETS = [
+  { label: '최소 폭 (min)', w: 320, h: 640 },
   { label: 'iPhone 15 Pro', w: 393, h: 852 },
   { label: 'iPhone SE', w: 375, h: 667 },
   { label: 'Galaxy S24', w: 360, h: 800 },
   { label: 'Pixel 8', w: 412, h: 915 },
   { label: 'iPad mini', w: 744, h: 1133 },
+  { label: '최대 폭 (max)', w: 768, h: 1024 },
 ] as const;
 // ── 미팅 2026-11-17 결론 — 코너는 SB 스튜디오 프리셋 → BO FE 코드 개발물(고정). 빌더는 배치·아이템 선택·공통 속성(타이틀·CTA)만 편집한다.
 //    코너마다 다른 임의 콘텐츠 속성(배너 이미지·대체텍스트, 카테고리/메뉴 아이콘, 개별 링크, 서브 텍스트)은 상품(EPC) 원장·코너 프리셋이 소유 → 조회 전용.
@@ -706,6 +709,9 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   };
   // 기본 아이템 — 불러오기 전용 유형: ①미리보기에 보이는 실제 항목 → ②없으면 카탈로그(영화/혜택/배너)로 '채워진 채' 시작. 그 외는 라벨 슬롯.
   const defaultItems = (): FillItem[] => {
+    // 배너형 — '깡통(껍데기) 불러오기'라 ③ 콘텐츠 설정은 비어서 시작한다(2026-11-19 사용자 요청). 배너 소재는 '배너 캠페인'에서 등록하고,
+    //  운영자가 '배너 불러오기/조회'로 직접 담는다(미팅 2026-11-17: 배너 이미지·링크는 조회 전용, 어드민은 선택만). 처음부터 데이터가 차 있으면 안 됨.
+    if (isBanner) return [];
     // 카테고리형 — 활성 카테고리(칩)에 해당하는 카탈로그 항목으로 시드. 카테고리를 바꾸면 그 카테고리 리스트로 교체된다(2026-11-09 사용자 요청: 카페·베이커리·외식 전환 시 변경).
     if (chipMode && isCategory && catalog.length) {
       const activeCat = chips[chipIdx];
@@ -975,15 +981,17 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
             ...itemFixed.map((f) => ({ label: f.ko })),
             ...itemOpt.map((f) => ({ label: f.ko, opt: true })),
           ];
-          const Pill = ({ t }: { t: Tok }) => (
-            <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-[12px] font-medium', t.opt ? 'border-[#cfd2ff] text-[var(--ac)]' : 'border-[var(--line3)] text-[var(--ink2)]')}>{t.label}</span>
-          );
-          {/* 긴 설명은 라벨의 ⓘ 툴팁으로(2026-11-12 사용자 요청). '템플릿 기본 정보'와 동일 테이블 스타일. */}
+          {/* 칩 UI 대신 그냥 텍스트로(2026-11-19 사용자 요청) — 옵션은 보라, 고정은 기본색, 중점(·)으로 구분. */}
           const AttrRow = ({ label, toks, desc }: { label: string; toks: Tok[]; desc: string }) => (
             <div className="grid grid-cols-[120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
               <div className="flex items-center gap-1 whitespace-nowrap bg-[var(--th)] px-4 py-3 text-[14px] font-medium text-[var(--ink2)]">{label}<Tip text={desc} /></div>
-              <div className="min-w-0 bg-white px-4 py-3">
-                <div className="flex flex-wrap gap-1.5">{toks.map((t, i) => <Pill key={i} t={t} />)}</div>
+              <div className="min-w-0 bg-white px-4 py-3 text-[14px] leading-relaxed">
+                {toks.map((t, i) => (
+                  <span key={i}>
+                    {i > 0 && <span className="px-1.5 text-[var(--ink4)]">·</span>}
+                    <span className={t.opt ? 'font-medium text-[var(--ac)]' : 'text-[var(--ink)]'}>{t.label}</span>
+                  </span>
+                ))}
               </div>
             </div>
           );
@@ -1708,7 +1716,7 @@ function CornerChip({ c, no, selected, fixed, on, onToggleOn, onSelect, onToggle
   const displayName = c.name.startsWith(typePrefix) ? c.name.slice(typePrefix.length) : c.name;
   return (
     <div ref={setNodeRef} style={style} id={`chip-${c.id}`} onClick={onSelect}
-      className={cn('cursor-pointer rounded-[10px] border bg-white px-2.5 py-1.5 transition',
+      className={cn('cursor-pointer rounded-[10px] border bg-white px-3.5 py-3 transition',
         isDragging && 'z-10 opacity-80 shadow-lg',
         selected ? 'border-[var(--ac)] bg-[var(--ac2)] ring-1 ring-[var(--ac)]' : 'border-[var(--line2)] hover:border-[var(--line3)]')}>
       {/* 그립을 좌측 레일로(위로 얼라인) + 우측 콘텐츠 2행(2026-11-12 사용자 요청: 순서변경 핸들 위로). */}
@@ -2157,10 +2165,41 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   const inputCls = 'h-[38px] w-full rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-[14px] text-[14px] text-[var(--ink)] placeholder:text-[var(--ink5)] focus:border-[var(--focus-border)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]';
 
   // 미리보기 컨트롤 — 디바이스 선택·줌·전체화면(SB 디바이스 프레임, 2026-11-17 사용자 요청).
-  const [deviceIdx, setDeviceIdx] = React.useState(0);
+  const [deviceIdx, setDeviceIdx] = React.useState(1); // 기본 iPhone 15 Pro (0=최소 폭)
   const device = DEVICE_PRESETS[deviceIdx];
-  const [zoom, setZoom] = React.useState(100);
+  // 미리보기는 좌측 열(좁힘)에 맞춰 리플로우 — 사이즈 조절(줌) 제거(2026-11-19 사용자 요청).
   const [fullscreen, setFullscreen] = React.useState(false);
+  // 디바이스 높이 — CSS 변수로 관리(하드코딩 금지, 2026-11-19 정식 스펙).
+  //  height = clamp(414px, calc(var(--sc-h) − var(--seg-h) − var(--gap) − var(--dev-bottom)), 800px)
+  //  너비는 aspect-ratio(기기 비율)로 자동 계산 — 고정하지 않음. transform:scale 금지, 프레임 overflow로 하단 잘라내기 금지.
+  //  가용 높이 = 스크롤 컨테이너(상단 탭바·하단 액션바 사이 메인 영역) clientHeight − 세그먼티드 컨트롤 행 − 간격 − 하단 여백.
+  //   고정값 아닌 --sc-h(컨테이너)·--seg-h(컨트롤 행)는 ResizeObserver로 실측해 변수에 주입. window(100vh/100dvh) 대신 실제 스크롤 컨테이너 기준이라 sticky가 유지된다.
+  const stickyRef = React.useRef<HTMLDivElement>(null); // 좌측 컬럼(컨트롤 행 + 디바이스) = sticky 래퍼, 변수 보유
+  const segRef = React.useRef<HTMLDivElement>(null);    // 세그먼티드 컨트롤 행(기본/폴백·디바이스)
+  React.useEffect(() => {
+    let ro: ResizeObserver | null = null;
+    let raf = 0;
+    const onResize = () => wire();
+    function wire() {
+      const wrap = stickyRef.current, seg = segRef.current;
+      // 아직 DOM이 안 붙었으면 다음 프레임에 재시도(마운트 타이밍에 ref가 비어도 결국 변수를 채운다).
+      if (!wrap || !seg) { raf = requestAnimationFrame(wire); return; }
+      // 스크롤 컨테이너 = 가장 가까운 overflow-y auto/scroll 조상(= 헤더+2열을 담은 .overflow-y-auto)
+      let sc: HTMLElement | null = wrap.parentElement;
+      while (sc) { const o = getComputedStyle(sc).overflowY; if (o === 'auto' || o === 'scroll') break; sc = sc.parentElement; }
+      const apply = () => {
+        wrap.style.setProperty('--sc-h', `${sc ? sc.clientHeight : window.innerHeight}px`);
+        wrap.style.setProperty('--seg-h', `${Math.round(seg.getBoundingClientRect().height)}px`);
+      };
+      apply();
+      ro = new ResizeObserver(apply);
+      if (sc) ro.observe(sc);
+      ro.observe(seg);
+    }
+    wire();
+    window.addEventListener('resize', onResize);
+    return () => { cancelAnimationFrame(raf); ro?.disconnect(); window.removeEventListener('resize', onResize); };
+  }, []);
   // 미리보기 본문(코너 매핑) — 디바이스 프레임·전체화면 모달에서 공용. 선택/폴백/숨김 로직 포함.
   const previewBody = activeTemplate && liveCorners.length > 0 ? (
     liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
@@ -2219,20 +2258,22 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
         </div>
       </div>
 
-      {/* 2열 — 좌 디바이스(sticky·뷰포트 높이 유지) · 우 콘텐츠(페이지 스크롤에 함께 흐름). */}
-      <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[clamp(384px,26vw,420px)_minmax(0,1fr)]">
-          {/* 좌: 미리보기 — sticky 고정. 하단 푸터(구성 검증 바)와 겹치지 않도록 상단 크롬+푸터 높이를 뺀 높이로(2026-11-09 사용자 요청: 바텀 겹침 금지). 큰 모니터에선 max 캡. */}
-          <div className="sticky top-2 flex h-[calc(100vh_-_230px)] max-h-[800px] flex-col">
-          {/* 미리보기 컨트롤 — 한 줄 압축 바(2026-11-18 사용자 요청: 디바이스·폴백 다 겹쳐 터지던 2행 → 1행 정리).
-              좌: 기본/폴백(주 보기 모드) · 우: 디바이스·줌·전체화면(보조). 좁아지면 wrap으로 접힌다. */}
-          <div className="mb-2 w-full shrink-0">
+      {/* 2열 — 좌 디바이스(sticky) · 우 콘텐츠. 좌측 열은 max-content = 디바이스 폭에 딱 맞춤(옆 빈 공간 0) → 나머지는 전부 템플릿 정보로(2026-11-19 사용자 요청). */}
+      <div className="grid grid-cols-1 items-start gap-6 px-6 pb-3 pt-1 xl:grid-cols-[max-content_minmax(0,1fr)]">
+          {/* 좌: 미리보기 — sticky 래퍼(컨트롤 행 + 디바이스). position:sticky; top:0; align-self:flex-start.
+              스크롤하면 타이틀은 올라가고 이 래퍼가 스크롤 컨테이너 상단에 고정 → 세그먼티드 컨트롤이 위에 딱 붙는다.
+              --gap=컨트롤↔디바이스 간격, --dev-bottom=디바이스 하단 여백(10px). --sc-h/--seg-h는 위 effect가 실측 주입. */}
+          <div ref={stickyRef} className="sticky top-0 flex flex-col self-start" style={{ '--gap': '8px', '--dev-bottom': '10px', '--dev-safe': '8px' } as React.CSSProperties}>
+          {/* 미리보기 컨트롤(세그먼티드 행) — 한 줄 압축 바.
+              좌: 기본/폴백(주 보기 모드) · 우: 디바이스·전체화면(보조). 좁아지면 wrap으로 접힌다. */}
+          <div ref={segRef} className="w-full shrink-0">
             <div className="flex w-full flex-wrap items-center gap-x-2 gap-y-1.5">
               {/* 기본/폴백 — 주 보기 토글 */}
               <div className="flex shrink-0 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
                 <button type="button" onClick={() => setFbMode(false)} className={cn('rounded-[6px] px-3.5 py-1 text-center', !fbMode ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>기본</button>
                 <button type="button" onClick={() => setFbMode(true)} className={cn('rounded-[6px] px-3.5 py-1 text-center', fbMode ? 'bg-white text-[#b67a12] shadow-sm' : 'text-[var(--ink3)]')}>폴백</button>
               </div>
-              {/* 보조 컨트롤 묶음 — 디바이스·줌·전체화면 */}
+              {/* 보조 컨트롤 묶음 — 디바이스·전체화면 (줌=사이즈 조절은 제거, 2026-11-19 사용자 요청) */}
               <div className="ml-auto flex items-center gap-1.5">
                 <div className="relative">
                   <select value={deviceIdx} onChange={(e) => setDeviceIdx(Number(e.target.value))} title={`${device.w}×${device.h}`} className="h-[30px] max-w-[122px] appearance-none truncate rounded-[8px] border border-[var(--line2)] bg-white pl-2.5 pr-7 text-[12px] font-medium text-[var(--ink2)] focus:border-[var(--ac)] focus:outline-none">
@@ -2240,21 +2281,26 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink4)]" />
                 </div>
-                <div className="flex items-center gap-0.5 rounded-[8px] border border-[var(--line2)] bg-white px-1">
-                  <button type="button" onClick={() => setZoom((z) => Math.max(50, z - 10))} title="축소" className="grid h-6 w-6 place-items-center text-[var(--ink3)] hover:text-[var(--ac)]"><Minus className="h-3.5 w-3.5" /></button>
-                  <span className="w-8 text-center text-[12px] font-semibold tabular-nums text-[var(--ink2)]">{zoom}%</span>
-                  <button type="button" onClick={() => setZoom((z) => Math.min(150, z + 10))} title="확대" className="grid h-6 w-6 place-items-center text-[var(--ink3)] hover:text-[var(--ac)]"><Plus className="h-3.5 w-3.5" /></button>
-                </div>
                 <button type="button" onClick={() => setFullscreen(true)} title="전체화면으로 보기" className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] border border-[var(--line2)] bg-white text-[var(--ink3)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Maximize2 className="h-3.5 w-3.5" /></button>
               </div>
             </div>
-            {/* 폴백 안내 — 바 아래 얇은 캡션으로(2026-11-18: 컨트롤 줄을 깔끔히) */}
-            {fbMode && <span title="CVM이 비면 이렇게 노출됩니다 (CVM 수급 코너만 바뀜)" className="mt-1 flex items-center gap-1 text-[11px] text-[#b67a12]"><Layers className="h-3 w-3 shrink-0" /><span className="truncate">CVM 비면 이렇게 노출 (수급 코너만)</span></span>}
+            {/* 폴백 안내 캡션 제거(2026-11-19 사용자 요청: 디바이스가 내려와 불편) — 폴백 여부는 토글 색/디바이스로 충분 */}
           </div>
-          {/* 디바이스는 좌측 열(뷰포트 높이) 안에서 fill로 꽉 채워 늘어남 — 바텀 고정·안 잘림. 줌은 scale 래퍼로(2026-11-17 사용자 요청). 바디는 내부 스크롤. */}
-          <div className="min-h-0 flex-1 overflow-auto">
-          <div className="flex h-full flex-col" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}>
-          <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim>
+          {/* 디바이스 박스 — 높이=clamp(414px, 가용, 800px), 너비=aspect-ratio(기기 비율)로 자동. 하단 여백 --dev-bottom.
+              프레임(fillBox)이 이 박스를 100% 채우고 바디만 내부 스크롤 → 프레임은 안 잘리고 네비는 위에 붙는다. */}
+          <div
+            className="mx-auto"
+            style={{
+              // 높이=clamp(414, 가용, 800). 너비는 같은 --dev-h에 기기 비율을 곱해 산출(ratio 유도 — 하드코딩 아님).
+              //  aspect-ratio 키워드는 블록 stretch/콘텐츠 max-content에 밀려 비율이 깨지므로 calc로 결정적 산출.
+              '--dev-h': 'clamp(414px, calc(var(--sc-h, 100dvh) - var(--seg-h, 40px) - var(--gap) - var(--dev-bottom) - var(--dev-safe)), 800px)',
+              height: 'var(--dev-h)',
+              width: `calc(var(--dev-h) * ${device.w} / ${device.h})`,
+              marginTop: 'var(--gap)',
+              marginBottom: 'var(--dev-bottom)',
+            } as React.CSSProperties}
+          >
+          <DeviceFrame width={device.w} bodyHeight={0} fillBox headerLabel={data.containerName} slim>
                   {activeTemplate && liveCorners.length > 0 ? (
                     /* 노출 토글로 숨긴 코너는 미리보기에서 제외(2026-11-12 사용자 요청) */
                     liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
@@ -2297,7 +2343,6 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
                   )}
           </DeviceFrame>
-          </div>
           </div>
         </div>
 

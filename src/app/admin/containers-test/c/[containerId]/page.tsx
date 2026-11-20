@@ -14,6 +14,7 @@ import { LoginGroupSelect } from '../../login-group-select';
 import { TemplateRowActions } from '../../template-row-actions';
 import { setDefaultTemplate } from '../../container-crud-actions';
 import { duplicateTestTemplate } from '../../actions';
+import { ImportTemplateButton } from '../../import-template-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,14 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
   if (!container) notFound();
   const activeTemplates = container.templates.filter((t) => !t.archivedAt);
   const fmt = (d: Date | null) => (d ? d.toISOString().slice(0, 16).replace('T', ' ') : '');
+
+  // 템플릿 불러오기 — 다른 컨테이너의 활성 템플릿 목록
+  const sources = await prisma.template.findMany({
+    where: { containerId: { not: container.id }, archivedAt: null },
+    include: { container: { select: { name: true } }, _count: { select: { templateCorners: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+  const importSources = sources.map((t) => ({ id: t.id, name: t.name, containerName: t.container.name, corners: t._count.templateCorners, conditionGroup: t.conditionGroup }));
 
   return (
     <ContainersTestShell>
@@ -132,7 +141,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
 
           {/* 연결된 전체페이지 정보 */}
           <section>
-            <SectionTitle right={<span className={BTN}><ExternalLink className="h-3.5 w-3.5" /> 전체페이지 관리</span>}>연결된 전체페이지 정보</SectionTitle>
+            <SectionTitle right={<Link href="/admin/page-menu-b" className={BTN}><ExternalLink className="h-3.5 w-3.5" /> 전체페이지 관리</Link>}>연결된 전체페이지 정보</SectionTitle>
             <div className="grid grid-cols-1 border-t border-[var(--line2)] sm:grid-cols-2">
               <Row label="페이지 ID"><span className="text-[var(--ink3)]">연동 대기</span></Row>
               <Row label="메뉴 경로"><span className="text-[var(--ink3)]">연동 대기</span></Row>
@@ -147,7 +156,7 @@ export default async function ContainersTestDetailPage({ params }: { params: { c
 
           {/* 매핑 템플릿 정보 — 행 클릭 시 order3 빌더 */}
           <section>
-            <SectionTitle right={<div className="flex items-center gap-2"><span className={BTN}><Download className="h-3.5 w-3.5" /> 템플릿 불러오기</span><AddTemplateButton containerId={container.id} /></div>}>
+            <SectionTitle right={<div className="flex items-center gap-2"><ImportTemplateButton containerId={container.id} sources={importSources} /><AddTemplateButton containerId={container.id} /></div>}>
               매핑 템플릿 정보 <span className="text-[14px] font-normal text-[var(--ink3)]">총 {activeTemplates.length}개</span>
             </SectionTitle>
             <div className="overflow-x-auto border-t border-[var(--line2)]">
