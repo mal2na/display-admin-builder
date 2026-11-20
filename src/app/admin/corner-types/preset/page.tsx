@@ -32,7 +32,8 @@ const GROUP_TONE: Record<string, string> = {
   'personal-data': 'bg-[#D5F2EC] text-[#0B8A75]',
   'personal-point': 'bg-[#D5F2EC] text-[#0B8A75]',
   'product-sub': 'bg-[#FFF2CC] text-[#A97A00]',
-  'product-device': 'bg-[#FFF2CC] text-[#A97A00]',
+  'product-device-banner': 'bg-[#FFF2CC] text-[#A97A00]',
+  'product-device-vertical': 'bg-[#FFF2CC] text-[#A97A00]',
   'product-roaming': 'bg-[#FFF2CC] text-[#A97A00]',
 };
 
