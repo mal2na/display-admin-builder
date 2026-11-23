@@ -45,10 +45,22 @@ export function BenefitCornerPreview({ mid, layout, typeId, name, variant, image
       if (!c.atoms.some((a) => a.atomType === 'CTA')) c.atoms = [...c.atoms, { id: `cta-${i}`, name: 'CTA', atomType: 'CTA', content: 'Label' } as (typeof c.atoms)[number]];
     });
   }
+  // 캐러셀형 스와이프 인디케이터(페이지 점) — 카드 아래 노출해 '옆으로 넘길 수 있음'을 표시.
+  const Dots = () => (
+    <div className="flex items-center justify-center gap-1.5">
+      <span className="h-1.5 w-4 rounded-full bg-[#3617ce]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-[#c4c9cf]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-[#c4c9cf]" />
+    </div>
+  );
+
   if (variant === 'list') {
-    // 리스트 썸네일 — 고정 박스, contain으로 전체 축소. 하드 보더 대신 부드러운 쉐도우로 카드를 띄운다.
-    return <div className="pointer-events-none mx-auto h-[220px] w-[150px] overflow-hidden rounded-[14px] bg-white shadow-[0_3px_14px_rgba(20,22,40,0.08)] ring-1 ring-black/[0.03]"><DevicePreview corner={corner} fit="contain" align="center-middle" /></div>;
+    // 리스트 썸네일 — 고정 박스(contain 축소)만. 바깥 흰 박스 제거 → 톤 셀 위에 카드(자체 라운드·쉐도우) 1장만.
+    return <div className="pointer-events-none mx-auto flex flex-col items-center gap-2">
+      <div className={`overflow-hidden ${m.carousel ? 'h-[196px]' : 'h-[220px]'} w-[150px]`}><DevicePreview corner={corner} fit="contain" align="center-middle" /></div>
+      {m.carousel && <Dots />}
+    </div>;
   }
   // 상세 — autoHeight. 카드(CornerBlock)가 자체 그림자를 가지므로 추가 필터 없이 그대로(필터는 스케일 카드에 비뚤게 입혀짐).
-  return <div className="w-full"><DevicePreview corner={corner} fit="autoHeight" /></div>;
+  return <div className="flex w-full flex-col items-center gap-3"><DevicePreview corner={corner} fit="autoHeight" />{m.carousel && <Dots />}</div>;
 }

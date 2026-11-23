@@ -58,14 +58,13 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
       {/* 미리보기(좌·고정폭 340·sticky) + 코너 기본 정보(우) */}
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
-          <div className="overflow-hidden rounded-[16px] border border-[#dce0e5] bg-white">
-            <div className="flex items-center gap-2 border-b border-[#f1f3f5] bg-[#f8f9fb] px-4 py-2.5">
-              <span className="text-[13px] font-bold text-[#454f59]">코너 미리보기</span>
-              <span className="text-[12px] text-[#b3b9c0]">껍데기(필드 코드)</span>
-            </div>
-            <div className="flex flex-col items-center bg-[#eceef5] p-5">
-              <BenefitCornerPreview mid={t.mid} layout={t.layout} typeId={t.typeId} name={t.name} variant="detail" image={t.presetIds[0] ? imgSrc(t.presetIds[0]) : null} />
-            </div>
+          {/* 라벨 + 톤 트레이 1개 안에 카드 1개 — 흰 보더 박스 중첩 제거(라운드 1겹) */}
+          <div className="mb-2.5 flex items-center gap-2 px-1">
+            <span className="text-[13px] font-bold text-[#454f59]">코너 미리보기</span>
+            <span className="text-[12px] text-[#b3b9c0]">껍데기(필드 코드)</span>
+          </div>
+          <div className="flex justify-center rounded-[20px] bg-[#eceef5] p-6">
+            <BenefitCornerPreview mid={t.mid} layout={t.layout} typeId={t.typeId} name={t.name} variant="detail" image={t.presetIds[0] ? imgSrc(t.presetIds[0]) : null} />
           </div>
         </div>
 

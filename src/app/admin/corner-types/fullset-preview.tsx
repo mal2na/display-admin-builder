@@ -77,7 +77,6 @@ export function FullsetPreview({ slots, size = 'lg' }: { slots: Slot[]; size?: '
   return (
     <div
       className={`mx-auto flex flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_3px_14px_rgba(20,22,40,0.10)] ${lg ? 'w-[300px] gap-3 p-4' : 'w-[150px] gap-2 p-3'}`}
-      style={lg ? undefined : { height: 220 }}
     >
       {slots.map((s, i) => <SlotBlock key={i} slot={s} lg={lg} />)}
     </div>
