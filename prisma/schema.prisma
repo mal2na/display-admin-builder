@@ -219,6 +219,10 @@ model Template {
   version        Int       @default(1) // 롤백 대상 버전 식별 (PI-DSP-RBK-002)
   rejectReason   String? // 반려 사유 (status = REJECTED / 수정 필요)
 
+  // 개인화 영역(1-1~1-3) — 혜택 카테고리 칩 하위, CVM 전용 마이크로 개인화 슬롯(2026-11-23 미팅).
+  //  JSON: { "1-1": { on, defaultKey, cards:[{key,name}] }, "1-2": {...}, "1-3": {...} }. 슬롯당 코너 N개 등록 → CVM이 1개 노출.
+  personalSlots  String? // JSON (코드베이스 JSON 컬럼 관례)
+
   // 보관(soft-delete). null = 활성, 값 있으면 보관됨(목록에서 숨김, 복구 가능)
   archivedAt DateTime?
   archivedBy String?

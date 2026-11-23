@@ -90,6 +90,12 @@ export async function setTestCornerZone(templateId: string, templateCornerId: st
   revalidatePath(`/admin/containers-test/t/${templateId}`);
 }
 
+// 개인화 영역(1-1~1-3) 슬롯 등록 저장 — Template.personalSlots(JSON 문자열). 2026-11-23.
+export async function savePersonalSlots(templateId: string, json: string) {
+  await prisma.template.update({ where: { id: templateId }, data: { personalSlots: json } });
+  // revalidate 하지 않음 — 저장 중 리렌더로 입력 끊김 방지(초안처럼 조용히 저장). 다음 로드시 반영.
+}
+
 // 코너 삭제 — 템플릿에서 코너 배치(TemplateCorner)만 제거. 코너 유형 관리의 원본 코너는 남는다.
 export async function removeCornerFromTemplate(templateId: string, templateCornerId: string) {
   await prisma.templateCorner.delete({ where: { id: templateCornerId } });
