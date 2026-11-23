@@ -5,18 +5,22 @@
 import * as React from 'react';
 import { ChevronRight, Info, MapPin } from 'lucide-react';
 import designs from '@/lib/benefit-preset-designs.json';
+import presetNames from '@/lib/preset-names.json';
 
 type Props = Record<string, unknown>;
 type Node = { cid: string; props: Props | null; children: Node[] };
 type Design = { name: string; tree: Node };
 
 const DESIGNS = designs as Record<string, Design>;
+const PRESET_NAMES = presetNames as Record<string, string>;
 export function hasPresetDesign(id?: string | null): boolean {
   return !!id && !!DESIGNS[id];
 }
+// 신규 67 프리셋 이름(preset-names.json) 우선, 없으면 구 설계도 JSON. 접두어([..][혜택]) 제거.
 export function presetDesignName(id?: string | null): string {
-  if (!id || !DESIGNS[id]) return '';
-  return (DESIGNS[id].name || '').replace(/^\[[^\]]*\]\s*\[혜택\]\s*/, '').replace(/^\[혜택\]\s*/, '');
+  if (!id) return '';
+  const raw = PRESET_NAMES[id] ?? DESIGNS[id]?.name ?? '';
+  return raw.replace(/^\[[^\]]*\]\s*\[혜택\]\s*/, '').replace(/^\[혜택\]\s*/, '');
 }
 
 const s = (p: Props | null, k: string): string => { const v = p?.[k]; return typeof v === 'string' ? v : ''; };
