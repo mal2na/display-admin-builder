@@ -10,7 +10,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { addCornersFromTypes, reorderTestCorners, setTestCornerZone, removeCornerFromTemplate, renameCorner } from './actions';
+import { addCornersFromTypes, reorderTestCorners, setTestCornerZone, removeCornerFromTemplate, renameCorner, savePersonalSlots } from './actions';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -19,6 +19,8 @@ import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
 import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
+import { PRESET_SHAPE_GROUPS } from '@/lib/preset-shape-groups';
+import { presetDesignName } from '@/components/preview/preset-design-card';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Minus, Maximize2, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, AlertTriangle, Barcode } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
@@ -1865,17 +1867,22 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
             </button>
           ) : segments.map((seg, si) => {
             const meta = ZONE_META[seg.band];
+            // 2026-11-23 미팅: '개인화'는 상단 개인화 영역(1-1~1-3)으로 분리됨 → 코너 구성의 Dynamic 밴드는 '운영'으로 표기(zone 값은 보존, 색=중립).
+            const isOps = seg.band === 'dynamic';
+            const hex = isOps ? '#697582' : meta.hex;
+            const label = isOps ? '운영' : meta.label;
+            const en = isOps ? '운영자 편성 · 고정형' : meta.en;
             return (
               <div key={si}>
                 {/* 세그먼트 헤더 — 존 점·라벨·개수 */}
                 <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
-                  <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: meta.hex }} />
-                  <span className="text-[12px] font-extrabold tracking-tight" style={{ color: meta.hex }}>{meta.label}</span>
-                  <span className="truncate text-[11px] text-[var(--ink4)]">{meta.en}</span>
+                  <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: hex }} />
+                  <span className="text-[12px] font-extrabold tracking-tight" style={{ color: hex }}>{label}</span>
+                  <span className="truncate text-[11px] text-[var(--ink4)]">{en}</span>
                   <span className="ml-auto grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full border border-[var(--line2)] bg-white px-1.5 text-[11px] font-bold text-[var(--ink3)]">{seg.items.length}</span>
                 </div>
                 {/* 세그먼트 본문 — 존 색 좌측 액센트 바 */}
-                <div className="space-y-1.5 rounded-r-[8px] border-l-[2px] py-1 pl-2.5 pr-1" style={{ borderColor: meta.hex }}>
+                <div className="space-y-1.5 rounded-r-[8px] border-l-[2px] py-1 pl-2.5 pr-1" style={{ borderColor: hex }}>
                   {seg.items.map((c) => (
                     <CornerChip key={c.templateCornerId} c={c} no={noOf(c.templateCornerId)} selected={c.id === selCorner}
                       fixed={c.zone === 'fixed'} on={!hiddenIds.has(c.templateCornerId)} onToggleOn={() => onToggleHidden(c.templateCornerId)}
@@ -1901,6 +1908,189 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
         </div>
       )}
     </DndContext>
+  );
+}
+
+/* ───────── 개인화 영역(1-1~1-3) — 혜택 카테고리 칩 바로 하위. CVM 전용 · N개 등록→1개 노출 · OX만 (2026-11-23 미팅) ─────────
+   마이크로 개인화 존: 1-1 맥락 / 1-2 선호 이력 / 1-3 활동. 순서 고정, 운영자 편성 없음(CVM 연동만).
+   한 슬롯(구좌)에 코너 카드 N개 등록 → CVM이 고객마다 1개만 노출. 추천 없으면 미노출, 단 디폴트 1개는 상시.
+   ※ 1차: 구조 밴드 신설(프레젠테이션). 코너 N개 등록 연결·미리보기 디바이스 반영은 다음 증분. */
+const PERSONAL_SLOTS = [
+  { code: '1-1', label: '맥락 기반', desc: '지금 상황·시점(해피아워·귀국 직후·대중교통 등)에 맞는 결정적 카드' },
+  { code: '1-2', label: '선호 이력 기반', desc: '자주 쓰거나 선호하는 혜택' },
+  { code: '1-3', label: '활동 기반', desc: '최근 조회·탐색·검색 이력 기반' },
+] as const;
+
+type SlotCard = { key: string; name: string };
+type SlotState = { on: boolean; defaultKey: string | null; cards: SlotCard[] };
+const presetImg = (id: string) => `/assets/preset-images/${id}.png`;
+const SLOT_CODES = ['1-1', '1-2', '1-3'] as const;
+
+// Template.personalSlots(JSON 문자열) → 슬롯 상태. 깨진 값은 기본값으로.
+function parsePersonalSlots(json: string | null | undefined): Record<string, SlotState> {
+  const base: Record<string, SlotState> = { '1-1': { on: true, defaultKey: null, cards: [] }, '1-2': { on: true, defaultKey: null, cards: [] }, '1-3': { on: true, defaultKey: null, cards: [] } };
+  if (!json) return base;
+  try {
+    const o = JSON.parse(json) as Record<string, unknown>;
+    for (const code of SLOT_CODES) {
+      const s = o?.[code] as { on?: unknown; defaultKey?: unknown; cards?: unknown } | undefined;
+      if (!s) continue;
+      const cards = Array.isArray(s.cards) ? (s.cards as unknown[]).filter((c): c is SlotCard => !!c && typeof (c as SlotCard).key === 'string').map((c) => ({ key: (c as SlotCard).key, name: typeof (c as SlotCard).name === 'string' ? (c as SlotCard).name : (c as SlotCard).key })) : [];
+      base[code] = { on: s.on !== false, defaultKey: typeof s.defaultKey === 'string' ? s.defaultKey : null, cards };
+    }
+  } catch { /* 기본값 */ }
+  return base;
+}
+
+/* 슬롯에 코너(혜택 프리셋) N개 등록 — 코너 유형(프리셋)에서 불러와 복수 선택(한 벌 공용). */
+function SlotRegisterModal({ slotCode, slotLabel, already, onClose, onAdd }: {
+  slotCode: string; slotLabel: string; already: Set<string>; onClose: () => void; onAdd: (picks: SlotCard[]) => void;
+}) {
+  const [sel, setSel] = React.useState<Set<string>>(new Set());
+  const toggle = (id: string) => setSel((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const submit = () => onAdd([...sel].map((id) => ({ key: id, name: presetDesignName(id) || id })));
+  return (
+    <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-[16px] bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b border-[var(--line2)] px-5 py-3.5">
+          <span className="rounded-[5px] bg-[#ede9fe] px-1.5 py-0.5 text-[12px] font-extrabold text-[#6D4AFF]">{slotCode}</span>
+          <p className="text-[14px] font-bold text-[var(--ink)]">{slotLabel} · 코너 등록</p>
+          <span className="text-[12px] text-[var(--ink4)]">프리셋 코너를 골라 담습니다 (복수 선택)</span>
+          <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          {PRESET_SHAPE_GROUPS.map((g) => (
+            <div key={g.key} className="mb-4">
+              <p className="mb-1.5 text-[12px] font-bold text-[var(--ink3)]">{g.label}</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {g.presetIds.map((id) => {
+                  const picked = sel.has(id); const dup = already.has(id);
+                  return (
+                    <button key={id} type="button" disabled={dup} onClick={() => toggle(id)}
+                      className={cn('flex items-center gap-2 rounded-[8px] border p-2 text-left transition',
+                        dup ? 'cursor-not-allowed border-[var(--line2)] bg-[var(--th)] opacity-55' : picked ? 'border-[#6D4AFF] bg-[#f6f4ff]' : 'border-[var(--line2)] bg-white hover:border-[#cfc6ff]')}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={presetImg(id)} alt="" className="h-9 w-9 shrink-0 rounded-[6px] border border-[var(--line2)] object-cover" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[11px] font-semibold text-[var(--ink2)]">{presetDesignName(id) || id}</span>
+                        <span className="block text-[10px] text-[var(--ink4)]">{id}{dup ? ' · 등록됨' : ''}</span>
+                      </span>
+                      {picked && <Check className="h-4 w-4 shrink-0 text-[#6D4AFF]" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--line2)] px-5 py-3">
+          <span className="mr-auto text-[12px] text-[var(--ink4)]">{sel.size}개 선택</span>
+          <button type="button" onClick={onClose} className="rounded-[8px] border border-[var(--line2)] bg-white px-4 py-2 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">취소</button>
+          <button type="button" disabled={sel.size === 0} onClick={submit} className="rounded-[8px] bg-[#6D4AFF] px-4 py-2 text-[13px] font-semibold text-white hover:opacity-90 disabled:opacity-40">{sel.size}개 등록</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PersonalZoneBand({ templateId, initial, onToast }: { templateId: string; initial: string | null; onToast: (m: string) => void }) {
+  const init = React.useMemo(() => parsePersonalSlots(initial), [initial]);
+  const [on, setOn] = React.useState<Record<string, boolean>>(() => ({ '1-1': init['1-1'].on, '1-2': init['1-2'].on, '1-3': init['1-3'].on }));
+  const [cards, setCards] = React.useState<Record<string, SlotCard[]>>(() => ({ '1-1': init['1-1'].cards, '1-2': init['1-2'].cards, '1-3': init['1-3'].cards }));
+  const [defKey, setDefKey] = React.useState<Record<string, string | null>>(() => ({ '1-1': init['1-1'].defaultKey, '1-2': init['1-2'].defaultKey, '1-3': init['1-3'].defaultKey }));
+  const [picking, setPicking] = React.useState<{ code: string; label: string } | null>(null);
+  const router = useRouter();
+
+  // 변경 시 자동 저장(디바운스). 최초 하이드레이션 1회는 건너뛴다. 저장 후 router.refresh로 미리보기(디바이스) 반영.
+  const hydrated = React.useRef(false);
+  React.useEffect(() => {
+    if (!hydrated.current) { hydrated.current = true; return; }
+    const payload = JSON.stringify(Object.fromEntries(SLOT_CODES.map((c) => [c, { on: on[c], defaultKey: defKey[c], cards: cards[c] }])));
+    const t = setTimeout(() => { savePersonalSlots(templateId, payload).then(() => router.refresh()).catch(() => onToast('개인화 영역 저장에 실패했습니다.')); }, 600);
+    return () => clearTimeout(t);
+  }, [on, cards, defKey, templateId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const addToSlot = (code: string, picks: SlotCard[]) => {
+    setCards((prev) => {
+      const merged = [...prev[code]];
+      for (const p of picks) if (!merged.some((m) => m.key === p.key)) merged.push(p);
+      // 디폴트 미지정이면 첫 카드로
+      setDefKey((d) => (d[code] ? d : { ...d, [code]: merged[0]?.key ?? null }));
+      return { ...prev, [code]: merged };
+    });
+    setPicking(null);
+    onToast(`${code}에 코너 ${picks.length}개 등록`);
+  };
+  const removeCard = (code: string, key: string) => {
+    setCards((prev) => { const next = prev[code].filter((c) => c.key !== key); setDefKey((d) => (d[code] === key ? { ...d, [code]: next[0]?.key ?? null } : d)); return { ...prev, [code]: next }; });
+  };
+
+  return (
+    <section className="rounded-[12px] border border-[#d9d2ff] bg-[#f6f4ff] p-3.5">
+      <div className="mb-2.5 flex flex-wrap items-center gap-2">
+        <span className="grid h-5 w-5 place-items-center rounded-full bg-[#6D4AFF] text-[11px] font-bold text-white">P</span>
+        <h3 className="text-[14px] font-bold text-[var(--ink)]">개인화 영역</h3>
+        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#6D4AFF] ring-1 ring-[#d9d2ff]">혜택 카테고리 칩 바로 하위</span>
+        <span className="rounded-full bg-[#6D4AFF] px-2 py-0.5 text-[11px] font-semibold text-white">CVM 전용</span>
+        <span className="ml-auto text-[11px] text-[var(--ink4)]">순서 고정 · 노출 OX만</span>
+      </div>
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+        {PERSONAL_SLOTS.map((s) => {
+          const isOn = on[s.code]; const list = cards[s.code]; const def = defKey[s.code];
+          return (
+            <div key={s.code} className={cn('flex flex-col rounded-[10px] border bg-white p-3', isOn ? 'border-[#cfc6ff]' : 'border-[var(--line2)] opacity-60')}>
+              <div className="flex items-center gap-1.5">
+                <span className="rounded-[5px] bg-[#ede9fe] px-1.5 py-0.5 text-[12px] font-extrabold tabular-nums text-[#6D4AFF]">{s.code}</span>
+                <span className="text-[13px] font-bold text-[var(--ink)]">{s.label}</span>
+                {list.length > 0 && <span className="rounded-full bg-[#ede9fe] px-1.5 py-0.5 text-[10px] font-bold text-[#6D4AFF]">{list.length}개</span>}
+                <button type="button" onClick={() => setOn((p) => ({ ...p, [s.code]: !p[s.code] }))}
+                  className={cn('ml-auto flex h-[18px] w-[32px] items-center rounded-full px-[2px] transition', isOn ? 'justify-end bg-[#6D4AFF]' : 'justify-start bg-[var(--line2)]')}
+                  title={isOn ? '노출 ON' : '노출 OFF'}>
+                  <span className="h-[14px] w-[14px] rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--ink4)] [word-break:keep-all]">{s.desc}</p>
+
+              {/* 등록된 코너 카드 N개 — 디폴트 1개(CVM 추천 없을 때 노출) 지정 */}
+              {list.length > 0 ? (
+                <div className="mt-2 space-y-1 border-t border-dashed border-[var(--line2)] pt-2">
+                  {list.map((c) => {
+                    const isDef = def === c.key;
+                    return (
+                      <div key={c.key} className="flex items-center gap-1.5 rounded-[6px] bg-[var(--th)] px-1.5 py-1">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={presetImg(c.key)} alt="" className="h-6 w-6 shrink-0 rounded-[4px] border border-[var(--line2)] object-cover" />
+                        <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-[var(--ink2)]">{c.name}</span>
+                        <button type="button" onClick={() => setDefKey((d) => ({ ...d, [s.code]: c.key }))}
+                          className={cn('shrink-0 rounded-[4px] px-1.5 py-0.5 text-[10px] font-bold', isDef ? 'bg-[#6D4AFF] text-white' : 'border border-[var(--line2)] text-[var(--ink4)] hover:text-[#6D4AFF]')}
+                          title="추천 없을 때 노출할 디폴트">{isDef ? '디폴트' : '디폴트 지정'}</button>
+                        <button type="button" onClick={() => removeCard(s.code, c.key)} className="shrink-0 rounded-[4px] p-0.5 text-[var(--ink4)] hover:bg-white hover:text-[var(--bad)]"><X className="h-3.5 w-3.5" /></button>
+                      </div>
+                    );
+                  })}
+                  <p className="pt-0.5 text-[10px] text-[var(--ink4)]">CVM이 {list.length}개 중 1개 노출 · 추천 없으면 <b className="text-[var(--ink3)]">디폴트</b> 노출</p>
+                </div>
+              ) : (
+                <div className="mt-2 border-t border-dashed border-[var(--line2)] pt-2 text-[11px] text-[var(--ink4)]">
+                  카드 <b className="text-[#6D4AFF]">N개 등록</b> → CVM이 <b className="text-[#6D4AFF]">1개만 노출</b> · 디폴트 1개 상시
+                </div>
+              )}
+
+              <button type="button" onClick={() => setPicking({ code: s.code, label: s.label })}
+                className="mt-2 flex w-full items-center justify-center gap-1 rounded-[8px] border border-dashed border-[#cfc6ff] bg-[#f6f4ff] py-1.5 text-[11px] font-bold text-[#6D4AFF] hover:bg-[#ede9fe]">
+                <Plus className="h-3.5 w-3.5" /> 코너 등록
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-[var(--ink4)]">* 운영자 편성 없음(CVM 연동만) · 노출 순서 1-1 → 1-2 → 1-3 고정 · 각 슬롯은 OX로만 끄고 켭니다. 아래 ‘코너 구성’은 운영(고정형) 영역입니다.</p>
+
+      {picking && (
+        <SlotRegisterModal slotCode={picking.code} slotLabel={picking.label} already={new Set(cards[picking.code].map((c) => c.key))}
+          onClose={() => setPicking(null)} onAdd={(picks) => addToSlot(picking.code, picks)} />
+      )}
+    </section>
   );
 }
 
@@ -1941,9 +2131,11 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
       {/* 카드 본문 */}
       {open && (
         <div className="space-y-4 p-4">
+          {/* 개인화 영역(1-1~1-3) — 혜택 카테고리 칩 바로 하위. 운영(코너 구성)보다 위(2026-11-23 미팅). */}
+          <PersonalZoneBand templateId={t.id} initial={t.personalSlots} onToast={onToast} />
           <div>
             {/* 타이틀↔카드 간격 확보(2026-11-19 사용자 요청: 너무 붙어 있음) — 폰트 키우고 아래 여백 확대 */}
-            <p className="mb-3.5 text-[14px] font-bold text-[var(--ink)]">코너 구성 <span className="font-semibold text-[var(--ink4)]">{corners.length}개</span></p>
+            <p className="mb-3.5 text-[14px] font-bold text-[var(--ink)]">코너 구성 <span className="font-semibold text-[var(--ink4)]">{corners.length}개</span> <span className="ml-1 rounded-full bg-[var(--th)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink4)]">운영 · 고정형</span></p>
             {/* order3 레퍼런스: 좌측 순서변경 박스만 그레이 배경 + 해상도 기준 고정 높이(내부 스크롤) + 코너 추가 하단 고정.
                코너가 0개여도 밴드(Fixed·Dynamic)는 항상 표시 — 각 밴드에 '추가 가능' 노출(2026-10-21). */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[360px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
@@ -2200,42 +2392,81 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
     window.addEventListener('resize', onResize);
     return () => { cancelAnimationFrame(raf); ro?.disconnect(); window.removeEventListener('resize', onResize); };
   }, []);
+  // 개인화 영역(1-1~1-3) 미리보기 — 혜택 카테고리 칩 바로 하위(디바이스 최상단). ON 슬롯의 디폴트 카드(또는 첫 카드) 1개를 프리셋 이미지로 노출.
+  //  저장된 personalSlots에서 읽는다(등록/토글 → 저장 → router.refresh로 반영). CVM 실서비스는 N개 중 1개 택1이지만 빌더 미리보기는 디폴트(폴백)만.
+  const personalPreview = (() => {
+    const slots = parsePersonalSlots(activeTemplate?.personalSlots);
+    const shown = SLOT_CODES
+      .map((code) => ({ code, label: PERSONAL_SLOTS.find((s) => s.code === code)?.label ?? code, slot: slots[code] }))
+      .filter((x) => x.slot.on && x.slot.cards.length > 0);
+    if (shown.length === 0) return null;
+    return (
+      <div className="mb-2 space-y-2">
+        {shown.map(({ code, label, slot }) => {
+          const key = slot.defaultKey && slot.cards.some((c) => c.key === slot.defaultKey) ? slot.defaultKey : slot.cards[0].key;
+          return (
+            <div key={code} className="overflow-hidden rounded-xl border border-[#e4e0ff] bg-white shadow-sm">
+              <div className="flex items-center gap-1 bg-[#f6f4ff] px-2.5 py-1 text-[10px] font-bold text-[#6D4AFF]">
+                <span className="rounded-[4px] bg-[#ede9fe] px-1 py-0.5 tabular-nums">{code}</span>
+                <span>{label} · 개인화</span>
+                <span className="ml-auto font-medium text-[#9b8cff]">{slot.cards.length}개 중 1개</span>
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={presetImg(key)} alt="" className="block w-full" />
+            </div>
+          );
+        })}
+      </div>
+    );
+  })();
+
   // 미리보기 본문(코너 매핑) — 디바이스 프레임·전체화면 모달에서 공용. 선택/폴백/숨김 로직 포함.
-  const previewBody = activeTemplate && liveCorners.length > 0 ? (
-    liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
-      const hidden = fbMode && c.isCvm && c.fallback === '미노출';
-      const replaced = fbMode && c.isCvm && c.fallback === '운영자 편성으로 대체';
-      const cvmContent = c.recSource === 'CVM 콘텐츠 연동' && !hidden && !replaced;
-      if (cvmContent) {
-        return (
-          <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
-            className={cn('cursor-pointer scroll-mt-4 rounded-xl border border-dashed border-[#b9a7ff] bg-[#f3f0ff] px-3 py-5 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
-            <Sparkles className="mx-auto mb-1 h-4 w-4 text-[var(--ac)]" />
-            <p className="text-[12px] font-bold text-[var(--ac)]">CVM 완성본 자리</p>
-            <p className="text-[11px] text-[var(--ink4)]">구좌만 — 이미지·문구·랜딩은 CVM이 내려줘요</p>
-          </div>
-        );
-      }
-      if (hidden) {
-        return (
-          <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
-            className={cn('cursor-pointer scroll-mt-4 rounded-xl border border-dashed border-[#f2c47a] bg-[#fff8ef] px-3 py-4 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
-            <EyeOff className="mx-auto mb-1 h-4 w-4 text-[#b67a12]" />
-            <p className="text-[11px] font-semibold text-[#b67a12]">{c.name} · 미노출</p>
-            <p className="text-[10px] text-[#c99a4e]">CVM이 비어 노출되지 않아요</p>
-          </div>
-        );
-      }
+  // 코너 1개 미리보기 렌더 — 메인/전체화면 공용. (CVM 콘텐츠 자리 · 미노출 · 일반 카드)
+  const renderPreviewCorner = (c: PCorner) => {
+    if (!activeTemplate) return null;
+    const hidden = fbMode && c.isCvm && c.fallback === '미노출';
+    const replaced = fbMode && c.isCvm && c.fallback === '운영자 편성으로 대체';
+    const cvmContent = c.recSource === 'CVM 콘텐츠 연동' && !hidden && !replaced;
+    if (cvmContent) {
       return (
         <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
-          className={cn('relative cursor-pointer scroll-mt-4 rounded-xl ring-offset-2 transition', c.id === activeSel && 'ring-2 ring-[var(--ac)]')}>
-          {replaced && <span className="absolute right-1 top-1 z-10 rounded-[4px] bg-[#e59a2a] px-1.5 py-0.5 text-[9px] font-bold text-white">운영자 편성 대체</span>}
-          <CornerBlock corner={c.recSource === 'CVM 데이터 연동'
-            ? { ...c.preview, cvmFillCount: (c.preview?.cvmFillCount ?? 0) || 5, cvmFillMin: (c.preview?.cvmFillMin ?? 0) || 3 }
-            : { ...c.preview, cvmFillCount: 0 }} />
+          className={cn('cursor-pointer scroll-mt-4 rounded-xl border border-dashed border-[#b9a7ff] bg-[#f3f0ff] px-3 py-5 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
+          <Sparkles className="mx-auto mb-1 h-4 w-4 text-[var(--ac)]" />
+          <p className="text-[12px] font-bold text-[var(--ac)]">CVM 완성본 자리</p>
+          <p className="text-[11px] text-[var(--ink4)]">구좌만 — 이미지·문구·랜딩은 CVM이 내려줘요</p>
         </div>
       );
-    })
+    }
+    if (hidden) {
+      return (
+        <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
+          className={cn('cursor-pointer scroll-mt-4 rounded-xl border border-dashed border-[#f2c47a] bg-[#fff8ef] px-3 py-4 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
+          <EyeOff className="mx-auto mb-1 h-4 w-4 text-[#b67a12]" />
+          <p className="text-[11px] font-semibold text-[#b67a12]">{c.name} · 미노출</p>
+          <p className="text-[10px] text-[#c99a4e]">CVM이 비어 노출되지 않아요</p>
+        </div>
+      );
+    }
+    return (
+      <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
+        className={cn('relative cursor-pointer scroll-mt-4 rounded-xl ring-offset-2 transition', c.id === activeSel && 'ring-2 ring-[var(--ac)]')}>
+        {replaced && <span className="absolute right-1 top-1 z-10 rounded-[4px] bg-[#e59a2a] px-1.5 py-0.5 text-[9px] font-bold text-white">운영자 편성 대체</span>}
+        <CornerBlock corner={c.recSource === 'CVM 데이터 연동'
+          ? { ...c.preview, cvmFillCount: (c.preview?.cvmFillCount ?? 0) || 5, cvmFillMin: (c.preview?.cvmFillMin ?? 0) || 3 }
+          : { ...c.preview, cvmFillCount: 0 }} />
+      </div>
+    );
+  };
+  // 미리보기 순서: 고정(퀵메뉴 등) → 개인화 영역(1-1~1-3) → 운영 코너 (미팅 2026-11-23: 카테고리 칩/퀵메뉴 하위에 개인화).
+  const visibleCorners = (activeTemplate ? liveCorners : []).filter((c) => !hiddenIds.has(c.templateCornerId));
+  const fixedPrev = visibleCorners.filter((c) => c.zone === 'fixed');
+  const restPrev = visibleCorners.filter((c) => c.zone !== 'fixed');
+  const previewBody = (activeTemplate && (visibleCorners.length > 0 || personalPreview)) ? (
+    <>
+      {fixedPrev.map(renderPreviewCorner)}
+      {personalPreview}
+      {restPrev.map(renderPreviewCorner)}
+    </>
   ) : (
     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
   );
@@ -2301,47 +2532,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             } as React.CSSProperties}
           >
           <DeviceFrame width={device.w} bodyHeight={0} fillBox headerLabel={data.containerName} slim>
-                  {activeTemplate && liveCorners.length > 0 ? (
-                    /* 노출 토글로 숨긴 코너는 미리보기에서 제외(2026-11-12 사용자 요청) */
-                    liveCorners.filter((c) => !hiddenIds.has(c.templateCornerId)).map((c) => {
-                      const hidden = fbMode && c.isCvm && c.fallback === '미노출';
-                      const replaced = fbMode && c.isCvm && c.fallback === '운영자 편성으로 대체';
-                      // CVM 콘텐츠 연동 = 구좌만 넘기고 완성본은 CVM이 내려줌 → 미리보기는 '완성본 자리' 구좌로 표시
-                      const cvmContent = c.recSource === 'CVM 콘텐츠 연동' && !hidden && !replaced;
-                      if (cvmContent) {
-                        return (
-                          <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
-                            className={cn('cursor-pointer scroll-mt-4 rounded-xl border border-dashed border-[#b9a7ff] bg-[#f3f0ff] px-3 py-5 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
-                            <Sparkles className="mx-auto mb-1 h-4 w-4 text-[var(--ac)]" />
-                            <p className="text-[12px] font-bold text-[var(--ac)]">CVM 완성본 자리</p>
-                            <p className="text-[11px] text-[var(--ink4)]">구좌만 — 이미지·문구·랜딩은 CVM이 내려줘요</p>
-                          </div>
-                        );
-                      }
-                      if (hidden) {
-                        return (
-                          <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
-                            className={cn('cursor-pointer scroll-mt-4 rounded-xl border border-dashed border-[#f2c47a] bg-[#fff8ef] px-3 py-4 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
-                            <EyeOff className="mx-auto mb-1 h-4 w-4 text-[#b67a12]" />
-                            <p className="text-[11px] font-semibold text-[#b67a12]">{c.name} · 미노출</p>
-                            <p className="text-[10px] text-[#c99a4e]">CVM이 비어 노출되지 않아요</p>
-                          </div>
-                        );
-                      }
-                      return (
-                        <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
-                          className={cn('relative cursor-pointer scroll-mt-4 rounded-xl ring-offset-2 transition', c.id === activeSel && 'ring-2 ring-[var(--ac)]')}>
-                          {replaced && <span className="absolute right-1 top-1 z-10 rounded-[4px] bg-[#e59a2a] px-1.5 py-0.5 text-[9px] font-bold text-white">운영자 편성 대체</span>}
-                          {/* CVM 추천 보충 박스는 'CVM 데이터 연동'일 때만(운영자 편성·콘텐츠 연동은 숨김). 데이터 연동이면 ③ 설정 전에도 기본 3~5로 즉시 표시(2026-11-06 사용자 요청). */}
-                          <CornerBlock corner={c.recSource === 'CVM 데이터 연동'
-                            ? { ...c.preview, cvmFillCount: (c.preview?.cvmFillCount ?? 0) || 5, cvmFillMin: (c.preview?.cvmFillMin ?? 0) || 3 }
-                            : { ...c.preview, cvmFillCount: 0 }} />
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
-                  )}
+                  {previewBody}
           </DeviceFrame>
           </div>
         </div>

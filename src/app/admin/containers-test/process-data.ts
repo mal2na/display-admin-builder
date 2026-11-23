@@ -68,6 +68,8 @@ export type PTemplate = {
   id: string; name: string; conditionGroup: string | null; isDefault: boolean; status: string; corners: PCorner[];
   /** 템플릿 기본 정보 필드 */
   memo: string | null; displayOn: boolean; startAt: string | null; endAt: string | null; startAtOnApproval: boolean;
+  /** 개인화 영역(1-1~1-3) 슬롯 등록 JSON — Template.personalSlots (2026-11-23) */
+  personalSlots: string | null;
 };
 export type ProcessData = {
   containerId: string; containerName: string; containerType: string; platform: string;
@@ -107,6 +109,7 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     startAt: t.startAt ? t.startAt.toISOString() : null,
     endAt: t.endAt ? t.endAt.toISOString() : null,
     startAtOnApproval: t.startAtOnApproval ?? false,
+    personalSlots: t.personalSlots ?? null,
     corners: t.templateCorners.map((tc) => ({
       id: tc.corner.id,
       templateCornerId: tc.id,

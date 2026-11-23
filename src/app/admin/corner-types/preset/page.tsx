@@ -20,27 +20,19 @@ function imgSrc(id: string): string {
   }
 }
 
-// 리프(모양) 묶음 톤 — key 기준.
-const GROUP_TONE: Record<string, string> = {
-  'affiliate-banner': 'bg-[#D9E9FF] text-[#2E7AFF]',
-  'affiliate-triple': 'bg-[#FFE4EC] text-[#D6336C]',
-  'program': 'bg-[#FCE1EC] text-[#BE2063]',
-  'program-banner': 'bg-[#FCE1EC] text-[#BE2063]',
-  'promotion-banner-list': 'bg-[#FFE4C4] text-[#D66400]',
-  'promotion-vertical': 'bg-[#FFE4C4] text-[#D66400]',
-  'promotion-graph': 'bg-[#FFE4C4] text-[#D66400]',
-  'personal-data': 'bg-[#D5F2EC] text-[#0B8A75]',
-  'personal-point': 'bg-[#D5F2EC] text-[#0B8A75]',
-  'product-sub': 'bg-[#FFF2CC] text-[#A97A00]',
-  'product-device-banner': 'bg-[#FFF2CC] text-[#A97A00]',
-  'product-device-vertical': 'bg-[#FFF2CC] text-[#A97A00]',
-  'product-roaming': 'bg-[#FFF2CC] text-[#A97A00]',
+// 리프 톤 — 중분류(mid)별 색. 리프 키가 많아 중분류 기준으로 칠한다.
+const MID_TONE: Record<string, string> = {
+  '제휴사형': 'bg-[#D9E9FF] text-[#2E7AFF]',
+  '미션형': 'bg-[#FFE4C4] text-[#D66400]',
+  '이벤트형': 'bg-[#FFE4EC] text-[#D6336C]',
+  '혜택프로그램형': 'bg-[#FCE1EC] text-[#BE2063]',
+  '이용지원형': 'bg-[#D5F2EC] text-[#0B8A75]',
+  '상품형': 'bg-[#FFF2CC] text-[#A97A00]',
 };
 
-// 최상위 분류 톤 — 좌측 바/제목 배지/박스 배경·테두리.
+// 최상위 분류 톤 — 혜택형(단일 top).
 const TOP_TONE: Record<string, { bar: string; chip: string; box: string; border: string }> = {
   '혜택형': { bar: 'bg-[#D6336C]', chip: 'bg-[#FFE4EC] text-[#D6336C]', box: 'bg-[#FFF6F9]', border: 'border-[#F6D3DF]' },
-  '개인형': { bar: 'bg-[#0B8A75]', chip: 'bg-[#D5F2EC] text-[#0B8A75]', box: 'bg-[#F2FBF8]', border: 'border-[#CDEBE2]' },
   '상품형': { bar: 'bg-[#A97A00]', chip: 'bg-[#FFF2CC] text-[#A97A00]', box: 'bg-[#FFFBF0]', border: 'border-[#EEDFB0]' },
 };
 
@@ -79,7 +71,7 @@ export default function PresetTypeListPage() {
       </nav>
       <h1 className="text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[#1a1a1a]">코너 유형 관리(프리셋)</h1>
       <p className="mb-4 mt-1 text-[14px] text-[#697582]">
-        SB 혜택 프리셋 <b className="text-[#1a1a1a]">{totalPresets}개</b>를 <b className="text-[#1a1a1a]">혜택형 · 개인형 · 상품형</b>으로 그루핑하고, 그 아래 중분류(제휴사·프로모션형)와 모양별로 <b className="text-[#1a1a1a]">{totalLeaves}개 코너 유형</b>으로 정리했습니다. 유형마다 포함된 프리셋 이미지를 전부 보여줍니다.
+        신규 프리셋 <b className="text-[#1a1a1a]">{totalPresets}개</b>를 <b className="text-[#1a1a1a]">혜택형</b>(중분류 제휴사형·미션형·이벤트형·혜택프로그램형·이용지원형) + <b className="text-[#1a1a1a]">상품형</b>(기기 지원금·요금제·구독) 아래 레이아웃(배너형·세로형·가로형·탭형·바코드형·그래프형·좌우 리스트형)으로 묶었습니다. 총 <b className="text-[#1a1a1a]">{totalLeaves}개 유형</b>. <span className="text-[#8b949e]">※ 중분류=파일명, 레이아웃=이미지 기준. 개인화형(1-1~1-3)은 별도 유형이 아니라 이 코너들을 빌더 개인화 슬롯에 담는 사용 방식.</span>
       </p>
 
       {/* 옵션 안내 — 바코드·CTA·스와이프는 유형(구조)이 아니라 켜고 끄는 옵션(토글)이라 별도 유형으로 쪼개지 않는다 */}
@@ -133,7 +125,7 @@ export default function PresetTypeListPage() {
                     <div className="flex flex-col gap-4">
                       {mid.leaves.map((leaf) => {
                         const g = leaf.group;
-                        const tone = GROUP_TONE[g.key] ?? 'bg-[#DCE0E5] text-[#454F59]';
+                        const tone = MID_TONE[mid.name ?? ''] ?? MID_TONE[top.name] ?? 'bg-[#DCE0E5] text-[#454F59]';
                         return (
                           // 코너 유형 = 안쪽 박스(전체 경로 라벨)
                           <section key={g.key} id={g.key} className="scroll-mt-6 rounded-[14px] border border-[#e8ecef] bg-white p-4">
@@ -152,12 +144,14 @@ export default function PresetTypeListPage() {
                               </div>
                             </div>
                             <div className="grid grid-cols-[repeat(auto-fill,minmax(236px,264px))] gap-4 rounded-[12px] bg-[#eef0f6] p-4">
+                              {g.presetIds.length === 0 && (
+                                <div className="col-span-full flex items-center justify-center rounded-[10px] border border-dashed border-[#c4c9cf] bg-white/60 px-3 py-6 text-[12px] font-medium text-[#8b949e]">샘플 이미지 TBD — FO 588 케이스로 채울 예정</div>
+                              )}
                               {g.presetIds.map((id) => (
                                 <figure key={id} className="flex flex-col gap-1.5">
-                                  <div className="overflow-hidden rounded-[12px] border border-[#e0e4ea] bg-white">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={imgSrc(id)} alt={presetDesignName(id)} className="block w-full" />
-                                  </div>
+                                  {/* 신규 PNG는 이미 둥근 카드+자체 여백 포함 → 바깥 테두리 박스 없이 그대로(이중 프레임/여백 방지, 2026-11-23) */}
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={imgSrc(id)} alt={presetDesignName(id)} className="block w-full" />
                                   <figcaption className="px-0.5 text-[12px] leading-tight [word-break:keep-all]">
                                     <span className="font-medium text-[#454f59]">{presetDesignName(id)}</span>
                                     <span className="ml-1 text-[#b3b9c0]">{id}</span>
