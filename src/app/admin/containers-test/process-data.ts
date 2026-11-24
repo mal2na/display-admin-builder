@@ -24,7 +24,8 @@ function cornerIsFilled(c: any): boolean {
   }
   return false;
 }
-import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, defaultComposition, componentTypesForCorner, CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
+import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, defaultComposition, componentTypesForCorner, type Zone } from '@/lib/display-taxonomy';
+import { benefitTypes, benefitMap, sbPreviewSrc } from '@/lib/benefit-corner-types';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { getProductOptions } from '../corner-types/built-options';
 import type { PreviewCorner } from '@/components/preview/blocks';
@@ -62,8 +63,9 @@ export type PCorner = {
   /** 전시 존(Fixed/Dynamic/Semi) — 코너 리스트 밴드용(2026-10-21) */
   zone: Zone;
 };
-/** 코너 불러오기 모달용 — 코너 유형 관리의 선택 가능한 코너(+미리보기) */
-export type LibCorner = { id: string; name: string; cornerType: string; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner; bannerCount: number };
+/** 코너 불러오기 모달용 — 코너 유형 관리의 선택 가능한 코너(+미리보기)
+ *  subType = 혜택형 중분류(제휴사형·미션형…), 모달 탭/그룹 구분용. sbPreview = SB Figma 프리뷰 이미지(있으면 모달 미리보기로). */
+export type LibCorner = { id: string; name: string; cornerType: string; subType: string | null; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner; bannerCount: number; sbPreview: string | null };
 export type PTemplate = {
   id: string; name: string; conditionGroup: string | null; isDefault: boolean; status: string; corners: PCorner[];
   /** 템플릿 기본 정보 필드 */
@@ -138,24 +140,42 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     ? activeTemplateId
     : (templates.find((t) => t.isDefault)?.id ?? templates[0]?.id ?? '');
 
-  // 코너 불러오기 모달 = 코너 유형 관리(카탈로그)와 연동(2026-10-28 사용자 요청).
-  //  배치된 코너가 아니라 '등록된 코너 유형'을 불러온다 → 목록이 코너 유형 관리와 1:1. 추가 시 그 유형으로 새 코너를 만든다(addCornersFromTypes).
-  //  미리보기는 껍데기 가이드(빈 슬롯). id = cornerType.id.
-  const rawTypes = await prisma.cornerType.findMany({
-    where: { active: true, baseCategory: { in: [...CORNER_TYPES] } }, // 전시 7종만(이벤트·미션 코너 유형 제외)
-    orderBy: [{ baseCategory: 'asc' }, { typeId: 'asc' }],
-    take: 300,
+  // 코너 불러오기 모달 = SB DSP_03 '등록한 혜택형 9종' + 배너형 2종만(2026-11-24 사용자 요청: "혜택형 9개·배너형 2개만 남기고 다 지워줘").
+  //  ① 혜택형 9종 = benefitTypes() 카탈로그(preset-shape-groups SSOT). cornerType=혜택·오퍼형(기존 채우기 로직 유지)·subType=중분류(모달 탭)·sbPreview=Figma 이미지.
+  const benefitLib: LibCorner[] = benefitTypes().map((t) => {
+    const m = benefitMap(t.mid, t.layout);
+    return {
+      id: `benefit-${t.typeId}`,
+      name: `${t.mid} · ${t.layout}`,
+      cornerType: m.base,              // '혜택·오퍼형' — 빌더 채우기/미리보기 로직과 호환
+      subType: t.mid,                  // 제휴사형·이벤트형·미션형… (모달 탭·칩)
+      layout: t.layout,                // 카탈로그 레이아웃명(리스트형·출석체크형·룰렛형·캐러셀형) — 모달 접기/표시 기준
+      layoutDetail: m.detail,
+      maxItems: m.items ?? null,
+      preview: guideCornerPreview(m.base, m.detail, m.comp),
+      bannerCount: m.detail.includes('배너') ? 1 : 0,
+      sbPreview: sbPreviewSrc(t.mid, t.layout), // SB Figma 프리뷰(모달 미리보기)
+    };
   });
-  const libCorners: LibCorner[] = rawTypes.map((ct) => ({
+  //  ② 배너형 2종 = DB 배너형 코너 유형(모달에서 단일형/스와이프형으로 접힘).
+  const bannerTypes = await prisma.cornerType.findMany({
+    where: { active: true, baseCategory: '배너형' },
+    orderBy: [{ typeId: 'asc' }],
+    take: 50,
+  });
+  const bannerLib: LibCorner[] = bannerTypes.map((ct) => ({
     id: ct.id,
     name: ct.name,
-    cornerType: ct.baseCategory,
+    cornerType: ct.baseCategory, // '배너형'
+    subType: null,
     layout: ct.layout,
     layoutDetail: ct.typeDetail,
     maxItems: ct.defaultMaxItems,
     preview: guideCornerPreview(ct.baseCategory, ct.typeDetail, ct.componentType),
-    bannerCount: 0, // 배너형은 카탈로그 typeDetail(배너 단일형/스와이프형)로 이미 구분됨
+    bannerCount: /스와이프/.test(ct.typeDetail ?? '') ? 2 : 0,
+    sbPreview: null,
   }));
+  const libCorners: LibCorner[] = [...benefitLib, ...bannerLib];
 
   return {
     containerId: container.id,

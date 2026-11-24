@@ -79,6 +79,21 @@ function SlotBlock({ slot, lg }: { slot: Slot; lg: boolean }) {
       );
     case 'checks':
       return <div className="flex justify-between">{['월', '화', '수', '목', '금', '토', '일'].map((d, i) => <div key={d} className="flex flex-col items-center gap-0.5"><span className={`rounded-full ${lg ? 'h-5 w-5' : 'h-3.5 w-3.5'} ${i < 4 ? 'bg-[#3617ce]' : 'bg-[#e8ecef]'}`} /><span className={`text-[#b3b9c0] ${lg ? 'text-[9px]' : 'text-[7px]'}`}>{d}</span></div>)}</div>;
+    case 'roulette':
+      // 룰렛 돌림판 — 8등분 원판 + 상단 포인터. 당첨 결과는 런타임.
+      return (
+        <div className="flex flex-col items-center">
+          <div className={`relative ${lg ? 'h-24 w-24' : 'h-16 w-16'}`}>
+            <div
+              className="h-full w-full rounded-full"
+              style={{ background: 'conic-gradient(#efeafe 0 45deg,#d9ccff 45deg 90deg,#efeafe 90deg 135deg,#d9ccff 135deg 180deg,#efeafe 180deg 225deg,#d9ccff 225deg 270deg,#efeafe 270deg 315deg,#d9ccff 315deg 360deg)', boxShadow: 'inset 0 0 0 2px #cdbcff' }}
+            />
+            <span className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#3617ce] ${lg ? 'h-5 w-5' : 'h-3 w-3'}`} />
+            <span className={`absolute left-1/2 -top-0.5 -translate-x-1/2 border-x-transparent border-t-[#3617ce] ${lg ? 'border-x-[5px] border-t-[8px]' : 'border-x-[3px] border-t-[5px]'}`} style={{ borderStyle: 'solid', borderBottomWidth: 0 }} />
+          </div>
+          <div className={`mt-1 font-semibold text-[#8b949e] ${lg ? 'text-[10px]' : 'text-[8px]'}`}>룰렛 돌리기</div>
+        </div>
+      );
     case 'metrics':
       return <div className={lg ? 'space-y-2' : 'space-y-1'}>{['잔여 혜택', '예정 혜택'].map((m) => <div key={m} className="flex items-center justify-between"><span className={`text-[#697582] ${lg ? 'text-[12px]' : 'text-[10px]'}`}>Label</span><span className={`font-bold text-[#1a1a1a] ${lg ? 'text-[12px]' : 'text-[10px]'}`}>00</span></div>)}</div>;
     default:

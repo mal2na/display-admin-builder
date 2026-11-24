@@ -5,7 +5,7 @@ import path from 'path';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Database, Lock, ChevronLeft, Info } from 'lucide-react';
-import { benefitTypeByKey, cornerAttrs, benefitGuide } from '@/lib/benefit-corner-types';
+import { benefitTypeByKey, cornerAttrSpec, benefitGuide } from '@/lib/benefit-corner-types';
 import { presetDesignName } from '@/components/preview/preset-design-card';
 import { BenefitCornerPreview } from '../../benefit-corner-preview';
 
@@ -87,46 +87,64 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
                 </span>
               </InfoRow>
               <InfoRow label="등록 프리셋">{t.presetIds.length}개</InfoRow>
-              <InfoRow label="사용여부"><span className="inline-flex items-center gap-1 font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span></InfoRow>
-              <InfoRow label="승인상태"><span className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[12px] font-semibold text-emerald-700">승인완료</span></InfoRow>
+              <InfoRow label="사용여부">{t.unused
+                ? <span className="inline-flex items-center gap-1.5 font-semibold text-[#8b949e]"><span className="h-1.5 w-1.5 rounded-full bg-[#b3b9c0]" />미사용 <span className="text-[12px] font-normal text-[#b3b9c0]">· Figma 최종본 미포함(프리셋 보존용)</span></span>
+                : <span className="inline-flex items-center gap-1 font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span>}</InfoRow>
+              <InfoRow label="승인상태">{t.unused
+                ? <span className="inline-flex items-center rounded-md border border-[#dce0e5] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#8b949e]">안씀</span>
+                : <span className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[12px] font-semibold text-emerald-700">승인완료</span>}</InfoRow>
               <InfoRow label="최근 수정자">김마리나</InfoRow>
               <InfoRow label="최근 수정일시"><span className="text-[#697582]">2026-11-23 10:21</span></InfoRow>
             </div>
           </section>
 
-          {/* 코너 속성 — 코너 카드에 들어가는 항목 + 옵션 표시(상단 이미지·CTA·카테고리 등 = 옵션) */}
+          {/* 코너 속성 / 컴포넌트 요소 — 기획(SB DSP_03) 기준 On/Off 가능 항목 + 의존 규칙(2026-11-24). 실제 On/Off는 전시 빌더에서. */}
           {(() => {
-            const attrs = cornerAttrs(t.mid, t.layout);
-            const Tag = ({ option }: { option: boolean }) => option
-              ? <span className="inline-flex items-center rounded-full bg-[#eef0ff] px-2 py-0.5 text-[11px] font-bold text-[#3617ce]">옵션</span>
-              : <span className="inline-flex items-center rounded-full bg-[#eef0f2] px-2 py-0.5 text-[11px] font-bold text-[#697582]">필수</span>;
-            const Row = ({ label, code, option }: { label: string; code: string; option: boolean }) => (
-              <div className="flex items-center gap-3 px-1 py-2.5">
+            const spec = cornerAttrSpec(t.mid, t.layout);
+            const Tag = ({ state, def }: { state: 'required' | 'toggle'; def?: boolean }) => state === 'toggle'
+              ? <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#eef0ff] px-2 py-0.5 text-[11px] font-bold text-[#3617ce]">On/Off<span className="font-medium text-[#8b9bf5]">· 기본 {def ? 'On' : 'Off'}</span></span>
+              : <span className="inline-flex shrink-0 items-center rounded-full bg-[#eef0f2] px-2 py-0.5 text-[11px] font-bold text-[#697582]">필수</span>;
+            const Row = ({ label, code, state, default: def, note }: typeof spec.card[number]) => (
+              <div className="flex items-start gap-3 px-1 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <span className="text-[14px] font-semibold text-[#1a1a1a]">{label}</span>
-                  <span className="ml-1.5 text-[12px] text-[#b3b9c0]">({code})</span>
+                  <div>
+                    <span className="text-[14px] font-semibold text-[#1a1a1a]">{label}</span>
+                    <span className="ml-1.5 text-[12px] text-[#b3b9c0]">({code})</span>
+                  </div>
+                  {note && <div className="mt-0.5 text-[12px] leading-snug text-[#8b949e] [word-break:keep-all]">{note}</div>}
                 </div>
-                <Tag option={option} />
+                <Tag state={state} def={def} />
               </div>
             );
             return (
               <section className="mt-6 overflow-hidden rounded-[16px] border border-[#dce0e5] bg-white">
-                <div className="flex items-center gap-2 border-b border-[#f1f3f5] bg-[#f8f9fb] px-4 py-3">
-                  <span className="text-[16px] font-bold text-[#1a1a1a]">코너 속성</span>
-                  <span className="text-[12px] text-[#8b949e]">· 이 코너 유형이 쓰는 표시 항목 (상단 이미지·CTA·카테고리는 옵션)</span>
+                <div className="flex flex-wrap items-center gap-2 border-b border-[#f1f3f5] bg-[#f8f9fb] px-4 py-3">
+                  <span className="text-[16px] font-bold text-[#1a1a1a]">코너 속성 · 컴포넌트 요소</span>
+                  <span className="text-[12px] text-[#8b949e]">· 기획 기준 On/Off 가능 항목 (실제 On/Off는 전시 빌더에서)</span>
                 </div>
                 <div className="px-4 py-2">
                   <div className="rounded-md bg-[#f8f9fb] px-3 py-1.5 text-[13px] font-bold text-[#3617ce]">코너(카드) <span className="font-normal text-[#8b949e]">· 카드 전체에 1개</span></div>
                   <div className="divide-y divide-[#f1f3f5]">
-                    {attrs.card.map((a) => <Row key={a.code} {...a} />)}
+                    {spec.card.map((a) => <Row key={a.code} {...a} />)}
                   </div>
-                  {attrs.item.length > 0 && (
+                  {spec.item.length > 0 && (
                     <>
                       <div className="mt-2 rounded-md bg-[#f8f9fb] px-3 py-1.5 text-[13px] font-bold text-[#3617ce]">컴포넌트(요소) <span className="font-normal text-[#8b949e]">· 리스트에서 반복되는 카드</span></div>
                       <div className="divide-y divide-[#f1f3f5]">
-                        {attrs.item.map((a) => <Row key={a.code} {...a} />)}
+                        {spec.item.map((a) => <Row key={a.code} {...a} />)}
                       </div>
                     </>
+                  )}
+                  {/* 의존 규칙 — 빌더에서 enforce */}
+                  {spec.rules.length > 0 && (
+                    <div className="mt-3 rounded-[10px] border border-[#ffe2b8] bg-[#fff8ee] px-3 py-2.5">
+                      <div className="mb-1 text-[12px] font-bold text-[#B45309]">노출 규칙 (빌더 적용)</div>
+                      <ul className="space-y-1">
+                        {spec.rules.map((r) => (
+                          <li key={r} className="flex gap-1.5 text-[12.5px] leading-snug text-[#7c5410] [word-break:keep-all]"><span className="text-[#d89a3c]">•</span><span>{r}</span></li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </div>
               </section>
@@ -140,11 +158,14 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
               <span className="text-[13px] text-[#8b949e]">{t.presetIds.length}개</span>
               <Link href={`/admin/corner-types/preset#${t.presetKey}`} className="ml-auto text-[13px] font-medium text-[#3617ce] hover:underline">프리셋 페이지에서 보기 ›</Link>
             </div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 p-4">
+            {/* 균일 타일 — 고정 비율(3:4) 프레임 안에 object-cover(상단 정렬). 라운드는 프레임만(이미지 자체 라운드와 겹침 방지). */}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 p-4">
               {t.presetIds.map((id) => (
-                <figure key={id} className="flex flex-col gap-1.5">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={imgSrc(id)} alt={presetDesignName(id)} className="block w-full rounded-lg border border-[#e8ecef]" />
+                <figure key={id} className="flex flex-col gap-2">
+                  <div className="aspect-[3/4] overflow-hidden rounded-[12px] border border-[#e8ecef] bg-[#f8f9fb]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imgSrc(id)} alt={presetDesignName(id)} className="h-full w-full object-cover object-top" />
+                  </div>
                   <figcaption className="px-0.5 text-[12px] leading-tight [word-break:keep-all]">
                     <span className="font-medium text-[#454f59]">{presetDesignName(id)}</span>
                     <span className="ml-1 text-[#b3b9c0]">{id}</span>

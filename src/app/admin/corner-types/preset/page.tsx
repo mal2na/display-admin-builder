@@ -101,7 +101,7 @@ export default function PresetTypeListPage() {
       </nav>
       <h1 className="text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[#1a1a1a]">코너 유형 관리(프리셋)</h1>
       <p className="mb-4 mt-1 text-[14px] text-[#697582]">
-        신규 프리셋 <b className="text-[#1a1a1a]">{totalPresets}개</b>를 <b className="text-[#1a1a1a]">혜택형</b>(중분류 제휴사형·미션형·이벤트형·혜택프로그램형·이용지원형) + <b className="text-[#1a1a1a]">상품형</b>(기기 지원금·요금제·구독) 아래 레이아웃(배너형·세로형·가로형·탭형·바코드형·그래프형·좌우 리스트형)으로 묶었습니다. 총 <b className="text-[#1a1a1a]">{totalLeaves}개 유형</b>. <span className="text-[#8b949e]">※ 중분류=파일명, 레이아웃=이미지 기준. 개인화형(1-1~1-3)은 별도 유형이 아니라 이 코너들을 빌더 개인화 슬롯에 담는 사용 방식.</span>
+        신규 프리셋 <b className="text-[#1a1a1a]">{totalPresets}개</b>를 <b className="text-[#1a1a1a]">혜택형</b>(중분류 제휴사형·미션형·이벤트형·혜택프로그램형·이용지원형) + <b className="text-[#1a1a1a]">상품형</b>(기기 지원금·요금제·구독) 아래 레이아웃(리스트형·캐러셀형·출석체크형·룰렛형·바코드형·배너형·그래프형)으로 묶었습니다. 총 <b className="text-[#1a1a1a]">{totalLeaves}개 유형</b>. <span className="text-[#8b949e]">※ 중분류=파일명, 레이아웃=이미지 기준. 개인화형(1-1~1-3)은 별도 유형이 아니라 이 코너들을 빌더 개인화 슬롯에 담는 사용 방식.</span>
       </p>
 
       {/* 분류 기준 · 원장 범례 — 중분류를 어떤 기준으로 나눴고 어떤 원장을 바라보는지 명시 */}

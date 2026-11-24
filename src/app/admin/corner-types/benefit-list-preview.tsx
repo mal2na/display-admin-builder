@@ -1,85 +1,22 @@
-// 혜택형 리스트형 공식 프리뷰(SB DSP_03) — 이벤트/미션/혜택프로그램/이용지원 4종의 필드 코드 목업(2026-11-24 사용자 제공 디자인).
-//  배너 + (추천 맥락 헤더) + {타이틀} + {Label}> + 카테고리 {Label}×5 + 아이템 3(아이콘+내용, 미션=우측 버튼) + 스와이프 점 + ⓘ Information + {Label} CTA.
-import { ImageIcon, Scan, Info } from 'lucide-react';
+// 혜택형 프리뷰 — SB DSP_03 Figma 프레임을 그대로 export한 이미지(2026-11-24).
+//  손으로 그리지 않고 Figma 원본을 2x PNG로 내려받아 사용. public/assets/sb-preview/<key>.png.
+//  유형(중분류>레이아웃)별 이미지 맵. 맵에 없는 유형은 기존 렌더러(cornerRowPreview/FullsetPreview)로 폴백.
+//  node: 제휴사27811 · 이벤트27920 · 미션(리스트)28036 · 혜택프로그램(리스트)28274 · 이용지원(리스트)28582.
 
-export type BenefitKind = '이벤트' | '미션' | '혜택 프로그램' | '이용 지원';
+// SB_PREVIEW 맵·sbPreviewSrc는 서버 공용 라이브러리로 이동(빌더 코너 불러오기 모달과 공용). 여기선 재노출만.
+export { SB_PREVIEW, sbPreviewSrc } from '@/lib/benefit-corner-types';
 
-const CFG: Record<BenefitKind, { context: boolean; circle: boolean; itemBtn: boolean }> = {
-  '이벤트': { context: true, circle: false, itemBtn: false },
-  '미션': { context: false, circle: true, itemBtn: true },
-  '혜택 프로그램': { context: true, circle: true, itemBtn: false },
-  '이용 지원': { context: false, circle: false, itemBtn: false },
-};
-
-export function kindOfMid(mid: string): BenefitKind | null {
-  if (mid === '이벤트형') return '이벤트';
-  if (mid === '미션형') return '미션';
-  if (mid === '혜택프로그램형') return '혜택 프로그램';
-  if (mid === '이용지원형') return '이용 지원';
-  return null;
-}
-
-export function BenefitListPreview({ kind, size = 'lg' }: { kind: BenefitKind; size?: 'sm' | 'lg' }) {
+// SB export 이미지 1장을 카드 프레임으로 렌더. lg=상세(300) · sm=리스트 썸네일(150).
+export function SbPreviewImage({ src, size = 'lg' }: { src: string; size?: 'sm' | 'lg' }) {
   const lg = size === 'lg';
-  const cfg = CFG[kind];
-  const t = (l: string, s: string) => (lg ? l : s);
-
   return (
-    <div className={`mx-auto overflow-hidden rounded-[18px] bg-white shadow-[0_3px_14px_rgba(20,22,40,0.10)] ${lg ? 'w-[300px]' : 'w-[150px]'}`}>
-      {/* 상단 배너 이미지 */}
-      <div className={`bg-gradient-to-b from-[#c6c3d8] via-[#dedbea] to-white ${lg ? 'h-[92px]' : 'h-[46px]'}`} />
-
-      <div className={lg ? 'px-4 pb-4 pt-1' : 'px-2.5 pb-2.5 pt-1'}>
-        {/* 추천 맥락 헤더 — 이벤트/혜택프로그램만 */}
-        {cfg.context && (
-          <div className={`mb-1 flex items-center gap-1 text-[#8b949e] ${t('text-[11px]', 'text-[8px]')}`}>
-            <Scan className={lg ? 'h-3.5 w-3.5' : 'h-2.5 w-2.5'} /><span>{'{추천 맥락 헤더(검색, 매장방문)}'}</span>
-          </div>
-        )}
-
-        {/* 타이틀(2줄) + 버튼 텍스트 */}
-        <div className={`font-bold leading-tight text-[#1a1a1a] ${t('text-[15px]', 'text-[11px]')}`}>
-          <div>{`{${kind} 타이틀`}</div>
-          <div>{`${kind} 타이틀}`}</div>
-        </div>
-        <div className={`mt-0.5 text-[#8b949e] ${t('text-[12px]', 'text-[9px]')}`}>{'{Label}'} ›</div>
-
-        {/* 카테고리 칩 */}
-        <div className={`mt-2 flex gap-1 overflow-hidden ${t('text-[11px]', 'text-[8px]')}`}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span key={i} className={`shrink-0 rounded-full border ${lg ? 'px-2.5 py-1' : 'px-1.5 py-0.5'} ${i === 0 ? 'border-[#1a1a1a] font-bold text-[#1a1a1a]' : 'border-[#e3e6ea] text-[#b3b9c0]'}`}>{'{Label}'}</span>
-          ))}
-        </div>
-
-        {/* 아이템 리스트 (3) */}
-        <div className={`mt-2 ${lg ? 'space-y-2' : 'space-y-1'}`}>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className={`flex shrink-0 items-center justify-center bg-[#f1f3f5] text-[#c4c9cf] ${cfg.circle ? 'rounded-full' : 'rounded-lg'} ${lg ? 'h-9 w-9' : 'h-6 w-6'}`}><ImageIcon className={lg ? 'h-4 w-4' : 'h-3 w-3'} /></span>
-              <div className="min-w-0 flex-1">
-                <div className={`font-bold text-[#1a1a1a] ${t('text-[13px]', 'text-[9px]')}`}>{`{${kind} 내용}`}</div>
-                <div className={`text-[#b3b9c0] ${t('text-[12px]', 'text-[8px]')}`}>{`{${kind} 내용}`}</div>
-              </div>
-              {cfg.itemBtn && <span className={`shrink-0 rounded-full bg-[#eceef5] font-semibold text-[#697582] ${lg ? 'px-2.5 py-1 text-[11px]' : 'px-1.5 py-0.5 text-[8px]'}`}>{'{Label}'}</span>}
-            </div>
-          ))}
-        </div>
-
-        {/* 스와이프 인디케이터 */}
-        <div className="mt-2 flex items-center justify-center gap-1">
-          <span className={`rounded-full bg-[#1a1a1a] ${lg ? 'h-1.5 w-4' : 'h-1 w-3'}`} />
-          <span className={`rounded-full bg-[#d7dbe0] ${lg ? 'h-1.5 w-1.5' : 'h-1 w-1'}`} />
-          <span className={`rounded-full bg-[#d7dbe0] ${lg ? 'h-1.5 w-1.5' : 'h-1 w-1'}`} />
-        </div>
-
-        {/* Information 성격 디스크립션 */}
-        <div className={`mt-2 flex items-center gap-1.5 font-medium text-[#3617ce] ${t('text-[13px]', 'text-[8px]')}`}>
-          <Info className={lg ? 'h-4 w-4' : 'h-2.5 w-2.5'} /><span>{'{Information 성격 디스크립션}'}</span>
-        </div>
-
-        {/* 하단 CTA */}
-        <div className={`mt-2 rounded-lg border border-[#dce0e5] text-center font-bold text-[#1a1a1a] ${lg ? 'py-2.5 text-[13px]' : 'py-1.5 text-[9px]'}`}>{'{Label}'}</div>
-      </div>
+    <div className={`mx-auto ${lg ? 'w-[300px]' : 'w-[150px]'}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt="코너 프리뷰"
+        className={`block w-full ${lg ? 'rounded-[20px] shadow-[0_8px_26px_-14px_rgba(20,22,40,0.22)]' : 'rounded-[14px] shadow-[0_4px_14px_-8px_rgba(20,22,40,0.2)]'}`}
+      />
     </div>
   );
 }

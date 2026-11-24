@@ -36,6 +36,7 @@ function benefitRows(): BenefitTypeRow[] {
     presetKey: t.presetKey,
     updatedBy: '김마리나',
     updatedAt: '2026-11-23 10:21',
+    unused: t.unused,
   }));
 }
 
