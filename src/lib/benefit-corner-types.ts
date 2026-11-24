@@ -88,10 +88,11 @@ export function fullsetSlots(mid: string, layout: string): Slot[] {
       return [title, buttonText, { kind: 'items', label: '제휴사 아이템', note: itemSource }, { kind: 'barcode', label: '멤버십 바코드', note: '런타임 발급' }];
     case '미션형 > 세로형':
       return [title, buttonText, { kind: 'items', label: '미션 아이템', note: itemSource }, cta];
+    // 둘 다 출석체크 미션(쉐입만 다름): 진행바형=누적 게이지, 출석체크형=요일 도장.
     case '미션형 > 진행바형':
-      return [title, buttonText, { kind: 'progress', label: '진행바(게이지)', note: '누적 진행 + 마일스톤' }, { kind: 'reward', label: '보상 아이템', note: '보상명 + 조건 + 받기 버튼' }];
+      return [title, buttonText, { kind: 'progress', label: '출석 진행바(게이지)', note: '누적 출석 + 보상 마일스톤' }, { kind: 'reward', label: '보상 아이템', note: '보상명 + 조건 + 받기 버튼' }];
     case '미션형 > 출석체크형':
-      return [title, buttonText, { kind: 'checks', label: '요일 체크', note: '출석 도장' }, { kind: 'reward', label: '보상 아이템', note: '보상명 + 조건 + 받기 버튼' }];
+      return [title, buttonText, { kind: 'checks', label: '출석 요일 체크', note: '출석 도장' }, { kind: 'reward', label: '보상 아이템', note: '보상명 + 조건 + 받기 버튼' }];
     case '이벤트형 > 세로형':
       return [title, buttonText, { kind: 'items', label: '이벤트 아이템', note: '어드민 프로모션' }];
     case '이벤트형 > 좌우 리스트형':

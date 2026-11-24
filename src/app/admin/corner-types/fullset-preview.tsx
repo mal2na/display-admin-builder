@@ -62,7 +62,21 @@ function SlotBlock({ slot, lg }: { slot: Slot; lg: boolean }) {
     case 'barcode':
       return <div className="rounded-lg bg-[#f8f9fb] p-2"><div className={lg ? 'h-10' : 'h-7'} style={{ backgroundImage: 'repeating-linear-gradient(90deg,#1a1a1a 0 2px,transparent 2px 5px)' }} /><div className={`mt-1 text-center tracking-[0.2em] text-[#b3b9c0] ${lg ? 'text-[10px]' : 'text-[8px]'}`}>BarcodeValue</div></div>;
     case 'progress':
-      return <div><div className="h-2 overflow-hidden rounded-full bg-[#e8ecef]"><div className="h-2 w-1/2 rounded-full bg-[#3617ce]" /></div><div className={`mt-1 flex justify-between text-[#b3b9c0] ${lg ? 'text-[10px]' : 'text-[8px]'}`}><span>0P</span><span>100P</span><span>200P</span><span>300P</span></div></div>;
+      // 출석 누적 게이지 — "출석 N일차" + 0일/10일/20일/한달 → 0P/100P/200P/300P 마일스톤.
+      return (
+        <div>
+          <div className={`mb-1.5 font-bold text-[#1a1a1a] ${lg ? 'text-[13px]' : 'text-[10px]'}`}>출석 <span className="text-[#3617ce]">18</span>일차</div>
+          <div className="h-2 overflow-hidden rounded-full bg-[#e8ecef]"><div className="h-full rounded-full bg-[#3617ce]" style={{ width: '55%' }} /></div>
+          <div className={`mt-1 grid grid-cols-4 ${lg ? 'text-[9px]' : 'text-[8px]'}`}>
+            {[['0일', '0P'], ['10일', '100P'], ['20일', '200P'], ['한달', '300P']].map(([d, p]) => (
+              <div key={d} className="flex flex-col items-center leading-tight">
+                <span className="text-[#b3b9c0]">{d}</span>
+                <span className="font-semibold text-[#454f59]">{p}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
     case 'checks':
       return <div className="flex justify-between">{['월', '화', '수', '목', '금', '토', '일'].map((d, i) => <div key={d} className="flex flex-col items-center gap-0.5"><span className={`rounded-full ${lg ? 'h-5 w-5' : 'h-3.5 w-3.5'} ${i < 4 ? 'bg-[#3617ce]' : 'bg-[#e8ecef]'}`} /><span className={`text-[#b3b9c0] ${lg ? 'text-[9px]' : 'text-[7px]'}`}>{d}</span></div>)}</div>;
     case 'metrics':
