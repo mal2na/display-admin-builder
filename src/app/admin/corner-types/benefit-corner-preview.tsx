@@ -4,6 +4,7 @@
 import { DevicePreview, cornerRowPreview, EMPTY_CORNER_TYPE, type CornerTypeRow } from './corner-type-manager';
 import { benefitMap, fullsetSlots } from '@/lib/benefit-corner-types';
 import { FullsetPreview } from './fullset-preview';
+import { BenefitListPreview, kindOfMid } from './benefit-list-preview';
 
 export function benefitCornerRow(mid: string, layout: string, typeId: string, name: string): CornerTypeRow {
   const m = benefitMap(mid, layout);
@@ -23,6 +24,12 @@ export function benefitCornerRow(mid: string, layout: string, typeId: string, na
 //  render:'image'(기존 렌더러에 없는 레이아웃=출석체크·진행바·좌우리스트)면 실제 프리셋 설계 이미지를 썸네일로.
 export function BenefitCornerPreview({ mid, layout, typeId, name, variant, image }: { mid: string; layout: string; typeId: string; name: string; variant: 'list' | 'detail'; image?: string | null }) {
   const m = benefitMap(mid, layout);
+
+  // 리스트형 — SB 공식 프리뷰(이벤트/미션/혜택프로그램/이용지원)로 렌더(2026-11-24).
+  const sbKind = layout === '리스트형' ? kindOfMid(mid) : null;
+  if (sbKind) {
+    return <BenefitListPreview kind={sbKind} size={variant === 'list' ? 'sm' : 'lg'} />;
+  }
 
   // 기존 CornerBlock에 없는 레이아웃(진행바·출석체크·좌우리스트) → 전용 껍데기 목업(필드 코드 + 위젯).
   if (m.render === 'special') {

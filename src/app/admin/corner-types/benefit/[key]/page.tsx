@@ -4,8 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Database, Lock, ChevronLeft } from 'lucide-react';
-import { benefitTypeByKey, cornerAttrs } from '@/lib/benefit-corner-types';
+import { Database, Lock, ChevronLeft, Info } from 'lucide-react';
+import { benefitTypeByKey, cornerAttrs, benefitGuide } from '@/lib/benefit-corner-types';
 import { presetDesignName } from '@/components/preview/preset-design-card';
 import { BenefitCornerPreview } from '../../benefit-corner-preview';
 
@@ -76,6 +76,11 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
               <InfoRow label="코너 유형"><span className={`${CHIP} bg-[#FFE4EC] text-[#D6336C]`}>혜택형</span></InfoRow>
               <InfoRow label="중분류"><span className="text-[#454f59]">{t.mid}</span></InfoRow>
               <InfoRow label="배열·레이아웃">{t.layout}</InfoRow>
+              <InfoRow label="노출 규격">
+                <span className="inline-flex items-start gap-1.5 rounded-md border border-[#dbe4ff] bg-[#f3f6ff] px-2.5 py-1.5 text-[13px] leading-snug text-[#3b4a66] [word-break:keep-all]">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#3617ce]" />{benefitGuide(t.mid, t.layout)}
+                </span>
+              </InfoRow>
               <InfoRow label="바라보는 원장">
                 <span className="inline-flex items-start gap-1.5 rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-2 py-1 text-[13px] text-[#454f59]">
                   <Database className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#8b949e]" /><span className="[word-break:keep-all]">{t.source}</span>
