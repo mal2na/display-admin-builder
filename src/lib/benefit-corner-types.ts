@@ -40,6 +40,26 @@ export function benefitTypeByKey(key: string): BenefitType | undefined {
   return benefitTypes().find((t) => t.presetKey === key);
 }
 
+// 유형별 노출 규격(가이드) — SB 프리셋 정책 기준. 인디케이터·아이템 개수·옵션 규칙(2026-11-24).
+export function benefitGuide(mid: string, layout: string): string {
+  switch (layout) {
+    case '리스트형':
+      return '세로 리스트. 인디케이터(스와이프) 사용 시 아이템 3~10개, 미사용 시 고정 노출. 상단 이미지·카테고리·CTA는 옵션.';
+    case '캐러셀형':
+      return '가로 스크롤 카드. 아이템 3~10개(인디케이터 노출). 카테고리는 옵션.';
+    case '바코드형':
+      return '상단 아이템 1개 + 멤버십 바코드(값은 런타임 발급). 상단 이미지는 옵션.';
+    case '출석체크형(게이지)':
+      return '출석 누적 게이지(예: 출석 N일차) + 마일스톤 보상. 보상 아이템은 가격 없음.';
+    case '출석체크형(요일)':
+      return '요일 출석 도장(월~일) + 매 출석 보상. 보상 아이템은 가격 없음.';
+    case '좌우 리스트형':
+      return '좌우 지표(잔여·예정 등) + 하단 CTA.';
+    default:
+      return '세로 리스트. 상단 이미지·카테고리·CTA는 옵션.';
+  }
+}
+
 // 혜택형(중분류 > 레이아웃) → 기존 코너 유형 관리의 baseCategory/typeDetail/componentType 매핑.
 //  미리보기(cornerRowPreview+DevicePreview)·코너 속성(CornerFieldList)을 기존 렌더러로 그대로 그리기 위함(2026-11-23 사용자 요청).
 export function benefitMap(mid: string, layout: string): { base: string; detail: string; comp: string; barcode?: boolean; items?: number; price?: boolean; render?: 'special'; itemButton?: boolean; carousel?: boolean } {
@@ -54,8 +74,8 @@ export function benefitMap(mid: string, layout: string): { base: string; detail:
     // 출석체크형(게이지/요일)은 기존 CornerBlock에 없는 레이아웃 → 전용 껍데기 목업(진행바/요일체크 위젯).
     case '미션형 > 출석체크형(게이지)': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
     case '미션형 > 출석체크형(요일)': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
-    // 이벤트형 리스트형: 배너 없음, 카테고리 있음(0045), 가격 없음(혜택 문구).
-    case '이벤트형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)', comp: '혜택형', price: false };
+    // 이벤트형 리스트형: 배너 옵션 + 카테고리(0045), 가격 없음(혜택 문구).
+    case '이벤트형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', price: false };
     case '이벤트형 > 좌우 리스트형': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
     // 혜택프로그램 리스트형: 세로 리스트(배너·카테고리 옵션) + 스와이프 인디케이터(구 세로형+캐러셀 통합).
     case '혜택프로그램형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false, carousel: true };
