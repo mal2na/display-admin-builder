@@ -44,27 +44,25 @@ export function benefitTypeByKey(key: string): BenefitType | undefined {
 //  미리보기(cornerRowPreview+DevicePreview)·코너 속성(CornerFieldList)을 기존 렌더러로 그대로 그리기 위함(2026-11-23 사용자 요청).
 export function benefitMap(mid: string, layout: string): { base: string; detail: string; comp: string; barcode?: boolean; items?: number; price?: boolean; render?: 'special'; itemButton?: boolean; carousel?: boolean } {
   switch (`${mid} > ${layout}`) {
-    // detail = 저장값(표시 라벨 아님). '세로형+배너'=상단 이미지형. '상단 이미지형' 문자열은 noTitle 조건('이미지형')에 걸리므로 금지.
-    // 풀스펙: 상단 이미지(+배너) + 카테고리(칩) + CTA(혜택·오퍼형 세로+카테고리 → moreButton 노출).
-    case '제휴사형 > 세로형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false };
-    // 바코드형: 배너+타이틀+아이템 1개 위에 멤버십 바코드. 가격·할인율 없음(혜택 문구만).
+    // 레이아웃 = 리스트형(세로 리스트, 인디케이터 있어도) / 캐러셀형(가로 스크롤) (2026-11-24 SB DSP_03 기준).
+    //  detail은 기존 렌더러용 저장값('세로형'·'가로형'…). '상단 이미지형' 문자열은 noTitle 조건에 걸리므로 금지.
+    // 제휴사형 리스트형: 배너·카테고리 옵션, 아이템 1, 혜택 문구(가격 없음).
+    case '제휴사형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false };
     case '제휴사형 > 바코드형': return { base: '혜택형', detail: '세로형+배너', comp: '혜택형', barcode: true, items: 1, price: false };
-    // 미션형 세로형: 풀옵션(배너+카테고리+CTA) + 아이템 1개 + 아이템 우측 버튼(Label).
-    case '미션형 > 세로형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, itemButton: true, price: false };
-    // 출석체크형(게이지/요일)은 기존 CornerBlock에 없는 레이아웃 → 전용 껍데기 목업(FullsetPreview: 진행바/요일체크 위젯).
+    // 미션형 리스트형: 배너+카테고리 + 아이템 1 + 우측 버튼(Label).
+    case '미션형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, itemButton: true, price: false };
+    // 출석체크형(게이지/요일)은 기존 CornerBlock에 없는 레이아웃 → 전용 껍데기 목업(진행바/요일체크 위젯).
     case '미션형 > 출석체크형(게이지)': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
     case '미션형 > 출석체크형(요일)': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
-    // 이벤트형 세로형: 배너 없음(프리셋 0040·0041·0042·0045·0062), 카테고리 있음(0045), 가격 없음(혜택 문구).
-    case '이벤트형 > 세로형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)', comp: '혜택형', price: false };
+    // 이벤트형 리스트형: 배너 없음, 카테고리 있음(0045), 가격 없음(혜택 문구).
+    case '이벤트형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)', comp: '혜택형', price: false };
     case '이벤트형 > 좌우 리스트형': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
-    // 혜택프로그램 세로형: 배너 있음(0007·0047~49), 카테고리 있음(0050·0055·0060), 혜택 브랜드 문구(가격 없음).
-    case '혜택프로그램형 > 세로형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false };
-    // 가로형: 카테고리 + 가로 카드. 상단 배너 없음(프리셋 0035·0036 기준).
-    case '혜택프로그램형 > 가로형': return { base: '혜택·오퍼형', detail: '가로형(카테고리형)', comp: '상품형' };
-    // 캐러셀형: 세로 리스트(혜택 문구 + 브랜드)를 스와이프하는 캐러셀. 배너·카테고리·가격 없음 + 스와이프 점.
-    case '혜택프로그램형 > 캐러셀형': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', price: false, carousel: true };
-    // 이용지원형은 상단 이미지(배너) 없음 — 카테고리·CTA만, 가격 없음(안내).
-    case '이용지원형 > 세로형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)', comp: '혜택형', items: 1, price: false };
+    // 혜택프로그램 리스트형: 세로 리스트(배너·카테고리 옵션) + 스와이프 인디케이터(구 세로형+캐러셀 통합).
+    case '혜택프로그램형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false, carousel: true };
+    // 혜택프로그램 캐러셀형: 가로 스크롤 상품 카드(호텔·공연 가격, 카테고리). 배너 없음(0035·0036).
+    case '혜택프로그램형 > 캐러셀형': return { base: '혜택·오퍼형', detail: '가로형(카테고리형)', comp: '상품형' };
+    // 이용지원형 리스트형: 배너 없음 — 카테고리만, 가격 없음(안내).
+    case '이용지원형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)', comp: '혜택형', items: 1, price: false };
     default: return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형' };
   }
 }
