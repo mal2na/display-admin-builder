@@ -11,6 +11,7 @@ export type BenefitType = {
   source: string;      // 바라보는 원장
   presetKey: string;   // 상세 경로 key = PresetShapeGroup.key
   presetIds: string[]; // 등록된 프리셋
+  unused?: boolean;    // 안씀(미사용) — Figma 최종본에 없으나 보존(바코드형 등)
 };
 
 export function benefitTypes(): BenefitType[] {
@@ -31,6 +32,7 @@ export function benefitTypes(): BenefitType[] {
       source: g.source,
       presetKey: g.key,
       presetIds: g.presetIds,
+      unused: g.unused ?? false,
     });
   }
   return out;
@@ -48,16 +50,32 @@ export function benefitGuide(mid: string, layout: string): string {
     case '캐러셀형':
       return '가로 스크롤 카드. 아이템 3~10개(인디케이터 노출). 카테고리는 옵션.';
     case '바코드형':
-      return '상단 아이템 1개 + 멤버십 바코드(값은 런타임 발급). 상단 이미지는 옵션.';
-    case '출석체크형(게이지)':
-      return '출석 누적 게이지(예: 출석 N일차) + 마일스톤 보상. 보상 아이템은 가격 없음.';
-    case '출석체크형(요일)':
-      return '요일 출석 도장(월~일) + 매 출석 보상. 보상 아이템은 가격 없음.';
-    case '좌우 리스트형':
-      return '좌우 지표(잔여·예정 등) + 하단 CTA.';
+      return '상단 아이템 1개 + 멤버십 바코드(값은 런타임 발급). 상단 이미지는 옵션. ※ 안씀(미사용) — Figma 최종본 미포함, 프리셋 보존용.';
+    case '출석체크형':
+      return '출석 누적 게이지(예: 출석 N일차, 출석 불규칙) + 마일스톤 보상. 보상 아이템은 가격 없음.';
+    case '룰렛형':
+      return '룰렛 돌림판 + 당첨 보상. 당첨 결과는 런타임 발급. 보상 아이템은 가격 없음.';
     default:
       return '세로 리스트. 상단 이미지·카테고리·CTA는 옵션.';
   }
+}
+
+// ── SB DSP_03 Figma 프레임 export 이미지 맵(2026-11-24) — `${mid} > ${layout}` → public/assets/sb-preview/<key>.png.
+//  코너 유형 관리 미리보기 + 빌더 코너 불러오기 모달이 공용으로 쓴다(서버 모듈이라 여기에 둔다).
+export const SB_PREVIEW: Record<string, string> = {
+  '제휴사형 > 리스트형': '/assets/sb-preview/affiliate.png',       // node 27811
+  '이벤트형 > 리스트형': '/assets/sb-preview/event.png',           // node 27920
+  '미션형 > 리스트형': '/assets/sb-preview/mission.png',           // node 28036
+  '미션형 > 출석체크형': '/assets/sb-preview/attendance.png',       // node 28693
+  '미션형 > 룰렛형': '/assets/sb-preview/roulette.png',             // node 28813
+  '혜택프로그램형 > 리스트형': '/assets/sb-preview/program.png',     // node 28274
+  '혜택프로그램형 > 캐러셀형': '/assets/sb-preview/program-carousel.png', // node 28312
+  '이용지원형 > 리스트형': '/assets/sb-preview/support.png',         // node 28582
+  '이용지원형 > 캐러셀형': '/assets/sb-preview/support-carousel.png',    // node 28620
+};
+
+export function sbPreviewSrc(mid: string, layout: string): string | null {
+  return SB_PREVIEW[`${mid} > ${layout}`] ?? null;
 }
 
 // 혜택형(중분류 > 레이아웃) → 기존 코너 유형 관리의 baseCategory/typeDetail/componentType 매핑.
@@ -68,28 +86,30 @@ export function benefitMap(mid: string, layout: string): { base: string; detail:
     //  detail은 기존 렌더러용 저장값('세로형'·'가로형'…). '상단 이미지형' 문자열은 noTitle 조건에 걸리므로 금지.
     // 제휴사형 리스트형: 배너·카테고리 옵션, 아이템 1, 혜택 문구(가격 없음).
     case '제휴사형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false };
+    //  바코드형: 안씀(미사용) 보존 — Figma 최종본 미포함.
     case '제휴사형 > 바코드형': return { base: '혜택형', detail: '세로형+배너', comp: '혜택형', barcode: true, items: 1, price: false };
     // 미션형 리스트형: 배너+카테고리 + 아이템 1 + 우측 버튼(Label).
     case '미션형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, itemButton: true, price: false };
-    // 출석체크형(게이지/요일)은 기존 CornerBlock에 없는 레이아웃 → 전용 껍데기 목업(진행바/요일체크 위젯).
-    case '미션형 > 출석체크형(게이지)': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
-    case '미션형 > 출석체크형(요일)': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
+    // 미션형 출석체크형(통합)·룰렛형 — 기존 CornerBlock에 없는 레이아웃 → 전용 껍데기 목업(진행바·룰렛 위젯).
+    case '미션형 > 출석체크형': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
+    case '미션형 > 룰렛형': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
     // 이벤트형 리스트형: 배너 옵션 + 카테고리(0045), 가격 없음(혜택 문구).
     case '이벤트형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', price: false };
-    case '이벤트형 > 좌우 리스트형': return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형', render: 'special', price: false };
     // 혜택프로그램 리스트형: 세로 리스트(배너·카테고리 옵션) + 스와이프 인디케이터(구 세로형+캐러셀 통합).
     case '혜택프로그램형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false, carousel: true };
     // 혜택프로그램 캐러셀형: 가로 스크롤 상품 카드(호텔·공연 가격, 카테고리). 배너 없음(0035·0036).
     case '혜택프로그램형 > 캐러셀형': return { base: '혜택·오퍼형', detail: '가로형(카테고리형)', comp: '상품형' };
     // 이용지원형 리스트형: 배너 없음 — 카테고리만, 가격 없음(안내).
     case '이용지원형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)', comp: '혜택형', items: 1, price: false };
+    // 이용지원형 캐러셀형(신규): 가로 스크롤 카드, 카테고리, 가격 없음(안내).
+    case '이용지원형 > 캐러셀형': return { base: '혜택·오퍼형', detail: '가로형(카테고리형)', comp: '혜택형', price: false };
     default: return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형' };
   }
 }
 
 // ── 풀셋(슬롯 구성) — 상세 '코너 미리보기'를 프리셋 더미 대신 '껍데기 1벌'로 보여주기 위한 슬롯 정의(2026-11-23 사용자 요청).
 //  각 유형이 담는 구조 슬롯(배너·타이틀·버튼 텍스트·아이템·하단 CTA 등)을 라벨과 함께 한 벌만 노출한다.
-export type SlotKind = 'banner' | 'title' | 'buttonText' | 'items' | 'reward' | 'cta' | 'barcode' | 'progress' | 'checks' | 'metrics' | 'carousel';
+export type SlotKind = 'banner' | 'title' | 'buttonText' | 'items' | 'reward' | 'cta' | 'barcode' | 'progress' | 'checks' | 'metrics' | 'carousel' | 'roulette';
 export type Slot = { kind: SlotKind; label: string; note?: string };
 
 export function fullsetSlots(mid: string, layout: string): Slot[] {
@@ -106,15 +126,14 @@ export function fullsetSlots(mid: string, layout: string): Slot[] {
       return [title, buttonText, { kind: 'items', label: '제휴사 아이템', note: itemSource }, { kind: 'barcode', label: '멤버십 바코드', note: '런타임 발급' }];
     case '미션형 > 세로형':
       return [title, buttonText, { kind: 'items', label: '미션 아이템', note: itemSource }, cta];
-    // 둘 다 출석체크 미션(쉐입만 다름): 게이지=누적 출석, 요일=요일 도장.
-    case '미션형 > 출석체크형(게이지)':
-      return [title, buttonText, { kind: 'progress', label: '출석 진행바(게이지)', note: '누적 출석 + 보상 마일스톤' }, { kind: 'reward', label: '보상 아이템', note: '보상명 + 조건 + 받기 버튼' }];
-    case '미션형 > 출석체크형(요일)':
-      return [title, buttonText, { kind: 'checks', label: '출석 요일 체크', note: '출석 도장' }, { kind: 'reward', label: '보상 아이템', note: '보상명 + 조건 + 받기 버튼' }];
+    // 출석체크형(통합) — 누적 출석 게이지 + 마일스톤 보상.
+    case '미션형 > 출석체크형':
+      return [title, buttonText, { kind: 'progress', label: '출석 진행바(게이지)', note: '누적 출석(불규칙) + 보상 마일스톤' }, { kind: 'reward', label: '보상 아이템', note: '보상명 + 조건 + 받기 버튼' }];
+    // 룰렛형(신규) — 돌림판 + 당첨 보상.
+    case '미션형 > 룰렛형':
+      return [title, buttonText, { kind: 'roulette', label: '룰렛 돌림판', note: '당첨 결과 런타임 발급' }, { kind: 'reward', label: '당첨 보상', note: '보상명 + 조건 + 받기 버튼' }];
     case '이벤트형 > 세로형':
       return [title, buttonText, { kind: 'items', label: '이벤트 아이템', note: '어드민 프로모션' }];
-    case '이벤트형 > 좌우 리스트형':
-      return [title, buttonText, { kind: 'metrics', label: '지표(좌우 리스트)', note: '잔여/예정 등' }, cta];
     case '혜택프로그램형 > 세로형':
       return [banner, title, buttonText, { kind: 'items', label: '혜택 아이템', note: itemSource }, cta];
     case '혜택프로그램형 > 가로형':
@@ -128,34 +147,70 @@ export function fullsetSlots(mid: string, layout: string): Slot[] {
   }
 }
 
-// ── 코너 속성(표시 항목) — 코너 카드에 들어가는 항목 + 옵션 표시(2026-11-23 사용자 요청).
-//  Y/N 라디오가 아니라 '필수/옵션' 태그로. 상단 이미지·CTA·카테고리 등 토글 가능한 건 옵션.
-export type AttrRow = { label: string; code: string; option: boolean };
-export type CornerAttrs = { card: AttrRow[]; item: AttrRow[] };
+// ── 코너 속성/컴포넌트 요소 — 기획(SB DSP_03) 기준 On/Off 가능 항목 + 의존 규칙(2026-11-24 전수 반영).
+//  state: 'required'(항상 노출) | 'toggle'(운영자가 On/Off). default=토글 기본값. rules=의존 규칙(빌더 enforce).
+//  핵심 규칙: ①카테고리 칩 노출 시 인디케이터 사용 불가(배타) ②액션버튼↔코너 랜딩 링크 택1 필수 ③인디케이터는 리스트 3개 이상.
+export type AttrState = 'required' | 'toggle';
+export type AttrRow = { label: string; code: string; state: AttrState; default?: boolean; note?: string };
+export type CornerAttrSpec = { card: AttrRow[]; item: AttrRow[]; rules: string[] };
 
-export function cornerAttrs(mid: string, layout: string): CornerAttrs {
+// 중분류별 '추천 맥락 헤더' 보유(이벤트/제휴사/혜택프로그램만 · 미션·이용지원 없음 — SB 프리뷰 기준).
+const CONTEXT_MIDS = new Set(['제휴사형', '이벤트형', '혜택프로그램형']);
+
+export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
   const m = benefitMap(mid, layout);
-  const d = m.detail;
-  const hasBanner = d.includes('배너');
-  const hasCategory = d.includes('카테고리');
+  const isList = layout === '리스트형';
+  const isCarousel = layout === '캐러셀형';
+  const isAttendance = layout === '출석체크형';
+  const isRoulette = layout === '룰렛형';
   const isBarcode = m.barcode === true;
-  const card: AttrRow[] = [
-    { label: '코너 타이틀', code: 'CornerTitle', option: false },
-    { label: '버튼 텍스트', code: 'ButtonText', option: false },
-  ];
-  if (hasBanner) card.push({ label: '상단 이미지', code: 'Banner', option: true });
-  if (hasCategory) card.push({ label: '카테고리', code: 'Category', option: true });
-  if (isBarcode) card.push({ label: '바코드', code: 'Barcode', option: true });
-  else card.push({ label: 'CTA', code: 'CallToAction', option: true });
-  // 아이템(반복 카드). 가격·할인율은 유형에 따라 없을 수 있다(바코드형=혜택 문구만).
-  const item: AttrRow[] = [
-    { label: '컴포넌트 이미지', code: 'ImageSrc', option: false },
-    { label: '컴포넌트 타이틀', code: 'ItemTitle', option: false },
-    { label: '서브텍스트', code: 'SubText', option: true },
-  ];
-  if (m.price !== false) {
-    item.push({ label: '가격', code: 'Price', option: true });
-    item.push({ label: '할인율', code: 'DiscountRate', option: true });
+  const listLike = isList || isCarousel;            // 반복 아이템 리스트/캐러셀
+  const hasChip = listLike;                         // 카테고리 칩(탭)
+  const hasIndicator = listLike;                    // 인디케이터(스와이프)
+  const hasContext = listLike && CONTEXT_MIDS.has(mid);
+
+  // ── 코너(카드) 공통 속성
+  const card: AttrRow[] = [{ label: '코너 타이틀', code: 'CornerTitle', state: 'required' }];
+  if (hasContext) card.push({ label: '추천 맥락 헤더', code: 'ContextHeader', state: 'toggle', default: false, note: '추천 근거(거리·검색·매장방문) 노출 · API 활동기록' });
+  card.push({ label: '상단 이미지', code: 'Image', state: 'toggle', default: false, note: '원장 이미지 또는 운영 등록 · 기본 OFF' });
+  if (hasChip) card.push({ label: '카테고리 칩(탭)', code: 'Category', state: 'toggle', default: false, note: '노출 시 인디케이터 사용 불가' });
+  if (hasIndicator) card.push({ label: '인디케이터(스와이프)', code: 'Indicator', state: 'toggle', default: false, note: '리스트 3개 이상 · 카테고리 칩과 동시 사용 불가' });
+  card.push({ label: '추가 인포메이션', code: 'Information', state: 'toggle', default: false, note: '운영 정보성 영역' });
+  card.push({ label: '코너 랜딩 링크 버튼', code: 'LandingLink', state: 'toggle', default: true, note: '액션 버튼과 택1 필수' });
+  card.push({ label: '액션 버튼(하단 CTA)', code: 'ActionButton', state: 'toggle', default: false, note: '코너 랜딩 링크와 택1 필수' });
+  if (isBarcode) card.push({ label: '바코드', code: 'Barcode', state: 'required', note: '멤버십 바코드 · 값 런타임 발급' });
+
+  // ── 컴포넌트(아이템) 요소
+  let item: AttrRow[] = [];
+  if (isAttendance) {
+    item = [
+      { label: '출석 진행(요일·게이지)', code: 'Attendance', state: 'required' },
+      { label: '보상 아이템(썸네일·보상명·조건)', code: 'Reward', state: 'required' },
+      { label: '받기 버튼', code: 'RewardButton', state: 'required' },
+    ];
+  } else if (isRoulette) {
+    item = [
+      { label: '응모 기회 지표(남은/추가)', code: 'EntryMetric', state: 'required' },
+    ];
+  } else if (listLike) {
+    item = [
+      { label: '썸네일', code: 'Thumbnail', state: 'required' },
+      { label: '명(타이틀)', code: 'ItemTitle', state: 'required' },
+      { label: '설명·내용', code: 'ItemDesc', state: 'required' },
+      { label: '상세 링크', code: 'ItemLink', state: 'required' },
+    ];
+    if (m.itemButton) item.push({ label: '우측 버튼(Label)', code: 'ItemButton', state: 'toggle', default: true });
+    if (m.price !== false) {
+      item.push({ label: '가격', code: 'Price', state: 'toggle', default: true });
+      item.push({ label: '할인율', code: 'DiscountRate', state: 'toggle', default: true });
+    }
   }
-  return { card, item };
+
+  // ── 의존 규칙(빌더 enforce)
+  const rules: string[] = [];
+  if (hasChip && hasIndicator) rules.push('카테고리 칩을 노출하면 인디케이터(스와이프)를 함께 쓸 수 없습니다 (배타).');
+  rules.push('코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).');
+  if (hasIndicator) rules.push('인디케이터는 리스트 3개 이상일 때만 사용할 수 있습니다. (사용 시 3개, 미사용 시 4개 이하 권장)');
+
+  return { card, item, rules };
 }

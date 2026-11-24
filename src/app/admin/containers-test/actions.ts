@@ -4,8 +4,9 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createCornerInstanceFromTypeId } from '../templates/actions';
+import { createCornerInstanceFromTypeId, createBenefitCornerInstance } from '../templates/actions';
 import { effectiveZone } from '@/lib/display-taxonomy';
+import { benefitTypes } from '@/lib/benefit-corner-types';
 
 export async function addTestTemplate(containerId: string, formData: FormData) {
   // 템플릿명·조건그룹은 더 이상 모달에서 받지 않는다 — 빌더(템플릿 기본 정보)에서 설정한다(2026-11-06).
@@ -57,8 +58,11 @@ export async function addCornersFromTypes(templateId: string, cornerTypeIds: str
   let order = (last?.order ?? -1) + 1;
   // 생성한 코너 id를 반환해 빌더가 '새로 추가한 코너로 포커스'할 수 있게 한다(2026-11-05 사용자 요청).
   const createdCornerIds: string[] = [];
+  const benefitByLibId = new Map(benefitTypes().map((t) => [`benefit-${t.typeId}`, t]));
   for (const typeId of cornerTypeIds) {
-    const corner = await createCornerInstanceFromTypeId(typeId);
+    // 혜택형(파생 카탈로그, id='benefit-CYH…')은 DB CornerType가 없으므로 benefitMap에서 직접 생성.
+    const bt = benefitByLibId.get(typeId);
+    const corner = bt ? await createBenefitCornerInstance(bt.mid, bt.layout) : await createCornerInstanceFromTypeId(typeId);
     await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order, zone: inheritedZone } });
     createdCornerIds.push(corner.id);
     order += 1;

@@ -18,6 +18,7 @@ import {
   type Composition,
 } from '@/lib/display-taxonomy';
 import { pickerItemByKey } from '@/lib/bss-products';
+import { benefitMap } from '@/lib/benefit-corner-types';
 
 function rp(templateId: string) {
   // 메인 빌더(containers-test/t)로 일원화 — 구 /admin/templates/[id] 라우트는 삭제됨.
@@ -626,6 +627,31 @@ export async function createCornerInstanceFromTypeId(cornerTypeId: string) {
   //  (2026-10-xx 회의: T우주 방식 — 코너에 콘텐츠를 미리 말아두지 않고, 전시화면 관리(빌더)에서 콘텐츠를 설정.)
   //  composition(JSON)이 있어도 콘텐츠는 채우지 않고 '배열·레이아웃 구조'만 가이드로 생성한다.
   await createScaffoldComponents(corner.id, def.baseCategory, scaffoldSpecFor(def.componentType, def.typeDetail, { badge: def.useBadge, image: def.useImage, price: def.usePrice, desc: def.useDesc }));
+  return corner;
+}
+
+// 혜택형(SB DSP_03) 코너 생성 — DB CornerType 없이 benefitMap(파생 카탈로그)에서 직접 껍데기 Corner를 만든다(2026-11-24 사용자 요청: 빌더에서 혜택형 불러오기).
+//  코너 유형 관리(혜택형 9종)는 preset-shape-groups SSOT 파생이라 DB row가 없으므로 별도 경로.
+export async function createBenefitCornerInstance(mid: string, layout: string) {
+  const m = benefitMap(mid, layout);
+  if (!(CORNER_TYPES as readonly string[]).includes(m.base)) throw new Error('유효한 Corner 유형이 아닙니다.');
+  const price = m.price !== false;
+  const corner = await prisma.corner.create({
+    data: {
+      name: `${mid} · ${layout}`,
+      cornerType: m.base,            // '혜택·오퍼형'
+      layoutDetail: m.detail,
+      cornerLayout: null,
+      mainTitle: null, subTitle: null, subTitleIcon: '사용안함',
+      minItems: null, maxItems: m.items ?? null,
+      sortStrategy: 'MANUAL',
+      moreButtonUse: false, moreButtonLabel: null,
+      showImage: true, showPrice: price, showBadge: false, showDesc: true,
+      sourceCornerTypeId: null,
+      userCustomizable: false,
+    },
+  });
+  await createScaffoldComponents(corner.id, m.base, scaffoldSpecFor(m.comp, m.detail, { badge: false, image: true, price, desc: true }));
   return corner;
 }
 

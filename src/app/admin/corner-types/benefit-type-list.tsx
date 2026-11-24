@@ -20,9 +20,11 @@ export type BenefitTypeRow = {
   presetKey: string;  // 상세 경로 key
   updatedBy: string;
   updatedAt: string;  // 'YYYY-MM-DD HH:mm'
+  unused?: boolean;   // 안씀(미사용) — 바코드형 등
 };
 
-const MID_ORDER = ['제휴사형', '미션형', '이벤트형', '혜택프로그램형', '이용지원형'];
+// 2026-11-24 SB DSP_03 최종 순서: 제휴사 → 이벤트 → 미션 → 혜택프로그램 → 이용지원.
+const MID_ORDER = ['제휴사형', '이벤트형', '미션형', '혜택프로그램형', '이용지원형'];
 // 중분류 텍스트 색상(칩 아님, 글자색만 구별).
 const MID_TEXT: Record<string, string> = {
   '제휴사형': 'text-[#2E7AFF]',
@@ -149,7 +151,7 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
                 <tr><td colSpan={10} className="px-3 py-10 text-center text-[#8b949e]">검색 결과가 없습니다.</td></tr>
               ) : filtered.map((r, i) => (
                 <tr key={r.typeId} onClick={() => open(r.presetKey)}
-                  className="cursor-pointer border-b border-[#f1f3f5] last:border-0 hover:bg-[#f8f9fb]">
+                  className={`cursor-pointer border-b border-[#f1f3f5] last:border-0 hover:bg-[#f8f9fb] ${r.unused ? 'opacity-60' : ''}`}>
                   <td className="px-3 py-3 align-middle tabular-nums text-[#8b949e]">{i + 1}</td>
                   <td className="whitespace-nowrap px-3 py-3 align-middle font-mono text-[12px] text-[#697582]">{r.typeId}</td>
                   <td className="px-3 py-3">
@@ -159,8 +161,12 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
                   <td className="whitespace-nowrap px-3 py-3 align-middle"><span className="inline-flex items-center rounded-md bg-[#FFE4EC] px-2 py-0.5 text-[12px] font-bold text-[#D6336C]">혜택형</span></td>
                   <td className={`whitespace-nowrap px-3 py-3 align-middle font-semibold ${MID_TEXT[r.mid] ?? 'text-[#454f59]'}`}>{r.mid}</td>
                   <td className="px-3 py-3 align-middle text-[#454f59]">{r.layout} <span className="ml-1 text-[12px] text-[#b3b9c0]">· 프리셋 {r.presetCount}</span></td>
-                  <td className="px-3 py-3 align-middle"><span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span></td>
-                  <td className="whitespace-nowrap px-3 py-3 align-middle"><span className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[12px] font-semibold text-emerald-700">승인완료</span></td>
+                  <td className="px-3 py-3 align-middle">{r.unused
+                    ? <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#8b949e]"><span className="h-1.5 w-1.5 rounded-full bg-[#b3b9c0]" />미사용</span>
+                    : <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span>}</td>
+                  <td className="whitespace-nowrap px-3 py-3 align-middle">{r.unused
+                    ? <span className="inline-flex items-center rounded-md border border-[#dce0e5] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#8b949e]">안씀</span>
+                    : <span className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[12px] font-semibold text-emerald-700">승인완료</span>}</td>
                   <td className="px-3 py-3 align-middle text-[#697582]">{r.updatedBy}</td>
                   <td className="px-3 py-3 align-middle text-[#8b949e]">{r.updatedAt}</td>
                 </tr>

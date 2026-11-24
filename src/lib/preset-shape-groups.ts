@@ -1,6 +1,7 @@
-// 코너 유형 관리(프리셋) — 신규 71 프리셋(2026/11) 기준. 혜택형 top · 중분류 고정 · 레이아웃 leaf. 기기지원금·요금제·구독=상품형(2026-11-23 사용자).
+// 코너 유형 관리(프리셋) — 신규 프리셋(2026/11) 기준. 혜택형 top(5중분류) · 상품형=별도 1뎁스 · 구분미정=보류.
+//  2026-11-24 SB DSP_03 확정: 제휴사·이벤트·미션(리스트/출석체크/룰렛)·혜택프로그램·이용지원(리스트/캐러셀). 바코드형=안씀 보존.
 //  이미지 = public/assets/preset-images/<CN-DSP-id>.png · 중분류=파일명 · 레이아웃=이미지 실측.
-export type PresetShapeGroup = { key: string; label: string; note: string; source: string; presetIds: string[] };
+export type PresetShapeGroup = { key: string; label: string; note: string; source: string; presetIds: string[]; unused?: boolean };
 
 export const PRESET_SHAPE_GROUPS: PresetShapeGroup[] = [
   {
@@ -11,11 +12,11 @@ export const PRESET_SHAPE_GROUPS: PresetShapeGroup[] = [
     presetIds: ['CN-DSP-0008', 'CN-DSP-0009', 'CN-DSP-0018', 'CN-DSP-0021', 'CN-DSP-0030', 'CN-DSP-0039', 'CN-DSP-0053', 'CN-DSP-0061', 'CN-DSP-0073'],
   },
   {
-    key: 'aff-barcode',
-    label: '혜택형 > 제휴사형 > 바코드형',
-    note: '제휴사형 · 바코드형 (3개)',
-    source: 'EPC > 제휴사 카테고리 관리 (기존 혜택 브랜드)',
-    presetIds: ['CN-DSP-0003', 'CN-DSP-0004', 'CN-DSP-0011'],
+    key: 'event-list',
+    label: '혜택형 > 이벤트형 > 리스트형',
+    note: '이벤트형 · 리스트형 (5개)',
+    source: '어드민 · 프로모션 관리',
+    presetIds: ['CN-DSP-0040', 'CN-DSP-0041', 'CN-DSP-0042', 'CN-DSP-0045', 'CN-DSP-0062'],
   },
   {
     key: 'mission-list',
@@ -25,31 +26,17 @@ export const PRESET_SHAPE_GROUPS: PresetShapeGroup[] = [
     presetIds: ['CN-DSP-0002', 'CN-DSP-0043'],
   },
   {
-    key: 'mission-progress',
-    label: '혜택형 > 미션형 > 출석체크형(게이지)',
-    note: '미션형 · 출석체크형(게이지) (1개)',
-    source: '어드민 > 내부 미션유형 (AS-IS 출석체크 · 혜택여행 스탬프 · 바로적립 · 참여적립 · 쇼핑적립 · 돈 버는 교통 · 돈 버는 설문)',
-    presetIds: ['CN-DSP-0010'],
-  },
-  {
     key: 'mission-attendance',
-    label: '혜택형 > 미션형 > 출석체크형(요일)',
-    note: '미션형 · 출석체크형(요일) (1개)',
+    label: '혜택형 > 미션형 > 출석체크형',
+    note: '미션형 · 출석체크형 (2개)',
     source: '어드민 > 내부 미션유형 (AS-IS 출석체크 · 혜택여행 스탬프 · 바로적립 · 참여적립 · 쇼핑적립 · 돈 버는 교통 · 돈 버는 설문)',
-    presetIds: ['CN-DSP-0029'],
+    presetIds: ['CN-DSP-0010', 'CN-DSP-0029'],
   },
   {
-    key: 'event-list',
-    label: '혜택형 > 이벤트형 > 리스트형',
-    note: '이벤트형 · 리스트형 (5개)',
-    source: '어드민 · 프로모션 관리',
-    presetIds: ['CN-DSP-0040', 'CN-DSP-0041', 'CN-DSP-0042', 'CN-DSP-0045', 'CN-DSP-0062'],
-  },
-  {
-    key: 'event-siderow',
-    label: '혜택형 > 이벤트형 > 좌우 리스트형',
-    note: '이벤트형 · 좌우 리스트형 (1개)',
-    source: '어드민 · 프로모션 관리',
+    key: 'mission-roulette',
+    label: '혜택형 > 미션형 > 룰렛형',
+    note: '미션형 · 룰렛형 (1개)',
+    source: '어드민 > 내부 미션유형 (AS-IS 출석체크 · 혜택여행 스탬프 · 바로적립 · 참여적립 · 쇼핑적립 · 돈 버는 교통 · 돈 버는 설문)',
     presetIds: ['CN-DSP-0026'],
   },
   {
@@ -74,24 +61,38 @@ export const PRESET_SHAPE_GROUPS: PresetShapeGroup[] = [
     presetIds: ['CN-DSP-0063', 'CN-DSP-0064', 'CN-DSP-0065', 'CN-DSP-0066', 'CN-DSP-0067', 'CN-DSP-0068'],
   },
   {
+    key: 'support-carousel',
+    label: '혜택형 > 이용지원형 > 캐러셀형',
+    note: '이용지원형 · 캐러셀형 (SB 프리셋 대기)',
+    source: '직접 입력(운영) · 앱 내 링크 (API 아님)',
+    presetIds: [],
+  },
+  {
     key: 'tbd-list',
     label: '구분 미정 > 리스트형',
     note: '구분 미정 · 리스트형 (5개)',
-    source: '구분 미정 — 재분류 검토',
+    source: '구분 미정 — 재분류 검토 (바코드형 3·4·11 = 폐지된 제휴사 바코드, 보류)',
     presetIds: ['CN-DSP-0012', 'CN-DSP-0017', 'CN-DSP-0022', 'CN-DSP-0023', 'CN-DSP-0037'],
+  },
+  {
+    key: 'tbd-barcode',
+    label: '구분 미정 > 바코드형',
+    note: '구분 미정 · 바코드형 (3개)',
+    source: '구분 미정 — 재분류 검토 (바코드형 3·4·11 = 폐지된 제휴사 바코드, 보류)',
+    presetIds: ['CN-DSP-0003', 'CN-DSP-0004', 'CN-DSP-0011'],
   },
   {
     key: 'tbd-graph',
     label: '구분 미정 > 그래프형',
     note: '구분 미정 · 그래프형 (2개)',
-    source: '구분 미정 — 재분류 검토',
+    source: '구분 미정 — 재분류 검토 (바코드형 3·4·11 = 폐지된 제휴사 바코드, 보류)',
     presetIds: ['CN-DSP-0001', 'CN-DSP-0016'],
   },
   {
     key: 'tbd-siderow',
     label: '구분 미정 > 좌우 리스트형',
     note: '구분 미정 · 좌우 리스트형 (1개)',
-    source: '구분 미정 — 재분류 검토',
+    source: '구분 미정 — 재분류 검토 (바코드형 3·4·11 = 폐지된 제휴사 바코드, 보류)',
     presetIds: ['CN-DSP-0072'],
   },
   {

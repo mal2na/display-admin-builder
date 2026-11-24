@@ -18,7 +18,7 @@ import { DeviceFrame, CornerBlock, BannerCard, type PreviewComponent } from '@/c
 import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
-import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, CORNER_TYPES, VISIBLE_CORNER_TYPES, type Zone } from '@/lib/display-taxonomy';
+import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, type Zone } from '@/lib/display-taxonomy';
 import { PRESET_SHAPE_GROUPS } from '@/lib/preset-shape-groups';
 import { presetDesignName } from '@/components/preview/preset-design-card';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Minus, Maximize2, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, AlertTriangle, Barcode } from 'lucide-react';
@@ -2186,22 +2186,25 @@ function shellLayout(c: Pick<LibCorner, 'cornerType' | 'layout' | 'layoutDetail'
 function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; onClose: () => void; onAdd: (cs: LibCorner[]) => void }) {
   const [q, setQ] = React.useState('');
   const [tab, setTab] = React.useState('전체');
-  // 상단 탭 = 코너 유형 관리의 전체 유형(7종) + 전체. 유형별 개수 표기.
-  const TABS = React.useMemo(() => ['전체', ...VISIBLE_CORNER_TYPES] as const, []);
-  // 껍데기 단위로 접기 — 같은 (유형 · 배열(상품형=가로/세로)) 는 대표 하나만. 제목도 '유형 · 배열'로 통일.
+  // 그룹 키 = 혜택형은 중분류(제휴사형·미션형…), 그 외(배너형)는 유형. 탭·칩·접기 기준.
+  const gk = (c: Pick<LibCorner, 'cornerType' | 'subType'>) => c.subType ?? c.cornerType;
+  // 껍데기 단위로 접기 — 같은 (그룹 · 배열) 는 대표 하나만. 제목도 '그룹 · 배열'로 통일.
   const shells = React.useMemo(() => {
     const seen = new Set<string>(); const out: (LibCorner & { shell: string; shellTitle: string })[] = [];
     for (const c of corners) {
-      const sl = shellLayout(c);
-      const key = `${c.cornerType}|${sl}`;
+      // 혜택형(subType)은 카탈로그 레이아웃명(리스트형·출석체크형·룰렛형…)으로 구분 — detail이 같아도 접히지 않게.
+      const sl = c.subType ? (c.layout ?? shellLayout(c)) : shellLayout(c);
+      const key = `${c.cornerType}|${c.subType ?? ''}|${sl}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      out.push({ ...c, shell: sl, shellTitle: `${c.cornerType} · ${layoutLabel(sl) || sl}` });
+      out.push({ ...c, shell: sl, shellTitle: `${c.subType ?? c.cornerType} · ${layoutLabel(sl) || sl}` });
     }
     return out;
   }, [corners]);
-  const countOf = (t: string) => (t === '전체' ? shells.length : shells.filter((c) => c.cornerType === t).length);
-  const list = shells.filter((c) => (tab === '전체' || c.cornerType === tab) && (!q || c.shellTitle.includes(q) || c.cornerType.includes(q)));
+  // 상단 탭 = 전체 + 등록된 그룹(혜택형 중분류 5 + 배너형). 유형별 개수 표기.
+  const TABS = React.useMemo(() => ['전체', ...Array.from(new Set(shells.map((c) => c.subType ?? c.cornerType)))], [shells]);
+  const countOf = (t: string) => (t === '전체' ? shells.length : shells.filter((c) => gk(c) === t).length);
+  const list = shells.filter((c) => (tab === '전체' || gk(c) === tab) && (!q || c.shellTitle.includes(q) || gk(c).includes(q)));
   // 멀티셀렉 — 체크된 코너 집합 + 우측 미리보기용 포커스
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
   const [focusId, setFocusId] = React.useState<string | null>(shells[0]?.id ?? null);
@@ -2246,7 +2249,7 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
                   {/* 두 줄 — 위: 배열(레이아웃) 굵게 · 아래: 유형 칩. '껍데기…' 안내문구 제거(2026-11-05 사용자 요청). */}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] font-bold text-[var(--ink)]">{layoutLabel(c.shell) || c.shell || c.cornerType}</span>
-                    <span className="mt-1 flex"><span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.cornerType}</span></span>
+                    <span className="mt-1 flex"><span className={cn(cornerTypeChipClass(c.cornerType), 'shrink-0')}>{c.subType ?? c.cornerType}</span></span>
                   </span>
                 </div>
               );
@@ -2268,12 +2271,16 @@ function LoadCornerModal({ corners, onClose, onAdd }: { corners: LibCorner[]; on
                 {/* 미리보기 폭 축소 — 코너 유형 관리처럼 폰 폭(최대 300px)으로 가운데 정렬(2026-11-05 사용자 요청). */}
                 <div className="rounded-[14px] border border-[var(--line2)] bg-[var(--th)] p-4">
                   <div className="mx-auto w-full max-w-[300px]">
-                    <CornerBlock corner={sel.preview} />
+                    {/* SB Figma 프리뷰가 있으면 그대로(코너 유형 관리와 동일), 없으면 빌더 껍데기 가이드 */}
+                    {sel.sbPreview
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={sel.sbPreview} alt={`${sel.subType ?? sel.cornerType} 프리뷰`} className="mx-auto block w-full rounded-[18px] shadow-[0_8px_26px_-14px_rgba(20,22,40,0.22)]" />
+                      : <CornerBlock corner={sel.preview} />}
                   </div>
                 </div>
                 <p className="mb-2 mt-5 text-[14px] font-bold text-[var(--ink)]">기본 노출 조건</p>
                 <div className="rounded-[10px] bg-[var(--th)] px-4 py-3 text-[13px] leading-relaxed text-[var(--ink2)]">
-                  <b className="text-[var(--ink3)]">WHEN</b> 코너 유형 = <b className="text-[var(--ac)]">{sel.cornerType}</b> · 껍데기(레이아웃·노출 타입)만 들어옵니다. 내용은 추가 후 <b>② 수급</b>에서 채웁니다.
+                  <b className="text-[var(--ink3)]">WHEN</b> 코너 유형 = <b className="text-[var(--ac)]">{sel.subType ?? sel.cornerType}</b> · 껍데기(레이아웃·노출 타입)만 들어옵니다. 내용은 추가 후 <b>② 수급</b>에서 채웁니다.
                 </div>
               </>
             ) : <p className="py-10 text-center text-[13px] text-[var(--ink4)]">왼쪽에서 코너를 선택하세요.</p>}
