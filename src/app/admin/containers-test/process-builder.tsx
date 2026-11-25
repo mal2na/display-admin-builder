@@ -593,8 +593,16 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const nFill = isCvmSrc ? 3 : 2; // ② 개인화 Sec 제거로 콘텐츠 설정이 2번(폴백 끼면 3번). 2026-11-25.
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
+  // 혜택형 코너는 '불러오기' 시 그 코너의 중분류 구좌만 뜨게 한다(2026-11-25 사용자 요청: 이벤트면 이벤트 구좌, 미션은 미션, 제휴사면 브랜드).
+  //  중분류는 코너명 앞 토막('이벤트형 · 리스트형' → '이벤트형')에서 파생.
+  const benefitMidKey = (() => {
+    if (corner.cornerType !== '혜택형' && corner.cornerType !== '혜택·오퍼형') return null;
+    const seg = (corner.name.split('·')[0] ?? '').trim();
+    return /형$/.test(seg) ? seg : null;
+  })();
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
-  const catalog = (isStatus ? catalogByType['상태 안내형'] : isProfile ? catalogByType['프로필형'] : catalogByType[corner.cornerType]) ?? [];
+  const catalog = (isStatus ? catalogByType['상태 안내형'] : isProfile ? catalogByType['프로필형']
+    : (benefitMidKey ? catalogByType['혜택형·' + benefitMidKey] : undefined) ?? catalogByType[corner.cornerType]) ?? [];
   const canLoad = catalog.length > 0;
   // 옵션(배너·칩·CTA) — 코너 유형이 허용하는 옵션을 빌더에서 On/Off 설정(2026-10-28 사용자: "배너·칩·CTA는 옵션, 여기서 설정").
   const optSpec = cornerFieldSpec(corner.cornerType, corner.layoutDetail ?? corner.layout);

@@ -60,14 +60,19 @@ function BannerTypePreview({ pager }: { pager?: boolean }) {
     </div>
   );
 }
-// 업무 진입형(탭형) 미리보기 — 상단 탭 칩 두 줄 느낌의 간단 껍데기.
+// 업무 진입형(탭형) 미리보기 — SB [홈]유형 탭(node 29032:27939): 아이콘 뱃지 + 라벨 pill, 라벤더 배경 2행.
 function TabTypePreview() {
+  const rows = [['4월 혜택', '혜택 줍기', '0 Week'], ['이벤트', '영화 예매', '글로벌']];
   return (
-    <div className="grid w-[150px] grid-cols-3 gap-1.5 rounded-[12px] border border-[#e3e6ea] bg-white p-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex flex-col items-center gap-1">
-          <div className="h-6 w-6 rounded-full bg-[#eef0f6]" />
-          <div className="h-1.5 w-7 rounded-full bg-[#e3e6ea]" />
+    <div className="w-[150px] space-y-1.5 rounded-[12px] bg-[#eef0ff] p-2.5">
+      {rows.map((row, ri) => (
+        <div key={ri} className="flex gap-1 overflow-hidden">
+          {row.map((t, i) => (
+            <span key={i} className="flex shrink-0 items-center gap-1 rounded-full bg-white py-1 pl-1 pr-1.5 shadow-sm">
+              <span className="h-3 w-3 shrink-0 rounded-full bg-[#3617ce]" />
+              <span className="whitespace-nowrap text-[8px] font-medium text-[#1a1a1a]">{t}</span>
+            </span>
+          ))}
         </div>
       ))}
     </div>
@@ -209,14 +214,13 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
                 <th className="px-3 py-2.5 text-left font-semibold">중분류</th>
                 <th className="px-3 py-2.5 text-left font-semibold">배열·레이아웃</th>
                 <th className="w-20 px-3 py-2.5 text-left font-semibold">사용여부</th>
-                <th className="w-28 px-3 py-2.5 text-left font-semibold">승인상태</th>
-                <th className="px-3 py-2.5 text-left font-semibold">최근 수정자</th>
-                <th className="px-3 py-2.5 text-left font-semibold">최근 수정일시</th>
+                <th className="px-3 py-2.5 text-left font-semibold">원장</th>
+                <th className="px-3 py-2.5 text-left font-semibold">등록일</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={10} className="px-3 py-10 text-center text-[#8b949e]">검색 결과가 없습니다.</td></tr>
+                <tr><td colSpan={9} className="px-3 py-10 text-center text-[#8b949e]">검색 결과가 없습니다.</td></tr>
               ) : filtered.map((r, i) => (
                 <tr key={r.typeId} onClick={() => open(r)}
                   className={`border-b border-[#f1f3f5] last:border-0 hover:bg-[#f8f9fb] ${r.presetKey ? 'cursor-pointer' : 'cursor-default'} ${r.unused ? 'opacity-60' : ''}`}>
@@ -232,11 +236,8 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
                   <td className="px-3 py-3 align-middle">{r.unused
                     ? <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#8b949e]"><span className="h-1.5 w-1.5 rounded-full bg-[#b3b9c0]" />미사용</span>
                     : <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span>}</td>
-                  <td className="whitespace-nowrap px-3 py-3 align-middle">{r.unused
-                    ? <span className="inline-flex items-center rounded-md border border-[#dce0e5] bg-[#f1f3f5] px-2 py-0.5 text-[12px] font-semibold text-[#8b949e]">안씀</span>
-                    : <span className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[12px] font-semibold text-emerald-700">승인완료</span>}</td>
-                  <td className="px-3 py-3 align-middle text-[#697582]">{r.updatedBy}</td>
-                  <td className="px-3 py-3 align-middle text-[#8b949e]">{r.updatedAt}</td>
+                  <td className="px-3 py-3 align-middle text-[#454f59]">{r.source}</td>
+                  <td className="whitespace-nowrap px-3 py-3 align-middle text-[#8b949e]">{r.updatedAt}</td>
                 </tr>
               ))}
             </tbody>

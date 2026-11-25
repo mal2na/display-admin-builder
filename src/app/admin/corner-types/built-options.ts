@@ -167,6 +167,42 @@ function benefitCatalog(): ProductOption[] {
     })),
   ];
 }
+// 혜택형 중분류별 '구좌' 카탈로그(2026-11-25 사용자 요청: 불러오기 누르면 코너의 중분류 구좌만 뜨게).
+//  제휴사형 = 제휴 브랜드(benefitCatalog 그대로). 이벤트·미션·혜택프로그램·이용지원은 각 중분류 구좌 목록.
+const EVENT_CATALOG: ProductOption[] = [
+  { key: 'ev-tday', title: '매주 받는 T DAY 데이터', brand: 'T DAY', imageUrl: null, price: null, badge: '진행중', category: '이벤트' },
+  { key: 'ev-0week', title: '0 Week 전용 특가', brand: '0 Week', imageUrl: null, price: null, badge: 'HOT', category: '이벤트' },
+  { key: 'ev-vip', title: 'VIP Pick 콕 혜택', brand: 'VIP Pick', imageUrl: null, price: null, badge: null, category: '이벤트' },
+  { key: 'ev-weekend', title: '주말 더블 적립', brand: '위켄드', imageUrl: null, price: null, badge: null, category: '이벤트' },
+];
+const MISSION_CATALOG: ProductOption[] = [
+  { key: 'ms-transport', title: '돈 버는 교통 미션', brand: '미션', imageUrl: null, price: null, badge: '진행중', category: '미션' },
+  { key: 'ms-attend', title: '출석 체크 미션', brand: '미션', imageUrl: null, price: null, badge: null, category: '미션' },
+  { key: 'ms-roulette', title: '행운 룰렛 돌리기', brand: '미션', imageUrl: null, price: null, badge: null, category: '미션' },
+  { key: 'ms-point', title: '포인트 적립 미션 모아보기', brand: '미션', imageUrl: null, price: null, badge: null, category: '미션' },
+];
+const PROGRAM_CATALOG: ProductOption[] = [
+  { key: 'pg-grade', title: 'T멤버십 등급 혜택', brand: 'T멤버십', imageUrl: null, price: null, badge: null, category: '혜택프로그램' },
+  { key: 'pg-universe', title: '우주패스 구독 혜택', brand: '우주패스', imageUrl: null, price: null, badge: null, category: '혜택프로그램' },
+  { key: 'pg-youth', title: '0 청년 요금제 혜택', brand: '0 청년', imageUrl: null, price: null, badge: null, category: '혜택프로그램' },
+  { key: 'pg-family', title: '결합가족 혜택', brand: '가족결합', imageUrl: null, price: null, badge: null, category: '혜택프로그램' },
+];
+const SUPPORT_CATALOG: ProductOption[] = [
+  { key: 'sp-datagift', title: '데이터 선물하기', brand: '이용지원', imageUrl: null, price: null, badge: null, category: '이용지원' },
+  { key: 'sp-split', title: '요금 분할납부 신청', brand: '이용지원', imageUrl: null, price: null, badge: null, category: '이용지원' },
+  { key: 'sp-pause', title: '일시정지 신청', brand: '이용지원', imageUrl: null, price: null, badge: null, category: '이용지원' },
+  { key: 'sp-roaming', title: '로밍 이용 지원', brand: '이용지원', imageUrl: null, price: null, badge: null, category: '이용지원' },
+];
+// 혜택형 중분류 → 구좌 카탈로그. 제휴사형은 제휴 브랜드(benefitCatalog).
+export function benefitCatalogByMid(mid: string): ProductOption[] {
+  switch (mid) {
+    case '이벤트형': return EVENT_CATALOG;
+    case '미션형': return MISSION_CATALOG;
+    case '혜택프로그램형': return PROGRAM_CATALOG;
+    case '이용지원형': return SUPPORT_CATALOG;
+    case '제휴사형': default: return benefitCatalog();
+  }
+}
 // 배너 카탈로그 — 배너형은 '배너 캠페인 관리'에 등록된 배너를 '가져오기'로만 채운다(2026-11-05 사용자 요청: 직접 입력 없음, 캠페인에서 가져옴).
 // 배너 카탈로그 — 배너 캠페인 관리에 등록된 배너. 불러오기 시 이미지·타이틀·이동링크(랜딩)·사이즈를 함께 끌어온다(2026-11-05 사용자 요청).
 const BANNER_CATALOG: ProductOption[] = [

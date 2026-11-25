@@ -27,7 +27,7 @@ function cornerIsFilled(c: any): boolean {
 import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, defaultComposition, componentTypesForCorner, type Zone } from '@/lib/display-taxonomy';
 import { benefitTypes, benefitMap, sbPreviewSrc, canPersonalize, operModeOf } from '@/lib/benefit-corner-types';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
-import { getProductOptions } from '../corner-types/built-options';
+import { getProductOptions, benefitCatalogByMid } from '../corner-types/built-options';
 import type { PreviewCorner } from '@/components/preview/blocks';
 import type { ProductOption } from '../corner-types/corner-type-manager';
 
@@ -232,6 +232,12 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       '프로필형': await getProductOptions('프로필형'), // 업무 진입형 프로필형 = 고객정보 한번에 가져오기(2026-11-05)
       '콘텐츠 안내형': await getProductOptions('콘텐츠 안내형'),
       '배너형': await getProductOptions('배너형'), // 배너 가져오기(배너 캠페인 관리) 카탈로그 — 누락돼 가져오기 안 되던 문제 수정(2026-11-05)
+      // 혜택형 중분류별 구좌(2026-11-25 사용자 요청: 불러오기 시 코너의 중분류 구좌만). 빌더에서 '혜택형·<중분류>' 키로 조회.
+      '혜택형·제휴사형': benefitCatalogByMid('제휴사형'),
+      '혜택형·이벤트형': benefitCatalogByMid('이벤트형'),
+      '혜택형·미션형': benefitCatalogByMid('미션형'),
+      '혜택형·혜택프로그램형': benefitCatalogByMid('혜택프로그램형'),
+      '혜택형·이용지원형': benefitCatalogByMid('이용지원형'),
     },
   };
 }
