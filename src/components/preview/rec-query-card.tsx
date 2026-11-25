@@ -20,8 +20,9 @@ export function RecQueryCard({ corner }: { corner: PreviewCorner }) {
   // 후보가 없으면 플레이스홀더 2개. 노출은 최대 2개(스펙).
   const items = (qs.length ? qs : ['{추천 질의어}', '{추천 질의어}']).slice(0, 2);
   return (
-    <section className="overflow-hidden rounded-[28px] bg-gradient-to-b from-[#eef0ff] via-[#f3f4ff] to-[#f7f8ff] px-[22px] pb-[20px] pt-[18px] font-[Pretendard,'Pretendard_Variable',-apple-system,sans-serif]">
-      {/* 질의어 칩 — 대화 스타터. 독립 버튼, 최대 2개, 1줄(20자). 라벨·아이콘 없음(2026-11-25 사용자 요청). 선택 시 AI 대화로 이동. */}
+    // 코너 배경은 투명 — 홈 배경(그라데이션) 위에 질의어 칩(버블)만 떠 보이게(2026-11-25 사용자 요청).
+    <section className="px-1 py-0.5 font-[Pretendard,'Pretendard_Variable',-apple-system,sans-serif]">
+      {/* 질의어 칩(버블) — 대화 스타터. 독립 버튼, 최대 2개, 1줄(20자). 라벨·아이콘 없음. 선택 시 AI 대화로 이동. */}
       <div className="space-y-2.5">
         {items.map((q, i) => (
           <div key={i} className="flex w-full items-center rounded-full bg-white px-4 py-3 shadow-[0_2px_10px_rgba(50,56,120,0.10)]">

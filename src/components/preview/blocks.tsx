@@ -891,11 +891,17 @@ export function DeviceFrame({
   slim = false,
   fill = false,
   fillBox = false,
+  bodyClassName,
+  footer,
 }: {
   width: number;
   bodyHeight: number | string;
   headerLabel: string;
   children: React.ReactNode;
+  /** 바디 배경 오버라이드(예: 메인홈 AI 그라데이션). 없으면 기본 톤. */
+  bodyClassName?: string;
+  /** 바디 하단 고정 영역(예: 메인홈 AI 입력바). 스크롤 바깥에 shrink-0으로 붙는다. */
+  footer?: React.ReactNode;
   /** 얇은 테두리(3px·radius30) + 좌우 8px 콘텐츠 패딩 — order3-create 레퍼런스(2026-10-21). 기본(실제 빌더)은 두꺼운 프레임 유지. */
   slim?: boolean;
   /** 부모 컬럼 높이를 flex로 꽉 채움(order3 .pv-panel .phone flex:1). 바디가 남은 높이를 차지하고 내부 스크롤. 너비는 유지. */
@@ -922,9 +928,10 @@ export function DeviceFrame({
             <div className="shrink-0 border-b bg-white px-4 py-2 text-sm font-semibold text-slate-700">{headerLabel}</div>
           </>
         )}
-        <div style={boxed ? undefined : { height: bodyHeight }} className={cn('overflow-y-auto', boxed && 'min-h-0 flex-1', slim ? 'space-y-3 bg-[#e9ebf4] px-2 py-2.5' : 'space-y-4 bg-slate-200 px-5 py-4')}>
+        <div style={boxed ? undefined : { height: bodyHeight }} className={cn('overflow-y-auto', boxed && 'min-h-0 flex-1', slim ? 'space-y-3 px-2 py-2.5' : 'space-y-4 px-5 py-4', bodyClassName ?? (slim ? 'bg-[#e9ebf4]' : 'bg-slate-200'))}>
           {children}
         </div>
+        {footer}
         {/* 하단 네비(혜택/쇼핑/마이·T⁺) 제거 — 미리보기에서 탭 UI는 빼기로(2026-11-11 사용자 요청). 탭 전환은 IA 레이어의 몫. */}
       </div>
     </div>

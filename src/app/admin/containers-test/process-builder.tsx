@@ -17,6 +17,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { DeviceFrame, CornerBlock, BannerCard, type PreviewComponent } from '@/components/preview/blocks';
 import { BenefitPreviewCard, benefitDesignKey } from '@/components/preview/benefit-card';
 import { RecQueryCard } from '@/components/preview/rec-query-card';
+import { MainHomeOfferCard } from '@/components/preview/main-home-card';
 import { benefitTypes, canPersonalize, sbPreviewSrc } from '@/lib/benefit-corner-types';
 import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
@@ -2649,9 +2650,19 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   // 코너 1개 미리보기 렌더 — 메인/전체화면 공용. (CVM 콘텐츠 자리 · 미노출 · 일반 카드)
   const renderPreviewCorner = (c: PCorner) => {
     if (!activeTemplate) return null;
+    // 메인홈 인사말 + 혜택 바코드 오퍼 — CVM 자리 placeholder 대신 SB [홈]유형 실제 카드로(2026-11-25 사용자 요청: 메인홈 UI 맞춤).
+    if (/혜택 바코드/.test(c.name) && c.preview) {
+      return (
+        <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
+          className={cn('cursor-pointer scroll-mt-4 rounded-[20px] ring-offset-2 transition', c.id === activeSel && 'ring-2 ring-[var(--ac)]')}>
+          <MainHomeOfferCard corner={c.preview} />
+        </div>
+      );
+    }
     const hidden = fbMode && c.isCvm && c.fallback === '미노출';
     const replaced = fbMode && c.isCvm && c.fallback === '운영자 편성으로 대체';
-    const cvmContent = c.recSource === 'CVM 콘텐츠 연동' && !hidden && !replaced;
+    // 메인홈 코너는 CVM이어도 '구좌 placeholder' 대신 실제 콘텐츠로 그린다(SB [홈]유형 UI 맞춤, 2026-11-25 사용자 요청).
+    const cvmContent = c.recSource === 'CVM 콘텐츠 연동' && !hidden && !replaced && !/메인홈/.test(c.name);
     if (cvmContent) {
       return (
         <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
@@ -2718,6 +2729,19 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
   );
 
+  // 메인홈(AI 어시스턴트) — SB [홈]유형 배경(연보라 그라데이션) + 하단 AI 입력바(2026-11-25 사용자 요청: 메인홈 UI 맞춤).
+  const isMainHome = /메인홈/.test(data.containerName);
+  const mainHomeBg = 'bg-gradient-to-b from-[#fcfcff] via-[#f1f3ff] to-[#e6ebfb]';
+  const mainHomeFooter = (
+    <div className="shrink-0 bg-transparent px-3 pb-3 pt-2">
+      <div className="flex items-center gap-2 rounded-full border border-[#dcdff2] bg-white px-3.5 py-2.5 shadow-[0_2px_10px_rgba(50,56,120,0.10)]">
+        <Sparkles className="h-4 w-4 shrink-0 text-[#4b59ff]" />
+        <span className="min-w-0 flex-1 truncate text-[13px] text-[#9aa0b4]">T에 대해 무엇이든 물어보세요</span>
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#6a5cff] to-[#4b59ff] text-white"><ArrowRight className="h-3.5 w-3.5" /></span>
+      </div>
+    </div>
+  );
+
   return (
     <ProductCatalogCtx.Provider value={data.catalogByType ?? {}}>
     <div className="relative flex h-full flex-col overflow-hidden rounded-t-[16px] border border-[var(--line2)] bg-white">
@@ -2779,7 +2803,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
               marginBottom: 'var(--dev-bottom)',
             } as React.CSSProperties}
           >
-          <DeviceFrame width={device.w} bodyHeight={0} fillBox headerLabel={data.containerName} slim>
+          <DeviceFrame width={device.w} bodyHeight={0} fillBox headerLabel={data.containerName} slim bodyClassName={isMainHome ? mainHomeBg : undefined} footer={isMainHome ? mainHomeFooter : undefined}>
                   {previewBody}
           </DeviceFrame>
           </div>
@@ -2800,7 +2824,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             </div>
             <div className="flex min-h-0 flex-1 justify-center overflow-auto py-1">
               <div className="h-full shrink-0" style={{ width: device.w }} onClick={(e) => e.stopPropagation()}>
-                <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim>{previewBody}</DeviceFrame>
+                <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim bodyClassName={isMainHome ? mainHomeBg : undefined} footer={isMainHome ? mainHomeFooter : undefined}>{previewBody}</DeviceFrame>
               </div>
             </div>
           </div>
