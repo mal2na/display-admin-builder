@@ -18,7 +18,7 @@ import {
   type Composition,
 } from '@/lib/display-taxonomy';
 import { pickerItemByKey } from '@/lib/bss-products';
-import { benefitMap } from '@/lib/benefit-corner-types';
+import { benefitMap, sbPreviewSrc } from '@/lib/benefit-corner-types';
 
 function rp(templateId: string) {
   // 메인 빌더(containers-test/t)로 일원화 — 구 /admin/templates/[id] 라우트는 삭제됨.
@@ -647,6 +647,8 @@ export async function createBenefitCornerInstance(mid: string, layout: string) {
       sortStrategy: 'MANUAL',
       moreButtonUse: false, moreButtonLabel: null,
       showImage: true, showPrice: price, showBadge: false, showDesc: true,
+      // SB Figma 프리뷰 이미지 경로를 코너에 저장 → 빌더 미리보기가 코너유형관리와 동일한 SB 이미지로 렌더(2026-11-25 사용자 요청).
+      sampleImageUrl: sbPreviewSrc(mid, layout),
       sourceCornerTypeId: null,
       userCustomizable: false,
     },

@@ -1,10 +1,10 @@
 'use client';
 // 혜택형 코너 유형 미리보기/속성 — 기존 코너 유형 관리의 렌더러를 '그대로' 재사용(2026-11-23 사용자 요청).
 //  혜택형(중분류·레이아웃) → 기존 baseCategory/typeDetail/componentType로 매핑 → cornerRowPreview + DevicePreview(미리보기) · CornerFieldList(코너 속성).
-import { DevicePreview, cornerRowPreview, EMPTY_CORNER_TYPE, type CornerTypeRow } from './corner-type-manager';
-import { benefitMap, fullsetSlots } from '@/lib/benefit-corner-types';
-import { FullsetPreview } from './fullset-preview';
-import { SbPreviewImage, sbPreviewSrc } from './benefit-list-preview';
+import { cornerRowPreview, EMPTY_CORNER_TYPE, type CornerTypeRow } from './corner-type-manager';
+import { benefitMap } from '@/lib/benefit-corner-types';
+import { BenefitPreviewCard, type BenefitDesign } from '@/components/preview/benefit-card';
+import type { PreviewCorner, PreviewAtom, PreviewComponent } from '@/components/preview/blocks';
 
 export function benefitCornerRow(mid: string, layout: string, typeId: string, name: string): CornerTypeRow {
   const m = benefitMap(mid, layout);
@@ -12,62 +12,56 @@ export function benefitCornerRow(mid: string, layout: string, typeId: string, na
     ...EMPTY_CORNER_TYPE,
     id: typeId, typeId, name,
     baseCategory: m.base, componentType: m.comp, typeDetail: m.detail,
-    presetDesignId: null, sampleImageUrl: null, // 스캐폴드(필드코드) 미리보기 — 설계도/이미지 아님
+    presetDesignId: null, sampleImageUrl: null,
     useMainTitle: true, useSubTitle: true, useImage: true, usePrice: m.price !== false, useDesc: true,
-    useBarcode: m.barcode ?? false, // 멤버십 바코드 옵션(바코드형) — base='혜택형'+상단이미지에서 하단 바코드
-    defaultMaxItems: m.items ?? null, // 미리보기 아이템 개수(바코드형=1)
+    useBarcode: m.barcode ?? false,
+    defaultMaxItems: m.items ?? null,
     active: true, status: 'APPROVED',
   };
 }
 
-// 기존 미리보기 — DevicePreview(cornerRowPreview). variant=list(균일 고정) | detail(패널 가득).
-//  render:'image'(기존 렌더러에 없는 레이아웃=출석체크·진행바·좌우리스트)면 실제 프리셋 설계 이미지를 썸네일로.
-export function BenefitCornerPreview({ mid, layout, typeId, name, variant, image }: { mid: string; layout: string; typeId: string; name: string; variant: 'list' | 'detail'; image?: string | null }) {
-  const m = benefitMap(mid, layout);
+const CONTEXT_MIDS = new Set(['제휴사형', '이벤트형', '혜택프로그램형']);
+const atom = (id: string, content: string): PreviewAtom => ({ id, name: content, atomType: 'TEXT', content, imageUrl: null, altText: null, linkUrl: null } as PreviewAtom);
+const comp = (id: string, componentType: string, atoms: PreviewAtom[], name = ''): PreviewComponent => ({ id, name, componentType, atoms });
 
-  // SB 공식 프리뷰 이미지가 있는 유형(제휴사/이벤트/미션/혜택프로그램/이용지원 리스트형)은 Figma export 그대로(2026-11-24).
-  const sbSrc = sbPreviewSrc(mid, layout);
-  if (sbSrc) {
-    return <SbPreviewImage src={sbSrc} size={variant === 'list' ? 'sm' : 'lg'} />;
-  }
+// 혜택형 코너 유형 미리보기 — 정적 SB 이미지가 아니라 '코드(BenefitPreviewCard)'로 렌더(2026-11-25 사용자 요청: 전부 코드).
+//  유형 상세/리스트의 '껍데기(필드 코드)' 프리뷰이므로 모든 요소를 켜 전체 구조를 보여준다.
+export function BenefitCornerPreview({ mid, layout, variant }: { mid: string; layout: string; typeId?: string; name?: string; variant: 'list' | 'detail'; image?: string | null }) {
+  const design: BenefitDesign = layout === '캐러셀형' ? 'carousel'
+    : layout === '출석체크형' ? 'attendance'
+    : layout === '룰렛형' ? 'roulette'
+    : layout === '바코드형' ? 'barcode' : 'list';
+  const square = mid === '이벤트형' || mid === '이용지원형';
+  const hasCtx = CONTEXT_MIDS.has(mid);
+  // 제휴사형·바코드형은 카피(타이틀) 밑 서브 CTA 버튼 없음 — 그 자리에 다양한 혜택이 노출(2026-11-25 SB, ButtonText hidden).
+  const hasSubCta = mid !== '제휴사형' && design !== 'barcode';
+  // 타이틀 플레이스홀더를 중분류에 맞게(제휴사/이벤트/미션/혜택 프로그램/이용 지원).
+  const tWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' } as Record<string, string>)[mid] ?? mid.replace('형', '');
 
-  // 기존 CornerBlock에 없는 레이아웃(진행바·출석체크·좌우리스트) → 전용 껍데기 목업(필드 코드 + 위젯).
-  if (m.render === 'special') {
-    return <FullsetPreview slots={fullsetSlots(mid, layout)} size={variant === 'list' ? 'sm' : 'lg'} />;
-  }
+  const iWord = ({ 제휴사형: '혜택 프로그램', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' } as Record<string, string>)[mid] ?? tWord;
+  const chips = comp('chip', '선택형', ['{Label}', '{Label}', '{Label}', '{Label}', '{Label}'].map((c, i) => atom(`c${i}`, c)));
+  // 아이템 플레이스홀더도 중분류에 맞게({미션 내용} 등). title·sub 두 아톰.
+  const items = [0, 1, 2].map((i) => comp(`it${i}`, '상품형', [atom(`t${i}`, `{${iWord} 내용}`), atom(`s${i}`, `{${iWord} 내용}`)]));
+  const corner: PreviewCorner = {
+    id: 'preview', name: '미리보기', cornerType: '혜택형', title: null, maxItems: null,
+    mainTitle: `{${tWord} 타이틀\n${tWord} 타이틀}`, subTitle: hasSubCta ? '{Label}' : null,
+    components: [chips, ...items],
+    bigBanner: true,
+    contextHeader: hasCtx,
+    information: true,
+    moreButtonUse: design !== 'barcode',
+  };
 
-  const corner = cornerRowPreview(benefitCornerRow(mid, layout, typeId, name));
-  // 미리보기 아이템 개수 제한(껍데기 가이드는 1개면 충분 등). 카테고리 칩(선택형)은 유지하고 반복 아이템 카드만 m.items개로 자른다.
-  if (m.items != null && Array.isArray(corner.components)) {
-    let n = 0;
-    corner.components = corner.components.filter((c) => {
-      if (c.componentType === '선택형') return true; // 상단 카테고리 칩 유지
-      n += 1; return n <= m.items!;
-    });
-  }
-  // 아이템 우측 버튼(Label) — 각 아이템 컴포넌트에 CTA 아톰 주입(BenefitRow가 CTA 있으면 우측 pill 렌더).
-  if (m.itemButton && Array.isArray(corner.components)) {
-    corner.components.forEach((c, i) => {
-      if (c.componentType === '선택형') return;
-      if (!c.atoms.some((a) => a.atomType === 'CTA')) c.atoms = [...c.atoms, { id: `cta-${i}`, name: 'CTA', atomType: 'CTA', content: 'Label' } as (typeof c.atoms)[number]];
-    });
-  }
-  // 캐러셀형 스와이프 인디케이터(페이지 점) — 카드 아래 노출해 '옆으로 넘길 수 있음'을 표시.
-  const Dots = () => (
-    <div className="flex items-center justify-center gap-1.5">
-      <span className="h-1.5 w-4 rounded-full bg-[#3617ce]" />
-      <span className="h-1.5 w-1.5 rounded-full bg-[#c4c9cf]" />
-      <span className="h-1.5 w-1.5 rounded-full bg-[#c4c9cf]" />
-    </div>
-  );
-
+  const itemBtn = !!benefitMap(mid, layout).itemButton; // 미션형 리스트 = 아이템 우측 {Label} pill
+  const card = <BenefitPreviewCard corner={corner} design={design} squareThumb={square} itemButton={itemBtn} />;
+  // 리스트(유형 목록 썸네일)는 zoom으로 축소 — transform scale과 달리 레이아웃 높이까지 줄어 '안 잘림'(2026-11-25 사용자 요청).
   if (variant === 'list') {
-    // 리스트 썸네일 — 고정 박스(contain 축소)만. 바깥 흰 박스 제거 → 톤 셀 위에 카드(자체 라운드·쉐도우) 1장만.
-    return <div className="pointer-events-none mx-auto flex flex-col items-center gap-2">
-      <div className={`overflow-hidden ${m.carousel ? 'h-[196px]' : 'h-[220px]'} w-[150px]`}><DevicePreview corner={corner} fit="contain" align="center-middle" /></div>
-      {m.carousel && <Dots />}
-    </div>;
+    return (
+      <div className="pointer-events-none w-[300px]" style={{ zoom: 0.5 }}>{card}</div>
+    );
   }
-  // 상세 — autoHeight. 카드(CornerBlock)가 자체 그림자를 가지므로 추가 필터 없이 그대로(필터는 스케일 카드에 비뚤게 입혀짐).
-  return <div className="flex w-full flex-col items-center gap-3"><DevicePreview corner={corner} fit="autoHeight" />{m.carousel && <Dots />}</div>;
+  return <div className="w-full">{card}</div>;
 }
+
+// cornerRowPreview는 다른 곳에서 쓰므로 import 유지(미사용 경고 방지용 no-op 참조).
+void cornerRowPreview;

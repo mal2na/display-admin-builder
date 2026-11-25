@@ -200,9 +200,11 @@ export default function PresetTypeListPage() {
                               )}
                               {g.presetIds.map((id) => (
                                 <figure key={id} className="flex flex-col gap-1.5">
-                                  {/* 신규 PNG는 이미 둥근 카드+자체 여백 포함 → 바깥 테두리 박스 없이 그대로(이중 프레임/여백 방지, 2026-11-23) */}
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img src={imgSrc(id)} alt={presetDesignName(id)} className="block w-full" />
+                                  {/* 흰 카드 안의 프리셋(디바이스 카드)에 drop-shadow — 둘 다 흰색이라 안 구분되는 문제 해결(2026-11-25 사용자 요청: 흰 배경 유지 + 프리셋에 그림자). */}
+                                  <div className="flex aspect-[5/8] items-center justify-center overflow-hidden rounded-[16px] bg-white p-3 shadow-[0_8px_26px_-10px_rgba(20,22,40,0.22)] ring-1 ring-[#eef0f4]">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={imgSrc(id)} alt={presetDesignName(id)} className="max-h-full max-w-full object-contain drop-shadow-[0_5px_16px_rgba(20,22,40,0.22)]" />
+                                  </div>
                                   <figcaption className="px-0.5 text-[12px] leading-tight [word-break:keep-all]">
                                     <span className="font-medium text-[#454f59]">{presetDesignName(id)}</span>
                                     <span className="ml-1 text-[#b3b9c0]">{id}</span>

@@ -8,8 +8,9 @@ import { cn } from '@/lib/utils';
 // 접기 상태는 AdminShell이 소유하고 prop으로 내려준다.
 export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
   return (
-    <aside className={cn('flex shrink-0 flex-col bg-[var(--bg)] transition-[width] duration-200', collapsed ? 'w-14' : 'w-[236px]')}>
-      <nav className="flex flex-1 flex-col gap-1 px-[14px] pb-6 pt-[14px]">
+    <aside className={cn('flex min-h-0 shrink-0 flex-col overflow-hidden bg-[var(--bg)] transition-[width] duration-200', collapsed ? 'w-14' : 'w-[236px]')}>
+      {/* LNB가 길어지면 내부 스크롤 — 바텀(버전)·본문을 밀지 않게(2026-11-25 사용자 요청). 스크롤바 얇게. */}
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-[14px] pb-6 pt-[14px] [scrollbar-width:thin]">
         {/* 구조도 — 전체 구조를 먼저 설명하기 위해 최상단에 배치 */}
         <NavLink href="/admin/structure" icon={<Workflow className="h-4 w-4" />} label="구조도" collapsed={collapsed} />
 

@@ -435,14 +435,26 @@ export function effectiveFallback(cornerType: string, cvmFallback: string | null
 //  Semi    : 운영자가 기간/캠페인 단위로 편성(시즌·프로모션·제휴). 수급=운영자 편성.
 //  Fixed   : 항상 그 자리, 거의 불변(메뉴성 진입). 업무 진입형·바코드형.
 //  세로 순서는 연속 밴드 고정: Dynamic(상단) → Semi → Fixed(하단). 위치 고정(pinned·퀵메뉴)은 밴드 위에 둔다.
-export const ZONES = ['dynamic', 'semi', 'fixed'] as const;
+// 2026-11-25: 코너 세팅을 '운영자 세팅존'(fixed/semi/dynamic)과 '개인화존'(personal)으로 분리.
+//  개인화존 = 코너 유형(껍데기) 여러 개 등록 → CVM/MLS가 고객마다 '어떤 코너를·어떤 콘텐츠로' 선택해 채움.
+export const ZONES = ['personal', 'dynamic', 'semi', 'fixed'] as const;
 export type Zone = (typeof ZONES)[number];
-export const ZONE_RANK: Record<Zone, number> = { dynamic: 0, semi: 1, fixed: 2 };
+export const ZONE_RANK: Record<Zone, number> = { personal: -1, dynamic: 0, semi: 1, fixed: 2 };
 export const ZONE_META: Record<Zone, { label: string; en: string; desc: string; hex: string; tone: string; bar: string; bg: string; chipBg: string; chipText: string }> = {
+  personal: { label: '개인화존', en: 'CVM/MLS 추천', desc: '코너 유형 여러 개 등록 → CVM이 고객마다 코너·콘텐츠를 골라 채움', hex: '#6D28D9', tone: 'bg-[#F2ECFB] text-[#6D28D9]', bar: '#6D28D9', bg: 'bg-[#F7F3FD]', chipBg: 'bg-[#6D28D9]', chipText: 'text-white' },
   dynamic: { label: 'Dynamic', en: '실시간 개인화', desc: 'CVM이 고객마다 순위·콘텐츠를 바꾸는 자리', hex: '#6D4AFF', tone: 'bg-[#EDE9FE] text-[#6D4AFF]', bar: '#6D4AFF', bg: 'bg-[#F6F4FF]', chipBg: 'bg-[#6D4AFF]', chipText: 'text-white' },
   semi: { label: 'Semi-fixed', en: '기간 편성', desc: '운영자가 시즌·프로모션·제휴를 기간 단위로 편성', hex: '#5B6773', tone: 'bg-[#E8ECEF] text-[#454F59]', bar: '#94A0AD', bg: 'bg-[#F8F9FB]', chipBg: 'bg-[#697582]', chipText: 'text-white' },
   fixed: { label: 'Fixed', en: '항상 고정', desc: '항상 그 자리 · 거의 불변(메뉴성 진입)', hex: '#8B949E', tone: 'bg-[#F1F3F5] text-[#697582]', bar: '#B3B9C0', bg: 'bg-[#F1F3F5]', chipBg: 'bg-[#8B949E]', chipText: 'text-white' },
 };
+
+// 개인화존 추천 로직(MLS) — 존 단위 1개 선택. image 619(상품 전시) 기준 4종. CVM/MLS 범위는 FO 협의로 조정될 수 있음(2026-11-25 미팅).
+export const MLS_REC_LOGICS = [
+  '[MLS] 고객정보 기반 추천',
+  '[MLS] 고객정보 기반 추천(관심사 키워드)',
+  '[MLS] 통계성(연령/성별) 기반 추천',
+  '[MLS] 실시간 고객 행동기반 추천',
+] as const;
+export type MlsRecLogic = (typeof MLS_REC_LOGICS)[number];
 
 /** 존 미지정(null) 코너의 기본 존 — 코너 성격에서 파생. CVM 수급=Dynamic, 네비/필수형=Fixed, 그 외=Semi. */
 export function deriveZone(cornerType?: string | null, recSource?: string | null): Zone {
@@ -715,7 +727,8 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   // 혜택·오퍼형 — SB v13. 가로형: 가격·할인율·기간 옵션 / 세로형: 이미지·타이틀·서브텍스트 고정.
   //  칩은 옵션에서 제외(2026-11-06 사용자 확정) → 카테고리형 전용 배열로 분리(가로형/세로형(카테고리형)).
   '혜택·오퍼형': {
-    options: ['CTA'], minItems: 3, maxItems: 8, rows: 1,
+    // 상단 이미지(배너)·CTA 옵션 On/Off(빌더). 탭(칩)은 카테고리형 레이아웃에서 토글(2026-11-25 사용자 요청: 상단 이미지·탭·CTA 빌더 On/Off).
+    options: ['배너', 'CTA'], minItems: 3, maxItems: 8, rows: 1,
     layouts: [
       { layout: '가로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE], optional: [PRICE, DISCOUNT, PERIOD] },
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE, SUBTITLE_ITEM] },
@@ -729,7 +742,7 @@ export const CORNER_TYPE_SPECS: Partial<Record<CornerType, CornerTypeSpec>> = {
   //  세로형(기본 카드) / 세로형+배너(상단 이미지형 · 멤버십 바코드 옵션 흡수) / 리스트형(적립·내역). 상품형(캐러셀·상품카드)·이벤트형은 제외.
   //  바코드는 별도 코너가 아니라 세로형+배너의 옵션(CornerType.useBarcode)으로 On/Off(2026-11-19 사용자 요청: 흡수).
   '혜택형': {
-    options: ['CTA'], minItems: 1, maxItems: 3, rows: 1,
+    options: ['배너', 'CTA'], minItems: 1, maxItems: 3, rows: 1,
     layouts: [
       { layout: '세로형', required: [CORNER_TITLE, LABEL_TEXT, ITEM_IMAGE, ITEM_TITLE], optional: [SUBTEXT, PRICE, DISCOUNT, PERIOD],
         note: '상단 이미지 없는 기본 혜택 카드(1~3개). 데이터 부족·소멸 임박 등 상황 맞춤 혜택.' },

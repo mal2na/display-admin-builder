@@ -45,7 +45,7 @@ export async function addCornersToTemplate(templateId: string, cornerIds: string
 
 // 코너 추가(코너 유형 연동) — 등록된 코너 유형(카탈로그) 각각에서 새 Corner 껍데기를 생성해 템플릿에 배치(2026-10-28 사용자 요청).
 //  '전시화면 관리'와 '코너 유형 관리'를 연동: 불러오기 목록이 카탈로그와 1:1. 내용은 빌더에서 채운다.
-export async function addCornersFromTypes(templateId: string, cornerTypeIds: string[]) {
+export async function addCornersFromTypes(templateId: string, cornerTypeIds: string[], zone?: 'personal' | 'dynamic' | 'semi' | 'fixed') {
   if (!cornerTypeIds.length) return;
   // 신규 코너는 '무조건 맨 아래'에 이어 붙이고, Fixed/Dynamic으로 새 밴드를 만들지 않는다 —
   //  마지막 코너의 '효과적 존'(저장값 없으면 유형에서 파생)을 그대로 물려받아 같은 밴드로 이어지게 한다(2026-11-05 사용자 요청).
@@ -63,7 +63,8 @@ export async function addCornersFromTypes(templateId: string, cornerTypeIds: str
     // 혜택형(파생 카탈로그, id='benefit-CYH…')은 DB CornerType가 없으므로 benefitMap에서 직접 생성.
     const bt = benefitByLibId.get(typeId);
     const corner = bt ? await createBenefitCornerInstance(bt.mid, bt.layout) : await createCornerInstanceFromTypeId(typeId);
-    await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order, zone: inheritedZone } });
+    // zone 지정 시(픽스/개인화/운영 영역에서 등록) 그 영역으로, 없으면 마지막 코너의 존 상속.
+    await prisma.templateCorner.create({ data: { templateId, cornerId: corner.id, order, zone: zone ?? inheritedZone } });
     createdCornerIds.push(corner.id);
     order += 1;
   }
@@ -89,7 +90,7 @@ export async function reorderTestCorners(templateId: string, orderedTemplateCorn
 }
 
 // 전시 존(밴드) 지정 — Fixed/Dynamic/Semi-fixed 밴드 사이로 드래그했을 때 이동한 밴드의 존으로 저장.
-export async function setTestCornerZone(templateId: string, templateCornerId: string, zone: 'dynamic' | 'semi' | 'fixed') {
+export async function setTestCornerZone(templateId: string, templateCornerId: string, zone: 'personal' | 'dynamic' | 'semi' | 'fixed') {
   await prisma.templateCorner.update({ where: { id: templateCornerId }, data: { zone } });
   revalidatePath(`/admin/containers-test/t/${templateId}`);
 }
