@@ -584,7 +584,7 @@ export const CHIP_BASE =
 // 코너 유형 → 톤. 디자인 시스템에 칩 색은 5종뿐이라 그 안에서만 배정한다(보라 없음).
 export const CORNER_TYPE_CHIP: Record<CornerType, string> = {
   상품형: 'bg-[#D9E9FF] text-[#2E7AFF]',              // info
-  배너형: 'bg-[#FFDCDC] text-[#ED3B3E]',              // negative
+  배너형: 'bg-[#E0E3FF] text-[#4B4ACF]',              // 인디고 — 혜택형(핑크)과 확실히 구분(2026-11-25 사용자 요청)
   '혜택·오퍼형': 'bg-[#FFE4C4] text-[#D66400]',        // warning
   '혜택형': 'bg-[#FFE4EC] text-[#D6336C]',             // highlight(핑크) — 혜택·오퍼형(warning)과 구분
   '업무 진입형': 'bg-[#D9E9FF] text-[#2E7AFF]',        // info

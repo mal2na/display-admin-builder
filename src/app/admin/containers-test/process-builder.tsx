@@ -543,6 +543,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const isBarcode = corner.cornerType === '바코드형';
   // 추천질의형(홈 AI) = 콘텐츠 '불러오기'가 아니라 추천 질의어를 AI로 생성/직접 입력(최대 2개·≤20자). SB [홈]유형(2026-11-25 사용자 요청).
   const isRecQuery = corner.cornerType === '업무 진입형' && /추천\s*질의/.test(`${layoutDetailStr} ${corner.name}`);
+  // 퀵메뉴(업무 진입형 카테고리 탭) = 메뉴 아이템 6+6(운영자+추천). 채우는 방식 노출 대상(프로필·상태·바코드·추천질의 제외, 2026-11-25 사용자 요청).
+  const isQuickMenu = corner.cornerType === '업무 진입형' && !isProfile && !isStatus && !isRecQuery;
   // 출석체크형·룰렛형 = '무조건 개인화'(2026-11-25 사용자 요청). 운영자 구성 선택 불가 · 자동으로 개인화로 고정.
   const forcePersonal = /(출석체크|룰렛)/.test(corner.name) && corner.canPersonal;
   // CN-DSP-0001 — 개인화 코너만 CVM/MLS 추천(맥락 헤더 노출). forcePersonal은 zone 저장 전이라도 개인화로 취급.
@@ -742,6 +744,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const detailStr = corner.layoutDetail ?? corner.layout ?? '';
   const isBenefitList = (corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형') && /세로/.test(detailStr);
   const isBenefitType = corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형';
+  // 채우는 방식(운영자 직접/운영자 고정+추천/전부 추천) 노출 대상 — 혜택형 + 퀵메뉴(업무 진입형 카테고리 탭). 후보 코너 유형은 혜택형만(2026-11-25 사용자 요청).
+  const showFillMode = isBenefitType || isQuickMenu;
   // 배너형 = '배너 캠페인 관리'에서 가져오기 전용(직접 입력 없음). 가져오기 버튼으로 등록된 배너를 담는다(2026-11-05 사용자 요청).
   const isBanner = corner.cornerType === '배너형';
   // 상품형 = 컴포넌트(아이템) 테이블을 가격 규격 컬럼으로(No·이미지·타이틀·할인율·가격·기간·서브 텍스트·경로 상세·상품 조회·삭제). 할인율/가격/기간은 상품(EPC) 원장 값(상품 조회) — 데모는 플레이스홀더. SB PG557(2026-11-17 사용자 요청).
@@ -1109,9 +1113,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
       {/* ② 코너 콘텐츠 설정 — 운영자 편성=채우기, 데이터 연동=요청+운영자 고정 앵커, 콘텐츠 연동=구좌만. 대체 노출(폴백)은 이 아래로(2026-11-25 사용자 요청). */}
       {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
         <Sec n={nFill} title={isPersonal ? '코너 콘텐츠 설정' : fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '코너 콘텐츠 설정'} hint="구성 방식을 고르고 노출할 데이터를 설정합니다">
-          {/* 채우는 방식 — 혜택형만. '개인화'를 따로 클릭하는 모드가 아니라 '어떻게 채울지'의 선택지로 통합(2026-11-25 사용자 요청).
-              운영자 직접 / 운영자 고정+추천(혼합) / 전부 추천(후보 여러 개). 출석·룰렛=전부 추천 고정, 수동 전용=운영자 직접만. */}
-          {isBenefitType && (<>
+          {/* 채우는 방식 — 혜택형 + 퀵메뉴. '개인화'를 따로 클릭하는 모드가 아니라 '어떻게 채울지'의 선택지로 통합(2026-11-25 사용자 요청).
+              운영자 직접 / 운영자 고정+추천(혼합) / 전부 추천. 출석·룰렛=전부 추천 고정, 수동 전용=운영자 직접만. */}
+          {showFillMode && (<>
           <div className="mb-4">
             <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">채우는 방식</p>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -1146,8 +1150,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 <RadioRow options={[...MLS_REC_LOGICS]} value={persoMls} onChange={setPersoMls} />
               </FormRow>
             </FormBlock>
-            {/* 후보 코너 유형 — '전부 추천'일 때만(여러 후보 중 추천이 택). '운영자 고정+추천'은 운영자가 담은 아이템 외 나머지를 추천이 채우므로 후보 선택 불필요(2026-11-25 사용자 요청). */}
-            {fillMode === '전부 추천' && (
+            {/* 후보 코너 유형 — 혜택형 '전부 추천'일 때만(여러 코너 껍데기 중 추천이 택). 퀵메뉴는 아이템 추천이라 후보 선택 없이 개수만(2026-11-25 사용자 요청). */}
+            {isBenefitType && fillMode === '전부 추천' && (
             <FormBlock title={`후보 코너 유형 · ${persoTypes.length}`}>
               <div className="px-0.5 py-2.5">
                 {persoTypes.length === 0 ? (
@@ -1188,7 +1192,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 </div>
               </FormRow>
             </FormBlock>
-            {fillMode === '전부 추천' && (
+            {isBenefitType && fillMode === '전부 추천' && (
             <div className="mt-1 flex flex-wrap items-center gap-2 rounded-[10px] border border-[#e8ddff] bg-[#faf7ff] px-3 py-2.5 text-[12px]">
               <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">후보 {persoTypes.length}개 유형</span>
               <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#b79ae8]" />
@@ -1219,8 +1223,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           </>)}
 
           {/* ── 운영자 지정 — '운영자 고정 + 추천'일 때만 라벨로 구분. '전부 추천'은 운영자 콘텐츠 없음. ── */}
-          {isBenefitType && fillMode === '운영자 고정 + 추천' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 고정 항목</p>}
-          {isBenefitType && fillMode === '전부 추천' ? null : isRecQuery ? (
+          {showFillMode && fillMode === '운영자 고정 + 추천' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 고정 항목</p>}
+          {showFillMode && fillMode === '전부 추천' ? null : isRecQuery ? (
           /* ── 추천 질의어 — AI 생성/직접 입력(최대 2개·≤20자·1줄). SB [홈]유형(2026-11-25 사용자 요청: 콘텐츠 불러오기 아님). ── */
           <div>
             <p className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#f5f1ff] px-3 py-2 text-[12px] leading-relaxed text-[#6D28D9]">
