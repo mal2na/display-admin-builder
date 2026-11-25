@@ -2734,11 +2734,12 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           <div
             className="mx-auto"
             style={{
-              // 높이=clamp(414, 가용, 800). 너비는 같은 --dev-h에 기기 비율을 곱해 산출(ratio 유도 — 하드코딩 아님).
-              //  aspect-ratio 키워드는 블록 stretch/콘텐츠 max-content에 밀려 비율이 깨지므로 calc로 결정적 산출.
-              '--dev-h': 'clamp(414px, calc(var(--sc-h, 100dvh) - var(--seg-h, 40px) - var(--gap) - var(--dev-bottom) - var(--dev-safe)), 800px)',
+              // 너비 = 기기 실제 논리 폭(예: iPhone 393px) 고정 → 콘텐츠(393px 기준 설계)가 안 잘리고 그대로 보인다(2026-11-25 사용자 요청).
+              //  높이는 가용 공간으로 clamp하고 바디만 세로 스크롤(기기 비율에 묶어 폭을 줄이던 방식 폐지 — 가로 여백 낭비·우측 클리핑 해소).
+              '--dev-h': 'clamp(414px, calc(var(--sc-h, 100dvh) - var(--seg-h, 40px) - var(--gap) - var(--dev-bottom) - var(--dev-safe)), 900px)',
               height: 'var(--dev-h)',
-              width: `calc(var(--dev-h) * ${device.w} / ${device.h})`,
+              width: `${device.w}px`,
+              maxWidth: '100%',
               marginTop: 'var(--gap)',
               marginBottom: 'var(--dev-bottom)',
             } as React.CSSProperties}
