@@ -736,7 +736,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // ③ 채우기 항목 — 칩/카테고리 On 이면 카테고리마다 별도 리스트(카테고리별 컴포넌트 연동). 아니면 단일 리스트(__flat__).
-  const chipMode = ((!!optOn['칩'] || isCategory) && chips.length > 0);
+  //  카테고리 '사용 여부'(catOn)=N이면 카테고리 구분 자체가 없으므로 단일 리스트로(2026-11-25 사용자 요청: N이면 아예 안 떠야).
+  const chipMode = ((!!optOn['칩'] || isCategory) && chips.length > 0 && catOn);
   const [activeChip, setActiveChip] = React.useState(0);
   const chipIdx = Math.min(activeChip, Math.max(0, chips.length - 1));
   const chipKey = chipMode ? `${isCategory ? 'cat' : 'chip'}:${chips[chipIdx] ?? chipIdx}` : '__flat__';
@@ -1401,7 +1402,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
               <FormRow label="사용 여부" req>
                 <RadioRow options={['Y', 'N'] as const} value={catOn ? 'Y' : 'N'} onChange={(v) => { const on = v === 'Y'; setCatOn(on); onOptionsChange({ ...optOn, ['칩']: on }, ctaLabelVal); }} />
               </FormRow>
-              {catOn && (<>
+              {/* 메뉴 테이블(이동경로·아이콘·열기방식·경로상세)은 업무진입형 '메뉴'에만 필요. 카테고리형은 탭이 컴포넌트 리스트에 바로 이어지므로 이동경로 불필요 — 칩 관리는 아래 '카테고리' 블록에서(2026-11-25 사용자 요청). */}
+              {catOn && !isCategory && (<>
                 <FormRow label="카테고리 선택" req>
                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                     <button type="button" onClick={() => setChipLoadOpen(true)} className="inline-flex h-[28px] items-center gap-1 rounded-[6px] border border-[var(--line2)] bg-white px-2.5 text-[12px] font-medium text-[var(--ink2)] hover:border-[var(--ac)] hover:text-[var(--ac)]"><Search className="h-3 w-3" /> 불러오기</button>
@@ -1475,8 +1477,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
             </FormBlock>
           )}
           {/* 인디케이터(스와이프) 폼 제거 — 리스트 코너에서 인디케이터 사용 안 함(2026-11-25 Slack 확정). */}
-          {/* 카테고리형 — 상단 카테고리 칩 관리(불러오기). 칩 선택 시 아래 컴포넌트 리스트가 그 카테고리로 전환(카테고리별 데이터 세팅, 2026-11-06 사용자 요청). */}
-          {isCategory && (
+          {/* 카테고리형 — 상단 카테고리 칩 관리(불러오기). 칩 선택 시 아래 컴포넌트 리스트가 그 카테고리로 전환(카테고리별 데이터 세팅, 2026-11-06 사용자 요청).
+              사용 여부(catOn)=N이면 아예 노출하지 않는다(2026-11-25 사용자 요청). */}
+          {isCategory && catOn && (
             <div className="mb-3 rounded-[8px] border border-[var(--line3)] bg-white p-2.5">
               <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                 <span className="text-[12px] font-bold text-[var(--ink2)]">카테고리</span>

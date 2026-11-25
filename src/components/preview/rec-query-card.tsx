@@ -21,7 +21,8 @@ export function RecQueryCard({ corner }: { corner: PreviewCorner }) {
   const items = (qs.length ? qs : ['{추천 질의어}', '{추천 질의어}']).slice(0, 2);
   return (
     // 코너 배경은 투명 — 홈 배경(그라데이션) 위에 질의어 칩(버블)만 떠 보이게(2026-11-25 사용자 요청).
-    <section className="px-1 py-0.5 font-[Pretendard,'Pretendard_Variable',-apple-system,sans-serif]">
+    //  상하 여백 — SB [홈]유형(node 29032:27421)처럼 오퍼 카드/배너와 붙지 않게 넉넉히(2026-11-25 사용자 요청).
+    <section className="px-1 py-2.5 font-[Pretendard,'Pretendard_Variable',-apple-system,sans-serif]">
       {/* 질의어 칩(버블) — 대화 스타터. 독립 버튼, 최대 2개, 1줄(20자). 라벨·아이콘 없음. 선택 시 AI 대화로 이동. */}
       <div className="space-y-2.5">
         {items.map((q, i) => (
