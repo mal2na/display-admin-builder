@@ -44,6 +44,43 @@ const MID_TEXT: Record<string, string> = {
   '배너형': 'text-[#2E6FF2]',
 };
 
+// 배너형 미리보기 — SB [홈]유형 배너(node 29032:27462). 문구 + 이미지, 복수형이면 하단 '1/10' 페이지네이션.
+function BannerTypePreview({ pager }: { pager?: boolean }) {
+  return (
+    <div className="w-[150px] rounded-[12px] border border-[#e3e6ea] bg-white p-3 shadow-[0_2px_10px_rgba(20,22,40,0.08)]">
+      <div className="flex items-start gap-2">
+        <p className="min-w-0 flex-1 text-[10px] font-bold leading-[14px] text-[#1a1a1a]">새 iPhone에 어울리는 AirPods Max 3 특별한 혜택</p>
+        <div className="h-9 w-9 shrink-0 rounded-[8px] bg-gradient-to-br from-[#e7eaf1] to-[#d7dce6]" />
+      </div>
+      {pager && (
+        <div className="mt-2 flex items-center gap-1 text-[9px] font-semibold text-[#8b949e]">
+          <ChevronRight className="h-2.5 w-2.5 rotate-180" /><span className="text-[#454f59]">1</span><span>/ 10</span><ChevronRight className="h-2.5 w-2.5" />
+        </div>
+      )}
+    </div>
+  );
+}
+// 업무 진입형(탭형) 미리보기 — 상단 탭 칩 두 줄 느낌의 간단 껍데기.
+function TabTypePreview() {
+  return (
+    <div className="grid w-[150px] grid-cols-3 gap-1.5 rounded-[12px] border border-[#e3e6ea] bg-white p-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex flex-col items-center gap-1">
+          <div className="h-6 w-6 rounded-full bg-[#eef0f6]" />
+          <div className="h-1.5 w-7 rounded-full bg-[#e3e6ea]" />
+        </div>
+      ))}
+    </div>
+  );
+}
+// 코너 유형별 미리보기 디스패치.
+function TypePreview({ r }: { r: BenefitTypeRow }) {
+  if (r.top === '혜택형') return <BenefitCornerPreview mid={r.mid} layout={r.layout} typeId={r.typeId} name={r.name} variant="list" image={r.repImg} />;
+  if (r.top === '배너형') return <BannerTypePreview pager={r.layout === '복수형'} />;
+  if (r.top === '업무 진입형') return <TabTypePreview />;
+  return <div className="grid h-[120px] w-[150px] place-items-center rounded-[10px] border border-dashed border-[#c4c9cf] bg-white text-[11px] text-[#8b949e]">{r.layout}</div>;
+}
+
 export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
   const router = useRouter();
   const [view, setView] = useState<'card' | 'list'>('list');
@@ -186,12 +223,8 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
                   <td className="px-3 py-3 align-middle tabular-nums text-[#8b949e]">{i + 1}</td>
                   <td className="whitespace-nowrap px-3 py-3 align-middle font-mono text-[12px] text-[#697582]">{r.typeId}</td>
                   <td className="px-3 py-3">
-                    {/* 미리보기 — 혜택형은 공용 렌더러, 그 외(배너형·업무 진입형)는 껍데기 플레이스홀더(프리셋 준비 전). */}
-                    <div className="flex justify-center rounded-[14px] bg-[#eceef5] p-3">
-                      {r.top === '혜택형'
-                        ? <BenefitCornerPreview mid={r.mid} layout={r.layout} typeId={r.typeId} name={r.name} variant="list" image={r.repImg} />
-                        : <div className="grid h-[120px] w-[150px] place-items-center rounded-[10px] border border-dashed border-[#c4c9cf] bg-white text-center text-[11px] font-medium text-[#8b949e]">{r.top}<br />{r.layout}<br /><span className="text-[10px] text-[#b3b9c0]">프리셋 준비 중</span></div>}
-                    </div>
+                    {/* 미리보기 — 혜택형=공용 렌더러, 배너형=배너 카드(복수형 1/10), 업무진입형=탭 껍데기. */}
+                    <div className="flex justify-center rounded-[14px] bg-[#eceef5] p-3"><TypePreview r={r} /></div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3 align-middle"><span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${TOP_BADGE[r.top] ?? 'bg-[#eef0f6] text-[#697582]'}`}>{r.top}</span></td>
                   <td className={`whitespace-nowrap px-3 py-3 align-middle font-semibold ${MID_TEXT[r.mid] ?? 'text-[#454f59]'}`}>{r.mid}</td>
@@ -217,11 +250,7 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
           {filtered.map((r) => (
             <button key={r.typeId} onClick={() => open(r)}
               className="group flex flex-col overflow-hidden rounded-[14px] border border-[#e8ecef] bg-white text-left transition hover:-translate-y-0.5 hover:border-[#c9ccf7] hover:shadow-[0_10px_28px_rgba(20,22,40,0.10)]">
-              <div className="flex justify-center bg-[#eef0f6] p-3">
-                {r.top === '혜택형'
-                  ? <BenefitCornerPreview mid={r.mid} layout={r.layout} typeId={r.typeId} name={r.name} variant="list" image={r.repImg} />
-                  : <div className="grid h-[120px] w-[150px] place-items-center rounded-[10px] border border-dashed border-[#c4c9cf] bg-white text-center text-[11px] font-medium text-[#8b949e]">{r.top}<br />{r.layout}<br /><span className="text-[10px] text-[#b3b9c0]">프리셋 준비 중</span></div>}
-              </div>
+              <div className="flex justify-center bg-[#eef0f6] p-3"><TypePreview r={r} /></div>
               <div className="flex flex-1 flex-col gap-2 p-3.5">
                 <div className="flex items-center gap-1.5">
                   <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${TOP_BADGE[r.top] ?? 'bg-[#eef0f6] text-[#697582]'}`}>{r.top}</span>

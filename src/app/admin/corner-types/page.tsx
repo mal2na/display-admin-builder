@@ -42,8 +42,8 @@ function benefitRows(): BenefitTypeRow[] {
   // 배너형·업무진입형 추가(2026-11-25 사용자 요청) — 코너 유형 필터로 묶기 위해 중분류 포함 3뎁스로 등록.
   //  SB 프리셋 이미지는 아직 없어 미리보기는 껍데기(placeholder). 상세 라우트 없음(조회 목록 노출용).
   const extra: BenefitTypeRow[] = [
-    { top: '배너형', typeId: 'CYB001', mid: '배너형', layout: '단일형', name: '배너형 · 단일형', repImg: null, presetCount: 0, source: '배너 캠페인 관리', presetKey: '', updatedBy: '김마리나', updatedAt: '2026-11-25 09:00' },
-    { top: '배너형', typeId: 'CYB002', mid: '배너형', layout: '스와이프형', name: '배너형 · 스와이프형', repImg: null, presetCount: 0, source: '배너 캠페인 관리', presetKey: '', updatedBy: '김마리나', updatedAt: '2026-11-25 09:00' },
+    { top: '배너형', typeId: 'CYB001', mid: '배너형', layout: '단수형', name: '배너형 · 단수형', repImg: null, presetCount: 0, source: '배너 캠페인 관리', presetKey: '', updatedBy: '김마리나', updatedAt: '2026-11-25 09:00' },
+    { top: '배너형', typeId: 'CYB002', mid: '배너형', layout: '복수형', name: '배너형 · 복수형', repImg: null, presetCount: 0, source: '배너 캠페인 관리', presetKey: '', updatedBy: '김마리나', updatedAt: '2026-11-25 09:00' },
     { top: '업무 진입형', typeId: 'CYW001', mid: '탭형', layout: '스와이프형', name: '탭형 · 스와이프형', repImg: null, presetCount: 0, source: '-', presetKey: '', updatedBy: '김마리나', updatedAt: '2026-11-25 09:00' },
   ];
   return [...rows, ...extra];
