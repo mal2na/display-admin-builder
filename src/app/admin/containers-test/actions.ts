@@ -89,7 +89,7 @@ export async function reorderTestCorners(templateId: string, orderedTemplateCorn
 }
 
 // 전시 존(밴드) 지정 — Fixed/Dynamic/Semi-fixed 밴드 사이로 드래그했을 때 이동한 밴드의 존으로 저장.
-export async function setTestCornerZone(templateId: string, templateCornerId: string, zone: 'dynamic' | 'semi' | 'fixed') {
+export async function setTestCornerZone(templateId: string, templateCornerId: string, zone: 'personal' | 'dynamic' | 'semi' | 'fixed') {
   await prisma.templateCorner.update({ where: { id: templateCornerId }, data: { zone } });
   revalidatePath(`/admin/containers-test/t/${templateId}`);
 }

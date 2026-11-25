@@ -50,7 +50,7 @@ export function benefitGuide(mid: string, layout: string): string {
     case '캐러셀형':
       return '가로 스크롤 카드. 아이템 3~10개(인디케이터 노출). 카테고리는 옵션.';
     case '바코드형':
-      return '상단 아이템 1개 + 멤버십 바코드(값은 런타임 발급). 상단 이미지는 옵션. ※ 안씀(미사용) — Figma 최종본 미포함, 프리셋 보존용.';
+      return '아이템 1개 + 멤버십 바코드(값은 런타임 발급). 상단 이미지·추천 맥락 헤더는 옵션.';
     case '출석체크형':
       return '출석 누적 게이지(예: 출석 N일차, 출석 불규칙) + 마일스톤 보상. 보상 아이템은 가격 없음.';
     case '룰렛형':
@@ -70,6 +70,7 @@ export const SB_PREVIEW: Record<string, string> = {
   '미션형 > 룰렛형': '/assets/sb-preview/roulette.png',             // node 28813
   '혜택프로그램형 > 리스트형': '/assets/sb-preview/program.png',     // node 28274
   '혜택프로그램형 > 캐러셀형': '/assets/sb-preview/program-carousel.png', // node 28312
+  '혜택프로그램형 > 바코드형': '/assets/sb-preview/program-barcode.png', // node 28912:21916
   '이용지원형 > 리스트형': '/assets/sb-preview/support.png',         // node 28582
   '이용지원형 > 캐러셀형': '/assets/sb-preview/support-carousel.png',    // node 28620
 };
@@ -99,6 +100,8 @@ export function benefitMap(mid: string, layout: string): { base: string; detail:
     case '혜택프로그램형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false, carousel: true };
     // 혜택프로그램 캐러셀형: 가로 스크롤 상품 카드(호텔·공연 가격, 카테고리). 배너 없음(0035·0036).
     case '혜택프로그램형 > 캐러셀형': return { base: '혜택·오퍼형', detail: '가로형(카테고리형)', comp: '상품형' };
+    // 혜택프로그램 바코드형(신규, 2026-11-25): 아이템 1 + 멤버십 바코드(값 런타임 발급).
+    case '혜택프로그램형 > 바코드형': return { base: '혜택형', detail: '세로형+배너', comp: '혜택형', barcode: true, items: 1, price: false };
     // 이용지원형 리스트형: 배너 없음 — 카테고리만, 가격 없음(안내).
     case '이용지원형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)', comp: '혜택형', items: 1, price: false };
     // 이용지원형 캐러셀형(신규): 가로 스크롤 카드, 카테고리, 가격 없음(안내).
@@ -167,7 +170,7 @@ export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
   const listLike = isList || isCarousel;            // 반복 아이템 리스트/캐러셀
   const hasChip = listLike;                         // 카테고리 칩(탭)
   const hasIndicator = listLike;                    // 인디케이터(스와이프)
-  const hasContext = listLike && CONTEXT_MIDS.has(mid);
+  const hasContext = (listLike || isBarcode) && CONTEXT_MIDS.has(mid);
 
   // ── 코너(카드) 공통 속성
   const card: AttrRow[] = [{ label: '코너 타이틀', code: 'CornerTitle', state: 'required' }];
@@ -191,6 +194,13 @@ export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
   } else if (isRoulette) {
     item = [
       { label: '응모 기회 지표(남은/추가)', code: 'EntryMetric', state: 'required' },
+    ];
+  } else if (isBarcode) {
+    item = [
+      { label: '썸네일', code: 'Thumbnail', state: 'required' },
+      { label: '명(타이틀)', code: 'ItemTitle', state: 'required' },
+      { label: '설명·내용', code: 'ItemDesc', state: 'required' },
+      { label: '멤버십 바코드', code: 'Barcode', state: 'required', note: '값은 런타임 발급' },
     ];
   } else if (listLike) {
     item = [

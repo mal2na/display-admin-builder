@@ -18,7 +18,7 @@ import { DeviceFrame, CornerBlock, BannerCard, type PreviewComponent } from '@/c
 import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
-import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, type Zone } from '@/lib/display-taxonomy';
+import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, MLS_REC_LOGICS, type Zone } from '@/lib/display-taxonomy';
 import { PRESET_SHAPE_GROUPS } from '@/lib/preset-shape-groups';
 import { presetDesignName } from '@/components/preview/preset-design-card';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Minus, Maximize2, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, AlertTriangle, Barcode } from 'lucide-react';
@@ -1116,7 +1116,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
             <div className="mb-1">
               {/* 배너 설정 — 배너 옵션이 있는 유형만 */}
               {availOptions.includes('배너') && (
-                <FormBlock title="배너(상단 이미지)" locked={LOCK_PRESET}>
+                // 상단 이미지(배너) On/Off — 2026-11-25 사용자 요청으로 잠금 해제(빌더에서 켜고 끄기).
+                <FormBlock title="배너(상단 이미지)">
                   <FormRow label="사용 여부" req>
                     <RadioRow options={['Y', 'N'] as const} value={optOn['배너'] ? 'Y' : 'N'} onChange={(v) => { const no = { ...optOn, ['배너']: v === 'Y' }; setOptOn(no); onOptionsChange(no, ctaLabelVal); }} />
                   </FormRow>
@@ -1709,7 +1710,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
 
 /* 코너 칩 카드(존 밴드 내부) — 이미지2: 드래그·이름·복사/삭제·유형/레이아웃·고정 토글 */
 /* 코너 순서 변경 행(order3 레퍼런스) — 드래그·번호·이름·유형칩 + 노출 토글 + 삭제. */
-function CornerChip({ c, no, selected, fixed, on, onToggleOn, onSelect, onToggleFixed, onDelete, onToast }: { c: PCorner; no: number; selected: boolean; fixed: boolean; on: boolean; onToggleOn: () => void; onSelect: () => void; onToggleFixed: () => void; onDelete: () => void; onToast: (m: string) => void }) {
+function CornerChip({ c, no, selected, fixed, on, isPersonal, onToggleOn, onSelect, onToggleFixed, onTogglePersonal, onDelete, onToast }: { c: PCorner; no: number; selected: boolean; fixed: boolean; on: boolean; isPersonal: boolean; onToggleOn: () => void; onSelect: () => void; onToggleFixed: () => void; onTogglePersonal: () => void; onDelete: () => void; onToast: (m: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.templateCornerId });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const layoutText = cornerLayoutText(c.cornerType, c.layout, c.layoutDetail);
@@ -1732,11 +1733,19 @@ function CornerChip({ c, no, selected, fixed, on, onToggleOn, onSelect, onToggle
           <div className="flex items-center gap-2">
             <span className="w-4 shrink-0 text-center text-[13px] font-semibold text-[var(--ink3)]">{no}</span>
             <span className={cn('min-w-0 flex-1 truncate text-[13px] font-bold', on ? 'text-[var(--ink)]' : 'text-[var(--ink4)]')}>{displayName}</span>
-            <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFixed(); }} title={fixed ? 'Fixed 고정됨 — 눌러서 해제' : '눌러서 Fixed로 고정'}
+            {/* 개인화존 이동 토글 — 켜면 CVM/MLS가 고객마다 코너·콘텐츠 선택(2026-11-25) */}
+            <button type="button" onClick={(e) => { e.stopPropagation(); onTogglePersonal(); }} title={isPersonal ? '개인화존 — 눌러서 운영자 세팅존으로' : '눌러서 개인화존으로(CVM/MLS 추천)'}
               className={cn('inline-flex h-5 shrink-0 items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
-                fixed ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink3)]')}>
-              {fixed ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />} {fixed ? '고정' : '미고정'}
+                isPersonal ? 'bg-[#F2ECFB] text-[#6D28D9]' : 'text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink3)]')}>
+              <Sparkles className="h-3 w-3" /> 개인화
             </button>
+            {!isPersonal && (
+              <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFixed(); }} title={fixed ? 'Fixed 고정됨 — 눌러서 해제' : '눌러서 Fixed로 고정'}
+                className={cn('inline-flex h-5 shrink-0 items-center gap-1 rounded-[6px] px-1.5 text-[11px] font-semibold transition',
+                  fixed ? 'bg-[var(--ac2)] text-[var(--ac)]' : 'text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink3)]')}>
+                {fixed ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />} {fixed ? '고정' : '미고정'}
+              </button>
+            )}
             <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="이 템플릿에서 코너 빼기"
               className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[var(--line2)] text-[var(--ink3)] transition hover:bg-[#fff0f1] hover:text-[var(--bad)]">
               <X className="h-3 w-3" />
@@ -1818,7 +1827,7 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
 
   // 고정 토글 — 켜면 Fixed로 잠금, 끄면 Dynamic으로 복귀
   async function toggleFixed(c: PCorner) {
-    const target: Band = c.zone === 'fixed' ? 'dynamic' : 'fixed';
+    const target: Zone = c.zone === 'fixed' ? 'dynamic' : 'fixed';
     setRows((prev) => prev.map((r) => (r.templateCornerId === c.templateCornerId ? { ...r, zone: target } : r))); // 낙관적
     try {
       await setTestCornerZone(templateId, c.templateCornerId, target);
@@ -1829,6 +1838,22 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
       onToast('변경을 저장하지 못했습니다.');
     }
   }
+
+  // 개인화존 ↔ 운영자 세팅존 이동(2026-11-25). 개인화존=personal, 운영자존 복귀=dynamic.
+  async function togglePersonal(c: PCorner) {
+    const target: Zone = c.zone === 'personal' ? 'dynamic' : 'personal';
+    setRows((prev) => prev.map((r) => (r.templateCornerId === c.templateCornerId ? { ...r, zone: target } : r)));
+    try {
+      await setTestCornerZone(templateId, c.templateCornerId, target);
+      router.refresh();
+      onToast(target === 'personal' ? `‘${c.name}’ 개인화존으로 이동했습니다.` : `‘${c.name}’ 운영자 세팅존으로 옮겼습니다.`);
+    } catch {
+      setRows(corners);
+      onToast('변경을 저장하지 못했습니다.');
+    }
+  }
+  // 개인화존 추천 로직(MLS) — 존 단위 1개. 1차: 클라이언트 상태(저장은 다음 증분).
+  const [mlsLogic, setMlsLogic] = React.useState<string>(MLS_REC_LOGICS[0]);
 
   // 코너 삭제 — 시스템 confirm 대신 디자인 모달(2026-11-12 사용자 요청). 확인 시 템플릿에서 배치 제거(원본 코너는 유지).
   async function confirmRemoveCorner(c: PCorner) {
@@ -1846,52 +1871,79 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
 
   // 연속 번호 — 배치 순서 그대로 1..N
   const noOf = (tcid: string) => rows.findIndex((r) => r.templateCornerId === tcid) + 1;
-  // 순서 그대로 연속 같은 존을 한 세그먼트로 묶는다 → fixed-dynamic-fixed-dynamic 교차 표시(2026-10-28 사용자 요청).
-  const segments: { band: Band; items: PCorner[] }[] = [];
-  for (const r of rows) {
-    const b = bandOf(r);
-    const last = segments[segments.length - 1];
-    if (last && last.band === b) last.items.push(r);
-    else segments.push({ band: b, items: [r] });
-  }
+  // 2026-11-25 사용자 요청: 코너 구성을 '픽스 영역 / 개인화 영역 / 운영 영역' 3섹션으로 분리해 각각 등록.
+  const fixedRows = rows.filter((r) => r.zone === 'fixed');
+  const personalRows = rows.filter((r) => r.zone === 'personal');
+  const opsRows = rows.filter((r) => r.zone !== 'fixed' && r.zone !== 'personal');
+  const chipOf = (c: PCorner) => (
+    <CornerChip key={c.templateCornerId} c={c} no={noOf(c.templateCornerId)} selected={c.id === selCorner}
+      fixed={c.zone === 'fixed'} isPersonal={c.zone === 'personal'} on={!hiddenIds.has(c.templateCornerId)} onToggleOn={() => onToggleHidden(c.templateCornerId)}
+      onSelect={() => onSelect(c.id)} onToggleFixed={() => toggleFixed(c)} onTogglePersonal={() => togglePersonal(c)} onDelete={() => setDeleteTarget(c)} onToast={onToast} />
+  );
+  const AddBtn = ({ hex }: { hex: string }) => (
+    <button type="button" onClick={onAddCorner}
+      className="flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-dashed bg-white/60 px-2 py-2 text-[11px] font-bold transition hover:bg-white"
+      style={{ borderColor: hex, color: hex }}>
+      <Plus className="h-3.5 w-3.5" /> 코너 등록
+    </button>
+  );
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-      {/* 전체 리스트가 하나의 Sortable — 드래그로 순서만 바뀌고 존은 '고정' 토글로만. */}
       <SortableContext items={rows.map((c) => c.templateCornerId)} strategy={verticalListSortingStrategy}>
         <div className="space-y-3">
-          {rows.length === 0 ? (
-            <button type="button" onClick={onAddCorner}
-              className="flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-[var(--line3)] bg-white/50 px-2 py-3 text-[11px] font-medium text-[var(--ink4)] transition hover:border-[var(--ac)] hover:bg-[var(--ac2)] hover:text-[var(--ac)]">
-              <Plus className="h-3.5 w-3.5" /> 코너 추가 · 끌어다 놓아도 됩니다
-            </button>
-          ) : segments.map((seg, si) => {
-            const meta = ZONE_META[seg.band];
-            // 2026-11-23 미팅: '개인화'는 상단 개인화 영역(1-1~1-3)으로 분리됨 → 코너 구성의 Dynamic 밴드는 '운영'으로 표기(zone 값은 보존, 색=중립).
-            const isOps = seg.band === 'dynamic';
-            const hex = isOps ? '#697582' : meta.hex;
-            const label = isOps ? '운영' : meta.label;
-            const en = isOps ? '운영자 편성 · 고정형' : meta.en;
-            return (
-              <div key={si}>
-                {/* 세그먼트 헤더 — 존 점·라벨·개수 */}
-                <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
-                  <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: hex }} />
-                  <span className="text-[12px] font-extrabold tracking-tight" style={{ color: hex }}>{label}</span>
-                  <span className="truncate text-[11px] text-[var(--ink4)]">{en}</span>
-                  <span className="ml-auto grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full border border-[var(--line2)] bg-white px-1.5 text-[11px] font-bold text-[var(--ink3)]">{seg.items.length}</span>
-                </div>
-                {/* 세그먼트 본문 — 존 색 좌측 액센트 바 */}
-                <div className="space-y-1.5 rounded-r-[8px] border-l-[2px] py-1 pl-2.5 pr-1" style={{ borderColor: hex }}>
-                  {seg.items.map((c) => (
-                    <CornerChip key={c.templateCornerId} c={c} no={noOf(c.templateCornerId)} selected={c.id === selCorner}
-                      fixed={c.zone === 'fixed'} on={!hiddenIds.has(c.templateCornerId)} onToggleOn={() => onToggleHidden(c.templateCornerId)}
-                      onSelect={() => onSelect(c.id)} onToggleFixed={() => toggleFixed(c)} onDelete={() => setDeleteTarget(c)} onToast={onToast} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+          {/* ───── 1. 픽스 영역 ───── */}
+          <section className="rounded-[12px] border border-[var(--line2)] bg-[#F8F9FB] p-3">
+            <div className="mb-2 flex items-center gap-1.5">
+              <Lock className="h-4 w-4 text-[#8B949E]" />
+              <span className="text-[13px] font-extrabold text-[#697582]">픽스 영역</span>
+              <span className="truncate text-[11px] text-[var(--ink4)]">항상 그 자리 고정(퀵메뉴 등)</span>
+              <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-full border border-[var(--line2)] bg-white px-1.5 text-[11px] font-bold text-[var(--ink3)]">{fixedRows.length}</span>
+            </div>
+            <div className="space-y-1.5">
+              {fixedRows.map(chipOf)}
+              {fixedRows.length === 0 && <p className="rounded-[8px] bg-white px-3 py-2.5 text-center text-[11px] text-[var(--ink4)]">코너 카드의 <b className="text-[#697582]">고정</b>으로 이 영역에 둡니다.</p>}
+              <AddBtn hex="#8B949E" />
+            </div>
+          </section>
+
+          {/* ───── 2. 개인화 영역 ───── */}
+          <section className="rounded-[12px] border border-[#e6ddf7] bg-[#faf8fe] p-3">
+            <div className="mb-1.5 flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-[#6D28D9]" />
+              <span className="text-[13px] font-extrabold text-[#6D28D9]">개인화 영역</span>
+              <span className="truncate text-[11px] text-[#9a7fd1]">CVM/MLS가 고객마다 코너·콘텐츠 선택 · 비해당 시 비노출</span>
+              <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-full border border-[#e6ddf7] bg-white px-1.5 text-[11px] font-bold text-[#6D28D9]">{personalRows.length}</span>
+            </div>
+            <div className="mb-2.5 flex flex-wrap items-center gap-2 rounded-[8px] border border-[#e6ddf7] bg-white px-2.5 py-2">
+              <span className="text-[11px] font-bold text-[#6D28D9]">추천 로직</span>
+              <select value={mlsLogic} onChange={(e) => setMlsLogic(e.target.value)}
+                className="h-[28px] min-w-0 flex-1 rounded-[6px] border border-[#e0d6f3] bg-white px-2 text-[12px] font-medium text-[var(--ink2)] focus:border-[#6D28D9] focus:outline-none">
+                {MLS_REC_LOGICS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <span className="w-full text-[11px] leading-snug text-[#9a7fd1]">등록 코너 전체를 CVM에 전달 → <b>노출 코너 여부 + 각 코너 콘텐츠</b> 받아 노출. 순서 지정 없음. <b className="text-[#6D28D9]">해당 고객 없으면(비로그인 등) 이 영역 비노출.</b></span>
+            </div>
+            <div className="space-y-1.5">
+              {personalRows.map(chipOf)}
+              {personalRows.length === 0 && <p className="rounded-[8px] bg-white px-3 py-3 text-center text-[11px] leading-relaxed text-[#9a7fd1]">코너 카드의 <b className="text-[#6D28D9]">개인화</b>로 이 영역에 둡니다.<br />CVM/MLS가 고객마다 맞는 코너를 골라 채웁니다.</p>}
+              <AddBtn hex="#6D28D9" />
+            </div>
+          </section>
+
+          {/* ───── 3. 운영 영역 ───── */}
+          <section className="rounded-[12px] border border-[var(--line2)] bg-white p-3">
+            <div className="mb-2 flex items-center gap-1.5">
+              <UserCog className="h-4 w-4 text-[#697582]" />
+              <span className="text-[13px] font-extrabold text-[#454f59]">운영 영역</span>
+              <span className="truncate text-[11px] text-[var(--ink4)]">운영자가 직접 편성 · 직접/조건 지정 + 정렬</span>
+              <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-full border border-[var(--line2)] bg-white px-1.5 text-[11px] font-bold text-[var(--ink3)]">{opsRows.length}</span>
+            </div>
+            <div className="space-y-1.5">
+              {opsRows.map(chipOf)}
+              {opsRows.length === 0 && <p className="rounded-[8px] bg-[var(--th)] px-3 py-2.5 text-center text-[11px] text-[var(--ink4)]">운영자가 직접 편성할 코너를 등록하세요.</p>}
+              <AddBtn hex="#697582" />
+            </div>
+          </section>
         </div>
       </SortableContext>
       {/* 코너 삭제 확인 — 디자인 모달(시스템 confirm 대체, 2026-11-12 사용자 요청). */}
@@ -2131,11 +2183,10 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
       {/* 카드 본문 */}
       {open && (
         <div className="space-y-4 p-4">
-          {/* 개인화 영역(1-1~1-3) — 혜택 카테고리 칩 바로 하위. 운영(코너 구성)보다 위(2026-11-23 미팅). */}
-          <PersonalZoneBand templateId={t.id} initial={t.personalSlots} onToast={onToast} />
+          {/* 2026-11-25 사용자 요청: 개인화 영역은 코너 구성 위 별도 블록(PersonalZoneBand) 폐지 → 코너 구성 안 '개인화 영역' 섹션으로 통일. */}
           <div>
             {/* 타이틀↔카드 간격 확보(2026-11-19 사용자 요청: 너무 붙어 있음) — 폰트 키우고 아래 여백 확대 */}
-            <p className="mb-3.5 text-[14px] font-bold text-[var(--ink)]">코너 구성 <span className="font-semibold text-[var(--ink4)]">{corners.length}개</span> <span className="ml-1 rounded-full bg-[var(--th)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink4)]">운영 · 고정형</span></p>
+            <p className="mb-3.5 text-[14px] font-bold text-[var(--ink)]">코너 구성 <span className="font-semibold text-[var(--ink4)]">{corners.length}개</span> <span className="ml-1 rounded-full bg-[var(--th)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink4)]">픽스 · 개인화 · 운영</span></p>
             {/* order3 레퍼런스: 좌측 순서변경 박스만 그레이 배경 + 해상도 기준 고정 높이(내부 스크롤) + 코너 추가 하단 고정.
                코너가 0개여도 밴드(Fixed·Dynamic)는 항상 표시 — 각 밴드에 '추가 가능' 노출(2026-10-21). */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[360px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
@@ -2458,21 +2509,38 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
       <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
         className={cn('relative cursor-pointer scroll-mt-4 rounded-xl ring-offset-2 transition', c.id === activeSel && 'ring-2 ring-[var(--ac)]')}>
         {replaced && <span className="absolute right-1 top-1 z-10 rounded-[4px] bg-[#e59a2a] px-1.5 py-0.5 text-[9px] font-bold text-white">운영자 편성 대체</span>}
-        <CornerBlock corner={c.recSource === 'CVM 데이터 연동'
-          ? { ...c.preview, cvmFillCount: (c.preview?.cvmFillCount ?? 0) || 5, cvmFillMin: (c.preview?.cvmFillMin ?? 0) || 3 }
-          : { ...c.preview, cvmFillCount: 0 }} />
+        {/* 혜택형 코너 = SB Figma 프리뷰 이미지로 렌더(코너 유형 관리와 동일). 그 외는 기존 CornerBlock. (2026-11-25) */}
+        {c.sbImage
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={c.sbImage} alt={`${c.name} 프리뷰`} className="block w-full rounded-[16px]" />
+          : <CornerBlock corner={c.recSource === 'CVM 데이터 연동'
+              ? { ...c.preview, cvmFillCount: (c.preview?.cvmFillCount ?? 0) || 5, cvmFillMin: (c.preview?.cvmFillMin ?? 0) || 3 }
+              : { ...c.preview, cvmFillCount: 0 }} />}
       </div>
     );
   };
-  // 미리보기 순서: 고정(퀵메뉴 등) → 개인화 영역(1-1~1-3) → 운영 코너 (미팅 2026-11-23: 카테고리 칩/퀵메뉴 하위에 개인화).
+  // 미리보기 순서: 고정(퀵메뉴) → 개인화존(1-x · 해당 고객만, 비해당 시 비노출) → 운영자 세팅존(2-x) (2026-11-25 사용자: 존 구분·비노출 명시).
   const visibleCorners = (activeTemplate ? liveCorners : []).filter((c) => !hiddenIds.has(c.templateCornerId));
   const fixedPrev = visibleCorners.filter((c) => c.zone === 'fixed');
-  const restPrev = visibleCorners.filter((c) => c.zone !== 'fixed');
-  const previewBody = (activeTemplate && (visibleCorners.length > 0 || personalPreview)) ? (
+  const personalCorners = visibleCorners.filter((c) => c.zone === 'personal');
+  const opsPrev = visibleCorners.filter((c) => c.zone !== 'fixed' && c.zone !== 'personal');
+  const hasPersonal = personalCorners.length > 0;
+  const previewBody = (activeTemplate && visibleCorners.length > 0) ? (
     <>
       {fixedPrev.map(renderPreviewCorner)}
-      {personalPreview}
-      {restPrev.map(renderPreviewCorner)}
+      {/* 개인화 영역 — 해당 고객만 노출. 비해당(비로그인 등) 시 영역 전체 비노출임을 명시(2026-11-25 사용자 요청). */}
+      {hasPersonal && (
+        <div className="space-y-2 rounded-xl border-2 border-dashed border-[#c9b8f0] bg-[#faf8fe] p-2">
+          <div className="flex items-center gap-1 px-0.5 text-[10px] font-extrabold text-[#6D28D9]">
+            <Sparkles className="h-3 w-3" /><span>개인화 영역 · 해당 고객만 노출</span>
+          </div>
+          {personalCorners.map(renderPreviewCorner)}
+          <div className="flex items-center justify-center gap-1 rounded-[8px] border border-dashed border-[#d9ccf3] bg-white px-2 py-2 text-[10.5px] font-semibold text-[#9a7fd1]">
+            <EyeOff className="h-3.5 w-3.5" /><span>비해당 고객(예: 비로그인) → 이 영역 <b className="text-[#6D28D9]">비노출</b></span>
+          </div>
+        </div>
+      )}
+      {opsPrev.map(renderPreviewCorner)}
     </>
   ) : (
     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>

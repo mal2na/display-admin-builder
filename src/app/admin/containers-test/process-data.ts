@@ -58,6 +58,8 @@ function guideCornerPreview(base: string, detail: string | null, component: stri
 
 export type PCorner = {
   id: string; templateCornerId: string; name: string; cornerType: string; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner;
+  /** SB Figma 프리뷰 이미지(혜택형 코너) — 있으면 디바이스 미리보기를 이 이미지로 렌더(2026-11-25) */
+  sbImage: string | null;
   /** 수급 방식(정규화) · CVM 연동 여부 · CVM 비었을 때 폴백 — 폴백 UI용(2026-10-20) */
   recSource: string | null; isCvm: boolean; fallback: '미노출' | '운영자 편성으로 대체';
   /** 전시 존(Fixed/Dynamic/Semi) — 코너 리스트 밴드용(2026-10-21) */
@@ -129,6 +131,8 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
         : guideCornerPreview(tc.corner.cornerType, tc.corner.layoutDetail ?? tc.corner.cornerLayout,
             ((tc.corner.cornerComponents ?? []).find((cc: any) => cc.component?.componentType !== '선택형')?.component?.componentType)
             ?? (tc.corner.cornerComponents ?? [])[0]?.component?.componentType ?? null)), moreButtonUse: false },
+      // SB 프리뷰 이미지 — createBenefitCornerInstance가 sampleImageUrl에 저장한 /assets/sb-preview/* 경로만.
+      sbImage: (typeof tc.corner.sampleImageUrl === 'string' && tc.corner.sampleImageUrl.startsWith('/assets/sb-preview/')) ? tc.corner.sampleImageUrl : null,
       recSource: tc.corner.recSource ? normalizeRecSource(tc.corner.recSource) : null,
       isCvm: isCvmSource(tc.corner.recSource),
       fallback: effectiveFallback(tc.corner.cornerType, tc.corner.cvmFallback),
