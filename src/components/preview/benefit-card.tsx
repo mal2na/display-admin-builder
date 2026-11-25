@@ -216,7 +216,7 @@ export function BenefitPreviewCard({ corner, design, squareThumb, itemButton, mi
 
   // ── 캐러셀형: 가로 카드(큰 이미지 + 카테고리/혜택명/99%/pill)
   if (design === 'carousel') {
-    const cards = itemsOf(corner.components, '{혜택명}', '{카테고리}', 2);
+    const cards = itemsOf(corner.components, '{혜택명}', '{카테고리}', 3);
     return (
       <section className={CARD}>
         {showImage && <TopImage src={corner.bannerImageUrl ?? null} />}
