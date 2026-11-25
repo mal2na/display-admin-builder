@@ -1141,9 +1141,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
             </p>
             <FormBlock title="추천 로직">
               <FormRow label="추천 엔진" req>
-                <select value={persoMls} onChange={(e) => setPersoMls(e.target.value)} className="h-[34px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none">
-                  {MLS_REC_LOGICS.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
+                <RadioRow options={[...MLS_REC_LOGICS]} value={persoMls} onChange={setPersoMls} />
               </FormRow>
             </FormBlock>
             <FormBlock title={`후보 코너 유형 · ${persoTypes.length}`}>

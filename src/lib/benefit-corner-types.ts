@@ -173,6 +173,10 @@ export type CornerAttrSpec = { card: AttrRow[]; item: AttrRow[]; rules: string[]
 
 // 중분류별 '추천 맥락 헤더' 보유(이벤트/제휴사/혜택프로그램만 · 미션·이용지원 없음 — SB 프리뷰 기준).
 const CONTEXT_MIDS = new Set(['제휴사형', '이벤트형', '혜택프로그램형']);
+// 코너 랜딩 링크 버튼 노출 중분류 — 제휴사형=있음 / 혜택프로그램형=없음(2026-11-25 사용자 확정). 그 외는 있음.
+export function hasLandingLink(mid: string): boolean {
+  return mid !== '혜택프로그램형';
+}
 
 export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
   const m = benefitMap(mid, layout);
@@ -191,8 +195,8 @@ export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
   card.push({ label: '상단 이미지', code: 'Image', state: 'toggle', default: false, note: '원장 이미지 또는 운영 등록 · 기본 OFF' });
   if (hasContext) card.push({ label: '추천 맥락 헤더', code: 'ContextHeader', state: 'toggle', default: false, note: '추천 근거(거리·검색·매장방문) 노출 · API 활동기록' });
   card.push({ label: '코너 타이틀', code: 'CornerTitle', state: 'required' });
-  // 코너 랜딩 링크 버튼 — 코너 타이틀 바로 다음(타이틀 옆, 2026-11-25 사용자 요청). 전 중분류 포함 · 코너 유형에서 On/Off(toggle).
-  card.push({ label: '코너 랜딩 링크 버튼', code: 'LandingLink', state: 'toggle', default: true, note: '액션 버튼과 택1 필수 · On/Off' });
+  // 코너 랜딩 링크 버튼 — 코너 타이틀 바로 다음(2026-11-25 사용자 요청). 제휴사형=있음 / 혜택프로그램형=없음(hasLandingLink). 코너 유형에서 On/Off.
+  if (hasLandingLink(mid)) card.push({ label: '코너 랜딩 링크 버튼', code: 'LandingLink', state: 'toggle', default: true, note: '액션 버튼과 택1 필수 · On/Off' });
   // 카테고리 칩(탭)은 컴포넌트(요소)로 이동(2026-11-25 사용자 요청) — 아래 item 배열에서 push.
   if (isBarcode) card.push({ label: '바코드', code: 'Barcode', state: 'required', note: '멤버십 바코드 · 값 런타임 발급' });
   // 추가 인포메이션은 랜딩 링크 아래로 내림(2026-11-25 사용자 요청). 바코드형은 성격 디스크립션 없음(SB).
