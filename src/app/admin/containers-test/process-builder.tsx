@@ -565,6 +565,11 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const [persoMax, setPersoMax] = React.useState(3);
   const [persoPickerOpen, setPersoPickerOpen] = React.useState(false);
   const BENEFIT_TYPE_LIST = React.useMemo(() => benefitTypes(), []);
+  // 채우는 방식(2026-11-25 사용자 요청: '개인화 클릭'을 없애고 콘텐츠 채우기 안의 선택지로 통합).
+  //  운영자 직접 / 운영자 고정+추천(혼합) / 전부 추천(후보 여러 개). '추천' 계열 = isPersonal.
+  const FILL_MODES = ['운영자 직접', '운영자 고정 + 추천', '전부 추천'] as const;
+  const [fillMode, setFillMode] = React.useState<string>(() => (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접');
+  const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); };
   // 추천 질의어 — 코너 컴포넌트(선택형)의 TEXT 아톰에서 초기값, 최대 2개(스펙). AI 생성·직접 입력.
   const [rqList, setRqList] = React.useState<string[]>(() => {
     const qs = (corner.preview?.components ?? []).flatMap((c) => c.atoms ?? []).filter((a) => a.atomType === 'TEXT').map((a) => a.content ?? '').filter(Boolean);
@@ -1126,32 +1131,37 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
       {/* ④ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청+운영자 고정 앵커(폴백과 무관하게 항상 노출 — 앵커는 정상 노출 시 앞자리 고정, 폴백은 별개. 2026-11-16 사용자 확정), 콘텐츠 연동=구좌만(미노출이면 구좌 안내). */}
       {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
         <Sec n={nFill} title={isPersonal ? '코너 콘텐츠 설정' : fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '코너 콘텐츠 설정'} hint="구성 방식을 고르고 노출할 데이터를 설정합니다">
-          {/* 개인화 추천 토글(혼합 모델) — 혜택형에서만 노출. 업무 진입형(퀵메뉴·탭·프로필)·배너형·바코드형은 개인화 추천/운영자 지정 표기 자체를 숨긴다(2026-11-25 사용자 요청). */}
+          {/* 채우는 방식 — 혜택형만. '개인화'를 따로 클릭하는 모드가 아니라 '어떻게 채울지'의 선택지로 통합(2026-11-25 사용자 요청).
+              운영자 직접 / 운영자 고정+추천(혼합) / 전부 추천(후보 여러 개). 출석·룰렛=전부 추천 고정, 수동 전용=운영자 직접만. */}
           {isBenefitType && (<>
-          <div className="mb-4 rounded-[10px] border border-[var(--line2)] bg-[var(--th)] px-3 py-2.5">
-            <div className="flex items-center gap-2">
-              <Sparkles className={cn('h-4 w-4 shrink-0', isPersonal ? 'text-[#6D28D9]' : 'text-[var(--ink4)]')} />
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-bold text-[var(--ink)]">개인화 추천</p>
-                <p className="text-[11px] leading-relaxed text-[var(--ink4)]">켜면 운영자 지정 자리 외 나머지를 추천이 고객별로 채워요 (운영자 지정 + 개인화 혼합).</p>
-              </div>
-              <button type="button" disabled={forcePersonal || !corner.canPersonal}
-                onClick={() => { if (forcePersonal || !corner.canPersonal) return; onPersonalChange(!isPersonal); }}
-                title={isPersonal ? '개인화 켜짐' : '개인화 꺼짐'}
-                className={cn('relative h-[22px] w-[40px] shrink-0 rounded-full transition-colors', isPersonal ? 'bg-[#6D28D9]' : 'bg-[var(--line3)]', (forcePersonal || !corner.canPersonal) && 'opacity-50')}>
-                <span className={cn('absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-all', isPersonal ? 'left-[20px]' : 'left-[2px]')} />
-              </button>
+          <div className="mb-4">
+            <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">채우는 방식</p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {FILL_MODES.map((m) => {
+                const on = fillMode === m;
+                const blocked = (!corner.canPersonal && m !== '운영자 직접') || (forcePersonal && m === '운영자 직접');
+                return (
+                  <button key={m} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(m); }}
+                    className={cn('rounded-full border px-3 py-1.5 text-[12px] font-semibold transition', on ? 'border-[#6D28D9] bg-[#6D28D9] text-white' : 'border-[var(--line3)] bg-white text-[var(--ink2)] hover:border-[#b79ae8]', blocked && 'cursor-not-allowed opacity-40')}>
+                    {m}
+                  </button>
+                );
+              })}
             </div>
-            {forcePersonal && <p className="mt-2 flex items-center gap-1 text-[11px] font-medium text-[#6D28D9]"><Sparkles className="h-3 w-3" />출석체크·룰렛형은 개인화 전용이라 항상 켜져 있어요.</p>}
-            {!corner.canPersonal && <p className="mt-2 text-[11px] text-[var(--ink4)]">이 코너 유형은 수동(운영자 지정) 전용이라 개인화를 켤 수 없어요.</p>}
+            <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--ink4)]">
+              {fillMode === '운영자 직접' ? '운영자가 아이템을 직접 담아요.'
+                : fillMode === '운영자 고정 + 추천' ? '앞자리는 운영자가 고정하고, 나머지는 추천 엔진이 고객별로 채워요.'
+                : '후보 코너 유형을 여러 개 담아두면, 고객마다 추천 엔진이 노출 개수만큼 골라요.'}
+              {forcePersonal && ' (출석체크·룰렛형은 개인화 전용)'}
+            </p>
           </div>
 
-          {/* 개인화 추천 설정 — On일 때만. 운영자 지정(아래)과 '함께' 노출되는 혼합 영역. */}
-          {isPersonal && (
+          {/* 개인화(추천) 설정 — '운영자 고정 + 추천' 또는 '전부 추천'일 때. */}
+          {fillMode !== '운영자 직접' && (
           <div className="mb-4 rounded-[10px] border border-[#e8ddff] bg-[#faf9ff] p-3">
             <p className="mb-2.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-[#6D28D9]">
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>운영자가 지정한 자리 외 나머지를 <b>추천 엔진</b>이 고객별로 채워요. 후보가 없으면 그 자리는 운영자 지정으로 채워집니다.</span>
+              <span>{fillMode === '운영자 고정 + 추천' ? <>운영자가 고정한 자리 외 나머지를 <b>추천 엔진</b>이 고객별로 채워요.</> : <>후보 코너 유형을 여러 개 담아두면 <b>추천 엔진</b>이 고객마다 노출 개수만큼 골라요. 없으면 미노출.</>}</span>
             </p>
             <FormBlock title="추천 로직">
               <FormRow label="추천 엔진" req>
@@ -1225,9 +1235,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           )}
           </>)}
 
-          {/* ── 운영자 지정 — 혜택형 + 개인화 On일 때만 '운영자 지정' 라벨로 구분. 그 외 유형은 라벨 없이 콘텐츠만. ── */}
-          {isBenefitType && isPersonal && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 지정</p>}
-          {isRecQuery ? (
+          {/* ── 운영자 지정 — '운영자 고정 + 추천'일 때만 라벨로 구분. '전부 추천'은 운영자 콘텐츠 없음. ── */}
+          {isBenefitType && fillMode === '운영자 고정 + 추천' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 고정 항목</p>}
+          {isBenefitType && fillMode === '전부 추천' ? null : isRecQuery ? (
           /* ── 추천 질의어 — AI 생성/직접 입력(최대 2개·≤20자·1줄). SB [홈]유형(2026-11-25 사용자 요청: 콘텐츠 불러오기 아님). ── */
           <div>
             <p className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#f5f1ff] px-3 py-2 text-[12px] leading-relaxed text-[#6D28D9]">
