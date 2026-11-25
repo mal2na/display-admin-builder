@@ -25,6 +25,24 @@ import {
   type CornerType,
 } from '../src/lib/display-taxonomy';
 import { EVENT_CORNER_TYPES } from '../src/lib/event-taxonomy';
+import { benefitTypes } from '../src/lib/benefit-corner-types';
+
+// 혜택 템플릿 정리(2026-11-25 사용자 요청) — 코너 유형 관리에 있는 유형만 남긴다:
+//  배너형 · 업무 진입형(퀵메뉴) · 혜택형 benefitType(제휴사형 리스트형 등). 레거시 혜택·오퍼형 및 제네릭 혜택형(미등록)은 배치 제거.
+async function pruneBenefitTemplates() {
+  const benefitNames = new Set(benefitTypes().map((t) => `${t.mid} · ${t.layout}`));
+  const temps = await prisma.template.findMany({ where: { container: { name: '혜택 홈' } }, select: { id: true } });
+  let removed = 0;
+  for (const t of temps) {
+    const tcs = await prisma.templateCorner.findMany({ where: { templateId: t.id }, select: { id: true, corner: { select: { cornerType: true, name: true } } } });
+    for (const tc of tcs) {
+      const ct = tc.corner.cornerType; const nm = tc.corner.name;
+      const keep = ct === '배너형' || ct === '업무 진입형' || (ct === '혜택형' && benefitNames.has(nm));
+      if (!keep) { await prisma.templateCorner.delete({ where: { id: tc.id } }); removed += 1; }
+    }
+  }
+  console.log(`✅ 혜택 템플릿 정리 — 미등록 유형 배치 ${removed}개 제거(코너 유형 관리 유형만 유지)`);
+}
 import { seedEvents } from './seed-events';
 import { seedAppSections } from './seed-app-sections';
 
@@ -1913,6 +1931,7 @@ main()
   .then(() => seedBannerCampaigns())
   .then(() => linkBannerCampaignUsage())
   .then(() => import('./seed-roaming').then((m) => m.seedRoaming()))
+  .then(() => pruneBenefitTemplates())
   .then(() => prisma.$disconnect())
   .catch(async (e) => {
     console.error(e);

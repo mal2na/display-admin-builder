@@ -59,7 +59,7 @@ function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
   const Preview = sp.kind === 'banner' ? (
     <div className="mx-auto w-full max-w-[320px] rounded-[18px] border border-[#e3e6ea] bg-white p-4 shadow-[0_2px_12px_rgba(20,22,40,0.08)]">
       <div className="flex items-start gap-3">
-        <p className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-[#1a1a1a]">새 iPhone에 어울리는 AirPods Max 3 특별한 혜택</p>
+        <p className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-[#8b949e]">배너 타이틀</p>
         <div className="h-14 w-14 shrink-0 rounded-[10px] bg-gradient-to-br from-[#e7eaf1] to-[#d7dce6]" />
       </div>
       {sp.pager && (
@@ -69,12 +69,13 @@ function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
       )}
     </div>
   ) : (
-    <div className="mx-auto w-full max-w-[320px] space-y-2 rounded-[18px] bg-[#eef0ff] p-4">
-      {[['4월 혜택', '혜택 줍기', '0 Week'], ['이벤트', '영화 예매', '글로벌']].map((row, ri) => (
-        <div key={ri} className="flex gap-1.5 overflow-hidden">
-          {row.map((t, i) => (
-            <span key={i} className="flex shrink-0 items-center gap-1.5 rounded-full bg-white py-1.5 pl-1.5 pr-2.5 shadow-sm">
-              <span className="h-4 w-4 shrink-0 rounded-full bg-[#3617ce]" /><span className="whitespace-nowrap text-[11px] font-medium text-[#1a1a1a]">{t}</span>
+    /* 탭형(상단 퀵메뉴·스와이프) — 운영자가 최대 12개 등록 → 위아래 2행×6개. 라벨은 껍데기(필드 코드)라 'menu'(2026-11-25 사용자 요청). 가로 스와이프라 카드 폭에서 클립. */
+    <div className="mx-auto w-full max-w-[320px] space-y-2 overflow-hidden rounded-[18px] bg-[#eef0ff] p-4">
+      {[0, 1].map((ri) => (
+        <div key={ri} className="flex w-max gap-2">
+          {Array.from({ length: 6 }, (_, i) => (
+            <span key={i} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white py-1 pl-1 pr-3.5 text-[12px] font-medium text-[#8b949e] shadow-sm">
+              <span className="h-6 w-6 shrink-0 rounded-full bg-[#eef0f6]" />menu
             </span>
           ))}
         </div>
@@ -95,19 +96,33 @@ function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
         <h1 className="text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[#1a1a1a]">{sp.top} &gt; {sp.mid} &gt; {sp.layout}</h1>
         <span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[12px] font-bold text-[#697582]"><Lock className="h-3 w-3" />조회 전용</span>
       </div>
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <div className="lg:sticky lg:top-6 lg:self-start">
-          <p className="mb-2 text-[13px] font-bold text-[#1a1a1a]">미리보기</p>
-          <div className="rounded-[16px] bg-[#eceef5] p-5">{Preview}</div>
-        </div>
-        <div>
-          <p className="mb-2 text-[13px] font-bold text-[#1a1a1a]">코너 기본 정보</p>
-          <div className="border-t border-[#dce0e5]">
-            <Row2 l1="코너 유형" v1={<span className={`${CHIP} ${sp.top === '배너형' ? 'bg-[#E6F0FF] text-[#2E6FF2]' : 'bg-[#EAF7F0] text-[#0B8A75]'}`}>{sp.top}</span>} l2="중분류" v2={sp.mid} />
-            <Row2 l1="배열·레이아웃" v1={sp.layout} l2="원장" v2={sp.source} />
-            <RowFull label="설명"><span className="text-[14px] leading-relaxed text-[#1a1a1a]">{sp.desc}</span></RowFull>
+      {/* 미리보기(좌·고정폭 340·sticky) + 코너 기본 정보(우·콜랩스) — 혜택형 상세와 동일 레이아웃(2026-11-25 사용자 요청). */}
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
+          <div className="mb-2.5 flex items-center gap-2 px-1">
+            <span className="text-[13px] font-bold text-[#454f59]">코너 미리보기</span>
+            <span className="text-[12px] text-[#b3b9c0]">껍데기(필드 코드)</span>
           </div>
-          <p className="mt-6 flex items-start gap-1.5 rounded-[8px] bg-[#f8f9fb] px-3 py-2.5 text-[13px] leading-relaxed text-[#697582]">
+          <div className="flex justify-center rounded-[20px] bg-[#eceef5] p-6">{Preview}</div>
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-6">
+          <Collapse title="코너 기본 정보">
+            <div className="px-5 pb-5 pt-4">
+             <div className="border-t border-[#dce0e5]">
+              <Row2 l1="코너 유형" v1={<span className={`${CHIP} ${sp.top === '배너형' ? 'bg-[#E6F0FF] text-[#2E6FF2]' : 'bg-[#EAF7F0] text-[#0B8A75]'}`}>{sp.top}</span>} l2="중분류" v2={<span className="text-[#454f59]">{sp.mid}</span>} />
+              <Row2 l1="배열·레이아웃" v1={<span className="text-[#454f59]">{sp.layout}</span>} l2="원장" v2={
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-2 py-1 text-[13px] text-[#454f59]">
+                  <Database className="h-3.5 w-3.5 shrink-0 text-[#8b949e]" /><span className="[word-break:keep-all]">{sp.source}</span>
+                </span>} />
+              <RowFull label="설명"><span className="text-[14px] leading-relaxed text-[#1a1a1a] [word-break:keep-all]">{sp.desc}</span></RowFull>
+              <Row2
+                l1="사용여부" v1={<span className="inline-flex items-center gap-1 font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span>}
+                l2="등록일시" v2={<span className="text-[#697582]">2026-11-23 10:21</span>} />
+             </div>
+            </div>
+          </Collapse>
+          <p className="flex items-start gap-1.5 rounded-[8px] bg-[#f8f9fb] px-3 py-2.5 text-[13px] leading-relaxed text-[#697582]">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#8b949e]" />
             <span>코너 유형은 SB 프리셋 → FE 고정 개발물이라 여기서는 조회만 합니다.</span>
           </p>

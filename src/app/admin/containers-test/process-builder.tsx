@@ -1138,93 +1138,12 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
             </p>
           </div>
 
-          {/* 개인화(추천) 설정 — '운영자 고정 + 추천' 또는 '전부 추천'일 때. */}
-          {fillMode !== '운영자 직접' && (
-          <div className="mb-4 rounded-[10px] border border-[#e8ddff] bg-[#faf9ff] p-3">
-            <p className="mb-2.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-[#6D28D9]">
-              <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>{fillMode === '운영자 고정 + 추천' ? <>운영자가 고정한 자리 외 나머지를 <b>추천 엔진</b>이 고객별로 채워요.</> : <>후보 코너 유형을 여러 개 담아두면 <b>추천 엔진</b>이 고객마다 노출 개수만큼 골라요. 없으면 미노출.</>}</span>
-            </p>
-            <FormBlock title="추천 로직">
-              <FormRow label="추천 엔진" req>
-                <RadioRow options={[...MLS_REC_LOGICS]} value={persoMls} onChange={setPersoMls} />
-              </FormRow>
-            </FormBlock>
-            {/* 후보 코너 유형 — 혜택형 '전부 추천'일 때만(여러 코너 껍데기 중 추천이 택). 퀵메뉴는 아이템 추천이라 후보 선택 없이 개수만(2026-11-25 사용자 요청). */}
-            {isBenefitType && fillMode === '전부 추천' && (
-            <FormBlock title={`후보 코너 유형 · ${persoTypes.length}`}>
-              <div className="px-0.5 py-2.5">
-                {persoTypes.length === 0 ? (
-                  <p className="mb-2 rounded-[8px] border border-dashed border-[var(--line3)] bg-white px-3 py-3 text-center text-[12px] text-[var(--ink4)]">아직 담은 후보가 없어요. 아래에서 후보 유형을 불러오세요.</p>
-                ) : (
-                  <ul className="mb-2 space-y-1.5">
-                    {persoTypes.map((id, i) => {
-                      const t = BENEFIT_TYPE_LIST.find((x) => x.typeId === id);
-                      if (!t) return null;
-                      const img = sbPreviewSrc(t.mid, t.layout);
-                      return (
-                        <li key={id} className="flex items-center gap-2 rounded-[8px] border border-[var(--line2)] bg-white px-2 py-1.5">
-                          <span className="shrink-0 text-[11px] font-bold tabular-nums text-[var(--ink5)]">{i + 1}</span>
-                          <span className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-[5px] bg-[var(--th)]">
-                            {img ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={img} alt={t.name} className="h-full w-full object-cover object-top" /> : <LayoutGrid className="h-3.5 w-3.5 text-[var(--ink5)]" />}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[var(--ink2)]">{t.name}</span>
-                          <button type="button" aria-label="후보 제거" onClick={() => setPersoTypes((a) => a.filter((x) => x !== id))} className="grid h-5 w-5 shrink-0 place-items-center rounded-[5px] text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink2)]"><X className="h-3 w-3" /></button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                <button type="button" onClick={() => setPersoPickerOpen(true)}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-dashed border-[#c9b8ec] bg-white px-2 py-2 text-[12px] font-semibold text-[#6D28D9] transition hover:bg-[#faf7ff]">
-                  <Plus className="h-3.5 w-3.5" /> 후보 유형 불러오기
-                </button>
-              </div>
-            </FormBlock>
-            )}
-            <FormBlock title={fillMode === '전부 추천' ? '노출 개수' : '추천 개수'}>
-              <FormRow label="최소 ~ 최대" req>
-                <div className="flex items-center gap-2 text-[13px]">
-                  <Stepper value={persoMin} min={1} max={persoMax} onChange={(v) => setPersoMin(v)} />
-                  <span className="text-[var(--ink4)]">~</span>
-                  <Stepper value={persoMax} min={persoMin} max={5} onChange={(v) => setPersoMax(v)} />
-                  <span className="ml-1 text-[12px] text-[var(--ink4)]">{fillMode === '전부 추천' ? '개 노출' : '자리 추천'}</span>
-                </div>
-              </FormRow>
-            </FormBlock>
-            {isBenefitType && fillMode === '전부 추천' && (
-            <div className="mt-1 flex flex-wrap items-center gap-2 rounded-[10px] border border-[#e8ddff] bg-[#faf7ff] px-3 py-2.5 text-[12px]">
-              <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">후보 {persoTypes.length}개 유형</span>
-              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#b79ae8]" />
-              <span className="flex items-center gap-1 rounded-full bg-[#6D28D9] px-2.5 py-1 font-semibold text-white"><Sparkles className="h-3 w-3" />{persoMls}</span>
-              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#b79ae8]" />
-              <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">최소 {persoMin}~최대 {persoMax}개 노출</span>
-              <span className="ml-auto shrink-0 text-[11px] text-[var(--ink4)]">없으면 미노출</span>
-            </div>
-            )}
-            {persoPickerOpen && (
-              /* 후보 유형 불러오기 = '코너 추가'와 동일한 모달(LoadCornerModal). 단, 개인화 가능 유형만(2026-11-25 사용자 요청).
-                 LibCorner.id = `benefit-${typeId}` 이므로 선택 결과를 후보 typeId로 환원. */
-              <LoadCornerModal
-                corners={libCorners.filter((c) => c.canPersonal)}
-                targetZone="personal"
-                title="후보 유형 추가"
-                addLabel="후보로 담기"
-                initialPicked={persoTypes.map((id) => `benefit-${id}`)}
-                onToast={onToast}
-                onClose={() => setPersoPickerOpen(false)}
-                onAdd={(cs) => {
-                  const ids = cs.map((c) => (c.id.startsWith('benefit-') ? c.id.slice('benefit-'.length) : '')).filter(Boolean);
-                  setPersoTypes(ids); setPersoPickerOpen(false); onToast(`후보 유형 ${ids.length}개를 담았어요`);
-                }} />
-            )}
-          </div>
-          )}
           </>)}
 
           {/* ── 운영자 지정 — '운영자 고정 + 추천'일 때만 라벨로 구분. '전부 추천'은 운영자 콘텐츠 없음. ── */}
           {showFillMode && fillMode === '운영자 고정 + 추천' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 고정 항목</p>}
-          {showFillMode && fillMode === '전부 추천' ? null : isRecQuery ? (
+          {showFillMode && fillMode === '전부 추천' && fb === '운영자 편성으로 대체' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[#b67a12]"><UserCog className="h-3.5 w-3.5" /> 대체 항목 <span className="text-[11px] font-normal text-[var(--ink4)]">· 추천이 없을 때 노출</span></p>}
+          {showFillMode && fillMode === '전부 추천' && fb !== '운영자 편성으로 대체' ? null : isRecQuery ? (
           /* ── 추천 질의어 — AI 생성/직접 입력(최대 2개·≤20자·1줄). SB [홈]유형(2026-11-25 사용자 요청: 콘텐츠 불러오기 아님). ── */
           <div>
             <p className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#f5f1ff] px-3 py-2 text-[12px] leading-relaxed text-[#6D28D9]">
@@ -1828,52 +1747,109 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           ) : null}
           </>
           )}
-          {/* CVM 데이터 연동 — 위 운영자 고정(아이템) + 나머지는 CVM이 중분류에서 채움(2026-11-06 사용자 확정: 별도 UI 없이 같은 아이템 UI 재사용). */}
-          {isData && (
-            <div className="mt-4 border-t border-[var(--line2)] pt-3">
-              <div className="mb-2 flex items-start gap-1.5 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]">
-                <span className="mt-0.5">ⓘ</span><span>위 <b>운영자 고정</b> 항목은 그대로 두고, <b>나머지 자리는 CVM</b>이 중분류에서 채웁니다(협의 중 조정 가능).</span>
-              </div>
-              <p className="mb-1.5 text-[12px] font-semibold text-[var(--ink3)]">요청 중분류 <span className="font-normal text-[var(--ink4)]">· 나머지 자리를 채울 CVM 범위</span></p>
-              <div className="flex flex-wrap gap-1.5">
-                {CVM_CATALOGS.map((c) => (
-                  <button key={c} type="button" onClick={() => setCat(c)} className={cn('rounded-[8px] px-2.5 py-1.5 text-[12px] font-semibold', c === cat ? 'bg-[var(--ac)] text-white' : 'bg-[var(--th)] text-[var(--ink2)] hover:bg-[var(--line)]')}>{c}</button>
-                ))}
-              </div>
-              {/* 직접 입력 — 프리셋에 없는 중분류를 운영자가 직접 적어 CVM에 제안(2026-11-09 사용자 요청). 입력하면 위 프리셋 칩은 자동 해제. */}
-              <div className="mt-1.5 flex items-center gap-1.5">
-                <input value={CVM_CATALOGS.includes(cat) ? '' : cat} onChange={(e) => setCat(e.target.value)}
-                  placeholder="직접 입력 (예: 로밍 혜택 · 멤버십 등급)"
-                  className={cn('h-[32px] min-w-0 flex-1 rounded-[6px] border bg-white px-2.5 text-[13px] focus:border-[var(--ac)] focus:outline-none', CVM_CATALOGS.includes(cat) ? 'border-[var(--line2)]' : 'border-[var(--ac)]')} />
-                {!CVM_CATALOGS.includes(cat) && cat && <span className="shrink-0 rounded-[6px] bg-[var(--ac2)] px-2 py-1 text-[11px] font-semibold text-[var(--ac)]">직접 입력</span>}
-              </div>
-              <p className="mb-1.5 mt-3 text-[12px] font-semibold text-[var(--ink3)]">나머지 요청 개수 <span className="font-normal text-[var(--ink4)]">· CVM이 채울 자리 (최소~최대)</span></p>
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-[var(--ink4)]">최소</span>
-                  <input type="number" min={1} max={5} value={cvmMin}
-                    onChange={(e) => { const v = Math.max(1, Math.min(5, Math.floor(Number(e.target.value) || 1))); const mx = Math.max(cvmMax, v); setCvmMin(v); setCvmMax(mx); pushDataPreview(items, v, mx); }}
-                    className="h-[32px] w-16 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-center text-[13px] tabular-nums focus:border-[var(--ac)] focus:outline-none" />
-                </div>
-                <span className="text-[var(--ink4)]">~</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-[var(--ink4)]">최대</span>
-                  <input type="number" min={cvmMin} max={5} value={cvmMax}
-                    onChange={(e) => { const v = Math.max(cvmMin, Math.min(5, Math.floor(Number(e.target.value) || cvmMin))); setCvmMax(v); pushDataPreview(items, cvmMin, v); }}
-                    className="h-[32px] w-16 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-center text-[13px] tabular-nums focus:border-[var(--ac)] focus:outline-none" />
-                </div>
-                <span className="ml-1 text-[11px] text-[var(--ink4)]">CVM 상한 5</span>
-              </div>
-              <p className="mt-1.5 text-[11px] text-[var(--ink4)]">고정 <b className="text-[var(--ink3)]">{items.length}</b> + CVM <b className="text-[var(--ink3)]">{cvmMin}~{cvmMax}</b> = 총 <b className="text-[var(--ac)]">{items.length + cvmMin}~{items.length + cvmMax}</b>칸</p>
-              <details className="mt-3 rounded-[8px] bg-[var(--th)] px-3 py-2 text-[12px] text-[var(--ink3)]">
-                <summary className="cursor-pointer font-semibold">▸ CVM이 주지 않는 것 5가지</summary>
-                <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-[11px] text-[var(--ink4)]">
-                  <li>세그먼트(개별 고객 단위만)</li><li>고객 성향·인사이트(C360·데이터실)</li><li>제휴 콘텐츠(EPC 밖)</li><li>레이아웃·카드 모양(전시 설계)</li><li>문구만 따로 베리에이션</li>
-                </ul>
-              </details>
-            </div>
-          )}
+          {/* CVM 데이터 연동 요청(요청 중분류·나머지 요청 개수·CVM 미제공 목록) UI 제거 — 채우는 방식(운영자 고정+추천)으로 대체(2026-11-25 사용자 요청). */}
           </>)}
+          {/* 개인화(추천) 설정 — '운영자 고정 + 추천' 또는 '전부 추천'일 때. */}
+          {fillMode !== '운영자 직접' && (
+          <div className="mb-4 rounded-[10px] border border-[#e8ddff] bg-[#faf9ff] p-3">
+            <p className="mb-2.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-[#6D28D9]">
+              <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>{fillMode === '운영자 고정 + 추천' ? <>운영자가 고정한 자리 외 나머지를 <b>추천 엔진</b>이 고객별로 채워요.</> : <>후보 코너 유형을 여러 개 담아두면 <b>추천 엔진</b>이 고객마다 노출 개수만큼 골라요. 없으면 미노출.</>}</span>
+            </p>
+            <FormBlock title="추천 로직">
+              <FormRow label="추천 엔진" req>
+                <RadioRow options={[...MLS_REC_LOGICS]} value={persoMls} onChange={setPersoMls} />
+              </FormRow>
+            </FormBlock>
+            {/* 후보 코너 유형 — 혜택형 '전부 추천'일 때만(여러 코너 껍데기 중 추천이 택). 퀵메뉴는 아이템 추천이라 후보 선택 없이 개수만(2026-11-25 사용자 요청). */}
+            {isBenefitType && fillMode === '전부 추천' && (
+            <FormBlock title={`후보 코너 유형 · ${persoTypes.length}`}>
+              <div className="px-0.5 py-2.5">
+                {persoTypes.length === 0 ? (
+                  <p className="mb-2 rounded-[8px] border border-dashed border-[var(--line3)] bg-white px-3 py-3 text-center text-[12px] text-[var(--ink4)]">아직 담은 후보가 없어요. 아래에서 후보 유형을 불러오세요.</p>
+                ) : (
+                  <ul className="mb-2 space-y-1.5">
+                    {persoTypes.map((id, i) => {
+                      const t = BENEFIT_TYPE_LIST.find((x) => x.typeId === id);
+                      if (!t) return null;
+                      const img = sbPreviewSrc(t.mid, t.layout);
+                      return (
+                        <li key={id} className="flex items-center gap-2 rounded-[8px] border border-[var(--line2)] bg-white px-2 py-1.5">
+                          <span className="shrink-0 text-[11px] font-bold tabular-nums text-[var(--ink5)]">{i + 1}</span>
+                          <span className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-[5px] bg-[var(--th)]">
+                            {img ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={img} alt={t.name} className="h-full w-full object-cover object-top" /> : <LayoutGrid className="h-3.5 w-3.5 text-[var(--ink5)]" />}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[var(--ink2)]">{t.name}</span>
+                          <button type="button" aria-label="후보 제거" onClick={() => setPersoTypes((a) => a.filter((x) => x !== id))} className="grid h-5 w-5 shrink-0 place-items-center rounded-[5px] text-[var(--ink4)] hover:bg-[var(--th)] hover:text-[var(--ink2)]"><X className="h-3 w-3" /></button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <button type="button" onClick={() => setPersoPickerOpen(true)}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-dashed border-[#c9b8ec] bg-white px-2 py-2 text-[12px] font-semibold text-[#6D28D9] transition hover:bg-[#faf7ff]">
+                  <Plus className="h-3.5 w-3.5" /> 후보 유형 불러오기
+                </button>
+              </div>
+            </FormBlock>
+            )}
+            <FormBlock title={fillMode === '전부 추천' ? '노출 개수' : '추천 개수'}>
+              <FormRow label="최소 ~ 최대" req>
+                <div className="flex items-center gap-2 text-[13px]">
+                  <Stepper value={persoMin} min={1} max={persoMax} onChange={(v) => setPersoMin(v)} />
+                  <span className="text-[var(--ink4)]">~</span>
+                  <Stepper value={persoMax} min={persoMin} max={5} onChange={(v) => setPersoMax(v)} />
+                  <span className="ml-1 text-[12px] text-[var(--ink4)]">{fillMode === '전부 추천' ? '개 노출' : '자리 추천'}</span>
+                </div>
+              </FormRow>
+            </FormBlock>
+            {fillMode === '전부 추천' && (
+            <FormBlock title="추천이 없을 때">
+              <div className="flex flex-col gap-1.5">
+                {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
+                  const on = fb === f;
+                  return (
+                    <button key={f} type="button" onClick={() => { setFb(f); onFallbackChange(f); onPreviewFallback(true); }}
+                      className={cn('flex items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px] transition', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white hover:bg-[var(--surface-hover)]')}>
+                      <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#d99b2b] bg-[#d99b2b]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
+                      <span className="min-w-0 flex-1">
+                        <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
+                        <span className="block text-[var(--ink4)]">{f === '미노출' ? '걸리는 후보가 없으면 이 코너는 노출하지 않아요.' : '추천이 비면 아래 ‘대체 항목’에 등록한 운영자 편성을 대신 노출해요.'}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </FormBlock>
+            )}
+            {isBenefitType && fillMode === '전부 추천' && (
+            <div className="mt-1 flex flex-wrap items-center gap-2 rounded-[10px] border border-[#e8ddff] bg-[#faf7ff] px-3 py-2.5 text-[12px]">
+              <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">후보 {persoTypes.length}개 유형</span>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#b79ae8]" />
+              <span className="flex items-center gap-1 rounded-full bg-[#6D28D9] px-2.5 py-1 font-semibold text-white"><Sparkles className="h-3 w-3" />{persoMls}</span>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#b79ae8]" />
+              <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">최소 {persoMin}~최대 {persoMax}개 노출</span>
+              <span className="ml-auto shrink-0 text-[11px] text-[var(--ink4)]">{fb === '운영자 편성으로 대체' ? '없으면 운영자 대체' : '없으면 미노출'}</span>
+            </div>
+            )}
+            {persoPickerOpen && (
+              /* 후보 유형 불러오기 = '코너 추가'와 동일한 모달(LoadCornerModal). 단, 개인화 가능 유형만(2026-11-25 사용자 요청).
+                 LibCorner.id = `benefit-${typeId}` 이므로 선택 결과를 후보 typeId로 환원. */
+              <LoadCornerModal
+                corners={libCorners.filter((c) => c.canPersonal)}
+                targetZone="personal"
+                title="후보 유형 추가"
+                addLabel="후보로 담기"
+                initialPicked={persoTypes.map((id) => `benefit-${id}`)}
+                onToast={onToast}
+                onClose={() => setPersoPickerOpen(false)}
+                onAdd={(cs) => {
+                  const ids = cs.map((c) => (c.id.startsWith('benefit-') ? c.id.slice('benefit-'.length) : '')).filter(Boolean);
+                  setPersoTypes(ids); setPersoPickerOpen(false); onToast(`후보 유형 ${ids.length}개를 담았어요`);
+                }} />
+            )}
+          </div>
+          )}
         </Sec>
       ) : isProfile ? (
         <Sec n={nFill} title="프로필 항목">

@@ -44,16 +44,17 @@ const MID_TEXT: Record<string, string> = {
   '배너형': 'text-[#2E6FF2]',
 };
 
-// 배너형 미리보기 — SB [홈]유형 배너(node 29032:27462). 문구 + 이미지, 복수형이면 하단 '1/10' 페이지네이션.
+// 배너형 미리보기 — SB [홈]유형 배너(node 29032:27462). 실제 배너처럼 가로로 넓은 비율(약 3:1). 복수형은 하단 '1/10'.
 function BannerTypePreview({ pager }: { pager?: boolean }) {
   return (
-    <div className="w-[150px] rounded-[12px] border border-[#e3e6ea] bg-white p-3 shadow-[0_2px_10px_rgba(20,22,40,0.08)]">
-      <div className="flex items-start gap-2">
-        <p className="min-w-0 flex-1 text-[10px] font-bold leading-[14px] text-[#1a1a1a]">새 iPhone에 어울리는 AirPods Max 3 특별한 혜택</p>
-        <div className="h-9 w-9 shrink-0 rounded-[8px] bg-gradient-to-br from-[#e7eaf1] to-[#d7dce6]" />
+    <div className="w-[190px]">
+      {/* 배너 — 가로로 긴 직사각형(배너 비율). 좌 문구 / 우 이미지. */}
+      <div className="flex w-full items-center gap-2 overflow-hidden rounded-[10px] bg-gradient-to-br from-[#eef0f6] to-[#e3e9f5] px-2.5 shadow-[0_2px_10px_rgba(20,22,40,0.08)]" style={{ aspectRatio: '672 / 214' }}>
+        <p className="min-w-0 flex-1 text-[10px] font-bold leading-[13px] text-[#1a1a1a] [word-break:keep-all]">배너 타이틀</p>
+        <div className="h-9 w-9 shrink-0 rounded-[8px] bg-gradient-to-br from-[#dfe3ea] to-[#cbd2e0]" />
       </div>
       {pager && (
-        <div className="mt-2 flex items-center gap-1 text-[9px] font-semibold text-[#8b949e]">
+        <div className="mt-1.5 flex items-center justify-center gap-1 text-[9px] font-semibold text-[#8b949e]">
           <ChevronRight className="h-2.5 w-2.5 rotate-180" /><span className="text-[#454f59]">1</span><span>/ 10</span><ChevronRight className="h-2.5 w-2.5" />
         </div>
       )}
