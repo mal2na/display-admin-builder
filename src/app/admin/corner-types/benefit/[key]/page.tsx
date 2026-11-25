@@ -69,17 +69,16 @@ function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
       )}
     </div>
   ) : (
-    /* 탭형(상단 퀵메뉴·스와이프) — 운영자가 최대 12개 등록 → 위아래 2행×6개. 라벨은 껍데기(필드 코드)라 'menu'(2026-11-25 사용자 요청). 가로 스와이프라 카드 폭에서 클립. */
-    <div className="mx-auto w-full max-w-[320px] space-y-2 overflow-hidden rounded-[18px] bg-[#eef0ff] p-4">
-      {[0, 1].map((ri) => (
-        <div key={ri} className="flex w-max gap-2">
-          {Array.from({ length: 6 }, (_, i) => (
-            <span key={i} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white py-1 pl-1 pr-3.5 text-[12px] font-medium text-[#8b949e] shadow-sm">
-              <span className="h-6 w-6 shrink-0 rounded-full bg-[#eef0f6]" />menu
-            </span>
-          ))}
-        </div>
-      ))}
+    /* 탭형(상단 퀵메뉴) — 운영자가 최대 12개 등록 → 위아래 2행×6개가 모두 보이게 아이콘 타일 그리드(잘림 없음, 2026-11-25 사용자 요청). 라벨은 껍데기(필드 코드)라 'menu'. */
+    <div className="mx-auto w-full max-w-[320px] rounded-[18px] bg-[#eef0ff] p-4">
+      <div className="grid grid-cols-6 gap-x-1.5 gap-y-3">
+        {Array.from({ length: 12 }, (_, i) => (
+          <div key={i} className="flex flex-col items-center gap-1">
+            <span className="h-8 w-8 rounded-full bg-white shadow-sm" />
+            <span className="text-[10px] font-medium leading-none text-[#8b949e]">menu</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
   return (
