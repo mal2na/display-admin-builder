@@ -142,19 +142,16 @@ function ChipsView({ component }: { component: PreviewComponent }) {
       // 상단 퀵메뉴 6+6 모델(2026-11-25 사용자): 운영자가 전체(최대 12) 등록. 개인화 추천은 최대 6개를 윗줄로 올린다.
       //  개인화가 6 미만이면 운영자 리스트로 윗줄을 채우고(순서), 아랫줄은 윗줄에 올라간 걸 제외한 운영자 6개.
       //  → 운영자 12개 등록 시 빈칸 없이 6+6. (미리보기는 폴백이라 ✦ 마커로 개인화 픽을 시뮬레이션.)
-      //  실제 FO에선 두 줄이 동일하게 보이므로 칩 스타일은 같게 두고, '줄의 성격'만 빌더용 라벨로 명시(틴트 대신, 2026-11-25 사용자 요청).
+      //  실제 FO처럼 두 줄 모두 동일한 칩으로만 — '개인화 추천/운영자 지정' 라벨은 미리보기에 띄우지 않는다(2026-11-25 사용자 요청).
       const picks = atoms.filter(isPers);
       const top: PreviewAtom[] = [...picks];
       for (const a of atoms) { if (top.length >= 6) break; if (!top.includes(a)) top.push(a); }
       const topSet = new Set(top);
       const bottom = atoms.filter((a) => !topSet.has(a)).slice(0, 6);
-      const RowTag = ({ kind }: { kind: '개인화' | '운영자' }) => (
-        <span className={'mt-1 shrink-0 self-start rounded-[5px] px-1.5 py-0.5 text-[9px] font-bold leading-[14px] ' + (kind === '개인화' ? 'bg-[#efeaff] text-[#5b36ff]' : 'bg-[#eef0f6] text-[#697582]')}>{kind === '개인화' ? '개인화 추천' : '운영자 지정'}</span>
-      );
       return (
         <div className="flex flex-col gap-2 overflow-x-auto pb-1">
-          <div className="flex w-max items-start gap-2"><RowTag kind="개인화" />{top.map(chip)}</div>
-          <div className="flex w-max items-start gap-2"><RowTag kind="운영자" />{bottom.map(chip)}</div>
+          <div className="flex w-max items-start gap-2">{top.map(chip)}</div>
+          <div className="flex w-max items-start gap-2">{bottom.map(chip)}</div>
         </div>
       );
     }
