@@ -333,8 +333,8 @@ function cornerTypeDisplayId(cornerType: string): string {
   return 'CY' + String(h).padStart(7, '0');
 }
 
-function CornerDetail({ template, corner, index, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast, onPersonalChange }: {
-  template: PTemplate; corner: PCorner | null; index: number; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void; onPersonalChange: (on: boolean) => void;
+function CornerDetail({ template, corner, index, libCorners, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast, onPersonalChange }: {
+  template: PTemplate; corner: PCorner | null; index: number; libCorners: LibCorner[]; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void; onPersonalChange: (on: boolean) => void;
 }) {
   if (!corner) {
     return (
@@ -343,7 +343,7 @@ function CornerDetail({ template, corner, index, onPreviewFallback, onFallbackCh
       </div>
     );
   }
-  return <CornerDetailBody key={corner.id} template={template} corner={corner} onPreviewFallback={onPreviewFallback} onFallbackChange={onFallbackChange} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onPreviewPatch={onPreviewPatch} onToast={onToast} onPersonalChange={onPersonalChange} />;
+  return <CornerDetailBody key={corner.id} template={template} corner={corner} libCorners={libCorners} onPreviewFallback={onPreviewFallback} onFallbackChange={onFallbackChange} onRecSourceChange={onRecSourceChange} onOptionsChange={onOptionsChange} onPreviewPatch={onPreviewPatch} onToast={onToast} onPersonalChange={onPersonalChange} />;
 }
 
 // 카테고리 불러오기 모달(2단) — 좌: 카테고리, 우: 그 카테고리의 브랜드/항목 멀티선택.
@@ -531,47 +531,7 @@ function SortableFillRow({ id, children }: { id: string; children: (h: { setRef:
   );
 }
 
-// 후보 코너 유형 불러오기 — 개인화 구성(②)에서 추천 후보 '껍데기'를 직접 담는 컴팩트 모달(2026-11-25 사용자 요청: 직접 가지고 와야 함).
-//  개인화 가능 유형(canPersonalize)만, 멀티 셀렉. 큰 그리드 대신 작은 카드로(너무 커 피드백 반영).
-function CandidateTypeModal({ current, onClose, onApply }: { current: string[]; onClose: () => void; onApply: (ids: string[]) => void }) {
-  const all = React.useMemo(() => benefitTypes().filter((t) => canPersonalize(t.mid, t.layout) && !t.unused), []);
-  const [picked, setPicked] = React.useState<Set<string>>(new Set(current));
-  const toggle = (id: string) => setPicked((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  return (
-    <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex max-h-[80vh] w-full max-w-[560px] flex-col overflow-hidden rounded-[16px] bg-white shadow-[var(--dlg-shadow)]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2 px-5 pb-3 pt-4">
-          <Sparkles className="h-4 w-4 text-[#6D28D9]" />
-          <h3 className="text-[16px] font-bold text-[var(--ink)]">후보 코너 유형 불러오기</h3>
-          <span className="rounded-full bg-[#F2ECFB] px-2 py-0.5 text-[11px] font-semibold text-[#6D28D9]">개인화 가능 유형</span>
-          <button type="button" onClick={onClose} className="ml-auto rounded-[6px] p-1 text-[var(--ink3)] hover:bg-[var(--th)]"><X className="h-4 w-4" /></button>
-        </div>
-        <div className="grid min-h-0 flex-1 grid-cols-2 gap-1.5 overflow-y-auto px-5 pb-3 sm:grid-cols-3">
-          {all.map((t) => {
-            const on = picked.has(t.typeId); const img = sbPreviewSrc(t.mid, t.layout);
-            return (
-              <button key={t.typeId} type="button" onClick={() => toggle(t.typeId)}
-                className={cn('flex items-center gap-2 rounded-[8px] border px-2 py-1.5 text-left transition', on ? 'border-[#6D28D9] bg-[#faf7ff]' : 'border-[var(--line2)] hover:border-[#b79ae8]')}>
-                <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-[5px] bg-[var(--th)]">
-                  {img ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={img} alt={t.name} className="h-full w-full object-cover object-top" /> : <LayoutGrid className="h-4 w-4 text-[var(--ink5)]" />}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-[var(--ink2)]">{t.name}</span>
-                <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border transition', on ? 'border-[#6D28D9] bg-[#6D28D9] text-white' : 'border-[var(--line3)] bg-white')}>{on && <Check className="h-2.5 w-2.5" strokeWidth={3} />}</span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="flex items-center gap-2 border-t border-[var(--line2)] p-3">
-          <span className="text-[12px] text-[var(--ink4)]"><b className="text-[#6D28D9]">{picked.size}</b>개 선택</span>
-          <button type="button" onClick={onClose} className="ml-auto h-[38px] rounded-[8px] border border-[var(--line3)] bg-white px-4 text-[13px] font-semibold text-[var(--ink2)] hover:bg-[var(--th)]">취소</button>
-          <button type="button" onClick={() => onApply([...picked])} className="h-[38px] rounded-[8px] bg-[#6D28D9] px-4 text-[13px] font-bold text-white hover:bg-[#5b21b6]">담기{picked.size > 0 ? ` (${picked.size})` : ''}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast, onPersonalChange }: { template: PTemplate; corner: PCorner; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void; onPersonalChange: (on: boolean) => void }) {
+function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onFallbackChange, onRecSourceChange, onOptionsChange, onPreviewPatch, onToast, onPersonalChange }: { template: PTemplate; corner: PCorner; libCorners: LibCorner[]; onPreviewFallback: (on: boolean) => void; onFallbackChange: (fb: '미노출' | '운영자 편성으로 대체') => void; onRecSourceChange: (src: string) => void; onOptionsChange: (opts: Record<string, boolean>, ctaLabel?: string) => void; onPreviewPatch: (patch: Record<string, unknown>) => void; onToast: (m: string) => void; onPersonalChange: (on: boolean) => void }) {
   // 프로필형(업무 진입형) = 고객 정보(이름·휴대폰 등)라 '무조건 CVM 데이터 연동' 고정(2026-11-05 사용자 요청).
   const layoutDetailStr = corner.layoutDetail ?? corner.layout ?? '';
   const isProfile = corner.cornerType === '업무 진입형' && /프로필/.test(layoutDetailStr);
@@ -579,8 +539,15 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
   const isStatus = corner.cornerType === '업무 진입형' && /상태|아이콘.?이미지/.test(layoutDetailStr);
   // 바코드형 = 멤버십 바코드. 값(번호)은 회원 인증 기반 런타임 발급 → 어드민은 라벨·갱신 주기 정책만(2026-11-05 사용자 요청).
   const isBarcode = corner.cornerType === '바코드형';
-  // CN-DSP-0001 — 개인화 영역에 배치된 코너만 CVM/MLS 수급(추천 맥락 헤더 노출). 운영/픽스 영역은 운영자 편성 고정(② 수급 선택 UI 자체를 숨김, 2026-11-25 사용자 요청).
-  const isPersonal = corner.zone === 'personal';
+  // 출석체크형·룰렛형 = '무조건 개인화'(2026-11-25 사용자 요청). 운영자 구성 선택 불가 · 자동으로 개인화로 고정.
+  const forcePersonal = /(출석체크|룰렛)/.test(corner.name) && corner.canPersonal;
+  // CN-DSP-0001 — 개인화 코너만 CVM/MLS 추천(맥락 헤더 노출). forcePersonal은 zone 저장 전이라도 개인화로 취급.
+  const isPersonal = corner.zone === 'personal' || forcePersonal;
+  // 강제 개인화인데 아직 zone이 personal이 아니면(예: 방금 추가) 한 번 저장해 리스트·미리보기에도 반영.
+  React.useEffect(() => {
+    if (forcePersonal && corner.zone !== 'personal') onPersonalChange(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [corner.templateCornerId, forcePersonal]);
   const [srcState, setSrc] = React.useState<string>(corner.recSource ?? '운영자 편성');
   // 프로필형·상태 안내형 = 'CVM 추천'이 아니라 '고객정보 바인딩(@cvm:key)'. 무엇을 노출할지는 운영자가 정하고 값만 런타임 고객 데이터로 자동.
   //  바코드형도 추천 대상이 아니라 시스템 카드(런타임 발급) → 모두 운영자 편성 고정(CVM 추천 잠금). (2026-11-05 사용자 확정)
@@ -1140,8 +1107,8 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
           <div className="mb-3">
             <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">구성 방식</p>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => { if (isPersonal) onPersonalChange(false); }}
-                className={cn('flex flex-col items-start gap-0.5 rounded-[10px] border px-3 py-2.5 text-left transition', !isPersonal ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]')}>
+              <button type="button" disabled={forcePersonal} onClick={() => { if (isPersonal && !forcePersonal) onPersonalChange(false); }}
+                className={cn('flex flex-col items-start gap-0.5 rounded-[10px] border px-3 py-2.5 text-left transition', !isPersonal ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]', forcePersonal && 'cursor-not-allowed opacity-45 hover:border-[var(--line3)]')}>
                 <span className="flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink)]"><UserCog className={cn('h-3.5 w-3.5', !isPersonal ? 'text-[var(--ac)]' : 'text-[var(--ink4)]')} /> 운영자 구성</span>
                 <span className="text-[11px] text-[var(--ink4)]">운영자가 직접 편성·수급</span>
               </button>
@@ -1151,6 +1118,7 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
                 <span className="text-[11px] text-[var(--ink4)]">후보 유형 등록 → 추천 엔진이 선택</span>
               </button>
             </div>
+            {forcePersonal && <p className="mt-2 flex items-center gap-1 text-[11px] font-medium text-[#6D28D9]"><Sparkles className="h-3 w-3" />출석체크·룰렛형은 개인화 전용이라 운영자 구성으로 바꿀 수 없어요.</p>}
             {!corner.canPersonal && <p className="mt-2 text-[11px] text-[var(--ink4)]">이 코너 유형은 수동(운영자 지정) 전용이라 개인화를 켤 수 없어요.</p>}
           </div>
 
@@ -1216,8 +1184,20 @@ function CornerDetailBody({ template, corner, onPreviewFallback, onFallbackChang
               <span className="ml-auto shrink-0 text-[11px] text-[var(--ink4)]">없으면 미노출</span>
             </div>
             {persoPickerOpen && (
-              <CandidateTypeModal current={persoTypes} onClose={() => setPersoPickerOpen(false)}
-                onApply={(ids) => { setPersoTypes(ids); setPersoPickerOpen(false); onToast(`후보 유형 ${ids.length}개를 담았어요`); }} />
+              /* 후보 유형 불러오기 = '코너 추가'와 동일한 모달(LoadCornerModal). 단, 개인화 가능 유형만(2026-11-25 사용자 요청).
+                 LibCorner.id = `benefit-${typeId}` 이므로 선택 결과를 후보 typeId로 환원. */
+              <LoadCornerModal
+                corners={libCorners.filter((c) => c.canPersonal)}
+                targetZone="personal"
+                title="후보 유형 추가"
+                addLabel="후보로 담기"
+                initialPicked={persoTypes.map((id) => `benefit-${id}`)}
+                onToast={onToast}
+                onClose={() => setPersoPickerOpen(false)}
+                onAdd={(cs) => {
+                  const ids = cs.map((c) => (c.id.startsWith('benefit-') ? c.id.slice('benefit-'.length) : '')).filter(Boolean);
+                  setPersoTypes(ids); setPersoPickerOpen(false); onToast(`후보 유형 ${ids.length}개를 담았어요`);
+                }} />
             )}
           </div>
           ) : (<>
@@ -2260,12 +2240,12 @@ function PersonalZoneBand({ templateId, initial, onToast }: { templateId: string
 }
 
 /* ───────── 템플릿 카드(= order3 '컨테이너' 카드) ───────── */
-function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle, onActivate, selCorner, onSelCorner, onAddCorner, onPreviewFallback, onToast, hiddenIds, onToggleHidden }: {
+function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle, onActivate, selCorner, onSelCorner, onAddCorner, libCorners, onPreviewFallback, onToast, hiddenIds, onToggleHidden }: {
   t: PTemplate; corners: PCorner[]; onCornersChange: React.Dispatch<React.SetStateAction<PCorner[]>>;
   idx: number; open: boolean; active: boolean;
   onToggle: () => void; onActivate: () => void;
   selCorner: string | null; onSelCorner: (id: string) => void;
-  onAddCorner: (zone?: Zone) => void; onPreviewFallback: (on: boolean) => void; onToast: (m: string) => void;
+  onAddCorner: (zone?: Zone) => void; libCorners: LibCorner[]; onPreviewFallback: (on: boolean) => void; onToast: (m: string) => void;
   hiddenIds: Set<string>; onToggleHidden: (tcid: string) => void;
 }) {
   const selIndex = corners.findIndex((c) => c.id === selCorner);
@@ -2313,7 +2293,7 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
               </div>
               {/* 코너 상세 — 독립 스크롤 */}
               <div className="min-h-0 overflow-y-auto pr-0.5">
-                <CornerDetail template={t} corner={selected} index={selIndex} onPreviewFallback={onPreviewFallback}
+                <CornerDetail template={t} corner={selected} index={selIndex} libCorners={libCorners} onPreviewFallback={onPreviewFallback}
                   onFallbackChange={(fb) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, fallback: fb } : c)); }}
                   onRecSourceChange={(src) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, recSource: src, isCvm: src.startsWith('CVM') } : c)); }}
                   onOptionsChange={(opts, ctaLabel) => { if (selected) onCornersChange((prev) => prev.map((c) => c.templateCornerId === selected.templateCornerId ? { ...c, preview: applyOptsToPreview(c.preview, opts, ctaLabel) } : c)); }}
@@ -2351,7 +2331,7 @@ function shellLayout(c: Pick<LibCorner, 'cornerType' | 'layout' | 'layoutDetail'
   if (c.cornerType === '업무 진입형') return '탭형';
   return displayLayout(c.cornerType, raw) || raw;
 }
-function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast }: { corners: LibCorner[]; targetZone?: Zone; onClose: () => void; onAdd: (cs: LibCorner[]) => void; onToast: (m: string) => void }) {
+function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast, initialPicked, title, addLabel }: { corners: LibCorner[]; targetZone?: Zone; onClose: () => void; onAdd: (cs: LibCorner[]) => void; onToast: (m: string) => void; initialPicked?: string[]; title?: string; addLabel?: string }) {
   const personalMode = targetZone === 'personal'; // 개인화 영역 등록 → 수동 전용 유형은 선택 불가
   const [q, setQ] = React.useState('');
   const [tab, setTab] = React.useState('전체');
@@ -2380,7 +2360,7 @@ function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast }: { cor
   const countOf = (t: string) => (t === '전체' ? shells.length : shells.filter((c) => gk(c) === t).length);
   const list = shells.filter((c) => (tab === '전체' || gk(c) === tab) && (!q || c.shellTitle.includes(q) || gk(c).includes(q)));
   // 멀티셀렉 — 체크된 코너 집합 + 우측 미리보기용 포커스
-  const [picked, setPicked] = React.useState<Set<string>>(new Set());
+  const [picked, setPicked] = React.useState<Set<string>>(new Set(initialPicked ?? []));
   const [focusId, setFocusId] = React.useState<string | null>(shells[0]?.id ?? null);
   const sel = shells.find((c) => c.id === focusId) ?? null;
   const toggle = (id: string) => setPicked((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -2390,7 +2370,7 @@ function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast }: { cor
         {/* 좌: 유형 상단 탭 + 검색 + 코너 목록 */}
         <div className="flex w-[380px] shrink-0 flex-col border-r border-[var(--line2)]">
           <div className="flex items-center justify-between px-5 pt-4">
-            <h3 className="text-[17px] font-bold text-[var(--ink)]">코너 추가 <span className="ml-1 text-[13px] font-medium text-[var(--ink4)]">코너 유형 관리</span></h3>
+            <h3 className="text-[17px] font-bold text-[var(--ink)]">{title ?? '코너 추가'} <span className="ml-1 text-[13px] font-medium text-[var(--ink4)]">코너 유형 관리</span></h3>
           </div>
           {/* 유형 탭 — 전체 + 7종(코너 유형 관리). 빈 유형은 비활성 */}
           <div className="flex flex-wrap gap-1.5 px-5 pb-1 pt-3">
@@ -2476,7 +2456,7 @@ function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast }: { cor
           </div>
           <div className="border-t border-[var(--line2)] p-4">
             <button type="button" disabled={picked.size === 0} onClick={() => onAdd(corners.filter((c) => picked.has(c.id)))}
-              className="h-[48px] w-full rounded-[10px] bg-[var(--ac)] text-[15px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">이 코너 추가{picked.size > 0 ? ` (${picked.size})` : ''}</button>
+              className="h-[48px] w-full rounded-[10px] bg-[var(--ac)] text-[15px] font-bold text-white hover:bg-[var(--ac-h)] disabled:opacity-50">{addLabel ?? '이 코너 추가'}{picked.size > 0 ? ` (${picked.size})` : ''}</button>
           </div>
         </div>
       </div>
@@ -2668,28 +2648,19 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
       </div>
     );
   };
-  // 미리보기 순서: 고정(퀵메뉴) → 개인화존(1-x · 해당 고객만, 비해당 시 비노출) → 운영자 세팅존(2-x) (2026-11-25 사용자: 존 구분·비노출 명시).
+  // 미리보기 = 코너 리스트와 '같은 순서'로(2026-11-25 사용자 요청: 좌측 순서≠코너 순서 문제). 존 묶음 폐지.
+  //  개인화 코너는 그 자리에서 보라 점선 박스로 감싸 '해당 고객만 노출'을 표시(순서는 유지).
   const visibleCorners = (activeTemplate ? liveCorners : []).filter((c) => !hiddenIds.has(c.templateCornerId));
-  const fixedPrev = visibleCorners.filter((c) => c.zone === 'fixed');
-  const personalCorners = visibleCorners.filter((c) => c.zone === 'personal');
-  const opsPrev = visibleCorners.filter((c) => c.zone !== 'fixed' && c.zone !== 'personal');
-  const hasPersonal = personalCorners.length > 0;
   const previewBody = (activeTemplate && visibleCorners.length > 0) ? (
     <>
-      {fixedPrev.map(renderPreviewCorner)}
-      {/* 개인화 영역 — 해당 고객만 노출. 비해당(비로그인 등) 시 영역 전체 비노출임을 명시(2026-11-25 사용자 요청). */}
-      {hasPersonal && (
-        <div className="space-y-2 rounded-xl border-2 border-dashed border-[#c9b8f0] bg-[#faf8fe] p-2">
+      {visibleCorners.map((c) => c.zone === 'personal' ? (
+        <div key={c.templateCornerId} className="space-y-1.5 rounded-xl border-2 border-dashed border-[#c9b8f0] bg-[#faf8fe] p-2">
           <div className="flex items-center gap-1 px-0.5 text-[10px] font-extrabold text-[#6D28D9]">
-            <Sparkles className="h-3 w-3" /><span>개인화 영역 · 해당 고객만 노출</span>
+            <Sparkles className="h-3 w-3" /><span>개인화 · 해당 고객만 노출 (비해당 시 미노출)</span>
           </div>
-          {personalCorners.map(renderPreviewCorner)}
-          <div className="flex items-center justify-center gap-1 rounded-[8px] border border-dashed border-[#d9ccf3] bg-white px-2 py-2 text-[10.5px] font-semibold text-[#9a7fd1]">
-            <EyeOff className="h-3.5 w-3.5" /><span>비해당 고객(예: 비로그인) → 이 영역 <b className="text-[#6D28D9]">비노출</b></span>
-          </div>
+          {renderPreviewCorner(c)}
         </div>
-      )}
-      {opsPrev.map(renderPreviewCorner)}
+      ) : renderPreviewCorner(c))}
     </>
   ) : (
     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
@@ -2861,6 +2832,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
                     selCorner={selCorner[t.id] ?? null}
                     onSelCorner={(id) => setSelCorner((m) => ({ ...m, [t.id]: id }))}
                     onAddCorner={(zone) => setLoadModal({ tid: t.id, zone })}
+                    libCorners={data.libCorners}
                     onPreviewFallback={setFbMode}
                     onToast={toast}
                     hiddenIds={hiddenIds}

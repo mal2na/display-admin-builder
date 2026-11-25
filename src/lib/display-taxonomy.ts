@@ -447,12 +447,10 @@ export const ZONE_META: Record<Zone, { label: string; en: string; desc: string; 
   fixed: { label: 'Fixed', en: '항상 고정', desc: '항상 그 자리 · 거의 불변(메뉴성 진입)', hex: '#8B949E', tone: 'bg-[#F1F3F5] text-[#697582]', bar: '#B3B9C0', bg: 'bg-[#F1F3F5]', chipBg: 'bg-[#8B949E]', chipText: 'text-white' },
 };
 
-// 개인화존 추천 로직(MLS) — 존 단위 1개 선택. image 619(상품 전시) 기준 4종. CVM/MLS 범위는 FO 협의로 조정될 수 있음(2026-11-25 미팅).
+// 개인화 추천 로직(MLS) — 코너별 1개 선택. 2종 중 택1(2026-11-25 사용자 요청: 사용 이력 / 서비스 활동 내역).
 export const MLS_REC_LOGICS = [
-  '[MLS] 고객정보 기반 추천',
-  '[MLS] 고객정보 기반 추천(관심사 키워드)',
-  '[MLS] 통계성(연령/성별) 기반 추천',
-  '[MLS] 실시간 고객 행동기반 추천',
+  '사용 이력 기반',
+  '서비스 활동 내역 기반',
 ] as const;
 export type MlsRecLogic = (typeof MLS_REC_LOGICS)[number];
 
