@@ -530,7 +530,8 @@ export const CORNER_TYPES = [
 export type CornerType = (typeof CORNER_TYPES)[number];
 
 // UI 노출용 코너 유형 — 6종 전체(2026-10-29 사용자 확정).
-export const VISIBLE_CORNER_TYPES: CornerType[] = [...CORNER_TYPES];
+// 콘텐츠 안내형은 우선 UI(필터·목록·코너 추가)에서 제외(2026-11-25 사용자 요청). 값·타입은 보존(CORNER_TYPES) — 되돌리려면 필터만 해제.
+export const VISIBLE_CORNER_TYPES: CornerType[] = CORNER_TYPES.filter((t) => t !== '콘텐츠 안내형');
 
 // 코너 유형별 '목적' — 정책서 코너 유형 표(목적 컬럼)의 문구를 그대로 사용(임의 변경 금지).
 export const CORNER_TYPE_PURPOSE: Record<CornerType, string> = {

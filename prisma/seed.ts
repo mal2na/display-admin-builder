@@ -549,7 +549,6 @@ async function main() {
       templateCorners: {
         create: [
           { cornerId: cornerTop.id, order: 0 },
-          { cornerId: cornerMovie.id, order: 1 },
           { cornerId: cornerZeroWeek.id, order: 2 },
           { cornerId: cornerBanner1.id, order: 3 },
           { cornerId: cornerTWeek.id, order: 4 },
@@ -563,7 +562,6 @@ async function main() {
   // 혜택 홈 8개 코너 (기본/로그인/비로그인 공통 배치)
   const beCorners = [
     { cornerId: cornerTop.id, order: 0 },
-    { cornerId: cornerMovie.id, order: 1 },
     { cornerId: cornerZeroWeek.id, order: 2 },
     { cornerId: cornerBanner1.id, order: 3 },
     { cornerId: cornerTWeek.id, order: 4 },
