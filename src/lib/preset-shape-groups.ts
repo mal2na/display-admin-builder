@@ -54,10 +54,11 @@ export const PRESET_SHAPE_GROUPS: PresetShapeGroup[] = [
     presetIds: ['CN-DSP-0035', 'CN-DSP-0036'],
   },
   {
+    // 바코드형을 혜택프로그램형 → 제휴사형으로 이동(2026-11-25 사용자 요청): 원장·들어가는 아이템도 제휴사로 변경.
     key: 'program-barcode',
-    label: '혜택형 > 혜택프로그램형 > 바코드형',
-    note: '혜택프로그램형 · 바코드형 (3개)',
-    source: '어드민 > 내부 프로그램 (T 멤버십 · T day · VIP PICK · 글로벌여행 · 클럽 멤버십 · T 장기고객 · 열린 멤버십 · 기프티콘)',
+    label: '혜택형 > 제휴사형 > 바코드형',
+    note: '제휴사형 · 바코드형 (3개)',
+    source: 'EPC > 제휴사 카테고리 관리 (기존 혜택 브랜드)',
     presetIds: ['CN-DSP-0003', 'CN-DSP-0004', 'CN-DSP-0011'],
   },
   {

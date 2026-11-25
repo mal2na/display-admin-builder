@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Database, Lock, ChevronLeft, Info } from 'lucide-react';
+import { Database, Lock, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { benefitTypeByKey, cornerAttrSpec, benefitGuide, operModeOf } from '@/lib/benefit-corner-types';
 import { presetDesignName } from '@/components/preview/preset-design-card';
 import { BenefitCornerPreview } from '../../benefit-corner-preview';
@@ -48,8 +48,93 @@ function RowFull({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
+// 배너형·탭형 조회 전용 상세 — 혜택형 프리셋이 아니라 공통 유형이라 간이 상세(미리보기 + 기본 정보)로 렌더(2026-11-25 사용자 요청).
+const SPECIAL_TYPES: Record<string, { top: string; mid: string; layout: string; source: string; desc: string; pager?: boolean; kind: 'banner' | 'tab' }> = {
+  'banner-single': { top: '배너형', mid: '배너형', layout: '단수형', source: '배너 캠페인 관리', desc: '배너 1개를 노출합니다. 소재·문구·랜딩은 배너 캠페인 관리에서 가져옵니다.', kind: 'banner' },
+  'banner-multi': { top: '배너형', mid: '배너형', layout: '복수형', source: '배너 캠페인 관리', desc: '여러 배너를 스와이프로 노출합니다(하단 1/N 페이지네이션).', pager: true, kind: 'banner' },
+  'tab-swipe': { top: '업무 진입형', mid: '탭형', layout: '스와이프형', source: '-', desc: '상단 진입 탭(퀵메뉴). 아이콘+라벨 칩을 가로 스와이프로 노출합니다.', kind: 'tab' },
+};
+
+function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
+  const Preview = sp.kind === 'banner' ? (
+    <div className="mx-auto w-full max-w-[320px] rounded-[18px] border border-[#e3e6ea] bg-white p-4 shadow-[0_2px_12px_rgba(20,22,40,0.08)]">
+      <div className="flex items-start gap-3">
+        <p className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-[#8b949e]">배너 타이틀</p>
+        <div className="h-14 w-14 shrink-0 rounded-[10px] bg-gradient-to-br from-[#e7eaf1] to-[#d7dce6]" />
+      </div>
+      {sp.pager && (
+        <div className="mt-3 flex items-center gap-1.5 text-[12px] font-semibold text-[#8b949e]">
+          <ChevronLeft className="h-3 w-3" /><span className="text-[#454f59]">1</span><span>/ 10</span><ChevronRight className="h-3 w-3" />
+        </div>
+      )}
+    </div>
+  ) : (
+    /* 탭형(상단 퀵메뉴) — 운영자가 최대 12개 등록 → 위아래 2행×6개가 모두 보이게 아이콘 타일 그리드(잘림 없음, 2026-11-25 사용자 요청). 라벨은 껍데기(필드 코드)라 'menu'. */
+    <div className="mx-auto w-full max-w-[320px] rounded-[18px] bg-[#eef0ff] p-4">
+      <div className="grid grid-cols-6 gap-x-1.5 gap-y-3">
+        {Array.from({ length: 12 }, (_, i) => (
+          <div key={i} className="flex flex-col items-center gap-1">
+            <span className="h-8 w-8 rounded-full bg-white shadow-sm" />
+            <span className="text-[10px] font-medium leading-none text-[#8b949e]">menu</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+  return (
+    <div className="px-12 py-9 pb-28">
+      <nav className="mb-2 flex items-center gap-1.5 text-[14px] text-[#697582]">
+        <span>홈</span><span>›</span><span>전시 관리</span><span>›</span>
+        <Link href="/admin/corner-types" className="hover:text-[#3617ce]">코너 유형 관리</Link><span>›</span>
+        <span className="text-[#1a1a1a]">{sp.mid} · {sp.layout}</span>
+      </nav>
+      <Link href="/admin/corner-types" className="mb-3 inline-flex items-center gap-1 text-[13px] font-medium text-[#697582] hover:text-[#3617ce]">
+        <ChevronLeft className="h-4 w-4" /> 목록으로
+      </Link>
+      <div className="mb-6 flex flex-wrap items-center gap-2.5">
+        <h1 className="text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[#1a1a1a]">{sp.top} &gt; {sp.mid} &gt; {sp.layout}</h1>
+        <span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[12px] font-bold text-[#697582]"><Lock className="h-3 w-3" />조회 전용</span>
+      </div>
+      {/* 미리보기(좌·고정폭 340·sticky) + 코너 기본 정보(우·콜랩스) — 혜택형 상세와 동일 레이아웃(2026-11-25 사용자 요청). */}
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
+          <div className="mb-2.5 flex items-center gap-2 px-1">
+            <span className="text-[13px] font-bold text-[#454f59]">코너 미리보기</span>
+            <span className="text-[12px] text-[#b3b9c0]">껍데기(필드 코드)</span>
+          </div>
+          <div className="flex justify-center rounded-[20px] bg-[#eceef5] p-6">{Preview}</div>
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-6">
+          <Collapse title="코너 기본 정보">
+            <div className="px-5 pb-5 pt-4">
+             <div className="border-t border-[#dce0e5]">
+              <Row2 l1="코너 유형" v1={<span className={`${CHIP} ${sp.top === '배너형' ? 'bg-[#E6F0FF] text-[#2E6FF2]' : 'bg-[#EAF7F0] text-[#0B8A75]'}`}>{sp.top}</span>} l2="중분류" v2={<span className="text-[#454f59]">{sp.mid}</span>} />
+              <Row2 l1="배열·레이아웃" v1={<span className="text-[#454f59]">{sp.layout}</span>} l2="원장" v2={
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-2 py-1 text-[13px] text-[#454f59]">
+                  <Database className="h-3.5 w-3.5 shrink-0 text-[#8b949e]" /><span className="[word-break:keep-all]">{sp.source}</span>
+                </span>} />
+              <RowFull label="설명"><span className="text-[14px] leading-relaxed text-[#1a1a1a] [word-break:keep-all]">{sp.desc}</span></RowFull>
+              <Row2
+                l1="사용여부" v1={<span className="inline-flex items-center gap-1 font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span>}
+                l2="등록일시" v2={<span className="text-[#697582]">2026-11-23 10:21</span>} />
+             </div>
+            </div>
+          </Collapse>
+          <p className="flex items-start gap-1.5 rounded-[8px] bg-[#f8f9fb] px-3 py-2.5 text-[13px] leading-relaxed text-[#697582]">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#8b949e]" />
+            <span>코너 유형은 SB 프리셋 → FE 고정 개발물이라 여기서는 조회만 합니다.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BenefitCornerTypeDetailPage({ params }: { params: { key: string } }) {
   const key = decodeURIComponent(params.key);
+  const sp = SPECIAL_TYPES[key];
+  if (sp) return <GenericTypeDetail sp={sp} />;
   const t = benefitTypeByKey(key);
   if (!t) notFound();
 

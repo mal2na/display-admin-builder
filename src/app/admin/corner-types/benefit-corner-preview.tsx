@@ -2,7 +2,7 @@
 // 혜택형 코너 유형 미리보기/속성 — 기존 코너 유형 관리의 렌더러를 '그대로' 재사용(2026-11-23 사용자 요청).
 //  혜택형(중분류·레이아웃) → 기존 baseCategory/typeDetail/componentType로 매핑 → cornerRowPreview + DevicePreview(미리보기) · CornerFieldList(코너 속성).
 import { cornerRowPreview, EMPTY_CORNER_TYPE, type CornerTypeRow } from './corner-type-manager';
-import { benefitMap } from '@/lib/benefit-corner-types';
+import { benefitMap, hasLandingLink } from '@/lib/benefit-corner-types';
 import { BenefitPreviewCard, type BenefitDesign } from '@/components/preview/benefit-card';
 import type { PreviewCorner, PreviewAtom, PreviewComponent } from '@/components/preview/blocks';
 
@@ -33,18 +33,18 @@ export function BenefitCornerPreview({ mid, layout, variant }: { mid: string; la
     : layout === '바코드형' ? 'barcode' : 'list';
   const square = mid === '이벤트형' || mid === '이용지원형';
   const hasCtx = CONTEXT_MIDS.has(mid);
-  // 제휴사형·바코드형은 카피(타이틀) 밑 서브 CTA 버튼 없음 — 그 자리에 다양한 혜택이 노출(2026-11-25 SB, ButtonText hidden).
-  const hasSubCta = mid !== '제휴사형' && design !== 'barcode';
+  // 코너 랜딩 링크 버튼(타이틀 옆) — 제휴사형=있음 / 혜택프로그램형=없음(2026-11-25 사용자 확정). 바코드형 제외.
+  const hasSubCta = hasLandingLink(mid) && design !== 'barcode';
   // 타이틀 플레이스홀더를 중분류에 맞게(제휴사/이벤트/미션/혜택 프로그램/이용 지원).
   const tWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' } as Record<string, string>)[mid] ?? mid.replace('형', '');
 
   const iWord = ({ 제휴사형: '혜택 프로그램', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' } as Record<string, string>)[mid] ?? tWord;
   const chips = comp('chip', '선택형', ['{Label}', '{Label}', '{Label}', '{Label}', '{Label}'].map((c, i) => atom(`c${i}`, c)));
   // 아이템 플레이스홀더도 중분류에 맞게({미션 내용} 등). title·sub 두 아톰.
-  const items = [0, 1, 2].map((i) => comp(`it${i}`, '상품형', [atom(`t${i}`, `{${iWord} 내용}`), atom(`s${i}`, `{${iWord} 내용}`)]));
+  const items = [0, 1].map((i) => comp(`it${i}`, '상품형', [atom(`t${i}`, `{${iWord} 내용}`), atom(`s${i}`, `{${iWord} 내용}`)]));
   const corner: PreviewCorner = {
     id: 'preview', name: '미리보기', cornerType: '혜택형', title: null, maxItems: null,
-    mainTitle: `{${tWord} 타이틀\n${tWord} 타이틀}`, subTitle: hasSubCta ? '{Label}' : null,
+    mainTitle: `{${tWord} 타이틀}`, subTitle: hasSubCta ? '{Label}' : null,
     components: [chips, ...items],
     bigBanner: true,
     contextHeader: hasCtx,

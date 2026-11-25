@@ -123,27 +123,35 @@ function ChipsView({ component }: { component: PreviewComponent }) {
   //  → 카테고리형 상단 탭 placeholder는 영문 'Category' 3개(첫 칩 선택)로 그린다(2026-11-12 사용자 요청: 다른 placeholder와 동일하게 영어). 업무 진입형 퀵메뉴(home)는 위에서 제외.
   const atoms = allPh ? [0, 1, 2].map((k) => ({ ...component.atoms[0], id: `${component.atoms[0].id}-ph${k}`, content: 'Category' })) : component.atoms;
 
-  // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 가로 순서(1,2,3,4 → 윗줄, 그다음 아랫줄). 가로 스크롤.
+  // ChipHome — 아이콘 뱃지(흰 원형)+라벨 pill. 2행이면 윗줄=개인화(최대 6)·아랫줄=운영자 지정(6). 가로 스크롤.
   if (variant === 'home') {
     const twoRows = component.chipRows === 2;
+    // 개인화 마커 — 운영자 등록 리스트 중 '✦'로 시작하는 라벨이 개인화 추천 픽(윗줄 우선). 라벨에서는 마커 제거.
+    const isPers = (a: PreviewAtom) => (a.content ?? a.name ?? '').trim().startsWith('✦');
+    const label = (a: PreviewAtom) => (a.content ?? a.name ?? '').replace(/^✦\s*/, '');
     const chip = (a: PreviewAtom) => (
       <span key={a.id} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/50 py-1 pl-1 pr-3.5 text-[12px] font-medium text-slate-800 shadow-sm">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#eef0f6] text-[#3617ce]">
           {/* lucide: (빌더 아이콘 선택) · 이미지 · icon: 글리프 모두 지원 — 빌더에서 아이콘 바꾸면 미리보기도 반영(2026-11-05 사용자 요청). */}
           <PreviewChipIcon src={a.imageUrl} className="h-3.5 w-3.5" />
         </span>
-        {a.content ?? a.name}
+        {label(a)}
       </span>
     );
     if (twoRows) {
-      // 가로(행) 우선 배치: 앞 절반이 윗줄, 뒤 절반이 아랫줄 — 번호가 좌→우로 이어지게.
-      const mid = Math.ceil(atoms.length / 2);
-      const grid = [atoms.slice(0, mid), atoms.slice(mid)];
+      // 상단 퀵메뉴 6+6 모델(2026-11-25 사용자): 운영자가 전체(최대 12) 등록. 개인화 추천은 최대 6개를 윗줄로 올린다.
+      //  개인화가 6 미만이면 운영자 리스트로 윗줄을 채우고(순서), 아랫줄은 윗줄에 올라간 걸 제외한 운영자 6개.
+      //  → 운영자 12개 등록 시 빈칸 없이 6+6. (미리보기는 폴백이라 ✦ 마커로 개인화 픽을 시뮬레이션.)
+      //  실제 FO처럼 두 줄 모두 동일한 칩으로만 — '개인화 추천/운영자 지정' 라벨은 미리보기에 띄우지 않는다(2026-11-25 사용자 요청).
+      const picks = atoms.filter(isPers);
+      const top: PreviewAtom[] = [...picks];
+      for (const a of atoms) { if (top.length >= 6) break; if (!top.includes(a)) top.push(a); }
+      const topSet = new Set(top);
+      const bottom = atoms.filter((a) => !topSet.has(a)).slice(0, 6);
       return (
         <div className="flex flex-col gap-2 overflow-x-auto pb-1">
-          {grid.map((r, ri) => (
-            <div key={ri} className="flex w-max items-start gap-2">{r.map(chip)}</div>
-          ))}
+          <div className="flex w-max items-start gap-2">{top.map(chip)}</div>
+          <div className="flex w-max items-start gap-2">{bottom.map(chip)}</div>
         </div>
       );
     }
@@ -880,11 +888,17 @@ export function DeviceFrame({
   slim = false,
   fill = false,
   fillBox = false,
+  bodyClassName,
+  footer,
 }: {
   width: number;
   bodyHeight: number | string;
   headerLabel: string;
   children: React.ReactNode;
+  /** 바디 배경 오버라이드(예: 메인홈 AI 그라데이션). 없으면 기본 톤. */
+  bodyClassName?: string;
+  /** 바디 하단 고정 영역(예: 메인홈 AI 입력바). 스크롤 바깥에 shrink-0으로 붙는다. */
+  footer?: React.ReactNode;
   /** 얇은 테두리(3px·radius30) + 좌우 8px 콘텐츠 패딩 — order3-create 레퍼런스(2026-10-21). 기본(실제 빌더)은 두꺼운 프레임 유지. */
   slim?: boolean;
   /** 부모 컬럼 높이를 flex로 꽉 채움(order3 .pv-panel .phone flex:1). 바디가 남은 높이를 차지하고 내부 스크롤. 너비는 유지. */
@@ -911,9 +925,10 @@ export function DeviceFrame({
             <div className="shrink-0 border-b bg-white px-4 py-2 text-sm font-semibold text-slate-700">{headerLabel}</div>
           </>
         )}
-        <div style={boxed ? undefined : { height: bodyHeight }} className={cn('overflow-y-auto', boxed && 'min-h-0 flex-1', slim ? 'space-y-3 bg-[#e9ebf4] px-2 py-2.5' : 'space-y-4 bg-slate-200 px-5 py-4')}>
+        <div style={boxed ? undefined : { height: bodyHeight }} className={cn('overflow-y-auto', boxed && 'min-h-0 flex-1', slim ? 'space-y-3 px-2 py-2.5' : 'space-y-4 px-5 py-4', bodyClassName ?? (slim ? 'bg-[#e9ebf4]' : 'bg-slate-200'))}>
           {children}
         </div>
+        {footer}
         {/* 하단 네비(혜택/쇼핑/마이·T⁺) 제거 — 미리보기에서 탭 UI는 빼기로(2026-11-11 사용자 요청). 탭 전환은 IA 레이어의 몫. */}
       </div>
     </div>

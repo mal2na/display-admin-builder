@@ -25,6 +25,24 @@ import {
   type CornerType,
 } from '../src/lib/display-taxonomy';
 import { EVENT_CORNER_TYPES } from '../src/lib/event-taxonomy';
+import { benefitTypes } from '../src/lib/benefit-corner-types';
+
+// 혜택 템플릿 정리(2026-11-25 사용자 요청) — 코너 유형 관리에 있는 유형만 남긴다:
+//  배너형 · 업무 진입형(퀵메뉴) · 혜택형 benefitType(제휴사형 리스트형 등). 레거시 혜택·오퍼형 및 제네릭 혜택형(미등록)은 배치 제거.
+async function pruneBenefitTemplates() {
+  const benefitNames = new Set(benefitTypes().map((t) => `${t.mid} · ${t.layout}`));
+  const temps = await prisma.template.findMany({ where: { container: { name: '혜택 홈' } }, select: { id: true } });
+  let removed = 0;
+  for (const t of temps) {
+    const tcs = await prisma.templateCorner.findMany({ where: { templateId: t.id }, select: { id: true, corner: { select: { cornerType: true, name: true } } } });
+    for (const tc of tcs) {
+      const ct = tc.corner.cornerType; const nm = tc.corner.name;
+      const keep = ct === '배너형' || ct === '업무 진입형' || (ct === '혜택형' && benefitNames.has(nm));
+      if (!keep) { await prisma.templateCorner.delete({ where: { id: tc.id } }); removed += 1; }
+    }
+  }
+  console.log(`✅ 혜택 템플릿 정리 — 미등록 유형 배치 ${removed}개 제거(코너 유형 관리 유형만 유지)`);
+}
 import { seedEvents } from './seed-events';
 import { seedAppSections } from './seed-app-sections';
 
@@ -133,65 +151,94 @@ async function main() {
   //   탭 전환과 무관하게 공유되는 1개 화면 → 별도 Container. '홈 위 / 혜택·쇼핑·마이 아래 탭'
   //   관계는 Container 중첩이 아니라 상위 IA(구조도)에서 정의. 맨 먼저 생성 → 트리 최상단.
   // ═══════════════════════════════════════════════════════════
-  // 홈은 단 2개 구좌 — 둘 다 '배너형 + CVM 콘텐츠 연동' 구좌(2026-11-11 사용자 확정). 인사말·질문칩·여행추천 제거.
-  // ① CVM 배너 구좌(상단) — '지훈님, 주문하신 iPhone20 Pro 도착' 셀프개통 오퍼. 이미지·문구·랜딩까지 CVM이 완성해 내려준다.
-  const homeActComp = await comp('홈 셀프 개통(CVM)', '배너형', [
-    { name: '개통:이미지', atomType: 'IMAGE', imageUrl: '/assets/device-iphone20pro.png', altText: 'iPhone20 Pro' },
-    { name: '개통:문구', atomType: 'TEXT', content: '지훈님, 주문하신\niPhone20 Pro가 도착했어요' },
-    { name: '개통:CTA', atomType: 'CTA', content: '1분 셀프 개통하기' },
+  // 메인홈(AI 어시스턴트) — SB DSP_06 [홈]유형 템플릿(node 29032:27421) 반영. 인사말(개인화) + 혜택 바코드(추천) + 추천 질의어 + 하단 배너.
+  // ① 혜택 바코드 오퍼(추천) — 인사말 타이틀 + '오후 5시까지 쉐이크쉑 5,000원 할인' + [혜택 바코드 열기] CTA. CVM이 완성해 내려주는 추천 오퍼.
+  //    인사말은 로그인/비로그인이 다르다: 로그인 '{이름}님 오늘도 놓치기 아쉬운 혜택이 있어요' / 비로그인 '오늘도 놓치기 아쉬운 혜택이 있어요'.
+  const homeOfferComp = await comp('메인홈 혜택 바코드(추천)', '배너형', [
+    { name: '오퍼:이미지', atomType: 'IMAGE', imageUrl: '/assets/shakeshack.png', altText: '쉐이크쉑 할인' },
+    { name: '오퍼:문구', atomType: 'TEXT', content: '오후 5시까지 쉐이크쉑에서\n5,000원 할인 받으세요' },
+    { name: '오퍼:CTA', atomType: 'CTA', content: '혜택 바코드 열기' },
   ]);
-  const homeActivate = await corner(
-    { name: '홈 셀프 개통(CVM)', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형', mainTitle: '지훈님, 주문하신 iPhone20 Pro가 도착했어요', recSource: 'CVM 콘텐츠 연동' },
-    [{ id: homeActComp.id, componentType: '배너형' }],
+  const homeOfferLogin = await corner(
+    { name: '메인홈 혜택 바코드(추천)', cornerType: '배너형', maxItems: 1, layoutDetail: '이미지형', mainTitle: '{이름}님 오늘도\n놓치기 아쉬운 혜택이 있어요', recSource: 'CVM 콘텐츠 연동' },
+    [{ id: homeOfferComp.id, componentType: '배너형' }],
   );
-  // ② CVM 배너 구좌(하단) — 하단 배너. CVM 타겟 배너(TM-DSP-018)로 소재·문구·랜딩을 CVM이 내려준다.
-  const homeBannerComp = await comp('홈 하단 배너(CVM)', '배너형', [
-    { name: '배너:이미지', atomType: 'IMAGE', imageUrl: '/assets/rimowa.png', altText: 'RIMOWA 수트케이스' },
-    { name: '배너:문구', atomType: 'TEXT', content: '어떤 여행에도 어울리는 아이콘' },
-    { name: '배너:브랜드', atomType: 'INFO', content: 'RIMOWA 수트케이스' },
+  const homeOfferGuest = await corner(
+    { name: '메인홈 혜택 바코드(추천)', cornerType: '배너형', maxItems: 1, layoutDetail: '이미지형', mainTitle: '오늘도\n놓치기 아쉬운 혜택이 있어요', recSource: 'CVM 콘텐츠 연동' },
+    [{ id: homeOfferComp.id, componentType: '배너형' }],
+  );
+  // ② 추천 질의어(추천질의형) — SB DSP_06 node 29032:27387. 독립 칩 최대 2개 · 질문당 ≤20자·1줄.
+  //    Admin 운영: 개인화 On=등록된 복수 추천 질의어 중 고객별 맞춤 / Off=수동 입력(직접 입력). 선택 시 AI 대화로 이동해 답변 자동 제공.
+  //    cornerType=업무 진입형(진입/선택형)·layoutDetail=추천질의형.
+  const homeRecQueryComp = await comp('메인홈 추천 질의어', '선택형', [
+    { name: '질의어1', atomType: 'TEXT', content: '이번 달 통신비 아끼는 법' },
+    { name: '질의어2', atomType: 'TEXT', content: '지금 받을 수 있는 혜택은?' },
+  ]);
+  const homeRecQuery = await corner(
+    { name: '메인홈 추천 질의어', cornerType: '업무 진입형', maxItems: 2, layoutDetail: '추천질의형', mainTitle: '무엇이든 물어보세요', recSource: '운영자 편성' },
+    [{ id: homeRecQueryComp.id, componentType: '선택형' }],
+  );
+  // ③ 하단 배너(CVM 타겟) — AirPods 특별 혜택.
+  const homeBannerComp = await comp('메인홈 하단 배너(CVM)', '배너형', [
+    { name: '배너:이미지', atomType: 'IMAGE', imageUrl: '/assets/airpods.png', altText: 'AirPods Max 3' },
+    { name: '배너:문구', atomType: 'TEXT', content: '새 iPhone에 어울리는\nAirPods Max 3 특별한 혜택' },
+    { name: '배너:브랜드', atomType: 'INFO', content: 'Apple' },
   ]);
   const homeBanner = await corner(
-    { name: '홈 하단 배너(CVM)', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형', mainTitle: '어떤 여행에도 어울리는 아이콘', recSource: 'CVM 콘텐츠 연동' },
+    { name: '메인홈 하단 배너(CVM)', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형', mainTitle: '새 iPhone에 어울리는 AirPods Max 3 특별한 혜택', recSource: 'CVM 콘텐츠 연동' },
     [{ id: homeBannerComp.id, componentType: '배너형' }],
   );
-  const homeCorners = [
-    { cornerId: homeActivate.id, order: 0 },
-    { cornerId: homeBanner.id, order: 1 },
+  // 로그인/비로그인 각각 인사말 코너만 다르게, 추천 질의어·배너는 공용(순서: 혜택 바코드 → 추천 질의어 → 하단 배너).
+  const homeCornersLogin = [
+    { cornerId: homeOfferLogin.id, order: 0 },
+    { cornerId: homeRecQuery.id, order: 1 },
+    { cornerId: homeBanner.id, order: 2 },
+  ];
+  const homeCornersGuest = [
+    { cornerId: homeOfferGuest.id, order: 0 },
+    { cornerId: homeRecQuery.id, order: 1 },
+    { cornerId: homeBanner.id, order: 2 },
   ];
   const homeContainer = await prisma.container.create({
     data: {
-      name: '홈', containerType: 'MAIN', channel: 'APP', status: 'active',
+      name: '메인홈', containerType: 'MAIN', channel: 'APP', status: 'active',
       previewUrl: 'https://main-concept1.vercel.app/',
       metaUse: true,
-      searchTags: '#홈 #AI #어시스턴트 #추천',
-      metaKeywords: '홈,AI,어시스턴트,추천,T우주',
-      metaDescription: 'AI 어시스턴트 홈 — 지훈님을 위한 맞춤 추천을 한 곳에서.',
-      ogTitle: '홈', ogDescription: '지훈님을 위한 AI 홈', ogSiteName: 'T우주',
+      searchTags: '#메인홈 #AI #어시스턴트 #추천',
+      metaKeywords: '메인홈,AI,어시스턴트,추천,T우주',
+      metaDescription: 'AI 어시스턴트 메인홈 — 지훈님을 위한 맞춤 추천을 한 곳에서.',
+      ogTitle: '메인홈', ogDescription: '지훈님을 위한 AI 메인홈', ogSiteName: 'T우주',
     },
   });
-  // 로그인/비로그인/기본(default) 3종 — 혜택·쇼핑·마이와 동일 포맷
+  // 로그인/비로그인 2종 — 인사말 코너만 다름(로그인='{이름}님 오늘도...', 비로그인='오늘도...').
   await prisma.template.create({
-    data: { containerId: homeContainer.id, name: '홈 로그인', conditionGroup: '로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
+    data: { containerId: homeContainer.id, name: '메인홈 로그인', conditionGroup: '로그인', isDefault: false, status: 'DRAFT', version: 1, templateCorners: { create: homeCornersLogin } },
   });
   // 컨테이너는 로그인/비로그인 2종만(2026-11-11 사용자 요청). 비로그인을 기본(default)으로.
   const homeBase = await prisma.template.create({
-    data: { containerId: homeContainer.id, name: '홈 비로그인', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: homeCorners } },
+    data: { containerId: homeContainer.id, name: '메인홈 비로그인', conditionGroup: '비로그인', isDefault: true, status: 'DRAFT', version: 1, templateCorners: { create: homeCornersGuest } },
   });
   await prisma.container.update({ where: { id: homeContainer.id }, data: { defaultTemplateId: homeBase.id } });
 
-  // 1) 상단 퀵메뉴 (탭)
+  // 1) 상단 퀵메뉴 (탭) — 6+6 구조(2026-11-25 사용자): 운영자가 최대 12개 등록 → 윗줄=개인화 추천(최대 6)·아랫줄=운영자 지정(6).
+  //    개인화 추천이 6개 미만이면 운영자 리스트로 윗줄을 채우고, 아랫줄은 윗줄에 올라간 항목을 제외한 운영자 6개(빈칸 없음).
+  //    미리보기는 폴백이라 '✦' 마커로 개인화 픽 4개를 시뮬레이션(윗줄 4 + 운영자 2로 채움). 마커는 미리보기에서 제거.
   const topMenu = await comp('혜택 상단 탭', '선택형', [
+    { name: '탭:혜택 줍기', atomType: 'TEXT', content: '✦ 혜택 줍기' },
     { name: '탭:4월 혜택', atomType: 'TEXT', content: '4월 혜택' },
-    { name: '탭:혜택 줍기', atomType: 'TEXT', content: '혜택 줍기' },
     { name: '탭:카테고리', atomType: 'TEXT', content: '카테고리' },
+    { name: '탭:0 Week', atomType: 'TEXT', content: '✦ 0 Week' },
     { name: '탭:VIP Pick', atomType: 'TEXT', content: 'VIP Pick' },
-    { name: '탭:0 Week', atomType: 'TEXT', content: '0 Week' },
     { name: '탭:이벤트', atomType: 'TEXT', content: '이벤트' },
-    { name: '탭:영화 예매', atomType: 'TEXT', content: '영화 예매' },
+    { name: '탭:영화 예매', atomType: 'TEXT', content: '✦ 영화 예매' },
     { name: '탭:글로벌 여행', atomType: 'TEXT', content: '글로벌 여행' },
-  ], { chipRows: 2 }); // 퀵메뉴는 기본 두 줄 표시
+    { name: '탭:데이터 선물', atomType: 'TEXT', content: '데이터 선물' },
+    { name: '탭:멤버십', atomType: 'TEXT', content: '✦ 멤버십' },
+    { name: '탭:로밍', atomType: 'TEXT', content: '로밍' },
+    { name: '탭:기프티콘', atomType: 'TEXT', content: '기프티콘' },
+  ], { chipRows: 2 }); // 퀵메뉴는 두 줄(개인화/운영자) 표시
   const cornerTop = await corner(
-    { name: '상단 퀵메뉴', cornerType: '업무 진입형', maxItems: 10, layoutDetail: '카테고리 탭', subTitleIcon: '사용안함' },
+    { name: '상단 퀵메뉴', cornerType: '업무 진입형', maxItems: 12, layoutDetail: '카테고리 탭', subTitleIcon: '사용안함' },
     [{ id: topMenu.id, componentType: '선택형' }],
   );
 
@@ -520,7 +567,6 @@ async function main() {
       templateCorners: {
         create: [
           { cornerId: cornerTop.id, order: 0 },
-          { cornerId: cornerMovie.id, order: 1 },
           { cornerId: cornerZeroWeek.id, order: 2 },
           { cornerId: cornerBanner1.id, order: 3 },
           { cornerId: cornerTWeek.id, order: 4 },
@@ -534,7 +580,6 @@ async function main() {
   // 혜택 홈 8개 코너 (기본/로그인/비로그인 공통 배치)
   const beCorners = [
     { cornerId: cornerTop.id, order: 0 },
-    { cornerId: cornerMovie.id, order: 1 },
     { cornerId: cornerZeroWeek.id, order: 2 },
     { cornerId: cornerBanner1.id, order: 3 },
     { cornerId: cornerTWeek.id, order: 4 },
@@ -1886,6 +1931,7 @@ main()
   .then(() => seedBannerCampaigns())
   .then(() => linkBannerCampaignUsage())
   .then(() => import('./seed-roaming').then((m) => m.seedRoaming()))
+  .then(() => pruneBenefitTemplates())
   .then(() => prisma.$disconnect())
   .catch(async (e) => {
     console.error(e);

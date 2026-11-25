@@ -447,12 +447,10 @@ export const ZONE_META: Record<Zone, { label: string; en: string; desc: string; 
   fixed: { label: 'Fixed', en: '항상 고정', desc: '항상 그 자리 · 거의 불변(메뉴성 진입)', hex: '#8B949E', tone: 'bg-[#F1F3F5] text-[#697582]', bar: '#B3B9C0', bg: 'bg-[#F1F3F5]', chipBg: 'bg-[#8B949E]', chipText: 'text-white' },
 };
 
-// 개인화존 추천 로직(MLS) — 존 단위 1개 선택. image 619(상품 전시) 기준 4종. CVM/MLS 범위는 FO 협의로 조정될 수 있음(2026-11-25 미팅).
+// 개인화 추천 로직(MLS) — 코너별 1개 선택. 2종 중 택1(2026-11-25 사용자 요청: 사용 이력 / 서비스 활동 내역).
 export const MLS_REC_LOGICS = [
-  '[MLS] 고객정보 기반 추천',
-  '[MLS] 고객정보 기반 추천(관심사 키워드)',
-  '[MLS] 통계성(연령/성별) 기반 추천',
-  '[MLS] 실시간 고객 행동기반 추천',
+  '사용 이력 기반',
+  '서비스 활동 내역 기반',
 ] as const;
 export type MlsRecLogic = (typeof MLS_REC_LOGICS)[number];
 
@@ -532,7 +530,8 @@ export const CORNER_TYPES = [
 export type CornerType = (typeof CORNER_TYPES)[number];
 
 // UI 노출용 코너 유형 — 6종 전체(2026-10-29 사용자 확정).
-export const VISIBLE_CORNER_TYPES: CornerType[] = [...CORNER_TYPES];
+// 콘텐츠 안내형은 우선 UI(필터·목록·코너 추가)에서 제외(2026-11-25 사용자 요청). 값·타입은 보존(CORNER_TYPES) — 되돌리려면 필터만 해제.
+export const VISIBLE_CORNER_TYPES: CornerType[] = CORNER_TYPES.filter((t) => t !== '콘텐츠 안내형');
 
 // 코너 유형별 '목적' — 정책서 코너 유형 표(목적 컬럼)의 문구를 그대로 사용(임의 변경 금지).
 export const CORNER_TYPE_PURPOSE: Record<CornerType, string> = {
@@ -585,7 +584,7 @@ export const CHIP_BASE =
 // 코너 유형 → 톤. 디자인 시스템에 칩 색은 5종뿐이라 그 안에서만 배정한다(보라 없음).
 export const CORNER_TYPE_CHIP: Record<CornerType, string> = {
   상품형: 'bg-[#D9E9FF] text-[#2E7AFF]',              // info
-  배너형: 'bg-[#FFDCDC] text-[#ED3B3E]',              // negative
+  배너형: 'bg-[#E0E3FF] text-[#4B4ACF]',              // 인디고 — 혜택형(핑크)과 확실히 구분(2026-11-25 사용자 요청)
   '혜택·오퍼형': 'bg-[#FFE4C4] text-[#D66400]',        // warning
   '혜택형': 'bg-[#FFE4EC] text-[#D6336C]',             // highlight(핑크) — 혜택·오퍼형(warning)과 구분
   '업무 진입형': 'bg-[#D9E9FF] text-[#2E7AFF]',        // info
@@ -1123,6 +1122,9 @@ const LAYOUT_LABEL: Record<string, string> = {
   // 상단 이미지형(2026-11-17): 배너 옵션 폐지 → '+배너'를 '상단 이미지형'으로 표기. 저장값 '가로형+배너'·'세로형+배너'는 유지(미리보기 배너는 저장값 기준).
   '가로형+배너': '가로형(상단 이미지형)',
   '세로형+배너': '세로형(상단 이미지형)',
+  // 카테고리형+배너(혜택형 benefitMap의 내부 저장값) — 카테고리형에는 배너를 붙이지 않는다(2026-11-17 규칙). 표기에서 '+배너'를 떼고 카테고리형으로만(2026-11-26 사용자 요청). 미리보기 배너 판정은 원본 저장값 기준이라 영향 없음.
+  '세로형(카테고리형)+배너': '세로형(카테고리형)',
+  '가로형(카테고리형)+배너': '가로형(카테고리형)',
   // 혜택형 전용 배열(2026-11-19): 세로 단일 상품 썸네일 카드.
   '세로형(상품카드)': '상품 카드형(세로)',
   // 업무 진입형 배열 표기(2026-11-06): 칩형 → 카테고리형(Category)으로 워딩 변경. 저장값 '카테고리 탭'은 유지.

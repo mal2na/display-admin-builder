@@ -118,7 +118,7 @@ export function BenefitPreviewCard({ corner, design, squareThumb, itemButton, mi
   // 중분류 워딩(있으면 공유 디자인의 하드코딩 플레이스홀더를 덮어씀).
   const tw = mid ? (MID_TITLE_WORD[mid] ?? mid.replace('형', '')) : null;
   const iw = mid ? (MID_ITEM_WORD[mid] ?? tw ?? '') : null;
-  const titlePh = tw ? `{${tw} 타이틀\n${tw} 타이틀}` : null;
+  const titlePh = tw ? `{${tw} 타이틀}` : null;
   const itemPh = iw ? `{${iw} 내용}` : null;
   const showImage = !!corner.bigBanner;
   const showContext = !!corner.contextHeader;
@@ -147,7 +147,7 @@ export function BenefitPreviewCard({ corner, design, squareThumb, itemButton, mi
       <section className={CARD}>
         {showImage && <TopImage src={corner.bannerImageUrl ?? null} />}
         <div className="space-y-3 px-[22px] pb-[20px] pt-[18px]">
-          <div className="space-y-2"><Header ph={'{룰렛 타이틀\n룰렛 타이틀}'} context={false} /></div>
+          <div className="space-y-2"><Header ph={'{룰렛 타이틀}'} context={false} /></div>
           <div className="space-y-3 pt-0.5">
             <div className="flex items-center justify-between text-[14px] tracking-[-0.4px]"><span className="font-medium text-[#6c7691]">남은 응모 기회</span><span className="font-semibold text-[#060c1f]">{'{n}'}회</span></div>
             <div className="flex items-center justify-between text-[14px] tracking-[-0.4px]"><span className="font-medium text-[#6c7691]">추가 응모 기회</span><span className="font-semibold text-[#060c1f]">{'{n}'}회</span></div>
@@ -167,7 +167,7 @@ export function BenefitPreviewCard({ corner, design, squareThumb, itemButton, mi
         {showImage && <TopImage src={corner.bannerImageUrl ?? null} />}
         <div className="space-y-3 px-[22px] pb-[20px] pt-[18px]">
           {showContext && <ContextHeader text={ctxText || '{추천 맥락 헤더(거리)}'} pin />}
-          <Title text={title} ph={titlePh ?? '{혜택 프로그램 타이틀\n혜택 프로그램 타이틀}'} />
+          <Title text={title} ph={titlePh ?? '{혜택 프로그램 타이틀}'} />
           <div className="flex items-center gap-3.5 pt-0.5">
             <Thumb image={it.image} big />
             <div className="min-w-0"><p className="text-[15px] font-semibold leading-[22px] tracking-[-0.4px] text-[#060c1f]">{it.title}</p><p className="mt-0.5 text-[12px] font-medium tracking-[-0.4px] text-[#6c7691]">{it.sub}</p></div>
@@ -191,7 +191,7 @@ export function BenefitPreviewCard({ corner, design, squareThumb, itemButton, mi
       <section className={CARD}>
         {showImage && <TopImage src={corner.bannerImageUrl ?? null} />}
         <div className="space-y-3 px-[22px] pb-[20px] pt-[18px]">
-          <div className="space-y-2"><Header ph={'{출석 체크 미션 타이틀\n출석 체크 미션 타이틀}'} context={false} /></div>
+          <div className="space-y-2"><Header ph={'{출석 체크 미션 타이틀}'} context={false} /></div>
           <div className="flex justify-between pt-0.5">
             {checks.map((on, i) => (
               <div key={i} className="flex flex-col items-center gap-1.5">
@@ -221,7 +221,7 @@ export function BenefitPreviewCard({ corner, design, squareThumb, itemButton, mi
       <section className={CARD}>
         {showImage && <TopImage src={corner.bannerImageUrl ?? null} />}
         <div className="space-y-3 pb-5 pt-4">
-          <div className="space-y-2 px-[22px]"><Header ph={titlePh ?? '{혜택 프로그램 타이틀\n혜택 프로그램 타이틀}'} context /></div>
+          <div className="space-y-2 px-[22px]"><Header ph={titlePh ?? '{혜택 프로그램 타이틀}'} context /></div>
           {showChips && <div className="px-[22px]"><Chips labels={chipsOf(corner.components)} /></div>}
           <div className="flex gap-3 overflow-hidden px-[22px]">
             {cards.map((c, i) => (
@@ -244,12 +244,12 @@ export function BenefitPreviewCard({ corner, design, squareThumb, itemButton, mi
   }
 
   // ── 리스트형(기본): 세로 리스트(썸네일 + 타이틀 + 보조)
-  const rows = itemsOf(corner.components, itemPh ?? '{혜택 프로그램 내용}', itemPh ?? '{혜택 프로그램 내용}', 3);
+  const rows = itemsOf(corner.components, itemPh ?? '{혜택 프로그램 내용}', itemPh ?? '{혜택 프로그램 내용}', 2);
   return (
     <section className={CARD}>
       {showImage && <TopImage src={corner.bannerImageUrl ?? null} />}
       <div className="space-y-3 px-[22px] pb-[20px] pt-[18px]">
-        <div className="space-y-2"><Header ph={titlePh ?? '{제휴사 타이틀\n제휴사 타이틀}'} context /></div>
+        <div className="space-y-2"><Header ph={titlePh ?? '{제휴사 타이틀}'} context /></div>
         {showChips && <Chips labels={chipsOf(corner.components)} />}
         <div className="space-y-3 pt-0.5">
           {rows.map((r, i) => (
