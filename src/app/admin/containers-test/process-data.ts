@@ -25,7 +25,7 @@ function cornerIsFilled(c: any): boolean {
   return false;
 }
 import { normalizeRecSource, isCvmSource, effectiveFallback, deriveZone, defaultComposition, componentTypesForCorner, type Zone } from '@/lib/display-taxonomy';
-import { benefitTypes, benefitMap, sbPreviewSrc } from '@/lib/benefit-corner-types';
+import { benefitTypes, benefitMap, sbPreviewSrc, canPersonalize, operModeOf } from '@/lib/benefit-corner-types';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { getProductOptions } from '../corner-types/built-options';
 import type { PreviewCorner } from '@/components/preview/blocks';
@@ -60,6 +60,8 @@ export type PCorner = {
   id: string; templateCornerId: string; name: string; cornerType: string; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner;
   /** SB Figma 프리뷰 이미지(혜택형 코너) — 있으면 디바이스 미리보기를 이 이미지로 렌더(2026-11-25) */
   sbImage: string | null;
+  /** 개인화 영역 등록 가능 여부(운영여부에 '개인화' 포함) — 수동 전용(이용지원형)이면 false(2026-11-25) */
+  canPersonal: boolean;
   /** 수급 방식(정규화) · CVM 연동 여부 · CVM 비었을 때 폴백 — 폴백 UI용(2026-10-20) */
   recSource: string | null; isCvm: boolean; fallback: '미노출' | '운영자 편성으로 대체';
   /** 전시 존(Fixed/Dynamic/Semi) — 코너 리스트 밴드용(2026-10-21) */
@@ -67,7 +69,7 @@ export type PCorner = {
 };
 /** 코너 불러오기 모달용 — 코너 유형 관리의 선택 가능한 코너(+미리보기)
  *  subType = 혜택형 중분류(제휴사형·미션형…), 모달 탭/그룹 구분용. sbPreview = SB Figma 프리뷰 이미지(있으면 모달 미리보기로). */
-export type LibCorner = { id: string; name: string; cornerType: string; subType: string | null; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner; bannerCount: number; sbPreview: string | null };
+export type LibCorner = { id: string; name: string; cornerType: string; subType: string | null; layout: string | null; layoutDetail: string | null; maxItems: number | null; preview: PreviewCorner; bannerCount: number; sbPreview: string | null; operMode: string; canPersonal: boolean };
 export type PTemplate = {
   id: string; name: string; conditionGroup: string | null; isDefault: boolean; status: string; corners: PCorner[];
   /** 템플릿 기본 정보 필드 */
@@ -133,6 +135,8 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
             ?? (tc.corner.cornerComponents ?? [])[0]?.component?.componentType ?? null)), moreButtonUse: false },
       // SB 프리뷰 이미지 — createBenefitCornerInstance가 sampleImageUrl에 저장한 /assets/sb-preview/* 경로만.
       sbImage: (typeof tc.corner.sampleImageUrl === 'string' && tc.corner.sampleImageUrl.startsWith('/assets/sb-preview/')) ? tc.corner.sampleImageUrl : null,
+      // 개인화 영역 가능 여부 — 이용지원형(support*) = 수동 전용이라 false. 그 외는 가능(2026-11-25 운영여부 규칙).
+      canPersonal: !(typeof tc.corner.sampleImageUrl === 'string' && /\/support(-carousel)?\.png/.test(tc.corner.sampleImageUrl)),
       recSource: tc.corner.recSource ? normalizeRecSource(tc.corner.recSource) : null,
       isCvm: isCvmSource(tc.corner.recSource),
       fallback: effectiveFallback(tc.corner.cornerType, tc.corner.cvmFallback),
@@ -159,6 +163,8 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       preview: guideCornerPreview(m.base, m.detail, m.comp),
       bannerCount: m.detail.includes('배너') ? 1 : 0,
       sbPreview: sbPreviewSrc(t.mid, t.layout), // SB Figma 프리뷰(모달 미리보기)
+      operMode: operModeOf(t.mid, t.layout),   // 운영여부(개인화/수동)
+      canPersonal: canPersonalize(t.mid, t.layout), // 개인화 영역 등록 가능 여부
     };
   });
   //  ② 배너형 2종 = DB 배너형 코너 유형(모달에서 단일형/스와이프형으로 접힘).
@@ -178,8 +184,33 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     preview: guideCornerPreview(ct.baseCategory, ct.typeDetail, ct.componentType),
     bannerCount: /스와이프/.test(ct.typeDetail ?? '') ? 2 : 0,
     sbPreview: null,
+    operMode: '수동',       // 배너형 = 운영자 편성(수동)
+    canPersonal: false,     // 배너형은 개인화 영역 불가
   }));
-  const libCorners: LibCorner[] = [...benefitLib, ...bannerLib];
+  //  ③ 탭형(업무 진입형 = 상단 퀵메뉴·카테고리) — 고정(픽스) 영역에 등록. 2026-11-25 사용자 요청: 탭형·배너형 다시 코너 유형에.
+  const tabTypes = await prisma.cornerType.findMany({
+    where: { active: true, baseCategory: '업무 진입형' },
+    orderBy: [{ typeId: 'asc' }],
+    take: 50,
+  });
+  // 업무진입형 > 탭형만(카테고리/칩형 = 상단 퀵메뉴 탭). 레이아웃명은 '탭형'으로 표기(2026-11-25 사용자 요청).
+  const tabLib: LibCorner[] = tabTypes
+    .filter((ct) => /카테고리|칩|탭/.test(`${ct.typeDetail ?? ''}${ct.layout ?? ''}`))
+    .map((ct) => ({
+      id: ct.id,
+      name: ct.name,
+      cornerType: ct.baseCategory, // '업무 진입형'
+      subType: null,
+      layout: '탭형',
+      layoutDetail: '탭형',
+      maxItems: ct.defaultMaxItems,
+      preview: guideCornerPreview(ct.baseCategory, ct.typeDetail, ct.componentType),
+      bannerCount: 0,
+      sbPreview: null,
+      operMode: '수동',       // 탭형(퀵메뉴) = 고정/수동
+      canPersonal: false,     // 개인화 영역 불가
+    }));
+  const libCorners: LibCorner[] = [...benefitLib, ...bannerLib, ...tabLib];
 
   return {
     containerId: container.id,

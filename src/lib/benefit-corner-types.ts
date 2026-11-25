@@ -42,13 +42,27 @@ export function benefitTypeByKey(key: string): BenefitType | undefined {
   return benefitTypes().find((t) => t.presetKey === key);
 }
 
+// ── 운영여부(개인화/수동) — 유형이 어느 영역에 들어갈 수 있나(2026-11-25 사용자 요청).
+//  개인화 = 개인화 영역 + 운영 영역 둘 다 가능 / 수동 = 운영(운영자 지정) 영역만, 개인화 영역 불가.
+//  이용지원형 = 수동만. 미션 출석체크·룰렛 = 개인화(전용). 그 외 = 개인화/수동.
+export type OperMode = '개인화/수동' | '개인화' | '수동';
+export function operModeOf(mid: string, layout: string): OperMode {
+  if (mid === '이용지원형') return '수동';
+  if (layout === '출석체크형' || layout === '룰렛형') return '개인화';
+  return '개인화/수동';
+}
+// 개인화 영역에 들어갈 수 있는가(= 운영여부에 '개인화' 포함). 수동 전용이면 false.
+export function canPersonalize(mid: string, layout: string): boolean {
+  return operModeOf(mid, layout) !== '수동';
+}
+
 // 유형별 노출 규격(가이드) — SB 프리셋 정책 기준. 인디케이터·아이템 개수·옵션 규칙(2026-11-24).
 export function benefitGuide(mid: string, layout: string): string {
   switch (layout) {
     case '리스트형':
-      return '세로 리스트. 인디케이터(스와이프) 사용 시 아이템 3~10개, 미사용 시 고정 노출. 상단 이미지·카테고리·CTA는 옵션.';
+      return '세로 리스트. 아이템 기본 3개·최대 4개 이하 권장. 상단 이미지·카테고리·CTA는 옵션.';
     case '캐러셀형':
-      return '가로 스크롤 카드. 아이템 3~10개(인디케이터 노출). 카테고리는 옵션.';
+      return '가로 스크롤 카드. 아이템 3~10개. 카테고리는 옵션.';
     case '바코드형':
       return '아이템 1개 + 멤버십 바코드(값은 런타임 발급). 상단 이미지·추천 맥락 헤더는 옵션.';
     case '출석체크형':
@@ -169,19 +183,20 @@ export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
   const isBarcode = m.barcode === true;
   const listLike = isList || isCarousel;            // 반복 아이템 리스트/캐러셀
   const hasChip = listLike;                         // 카테고리 칩(탭)
-  const hasIndicator = listLike;                    // 인디케이터(스와이프)
+  // 인디케이터(스와이프)는 제외 — 리스트 코너에서 사용 안 함(2026-11-25 Slack 확정).
   const hasContext = (listLike || isBarcode) && CONTEXT_MIDS.has(mid);
 
-  // ── 코너(카드) 공통 속성
-  const card: AttrRow[] = [{ label: '코너 타이틀', code: 'CornerTitle', state: 'required' }];
-  if (hasContext) card.push({ label: '추천 맥락 헤더', code: 'ContextHeader', state: 'toggle', default: false, note: '추천 근거(거리·검색·매장방문) 노출 · API 활동기록' });
+  // ── 코너(카드) 공통 속성 — 카드 상단→하단 시각 순서로 나열(2026-11-25 사용자 요청): 상단 이미지 → 추천 맥락 헤더 → 코너 타이틀 → 카테고리 칩 → 추가 인포메이션 → 랜딩/액션 버튼.
+  const card: AttrRow[] = [];
   card.push({ label: '상단 이미지', code: 'Image', state: 'toggle', default: false, note: '원장 이미지 또는 운영 등록 · 기본 OFF' });
-  if (hasChip) card.push({ label: '카테고리 칩(탭)', code: 'Category', state: 'toggle', default: false, note: '노출 시 인디케이터 사용 불가' });
-  if (hasIndicator) card.push({ label: '인디케이터(스와이프)', code: 'Indicator', state: 'toggle', default: false, note: '리스트 3개 이상 · 카테고리 칩과 동시 사용 불가' });
-  card.push({ label: '추가 인포메이션', code: 'Information', state: 'toggle', default: false, note: '운영 정보성 영역' });
-  card.push({ label: '코너 랜딩 링크 버튼', code: 'LandingLink', state: 'toggle', default: true, note: '액션 버튼과 택1 필수' });
-  card.push({ label: '액션 버튼(하단 CTA)', code: 'ActionButton', state: 'toggle', default: false, note: '코너 랜딩 링크와 택1 필수' });
+  if (hasContext) card.push({ label: '추천 맥락 헤더', code: 'ContextHeader', state: 'toggle', default: false, note: '추천 근거(거리·검색·매장방문) 노출 · API 활동기록' });
+  card.push({ label: '코너 타이틀', code: 'CornerTitle', state: 'required' });
+  // 카테고리 칩(탭)은 컴포넌트(요소)로 이동(2026-11-25 사용자 요청) — 아래 item 배열에서 push.
   if (isBarcode) card.push({ label: '바코드', code: 'Barcode', state: 'required', note: '멤버십 바코드 · 값 런타임 발급' });
+  if (!isBarcode) card.push({ label: '추가 인포메이션', code: 'Information', state: 'toggle', default: false, note: '운영 정보성 영역' }); // 바코드형은 성격 디스크립션 없음(2026-11-25 SB)
+  // 제휴사형은 카피 밑 랜딩 링크 버튼 없음(그 자리에 다양한 혜택 노출, 2026-11-25 사용자 요청).
+  if (mid !== '제휴사형') card.push({ label: '코너 랜딩 링크 버튼', code: 'LandingLink', state: 'toggle', default: true, note: '액션 버튼과 택1 필수' });
+  card.push({ label: '하단 CTA', code: 'ActionButton', state: 'toggle', default: false, note: '코너 랜딩 링크와 택1 필수' });
 
   // ── 컴포넌트(아이템) 요소
   let item: AttrRow[] = [];
@@ -198,16 +213,18 @@ export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
   } else if (isBarcode) {
     item = [
       { label: '썸네일', code: 'Thumbnail', state: 'required' },
-      { label: '명(타이틀)', code: 'ItemTitle', state: 'required' },
-      { label: '설명·내용', code: 'ItemDesc', state: 'required' },
+      { label: '컴포넌트 타이틀', code: 'ItemTitle', state: 'required' },
+      { label: '컴포넌트 내용', code: 'ItemDesc', state: 'required' },
       { label: '멤버십 바코드', code: 'Barcode', state: 'required', note: '값은 런타임 발급' },
     ];
   } else if (listLike) {
     item = [
+      // 카테고리 칩(탭) — 리스트 상단 카테고리 구분(컴포넌트로 이동, 2026-11-25 사용자 요청).
+      ...(hasChip ? [{ label: '카테고리 탭', code: 'Category', state: 'toggle' as const, default: false, note: '카테고리 구분' }] : []),
       { label: '썸네일', code: 'Thumbnail', state: 'required' },
-      { label: '명(타이틀)', code: 'ItemTitle', state: 'required' },
-      { label: '설명·내용', code: 'ItemDesc', state: 'required' },
-      { label: '상세 링크', code: 'ItemLink', state: 'required' },
+      { label: '컴포넌트 타이틀', code: 'ItemTitle', state: 'required' },
+      { label: '컴포넌트 내용', code: 'ItemDesc', state: 'required' },
+      // 상세 링크(ItemLink) 제외 — 원장(EPC) 소유 값이라 기획 On/Off 대상 아님(2026-11-25 사용자 요청).
     ];
     if (m.itemButton) item.push({ label: '우측 버튼(Label)', code: 'ItemButton', state: 'toggle', default: true });
     if (m.price !== false) {
@@ -218,9 +235,8 @@ export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
 
   // ── 의존 규칙(빌더 enforce)
   const rules: string[] = [];
-  if (hasChip && hasIndicator) rules.push('카테고리 칩을 노출하면 인디케이터(스와이프)를 함께 쓸 수 없습니다 (배타).');
   rules.push('코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).');
-  if (hasIndicator) rules.push('인디케이터는 리스트 3개 이상일 때만 사용할 수 있습니다. (사용 시 3개, 미사용 시 4개 이하 권장)');
+  if (listLike) rules.push('리스트는 기본 3개, 최대 4개 이하 권장입니다.');
 
   return { card, item, rules };
 }

@@ -1,4 +1,4 @@
-import { Signal, Wifi, BatteryFull, ChevronRight, ChevronLeft, ChevronDown, User, Lock, GripVertical, Sparkles, ImageIcon, Share, Menu } from 'lucide-react';
+import { Signal, Wifi, BatteryFull, ChevronRight, ChevronLeft, ChevronDown, User, Lock, GripVertical, Sparkles, ImageIcon, Share, Menu, Info } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { IconGlyph, isIconRef } from '@/lib/icon-library';
 import { PresetDesignCard, hasPresetDesign } from './preset-design-card';
@@ -88,6 +88,12 @@ export type PreviewCorner = {
   emptyImages?: boolean | null; // 신규 등록 가이드 폼 — 이미지/배너 영역을 빈 자리로만 보여줌(여기 채우세요)
   withBarcode?: boolean | null; // 혜택형 세로형(상단 이미지형) 바코드 옵션(useBarcode) — 켜면 본문 하단에 멤버십 바코드 블록 추가(2026-11-19)
   presetDesignId?: string | null; // SB 프리셋 설계 ID — 있으면 PresetDesignCard로 설계도 그대로 렌더(2026-11-19)
+  // CN-DSP-0001 정의 — 추천 맥락 헤더(개인화 전용 · 추천 근거 노출)와 추가 인포메이션(수동 운영 전용) On/Off (2026-11-25 SB 정의 반영).
+  contextHeader?: boolean | null; // [추천 맥락 헤더] 상단 추천 근거 밴드(✦ 어제 찾으신 내용으로 골랐어요). 개인화 코너에서만 On 가능.
+  contextHeaderText?: string | null; // 추천 맥락 헤더 문구(없으면 플레이스홀더)
+  information?: boolean | null; // [추가 인포메이션] 하단 운영 정보성 영역(ⓘ). 수동(수기) 운영일 때만 노출, 개인화시 x.
+  informationText?: string | null; // 추가 인포메이션 문구(없으면 플레이스홀더)
+  indicator?: boolean | null; // [인디케이터] 리스트/캐러셀 스와이프 점. 탭(카테고리)과 택1.
 };
 
 const byType = (atoms: PreviewAtom[], ...types: string[]) => atoms.filter((a) => types.includes(a.atomType));
@@ -753,6 +759,21 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
     )
   ) : null;
 
+  // [추천 맥락 헤더] — CN-DSP-0001 정의. 개인화 추천 근거 밴드(✦). 코너 타이틀 위에 노출. 문구 없으면 플레이스홀더.
+  const ctxHeaderEl = corner.contextHeader ? (
+    <div className="flex items-center gap-1 rounded-md bg-[#eef1ff] px-2.5 py-1.5 text-[11px] font-semibold leading-tight text-[#3617ce]">
+      <Sparkles className="h-3 w-3 shrink-0" />
+      <span className="truncate">{corner.contextHeaderText || '{추천 맥락 헤더(검색)}'}</span>
+    </div>
+  ) : null;
+  // [추가 인포메이션] — CN-DSP-0001 정의. 하단 운영 정보성 영역(ⓘ). 수동 운영일 때만. 문구 없으면 플레이스홀더.
+  const infoEl = corner.information ? (
+    <div className="flex items-center gap-1 text-[11px] leading-tight text-slate-400">
+      <Info className="h-3 w-3 shrink-0" />
+      <span className="truncate">{corner.informationText || '{Information 성격 디스크립션}'}</span>
+    </div>
+  ) : null;
+
   // 혜택형 바코드 옵션(useBarcode) — 본문 하단에 멤버십 바코드 블록(T 멤버십 라벨 · 바코드 줄무늬 · 번호). 값은 런타임 발급.
   const barcodeEl = corner.withBarcode ? (
     <div className="mt-1 rounded-xl border border-slate-200 bg-white px-3 py-3">
@@ -768,6 +789,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
       <section className={`overflow-hidden ${CARD_RADIUS} bg-white ${CARD_FLOAT_SHADOW}`}>
         {bannerEl}
         <div className={`space-y-2 ${CARD_PAD_X} pb-[30px] pt-[20px]`}>
+          {ctxHeaderEl}
           {heading && (
             <div>
               <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
@@ -782,6 +804,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
               <Sparkles className="h-3 w-3" /> CVM 추천 {corner.cvmFillMin && corner.cvmFillMin !== corner.cvmFillCount ? `${corner.cvmFillMin}~${corner.cvmFillCount}` : corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
             </div>
           )}
+          {infoEl}
           {corner.moreButtonUse && (
             <div className="pt-1 text-center">
               <span className="flex w-full items-center justify-center gap-0.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-[12px] font-medium text-slate-600">{corner.moreButtonLabel || 'CTA'} <ChevronRight className="h-3 w-3" /></span>
@@ -817,6 +840,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           </div>
         );
       })()}
+      {ctxHeaderEl}
       {heading && (
         <div>
           <h3 className="whitespace-pre-line text-[16px] font-bold leading-snug text-slate-900">{heading}</h3>
@@ -835,6 +859,7 @@ export function CornerBlock({ corner }: { corner: PreviewCorner }) {
           <Sparkles className="h-3 w-3" /> CVM 추천 {corner.cvmFillMin && corner.cvmFillMin !== corner.cvmFillCount ? `${corner.cvmFillMin}~${corner.cvmFillCount}` : corner.cvmFillCount}칸 <span className="text-violet-400">· 고객마다 채움</span>
         </div>
       )}
+      {infoEl}
       {corner.moreButtonUse && !isBanner && (
         <div className="pt-1 text-center">
           <span className="flex w-full items-center justify-center gap-0.5 rounded-full border border-slate-300 bg-white px-4 py-2 text-[12px] font-medium text-slate-600">
