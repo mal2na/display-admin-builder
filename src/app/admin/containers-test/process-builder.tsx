@@ -540,6 +540,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const isStatus = corner.cornerType === '업무 진입형' && /상태|아이콘.?이미지/.test(layoutDetailStr);
   // 바코드형 = 멤버십 바코드. 값(번호)은 회원 인증 기반 런타임 발급 → 어드민은 라벨·갱신 주기 정책만(2026-11-05 사용자 요청).
   const isBarcode = corner.cornerType === '바코드형';
+  // 추천질의형(홈 AI) = 콘텐츠 '불러오기'가 아니라 추천 질의어를 AI로 생성/직접 입력(최대 2개·≤20자). SB [홈]유형(2026-11-25 사용자 요청).
+  const isRecQuery = corner.cornerType === '업무 진입형' && /추천\s*질의/.test(`${layoutDetailStr} ${corner.name}`);
   // 출석체크형·룰렛형 = '무조건 개인화'(2026-11-25 사용자 요청). 운영자 구성 선택 불가 · 자동으로 개인화로 고정.
   const forcePersonal = /(출석체크|룰렛)/.test(corner.name) && corner.canPersonal;
   // CN-DSP-0001 — 개인화 코너만 CVM/MLS 추천(맥락 헤더 노출). forcePersonal은 zone 저장 전이라도 개인화로 취급.
@@ -562,6 +564,17 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const [persoMax, setPersoMax] = React.useState(3);
   const [persoPickerOpen, setPersoPickerOpen] = React.useState(false);
   const BENEFIT_TYPE_LIST = React.useMemo(() => benefitTypes(), []);
+  // 추천 질의어 — 코너 컴포넌트(선택형)의 TEXT 아톰에서 초기값, 최대 2개(스펙). AI 생성·직접 입력.
+  const [rqList, setRqList] = React.useState<string[]>(() => {
+    const qs = (corner.preview?.components ?? []).flatMap((c) => c.atoms ?? []).filter((a) => a.atomType === 'TEXT').map((a) => a.content ?? '').filter(Boolean);
+    return [qs[0] ?? '', qs[1] ?? ''];
+  });
+  const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법'];
+  // 추천 질의어 → 미리보기(RecQueryCard) 동기화: 선택형 컴포넌트의 TEXT 아톰으로 반영.
+  const syncRecQuery = (list: string[]) => {
+    const atoms = list.filter((q) => q.trim()).map((q, i) => ({ id: `rq-${i}`, name: `질의어${i + 1}`, atomType: 'TEXT', content: q, imageUrl: null, altText: null, linkUrl: null }));
+    onPreviewPatch({ components: [{ id: 'rq-comp', name: '추천 질의어', componentType: '선택형', atoms }] });
+  };
   // 카드 1장 = 코너 1개인 유형(프로필형·상태 안내형) — 코너/아이템 분리 없음. 세그먼트 컨트롤 제거, 코너 세팅 + '한번에 가져오기'만(2026-11-05 사용자 요청).
   const cardOnly = isProfile || isStatus;
   const [fb, setFb] = React.useState<'미노출' | '운영자 편성으로 대체'>(corner.fallback);
@@ -1213,7 +1226,30 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
 
           {/* ── 운영자 지정 — 혜택형 + 개인화 On일 때만 '운영자 지정' 라벨로 구분. 그 외 유형은 라벨 없이 콘텐츠만. ── */}
           {isBenefitType && isPersonal && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 지정</p>}
-          <>
+          {isRecQuery ? (
+          /* ── 추천 질의어 — AI 생성/직접 입력(최대 2개·≤20자·1줄). SB [홈]유형(2026-11-25 사용자 요청: 콘텐츠 불러오기 아님). ── */
+          <div>
+            <p className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#f5f1ff] px-3 py-2 text-[12px] leading-relaxed text-[#6D28D9]">
+              <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>독립 칩 <b>최대 2개</b> · 질문당 <b>20자 이내·1줄</b>. <b>개인화 On</b> = 등록한 여러 질의어 중 고객별 맞춤, <b>Off</b> = 입력한 질의어 그대로. 선택 시 AI 대화로 이동해 답변을 제공해요.</span>
+            </p>
+            <div className="mb-2 flex justify-end">
+              <button type="button" onClick={() => { const picks = [...RQ_SAMPLES].sort(() => Math.random() - 0.5).slice(0, 2); setRqList(picks); syncRecQuery(picks); onToast('AI가 추천 질의어 2개를 생성했어요'); }}
+                className="inline-flex h-[32px] items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3.5 w-3.5" /> AI로 질의어 생성</button>
+            </div>
+            {[0, 1].map((i) => (
+              <FormRow key={i} label={`질의어 ${i + 1}`} req={i === 0}>
+                <div className="flex items-center gap-1">
+                  <button type="button" onClick={() => { const v = RQ_SAMPLES[Math.floor(Math.random() * RQ_SAMPLES.length)]; const next = [...rqList]; next[i] = v; setRqList(next); syncRecQuery(next); }}
+                    className="flex h-[32px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3 w-3" /> AI 추천</button>
+                  <input value={rqList[i] ?? ''} maxLength={20} onChange={(e) => { const next = [...rqList]; next[i] = e.target.value; setRqList(next); syncRecQuery(next); }}
+                    placeholder="추천 질의어 입력 (비어 있으면 AI 추천)" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                  <span className="shrink-0 text-[11px] tabular-nums text-[var(--ink4)]">{(rqList[i] ?? '').length}/20</span>
+                </div>
+              </FormRow>
+            ))}
+          </div>
+          ) : (<>
           {fillForFallback && (
             <div className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#fff8ef] px-3 py-2 text-[12px] leading-relaxed text-[#b67a12]">
               <span className="mt-0.5">⚠</span><span>이 코너는 <b>CVM 콘텐츠 연동</b>이라 평소엔 CVM 완성본이 노출됩니다. <b>CVM 응답이 비면</b> 아래에 등록한 운영자 편성 항목이 대신 노출돼요(폴백 미리보기에서 확인).</span>
@@ -1839,7 +1875,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
               </details>
             </div>
           )}
-          </>
+          </>)}
         </Sec>
       ) : isProfile ? (
         <Sec n={nFill} title="프로필 항목">
