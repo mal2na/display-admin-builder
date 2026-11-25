@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search, LayoutGrid, List as ListIcon, Database, Lock, ChevronRight } from 'lucide-react';
 import { BenefitCornerPreview } from './benefit-corner-preview';
+import { operModeOf } from '@/lib/benefit-corner-types';
 
 export type BenefitTypeRow = {
   top: string;        // 코너 유형(필터1) — 혜택형 · 배너형 · 업무 진입형
@@ -61,21 +62,19 @@ function BannerTypePreview({ pager }: { pager?: boolean }) {
     </div>
   );
 }
-// 업무 진입형(탭형) 미리보기 — SB [홈]유형 탭(node 29032:27939): 아이콘 뱃지 + 라벨 pill, 라벤더 배경 2행.
+// 업무 진입형(탭형) 미리보기 — 상세와 동일한 아이콘 타일 그리드. 라벨은 껍데기(필드 코드)라 'menu'.
+//  썸네일은 좁아 6열은 안 들어가므로 가로 4개×2행(최소 4개 노출, 2026-11-25 사용자 요청: 2개만 보이면 안 됨).
 function TabTypePreview() {
-  const rows = [['4월 혜택', '혜택 줍기', '0 Week'], ['이벤트', '영화 예매', '글로벌']];
   return (
-    <div className="w-[150px] space-y-1.5 rounded-[12px] bg-[#eef0ff] p-2.5">
-      {rows.map((row, ri) => (
-        <div key={ri} className="flex gap-1 overflow-hidden">
-          {row.map((t, i) => (
-            <span key={i} className="flex shrink-0 items-center gap-1 rounded-full bg-white py-1 pl-1 pr-1.5 shadow-sm">
-              <span className="h-3 w-3 shrink-0 rounded-full bg-[#3617ce]" />
-              <span className="whitespace-nowrap text-[8px] font-medium text-[#1a1a1a]">{t}</span>
-            </span>
-          ))}
-        </div>
-      ))}
+    <div className="w-[164px] rounded-[12px] bg-[#eef0ff] p-2.5">
+      <div className="grid grid-cols-4 gap-x-1 gap-y-2">
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} className="flex flex-col items-center gap-0.5">
+            <span className="h-6 w-6 rounded-full bg-white shadow-sm" />
+            <span className="text-[8px] font-medium leading-none text-[#8b949e]">menu</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -216,6 +215,7 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
                 <th className="px-3 py-2.5 text-left font-semibold">코너 유형</th>
                 <th className="px-3 py-2.5 text-left font-semibold">중분류</th>
                 <th className="px-3 py-2.5 text-left font-semibold">배열·레이아웃</th>
+                <th className="w-24 px-3 py-2.5 text-left font-semibold">운영여부</th>
                 <th className="w-20 px-3 py-2.5 text-left font-semibold">사용여부</th>
                 <th className="px-3 py-2.5 text-left font-semibold">원장</th>
                 <th className="px-3 py-2.5 text-left font-semibold">등록일</th>
@@ -223,7 +223,7 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={9} className="px-3 py-10 text-center text-[#8b949e]">검색 결과가 없습니다.</td></tr>
+                <tr><td colSpan={10} className="px-3 py-10 text-center text-[#8b949e]">검색 결과가 없습니다.</td></tr>
               ) : filtered.map((r, i) => (
                 <tr key={r.typeId} onClick={() => open(r)}
                   className={`border-b border-[#f1f3f5] last:border-0 hover:bg-[#f8f9fb] ${r.presetKey ? 'cursor-pointer' : 'cursor-default'} ${r.unused ? 'opacity-60' : ''}`}>
@@ -236,6 +236,10 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
                   <td className="whitespace-nowrap px-3 py-3 align-middle"><span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${TOP_BADGE[r.top] ?? 'bg-[#eef0f6] text-[#697582]'}`}>{r.top}</span></td>
                   <td className={`whitespace-nowrap px-3 py-3 align-middle font-semibold ${MID_TEXT[r.mid] ?? 'text-[#454f59]'}`}>{r.mid}</td>
                   <td className="px-3 py-3 align-middle text-[#454f59]">{r.layout} <span className="ml-1 text-[12px] text-[#b3b9c0]">· 프리셋 {r.presetCount}</span></td>
+                  <td className="px-3 py-3 align-middle">{(() => {
+                    const oper = operModeOf(r.mid, r.layout);
+                    return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-bold ${oper !== '수동' ? 'bg-[#F2ECFB] text-[#6D28D9]' : 'bg-[#eef0f2] text-[#697582]'}`}>{oper}</span>;
+                  })()}</td>
                   <td className="px-3 py-3 align-middle">{r.unused
                     ? <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#8b949e]"><span className="h-1.5 w-1.5 rounded-full bg-[#b3b9c0]" />미사용</span>
                     : <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span>}</td>
