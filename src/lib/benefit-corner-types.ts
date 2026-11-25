@@ -84,7 +84,7 @@ export const SB_PREVIEW: Record<string, string> = {
   '미션형 > 룰렛형': '/assets/sb-preview/roulette.png',             // node 28813
   '혜택프로그램형 > 리스트형': '/assets/sb-preview/program.png',     // node 28274
   '혜택프로그램형 > 캐러셀형': '/assets/sb-preview/program-carousel.png', // node 28312
-  '혜택프로그램형 > 바코드형': '/assets/sb-preview/program-barcode.png', // node 28912:21916
+  '제휴사형 > 바코드형': '/assets/sb-preview/program-barcode.png', // node 28912:21916 (바코드형 제휴사형으로 이동 2026-11-25)
   '이용지원형 > 리스트형': '/assets/sb-preview/support.png',         // node 28582
   '이용지원형 > 캐러셀형': '/assets/sb-preview/support-carousel.png',    // node 28620
 };
@@ -194,9 +194,9 @@ export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
   // 카테고리 칩(탭)은 컴포넌트(요소)로 이동(2026-11-25 사용자 요청) — 아래 item 배열에서 push.
   if (isBarcode) card.push({ label: '바코드', code: 'Barcode', state: 'required', note: '멤버십 바코드 · 값 런타임 발급' });
   if (!isBarcode) card.push({ label: '추가 인포메이션', code: 'Information', state: 'toggle', default: false, note: '운영 정보성 영역' }); // 바코드형은 성격 디스크립션 없음(2026-11-25 SB)
-  // 제휴사형은 카피 밑 랜딩 링크 버튼 없음(그 자리에 다양한 혜택 노출, 2026-11-25 사용자 요청).
-  if (mid !== '제휴사형') card.push({ label: '코너 랜딩 링크 버튼', code: 'LandingLink', state: 'toggle', default: true, note: '액션 버튼과 택1 필수' });
-  card.push({ label: '하단 CTA', code: 'ActionButton', state: 'toggle', default: false, note: '코너 랜딩 링크와 택1 필수' });
+  // 코너 랜딩 링크 버튼 — 모든 중분류에 포함(2026-11-25 사용자 요청: 있는 거 다 넣기). 코너 유형에서 On/Off 가능(toggle).
+  card.push({ label: '코너 랜딩 링크 버튼', code: 'LandingLink', state: 'toggle', default: true, note: '액션 버튼과 택1 필수 · On/Off' });
+  card.push({ label: '하단 CTA', code: 'ActionButton', state: 'toggle', default: false, note: '코너 랜딩 링크와 택1 필수 · On/Off' });
 
   // ── 컴포넌트(아이템) 요소
   let item: AttrRow[] = [];
