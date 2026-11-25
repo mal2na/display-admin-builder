@@ -16,6 +16,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import { DeviceFrame, CornerBlock, BannerCard, type PreviewComponent } from '@/components/preview/blocks';
 import { BenefitPreviewCard, benefitDesignKey } from '@/components/preview/benefit-card';
+import { RecQueryCard } from '@/components/preview/rec-query-card';
 import { benefitTypes, canPersonalize, sbPreviewSrc } from '@/lib/benefit-corner-types';
 import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
@@ -2629,6 +2630,9 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
         {replaced && <span className="absolute right-1 top-1 z-10 rounded-[4px] bg-[#e59a2a] px-1.5 py-0.5 text-[9px] font-bold text-white">운영자 편성 대체</span>}
         {/* 전부 '코드'로 렌더 — 혜택형 코너는 SB 디자인을 코드로 재현한 BenefitPreviewCard. sbImage가 없어도 레이아웃에서 디자인 파생(옛 코너도 최신 카드로, 2026-11-25 사용자 요청). 그 외 유형은 CornerBlock. */}
         {(() => {
+          // 추천질의형(홈 AI 질의 칩) — 전용 렌더(SB DSP_06 [홈]유형). layoutDetail/name으로 판정.
+          const isRecQuery = /추천\s*질의/.test(`${c.layoutDetail ?? ''} ${c.name}`);
+          if (isRecQuery && c.preview) return <RecQueryCard corner={c.preview} />;
           const isBenefit = c.cornerType === '혜택형' || c.cornerType === '혜택·오퍼형';
           const design = benefitDesignKey(c.sbImage) ?? (isBenefit ? (() => {
             const l = c.layoutDetail ?? c.layout ?? '';

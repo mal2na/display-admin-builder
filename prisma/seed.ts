@@ -154,9 +154,21 @@ async function main() {
     { name: '홈 하단 배너(CVM)', cornerType: '배너형', maxItems: 3, layoutDetail: '이미지형', mainTitle: '어떤 여행에도 어울리는 아이콘', recSource: 'CVM 콘텐츠 연동' },
     [{ id: homeBannerComp.id, componentType: '배너형' }],
   );
+  // ③ 추천 질의어(추천질의형) — 홈 AI 어시스턴트 상단. 독립 칩 최대 2개(SB DSP_06 [홈]유형, node 29032:27387).
+  //    개인화 On = 등록된 복수 추천 질의어 중 고객별 맞춤 / Off = 운영자 수동 입력(직접 입력). 질문당 ≤20자·1줄.
+  //    각 질의어 선택 시 AI 대화 화면으로 이동해 해당 질문의 답변 자동 제공. cornerType=업무 진입형(진입/선택형)·layoutDetail=추천질의형.
+  const homeRecQueryComp = await comp('홈 추천 질의어', '선택형', [
+    { name: '질의어1', atomType: 'TEXT', content: '이번 달 통신비 아끼는 법' },
+    { name: '질의어2', atomType: 'TEXT', content: '지금 받을 수 있는 혜택은?' },
+  ]);
+  const homeRecQuery = await corner(
+    { name: '홈 추천 질의어', cornerType: '업무 진입형', maxItems: 2, layoutDetail: '추천질의형', mainTitle: '무엇이든 물어보세요', recSource: '운영자 편성' },
+    [{ id: homeRecQueryComp.id, componentType: '선택형' }],
+  );
   const homeCorners = [
-    { cornerId: homeActivate.id, order: 0 },
-    { cornerId: homeBanner.id, order: 1 },
+    { cornerId: homeRecQuery.id, order: 0 },
+    { cornerId: homeActivate.id, order: 1 },
+    { cornerId: homeBanner.id, order: 2 },
   ];
   const homeContainer = await prisma.container.create({
     data: {
@@ -179,19 +191,25 @@ async function main() {
   });
   await prisma.container.update({ where: { id: homeContainer.id }, data: { defaultTemplateId: homeBase.id } });
 
-  // 1) 상단 퀵메뉴 (탭)
+  // 1) 상단 퀵메뉴 (탭) — 6+6 구조(2026-11-25 사용자): 운영자가 최대 12개 등록 → 윗줄=개인화 추천(최대 6)·아랫줄=운영자 지정(6).
+  //    개인화 추천이 6개 미만이면 운영자 리스트로 윗줄을 채우고, 아랫줄은 윗줄에 올라간 항목을 제외한 운영자 6개(빈칸 없음).
+  //    미리보기는 폴백이라 '✦' 마커로 개인화 픽 4개를 시뮬레이션(윗줄 4 + 운영자 2로 채움). 마커는 미리보기에서 제거.
   const topMenu = await comp('혜택 상단 탭', '선택형', [
+    { name: '탭:혜택 줍기', atomType: 'TEXT', content: '✦ 혜택 줍기' },
     { name: '탭:4월 혜택', atomType: 'TEXT', content: '4월 혜택' },
-    { name: '탭:혜택 줍기', atomType: 'TEXT', content: '혜택 줍기' },
     { name: '탭:카테고리', atomType: 'TEXT', content: '카테고리' },
+    { name: '탭:0 Week', atomType: 'TEXT', content: '✦ 0 Week' },
     { name: '탭:VIP Pick', atomType: 'TEXT', content: 'VIP Pick' },
-    { name: '탭:0 Week', atomType: 'TEXT', content: '0 Week' },
     { name: '탭:이벤트', atomType: 'TEXT', content: '이벤트' },
-    { name: '탭:영화 예매', atomType: 'TEXT', content: '영화 예매' },
+    { name: '탭:영화 예매', atomType: 'TEXT', content: '✦ 영화 예매' },
     { name: '탭:글로벌 여행', atomType: 'TEXT', content: '글로벌 여행' },
-  ], { chipRows: 2 }); // 퀵메뉴는 기본 두 줄 표시
+    { name: '탭:데이터 선물', atomType: 'TEXT', content: '데이터 선물' },
+    { name: '탭:멤버십', atomType: 'TEXT', content: '✦ 멤버십' },
+    { name: '탭:로밍', atomType: 'TEXT', content: '로밍' },
+    { name: '탭:기프티콘', atomType: 'TEXT', content: '기프티콘' },
+  ], { chipRows: 2 }); // 퀵메뉴는 두 줄(개인화/운영자) 표시
   const cornerTop = await corner(
-    { name: '상단 퀵메뉴', cornerType: '업무 진입형', maxItems: 10, layoutDetail: '카테고리 탭', subTitleIcon: '사용안함' },
+    { name: '상단 퀵메뉴', cornerType: '업무 진입형', maxItems: 12, layoutDetail: '카테고리 탭', subTitleIcon: '사용안함' },
     [{ id: topMenu.id, componentType: '선택형' }],
   );
 
