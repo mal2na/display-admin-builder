@@ -157,9 +157,10 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
               ))}
             </div>
           </div>
-          {/* 필터2 — 중분류(선택한 코너 유형 하위). */}
+          {/* 필터2 — 중분류(선택). 코너 유형을 먼저 고른 뒤에만 노출(2026-11-25 사용자 요청: 코너 유형이 1차, 중분류는 선택). */}
+          {top !== '전체' && mids.length > 0 && (
           <div className="flex items-start gap-2 text-[13px] text-[#454f59]">
-            <span className="mt-1 w-[72px] shrink-0 font-semibold">중분류</span>
+            <span className="mt-1 w-[72px] shrink-0 font-semibold">중분류 <span className="font-normal text-[#b3b9c0]">선택</span></span>
             <div className="flex flex-wrap items-center gap-1.5">
               {['전체', ...mids].map((m) => (
                 <button key={m} onClick={() => setMid(m)}
@@ -169,6 +170,7 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
               ))}
             </div>
           </div>
+          )}
           <div className="flex items-center gap-2">
             <label className="flex flex-1 items-center gap-2 text-[13px] text-[#454f59]">
               <span className="w-[72px] shrink-0 font-semibold">직접 검색</span>
