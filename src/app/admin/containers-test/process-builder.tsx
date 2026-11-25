@@ -25,7 +25,7 @@ import { FieldRow } from '@/components/ops-ui';
 import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, MLS_REC_LOGICS, type Zone } from '@/lib/display-taxonomy';
 import { PRESET_SHAPE_GROUPS } from '@/lib/preset-shape-groups';
 import { presetDesignName } from '@/components/preview/preset-design-card';
-import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Minus, Maximize2, Copy, Pencil, ShieldCheck, Layers, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, AlertTriangle, Barcode, ArrowRight, LayoutGrid } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Minus, Maximize2, Copy, Pencil, ShieldCheck, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, AlertTriangle, Barcode, ArrowRight, LayoutGrid } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 // 아이템 아이콘 — 'lucide:<Name>'은 벡터 아이콘, 그 외는 실제 이미지(포스터·로고). 2026-11-05 사용자 요청(메뉴 아이콘을 텍스트에 맞는 벡터로).
@@ -609,7 +609,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const fillForFallback = isCvmSrc && !isData && fb === '운영자 편성으로 대체' && !isProfile && !isStatus && !isBarcode;
   // 섹션 번호 — CVM 코너는 ③ 폴백(채우기 위로)이 끼어 번호가 하나씩 밀린다(2026-11-10 사용자 요청: 폴백이 채우기 결과를 좌우하므로 위로). 번호 공백 방지.
   //  운영/픽스 영역(비개인화)은 ② 수급 선택을 숨기므로 콘텐츠 설정이 ②로 당겨진다(2026-11-25 사용자 요청).
-  const nFill = isCvmSrc ? 3 : 2; // ② 개인화 Sec 제거로 콘텐츠 설정이 2번(폴백 끼면 3번). 2026-11-25.
+  const nFill = 2; // 코너 콘텐츠 설정 = 항상 ②. 대체 노출(폴백)은 ③로 아래에(2026-11-25 사용자 요청).
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   // 혜택형 코너는 '불러오기' 시 그 코너의 중분류 구좌만 뜨게 한다(2026-11-25 사용자 요청: 이벤트면 이벤트 구좌, 미션은 미션, 제휴사면 브랜드).
@@ -1106,29 +1106,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
 
       {/* ② 개인화 구성은 아래 '코너 콘텐츠 설정' 섹션 안으로 이동(2026-11-25 사용자 요청: 구성 방식이 코너 콘텐츠 설정으로 들어가야 함). */}
 
-      {/* ③ 폴백 — CVM 수급일 때. 폴백 선택(미노출/운영자 편성 대체)이 아래 '채우기' 내용을 좌우하므로 채우기 위에 둔다(2026-11-10 사용자 요청). */}
-      {isCvmSrc && (
-        <Sec n={3} title="대체 노출 설정 (폴백)" hint="CVM 응답이 없을 때 대체 노출을 설정합니다">
-          <div className="space-y-1.5">
-            {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
-              const on = fb === f;
-              return (
-                <button key={f} type="button" onClick={() => { setFb(f); onFallbackChange(f); onPreviewFallback(true); }} className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px]', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white opacity-80')}>
-                  <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#e59a2a] bg-[#e59a2a]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
-                  <span className="min-w-0 flex-1">
-                    <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
-                    <span className="block text-[var(--ink4)]">{f === '미노출' ? 'CVM이 비면 이 코너는 노출되지 않아요.' : '등록한 운영자 편성 항목을 대신 노출해요.'}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {/* 미노출 조건은 '미노출'을 고른 경우에만 — 운영자 편성 대체면 코너가 숨지 않으므로 불필요(2026-11-10 사용자 요청). */}
-          {fb === '미노출' && MiNoChul}
-        </Sec>
-      )}
-
-      {/* ④ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청+운영자 고정 앵커(폴백과 무관하게 항상 노출 — 앵커는 정상 노출 시 앞자리 고정, 폴백은 별개. 2026-11-16 사용자 확정), 콘텐츠 연동=구좌만(미노출이면 구좌 안내). */}
+      {/* ② 코너 콘텐츠 설정 — 운영자 편성=채우기, 데이터 연동=요청+운영자 고정 앵커, 콘텐츠 연동=구좌만. 대체 노출(폴백)은 이 아래로(2026-11-25 사용자 요청). */}
       {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
         <Sec n={nFill} title={isPersonal ? '코너 콘텐츠 설정' : fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '코너 콘텐츠 설정'} hint="구성 방식을 고르고 노출할 데이터를 설정합니다">
           {/* 채우는 방식 — 혜택형만. '개인화'를 따로 클릭하는 모드가 아니라 '어떻게 채울지'의 선택지로 통합(2026-11-25 사용자 요청).
@@ -1168,6 +1146,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 <RadioRow options={[...MLS_REC_LOGICS]} value={persoMls} onChange={setPersoMls} />
               </FormRow>
             </FormBlock>
+            {/* 후보 코너 유형 — '전부 추천'일 때만(여러 후보 중 추천이 택). '운영자 고정+추천'은 운영자가 담은 아이템 외 나머지를 추천이 채우므로 후보 선택 불필요(2026-11-25 사용자 요청). */}
+            {fillMode === '전부 추천' && (
             <FormBlock title={`후보 코너 유형 · ${persoTypes.length}`}>
               <div className="px-0.5 py-2.5">
                 {persoTypes.length === 0 ? (
@@ -1197,16 +1177,18 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 </button>
               </div>
             </FormBlock>
-            <FormBlock title="노출 개수">
+            )}
+            <FormBlock title={fillMode === '전부 추천' ? '노출 개수' : '추천 개수'}>
               <FormRow label="최소 ~ 최대" req>
                 <div className="flex items-center gap-2 text-[13px]">
                   <Stepper value={persoMin} min={1} max={persoMax} onChange={(v) => setPersoMin(v)} />
                   <span className="text-[var(--ink4)]">~</span>
                   <Stepper value={persoMax} min={persoMin} max={5} onChange={(v) => setPersoMax(v)} />
-                  <span className="ml-1 text-[12px] text-[var(--ink4)]">개 노출</span>
+                  <span className="ml-1 text-[12px] text-[var(--ink4)]">{fillMode === '전부 추천' ? '개 노출' : '자리 추천'}</span>
                 </div>
               </FormRow>
             </FormBlock>
+            {fillMode === '전부 추천' && (
             <div className="mt-1 flex flex-wrap items-center gap-2 rounded-[10px] border border-[#e8ddff] bg-[#faf7ff] px-3 py-2.5 text-[12px]">
               <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">후보 {persoTypes.length}개 유형</span>
               <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#b79ae8]" />
@@ -1215,6 +1197,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
               <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">최소 {persoMin}~최대 {persoMax}개 노출</span>
               <span className="ml-auto shrink-0 text-[11px] text-[var(--ink4)]">없으면 미노출</span>
             </div>
+            )}
             {persoPickerOpen && (
               /* 후보 유형 불러오기 = '코너 추가'와 동일한 모달(LoadCornerModal). 단, 개인화 가능 유형만(2026-11-25 사용자 요청).
                  LibCorner.id = `benefit-${typeId}` 이므로 선택 결과를 후보 typeId로 환원. */
@@ -1917,6 +1900,26 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
         </Sec>
       )}
 
+      {/* ③ 대체 노출 설정(폴백) — CVM 수급일 때. 코너 콘텐츠 설정(②) '아래'로 배치(2026-11-25 사용자 요청). */}
+      {isCvmSrc && (
+        <Sec n={3} title="대체 노출 설정 (폴백)" hint="CVM 응답이 없을 때 대체 노출을 설정합니다">
+          <div className="space-y-1.5">
+            {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
+              const on = fb === f;
+              return (
+                <button key={f} type="button" onClick={() => { setFb(f); onFallbackChange(f); onPreviewFallback(true); }} className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px]', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white opacity-80')}>
+                  <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#e59a2a] bg-[#e59a2a]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
+                  <span className="min-w-0 flex-1">
+                    <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
+                    <span className="block text-[var(--ink4)]">{f === '미노출' ? 'CVM이 비면 이 코너는 노출되지 않아요.' : '등록한 운영자 편성 항목을 대신 노출해요.'}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Sec>
+      )}
+
       {/* ⑥ 출처(컴포넌트/데이터 출처) 섹션 제거 — 2026-11-19 사용자 요청. 값·로직은 상단 수급(②)·채우기(③)로 충분. */}
     </div>
   );
@@ -2085,19 +2088,12 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
       <SortableContext items={rows.map((c) => c.templateCornerId)} strategy={verticalListSortingStrategy}>
-        <section className="rounded-[12px] border border-[var(--line2)] bg-[var(--th)] p-3">
-          <div className="mb-2 flex items-center gap-1.5">
-            <Layers className="h-4 w-4 text-[var(--ink4)]" />
-            <span className="text-[13px] font-bold text-[var(--ink2)]">코너 구성</span>
-            <span className="truncate text-[11px] text-[var(--ink4)]">드래그로 순서 변경 · 고정/개인화는 코너별 설정</span>
-            <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-full border border-[var(--line2)] bg-white px-1.5 text-[11px] font-bold text-[var(--ink3)]">{rows.length}</span>
-          </div>
-          <div className="space-y-1.5">
-            {rows.map(chipOf)}
-            {rows.length === 0 && <EmptyRow text="아래에서 코너를 추가하세요" />}
-            <AddBtn />
-          </div>
-        </section>
+        {/* 코너 리스트 — 바깥(TemplateCard)에 이미 '코너 구성' 영역·제목이 있어 여기선 박스/헤더 없이 리스트만(2026-11-25 사용자 요청: 영역 중첩·카드 축소 방지). */}
+        <div className="space-y-1.5">
+          {rows.map(chipOf)}
+          {rows.length === 0 && <EmptyRow text="아래에서 코너를 추가하세요" />}
+          <AddBtn />
+        </div>
       </SortableContext>
       {/* 코너 삭제 확인 — 디자인 모달(시스템 confirm 대체, 2026-11-12 사용자 요청). */}
       {deleteTarget && (
@@ -2339,7 +2335,7 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
           {/* 2026-11-25 사용자 요청: 개인화 영역은 코너 구성 위 별도 블록(PersonalZoneBand) 폐지 → 코너 구성 안 '개인화 영역' 섹션으로 통일. */}
           <div>
             {/* 타이틀↔카드 간격 확보(2026-11-19 사용자 요청: 너무 붙어 있음) — 폰트 키우고 아래 여백 확대 */}
-            <p className="mb-3.5 text-[14px] font-bold text-[var(--ink)]">코너 구성 <span className="font-semibold text-[var(--ink4)]">{corners.length}개</span> <span className="ml-1 rounded-full bg-[var(--th)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink4)]">픽스 · 개인화 · 운영</span></p>
+            <p className="mb-3.5 text-[14px] font-bold text-[var(--ink)]">코너 구성 <span className="font-semibold text-[var(--ink4)]">{corners.length}개</span> <span className="ml-1 text-[11px] font-normal text-[var(--ink4)]">드래그로 순서 변경 · 고정/개인화는 코너별 설정</span></p>
             {/* order3 레퍼런스: 좌측 순서변경 박스만 그레이 배경 + 해상도 기준 고정 높이(내부 스크롤) + 코너 추가 하단 고정.
                코너가 0개여도 밴드(Fixed·Dynamic)는 항상 표시 — 각 밴드에 '추가 가능' 노출(2026-10-21). */}
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[360px_minmax(0,1fr)] lg:h-[calc(100vh-300px)] lg:min-h-[420px]">
