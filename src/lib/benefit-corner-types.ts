@@ -186,16 +186,17 @@ export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
   // 인디케이터(스와이프)는 제외 — 리스트 코너에서 사용 안 함(2026-11-25 Slack 확정).
   const hasContext = (listLike || isBarcode) && CONTEXT_MIDS.has(mid);
 
-  // ── 코너(카드) 공통 속성 — 카드 상단→하단 시각 순서로 나열(2026-11-25 사용자 요청): 상단 이미지 → 추천 맥락 헤더 → 코너 타이틀 → 카테고리 칩 → 추가 인포메이션 → 랜딩/액션 버튼.
+  // ── 코너(카드) 공통 속성 — 카드 상단→하단 시각 순서(2026-11-25 사용자 요청): 상단 이미지 → 추천 맥락 헤더 → 코너 타이틀 → 코너 랜딩 링크 버튼 → (바코드) → 추가 인포메이션 → 하단 CTA.
   const card: AttrRow[] = [];
   card.push({ label: '상단 이미지', code: 'Image', state: 'toggle', default: false, note: '원장 이미지 또는 운영 등록 · 기본 OFF' });
   if (hasContext) card.push({ label: '추천 맥락 헤더', code: 'ContextHeader', state: 'toggle', default: false, note: '추천 근거(거리·검색·매장방문) 노출 · API 활동기록' });
   card.push({ label: '코너 타이틀', code: 'CornerTitle', state: 'required' });
+  // 코너 랜딩 링크 버튼 — 코너 타이틀 바로 다음(타이틀 옆, 2026-11-25 사용자 요청). 전 중분류 포함 · 코너 유형에서 On/Off(toggle).
+  card.push({ label: '코너 랜딩 링크 버튼', code: 'LandingLink', state: 'toggle', default: true, note: '액션 버튼과 택1 필수 · On/Off' });
   // 카테고리 칩(탭)은 컴포넌트(요소)로 이동(2026-11-25 사용자 요청) — 아래 item 배열에서 push.
   if (isBarcode) card.push({ label: '바코드', code: 'Barcode', state: 'required', note: '멤버십 바코드 · 값 런타임 발급' });
-  if (!isBarcode) card.push({ label: '추가 인포메이션', code: 'Information', state: 'toggle', default: false, note: '운영 정보성 영역' }); // 바코드형은 성격 디스크립션 없음(2026-11-25 SB)
-  // 코너 랜딩 링크 버튼 — 모든 중분류에 포함(2026-11-25 사용자 요청: 있는 거 다 넣기). 코너 유형에서 On/Off 가능(toggle).
-  card.push({ label: '코너 랜딩 링크 버튼', code: 'LandingLink', state: 'toggle', default: true, note: '액션 버튼과 택1 필수 · On/Off' });
+  // 추가 인포메이션은 랜딩 링크 아래로 내림(2026-11-25 사용자 요청). 바코드형은 성격 디스크립션 없음(SB).
+  if (!isBarcode) card.push({ label: '추가 인포메이션', code: 'Information', state: 'toggle', default: false, note: '운영 정보성 영역' });
   card.push({ label: '하단 CTA', code: 'ActionButton', state: 'toggle', default: false, note: '코너 랜딩 링크와 택1 필수 · On/Off' });
 
   // ── 컴포넌트(아이템) 요소
