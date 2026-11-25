@@ -10,21 +10,29 @@ import { Search, LayoutGrid, List as ListIcon, Database, Lock, ChevronRight } fr
 import { BenefitCornerPreview } from './benefit-corner-preview';
 
 export type BenefitTypeRow = {
+  top: string;        // 코너 유형(필터1) — 혜택형 · 배너형 · 업무 진입형
   typeId: string;
-  mid: string;        // 중분류 (혜택형 하위 뎁스)
+  mid: string;        // 중분류(필터2) — 코너 유형 하위 뎁스
   layout: string;     // 배열·레이아웃
   name: string;
   repImg: string | null; // (미사용 — 풀셋 미리보기로 대체)
   presetCount: number;
   source: string;     // 바라보는 원장
-  presetKey: string;  // 상세 경로 key
+  presetKey: string;  // 상세 경로 key (없으면 조회 전용 · 비링크)
   updatedBy: string;
   updatedAt: string;  // 'YYYY-MM-DD HH:mm'
   unused?: boolean;   // 안씀(미사용) — 바코드형 등
 };
 
-// 2026-11-24 SB DSP_03 최종 순서: 제휴사 → 이벤트 → 미션 → 혜택프로그램 → 이용지원.
-const MID_ORDER = ['제휴사형', '이벤트형', '미션형', '혜택프로그램형', '이용지원형'];
+// 코너 유형(필터1) 순서·배지 색.
+const TOP_ORDER = ['혜택형', '배너형', '업무 진입형'];
+const TOP_BADGE: Record<string, string> = {
+  '혜택형': 'bg-[#FFE4EC] text-[#D6336C]',
+  '배너형': 'bg-[#E6F0FF] text-[#2E6FF2]',
+  '업무 진입형': 'bg-[#EAF7F0] text-[#0B8A75]',
+};
+// 2026-11-24 SB DSP_03 최종 순서: 제휴사 → 이벤트 → 미션 → 혜택프로그램 → 이용지원. (+배너형·탭형)
+const MID_ORDER = ['제휴사형', '이벤트형', '미션형', '혜택프로그램형', '이용지원형', '배너형', '탭형'];
 // 중분류 텍스트 색상(칩 아님, 글자색만 구별).
 const MID_TEXT: Record<string, string> = {
   '제휴사형': 'text-[#2E7AFF]',
@@ -32,27 +40,37 @@ const MID_TEXT: Record<string, string> = {
   '이벤트형': 'text-[#6D28D9]',
   '혜택프로그램형': 'text-[#BE2063]',
   '이용지원형': 'text-[#0B8A75]',
+  '탭형': 'text-[#454f59]',
+  '배너형': 'text-[#2E6FF2]',
 };
 
 export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
   const router = useRouter();
   const [view, setView] = useState<'card' | 'list'>('list');
-  const [mid, setMid] = useState<string>('전체');   // 중분류 라이브 필터
+  const [top, setTop] = useState<string>('전체'); // 코너 유형 필터(1)
+  const [mid, setMid] = useState<string>('전체');  // 중분류 필터(2)
   const [q, setQ] = useState('');
   const [appliedQ, setAppliedQ] = useState('');
 
-  const mids = useMemo(() => MID_ORDER.filter((m) => rows.some((r) => r.mid === m)), [rows]);
+  const tops = useMemo(() => TOP_ORDER.filter((t) => rows.some((r) => r.top === t)), [rows]);
+  // 중분류 옵션 = 선택한 코너 유형 하위만(전체면 전부). 코너 유형 바뀌면 중분류 '전체'로 리셋.
+  const mids = useMemo(() => {
+    const scope = top === '전체' ? rows : rows.filter((r) => r.top === top);
+    return MID_ORDER.filter((m) => scope.some((r) => r.mid === m));
+  }, [rows, top]);
   const filtered = useMemo(() => rows.filter((r) => {
+    if (top !== '전체' && r.top !== top) return false;
     if (mid !== '전체' && r.mid !== mid) return false;
     if (appliedQ) {
-      const hay = `${r.typeId} ${r.mid} ${r.layout} ${r.name}`.toLowerCase();
+      const hay = `${r.typeId} ${r.top} ${r.mid} ${r.layout} ${r.name}`.toLowerCase();
       if (!hay.includes(appliedQ.toLowerCase())) return false;
     }
     return true;
-  }), [rows, mid, appliedQ]);
+  }), [rows, top, mid, appliedQ]);
 
-  const reset = () => { setMid('전체'); setQ(''); setAppliedQ(''); };
-  const open = (key: string) => router.push(`/admin/corner-types/benefit/${key}`);
+  const pickTop = (t: string) => { setTop(t); setMid('전체'); };
+  const reset = () => { setTop('전체'); setMid('전체'); setQ(''); setAppliedQ(''); };
+  const open = (r: BenefitTypeRow) => { if (r.presetKey) router.push(`/admin/corner-types/benefit/${r.presetKey}`); };
 
   return (
     <>
@@ -85,6 +103,30 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
               ))}
             </div>
           </div>
+          {/* 필터1 — 코너 유형(혜택형·배너형·업무 진입형). 선택 시 하위 중분류(필터2)가 그 유형으로 좁혀진다(2026-11-25 사용자 요청). */}
+          <div className="flex items-start gap-2 text-[13px] text-[#454f59]">
+            <span className="mt-1 w-[72px] shrink-0 font-semibold">코너 유형</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {['전체', ...tops].map((t) => (
+                <button key={t} onClick={() => pickTop(t)}
+                  className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition ${top === t ? 'border-[#3617ce] bg-[#3617ce] text-white' : 'border-[#e3e6ea] bg-white text-[#454f59] hover:border-[#3617ce] hover:text-[#3617ce]'}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* 필터2 — 중분류(선택한 코너 유형 하위). */}
+          <div className="flex items-start gap-2 text-[13px] text-[#454f59]">
+            <span className="mt-1 w-[72px] shrink-0 font-semibold">중분류</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {['전체', ...mids].map((m) => (
+                <button key={m} onClick={() => setMid(m)}
+                  className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition ${mid === m ? 'border-[#3617ce] bg-[#3617ce] text-white' : 'border-[#e3e6ea] bg-white text-[#454f59] hover:border-[#3617ce] hover:text-[#3617ce]'}`}>
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <label className="flex flex-1 items-center gap-2 text-[13px] text-[#454f59]">
               <span className="w-[72px] shrink-0 font-semibold">직접 검색</span>
@@ -99,17 +141,6 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
             <button onClick={() => setAppliedQ(q)} className="h-[38px] rounded-[6px] bg-[#3617ce] px-5 text-[14px] font-semibold text-white hover:bg-[#502dfb]">조회</button>
           </div>
         </div>
-      </div>
-
-      {/* 중분류 라이브 필터 — 클릭 즉시 적용(혜택형 하위) */}
-      <div className="mb-4 flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-[13px] font-semibold text-[#697582]">중분류</span>
-        {['전체', ...mids].map((m) => (
-          <button key={m} onClick={() => setMid(m)}
-            className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition ${mid === m ? 'border-[#3617ce] bg-[#3617ce] text-white' : 'border-[#e3e6ea] bg-white text-[#454f59] hover:border-[#3617ce] hover:text-[#3617ce]'}`}>
-            {m}
-          </button>
-        ))}
       </div>
 
       {/* 조회결과 헤더 + 보기 전환 */}
@@ -150,15 +181,19 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
               {filtered.length === 0 ? (
                 <tr><td colSpan={10} className="px-3 py-10 text-center text-[#8b949e]">검색 결과가 없습니다.</td></tr>
               ) : filtered.map((r, i) => (
-                <tr key={r.typeId} onClick={() => open(r.presetKey)}
-                  className={`cursor-pointer border-b border-[#f1f3f5] last:border-0 hover:bg-[#f8f9fb] ${r.unused ? 'opacity-60' : ''}`}>
+                <tr key={r.typeId} onClick={() => open(r)}
+                  className={`border-b border-[#f1f3f5] last:border-0 hover:bg-[#f8f9fb] ${r.presetKey ? 'cursor-pointer' : 'cursor-default'} ${r.unused ? 'opacity-60' : ''}`}>
                   <td className="px-3 py-3 align-middle tabular-nums text-[#8b949e]">{i + 1}</td>
                   <td className="whitespace-nowrap px-3 py-3 align-middle font-mono text-[12px] text-[#697582]">{r.typeId}</td>
                   <td className="px-3 py-3">
-                    {/* 미리보기 = 기존 코너 유형 관리와 동일한 렌더러, 크기 고정. 옅은 톤 배경으로 흰 카드가 잘 보이게. */}
-                    <div className="flex justify-center rounded-[14px] bg-[#eceef5] p-3"><BenefitCornerPreview mid={r.mid} layout={r.layout} typeId={r.typeId} name={r.name} variant="list" image={r.repImg} /></div>
+                    {/* 미리보기 — 혜택형은 공용 렌더러, 그 외(배너형·업무 진입형)는 껍데기 플레이스홀더(프리셋 준비 전). */}
+                    <div className="flex justify-center rounded-[14px] bg-[#eceef5] p-3">
+                      {r.top === '혜택형'
+                        ? <BenefitCornerPreview mid={r.mid} layout={r.layout} typeId={r.typeId} name={r.name} variant="list" image={r.repImg} />
+                        : <div className="grid h-[120px] w-[150px] place-items-center rounded-[10px] border border-dashed border-[#c4c9cf] bg-white text-center text-[11px] font-medium text-[#8b949e]">{r.top}<br />{r.layout}<br /><span className="text-[10px] text-[#b3b9c0]">프리셋 준비 중</span></div>}
+                    </div>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3 align-middle"><span className="inline-flex items-center rounded-md bg-[#FFE4EC] px-2 py-0.5 text-[12px] font-bold text-[#D6336C]">혜택형</span></td>
+                  <td className="whitespace-nowrap px-3 py-3 align-middle"><span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${TOP_BADGE[r.top] ?? 'bg-[#eef0f6] text-[#697582]'}`}>{r.top}</span></td>
                   <td className={`whitespace-nowrap px-3 py-3 align-middle font-semibold ${MID_TEXT[r.mid] ?? 'text-[#454f59]'}`}>{r.mid}</td>
                   <td className="px-3 py-3 align-middle text-[#454f59]">{r.layout} <span className="ml-1 text-[12px] text-[#b3b9c0]">· 프리셋 {r.presetCount}</span></td>
                   <td className="px-3 py-3 align-middle">{r.unused
@@ -180,12 +215,16 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
       {view === 'card' && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(248px,1fr))] gap-4">
           {filtered.map((r) => (
-            <button key={r.typeId} onClick={() => open(r.presetKey)}
+            <button key={r.typeId} onClick={() => open(r)}
               className="group flex flex-col overflow-hidden rounded-[14px] border border-[#e8ecef] bg-white text-left transition hover:-translate-y-0.5 hover:border-[#c9ccf7] hover:shadow-[0_10px_28px_rgba(20,22,40,0.10)]">
-              <div className="flex justify-center bg-[#eef0f6] p-3"><BenefitCornerPreview mid={r.mid} layout={r.layout} typeId={r.typeId} name={r.name} variant="list" image={r.repImg} /></div>
+              <div className="flex justify-center bg-[#eef0f6] p-3">
+                {r.top === '혜택형'
+                  ? <BenefitCornerPreview mid={r.mid} layout={r.layout} typeId={r.typeId} name={r.name} variant="list" image={r.repImg} />
+                  : <div className="grid h-[120px] w-[150px] place-items-center rounded-[10px] border border-dashed border-[#c4c9cf] bg-white text-center text-[11px] font-medium text-[#8b949e]">{r.top}<br />{r.layout}<br /><span className="text-[10px] text-[#b3b9c0]">프리셋 준비 중</span></div>}
+              </div>
               <div className="flex flex-1 flex-col gap-2 p-3.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="inline-flex items-center rounded-md bg-[#FFE4EC] px-2 py-0.5 text-[12px] font-bold text-[#D6336C]">혜택형</span>
+                  <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${TOP_BADGE[r.top] ?? 'bg-[#eef0f6] text-[#697582]'}`}>{r.top}</span>
                   <span className="text-[13px] font-semibold text-[#454f59]">{r.mid}</span>
                   <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-[#c4c9cf] group-hover:text-[#3617ce]" />
                 </div>

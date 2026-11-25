@@ -5,8 +5,8 @@ import { ContainerTree } from '@/components/container-tree';
 
 export async function ContainersTestShell({ children }: { children: React.ReactNode }) {
   const containers = await prisma.container.findMany({
-    // 혜택 탭만 노출(2026-11-23 사용자 요청: 빌더에서 혜택만 남기고 나머지 숨김). 데이터는 보존 — 되돌리려면 name 필터만 제거.
-    where: { NOT: { containerType: 'PROMOTION' }, name: { contains: '혜택' } },
+    // 메인홈 + 혜택만 노출(2026-11-25 사용자 요청: 메인홈 컨테이너 추가). 쇼핑·마이는 숨김. 데이터는 보존 — 되돌리려면 필터만 조정.
+    where: { NOT: { containerType: 'PROMOTION' }, OR: [{ name: { contains: '혜택' } }, { name: { contains: '메인홈' } }] },
     orderBy: { createdAt: 'asc' },
     select: {
       id: true,

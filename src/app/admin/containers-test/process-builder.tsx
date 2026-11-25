@@ -1104,31 +1104,32 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
       {/* ④ 수급 방식별 — 운영자 편성=채우기, 데이터 연동=요청+운영자 고정 앵커(폴백과 무관하게 항상 노출 — 앵커는 정상 노출 시 앞자리 고정, 폴백은 별개. 2026-11-16 사용자 확정), 콘텐츠 연동=구좌만(미노출이면 구좌 안내). */}
       {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
         <Sec n={nFill} title={isPersonal ? '코너 콘텐츠 설정' : fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '코너 콘텐츠 설정'} hint="구성 방식을 고르고 노출할 데이터를 설정합니다">
-          {/* 구성 방식 — 코너를 가져온 뒤 운영자가 '운영자 구성 / 개인화'를 고른다(2026-11-25 사용자 요청: 코너 콘텐츠 설정 안에서 선택). 수동 전용 유형은 개인화 불가. */}
-          <div className="mb-3">
-            <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">구성 방식</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" disabled={forcePersonal} onClick={() => { if (isPersonal && !forcePersonal) onPersonalChange(false); }}
-                className={cn('flex flex-col items-start gap-0.5 rounded-[10px] border px-3 py-2.5 text-left transition', !isPersonal ? 'border-[var(--ac)] bg-[var(--ac2)]' : 'border-[var(--line3)] bg-white hover:border-[var(--ink5)]', forcePersonal && 'cursor-not-allowed opacity-45 hover:border-[var(--line3)]')}>
-                <span className="flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink)]"><UserCog className={cn('h-3.5 w-3.5', !isPersonal ? 'text-[var(--ac)]' : 'text-[var(--ink4)]')} /> 운영자 구성</span>
-                <span className="text-[11px] text-[var(--ink4)]">운영자가 직접 편성·수급</span>
-              </button>
-              <button type="button" disabled={!corner.canPersonal} onClick={() => { if (!isPersonal && corner.canPersonal) onPersonalChange(true); }}
-                className={cn('flex flex-col items-start gap-0.5 rounded-[10px] border px-3 py-2.5 text-left transition', isPersonal ? 'border-[#6D28D9] bg-[#faf7ff]' : 'border-[var(--line3)] bg-white hover:border-[#b79ae8]', !corner.canPersonal && 'cursor-not-allowed opacity-45 hover:border-[var(--line3)]')}>
-                <span className="flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink)]"><Sparkles className={cn('h-3.5 w-3.5', isPersonal ? 'text-[#6D28D9]' : 'text-[var(--ink4)]')} /> 개인화</span>
-                <span className="text-[11px] text-[var(--ink4)]">후보 유형 등록 → 추천 엔진이 선택</span>
+          {/* 개인화 추천 — 운영자 지정 '위에' 올리는 혼합 모델(2026-11-25 사용자: 한 뷰에 운영자+개인화가 함께 보여야 함, 둘 중 하나 택1 아님).
+              켜면 운영자가 지정한 자리 외 나머지를 추천이 고객별로 채운다. 출석체크·룰렛형은 전용이라 항상 On. 수동 전용 유형은 Off 고정. */}
+          <div className="mb-4 rounded-[10px] border border-[var(--line2)] bg-[var(--th)] px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <Sparkles className={cn('h-4 w-4 shrink-0', isPersonal ? 'text-[#6D28D9]' : 'text-[var(--ink4)]')} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-bold text-[var(--ink)]">개인화 추천</p>
+                <p className="text-[11px] leading-relaxed text-[var(--ink4)]">켜면 운영자 지정 자리 외 나머지를 추천이 고객별로 채워요 (운영자 지정 + 개인화 혼합).</p>
+              </div>
+              <button type="button" disabled={forcePersonal || !corner.canPersonal}
+                onClick={() => { if (forcePersonal || !corner.canPersonal) return; onPersonalChange(!isPersonal); }}
+                title={isPersonal ? '개인화 켜짐' : '개인화 꺼짐'}
+                className={cn('relative h-[22px] w-[40px] shrink-0 rounded-full transition-colors', isPersonal ? 'bg-[#6D28D9]' : 'bg-[var(--line3)]', (forcePersonal || !corner.canPersonal) && 'opacity-50')}>
+                <span className={cn('absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-all', isPersonal ? 'left-[20px]' : 'left-[2px]')} />
               </button>
             </div>
-            {forcePersonal && <p className="mt-2 flex items-center gap-1 text-[11px] font-medium text-[#6D28D9]"><Sparkles className="h-3 w-3" />출석체크·룰렛형은 개인화 전용이라 운영자 구성으로 바꿀 수 없어요.</p>}
+            {forcePersonal && <p className="mt-2 flex items-center gap-1 text-[11px] font-medium text-[#6D28D9]"><Sparkles className="h-3 w-3" />출석체크·룰렛형은 개인화 전용이라 항상 켜져 있어요.</p>}
             {!corner.canPersonal && <p className="mt-2 text-[11px] text-[var(--ink4)]">이 코너 유형은 수동(운영자 지정) 전용이라 개인화를 켤 수 없어요.</p>}
           </div>
 
-          {isPersonal ? (
-          /* ── 개인화 구성 — 후보 코너 유형(껍데기) 직접 담기 + 추천 엔진 + 노출 개수(최소~최대) + 흐름(2026-11-25 통화 결론). ── */
-          <div>
-            <p className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#f5f1ff] px-3 py-2 text-[12px] leading-relaxed text-[#6D28D9]">
+          {/* 개인화 추천 설정 — On일 때만. 운영자 지정(아래)과 '함께' 노출되는 혼합 영역. */}
+          {isPersonal && (
+          <div className="mb-4 rounded-[10px] border border-[#e8ddff] bg-[#faf9ff] p-3">
+            <p className="mb-2.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-[#6D28D9]">
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>후보 유형을 여러 개 담아두면, 고객마다 <b>추천 엔진</b>이 노출 개수만큼 골라서 보여줘요. 걸리는 후보가 없으면 이 코너는 노출되지 않아요.</span>
+              <span>운영자가 지정한 자리 외 나머지를 <b>추천 엔진</b>이 고객별로 채워요. 후보가 없으면 그 자리는 운영자 지정으로 채워집니다.</span>
             </p>
             <FormBlock title="추천 로직">
               <FormRow label="추천 엔진" req>
@@ -1201,7 +1202,11 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 }} />
             )}
           </div>
-          ) : (<>
+          )}
+
+          {/* ── 운영자 지정 — 항상 노출(개인화 On이어도 함께). 운영자가 직접 담는 아이템/카드. ── */}
+          {isPersonal && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 지정</p>}
+          <>
           {fillForFallback && (
             <div className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#fff8ef] px-3 py-2 text-[12px] leading-relaxed text-[#b67a12]">
               <span className="mt-0.5">⚠</span><span>이 코너는 <b>CVM 콘텐츠 연동</b>이라 평소엔 CVM 완성본이 노출됩니다. <b>CVM 응답이 비면</b> 아래에 등록한 운영자 편성 항목이 대신 노출돼요(폴백 미리보기에서 확인).</span>
@@ -1827,7 +1832,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
               </details>
             </div>
           )}
-          </>)}
+          </>
         </Sec>
       ) : isProfile ? (
         <Sec n={nFill} title="프로필 항목">
