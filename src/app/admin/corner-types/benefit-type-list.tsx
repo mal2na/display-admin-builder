@@ -55,7 +55,7 @@ function BannerTypePreview({ pager }: { pager?: boolean }) {
   return (
     <div className="w-[190px]">
       {/* 배너 — 가로로 긴 직사각형(배너 비율). 좌 문구 / 우 이미지. */}
-      <div className="flex w-full items-center gap-2 overflow-hidden rounded-[10px] bg-gradient-to-br from-[#eef0f6] to-[#e3e9f5] px-2.5 shadow-[0_2px_10px_rgba(20,22,40,0.08)]" style={{ aspectRatio: '672 / 214' }}>
+      <div className="flex w-full items-center gap-2 overflow-hidden rounded-[10px] bg-gradient-to-br from-[#eef0f6] to-[#e3e9f5] px-2.5 shadow-[0_2px_10px_rgba(20,22,40,0.08)]" style={{ aspectRatio: '353 / 112' }}>
         <p className="min-w-0 flex-1 text-[10px] font-bold leading-[13px] text-[#1a1a1a] [word-break:keep-all]">배너 타이틀</p>
         <div className="h-9 w-9 shrink-0 rounded-[8px] bg-gradient-to-br from-[#dfe3ea] to-[#cbd2e0]" />
       </div>
