@@ -64,11 +64,11 @@ export function ComposedBanner({ f, width, height, preview = false }: { f: Compo
     </div>
   );
 
-  // 배너 라운드 = 레퍼런스(T우주 앱) 카드와 동일 28px, 단 작은 썸네일에선 과하지 않게 높이에 비례(최대 28). 전시화면 카드 radius와 통일.
-  const radius = Math.min(28, Math.round(height / 4));
+  // 배너 라운드 = SB Figma(node 29032-27462) radius-28 기준으로 28px 고정(2026-11-26 사용자 요청). 흰 ring 테두리 제거 — 보더가 같이 나와 지저분하던 문제.
+  const radius = 28;
   return (
     <div
-      className={'flex overflow-hidden px-4 shadow-sm ring-1 ring-white ' + (vertical ? 'flex-col items-center justify-center gap-2 py-3' : 'items-center gap-3')}
+      className={'flex overflow-hidden px-4 ' + (vertical ? 'flex-col items-center justify-center gap-2 py-3' : 'items-center gap-3')}
       style={{ background: composeBg(f), width, height, borderRadius: radius }}
     >
       {(pos === 'left' || pos === 'top') && imageEl}
