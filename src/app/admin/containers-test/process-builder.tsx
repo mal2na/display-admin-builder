@@ -2014,10 +2014,12 @@ function CornerChip({ c, no, selected, fixed, on, isPersonal, onToggleOn, onSele
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.templateCornerId });
   const style = { transform: CSS.Transform.toString(transform), transition };
   // 혜택형 코너는 이름이 이미 '{중분류} · {배열}'(예: 제휴사형 · 리스트형)이라, 하단에 베이스 혜택·오퍼형 배열(세로형(카테고리형) 등)을 또 띄우면 혼란 → 숨긴다(2026-11-26 사용자 요청). 실제 cornerType은 '혜택·오퍼형'(cornerTypeLabel→혜택형)이라 라벨 기준으로 판정.
-  const layoutText = cornerTypeLabel(c.cornerType) === '혜택형' ? '' : cornerLayoutText(c.cornerType, c.layout, c.layoutDetail);
+  // 구좌 전체 추천(= CVM 콘텐츠 연동) 코너는 '자리째 추천에 위임'이라 구체 유형(제휴사형 리스트형)을 드러내지 않고 '추천 구좌'로만 표기(2026-11-26 사용자 요청).
+  const isRecSlot = c.recSource === 'CVM 콘텐츠 연동';
+  const layoutText = isRecSlot || cornerTypeLabel(c.cornerType) === '혜택형' ? '' : cornerLayoutText(c.cornerType, c.layout, c.layoutDetail);
   // 이름에 '유형 · ' 접두가 붙은 자동생성 코너는 접두를 떼어 '배열(레이아웃)'만 제목으로(유형은 아래 칩으로만). 2026-11-05 사용자 요청.
   const typePrefix = `${c.cornerType} · `;
-  const displayName = c.name.startsWith(typePrefix) ? c.name.slice(typePrefix.length) : c.name;
+  const displayName = isRecSlot ? '추천 구좌' : (c.name.startsWith(typePrefix) ? c.name.slice(typePrefix.length) : c.name);
   return (
     <div ref={setNodeRef} style={style} id={`chip-${c.id}`} onClick={onSelect}
       className={cn('cursor-pointer rounded-[10px] border bg-white px-3.5 py-3 transition',
@@ -2048,7 +2050,9 @@ function CornerChip({ c, no, selected, fixed, on, isPersonal, onToggleOn, onSele
           </div>
           {/* 하단 행 — 유형 칩·레이아웃 · (우) 노출 토글 */}
           <div className="mt-1 flex items-center gap-1.5 pl-6">
-            <span className={cn(cornerTypeChipClass(cornerTypeLabel(c.cornerType)), 'shrink-0')}>{cornerTypeLabel(c.cornerType)}</span>
+            {isRecSlot
+              ? <span className="whitespace-nowrap text-[11px] font-medium text-[#6D28D9]">자리째 추천 위임 · 내용 미표시</span>
+              : <span className={cn(cornerTypeChipClass(cornerTypeLabel(c.cornerType)), 'shrink-0')}>{cornerTypeLabel(c.cornerType)}</span>}
             {layoutText && <span className="whitespace-nowrap text-[11px] text-[var(--ink4)]">{layoutText}</span>}
             <span className="min-w-0 flex-1" />
             {/* 노출 on/off 토글 */}
@@ -2783,8 +2787,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
       return (
         <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
           className={cn('group flex min-h-[132px] cursor-pointer flex-col items-center justify-center gap-1.5 scroll-mt-4 rounded-[20px] border-2 border-dashed border-[#c3b4f2] bg-[#f6f3ff] px-4 py-7 text-center transition hover:border-[var(--ac)]', c.id === activeSel && 'border-[var(--ac)] ring-2 ring-[var(--ac)] ring-offset-2')}>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]"><Sparkles className="h-3 w-3" />개인화 구좌</span>
-          <p className="text-[12px] font-bold text-[var(--ink2)]">{c.name}</p>
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]"><Sparkles className="h-3 w-3" />개인화</span>
+          <p className="text-[13px] font-bold text-[var(--ink)]">추천 구좌</p>
           <p className="text-[11px] leading-relaxed text-[var(--ink4)]">이미지·문구·랜딩까지 <b className="text-[#6D28D9]">추천이 고객마다</b> 채웁니다 · 빌더엔 내용 미표시</p>
         </div>
       );
