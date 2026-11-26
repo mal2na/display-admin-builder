@@ -591,10 +591,13 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const FILL_MODE_LABEL: Record<string, string> = { '운영자 직접': '운영자 직접', '운영자 고정 + 추천': '코너 고정 · 콘텐츠 추천', '전부 추천': '전부 추천' };
   // ③ 섹션 타이틀 = ② 채우는 방식에서 고른 라벨과 동일하게(2026-11-26 사용자 요청). ② 라디오 라벨과 일치.
   const FILL_MODE_SEC_TITLE: Record<string, string> = { '운영자 직접': '운영자 편성', '운영자 고정 + 추천': '운영자 편성 + 추천', '전부 추천': '구좌 전체 추천' };
-  const [fillMode, setFillMode] = React.useState<string>(() => (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접');
+  const [fillMode, setFillMode] = React.useState<string>(() => (
+    isQuickMenu ? '운영자 고정 + 추천'  // 퀵메뉴(카테고리 탭)는 6+6(운영자 고정 + 추천) — 구좌 전체 추천 불가(2026-11-26 사용자 요청)
+    : (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접'));
   // 채우는 방식(fillMode) → 수급(recSource) 매핑. ② 라디오 선택이 코너 recSource에 반영돼야 미리보기가 'CVM 구좌'로 바뀐다(2026-11-26 사용자 요청: 개인화면 뚫린 구좌).
   const FILL_TO_REC: Record<string, string> = { '운영자 직접': '운영자 편성', '운영자 고정 + 추천': 'CVM 데이터 연동', '전부 추천': 'CVM 콘텐츠 연동' };
-  const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); const rec = FILL_TO_REC[m] ?? '운영자 편성'; setSrc(rec); onRecSourceChange(rec); onPreviewPatch({ contextHeader: m !== '운영자 직접' ? ctxHeaderOn : false }); };
+  // 모드 전환(운영자 편성 ↔ 운영자 편성+추천)은 미리보기를 바꾸지 않는다 — 추천 맥락 헤더는 여기서 자동 토글하지 않고, 아래 Y/N 토글(ctxHeaderOn)로만 제어(2026-11-26 사용자 요청: 클릭할 때마다 좌측 이미지가 변하면 안 됨).
+  const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); const rec = FILL_TO_REC[m] ?? '운영자 편성'; setSrc(rec); onRecSourceChange(rec); };
   const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법', '남은 데이터 확인하기', '가족 결합 할인 알아보기', '기기 할부금 조회하기', '요금제 바로 변경하기', 'T멤버십 쿠폰 받기', '오늘의 맞춤 혜택 보기', '해외 데이터 로밍 신청', '소액결제 한도 변경', '유독(구독) 추천받기', '약정 만료일 확인', '포인트 적립 내역 보기', '단말기 보험 가입 확인', '자동이체 할인 신청', 'VIP 전용 혜택 보기'];
   const RQ_MAX = 20;      // 등록 풀 상한(운영자가 여기까지 추가 가능).
   const RQ_SEED = 10;     // 기본 채움 개수(2026-11-26 사용자: 20개 말고 10개만 우선).
@@ -1162,7 +1165,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 sub: '구좌 자체를 추천에 맡겨요 — 이미지·문구·랜딩까지 추천이 고객마다 채워요', who: '운영자 · 구좌만', rec: '추천 · 전체' },
             ] as const).map(({ method, mode, label, personalized, sub, who, rec }) => {
               const on = fillMode === mode;
-              const blocked = (!corner.canPersonal && mode !== '운영자 직접') || (forcePersonal && mode === '운영자 직접');
+              // 퀵메뉴(업무진입형 카테고리 탭)는 '구좌 전체 추천'(자리째 위임) 불가 — 메뉴 아이템이라 구좌를 통째로 비울 수 없음(2026-11-26 사용자 요청).
+              const blocked = (!corner.canPersonal && mode !== '운영자 직접') || (forcePersonal && mode === '운영자 직접') || (isQuickMenu && mode === '전부 추천');
               return (
                 // 컴팩트 2줄 — 라디오+라벨+배지+분담(1줄) / 설명(1줄). 높이 최소화(2026-11-26 사용자 요청: 영역 과다 차지).
                 <button key={method} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(mode); }}
@@ -2656,11 +2660,19 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   // 추천(구좌 전체 추천) 기본 코너는 recSource를 'CVM 콘텐츠 연동'으로 맞춰 '빈 구좌(추천 구좌)'로 뜨게 한다 — 추천이면 구좌를 비워야 하고 클릭 전/새로고침 후에도 유지(2026-11-26 사용자 요청: 추천은 구좌를 비워달라).
   //  대상 = fillMode 기본값이 '전부 추천'인 코너(개인화 영역 zone='personal' 또는 출석체크·룰렛). 서버 코너를 liveCorners에 반영할 때마다 함께 적용. 운영자가 ②에서 로컬로 바꾼 선택은 liveCorners에만 있어 덮이지 않음.
   const syncRec = React.useCallback((raw: PCorner[]): PCorner[] => raw.map((c) => {
-    const defaultAllRec = c.zone === 'personal' || (/(출석체크|룰렛)/.test(c.name) && c.canPersonal);
+    // 업무진입형(퀵메뉴·상태·프로필·바코드)은 구좌 전체 추천(빈 구좌) 대상 아님 — 메뉴/카드 아이템이라 제외(2026-11-26 사용자 요청).
+    const defaultAllRec = c.cornerType !== '업무 진입형' && (c.zone === 'personal' || (/(출석체크|룰렛)/.test(c.name) && c.canPersonal));
     return (defaultAllRec && (c.recSource == null || c.recSource === '운영자 편성')) ? { ...c, recSource: 'CVM 콘텐츠 연동', isCvm: true } : c;
   }), []);
   const [liveCorners, setLiveCorners] = React.useState<PCorner[]>(() => syncRec(activeTemplate?.corners ?? []));
-  React.useEffect(() => { setLiveCorners(syncRec(activeTemplate?.corners ?? [])); }, [activeTemplate?.corners, syncRec]);
+  // 템플릿당 1회만 서버 코너 → liveCorners 반영(+추천 기본 동기화). 같은 템플릿에서의 서버 새로고침(zone 저장 등)은 무시해 운영자가 ②에서 바꾼 선택이 되돌아가지 않게(2026-11-26 사용자 요청: 운영자 편성+추천은 내용 유지).
+  const syncedTplRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    const tid = activeTemplate?.id ?? null;
+    if (syncedTplRef.current === tid) return;
+    syncedTplRef.current = tid;
+    setLiveCorners(syncRec(activeTemplate?.corners ?? []));
+  }, [activeTemplate?.id, activeTemplate?.corners, syncRec]);
   const totalCorners = liveCorners.length;
   // 노출 토글(코너 카드)로 숨긴 코너 — 좌측 미리보기에서도 빠진다(2026-11-12 사용자 요청). templateCornerId 기준.
   const [hiddenIds, setHiddenIds] = React.useState<Set<string>>(new Set());
@@ -2833,7 +2845,8 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           if (design && c.preview) {
             // 코너 불러오기 미리보기 — 배너·맥락 헤더·추가 인포는 기본 노출(모달과 일치). 단 하단 CTA는 기본 OFF(잘 안 씀) → 토글/입력값 따름(2026-11-26 사용자 요청).
             // 추천 맥락 헤더 = '추천'일 때만. 운영자 편성이면 끄고, 추천 모드에선 Y/N 토글값(c.preview.contextHeader)을 따른다(2026-11-26 사용자 요청).
-            const showCtx = c.recSource !== '운영자 편성' && !!c.preview.contextHeader;
+            // 추천 맥락 헤더 = 토글값(c.preview.contextHeader)만 따른다 — 모드(운영자 편성↔+추천)로 켜지고 꺼지지 않게(2026-11-26 사용자 요청).
+            const showCtx = !!c.preview.contextHeader;
             const fullPreview = {
               ...c.preview,
               bigBanner: !!c.preview.bigBanner,
