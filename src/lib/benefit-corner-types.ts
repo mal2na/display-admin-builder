@@ -108,7 +108,8 @@ export function benefitMap(mid: string, layout: string): { base: string; detail:
     // 제휴사형 리스트형: 배너·카테고리 옵션, 아이템 1, 혜택 문구(가격 없음).
     case '제휴사형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false };
     // 바코드형 리스트형(2026-11-26 독립 중분류): 제휴사 리스트 + 멤버십 바코드(값 런타임 발급).
-    case '바코드형 > 리스트형': return { base: '혜택형', detail: '세로형+배너', comp: '혜택형', barcode: true, items: 1, price: false };
+    //  base=바코드형(표준 cornerType) → 코너 추가 후 빌더가 isBarcode로 인식해 바코드 UI(라벨·갱신주기) 렌더. 모달은 subType로 혜택형 하위 그룹 유지.
+    case '바코드형 > 리스트형': return { base: '바코드형', detail: '세로형+배너', comp: '혜택형', barcode: true, items: 1, price: false };
     // 미션형 리스트형: 배너+카테고리 + 아이템 1 + 우측 버튼(Label).
     case '미션형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, itemButton: true, price: false };
     // 미션형 출석체크형(통합)·룰렛형 — 기존 CornerBlock에 없는 레이아웃 → 전용 껍데기 목업(진행바·룰렛 위젯).

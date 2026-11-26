@@ -548,6 +548,12 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const isQuickMenu = corner.cornerType === '업무 진입형' && !isProfile && !isStatus && !isRecQuery;
   // 출석체크형·룰렛형 = '무조건 개인화'(2026-11-25 사용자 요청). 운영자 구성 선택 불가 · 자동으로 개인화로 고정.
   const forcePersonal = /(출석체크|룰렛)/.test(corner.name) && corner.canPersonal;
+  // 미션형(출석체크·룰렛) = 고정 틀 → 콘텐츠를 조립하지 않고 '운영 중인 미션'에 연결(2026-11-26 사용자 확정 A안). 데모 로컬 상태.
+  const isRoulette = /룰렛/.test(corner.name);
+  const MISSION_OPTS = isRoulette
+    ? ['행운 룰렛 이벤트 (상시)', '매일 룰렛 챌린지', '신규 가입 룰렛']
+    : ['출석체크 7일 챌린지', '매일 출석 이벤트', '주말 출석 보너스'];
+  const [linkedMission, setLinkedMission] = React.useState<string>('');
   // CN-DSP-0001 — 개인화 코너만 CVM/MLS 추천(맥락 헤더 노출). forcePersonal은 zone 저장 전이라도 개인화로 취급.
   const isPersonal = corner.zone === 'personal' || forcePersonal;
   // 강제 개인화인데 아직 zone이 personal이 아니면(예: 방금 추가) 한 번 저장해 리스트·미리보기에도 반영.
@@ -1153,6 +1159,23 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           </div>
 
           </>)}
+
+          {/* ── 미션 연결(출석체크·룰렛) — 고정 틀이라 콘텐츠를 조립하지 않고 운영 중인 미션에 '연결'(2026-11-26 A안). 콘텐츠·보상은 연결된 미션에서 내려오고, 개인화는 CVM이 고객별로 채움. ── */}
+          {forcePersonal && (
+          <div className="mb-4 rounded-[10px] border border-[#e8ddff] bg-[#faf9ff] p-3">
+            <p className="mb-1.5 flex items-center gap-1.5 text-[13px] font-bold text-[#6D28D9]"><Link2 className="h-3.5 w-3.5" /> 연결할 미션</p>
+            <p className="mb-2.5 text-[11px] leading-relaxed text-[var(--ink4)]">{isRoulette ? '룰렛' : '출석체크'}형은 고정 틀이라 콘텐츠를 직접 담지 않고 <b className="text-[#6D28D9]">운영 중인 미션에 연결</b>합니다. 보상·진행은 연결된 미션에서, 노출 대상은 개인화(CVM)가 고객별로 정합니다.</p>
+            <div className="relative">
+              <select value={linkedMission} onChange={(e) => setLinkedMission(e.target.value)}
+                className="h-[38px] w-full appearance-none rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-3 pr-9 text-[13px] text-[var(--ink)] focus:border-[var(--ac)] focus:outline-none">
+                <option value="">운영 중인 {isRoulette ? '룰렛' : '출석체크'} 미션 선택…</option>
+                {MISSION_OPTS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink4)]" />
+            </div>
+            {linkedMission && <p className="mt-2 flex items-center gap-1.5 rounded-[8px] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[#6D28D9]"><Sparkles className="h-3.5 w-3.5" /> ‘{linkedMission}’ 연결됨 — 콘텐츠·보상은 이 미션에서 가져옵니다.</p>}
+          </div>
+          )}
 
           {/* ── 운영자 지정 — '운영자 고정 + 추천'일 때만 라벨로 구분. '전부 추천'은 운영자 콘텐츠 없음. ── */}
           {showFillMode && fillMode === '운영자 고정 + 추천' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 고정 항목</p>}
@@ -2396,8 +2419,8 @@ function shellLayout(c: Pick<LibCorner, 'cornerType' | 'layout' | 'layoutDetail'
   }
   // 배너형 = 단일형/스와이프형. 카탈로그 typeDetail(배너 단일형/스와이프형) 또는 배너 수로 구분.
   if (c.cornerType === '배너형') return (/스와이프/.test(raw) || c.bannerCount >= 2) ? '스와이프형' : '단일형';
-  // 업무 진입형 = 탭형(퀵메뉴)으로 표기(2026-11-25 사용자 요청: 업무진입형 > 탭형).
-  if (c.cornerType === '업무 진입형') return '탭형';
+  // 업무 진입형 = 퀵메뉴형으로 표기(2026-11-26 사용자 요청: 탭형 → 퀵메뉴형).
+  if (c.cornerType === '업무 진입형') return '퀵메뉴형';
   return displayLayout(c.cornerType, raw) || raw;
 }
 function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast, initialPicked, title, addLabel }: { corners: LibCorner[]; targetZone?: Zone; onClose: () => void; onAdd: (cs: LibCorner[]) => void; onToast: (m: string) => void; initialPicked?: string[]; title?: string; addLabel?: string }) {
