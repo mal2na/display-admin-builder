@@ -576,6 +576,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   // 채우는 방식(2026-11-25 사용자 요청: '개인화 클릭'을 없애고 콘텐츠 채우기 안의 선택지로 통합).
   //  운영자 직접 / 운영자 고정+추천(혼합) / 전부 추천(후보 여러 개). '추천' 계열 = isPersonal.
   const FILL_MODES = ['운영자 직접', '운영자 고정 + 추천', '전부 추천'] as const;
+  // 표시명(2026-11-26 회의) — 저장값은 유지, 라벨만 명확화: '운영자 고정 + 추천' → '코너 고정 · 콘텐츠 추천'(코너 하나 고정 후 콘텐츠 일부 입력+나머지 추천).
+  const FILL_MODE_LABEL: Record<string, string> = { '운영자 직접': '운영자 직접', '운영자 고정 + 추천': '코너 고정 · 콘텐츠 추천', '전부 추천': '전부 추천' };
   const [fillMode, setFillMode] = React.useState<string>(() => (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접');
   const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); };
   const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법', '남은 데이터 확인하기', '가족 결합 할인 알아보기', '기기 할부금 조회하기', '요금제 바로 변경하기', 'T멤버십 쿠폰 받기', '오늘의 맞춤 혜택 보기', '해외 데이터 로밍 신청', '소액결제 한도 변경', '유독(구독) 추천받기', '약정 만료일 확인', '포인트 적립 내역 보기', '단말기 보험 가입 확인', '자동이체 할인 신청', 'VIP 전용 혜택 보기'];
@@ -1137,7 +1139,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 return (
                   <button key={m} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(m); }}
                     className={cn('rounded-full border px-3 py-1.5 text-[12px] font-semibold transition', on ? 'border-[#6D28D9] bg-[#6D28D9] text-white' : 'border-[var(--line3)] bg-white text-[var(--ink2)] hover:border-[#b79ae8]', blocked && 'cursor-not-allowed opacity-40')}>
-                    {m}
+                    {FILL_MODE_LABEL[m] ?? m}
                   </button>
                 );
               })}
@@ -1789,6 +1791,17 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>{fillMode === '운영자 고정 + 추천' ? <>운영자가 고정한 자리 외 나머지를 <b>추천 엔진</b>이 고객별로 채워요.</> : <>후보 코너 유형을 여러 개 담아두면 <b>추천 엔진</b>이 고객마다 노출 개수만큼 골라요. 없으면 미노출.</>}</span>
             </p>
+            {/* 퀵메뉴(6+6) 개인화 규칙 — 2번 자리 고정 · 개인화 Max 5 · 후순위부터 교체(2026-11-26 회의). */}
+            {isQuickMenu && (
+            <div className="mb-3 rounded-[8px] border border-[#e8ddff] bg-white px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
+              <p className="mb-1.5 flex items-center gap-1.5 font-bold text-[#6D28D9]"><Lock className="h-3.5 w-3.5" /> 퀵메뉴 개인화 규칙</p>
+              <ul className="space-y-1 text-[11.5px]">
+                <li className="flex gap-1.5"><span className="shrink-0 font-bold text-[#6D28D9]">·</span><span><b>2번 자리는 항상 고정</b>입니다 — 개인화가 들어와도 밀리지 않아요(프로모션 보장).</span></li>
+                <li className="flex gap-1.5"><span className="shrink-0 font-bold text-[#6D28D9]">·</span><span>개인화는 <b>최대 5개</b>까지 노출돼요(2번 고정 자리 제외).</span></li>
+                <li className="flex gap-1.5"><span className="shrink-0 font-bold text-[#6D28D9]">·</span><span>추천이 들어오면 운영 등록 메뉴 중 <b>맨 후순위부터</b> 교체됩니다.</span></li>
+              </ul>
+            </div>
+            )}
             <FormBlock title="추천 로직">
               <FormRow label="추천 엔진" req>
                 <RadioRow options={[...MLS_REC_LOGICS]} value={persoMls} onChange={setPersoMls} />

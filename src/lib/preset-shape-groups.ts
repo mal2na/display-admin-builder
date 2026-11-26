@@ -54,6 +54,16 @@ export const PRESET_SHAPE_GROUPS: PresetShapeGroup[] = [
     presetIds: ['CN-DSP-0035', 'CN-DSP-0036'],
   },
   {
+    // 종합형(5-1) 신규(2026-11-26 회의) — 한 제휴사(예: 파리바게뜨)를 보고 그 아래 혜택 프로그램 리스트를 노출.
+    //  API가 섞인(제휴사 + MP) 코너라 별도. BO 실반영 전 'FO 리뷰 먼저' → 미사용(조회만)으로 두고 필요 시 On.
+    key: 'combo-list',
+    label: '혜택형 > 종합형 > 리스트형',
+    note: '종합형(제휴사+혜택프로그램) · 리스트형 (FO 리뷰 대기)',
+    source: 'EPC > 제휴사 + 혜택 프로그램(MP) 종합',
+    presetIds: [],
+    unused: true,
+  },
+  {
     // 바코드형 = 독립 중분류로 분리(2026-11-26 사용자 요청·회의 확정): 제휴사/혜택프로그램 어느 쪽에도 완전히 포화되지 않아 '혜택형 > 바코드형 > 리스트형'으로 뺀다.
     //  상시(통합)·매직·쿠폰 등 바코드 종류는 빌더에서 택1(멤버십 바코드=원타임, 값 런타임 발급).
     key: 'program-barcode',
@@ -68,6 +78,15 @@ export const PRESET_SHAPE_GROUPS: PresetShapeGroup[] = [
     note: '이용지원형 · 리스트형 (6개)',
     source: '직접 입력(운영) · 앱 내 링크 (API 아님)',
     presetIds: ['CN-DSP-0063', 'CN-DSP-0064', 'CN-DSP-0065', 'CN-DSP-0066', 'CN-DSP-0067', 'CN-DSP-0068'],
+  },
+  {
+    // 무료 상품형(리스트형) — 혜택 존에 들어가는 0원 상품(예: 우주패스 프리). 무료도 '상품명'으로 노출(2026-11-26 회의).
+    //  유료 상품형(리스트+캐러셀)은 다음 차수. 혜택 존 전용이라 혜택형 top 아래 중분류로 둔다.
+    key: 'free-product-list',
+    label: '혜택형 > 무료상품형 > 리스트형',
+    note: '무료상품형 · 리스트형 (0원 상품)',
+    source: 'EPC 원장 (0원 상품) · 혜택 존 전용',
+    presetIds: [],
   },
   {
     key: 'support-carousel',
