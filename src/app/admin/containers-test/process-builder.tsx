@@ -1853,25 +1853,21 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
             <FormBlock title={`개인화 옵션 · ${persoCats.length}`}>
               <div className="px-0.5 py-1">
                 <p className="mb-2 text-[11px] leading-relaxed text-[var(--ink4)]">이 코너 유형에 맞는 <b className="text-[#6D28D9]">개인화 기준(대분류)</b>을 <b>복수 선택</b>하세요. 운영자 제안값이며 CVM 협의로 조정됩니다.</p>
-                <div className="space-y-1.5">
+                {/* 선택형 칩(래핑) — 풀폭 카드 대신 밀도 높은 칩. 세부 항목(items)은 툴팁(title)으로, 선택 상태는 보라 채움으로(2026-11-26 사용자 요청: 개인화 옵션이 너무 큼). */}
+                <div className="flex flex-wrap gap-1.5">
                   {persoOpts.map(({ category, items }) => {
                     const on = persoCats.includes(category);
                     return (
-                      <button key={category} type="button" onClick={() => togglePersoCat(category)}
-                        className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left transition', on ? 'border-[#6D28D9] bg-[#faf7ff]' : 'border-[var(--line2)] bg-white hover:border-[#c9b8ec]')}>
-                        <span className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[#6D28D9] bg-[#6D28D9]' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3 text-white" />}</span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[12px] font-bold text-[var(--ink)]">{category}</span>
-                          <span className="block text-[11px] text-[var(--ink4)]">{items.join(' · ')}</span>
-                        </span>
+                      <button key={category} type="button" onClick={() => togglePersoCat(category)} title={items.join(' · ')}
+                        className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-semibold transition', on ? 'border-[#6D28D9] bg-[#6D28D9] text-white' : 'border-[var(--line2)] bg-white text-[var(--ink2)] hover:border-[#c9b8ec] hover:text-[#6D28D9]')}>
+                        {on ? <Check className="h-3 w-3 shrink-0" /> : <Plus className="h-3 w-3 shrink-0 opacity-50" />}
+                        {category}
                       </button>
                     );
                   })}
                 </div>
                 {persoCats.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {persoCats.map((c) => <span key={c} className="inline-flex items-center gap-1 rounded-full bg-[#6D28D9] px-2 py-0.5 text-[11px] font-semibold text-white"><Sparkles className="h-2.5 w-2.5" />{c}</span>)}
-                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-[var(--ink4)]">선택한 기준의 세부 항목은 CVM에 <b className="text-[#6D28D9]">제안값</b>으로 전달됩니다. 칩에 마우스를 올리면 세부 항목이 보입니다.</p>
                 )}
               </div>
             </FormBlock>
@@ -2815,7 +2811,19 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           // 썸네일 모양·아이템 버튼 — sbImage가 있으면 경로로, 없으면 중분류로 판정(이벤트/이용지원=사각 썸네일, 미션 리스트=우측 라벨 버튼).
           const squareThumb = c.sbImage ? /event|support/.test(c.sbImage) : (mid === '이벤트형' || mid === '이용지원형');
           const itemButton = c.sbImage ? c.sbImage.includes('mission') : (mid === '미션형' && design === 'list');
-          if (design && c.preview) return <BenefitPreviewCard corner={c.preview} design={design} mid={mid} squareThumb={squareThumb} itemButton={itemButton} />;
+          if (design && c.preview) {
+            // 코너 불러오기 = 풀 패키지(모든 요소 ON) — 모달(BenefitCornerPreview)과 '동일한 UI'로. 배너·맥락 헤더·추가 인포·하단 CTA를
+            //  기본 노출하되, 운영자가 입력한 텍스트(타이틀·맥락·인포·버튼 라벨)는 보존(2026-11-26 사용자 요청: 불러오기/미리보기 일치).
+            const CTX_MIDS = new Set(['제휴사형', '이벤트형', '혜택프로그램형']);
+            const fullPreview = {
+              ...c.preview,
+              bigBanner: true,
+              contextHeader: c.preview.contextHeader || (mid ? CTX_MIDS.has(mid) : false),
+              information: true,
+              moreButtonUse: design !== 'barcode',
+            };
+            return <BenefitPreviewCard corner={fullPreview} design={design} mid={mid} squareThumb={squareThumb} itemButton={itemButton} />;
+          }
           return <CornerBlock corner={c.recSource === 'CVM 데이터 연동'
             ? { ...c.preview, cvmFillCount: (c.preview?.cvmFillCount ?? 0) || 5, cvmFillMin: (c.preview?.cvmFillMin ?? 0) || 3 }
             : { ...c.preview, cvmFillCount: 0 }} />;
