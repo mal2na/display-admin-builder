@@ -1,7 +1,7 @@
 'use client';
 
 import { NavLink } from '@/components/nav-link';
-import { MonitorSmartphone, LayoutGrid, Ticket, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, ClipboardList, Menu as MenuIcon, Globe } from 'lucide-react';
+import { MonitorSmartphone, LayoutGrid, Ticket, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, ClipboardList, Menu as MenuIcon, Globe, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 좌측 사이드바 — NC-Channel Product Admin LNB 규격. 폭 236px, 라벤더 var(--bg) 배경.
@@ -23,7 +23,8 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
 
         {/* 프로모션 관리 */}
         {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">프로모션 관리</p>}
-        <NavLink href="/admin/events" icon={<Ticket className="h-4 w-4" />} label="프로모션 관리" collapsed={collapsed} excludeFor={['/admin/events/result']} />
+        <NavLink href="/admin/events" icon={<Ticket className="h-4 w-4" />} label="프로모션 관리" collapsed={collapsed} excludeFor={['/admin/events/result', '/admin/events/winners']} />
+        <NavLink href="/admin/events/winners" icon={<Trophy className="h-4 w-4" />} label="당첨자 관리" collapsed={collapsed} />
         <NavLink href="/admin/events/result" icon={<ClipboardList className="h-4 w-4" />} label="결과 관리" collapsed={collapsed} />
 
         {/* 운영 관리 */}
