@@ -1913,7 +1913,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
 function CornerChip({ c, no, selected, fixed, on, isPersonal, onToggleOn, onSelect, onToggleFixed, onDelete, onToast }: { c: PCorner; no: number; selected: boolean; fixed: boolean; on: boolean; isPersonal: boolean; onToggleOn: () => void; onSelect: () => void; onToggleFixed: () => void; onDelete: () => void; onToast: (m: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.templateCornerId });
   const style = { transform: CSS.Transform.toString(transform), transition };
-  const layoutText = cornerLayoutText(c.cornerType, c.layout, c.layoutDetail);
+  // 혜택형 코너는 이름이 이미 '{중분류} · {배열}'(예: 제휴사형 · 리스트형)이라, 하단에 베이스 혜택·오퍼형 배열(세로형(카테고리형) 등)을 또 띄우면 혼란 → 숨긴다(2026-11-26 사용자 요청).
+  const layoutText = c.cornerType === '혜택형' ? '' : cornerLayoutText(c.cornerType, c.layout, c.layoutDetail);
   // 이름에 '유형 · ' 접두가 붙은 자동생성 코너는 접두를 떼어 '배열(레이아웃)'만 제목으로(유형은 아래 칩으로만). 2026-11-05 사용자 요청.
   const typePrefix = `${c.cornerType} · `;
   const displayName = c.name.startsWith(typePrefix) ? c.name.slice(typePrefix.length) : c.name;
@@ -2394,10 +2395,14 @@ function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast, initial
     }
     return out;
   }, [corners]);
-  // 상단 탭 = 전체 + 등록된 그룹(혜택형 중분류 5 + 배너형). 유형별 개수 표기.
-  const TABS = React.useMemo(() => ['전체', ...Array.from(new Set(shells.map((c) => c.subType ?? c.cornerType)))], [shells]);
-  const countOf = (t: string) => (t === '전체' ? shells.length : shells.filter((c) => gk(c) === t).length);
-  const list = shells.filter((c) => (tab === '전체' || gk(c) === tab) && (!q || c.shellTitle.includes(q) || gk(c).includes(q)));
+  // 상단 탭 = 전체 + 최상위 코너 유형(혜택형·배너형·업무 진입형). 중분류(제휴사형 등)가 아니라 유형으로 묶는다(2026-11-26 사용자 요청).
+  const TOP_ORDER = ['혜택형', '배너형', '업무 진입형'];
+  const TABS = React.useMemo(() => {
+    const set = new Set(shells.map((c) => (c.subType ? '혜택형' : c.cornerType)));
+    return ['전체', ...TOP_ORDER.filter((t) => set.has(t)), ...[...set].filter((t) => !TOP_ORDER.includes(t))];
+  }, [shells]);
+  const countOf = (t: string) => (t === '전체' ? shells.length : shells.filter((c) => topOf(c) === t).length);
+  const list = shells.filter((c) => (tab === '전체' || topOf(c) === tab) && (!q || c.shellTitle.includes(q) || gk(c).includes(q)));
   // 멀티셀렉 — 체크된 코너 집합 + 우측 미리보기용 포커스
   const [picked, setPicked] = React.useState<Set<string>>(new Set(initialPicked ?? []));
   const [focusId, setFocusId] = React.useState<string | null>(shells[0]?.id ?? null);
