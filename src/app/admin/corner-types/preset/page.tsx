@@ -97,9 +97,9 @@ export default function PresetTypeListPage() {
     <div className="px-12 py-9 pb-28">
       <nav className="mb-2 flex items-center gap-1.5 text-[14px] text-[#697582]">
         <span>홈</span><span>›</span><span>전시 관리</span><span>›</span>
-        <span className="text-[#1a1a1a]">코너 유형 관리(프리셋)</span>
+        <span className="text-[#1a1a1a]">프리셋 관리</span>
       </nav>
-      <h1 className="text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[#1a1a1a]">코너 유형 관리(프리셋)</h1>
+      <h1 className="text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[#1a1a1a]">프리셋 관리</h1>
       <p className="mb-4 mt-1 text-[14px] text-[#697582]">
         신규 프리셋 <b className="text-[#1a1a1a]">{totalPresets}개</b>를 <b className="text-[#1a1a1a]">혜택형</b>(중분류 제휴사형·미션형·이벤트형·혜택프로그램형·이용지원형) + <b className="text-[#1a1a1a]">상품형</b>(기기 지원금·요금제·구독) 아래 레이아웃(리스트형·캐러셀형·출석체크형·룰렛형·바코드형·배너형·그래프형)으로 묶었습니다. 총 <b className="text-[#1a1a1a]">{totalLeaves}개 유형</b>. <span className="text-[#8b949e]">※ 중분류=파일명, 레이아웃=이미지 기준. 개인화형(1-1~1-3)은 별도 유형이 아니라 이 코너들을 빌더 개인화 슬롯에 담는 사용 방식.</span>
       </p>
@@ -200,10 +200,10 @@ export default function PresetTypeListPage() {
                               )}
                               {g.presetIds.map((id) => (
                                 <figure key={id} className="flex flex-col gap-1.5">
-                                  {/* 흰 카드 안의 프리셋(디바이스 카드)에 drop-shadow — 둘 다 흰색이라 안 구분되는 문제 해결(2026-11-25 사용자 요청: 흰 배경 유지 + 프리셋에 그림자). */}
-                                  <div className="flex aspect-[5/8] items-center justify-center overflow-hidden rounded-[16px] bg-white p-3 shadow-[0_8px_26px_-10px_rgba(20,22,40,0.22)] ring-1 ring-[#eef0f4]">
+                                  {/* 쉐도우 대신 보더 2겹 — 균일 타일 프레임(영역) + 프리셋 이미지 자신. 흰 배경과 프리셋(흰 카드) 구분(2026-11-26 사용자 요청). */}
+                                  <div className="flex aspect-[5/8] items-center justify-center overflow-hidden rounded-[16px] border border-[#e8ecef] bg-white p-3">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={imgSrc(id)} alt={presetDesignName(id)} className="max-h-full max-w-full object-contain drop-shadow-[0_5px_16px_rgba(20,22,40,0.22)]" />
+                                    <img src={imgSrc(id)} alt={presetDesignName(id)} className="max-h-full max-w-full rounded-[10px] border border-[#dce0e5] object-contain" />
                                   </div>
                                   <figcaption className="px-0.5 text-[12px] leading-tight [word-break:keep-all]">
                                     <span className="font-medium text-[#454f59]">{presetDesignName(id)}</span>

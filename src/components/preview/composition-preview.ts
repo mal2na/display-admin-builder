@@ -237,9 +237,11 @@ function blockCompRaw(b: CompositionBlock, i: number, ctx?: { base?: string; det
       const chipKind = chipTypeOf(ctx?.detail ?? '') ?? (ctx?.base === '업무 진입형' ? 'ChipHome' : null);
       // ChipHome — DS ChipHome. 아이콘+라벨 퀵칩 2행. Normal/<Icon> → icon:general/<Icon>.
       if (chipKind === 'ChipHome') {
+        // 퀵메뉴(업무 진입형)는 기본 12칸(6+6)이 차 있어야 한다(2026-11-26 사용자 요청) → 프리뷰도 12개.
         const items: [string, string][] = [
           ['장바구니', 'Cart'], ['검색', 'Search'], ['이벤트', 'Event'], ['혜택', 'Star'],
           ['VIP', 'Vip'], ['영화', 'Movie'], ['구독', 'Subscribe'], ['가족', 'Family'],
+          ['로밍', 'Roaming'], ['요금', 'Won'], ['멤버십', 'Benefit'], ['매장', 'Store'],
         ];
         return { ...base, name: 'ChipHome', selectedIndex: 0, chipRows: 2, chipVariant: 'home', atoms: items.map(([label, icon]) => atom({ name: label, atomType: 'TEXT', content: label, imageUrl: `icon:general/${icon}` })) };
       }

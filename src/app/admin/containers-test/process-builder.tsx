@@ -19,10 +19,12 @@ import { BenefitPreviewCard, benefitDesignKey } from '@/components/preview/benef
 import { RecQueryCard } from '@/components/preview/rec-query-card';
 import { MainHomeOfferCard } from '@/components/preview/main-home-card';
 import { benefitTypes, canPersonalize, sbPreviewSrc } from '@/lib/benefit-corner-types';
+import { BenefitCornerPreview } from '@/app/admin/corner-types/benefit-corner-preview';
 import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
-import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, MLS_REC_LOGICS, type Zone } from '@/lib/display-taxonomy';
+import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, type Zone } from '@/lib/display-taxonomy';
+import { persoOptionsFor } from '@/lib/personalization-options';
 import { PRESET_SHAPE_GROUPS } from '@/lib/preset-shape-groups';
 import { presetDesignName } from '@/components/preview/preset-design-card';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Minus, Maximize2, Copy, Pencil, ShieldCheck, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, AlertTriangle, Barcode, ArrowRight, LayoutGrid } from 'lucide-react';
@@ -574,7 +576,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const srcLocked = isProfile || isStatus || isBarcode;
   // 개인화 구성(2026-11-25 통화 결론) — 개인화 코너는 '추천 후보 코너 유형'을 여러 개 등록하고, 추천 엔진이 노출 개수(최소~최대, 1~3)만큼 골라 노출(없으면 미노출). 데모 로컬 상태.
   const [persoTypes, setPersoTypes] = React.useState<string[]>([]);
-  const [persoMls, setPersoMls] = React.useState<string>(MLS_REC_LOGICS[0]);
+  // 개인화 옵션(대분류) 복수 선택 상태 — 옵션 목록(persoOpts)은 benefitMidKey 확정 후 아래에서 계산.
+  const [persoCats, setPersoCats] = React.useState<string[]>([]);
+  const togglePersoCat = (c: string) => setPersoCats((a) => (a.includes(c) ? a.filter((x) => x !== c) : [...a, c]));
   const [persoMin, setPersoMin] = React.useState(1);
   const [persoMax, setPersoMax] = React.useState(3);
   const [persoPickerOpen, setPersoPickerOpen] = React.useState(false);
@@ -629,7 +633,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const fillForFallback = isCvmSrc && !isData && fb === '운영자 편성으로 대체' && !isProfile && !isStatus && !isBarcode;
   // 섹션 번호 — CVM 코너는 ③ 폴백(채우기 위로)이 끼어 번호가 하나씩 밀린다(2026-11-10 사용자 요청: 폴백이 채우기 결과를 좌우하므로 위로). 번호 공백 방지.
   //  운영/픽스 영역(비개인화)은 ② 수급 선택을 숨기므로 콘텐츠 설정이 ②로 당겨진다(2026-11-25 사용자 요청).
-  const nFill = 2; // 코너 콘텐츠 설정 = 항상 ②. 대체 노출(폴백)은 ③로 아래에(2026-11-25 사용자 요청).
+  // nFillSec·nFallback은 showFillMode 확정 후 아래에서 정의(채우는 방식 ② 유무에 따라 번호 이동).
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   // 혜택형 코너는 '불러오기' 시 그 코너의 중분류 구좌만 뜨게 한다(2026-11-25 사용자 요청: 이벤트면 이벤트 구좌, 미션은 미션, 제휴사면 브랜드).
@@ -639,6 +643,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
     const seg = (corner.name.split('·')[0] ?? '').trim();
     return /형$/.test(seg) ? seg : null;
   })();
+  // 개인화 옵션(대분류) — 코너 중분류에 맞는 시트 분류(SKT NC_정보 분류, 2026-11-26). 대분류만 복수 선택.
+  const persoOpts = persoOptionsFor(benefitMidKey);
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
   const catalog = (isStatus ? catalogByType['상태 안내형'] : isProfile ? catalogByType['프로필형']
     : (benefitMidKey ? catalogByType['혜택형·' + benefitMidKey] : undefined) ?? catalogByType[corner.cornerType]) ?? [];
@@ -651,10 +657,10 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   //  CTA=moreButtonUse / 배너=bigBanner / 칩=선택형 컴포넌트 유무. 토글을 끄면 applyOptsToPreview로 미리보기도 함께 꺼진다.
   const pv = corner.preview;
   const hasChipComp = !!pv?.components?.some((c) => c.componentType === '선택형');
-  // 상단 이미지(배너)·하단 CTA는 기본 N — 운영자가 빌더에서 켤 때만 노출(2026-11-25 사용자 요청). 칩만 프리셋 구조 유지.
+  // 불러올 때 '풀 패키지' — 유형 미리보기(전 요소 ON)와 맞춰 모든 옵션(배너·칩·CTA)을 기본 ON으로 로드(2026-11-26 사용자 요청: 불러올 때 꺼져 있어 불일치/에러처럼 보임). 운영자가 필요 시 끈다.
   const [optOn, setOptOn] = React.useState<Record<string, boolean>>(() =>
-    Object.fromEntries(availOptions.map((o) => [o,
-      (o === '칩' && (/칩/.test(rawDetail) || hasChipComp))])));
+    Object.fromEntries(availOptions.map((o) => [o, true])));
+  void rawDetail; void hasChipComp; // (풀 패키지 로드로 더 이상 조건 분기 안 함 — 참조 보존)
   // 코너 공통 필드(코너 타이틀·버튼 텍스트) — 코너 유형 required 중 corner 그룹. 빌더에 입력란이 없던 문제 수정(2026-11-05 사용자 요청).
   const cornerReqFields = (optSpec?.required ?? []).filter((f) => f.group === 'corner');
   // 프로필형 = '내 정보/프로필·가입현황' 같은 코너 타이틀/서브를 두지 않는다(고객정보 행 자체가 콘텐츠). 코너 세팅 없이 '고객정보 가져오기'만(2026-11-05 사용자 요청).
@@ -667,7 +673,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const [barcodeLabel, setBarcodeLabel] = React.useState(() => { const t = bcAtoms.find((a) => a.atomType === 'TEXT')?.content; return (t && !/^Title/.test(String(t))) ? String(t) : 'T멤버십'; });
   const [barcodeRefresh, setBarcodeRefresh] = React.useState(() => { const b = bcAtoms.find((a) => a.atomType === 'BARCODE')?.content; return String(Number(b) || 20); });
   // 바코드 유형 — 일반 바코드 / 매직 바코드(SB BO-AIM-DSP-PG557 코너 레이아웃). 데모 로컬 상태.
-  const [barcodeKind, setBarcodeKind] = React.useState<'일반 바코드' | '매직 바코드'>('일반 바코드');
+  // 바코드 3종(2026-11-26 회의): 통합(상시)·매직·쿠폰(일회용) 중 택1. 멤버십 바코드=원타임(런타임 발급).
+  const [barcodeKind, setBarcodeKind] = React.useState<'통합 바코드' | '매직 바코드' | '쿠폰 바코드'>('통합 바코드');
   // 버튼 텍스트(ButtonText) = 미리보기의 '서브 타이틀'(타이틀 아래 보조 문구, 예: T 영화예매). CTA(전체보기)와는 별개(2026-11-05 사용자 요청).
   const [buttonTextVal, setButtonTextVal] = React.useState(() => (pv?.subTitle && pv.subTitle !== 'ButtonText' ? pv.subTitle : ''));
   // CTA 라벨(전체보기 등) = 하단 더보기 버튼. CTA 옵션을 켤 때만 입력, 버튼 텍스트와 별개(2026-11-05 사용자 요청).
@@ -684,9 +691,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const [btnRoute, setBtnRoute] = React.useState<BtnRoute>('페이지');
   const [btnOpen, setBtnOpen] = React.useState<BtnOpen>('현재 화면');
   // CN-DSP-0001 정의(2026-11-25) — 추천 맥락 헤더(개인화 전용)·추가 인포메이션(수동 전용)·인디케이터. 모두 기본 N.
-  const [ctxHeaderOn, setCtxHeaderOn] = React.useState(false);     // [추천 맥락 헤더] On/Off — 개인화 코너에서만
+  const [ctxHeaderOn, setCtxHeaderOn] = React.useState(true);      // [추천 맥락 헤더] 기본 ON(풀 패키지, 2026-11-26) — 개인화 코너에서만 적용
   const [ctxHeaderText, setCtxHeaderText] = React.useState('');    // 추천 맥락 헤더 문구(없으면 플레이스홀더)
-  const [infoOn, setInfoOn] = React.useState(false);               // [추가 인포메이션] On/Off — 수동 운영에서만
+  const [infoOn, setInfoOn] = React.useState(true);                // [추가 인포메이션] 기본 ON(풀 패키지, 2026-11-26) — 수동 운영에서만 적용
   const [infoText, setInfoText] = React.useState('');              // 추가 인포메이션 문구
   // 인디케이터(스와이프) 제외 — 리스트 타입은 좌우 스와이프 탐색이 없어 효용 낮고 접근성 이슈(2026-11-25 임태은/SKT 확정, Slack). 전 코너에서 삭제.
   // ③채우기를 '코너 | 아이템' 탭으로 나눠 등록(2026-11-05 사용자 요청). 코너 속성이 없는 유형(배너형 등)은 아이템만.
@@ -729,7 +736,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const [bannerFileName, setBannerFileName] = React.useState('');
   const [bannerAlt, setBannerAlt] = React.useState('');
   // 카테고리 설정(상품형·혜택 카테고리형) — 카테고리별 메뉴 메타(아이콘·링크·이동경로·열기방식). SB PG557 '카테고리 설정' 테이블(2026-11-17 사용자 요청).
-  const [catOn, setCatOn] = React.useState(false); // 카테고리 설정 기본 N(2026-11-25 사용자 요청)
+  const [catOn, setCatOn] = React.useState(true); // 카테고리 설정 기본 ON(풀 패키지 로드, 2026-11-26 사용자 요청: 불러올 때 유형 미리보기와 일치)
   type CatMeta = { icon: string | null; link: string; linkType: 'internal' | 'external'; mode: 'direct' | 'load' };
   const [catMeta, setCatMeta] = React.useState<Record<string, CatMeta>>({});
   const [catIconFor, setCatIconFor] = React.useState<string | null>(null);
@@ -765,6 +772,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const isBenefitType = corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형';
   // 채우는 방식(운영자 직접/운영자 고정+추천/전부 추천) 노출 대상 — 혜택형 + 퀵메뉴(업무 진입형 카테고리 탭). 후보 코너 유형은 혜택형만(2026-11-25 사용자 요청).
   const showFillMode = isBenefitType || isQuickMenu;
+  // 섹션 번호(2026-11-26 사용자 요청: 채우는 방식 ② / 채우기 ③ 분리) — 채우는 방식(②)이 있으면 채우기=③·폴백=④, 없으면(프로필·CVM 등) 채우기=②·폴백=③.
+  const nFillSec = showFillMode ? 3 : 2;
+  const nFallback = showFillMode ? 4 : 3;
   // 배너형 = '배너 캠페인 관리'에서 가져오기 전용(직접 입력 없음). 가져오기 버튼으로 등록된 배너를 담는다(2026-11-05 사용자 요청).
   const isBanner = corner.cornerType === '배너형';
   // 상품형 = 컴포넌트(아이템) 테이블을 가격 규격 컬럼으로(No·이미지·타이틀·할인율·가격·기간·서브 텍스트·경로 상세·상품 조회·삭제). 할인율/가격/기간은 상품(EPC) 원장 값(상품 조회) — 데모는 플레이스홀더. SB PG557(2026-11-17 사용자 요청).
@@ -1052,7 +1062,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
       <Sec n={1} title="코너 기본 정보" defaultOpen={false}>
         {/* 코너 유형 정보 — '템플릿 기본 정보'(FieldRow)와 동일 테이블. SB(BO-AIM-DSP-PG557): 유형·배열 위 / ID·코너명 아래(2026-11-16 재정렬). 좌우 보더 없음. 행 높이 48px([&>div]:h-12). */}
         <p className="mb-2 text-[13px] font-bold text-[var(--ink)]">코너 유형 정보</p>
-        <div className="border-t border-[var(--line2)] text-[14px] [&>div]:h-12">
+        <div className="text-[14px] [&>div]:h-12">
           {/* row1: 코너 유형 | 배열·레이아웃 */}
           <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
             <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형</div>
@@ -1129,36 +1139,45 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
 
       {/* ② 개인화 구성은 아래 '코너 콘텐츠 설정' 섹션 안으로 이동(2026-11-25 사용자 요청: 구성 방식이 코너 콘텐츠 설정으로 들어가야 함). */}
 
-      {/* ② 코너 콘텐츠 설정 — 운영자 편성=채우기, 데이터 연동=요청+운영자 고정 앵커, 콘텐츠 연동=구좌만. 대체 노출(폴백)은 이 아래로(2026-11-25 사용자 요청). */}
-      {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
-        <Sec n={nFill} title={isPersonal ? '코너 콘텐츠 설정' : fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '코너 콘텐츠 설정'} hint="구성 방식을 고르고 노출할 데이터를 설정합니다">
-          {/* 채우는 방식 — 혜택형 + 퀵메뉴. '개인화'를 따로 클릭하는 모드가 아니라 '어떻게 채울지'의 선택지로 통합(2026-11-25 사용자 요청).
-              운영자 직접 / 운영자 고정+추천(혼합) / 전부 추천. 출석·룰렛=전부 추천 고정, 수동 전용=운영자 직접만. */}
-          {showFillMode && (<>
-          <div className="mb-4">
-            <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">채우는 방식</p>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {FILL_MODES.map((m) => {
-                const on = fillMode === m;
-                // 미션형(룰렛·출석체크)은 운영자가 미션을 '연결'해야 하므로 운영자 직접·고정+추천을 비활성화하지 않는다(2026-11-26 사용자 확정, 비활성 제안 철회). 수동 전용은 '운영자 직접'만.
-                const blocked = (!corner.canPersonal && m !== '운영자 직접') || (forcePersonal && m === '운영자 직접');
-                return (
-                  <button key={m} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(m); }}
-                    className={cn('rounded-full border px-3 py-1.5 text-[12px] font-semibold transition', on ? 'border-[#6D28D9] bg-[#6D28D9] text-white' : 'border-[var(--line3)] bg-white text-[var(--ink2)] hover:border-[#b79ae8]', blocked && 'cursor-not-allowed opacity-40')}>
-                    {FILL_MODE_LABEL[m] ?? m}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--ink4)]">
-              {fillMode === '운영자 직접' ? '운영자가 아이템을 직접 담아요.'
-                : fillMode === '운영자 고정 + 추천' ? '앞자리는 운영자가 고정하고, 나머지는 추천 엔진이 고객별로 채워요.'
-                : '후보 코너 유형을 여러 개 담아두면, 고객마다 추천 엔진이 노출 개수만큼 골라요.'}
-              {forcePersonal && ' (출석체크·룰렛형은 개인화 전용)'}
-            </p>
+      {/* ② 채우는 방식 — 콘텐츠를 누가·어떻게 채우는지. 채우기(③)·폴백(④)과 분리(2026-11-26 사용자 요청: AS-IS 구조). */}
+      {showFillMode && (
+        <Sec n={2} title="채우는 방식" hint="콘텐츠를 누가·어떻게 채우는지 고릅니다">
+          {/* AS-IS(node 29268-74688) '코너 콘텐츠 구성 방식' 라디오 카드 — 수급 3종 + CVM/운영자 소유 분담(2026-11-26 사용자 요청). 내부 fillMode는 매핑 유지. */}
+          <div className="space-y-1.5 pb-1">
+            {([
+              { method: '운영자 편성', mode: '운영자 직접' },
+              { method: 'CVM 데이터 연동', mode: '운영자 고정 + 추천' },
+              { method: 'CVM 콘텐츠 연동', mode: '전부 추천' },
+            ] as const).map(({ method, mode }) => {
+              const on = fillMode === mode;
+              const info = REC_SOURCE_INFO[method];
+              const blocked = (!corner.canPersonal && mode !== '운영자 직접') || (forcePersonal && mode === '운영자 직접');
+              return (
+                <button key={method} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(mode); }}
+                  className={cn('flex w-full items-start gap-3 rounded-[10px] border px-3.5 py-3 text-left transition', on ? 'border-[#6D28D9] bg-[#faf7ff]' : 'border-[var(--line2)] bg-white hover:border-[#c9b8ec]', blocked && 'cursor-not-allowed opacity-40')}>
+                  <span className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[#6D28D9]' : 'border-[var(--line3)]')}>{on && <span className="h-2 w-2 rounded-full bg-[#6D28D9]" />}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <b className="text-[14px] text-[var(--ink)]">{method}</b>
+                      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-bold', info.personalized ? 'bg-[#F2ECFB] text-[#6D28D9]' : 'bg-[#eef0f2] text-[var(--ink3)]')}>{info.personalized ? '개인화 · 고객마다 다름' : '모두 같음'}</span>
+                    </span>
+                    <span className="mt-0.5 block text-[12px] text-[var(--ink3)]">{info.sub}</span>
+                    <span className="mt-1.5 flex flex-wrap gap-1.5 text-[11px]">
+                      <span className="rounded-full bg-[var(--th)] px-2 py-0.5 font-semibold text-[var(--ink3)]">운영자 · {info.weBuild}</span>
+                      <span className="rounded-full bg-[var(--th)] px-2 py-0.5 font-semibold text-[var(--ink3)]">CVM · {info.cvmGives}</span>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+            {forcePersonal && <p className="mt-1 text-[11px] text-[#6D28D9]">· 출석체크·룰렛형은 개인화 전용입니다(운영자 편성 불가).</p>}
           </div>
+        </Sec>
+      )}
 
-          </>)}
+      {/* ③ 채우기 — 선택한 방식으로 노출할 데이터를 설정. 대체 노출(폴백)은 ④로 아래에. */}
+      {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
+        <Sec n={nFillSec} title={fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '채우기'} hint="노출할 데이터를 설정합니다">
 
           {/* ── 미션 연결(출석체크·룰렛) — 고정 틀이라 콘텐츠를 조립하지 않고 운영 중인 미션에 '연결'(2026-11-26 A안). 콘텐츠·보상은 연결된 미션에서 내려오고, 개인화는 CVM이 고객별로 채움. ── */}
           {forcePersonal && (
@@ -1430,10 +1449,15 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           {/* ── 바코드형 = 라벨·갱신 주기 정책만. 번호는 회원별 런타임 발급(미리보기엔 sample). ── */}
           {isBarcode && (
             <FormBlock title="코너 레이아웃" desc="바코드 유형 · 코너 타이틀 · 갱신 주기">
-              {/* 바코드 유형 — 일반/매직(SB BO-AIM-DSP-PG557 코너 레이아웃). */}
+              {/* 바코드 유형 — 3종 택1(2026-11-26 회의): 통합(상시, 모든 제휴사 공통) · 매직(제휴사·기간 지정) · 쿠폰(다운로드·일회용). */}
               <FormRow label="바코드 유형">
-                <RadioRow options={['일반 바코드', '매직 바코드'] as const} value={barcodeKind} onChange={setBarcodeKind} />
+                <RadioRow options={['통합 바코드', '매직 바코드', '쿠폰 바코드'] as const} value={barcodeKind} onChange={setBarcodeKind} />
               </FormRow>
+              <p className="-mt-1 mb-1 px-[76px] text-[11px] leading-relaxed text-[var(--ink4)]">
+                {barcodeKind === '통합 바코드' ? '상시 · 모든 제휴사 공통 할인 바코드.'
+                  : barcodeKind === '매직 바코드' ? '제휴사·기간이 지정된 마케팅 바코드(구독 상품 등).'
+                  : '고객이 다운로드한 쿠폰 바코드(일회용).'}
+              </p>
               <FormRow label="코너 타이틀" en="CornerTitle">
                 <input value={barcodeLabel} onChange={(e) => { setBarcodeLabel(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'T멤버십' }); }} placeholder="코너 타이틀에 노출할 바코드명을 입력하세요" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
               </FormRow>
@@ -1825,10 +1849,31 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
               </ul>
             </div>
             )}
-            <FormBlock title="추천 로직">
-              <FormRow label="추천 엔진" req>
-                <RadioRow options={[...MLS_REC_LOGICS]} value={persoMls} onChange={setPersoMls} />
-              </FormRow>
+            {/* 개인화 옵션(대분류) — 복수 선택. 코너 유형(중분류)마다 옵션이 다름(SKT NC_정보 분류 시트). 운영자가 복수로 제안 → CVM이 조정(2026-11-26 사용자 요청). */}
+            <FormBlock title={`개인화 옵션 · ${persoCats.length}`}>
+              <div className="px-0.5 py-1">
+                <p className="mb-2 text-[11px] leading-relaxed text-[var(--ink4)]">이 코너 유형에 맞는 <b className="text-[#6D28D9]">개인화 기준(대분류)</b>을 <b>복수 선택</b>하세요. 운영자 제안값이며 CVM 협의로 조정됩니다.</p>
+                <div className="space-y-1.5">
+                  {persoOpts.map(({ category, items }) => {
+                    const on = persoCats.includes(category);
+                    return (
+                      <button key={category} type="button" onClick={() => togglePersoCat(category)}
+                        className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left transition', on ? 'border-[#6D28D9] bg-[#faf7ff]' : 'border-[var(--line2)] bg-white hover:border-[#c9b8ec]')}>
+                        <span className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[#6D28D9] bg-[#6D28D9]' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3 text-white" />}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[12px] font-bold text-[var(--ink)]">{category}</span>
+                          <span className="block text-[11px] text-[var(--ink4)]">{items.join(' · ')}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {persoCats.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {persoCats.map((c) => <span key={c} className="inline-flex items-center gap-1 rounded-full bg-[#6D28D9] px-2 py-0.5 text-[11px] font-semibold text-white"><Sparkles className="h-2.5 w-2.5" />{c}</span>)}
+                  </div>
+                )}
+              </div>
             </FormBlock>
             {/* 후보 코너 유형 — 혜택형 '전부 추천'일 때만(여러 코너 껍데기 중 추천이 택). 퀵메뉴는 아이템 추천이라 후보 선택 없이 개수만(2026-11-25 사용자 요청). */}
             {isBenefitType && fillMode === '전부 추천' && (
@@ -1877,7 +1922,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
             <div className="mt-1 flex flex-wrap items-center gap-2 rounded-[10px] border border-[#e8ddff] bg-[#faf7ff] px-3 py-2.5 text-[12px]">
               <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">후보 {persoTypes.length}개 유형</span>
               <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#b79ae8]" />
-              <span className="flex items-center gap-1 rounded-full bg-[#6D28D9] px-2.5 py-1 font-semibold text-white"><Sparkles className="h-3 w-3" />{persoMls}</span>
+              <span className="flex items-center gap-1 rounded-full bg-[#6D28D9] px-2.5 py-1 font-semibold text-white"><Sparkles className="h-3 w-3" />개인화 옵션 {persoCats.length}개</span>
               <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#b79ae8]" />
               <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">최소 {persoMin}~최대 {persoMax}개 노출</span>
               <span className="ml-auto shrink-0 text-[11px] text-[var(--ink4)]">{fb === '운영자 편성으로 대체' ? '없으면 운영자 대체' : '없으면 미노출'}</span>
@@ -1903,7 +1948,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           )}
         </Sec>
       ) : isProfile ? (
-        <Sec n={nFill} title="프로필 항목">
+        <Sec n={nFillSec} title="프로필 항목">
           <div className="mb-2 flex items-start gap-1.5 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]">
             <span className="mt-0.5">ⓘ</span><span><b>고객명·휴대폰 번호·프로필 이미지</b>는 고객 정보로 자동 표시(@cvm)됩니다. 아래 문구만 설정하세요.</span>
           </div>
@@ -1924,7 +1969,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           </div>
         </Sec>
       ) : (
-        <Sec n={nFill} title="CVM 요청 (구좌만)" help>
+        <Sec n={nFillSec} title="CVM 요청 (구좌만)" help>
           <p className="rounded-[8px] bg-[var(--ac2)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
             <b className="text-[var(--ac)]">CVM 콘텐츠 연동</b> = 구좌(자리)만 넘깁니다. 이미지·문구·랜딩까지 <b>CVM이 완성본을 내려주고</b> 전시 어드민은 받은 그대로 노출합니다. 별도 요청 범위(③) 설정은 없습니다.
           </p>
@@ -1936,7 +1981,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
         const isRec = fillMode === '전부 추천' && !isCvmSrc; // 추천 수급(전부 추천) vs CVM
         const emptyWord = isRec ? '추천이 비면' : 'CVM이 비면';
         return (
-        <Sec n={3} title="대체 노출 설정 (폴백)" hint={`${isRec ? '추천이 없을 때' : 'CVM 응답이 없을 때'} 대체 노출을 설정합니다`}>
+        <Sec n={nFallback} title="대체 노출 설정 (폴백)" hint={`${isRec ? '추천이 없을 때' : 'CVM 응답이 없을 때'} 대체 노출을 설정합니다`}>
           <div className="space-y-1.5">
             {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
               const on = fb === f;
@@ -2536,10 +2581,9 @@ function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast, initial
                 {/* 미리보기 폭 축소 — 코너 유형 관리처럼 폰 폭(최대 300px)으로 가운데 정렬(2026-11-05 사용자 요청). */}
                 <div className="rounded-[14px] border border-[var(--line2)] bg-[var(--th)] p-4">
                   <div className="mx-auto w-full max-w-[300px]">
-                    {/* SB Figma 프리뷰가 있으면 그대로(코너 유형 관리와 동일), 없으면 빌더 껍데기 가이드 */}
-                    {sel.sbPreview
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={sel.sbPreview} alt={`${sel.subType ?? sel.cornerType} 프리뷰`} className="mx-auto block w-full rounded-[18px] shadow-[0_8px_26px_-14px_rgba(20,22,40,0.22)]" />
+    {/* 혜택형(subType)은 코너 유형 관리·빌더와 '동일한' 렌더러(BenefitCornerPreview, 전 요소 ON)로 — 불러오기/미리보기 UI 일치(2026-11-26 사용자 요청). 그 외(배너형·업무진입형)는 껍데기 가이드. */}
+                    {sel.subType
+                      ? <BenefitCornerPreview mid={sel.subType} layout={sel.layout ?? sel.shell} variant="detail" />
                       : <CornerBlock corner={sel.preview} />}
                   </div>
                 </div>

@@ -311,12 +311,13 @@ export function BannerCard({ component, sizeDetail }: { component: PreviewCompon
   // 배너 규격(layoutDetail의 W×H)으로 실제 비율을 잡는다 — 빅/스몰/띠/팝업이 눈에 보이게.
   //  규격에 W×H가 없으면(예: '배너 단일형'): 완성형 이미지는 빅배너(672×460), 콤포즈형(타이틀+로고)은 납작한 띠 비율(672×260)로 → 뚱뚱한 박스 방지.
   const m = (sizeDetail ?? '').match(/(\d+)\s*[×xX*]\s*(\d+)/);
-  const ratio = m ? `${m[1]} / ${m[2]}` : (isFullBanner ? '672 / 460' : '672 / 324');
-  // 콤포즈형(타이틀+로고)은 스몰배너(672×324) 비율로 '배너답게 길게' — 규격이 더 커도 세로는 324로 캡(뚱뚱 방지, 2026-11-05 사용자 요청).
+  // 배너 기본 비율 = SB Figma(node 29032-27462) 기준 353:112(≈3.15:1, 가로 긴 띠)로 통일(2026-11-26 사용자 요청). 규격(W×H)이 있으면 그 비율 사용.
+  const ratio = m ? `${m[1]} / ${m[2]}` : '353 / 112';
+  // 콤포즈형(타이틀+이미지)도 353:112 기본 — 규격이 더 세로로 길어도 353:112 비율까지만 캡(뚱뚱 방지).
   const composeRatio = (() => {
-    if (!m) return isFullBanner ? '672 / 460' : '672 / 324';
+    if (!m) return '353 / 112';
     const w = Number(m[1]), h = Number(m[2]);
-    const capH = Math.round((w * 324) / 672);
+    const capH = Math.round((w * 112) / 353);
     return `${w} / ${Math.min(h, capH)}`;
   })();
   if (ratio) {

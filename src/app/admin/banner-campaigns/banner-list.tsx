@@ -29,11 +29,12 @@ const THUMB_H = Math.round(NAT_H * THUMB_SCALE);
 function BannerThumb({ preview }: { preview: BannerRow['preview'] }) {
   if (preview?.imageUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={preview.imageUrl} alt="" style={{ width: THUMB_W, height: THUMB_H }} className="rounded-md border border-[#dce0e5] object-cover" />;
+    return <img src={preview.imageUrl} alt="" style={{ width: THUMB_W, height: THUMB_H }} className="rounded-lg object-cover" />;
   }
   if (preview?.f) {
     return (
-      <div style={{ width: THUMB_W, height: THUMB_H }} className="overflow-hidden rounded-md border border-[#dce0e5]">
+      <div style={{ width: THUMB_W, height: THUMB_H }} className="overflow-hidden rounded-lg">
+
         <div style={{ width: NAT_W, height: NAT_H, transform: `scale(${THUMB_SCALE})`, transformOrigin: 'top left' }}>
           <ComposedBanner f={preview.f} width={NAT_W} height={NAT_H} preview />
         </div>
