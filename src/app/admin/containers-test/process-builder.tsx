@@ -593,7 +593,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const [fillMode, setFillMode] = React.useState<string>(() => (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접');
   // 채우는 방식(fillMode) → 수급(recSource) 매핑. ② 라디오 선택이 코너 recSource에 반영돼야 미리보기가 'CVM 구좌'로 바뀐다(2026-11-26 사용자 요청: 개인화면 뚫린 구좌).
   const FILL_TO_REC: Record<string, string> = { '운영자 직접': '운영자 편성', '운영자 고정 + 추천': 'CVM 데이터 연동', '전부 추천': 'CVM 콘텐츠 연동' };
-  const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); const rec = FILL_TO_REC[m] ?? '운영자 편성'; setSrc(rec); onRecSourceChange(rec); };
+  const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); const rec = FILL_TO_REC[m] ?? '운영자 편성'; setSrc(rec); onRecSourceChange(rec); onPreviewPatch({ contextHeader: m !== '운영자 직접' ? ctxHeaderOn : false }); };
   const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법', '남은 데이터 확인하기', '가족 결합 할인 알아보기', '기기 할부금 조회하기', '요금제 바로 변경하기', 'T멤버십 쿠폰 받기', '오늘의 맞춤 혜택 보기', '해외 데이터 로밍 신청', '소액결제 한도 변경', '유독(구독) 추천받기', '약정 만료일 확인', '포인트 적립 내역 보기', '단말기 보험 가입 확인', '자동이체 할인 신청', 'VIP 전용 혜택 보기'];
   const RQ_MAX = 20;      // 등록 풀 상한(운영자가 여기까지 추가 가능).
   const RQ_SEED = 10;     // 기본 채움 개수(2026-11-26 사용자: 20개 말고 10개만 우선).
@@ -757,7 +757,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
     if (isCategory || availOptions.includes('칩')) opts['칩'] = catOn; // 카테고리 설정(catOn)에 칩 노출 동기화 — off면 칩 제거(2026-11-25 사용자 요청)
     onOptionsChange(opts, ctaLabelVal);
     const patch: Record<string, unknown> = {
-      contextHeader: isPersonal ? ctxHeaderOn : false,
+      contextHeader: (isPersonal || fillMode !== '운영자 직접') ? ctxHeaderOn : false,
       information: isPersonal ? false : infoOn,
     };
     if (isCategory && !subCtaOn) patch.subTitle = null;
@@ -1321,8 +1321,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                   </>)}
                 </FormBlock>
               )}
-              {/* 추천 맥락 헤더 — CN-DSP-0001 정의. 상단 이미지 아래·코너 타이틀 위. 개인화 코너(개인화 영역)에서만 On/Off. 추천 근거(검색·매장방문) 밴드 · API 활동 기록일. */}
-              {isPersonal && (
+              {/* 추천 맥락 헤더 — '추천'을 쓸 때만(운영자 편성+추천·구좌 전체 추천) Y/N로 노출. 운영자 편성(추천 아님)이면 숨김(2026-11-26 사용자 요청). */}
+              {fillMode !== '운영자 직접' && (
                 <FormBlock title="추천 맥락 헤더" desc="개인화 추천 근거 밴드 · API 활동 기록일">
                   <FormRow label="사용 여부" req>
                     <RadioRow options={['Y', 'N'] as const} value={ctxHeaderOn ? 'Y' : 'N'} onChange={(v) => { const on = v === 'Y'; setCtxHeaderOn(on); onPreviewPatch({ contextHeader: on, contextHeaderText: ctxHeaderText || null }); }} />
@@ -2825,11 +2825,12 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           const itemButton = c.sbImage ? c.sbImage.includes('mission') : (mid === '미션형' && design === 'list');
           if (design && c.preview) {
             // 코너 불러오기 미리보기 — 배너·맥락 헤더·추가 인포는 기본 노출(모달과 일치). 단 하단 CTA는 기본 OFF(잘 안 씀) → 토글/입력값 따름(2026-11-26 사용자 요청).
-            const CTX_MIDS = new Set(['제휴사형', '이벤트형', '혜택프로그램형']);
+            // 추천 맥락 헤더 = '추천'일 때만. 운영자 편성이면 끄고, 추천 모드에선 Y/N 토글값(c.preview.contextHeader)을 따른다(2026-11-26 사용자 요청).
+            const showCtx = c.recSource !== '운영자 편성' && !!c.preview.contextHeader;
             const fullPreview = {
               ...c.preview,
               bigBanner: true,
-              contextHeader: c.preview.contextHeader || (mid ? CTX_MIDS.has(mid) : false),
+              contextHeader: showCtx,
               information: true,
               moreButtonUse: !!c.preview.moreButtonUse,
             };
