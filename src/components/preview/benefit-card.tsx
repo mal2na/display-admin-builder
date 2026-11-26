@@ -111,8 +111,8 @@ function ActionButton({ label }: { label: string }) {
 /** 혜택형 코드 미리보기 — designKey에 맞춰 SB 디자인 재현. corner 필드로 반응형. itemButton=리스트 아이템 우측 {Label} pill(미션형 리스트). */
 // 중분류(mid) → 타이틀/아이템 플레이스홀더 워딩. list·carousel 등 한 디자인을 여러 중분류가 공유하므로,
 //  하드코딩('제휴사')이 아니라 실제 중분류로 치환해야 한다(2026-11-25 버그픽스: 이벤트형인데 제휴사로 보임).
-const MID_TITLE_WORD: Record<string, string> = { 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' };
-const MID_ITEM_WORD: Record<string, string> = { 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' };
+const MID_TITLE_WORD: Record<string, string> = { 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원', 바코드형: '바코드', 종합형: '제휴사', 무료상품형: '상품' };
+const MID_ITEM_WORD: Record<string, string> = { 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원', 바코드형: '제휴사', 종합형: '혜택 프로그램', 무료상품형: '상품명' };
 
 export function BenefitPreviewCard({ corner, design, squareThumb, itemButton, mid }: { corner: PreviewCorner; design: BenefitDesign; squareThumb?: boolean; itemButton?: boolean; mid?: string }) {
   // 중분류 워딩(있으면 공유 디자인의 하드코딩 플레이스홀더를 덮어씀).

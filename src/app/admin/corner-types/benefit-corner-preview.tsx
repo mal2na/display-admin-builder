@@ -27,18 +27,20 @@ const comp = (id: string, componentType: string, atoms: PreviewAtom[], name = ''
 // 혜택형 코너 유형 미리보기 — 정적 SB 이미지가 아니라 '코드(BenefitPreviewCard)'로 렌더(2026-11-25 사용자 요청: 전부 코드).
 //  유형 상세/리스트의 '껍데기(필드 코드)' 프리뷰이므로 모든 요소를 켜 전체 구조를 보여준다.
 export function BenefitCornerPreview({ mid, layout, variant }: { mid: string; layout: string; typeId?: string; name?: string; variant: 'list' | 'detail'; image?: string | null }) {
-  const design: BenefitDesign = layout === '캐러셀형' ? 'carousel'
+  // 바코드형은 독립 중분류(레이아웃=리스트형)라 레이아웃 문자열이 아니라 benefitMap.barcode로 판정(2026-11-26).
+  const design: BenefitDesign = benefitMap(mid, layout).barcode ? 'barcode'
+    : layout === '캐러셀형' ? 'carousel'
     : layout === '출석체크형' ? 'attendance'
-    : layout === '룰렛형' ? 'roulette'
-    : layout === '바코드형' ? 'barcode' : 'list';
+    : layout === '룰렛형' ? 'roulette' : 'list';
   const square = mid === '이벤트형' || mid === '이용지원형';
   const hasCtx = CONTEXT_MIDS.has(mid);
-  // 코너 랜딩 링크 버튼(타이틀 옆) — 제휴사형=있음 / 혜택프로그램형=없음(2026-11-25 사용자 확정). 바코드형 제외.
+  // 코너 랜딩 링크 버튼(타이틀 옆) — 개념 스왑(2026-11-26): 혜택프로그램형=있음 / 제휴사형=없음. 바코드형 제외.
   const hasSubCta = hasLandingLink(mid) && design !== 'barcode';
   // 타이틀 플레이스홀더를 중분류에 맞게(제휴사/이벤트/미션/혜택 프로그램/이용 지원).
-  const tWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' } as Record<string, string>)[mid] ?? mid.replace('형', '');
+  const tWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원', 바코드형: '바코드', 종합형: '제휴사', 무료상품형: '상품' } as Record<string, string>)[mid] ?? mid.replace('형', '');
 
-  const iWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' } as Record<string, string>)[mid] ?? tWord;
+  // 바코드형 아이템 = 제휴사 리스트(멤버십 바코드는 별도 요소) · 종합형 아이템 = 혜택 프로그램 · 무료상품형 = 상품명(2026-11-26).
+  const iWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원', 바코드형: '제휴사', 종합형: '혜택 프로그램', 무료상품형: '상품명' } as Record<string, string>)[mid] ?? tWord;
   const chips = comp('chip', '선택형', ['{Label}', '{Label}', '{Label}', '{Label}', '{Label}'].map((c, i) => atom(`c${i}`, c)));
   // 아이템 플레이스홀더도 중분류에 맞게({미션 내용} 등). title·sub 두 아톰. 혜택프로그램형은 개별 혜택이라 '{혜택명}'(2026-11-26 사용자 요청).
   const itemPh = mid === '혜택프로그램형' ? '{혜택명}' : `{${iWord} 내용}`;

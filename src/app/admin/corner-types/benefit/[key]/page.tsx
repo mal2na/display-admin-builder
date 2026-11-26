@@ -51,8 +51,8 @@ function RowFull({ label, children }: { label: string; children: React.ReactNode
 // 배너형·탭형 조회 전용 상세 — 혜택형 프리셋이 아니라 공통 유형이라 간이 상세(미리보기 + 기본 정보)로 렌더(2026-11-25 사용자 요청).
 const SPECIAL_TYPES: Record<string, { top: string; mid: string; layout: string; source: string; desc: string; pager?: boolean; kind: 'banner' | 'tab' }> = {
   'banner-single': { top: '배너형', mid: '배너형', layout: '단수형', source: '배너 캠페인 관리', desc: '배너 1개를 노출합니다. 소재·문구·랜딩은 배너 캠페인 관리에서 가져옵니다.', kind: 'banner' },
-  'banner-multi': { top: '배너형', mid: '배너형', layout: '복수형', source: '배너 캠페인 관리', desc: '여러 배너를 스와이프로 노출합니다(하단 1/N 페이지네이션).', pager: true, kind: 'banner' },
-  'tab-swipe': { top: '업무 진입형', mid: '탭형', layout: '스와이프형', source: '-', desc: '상단 진입 탭(퀵메뉴). 아이콘+라벨 칩을 가로 스와이프로 노출합니다.', kind: 'tab' },
+  'banner-multi': { top: '배너형', mid: '배너형', layout: '복수형', source: '배너 캠페인 관리', desc: '여러 배너(최대 10개)를 스와이프로 노출합니다(하단 1/N). 노출 순서 = 등록 순서대로 또는 개인화 순서(2026-11-26 회의: 동일 순번 추천은 폐기). 비로그인은 등록 순서.', pager: true, kind: 'banner' },
+  'tab-swipe': { top: '업무 진입형', mid: '퀵메뉴형', layout: '스와이프형', source: '-', desc: '상단 진입 퀵메뉴. 아이콘+라벨 칩을 가로 스와이프로 노출합니다.', kind: 'tab' },
 };
 
 function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {

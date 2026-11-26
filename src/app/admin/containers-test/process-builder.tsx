@@ -548,6 +548,12 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const isQuickMenu = corner.cornerType === '업무 진입형' && !isProfile && !isStatus && !isRecQuery;
   // 출석체크형·룰렛형 = '무조건 개인화'(2026-11-25 사용자 요청). 운영자 구성 선택 불가 · 자동으로 개인화로 고정.
   const forcePersonal = /(출석체크|룰렛)/.test(corner.name) && corner.canPersonal;
+  // 미션형(출석체크·룰렛) = 고정 틀 → 콘텐츠를 조립하지 않고 '운영 중인 미션'에 연결(2026-11-26 사용자 확정 A안). 데모 로컬 상태.
+  const isRoulette = /룰렛/.test(corner.name);
+  const MISSION_OPTS = isRoulette
+    ? ['행운 룰렛 이벤트 (상시)', '매일 룰렛 챌린지', '신규 가입 룰렛']
+    : ['출석체크 7일 챌린지', '매일 출석 이벤트', '주말 출석 보너스'];
+  const [linkedMission, setLinkedMission] = React.useState<string>('');
   // CN-DSP-0001 — 개인화 코너만 CVM/MLS 추천(맥락 헤더 노출). forcePersonal은 zone 저장 전이라도 개인화로 취급.
   const isPersonal = corner.zone === 'personal' || forcePersonal;
   // 강제 개인화인데 아직 zone이 personal이 아니면(예: 방금 추가) 한 번 저장해 리스트·미리보기에도 반영.
@@ -576,6 +582,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   // 채우는 방식(2026-11-25 사용자 요청: '개인화 클릭'을 없애고 콘텐츠 채우기 안의 선택지로 통합).
   //  운영자 직접 / 운영자 고정+추천(혼합) / 전부 추천(후보 여러 개). '추천' 계열 = isPersonal.
   const FILL_MODES = ['운영자 직접', '운영자 고정 + 추천', '전부 추천'] as const;
+  // 표시명(2026-11-26 회의) — 저장값은 유지, 라벨만 명확화: '운영자 고정 + 추천' → '코너 고정 · 콘텐츠 추천'(코너 하나 고정 후 콘텐츠 일부 입력+나머지 추천).
+  const FILL_MODE_LABEL: Record<string, string> = { '운영자 직접': '운영자 직접', '운영자 고정 + 추천': '코너 고정 · 콘텐츠 추천', '전부 추천': '전부 추천' };
   const [fillMode, setFillMode] = React.useState<string>(() => (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접');
   const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); };
   const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법', '남은 데이터 확인하기', '가족 결합 할인 알아보기', '기기 할부금 조회하기', '요금제 바로 변경하기', 'T멤버십 쿠폰 받기', '오늘의 맞춤 혜택 보기', '해외 데이터 로밍 신청', '소액결제 한도 변경', '유독(구독) 추천받기', '약정 만료일 확인', '포인트 적립 내역 보기', '단말기 보험 가입 확인', '자동이체 할인 신청', 'VIP 전용 혜택 보기'];
@@ -1137,7 +1145,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 return (
                   <button key={m} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(m); }}
                     className={cn('rounded-full border px-3 py-1.5 text-[12px] font-semibold transition', on ? 'border-[#6D28D9] bg-[#6D28D9] text-white' : 'border-[var(--line3)] bg-white text-[var(--ink2)] hover:border-[#b79ae8]', blocked && 'cursor-not-allowed opacity-40')}>
-                    {m}
+                    {FILL_MODE_LABEL[m] ?? m}
                   </button>
                 );
               })}
@@ -1151,6 +1159,23 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           </div>
 
           </>)}
+
+          {/* ── 미션 연결(출석체크·룰렛) — 고정 틀이라 콘텐츠를 조립하지 않고 운영 중인 미션에 '연결'(2026-11-26 A안). 콘텐츠·보상은 연결된 미션에서 내려오고, 개인화는 CVM이 고객별로 채움. ── */}
+          {forcePersonal && (
+          <div className="mb-4 rounded-[10px] border border-[#e8ddff] bg-[#faf9ff] p-3">
+            <p className="mb-1.5 flex items-center gap-1.5 text-[13px] font-bold text-[#6D28D9]"><Link2 className="h-3.5 w-3.5" /> 연결할 미션</p>
+            <p className="mb-2.5 text-[11px] leading-relaxed text-[var(--ink4)]">{isRoulette ? '룰렛' : '출석체크'}형은 고정 틀이라 콘텐츠를 직접 담지 않고 <b className="text-[#6D28D9]">운영 중인 미션에 연결</b>합니다. 보상·진행은 연결된 미션에서, 노출 대상은 개인화(CVM)가 고객별로 정합니다.</p>
+            <div className="relative">
+              <select value={linkedMission} onChange={(e) => setLinkedMission(e.target.value)}
+                className="h-[38px] w-full appearance-none rounded-[var(--r-field)] border border-[var(--line3)] bg-white px-3 pr-9 text-[13px] text-[var(--ink)] focus:border-[var(--ac)] focus:outline-none">
+                <option value="">운영 중인 {isRoulette ? '룰렛' : '출석체크'} 미션 선택…</option>
+                {MISSION_OPTS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink4)]" />
+            </div>
+            {linkedMission && <p className="mt-2 flex items-center gap-1.5 rounded-[8px] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[#6D28D9]"><Sparkles className="h-3.5 w-3.5" /> ‘{linkedMission}’ 연결됨 — 콘텐츠·보상은 이 미션에서 가져옵니다.</p>}
+          </div>
+          )}
 
           {/* ── 운영자 지정 — '운영자 고정 + 추천'일 때만 라벨로 구분. '전부 추천'은 운영자 콘텐츠 없음. ── */}
           {showFillMode && fillMode === '운영자 고정 + 추천' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 고정 항목</p>}
@@ -1789,6 +1814,17 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>{fillMode === '운영자 고정 + 추천' ? <>운영자가 고정한 자리 외 나머지를 <b>추천 엔진</b>이 고객별로 채워요.</> : <>후보 코너 유형을 여러 개 담아두면 <b>추천 엔진</b>이 고객마다 노출 개수만큼 골라요. 없으면 미노출.</>}</span>
             </p>
+            {/* 퀵메뉴(6+6) 개인화 규칙 — 2번 자리 고정 · 개인화 Max 5 · 후순위부터 교체(2026-11-26 회의). */}
+            {isQuickMenu && (
+            <div className="mb-3 rounded-[8px] border border-[#e8ddff] bg-white px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
+              <p className="mb-1.5 flex items-center gap-1.5 font-bold text-[#6D28D9]"><Lock className="h-3.5 w-3.5" /> 퀵메뉴 개인화 규칙</p>
+              <ul className="space-y-1 text-[11.5px]">
+                <li className="flex gap-1.5"><span className="shrink-0 font-bold text-[#6D28D9]">·</span><span><b>2번 자리는 항상 고정</b>입니다 — 개인화가 들어와도 밀리지 않아요(프로모션 보장).</span></li>
+                <li className="flex gap-1.5"><span className="shrink-0 font-bold text-[#6D28D9]">·</span><span>개인화는 <b>최대 5개</b>까지 노출돼요(2번 고정 자리 제외).</span></li>
+                <li className="flex gap-1.5"><span className="shrink-0 font-bold text-[#6D28D9]">·</span><span>추천이 들어오면 운영 등록 메뉴 중 <b>맨 후순위부터</b> 교체됩니다.</span></li>
+              </ul>
+            </div>
+            )}
             <FormBlock title="추천 로직">
               <FormRow label="추천 엔진" req>
                 <RadioRow options={[...MLS_REC_LOGICS]} value={persoMls} onChange={setPersoMls} />
@@ -2383,8 +2419,8 @@ function shellLayout(c: Pick<LibCorner, 'cornerType' | 'layout' | 'layoutDetail'
   }
   // 배너형 = 단일형/스와이프형. 카탈로그 typeDetail(배너 단일형/스와이프형) 또는 배너 수로 구분.
   if (c.cornerType === '배너형') return (/스와이프/.test(raw) || c.bannerCount >= 2) ? '스와이프형' : '단일형';
-  // 업무 진입형 = 탭형(퀵메뉴)으로 표기(2026-11-25 사용자 요청: 업무진입형 > 탭형).
-  if (c.cornerType === '업무 진입형') return '탭형';
+  // 업무 진입형 = 퀵메뉴형으로 표기(2026-11-26 사용자 요청: 탭형 → 퀵메뉴형).
+  if (c.cornerType === '업무 진입형') return '퀵메뉴형';
   return displayLayout(c.cornerType, raw) || raw;
 }
 function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast, initialPicked, title, addLabel }: { corners: LibCorner[]; targetZone?: Zone; onClose: () => void; onAdd: (cs: LibCorner[]) => void; onToast: (m: string) => void; initialPicked?: string[]; title?: string; addLabel?: string }) {
@@ -2584,10 +2620,31 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   //  미리보기를 클릭하면 코너 구성에서도 같이 스크롤돼 복잡한 정보에서 길을 잃지 않게 한다(2026-11-05 사용자 요청).
   React.useEffect(() => {
     if (!activeSel) return;
-    // 두 컨테이너를 'smooth'로 동시에 스크롤하면 개인화 코너(룰렛·출석체크) 선택 시 레이아웃 시프트와 겹쳐 화면이 왔다갔다 한다
-    //  → 'auto'(즉시) + 'nearest'로, 이미 보이면 움직이지 않게(2026-11-26 사용자 버그).
-    document.getElementById(`pv-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
-    document.getElementById(`chip-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    // '왔다갔다' 버그(2026-11-26) 근본 원인 — pv-(미리보기)와 chip-(리스트)이 '공통 바깥 스크롤러'를 공유하는데,
+    //  네이티브 scrollIntoView는 모든 스크롤 조상을 움직여 그 공통 스크롤러를 pv 위치→chip 위치로 연달아 당긴다.
+    //  개인화 코너(룰렛·출석체크)는 선택 시 개인화 박스가 추가돼 레이아웃이 밀리면서 이 당김이 더 크게 겹쳐 튄다.
+    //  → 각 앵커를 '가장 가까운(전용) 스크롤러' 안에서만, 보이지 않을 때만 이동. 공통 바깥 스크롤러는 건드리지 않아 싸움이 사라진다.
+    const scrollWithinNearest = (id: string) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      let sc: HTMLElement | null = el.parentElement;
+      while (sc) {
+        const o = getComputedStyle(sc).overflowY;
+        if ((o === 'auto' || o === 'scroll') && sc.scrollHeight > sc.clientHeight + 1) break;
+        sc = sc.parentElement;
+      }
+      if (!sc) return;
+      const er = el.getBoundingClientRect(), cr = sc.getBoundingClientRect();
+      if (er.top < cr.top) sc.scrollTop -= cr.top - er.top;
+      else if (er.bottom > cr.bottom) sc.scrollTop += er.bottom - cr.bottom;
+      // 이미 전부 보이면 아무것도 하지 않는다(튐 방지).
+    };
+    // 레이아웃(개인화 박스)이 자리잡은 뒤 한 번만 이동 — 리플로우 도중 측정으로 인한 튐 방지.
+    const raf = requestAnimationFrame(() => {
+      scrollWithinNearest(`pv-${activeSel}`);
+      scrollWithinNearest(`chip-${activeSel}`);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [activeSel, liveCorners.length]);
 
   // Figma BO 공통 textfield 토큰 — h38·r6·inset-x 14·본문 14·border #c4c9cf·포커스 border #b3b9c0+ring 2 #dce0e5

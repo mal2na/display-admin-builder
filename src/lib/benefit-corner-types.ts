@@ -48,6 +48,8 @@ export function benefitTypeByKey(key: string): BenefitType | undefined {
 export type OperMode = '개인화/수동' | '개인화' | '수동';
 export function operModeOf(mid: string, layout: string): OperMode {
   if (mid === '이용지원형') return '수동';
+  // 바코드형 = 멤버십 바코드(시스템 카드, 값 런타임 발급) → 추천 대상 아님, 운영자 편성 고정(2026-11-26 회의).
+  if (mid === '바코드형') return '수동';
   if (layout === '출석체크형' || layout === '룰렛형') return '개인화';
   return '개인화/수동';
 }
@@ -58,6 +60,10 @@ export function canPersonalize(mid: string, layout: string): boolean {
 
 // 유형별 노출 규격(가이드) — SB 프리셋 정책 기준. 인디케이터·아이템 개수·옵션 규칙(2026-11-24).
 export function benefitGuide(mid: string, layout: string): string {
+  // 바코드형(독립 중분류)은 레이아웃이 리스트형이어도 바코드 안내로(2026-11-26).
+  if (mid === '바코드형') return '제휴사 리스트 + 멤버십 바코드(값은 런타임 발급 · 원타임). 상단 이미지·추천 맥락 헤더는 옵션.';
+  if (mid === '종합형') return '제휴사 1개 + 그 아래 혜택 프로그램 리스트(제휴사+MP 종합). FO 리뷰 후 확정.';
+  if (mid === '무료상품형') return '혜택 존 0원 상품(상품명). 가격 없음(무료). 유료 상품형은 다음 차수.';
   switch (layout) {
     case '리스트형':
       return '세로 리스트. 아이템 기본 3개·최대 4개 이하 권장. 상단 이미지·카테고리·CTA는 옵션.';
@@ -84,7 +90,7 @@ export const SB_PREVIEW: Record<string, string> = {
   '미션형 > 룰렛형': '/assets/sb-preview/roulette.png',             // node 28813
   '혜택프로그램형 > 리스트형': '/assets/sb-preview/program.png',     // node 28274
   '혜택프로그램형 > 캐러셀형': '/assets/sb-preview/program-carousel.png', // node 28312
-  '제휴사형 > 바코드형': '/assets/sb-preview/program-barcode.png', // node 28912:21916 (바코드형 제휴사형으로 이동 2026-11-25)
+  '바코드형 > 리스트형': '/assets/sb-preview/program-barcode.png', // node 28912:21916 (바코드형=독립 중분류로 분리 2026-11-26)
   '이용지원형 > 리스트형': '/assets/sb-preview/support.png',         // node 28582
   '이용지원형 > 캐러셀형': '/assets/sb-preview/support-carousel.png',    // node 28620
 };
@@ -101,8 +107,9 @@ export function benefitMap(mid: string, layout: string): { base: string; detail:
     //  detail은 기존 렌더러용 저장값('세로형'·'가로형'…). '상단 이미지형' 문자열은 noTitle 조건에 걸리므로 금지.
     // 제휴사형 리스트형: 배너·카테고리 옵션, 아이템 1, 혜택 문구(가격 없음).
     case '제휴사형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false };
-    //  바코드형: 안씀(미사용) 보존 — Figma 최종본 미포함.
-    case '제휴사형 > 바코드형': return { base: '혜택형', detail: '세로형+배너', comp: '혜택형', barcode: true, items: 1, price: false };
+    // 바코드형 리스트형(2026-11-26 독립 중분류): 제휴사 리스트 + 멤버십 바코드(값 런타임 발급).
+    //  base=바코드형(표준 cornerType) → 코너 추가 후 빌더가 isBarcode로 인식해 바코드 UI(라벨·갱신주기) 렌더. 모달은 subType로 혜택형 하위 그룹 유지.
+    case '바코드형 > 리스트형': return { base: '바코드형', detail: '세로형+배너', comp: '혜택형', barcode: true, items: 1, price: false };
     // 미션형 리스트형: 배너+카테고리 + 아이템 1 + 우측 버튼(Label).
     case '미션형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, itemButton: true, price: false };
     // 미션형 출석체크형(통합)·룰렛형 — 기존 CornerBlock에 없는 레이아웃 → 전용 껍데기 목업(진행바·룰렛 위젯).
@@ -120,6 +127,10 @@ export function benefitMap(mid: string, layout: string): { base: string; detail:
     case '이용지원형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)', comp: '혜택형', items: 1, price: false };
     // 이용지원형 캐러셀형(신규): 가로 스크롤 카드, 카테고리, 가격 없음(안내).
     case '이용지원형 > 캐러셀형': return { base: '혜택·오퍼형', detail: '가로형(카테고리형)', comp: '혜택형', price: false };
+    // 종합형(5-1) 리스트형(신규, 2026-11-26): 제휴사 1개 + 그 아래 혜택 프로그램 리스트(배너·카테고리 옵션).
+    case '종합형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false };
+    // 무료상품형 리스트형(신규, 2026-11-26): 혜택 존 0원 상품(상품명). 가격 없음(무료).
+    case '무료상품형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형', comp: '상품형', items: 1, price: false };
     default: return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형' };
   }
 }
@@ -139,7 +150,7 @@ export function fullsetSlots(mid: string, layout: string): Slot[] {
   switch (`${mid} > ${layout}`) {
     case '제휴사형 > 세로형':
       return [banner, title, buttonText, { kind: 'items', label: '제휴사 아이템', note: itemSource }, cta];
-    case '제휴사형 > 바코드형':
+    case '바코드형 > 리스트형':
       return [title, buttonText, { kind: 'items', label: '제휴사 아이템', note: itemSource }, { kind: 'barcode', label: '멤버십 바코드', note: '런타임 발급' }];
     case '미션형 > 세로형':
       return [title, buttonText, { kind: 'items', label: '미션 아이템', note: itemSource }, cta];
@@ -173,9 +184,10 @@ export type CornerAttrSpec = { card: AttrRow[]; item: AttrRow[]; rules: string[]
 
 // 중분류별 '추천 맥락 헤더' 보유(이벤트/제휴사/혜택프로그램만 · 미션·이용지원 없음 — SB 프리뷰 기준).
 const CONTEXT_MIDS = new Set(['제휴사형', '이벤트형', '혜택프로그램형']);
-// 코너 랜딩 링크 버튼 노출 중분류 — 제휴사형=있음 / 혜택프로그램형=없음(2026-11-25 사용자 확정). 그 외는 있음.
+// 코너 랜딩 링크 버튼 노출 중분류 — 개념 스왑(2026-11-26 회의): 혜택프로그램형(VIP픽·T데이)=프로그램 상세로 랜딩 '있음',
+//  제휴사형(혜택 브랜드 자유 풀)=한 페이지로 못 묶음 '없음'. 그 외(이벤트·미션·이용지원)는 있음. 바코드형=시스템 카드라 제외(design==='barcode'로 별도 차단).
 export function hasLandingLink(mid: string): boolean {
-  return mid !== '혜택프로그램형';
+  return mid !== '제휴사형' && mid !== '바코드형';
 }
 
 export function cornerAttrSpec(mid: string, layout: string): CornerAttrSpec {
