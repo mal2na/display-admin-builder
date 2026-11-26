@@ -1278,9 +1278,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           )}
           {/* ── 코너 속성 / 아이템 탭 — 등록을 나눠서(2026-11-05 사용자 요청). 코너 속성이 없으면(배너형 등) 아이템만 노출. 카드 1장 유형(프로필·상태)은 탭 없음. ── */}
           {(hasCornerTitle || hasButtonText || availOptions.length > 0) && !cardOnly && (
-            <div className="mb-3 flex gap-1 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-0.5 text-[12px] font-semibold">
-              <button type="button" onClick={() => setFillTab('코너')} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', fillTab === '코너' ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>코너 카드</button>
-              <button type="button" onClick={() => setFillTab('아이템')} className={cn('flex-1 rounded-[6px] px-3 py-1.5 text-center', fillTab === '아이템' ? 'bg-white text-[var(--ac)] shadow-sm' : 'text-[var(--ink3)]')}>컴포넌트 <span className="font-normal opacity-70">· {items.length}</span></button>
+            <div className="mb-3 mt-1 flex gap-1.5 rounded-[8px] border border-[var(--line2)] bg-[var(--th)] p-1 text-[12px] font-semibold">
+              <button type="button" onClick={() => setFillTab('코너')} className={cn('flex-1 rounded-[6px] border px-3 py-1.5 text-center transition', fillTab === '코너' ? 'border-[var(--line3)] bg-white text-[var(--ac)] shadow-sm' : 'border-transparent text-[var(--ink3)] hover:text-[var(--ink2)]')}>코너 카드</button>
+              <button type="button" onClick={() => setFillTab('아이템')} className={cn('flex-1 rounded-[6px] border px-3 py-1.5 text-center transition', fillTab === '아이템' ? 'border-[var(--line3)] bg-white text-[var(--ac)] shadow-sm' : 'border-transparent text-[var(--ink3)] hover:text-[var(--ink2)]')}>컴포넌트 <span className="font-normal opacity-70">· {items.length}</span></button>
             </div>
           )}
           {/* ── 코너 카드 — SB(BO-AIM-DSP-PG557) 폼블록: 배너 설정 · 코너 타이틀 · 버튼 설정 · 카테고리. 2026-11-12 사용자 요청(작업자 SB 정렬). 카드 1장 유형(상태 안내형)은 타이틀 없이 '카드 가져오기'만(2026-11-12 사용자 요청). ── */}
