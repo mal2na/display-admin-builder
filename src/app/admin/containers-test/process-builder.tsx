@@ -1058,7 +1058,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
       <Sec n={1} title="코너 기본 정보" defaultOpen={false}>
         {/* 코너 유형 정보 — '템플릿 기본 정보'(FieldRow)와 동일 테이블. SB(BO-AIM-DSP-PG557): 유형·배열 위 / ID·코너명 아래(2026-11-16 재정렬). 좌우 보더 없음. 행 높이 48px([&>div]:h-12). */}
         <p className="mb-2 text-[13px] font-bold text-[var(--ink)]">코너 유형 정보</p>
-        <div className="border-t border-[var(--line2)] text-[14px] [&>div]:h-12">
+        <div className="text-[14px] [&>div]:h-12">
           {/* row1: 코너 유형 | 배열·레이아웃 */}
           <div className="grid grid-cols-[120px_minmax(0,1fr)_120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
             <div className="flex items-center whitespace-nowrap bg-[var(--th)] px-4 py-3 font-medium text-[var(--ink2)]">코너 유형</div>

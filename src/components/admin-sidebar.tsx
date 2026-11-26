@@ -1,7 +1,7 @@
 'use client';
 
 import { NavLink } from '@/components/nav-link';
-import { MonitorSmartphone, LayoutGrid, Ticket, MessageSquareText, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, ClipboardList, Menu as MenuIcon, Globe } from 'lucide-react';
+import { MonitorSmartphone, LayoutGrid, Ticket, MessagesSquare, AppWindow, ImagePlay, SmartphoneNfc, GalleryHorizontalEnd, Workflow, FolderTree, ClipboardList, Menu as MenuIcon, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 좌측 사이드바 — NC-Channel Product Admin LNB 규격. 폭 236px, 라벤더 var(--bg) 배경.
@@ -19,9 +19,7 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         {/* 전시화면 관리 — 메인(백업 완전 삭제됨, 2026-11-06). */}
         <NavLink href="/admin/containers-test" icon={<MonitorSmartphone className="h-4 w-4" />} label="전시화면 관리" collapsed={collapsed} />
         <NavLink href="/admin/corner-types" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리" collapsed={collapsed} excludeFor={['/admin/corner-types/preset']} />
-        <NavLink href="/admin/corner-types/preset" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리(프리셋)" collapsed={collapsed} />
         <NavLink href="/admin/banner-campaigns" icon={<GalleryHorizontalEnd className="h-4 w-4" />} label="배너 캠페인 관리" collapsed={collapsed} />
-        <NavLink href="/admin/messages" icon={<MessageSquareText className="h-4 w-4" />} label="문구 관리" collapsed={collapsed} badge="테스트" />
 
         {/* 프로모션 관리 */}
         {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 pt-4 text-[12px] font-medium text-[var(--ink3)]">프로모션 관리</p>}
@@ -44,6 +42,7 @@ export function AdminSidebar({ collapsed }: { collapsed: boolean }) {
         {/* 백업 — 소통·비교용. 메인이 조회 전용(2026-11-17)이라 '수정 가능' 버전을 '?edit=1'로 분리. 메뉴 바로 밑이면 오클릭돼 LNB 맨 아래(mt-auto)로 띄운다(2026-11-18 사용자 요청). */}
         <div className="mt-auto pt-2">
           {collapsed ? <div className="my-1 h-px bg-[#dcdfe8]" /> : <p className="px-[10px] pb-1 text-[12px] font-medium text-[var(--ink3)]">백업 (소통용)</p>}
+          <NavLink href="/admin/corner-types/preset" icon={<LayoutGrid className="h-4 w-4" />} label="프리셋 관리" collapsed={collapsed} />
           <NavLink href="/admin/corner-types?edit=1" icon={<LayoutGrid className="h-4 w-4" />} label="코너 유형 관리 (수정)" collapsed={collapsed} />
         </div>
       </nav>

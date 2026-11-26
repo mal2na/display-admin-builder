@@ -34,16 +34,14 @@ const TOP_BADGE: Record<string, string> = {
   '홈형': 'bg-[#F2ECFB] text-[#6D28D9]',
 };
 // 2026-11-24 SB DSP_03 최종 순서: 제휴사 → 이벤트 → 미션 → 혜택프로그램 → 이용지원. (+배너형·탭형)
-const MID_ORDER = ['제휴사형', '이벤트형', '미션형', '혜택프로그램형', '종합형', '이용지원형', '무료상품형', '바코드형', '배너형', '퀵메뉴형', '추천형'];
+const MID_ORDER = ['제휴사형', '이벤트형', '미션형', '혜택프로그램형', '이용지원형', '바코드형', '배너형', '퀵메뉴형', '추천형'];
 // 중분류 텍스트 색상(칩 아님, 글자색만 구별).
 const MID_TEXT: Record<string, string> = {
   '제휴사형': 'text-[#2E7AFF]',
   '미션형': 'text-[#D66400]',
   '이벤트형': 'text-[#6D28D9]',
   '혜택프로그램형': 'text-[#BE2063]',
-  '종합형': 'text-[#9333EA]',
   '이용지원형': 'text-[#0B8A75]',
-  '무료상품형': 'text-[#C2410C]',
   '바코드형': 'text-[#038E52]',
   '퀵메뉴형': 'text-[#454f59]',
   '배너형': 'text-[#2E6FF2]',
@@ -67,16 +65,17 @@ function BannerTypePreview({ pager }: { pager?: boolean }) {
     </div>
   );
 }
-// 업무 진입형(탭형) 미리보기 — 상세와 동일한 아이콘 타일 그리드. 라벨은 껍데기(필드 코드)라 'menu'.
-//  썸네일은 좁아 6열은 안 들어가므로 가로 4개×2행(최소 4개 노출, 2026-11-25 사용자 요청: 2개만 보이면 안 됨).
-function TabTypePreview() {
+// 업무 진입형(퀵메뉴) 미리보기 — SB Figma(node 29276-99332) 고정: 흰 알약 칩(원형 아이콘 + 'Menu'), 4열×2행.
+//  6+6 규칙상 2번째 자리는 항상 고정 → 2번 칩에 '고정' 배지 표시(2026-11-26 사용자 요청).
+function QuickMenuTypePreview() {
   return (
-    <div className="w-[164px] rounded-[12px] bg-[#eef0ff] p-2.5">
-      <div className="grid grid-cols-4 gap-x-1 gap-y-2">
+    <div className="w-[344px] rounded-[14px] bg-[#f4f5fb] p-2">
+      <div className="grid grid-cols-4 gap-1.5">
         {Array.from({ length: 8 }, (_, i) => (
-          <div key={i} className="flex flex-col items-center gap-0.5">
-            <span className="h-6 w-6 rounded-full bg-white shadow-sm" />
-            <span className="text-[8px] font-medium leading-none text-[#8b949e]">menu</span>
+          <div key={i} className="flex items-center gap-1 rounded-full bg-white px-1.5 py-1.5 shadow-[0_1px_3px_rgba(20,22,40,0.06)]">
+            <span className="h-4.5 w-4.5 shrink-0 rounded-full bg-[#dfe2ee]" style={{ height: 18, width: 18 }} />
+            <span className="truncate text-[10px] font-medium text-[#454f59]">Menu</span>
+            {i === 1 && <span className="ml-auto inline-flex shrink-0 items-center gap-0.5 rounded-full bg-[#ede9fe] px-1 py-0.5 text-[8px] font-bold text-[#6D28D9]"><Lock className="h-2 w-2" />고정</span>}
           </div>
         ))}
       </div>
@@ -112,7 +111,7 @@ function HomeTypePreview({ big }: { big?: boolean }) {
 function TypePreview({ r }: { r: BenefitTypeRow }) {
   if (r.top === '혜택형') return <BenefitCornerPreview mid={r.mid} layout={r.layout} typeId={r.typeId} name={r.name} variant="list" image={r.repImg} />;
   if (r.top === '배너형') return <BannerTypePreview pager={r.layout === '복수형'} />;
-  if (r.top === '업무 진입형') return <TabTypePreview />;
+  if (r.top === '업무 진입형') return <QuickMenuTypePreview />;
   if (r.top === '홈형') return <HomeTypePreview big={r.layout === '배너 확장형'} />;
   return <div className="grid h-[120px] w-[150px] place-items-center rounded-[10px] border border-dashed border-[#c4c9cf] bg-white text-[11px] text-[#8b949e]">{r.layout}</div>;
 }
@@ -260,9 +259,9 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
                   className={`border-b border-[#f1f3f5] last:border-0 hover:bg-[#f8f9fb] ${r.presetKey ? 'cursor-pointer' : 'cursor-default'} ${r.unused ? 'opacity-60' : ''}`}>
                   <td className="px-3 py-3 align-middle tabular-nums text-[#8b949e]">{i + 1}</td>
                   <td className="whitespace-nowrap px-3 py-3 align-middle font-mono text-[12px] text-[#697582]">{r.typeId}</td>
-                  <td className="px-3 py-3">
-                    {/* 미리보기 — 혜택형=공용 렌더러, 배너형=배너 카드(복수형 1/10), 업무진입형=탭 껍데기. */}
-                    <div className="flex justify-center rounded-[14px] bg-[#eceef5] p-3"><TypePreview r={r} /></div>
+                  {/* 미리보기 — 고정 높이 박스, 세로 중앙, 넘치면 숨김(행 높이 통일은 원장 열 clamp로 해결, 2026-11-26). */}
+                  <td className="w-52 px-3 py-3">
+                    <div className="mx-auto flex h-[150px] w-[188px] items-center justify-center overflow-hidden rounded-[14px] bg-[#eceef5]"><TypePreview r={r} /></div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3 align-middle"><span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${TOP_BADGE[r.top] ?? 'bg-[#eef0f6] text-[#697582]'}`}>{r.top}</span></td>
                   <td className={`whitespace-nowrap px-3 py-3 align-middle font-semibold ${MID_TEXT[r.mid] ?? 'text-[#454f59]'}`}>{r.mid}</td>
@@ -274,7 +273,8 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
                   <td className="px-3 py-3 align-middle">{r.unused
                     ? <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#8b949e]"><span className="h-1.5 w-1.5 rounded-full bg-[#b3b9c0]" />미사용</span>
                     : <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span>}</td>
-                  <td className="px-3 py-3 align-middle text-[#454f59]">{r.source}</td>
+                  {/* 원장 텍스트가 길면(미션형 등) 행 높이가 폭주하던 원인 → 2줄로 clamp하고 최대폭 제한(2026-11-26 사용자: 행 높이 통일). 전체는 title 툴팁. */}
+                  <td className="px-3 py-3 align-middle text-[#454f59]"><span className="line-clamp-2 max-w-[200px] [word-break:keep-all]" title={r.source}>{r.source}</span></td>
                   <td className="whitespace-nowrap px-3 py-3 align-middle text-[#8b949e]">{r.updatedAt}</td>
                 </tr>
               ))}
@@ -289,7 +289,7 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
           {filtered.map((r) => (
             <button key={r.typeId} onClick={() => open(r)}
               className="group flex flex-col overflow-hidden rounded-[14px] border border-[#e8ecef] bg-white text-left transition hover:-translate-y-0.5 hover:border-[#c9ccf7] hover:shadow-[0_10px_28px_rgba(20,22,40,0.10)]">
-              <div className="flex justify-center bg-[#eef0f6] p-3"><TypePreview r={r} /></div>
+              <div className="relative h-[150px] overflow-hidden bg-[#eef0f6]"><div className="absolute inset-0 flex items-center justify-center px-3"><TypePreview r={r} /></div></div>
               <div className="flex flex-1 flex-col gap-2 p-3.5">
                 <div className="flex items-center gap-1.5">
                   <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${TOP_BADGE[r.top] ?? 'bg-[#eef0f6] text-[#697582]'}`}>{r.top}</span>

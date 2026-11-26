@@ -37,10 +37,10 @@ export function BenefitCornerPreview({ mid, layout, variant }: { mid: string; la
   // 코너 랜딩 링크 버튼(타이틀 옆) — 개념 스왑(2026-11-26): 혜택프로그램형=있음 / 제휴사형=없음. 바코드형 제외.
   const hasSubCta = hasLandingLink(mid) && design !== 'barcode';
   // 타이틀 플레이스홀더를 중분류에 맞게(제휴사/이벤트/미션/혜택 프로그램/이용 지원).
-  const tWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원', 바코드형: '바코드', 종합형: '제휴사', 무료상품형: '상품' } as Record<string, string>)[mid] ?? mid.replace('형', '');
+  const tWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원', 바코드형: '바코드' } as Record<string, string>)[mid] ?? mid.replace('형', '');
 
-  // 바코드형 아이템 = 제휴사 리스트(멤버십 바코드는 별도 요소) · 종합형 아이템 = 혜택 프로그램 · 무료상품형 = 상품명(2026-11-26).
-  const iWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원', 바코드형: '제휴사', 종합형: '혜택 프로그램', 무료상품형: '상품명' } as Record<string, string>)[mid] ?? tWord;
+  // 바코드형 아이템 = 제휴사 리스트(멤버십 바코드는 별도 요소)(2026-11-26).
+  const iWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원', 바코드형: '제휴사' } as Record<string, string>)[mid] ?? tWord;
   const chips = comp('chip', '선택형', ['{Label}', '{Label}', '{Label}', '{Label}', '{Label}'].map((c, i) => atom(`c${i}`, c)));
   // 아이템 플레이스홀더도 중분류에 맞게({미션 내용} 등). title·sub 두 아톰. 혜택프로그램형은 개별 혜택이라 '{혜택명}'(2026-11-26 사용자 요청).
   const itemPh = mid === '혜택프로그램형' ? '{혜택명}' : `{${iWord} 내용}`;
@@ -57,7 +57,7 @@ export function BenefitCornerPreview({ mid, layout, variant }: { mid: string; la
 
   const itemBtn = !!benefitMap(mid, layout).itemButton; // 미션형 리스트 = 아이템 우측 {Label} pill
   const card = <BenefitPreviewCard corner={corner} design={design} squareThumb={square} itemButton={itemBtn} />;
-  // 리스트(유형 목록 썸네일)는 zoom으로 축소 — transform scale과 달리 레이아웃 높이까지 줄어 '안 잘림'(2026-11-25 사용자 요청).
+  // 리스트(유형 목록 썸네일)는 zoom으로 축소 — 레이아웃 높이까지 줄어 '안 잘림'(2026-11-25 사용자 요청).
   if (variant === 'list') {
     return (
       <div className="pointer-events-none w-[300px]" style={{ zoom: 0.5 }}>{card}</div>

@@ -62,8 +62,6 @@ export function canPersonalize(mid: string, layout: string): boolean {
 export function benefitGuide(mid: string, layout: string): string {
   // 바코드형(독립 중분류)은 레이아웃이 리스트형이어도 바코드 안내로(2026-11-26).
   if (mid === '바코드형') return '제휴사 리스트 + 멤버십 바코드(값은 런타임 발급 · 원타임). 상단 이미지·추천 맥락 헤더는 옵션.';
-  if (mid === '종합형') return '제휴사 1개 + 그 아래 혜택 프로그램 리스트(제휴사+MP 종합). FO 리뷰 후 확정.';
-  if (mid === '무료상품형') return '혜택 존 0원 상품(상품명). 가격 없음(무료). 유료 상품형은 다음 차수.';
   switch (layout) {
     case '리스트형':
       return '세로 리스트. 아이템 기본 3개·최대 4개 이하 권장. 상단 이미지·카테고리·CTA는 옵션.';
@@ -127,10 +125,6 @@ export function benefitMap(mid: string, layout: string): { base: string; detail:
     case '이용지원형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)', comp: '혜택형', items: 1, price: false };
     // 이용지원형 캐러셀형(신규): 가로 스크롤 카드, 카테고리, 가격 없음(안내).
     case '이용지원형 > 캐러셀형': return { base: '혜택·오퍼형', detail: '가로형(카테고리형)', comp: '혜택형', price: false };
-    // 종합형(5-1) 리스트형(신규, 2026-11-26): 제휴사 1개 + 그 아래 혜택 프로그램 리스트(배너·카테고리 옵션).
-    case '종합형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false };
-    // 무료상품형 리스트형(신규, 2026-11-26): 혜택 존 0원 상품(상품명). 가격 없음(무료).
-    case '무료상품형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형', comp: '상품형', items: 1, price: false };
     default: return { base: '혜택·오퍼형', detail: '세로형', comp: '혜택형' };
   }
 }

@@ -108,7 +108,7 @@ function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
         <div className="min-w-0 flex-1 space-y-6">
           <Collapse title="코너 기본 정보">
             <div className="px-5 pb-5 pt-4">
-             <div className="border-t border-[#dce0e5]">
+             <div className="">
               <Row2 l1="코너 유형" v1={<span className={`${CHIP} ${sp.top === '배너형' ? 'bg-[#E6F0FF] text-[#2E6FF2]' : 'bg-[#EAF7F0] text-[#0B8A75]'}`}>{sp.top}</span>} l2="중분류" v2={<span className="text-[#454f59]">{sp.mid}</span>} />
               <Row2 l1="배열·레이아웃" v1={<span className="text-[#454f59]">{sp.layout}</span>} l2="원장" v2={
                 <span className="inline-flex items-center gap-1.5 rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-2 py-1 text-[13px] text-[#454f59]">
@@ -172,7 +172,7 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
         <div className="min-w-0 flex-1 space-y-6">
           <Collapse title="코너 기본 정보">
             <div className="px-5 pb-5 pt-4">
-             <div className="border-t border-[#dce0e5]">
+             <div className="">
               <Row2
                 l1="코너 유형 ID" v1={<span className="font-mono text-[13px] text-[#454f59]">{t.typeId}</span>}
                 l2="코너 유형" v2={<span className={`${CHIP} bg-[#FFE4EC] text-[#D6336C]`}>혜택형</span>} />
@@ -262,11 +262,11 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
               <Collapse title="코너 속성 · 컴포넌트 요소" hint="· 기획 기준 On/Off 가능 항목 (실제 On/Off는 전시 빌더에서)">
                 <div className="px-5 pb-5 pt-4">
                   <GroupBar title="코너(카드)" desc="· 카드 전체에 1개" />
-                  <div className="border-t border-[#dce0e5]"><PairRows list={spec.card} /></div>
+                  <div className=""><PairRows list={spec.card} /></div>
                   {spec.item.length > 0 && (
                     <>
                       <GroupBar title="컴포넌트(요소)" desc="· 리스트에서 반복되는 카드" />
-                      <div className="border-t border-[#dce0e5]"><PairRows list={spec.item} /></div>
+                      <div className=""><PairRows list={spec.item} /></div>
                     </>
                   )}
                   {/* 의존 규칙 — 빌더에서 enforce */}
