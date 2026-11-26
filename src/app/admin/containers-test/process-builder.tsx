@@ -2881,18 +2881,9 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
   );
 
-  // 메인홈(AI 어시스턴트) — SB [홈]유형 배경(연보라 그라데이션) + 하단 AI 입력바(2026-11-25 사용자 요청: 메인홈 UI 맞춤).
+  // 메인홈(AI 어시스턴트) — SB [홈]유형 배경(연보라 그라데이션)만. 하단 AI 입력바는 제거(2026-11-26 사용자 요청).
   const isMainHome = /메인홈/.test(data.containerName);
   const mainHomeBg = 'bg-gradient-to-b from-[#fcfcff] via-[#f1f3ff] to-[#e6ebfb]';
-  const mainHomeFooter = (
-    <div className="shrink-0 bg-transparent px-3 pb-3 pt-2">
-      <div className="flex items-center gap-2 rounded-full border border-[#dcdff2] bg-white px-3.5 py-2.5 shadow-[0_2px_10px_rgba(50,56,120,0.10)]">
-        <Sparkles className="h-4 w-4 shrink-0 text-[#4b59ff]" />
-        <span className="min-w-0 flex-1 truncate text-[13px] text-[#9aa0b4]">T에 대해 무엇이든 물어보세요</span>
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#6a5cff] to-[#4b59ff] text-white"><ArrowRight className="h-3.5 w-3.5" /></span>
-      </div>
-    </div>
-  );
 
   return (
     <ProductCatalogCtx.Provider value={data.catalogByType ?? {}}>
@@ -2955,7 +2946,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
               marginBottom: 'var(--dev-bottom)',
             } as React.CSSProperties}
           >
-          <DeviceFrame width={device.w} bodyHeight={0} fillBox headerLabel={data.containerName} slim bodyClassName={isMainHome ? mainHomeBg : undefined} footer={isMainHome ? mainHomeFooter : undefined}>
+          <DeviceFrame width={device.w} bodyHeight={0} fillBox headerLabel={data.containerName} slim bodyClassName={isMainHome ? mainHomeBg : undefined}>
                   {previewBody}
           </DeviceFrame>
           </div>
@@ -2976,7 +2967,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             </div>
             <div className="flex min-h-0 flex-1 justify-center overflow-auto py-1">
               <div className="h-full shrink-0" style={{ width: device.w }} onClick={(e) => e.stopPropagation()}>
-                <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim bodyClassName={isMainHome ? mainHomeBg : undefined} footer={isMainHome ? mainHomeFooter : undefined}>{previewBody}</DeviceFrame>
+                <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim bodyClassName={isMainHome ? mainHomeBg : undefined}>{previewBody}</DeviceFrame>
               </div>
             </div>
           </div>
