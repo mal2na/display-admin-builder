@@ -1,0 +1,2272 @@
+{
+  "meta": {
+    "title": "전시화면 관리(빌더) 스펙",
+    "generatedAt": "2026-11-26T06:20:15.299Z",
+    "source": "display-taxonomy.ts · benefit-corner-types.ts · preset-shape-groups.ts (SSOT)",
+    "policy": "POL-DSP v0.31",
+    "note": "SB 스튜디오 코너 프리셋 정의용. 코너=SB 프리셋→BO FE 고정 개발물, 어드민은 조회·배치·공통속성·ID선택만."
+  },
+  "hierarchy": [
+    {
+      "level": "Atom",
+      "ko": "표시 요소",
+      "desc": "문구·이미지·CTA·가격·아이콘·배지 등 가장 작은 표시 요소. 단독 화면 구성 불가."
+    },
+    {
+      "level": "Component",
+      "ko": "기능 모듈",
+      "desc": "Atom 조합. 유형 6종: 정보형·행동형·혜택형·선택형·배너형·상품형."
+    },
+    {
+      "level": "Corner",
+      "ko": "화면 영역",
+      "desc": "Component를 올려 화면의 특정 영역 구성. 유형별 허용 Component 제한."
+    },
+    {
+      "level": "Template",
+      "ko": "레이아웃",
+      "desc": "Corner를 순서/배치로 구성. 분기(로그인·세그)·기간형."
+    },
+    {
+      "level": "Container",
+      "ko": "화면/영역",
+      "desc": "채널에 실제 나가는 화면. 화면과 1:1, Template과 1:N. soft-delete."
+    }
+  ],
+  "builderFlow": {
+    "route": "/admin/containers-test/t/<templateId>",
+    "panels": {
+      "left": {
+        "title": "디바이스 미리보기",
+        "desc": "iPhone 프레임. 기본/폴백 토글. 코너 선택 시 해당 위치로 스크롤."
+      },
+      "center": {
+        "title": "코너 구성 리스트",
+        "desc": "드래그로 순서 변경, 고정/개인화 토글, 노출 온오프, 코너 추가/삭제."
+      },
+      "right": {
+        "title": "코너 설정 패널",
+        "sections": [
+          {
+            "n": 1,
+            "title": "코너 기본 정보",
+            "editable": [
+              "코너명"
+            ],
+            "readonly": [
+              "코너 유형",
+              "배열·레이아웃",
+              "노출 개수(범위)"
+            ],
+            "note": "유형·배열·개수는 껍데기(코너 유형 관리에서 불러옴)."
+          },
+          {
+            "n": 2,
+            "title": "코너 콘텐츠 설정",
+            "desc": "채우는 방식 선택 + 아이템 ID 선택/불러오기 or CVM 요청. 미션형은 운영 미션 연결."
+          },
+          {
+            "n": 3,
+            "title": "대체 노출 설정(폴백)",
+            "desc": "추천(CVM 또는 전부 추천)을 쓸 때만. 미노출 / 운영자 편성으로 대체."
+          }
+        ]
+      }
+    },
+    "steps": [
+      "컨테이너 목록 → 템플릿 클릭 → 빌더 진입",
+      "[코너 추가] 모달에서 껍데기 선택(혜택형·배너형·업무진입형)",
+      "코너별 ①기본정보 ②콘텐츠 설정 ③폴백 설정",
+      "드래그로 순서·고정·개인화 조정",
+      "[구성 검증] → 필수항목 체크 → [승인 요청]"
+    ],
+    "rules": [
+      "PI-DSP-CMP-003: 코너 유형 선택 시 허용되지 않은 Component 유형은 못 붙임.",
+      "PI-DSP-CMP-004: 이미지/아이콘 대체텍스트 없으면 draft 허용, review 전환 차단.",
+      "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개 필수(택1)."
+    ]
+  },
+  "fillModes": [
+    {
+      "key": "운영자 직접",
+      "desc": "운영자가 아이템을 직접 담음.",
+      "personalized": false,
+      "recSource": "운영자 편성"
+    },
+    {
+      "key": "코너 고정 · 콘텐츠 추천",
+      "legacyKey": "운영자 고정 + 추천",
+      "desc": "코너 고정 후 콘텐츠 일부 입력, 나머지는 추천 엔진이 고객별로 채움.",
+      "personalized": true,
+      "recSource": "CVM 데이터 연동"
+    },
+    {
+      "key": "전부 추천",
+      "desc": "후보 코너 유형을 여러 개 담으면 고객마다 추천 엔진이 노출 개수만큼 선택. 없으면 미노출.",
+      "personalized": true,
+      "recSource": "CVM 데이터/콘텐츠 연동"
+    }
+  ],
+  "supplyMethods": [
+    {
+      "method": "운영자 편성",
+      "tag": "운영자 직접 구성",
+      "how": "운영자가 고른 항목을 정한 순서대로",
+      "sub": "운영자가 노출 항목과 순서를 설정해요",
+      "detail": "운영자가 상품·혜택을 직접 골라 정한 순서대로 보여줍니다(기획전·시즌 등). CVM 연동이 비었을 때 대체안으로도 쓰입니다.",
+      "personalized": false,
+      "cvmGives": "없음",
+      "weBuild": "ALL"
+    },
+    {
+      "method": "CVM 데이터 연동",
+      "tag": "개인화 · 데이터만",
+      "how": "CVM은 컴포넌트와 순서만, 문구·이미지는 상품 원장",
+      "sub": "운영자 지정 영역과 CVM 추천 영역을 혼합해요",
+      "detail": "CVM은 “이 고객에게 이 컴포넌트를 이 순서로”까지만 내려줍니다. 이미지·설명 문구는 상품(EPC) 원장 값을 전시 어드민이 가져와 조립합니다.",
+      "personalized": true,
+      "cvmGives": "컴포넌트 · 순서",
+      "weBuild": "문구 · 이미지"
+    },
+    {
+      "method": "CVM 콘텐츠 연동",
+      "tag": "개인화 · 구좌 위임",
+      "how": "자리만 넘기고 완성본을 받아 그대로 노출",
+      "sub": "운영자는 구좌만 지정하고 항목은 CVM이 추천",
+      "detail": "자리(구좌)만 뚫어 CVM에 넘깁니다. 이미지·문구·랜딩까지 CVM이 만들어 내려주고 전시 어드민은 받은 그대로 노출합니다. 같은 오퍼를 배너·MMS 등 여러 채널에 일관되게 내보낼 때 씁니다.",
+      "personalized": true,
+      "cvmGives": "ALL",
+      "weBuild": "자리 · 규격"
+    }
+  ],
+  "cvmContract": {
+    "catalogs": [
+      "요금제",
+      "단말",
+      "멤버십",
+      "혜택",
+      "마케팅 프로그램",
+      "업무"
+    ],
+    "topNMax": 5,
+    "outOfScope": [
+      {
+        "item": "세그먼트(고객군)",
+        "why": "CVM은 세그를 만들지 않고 개별 고객 단위로만 판정합니다.",
+        "instead": "고객군이 필요하면 어드민 노출 조건(룰)으로 나누세요."
+      },
+      {
+        "item": "고객 성향 · 인사이트",
+        "why": "대가족 · 선호 색상 같은 가공된 성향 값은 CVM 산출물이 아닙니다.",
+        "instead": "C360 · 데이터실에 별도 요건으로 요청하세요."
+      },
+      {
+        "item": "제휴 콘텐츠(영화 · 공연 등)",
+        "why": "CVM이 아는 건 EPC 상품 · 마케팅 프로그램 · 업무 카탈로그까지입니다.",
+        "instead": "해당 코너는 운영자 편성으로 채우세요."
+      },
+      {
+        "item": "레이아웃 · 카드 모양",
+        "why": "전시 방식은 추천 결과가 아니라 화면 설계 영역입니다.",
+        "instead": "코너 유형 관리에서 노출 타입을 정하거나 어드민 룰로 분기하세요."
+      },
+      {
+        "item": "문구만 따로 베리에이션",
+        "why": "CVM 문구는 (고객 · 오퍼 · 시점 · 채널)이 한 세트로 생성돼, 문구만 떼어 요청할 수 없습니다.",
+        "instead": "묶음 대표 문구는 어드민 룰로 베리에이션하세요."
+      }
+    ],
+    "fallbacks": [
+      "미노출",
+      "운영자 편성으로 대체"
+    ]
+  },
+  "cornerTypes": {
+    "topLevel": [
+      "상품형",
+      "혜택·오퍼형",
+      "혜택형",
+      "배너형",
+      "업무 진입형",
+      "콘텐츠 안내형",
+      "바코드형"
+    ],
+    "visible": [
+      "상품형",
+      "혜택·오퍼형",
+      "혜택형",
+      "배너형",
+      "업무 진입형",
+      "바코드형"
+    ],
+    "componentMap": {
+      "상품형": [
+        "상품형",
+        "선택형"
+      ],
+      "배너형": [
+        "배너형"
+      ],
+      "혜택·오퍼형": [
+        "혜택형",
+        "정보형",
+        "행동형",
+        "배너형",
+        "상품형",
+        "선택형"
+      ],
+      "혜택형": [
+        "혜택형",
+        "상품형",
+        "정보형",
+        "행동형"
+      ],
+      "업무 진입형": [
+        "행동형",
+        "정보형",
+        "선택형"
+      ],
+      "콘텐츠 안내형": [
+        "정보형",
+        "행동형",
+        "배너형",
+        "상품형"
+      ],
+      "바코드형": [
+        "정보형"
+      ]
+    },
+    "layouts": {
+      "상품형": [
+        "가로형",
+        "세로형",
+        "가로형+배너",
+        "세로형+배너",
+        "가로형(카테고리형)",
+        "세로형(카테고리형)"
+      ],
+      "혜택·오퍼형": [
+        "가로형",
+        "세로형",
+        "세로형+배너",
+        "가로형(카테고리형)",
+        "세로형(카테고리형)"
+      ],
+      "혜택형": [
+        "세로형",
+        "세로형+배너",
+        "리스트형"
+      ],
+      "콘텐츠 안내형": [
+        "가로형"
+      ],
+      "배너형": [
+        "배너 단일형",
+        "스와이프형"
+      ],
+      "업무 진입형": [
+        "카테고리 탭",
+        "메뉴 리스트",
+        "프로필형",
+        "아이콘/이미지형"
+      ],
+      "바코드형": [
+        "바코드"
+      ]
+    },
+    "specs": {
+      "상품형": {
+        "options": [
+          "CTA"
+        ],
+        "minItems": 3,
+        "maxItems": 8,
+        "rows": 1,
+        "layouts": [
+          {
+            "layout": "가로형",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle"
+              },
+              {
+                "key": "SubText",
+                "ko": "서브 텍스트",
+                "group": "item",
+                "asIs": "SubText"
+              }
+            ],
+            "optional": [
+              {
+                "key": "Price",
+                "ko": "가격",
+                "group": "item",
+                "asIs": "Price",
+                "defaultOn": true
+              },
+              {
+                "key": "DiscountRate",
+                "ko": "할인율",
+                "group": "item",
+                "asIs": "DiscountRate",
+                "defaultOn": false,
+                "dependsOn": "Price"
+              }
+            ]
+          },
+          {
+            "layout": "세로형",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle"
+              },
+              {
+                "key": "Caption01",
+                "ko": "캡션",
+                "group": "item",
+                "asIs": "Caption/Caption01"
+              },
+              {
+                "key": "Caption02",
+                "ko": "캡션2",
+                "group": "item",
+                "asIs": "Caption02"
+              }
+            ],
+            "optional": [
+              {
+                "key": "Price",
+                "ko": "가격",
+                "group": "item",
+                "asIs": "Price",
+                "defaultOn": true
+              },
+              {
+                "key": "DiscountRate",
+                "ko": "할인율",
+                "group": "item",
+                "asIs": "DiscountRate",
+                "defaultOn": false,
+                "dependsOn": "Price"
+              },
+              {
+                "key": "PricePeriod",
+                "ko": "기간",
+                "group": "item",
+                "asIs": "PricePeriod",
+                "defaultOn": true
+              }
+            ]
+          },
+          {
+            "layout": "가로형(카테고리형)",
+            "required": [
+              {
+                "key": "Category",
+                "ko": "카테고리",
+                "group": "corner",
+                "asIs": "Category"
+              },
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle"
+              },
+              {
+                "key": "SubText",
+                "ko": "서브 텍스트",
+                "group": "item",
+                "asIs": "SubText"
+              }
+            ],
+            "optional": [
+              {
+                "key": "Price",
+                "ko": "가격",
+                "group": "item",
+                "asIs": "Price",
+                "defaultOn": true
+              },
+              {
+                "key": "DiscountRate",
+                "ko": "할인율",
+                "group": "item",
+                "asIs": "DiscountRate",
+                "defaultOn": false,
+                "dependsOn": "Price"
+              }
+            ],
+            "note": "상단 카테고리(칩)를 누르면 하위 아이템이 통째로 바뀝니다. 카테고리별 아이템은 전시화면 관리(빌더)에서 등록합니다."
+          },
+          {
+            "layout": "세로형(카테고리형)",
+            "required": [
+              {
+                "key": "Category",
+                "ko": "카테고리",
+                "group": "corner",
+                "asIs": "Category"
+              },
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle"
+              },
+              {
+                "key": "Caption01",
+                "ko": "캡션",
+                "group": "item",
+                "asIs": "Caption/Caption01"
+              },
+              {
+                "key": "Caption02",
+                "ko": "캡션2",
+                "group": "item",
+                "asIs": "Caption02"
+              }
+            ],
+            "optional": [
+              {
+                "key": "Price",
+                "ko": "가격",
+                "group": "item",
+                "asIs": "Price",
+                "defaultOn": true
+              },
+              {
+                "key": "DiscountRate",
+                "ko": "할인율",
+                "group": "item",
+                "asIs": "DiscountRate",
+                "defaultOn": false,
+                "dependsOn": "Price"
+              },
+              {
+                "key": "PricePeriod",
+                "ko": "기간",
+                "group": "item",
+                "asIs": "PricePeriod",
+                "defaultOn": true
+              }
+            ],
+            "note": "상단 카테고리(칩)를 누르면 하위 아이템이 통째로 바뀝니다. 카테고리별 아이템은 전시화면 관리(빌더)에서 등록합니다."
+          }
+        ]
+      },
+      "혜택·오퍼형": {
+        "options": [
+          "배너",
+          "CTA"
+        ],
+        "minItems": 3,
+        "maxItems": 8,
+        "rows": 1,
+        "layouts": [
+          {
+            "layout": "가로형",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle"
+              }
+            ],
+            "optional": [
+              {
+                "key": "Price",
+                "ko": "가격",
+                "group": "item",
+                "asIs": "Price",
+                "defaultOn": true
+              },
+              {
+                "key": "DiscountRate",
+                "ko": "할인율",
+                "group": "item",
+                "asIs": "DiscountRate",
+                "defaultOn": false,
+                "dependsOn": "Price"
+              },
+              {
+                "key": "PricePeriod",
+                "ko": "기간",
+                "group": "item",
+                "asIs": "PricePeriod",
+                "defaultOn": true
+              }
+            ]
+          },
+          {
+            "layout": "세로형",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle"
+              },
+              {
+                "key": "SubTitle",
+                "ko": "서브 타이틀",
+                "group": "item",
+                "asIs": "SubTitle"
+              }
+            ]
+          },
+          {
+            "layout": "가로형(카테고리형)",
+            "required": [
+              {
+                "key": "Category",
+                "ko": "카테고리",
+                "group": "corner",
+                "asIs": "Category"
+              },
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle"
+              }
+            ],
+            "optional": [
+              {
+                "key": "Price",
+                "ko": "가격",
+                "group": "item",
+                "asIs": "Price",
+                "defaultOn": true
+              },
+              {
+                "key": "DiscountRate",
+                "ko": "할인율",
+                "group": "item",
+                "asIs": "DiscountRate",
+                "defaultOn": false,
+                "dependsOn": "Price"
+              },
+              {
+                "key": "PricePeriod",
+                "ko": "기간",
+                "group": "item",
+                "asIs": "PricePeriod",
+                "defaultOn": true
+              }
+            ],
+            "note": "상단 카테고리(칩)를 누르면 하위 아이템이 통째로 바뀝니다. 카테고리별 아이템은 전시화면 관리(빌더)에서 등록합니다."
+          },
+          {
+            "layout": "세로형(카테고리형)",
+            "required": [
+              {
+                "key": "Category",
+                "ko": "카테고리",
+                "group": "corner",
+                "asIs": "Category"
+              },
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle"
+              },
+              {
+                "key": "SubTitle",
+                "ko": "서브 타이틀",
+                "group": "item",
+                "asIs": "SubTitle"
+              }
+            ],
+            "note": "상단 카테고리(칩)를 누르면 하위 아이템이 통째로 바뀝니다. 카테고리별 아이템은 전시화면 관리(빌더)에서 등록합니다."
+          }
+        ]
+      },
+      "혜택형": {
+        "options": [
+          "배너",
+          "CTA"
+        ],
+        "minItems": 1,
+        "maxItems": 3,
+        "rows": 1,
+        "layouts": [
+          {
+            "layout": "세로형",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle"
+              }
+            ],
+            "optional": [
+              {
+                "key": "SubText",
+                "ko": "서브 텍스트",
+                "group": "item",
+                "asIs": "SubText"
+              },
+              {
+                "key": "Price",
+                "ko": "가격",
+                "group": "item",
+                "asIs": "Price",
+                "defaultOn": true
+              },
+              {
+                "key": "DiscountRate",
+                "ko": "할인율",
+                "group": "item",
+                "asIs": "DiscountRate",
+                "defaultOn": false,
+                "dependsOn": "Price"
+              },
+              {
+                "key": "PricePeriod",
+                "ko": "기간",
+                "group": "item",
+                "asIs": "PricePeriod",
+                "defaultOn": true
+              }
+            ],
+            "note": "상단 이미지 없는 기본 혜택 카드(1~3개). 데이터 부족·소멸 임박 등 상황 맞춤 혜택."
+          },
+          {
+            "layout": "세로형+배너",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle"
+              }
+            ],
+            "optional": [
+              {
+                "key": "SubText",
+                "ko": "서브 텍스트",
+                "group": "item",
+                "asIs": "SubText"
+              },
+              {
+                "key": "Price",
+                "ko": "가격",
+                "group": "item",
+                "asIs": "Price",
+                "defaultOn": true
+              },
+              {
+                "key": "DiscountRate",
+                "ko": "할인율",
+                "group": "item",
+                "asIs": "DiscountRate",
+                "defaultOn": false,
+                "dependsOn": "Price"
+              },
+              {
+                "key": "PricePeriod",
+                "ko": "기간",
+                "group": "item",
+                "asIs": "PricePeriod",
+                "defaultOn": true
+              }
+            ],
+            "note": "상단 대표 이미지(배너) + 혜택 카드. 멤버십 바코드는 옵션(코너 유형에서 On/Off)으로 하단에 추가."
+          },
+          {
+            "layout": "리스트형",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "List",
+                "ko": "리스트",
+                "group": "item",
+                "asIs": "CellRightTable"
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 8,
+            "note": "좌 라벨 / 우 값 적립·내역 리스트(포인트·쿠폰 적립 현황 등)."
+          }
+        ]
+      },
+      "배너형": {
+        "options": [],
+        "layouts": [
+          {
+            "layout": "단일형",
+            "required": [],
+            "note": "배너 소재(이미지·문구·랜딩)는 배너 캠페인 관리에서 등록해요. 이 코너에 어떤 배너를 노출할지는 전시화면 관리(빌더)에서 선택합니다."
+          },
+          {
+            "layout": "스와이프형",
+            "required": [],
+            "minItems": 2,
+            "maxItems": 5,
+            "note": "배너 소재(이미지·문구·랜딩)는 배너 캠페인 관리에서 등록해요. 여러 배너를 어떤 순서로 묶어 노출할지(배너 조합)는 전시화면 관리(빌더)에서 정합니다."
+          }
+        ]
+      },
+      "업무 진입형": {
+        "options": [],
+        "layouts": [
+          {
+            "layout": "카테고리형",
+            "required": [
+              {
+                "key": "Icon",
+                "ko": "아이콘",
+                "group": "item",
+                "asIs": "Icon"
+              },
+              {
+                "key": "Label",
+                "ko": "라벨",
+                "group": "item",
+                "asIs": "Label"
+              }
+            ]
+          },
+          {
+            "layout": "리스트형",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "List",
+                "ko": "리스트",
+                "group": "item",
+                "asIs": "List"
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 8
+          },
+          {
+            "layout": "상태 안내형",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "SubTitle",
+                "ko": "서브 타이틀",
+                "group": "corner",
+                "asIs": "SubTitle"
+              },
+              {
+                "key": "BadgeItem",
+                "ko": "배지",
+                "group": "corner",
+                "asIs": "BadgeItem"
+              },
+              {
+                "key": "IconItem",
+                "ko": "아이콘",
+                "group": "corner",
+                "asIs": "IconItem"
+              }
+            ]
+          },
+          {
+            "layout": "프로필형",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "서브 타이틀",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "프로필 이미지",
+                "group": "corner",
+                "asIs": "ImageSrc"
+              },
+              {
+                "key": "CustomerName",
+                "ko": "고객명",
+                "group": "corner",
+                "asIs": "CustomerName"
+              },
+              {
+                "key": "Caption",
+                "ko": "휴대폰 번호",
+                "group": "corner",
+                "asIs": "Caption"
+              },
+              {
+                "key": "Button",
+                "ko": "버튼",
+                "group": "corner",
+                "asIs": "Button"
+              }
+            ]
+          }
+        ]
+      },
+      "콘텐츠 안내형": {
+        "options": [
+          "CTA"
+        ],
+        "minItems": 3,
+        "maxItems": 8,
+        "rows": 1,
+        "layouts": [
+          {
+            "layout": "가로형",
+            "required": [
+              {
+                "key": "CornerTitle",
+                "ko": "코너 타이틀",
+                "group": "corner",
+                "asIs": "CornerTitle"
+              },
+              {
+                "key": "ButtonText",
+                "ko": "버튼 텍스트",
+                "group": "corner",
+                "asIs": "ButtonText"
+              },
+              {
+                "key": "ImageSrc",
+                "ko": "컴포넌트 이미지",
+                "group": "item",
+                "asIs": "ImageSrc",
+                "note": "영화 이미지"
+              },
+              {
+                "key": "ItemTitle",
+                "ko": "컴포넌트 타이틀",
+                "group": "item",
+                "asIs": "ItemTitle",
+                "note": "영화 제목"
+              },
+              {
+                "key": "Caption01",
+                "ko": "캡션·평점",
+                "group": "item",
+                "asIs": "Caption/Caption01"
+              }
+            ]
+          }
+        ]
+      },
+      "바코드형": {
+        "options": [],
+        "layouts": [
+          {
+            "layout": "바코드형",
+            "required": [
+              {
+                "key": "Title",
+                "ko": "타이틀",
+                "group": "corner",
+                "asIs": "Title"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "benefitTypes": [
+    {
+      "typeId": "CYH001",
+      "top": "혜택형",
+      "mid": "제휴사형",
+      "layout": "리스트형",
+      "name": "제휴사형 · 리스트형",
+      "source": "EPC > 제휴사 카테고리 관리 (기존 혜택 브랜드)",
+      "presetKey": "aff-list",
+      "presetCount": 9,
+      "operMode": "개인화/수동",
+      "landingLink": false,
+      "unused": false,
+      "guide": "세로 리스트. 아이템 기본 3개·최대 4개 이하 권장. 상단 이미지·카테고리·CTA는 옵션.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "추천 맥락 헤더",
+            "code": "ContextHeader",
+            "state": "toggle",
+            "default": false,
+            "note": "추천 근거(거리·검색·매장방문) 노출 · API 활동기록"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "카테고리 탭",
+            "code": "Category",
+            "state": "toggle",
+            "default": false,
+            "note": "카테고리 구분"
+          },
+          {
+            "label": "썸네일",
+            "code": "Thumbnail",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 타이틀",
+            "code": "ItemTitle",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 내용",
+            "code": "ItemDesc",
+            "state": "required"
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).",
+          "리스트는 기본 3개, 최대 4개 이하 권장입니다."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH002",
+      "top": "혜택형",
+      "mid": "이벤트형",
+      "layout": "리스트형",
+      "name": "이벤트형 · 리스트형",
+      "source": "어드민 · 프로모션 관리",
+      "presetKey": "event-list",
+      "presetCount": 5,
+      "operMode": "개인화/수동",
+      "landingLink": true,
+      "unused": false,
+      "guide": "세로 리스트. 아이템 기본 3개·최대 4개 이하 권장. 상단 이미지·카테고리·CTA는 옵션.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "추천 맥락 헤더",
+            "code": "ContextHeader",
+            "state": "toggle",
+            "default": false,
+            "note": "추천 근거(거리·검색·매장방문) 노출 · API 활동기록"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "코너 랜딩 링크 버튼",
+            "code": "LandingLink",
+            "state": "toggle",
+            "default": true,
+            "note": "액션 버튼과 택1 필수 · On/Off"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "카테고리 탭",
+            "code": "Category",
+            "state": "toggle",
+            "default": false,
+            "note": "카테고리 구분"
+          },
+          {
+            "label": "썸네일",
+            "code": "Thumbnail",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 타이틀",
+            "code": "ItemTitle",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 내용",
+            "code": "ItemDesc",
+            "state": "required"
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).",
+          "리스트는 기본 3개, 최대 4개 이하 권장입니다."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH003",
+      "top": "혜택형",
+      "mid": "미션형",
+      "layout": "리스트형",
+      "name": "미션형 · 리스트형",
+      "source": "어드민 > 내부 미션유형 (AS-IS 출석체크 · 혜택여행 스탬프 · 바로적립 · 참여적립 · 쇼핑적립 · 돈 버는 교통 · 돈 버는 설문)",
+      "presetKey": "mission-list",
+      "presetCount": 2,
+      "operMode": "개인화/수동",
+      "landingLink": true,
+      "unused": false,
+      "guide": "세로 리스트. 아이템 기본 3개·최대 4개 이하 권장. 상단 이미지·카테고리·CTA는 옵션.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "코너 랜딩 링크 버튼",
+            "code": "LandingLink",
+            "state": "toggle",
+            "default": true,
+            "note": "액션 버튼과 택1 필수 · On/Off"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "카테고리 탭",
+            "code": "Category",
+            "state": "toggle",
+            "default": false,
+            "note": "카테고리 구분"
+          },
+          {
+            "label": "썸네일",
+            "code": "Thumbnail",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 타이틀",
+            "code": "ItemTitle",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 내용",
+            "code": "ItemDesc",
+            "state": "required"
+          },
+          {
+            "label": "우측 버튼(Label)",
+            "code": "ItemButton",
+            "state": "toggle",
+            "default": true
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).",
+          "리스트는 기본 3개, 최대 4개 이하 권장입니다."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH004",
+      "top": "혜택형",
+      "mid": "미션형",
+      "layout": "출석체크형",
+      "name": "미션형 · 출석체크형",
+      "source": "어드민 > 내부 미션유형 (AS-IS 출석체크 · 혜택여행 스탬프 · 바로적립 · 참여적립 · 쇼핑적립 · 돈 버는 교통 · 돈 버는 설문)",
+      "presetKey": "mission-attendance",
+      "presetCount": 2,
+      "operMode": "개인화",
+      "landingLink": true,
+      "unused": false,
+      "guide": "출석 누적 게이지(예: 출석 N일차, 출석 불규칙) + 마일스톤 보상. 보상 아이템은 가격 없음.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "코너 랜딩 링크 버튼",
+            "code": "LandingLink",
+            "state": "toggle",
+            "default": true,
+            "note": "액션 버튼과 택1 필수 · On/Off"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "출석 진행(요일·게이지)",
+            "code": "Attendance",
+            "state": "required"
+          },
+          {
+            "label": "보상 아이템(썸네일·보상명·조건)",
+            "code": "Reward",
+            "state": "required"
+          },
+          {
+            "label": "받기 버튼",
+            "code": "RewardButton",
+            "state": "required"
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1)."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH005",
+      "top": "혜택형",
+      "mid": "미션형",
+      "layout": "룰렛형",
+      "name": "미션형 · 룰렛형",
+      "source": "어드민 > 내부 미션유형 (AS-IS 출석체크 · 혜택여행 스탬프 · 바로적립 · 참여적립 · 쇼핑적립 · 돈 버는 교통 · 돈 버는 설문)",
+      "presetKey": "mission-roulette",
+      "presetCount": 1,
+      "operMode": "개인화",
+      "landingLink": true,
+      "unused": false,
+      "guide": "룰렛 돌림판 + 당첨 보상. 당첨 결과는 런타임 발급. 보상 아이템은 가격 없음.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "코너 랜딩 링크 버튼",
+            "code": "LandingLink",
+            "state": "toggle",
+            "default": true,
+            "note": "액션 버튼과 택1 필수 · On/Off"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "응모 기회 지표(남은/추가)",
+            "code": "EntryMetric",
+            "state": "required"
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1)."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH006",
+      "top": "혜택형",
+      "mid": "혜택프로그램형",
+      "layout": "리스트형",
+      "name": "혜택프로그램형 · 리스트형",
+      "source": "어드민 > 내부 프로그램 (T 멤버십 · T day · VIP PICK · 글로벌여행 · 클럽 멤버십 · T 장기고객 · 열린 멤버십 · 기프티콘)",
+      "presetKey": "program-list",
+      "presetCount": 14,
+      "operMode": "개인화/수동",
+      "landingLink": true,
+      "unused": false,
+      "guide": "세로 리스트. 아이템 기본 3개·최대 4개 이하 권장. 상단 이미지·카테고리·CTA는 옵션.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "추천 맥락 헤더",
+            "code": "ContextHeader",
+            "state": "toggle",
+            "default": false,
+            "note": "추천 근거(거리·검색·매장방문) 노출 · API 활동기록"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "코너 랜딩 링크 버튼",
+            "code": "LandingLink",
+            "state": "toggle",
+            "default": true,
+            "note": "액션 버튼과 택1 필수 · On/Off"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "카테고리 탭",
+            "code": "Category",
+            "state": "toggle",
+            "default": false,
+            "note": "카테고리 구분"
+          },
+          {
+            "label": "썸네일",
+            "code": "Thumbnail",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 타이틀",
+            "code": "ItemTitle",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 내용",
+            "code": "ItemDesc",
+            "state": "required"
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).",
+          "리스트는 기본 3개, 최대 4개 이하 권장입니다."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH007",
+      "top": "혜택형",
+      "mid": "혜택프로그램형",
+      "layout": "캐러셀형",
+      "name": "혜택프로그램형 · 캐러셀형",
+      "source": "어드민 > 내부 프로그램 (T 멤버십 · T day · VIP PICK · 글로벌여행 · 클럽 멤버십 · T 장기고객 · 열린 멤버십 · 기프티콘)",
+      "presetKey": "program-carousel",
+      "presetCount": 2,
+      "operMode": "개인화/수동",
+      "landingLink": true,
+      "unused": false,
+      "guide": "가로 스크롤 카드. 아이템 3~10개. 카테고리는 옵션.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "추천 맥락 헤더",
+            "code": "ContextHeader",
+            "state": "toggle",
+            "default": false,
+            "note": "추천 근거(거리·검색·매장방문) 노출 · API 활동기록"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "코너 랜딩 링크 버튼",
+            "code": "LandingLink",
+            "state": "toggle",
+            "default": true,
+            "note": "액션 버튼과 택1 필수 · On/Off"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "카테고리 탭",
+            "code": "Category",
+            "state": "toggle",
+            "default": false,
+            "note": "카테고리 구분"
+          },
+          {
+            "label": "썸네일",
+            "code": "Thumbnail",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 타이틀",
+            "code": "ItemTitle",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 내용",
+            "code": "ItemDesc",
+            "state": "required"
+          },
+          {
+            "label": "가격",
+            "code": "Price",
+            "state": "toggle",
+            "default": true
+          },
+          {
+            "label": "할인율",
+            "code": "DiscountRate",
+            "state": "toggle",
+            "default": true
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).",
+          "리스트는 기본 3개, 최대 4개 이하 권장입니다."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH008",
+      "top": "혜택형",
+      "mid": "종합형",
+      "layout": "리스트형",
+      "name": "종합형 · 리스트형",
+      "source": "EPC > 제휴사 + 혜택 프로그램(MP) 종합",
+      "presetKey": "combo-list",
+      "presetCount": 0,
+      "operMode": "개인화/수동",
+      "landingLink": true,
+      "unused": true,
+      "guide": "제휴사 1개 + 그 아래 혜택 프로그램 리스트(제휴사+MP 종합). FO 리뷰 후 확정.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "코너 랜딩 링크 버튼",
+            "code": "LandingLink",
+            "state": "toggle",
+            "default": true,
+            "note": "액션 버튼과 택1 필수 · On/Off"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "카테고리 탭",
+            "code": "Category",
+            "state": "toggle",
+            "default": false,
+            "note": "카테고리 구분"
+          },
+          {
+            "label": "썸네일",
+            "code": "Thumbnail",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 타이틀",
+            "code": "ItemTitle",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 내용",
+            "code": "ItemDesc",
+            "state": "required"
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).",
+          "리스트는 기본 3개, 최대 4개 이하 권장입니다."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH009",
+      "top": "혜택형",
+      "mid": "바코드형",
+      "layout": "리스트형",
+      "name": "바코드형 · 리스트형",
+      "source": "EPC > 제휴사 카테고리 관리 (기존 혜택 브랜드) + 멤버십 바코드(런타임)",
+      "presetKey": "program-barcode",
+      "presetCount": 3,
+      "operMode": "수동",
+      "landingLink": false,
+      "unused": false,
+      "guide": "제휴사 리스트 + 멤버십 바코드(값은 런타임 발급 · 원타임). 상단 이미지·추천 맥락 헤더는 옵션.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "바코드",
+            "code": "Barcode",
+            "state": "required",
+            "note": "멤버십 바코드 · 값 런타임 발급"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "썸네일",
+            "code": "Thumbnail",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 타이틀",
+            "code": "ItemTitle",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 내용",
+            "code": "ItemDesc",
+            "state": "required"
+          },
+          {
+            "label": "멤버십 바코드",
+            "code": "Barcode",
+            "state": "required",
+            "note": "값은 런타임 발급"
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).",
+          "리스트는 기본 3개, 최대 4개 이하 권장입니다."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH010",
+      "top": "혜택형",
+      "mid": "이용지원형",
+      "layout": "리스트형",
+      "name": "이용지원형 · 리스트형",
+      "source": "직접 입력(운영) · 앱 내 링크 (API 아님)",
+      "presetKey": "support-list",
+      "presetCount": 6,
+      "operMode": "수동",
+      "landingLink": true,
+      "unused": false,
+      "guide": "세로 리스트. 아이템 기본 3개·최대 4개 이하 권장. 상단 이미지·카테고리·CTA는 옵션.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "코너 랜딩 링크 버튼",
+            "code": "LandingLink",
+            "state": "toggle",
+            "default": true,
+            "note": "액션 버튼과 택1 필수 · On/Off"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "카테고리 탭",
+            "code": "Category",
+            "state": "toggle",
+            "default": false,
+            "note": "카테고리 구분"
+          },
+          {
+            "label": "썸네일",
+            "code": "Thumbnail",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 타이틀",
+            "code": "ItemTitle",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 내용",
+            "code": "ItemDesc",
+            "state": "required"
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).",
+          "리스트는 기본 3개, 최대 4개 이하 권장입니다."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH011",
+      "top": "혜택형",
+      "mid": "무료상품형",
+      "layout": "리스트형",
+      "name": "무료상품형 · 리스트형",
+      "source": "EPC 원장 (0원 상품) · 혜택 존 전용",
+      "presetKey": "free-product-list",
+      "presetCount": 0,
+      "operMode": "개인화/수동",
+      "landingLink": true,
+      "unused": false,
+      "guide": "혜택 존 0원 상품(상품명). 가격 없음(무료). 유료 상품형은 다음 차수.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "코너 랜딩 링크 버튼",
+            "code": "LandingLink",
+            "state": "toggle",
+            "default": true,
+            "note": "액션 버튼과 택1 필수 · On/Off"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "카테고리 탭",
+            "code": "Category",
+            "state": "toggle",
+            "default": false,
+            "note": "카테고리 구분"
+          },
+          {
+            "label": "썸네일",
+            "code": "Thumbnail",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 타이틀",
+            "code": "ItemTitle",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 내용",
+            "code": "ItemDesc",
+            "state": "required"
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).",
+          "리스트는 기본 3개, 최대 4개 이하 권장입니다."
+        ]
+      }
+    },
+    {
+      "typeId": "CYH012",
+      "top": "혜택형",
+      "mid": "이용지원형",
+      "layout": "캐러셀형",
+      "name": "이용지원형 · 캐러셀형",
+      "source": "직접 입력(운영) · 앱 내 링크 (API 아님)",
+      "presetKey": "support-carousel",
+      "presetCount": 0,
+      "operMode": "수동",
+      "landingLink": true,
+      "unused": false,
+      "guide": "가로 스크롤 카드. 아이템 3~10개. 카테고리는 옵션.",
+      "fields": {
+        "card": [
+          {
+            "label": "상단 이미지",
+            "code": "Image",
+            "state": "toggle",
+            "default": false,
+            "note": "원장 이미지 또는 운영 등록 · 기본 OFF"
+          },
+          {
+            "label": "코너 타이틀",
+            "code": "CornerTitle",
+            "state": "required"
+          },
+          {
+            "label": "코너 랜딩 링크 버튼",
+            "code": "LandingLink",
+            "state": "toggle",
+            "default": true,
+            "note": "액션 버튼과 택1 필수 · On/Off"
+          },
+          {
+            "label": "추가 인포메이션",
+            "code": "Information",
+            "state": "toggle",
+            "default": false,
+            "note": "운영 정보성 영역"
+          },
+          {
+            "label": "하단 CTA",
+            "code": "ActionButton",
+            "state": "toggle",
+            "default": false,
+            "note": "코너 랜딩 링크와 택1 필수 · On/Off"
+          }
+        ],
+        "item": [
+          {
+            "label": "카테고리 탭",
+            "code": "Category",
+            "state": "toggle",
+            "default": false,
+            "note": "카테고리 구분"
+          },
+          {
+            "label": "썸네일",
+            "code": "Thumbnail",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 타이틀",
+            "code": "ItemTitle",
+            "state": "required"
+          },
+          {
+            "label": "컴포넌트 내용",
+            "code": "ItemDesc",
+            "state": "required"
+          }
+        ],
+        "rules": [
+          "코너 랜딩 링크 버튼과 액션 버튼 중 최소 1개는 필수 노출입니다 (택1).",
+          "리스트는 기본 3개, 최대 4개 이하 권장입니다."
+        ]
+      }
+    }
+  ],
+  "presetGroups": [
+    {
+      "key": "aff-list",
+      "label": "혜택형 > 제휴사형 > 리스트형",
+      "source": "EPC > 제휴사 카테고리 관리 (기존 혜택 브랜드)",
+      "presetCount": 9,
+      "unused": false
+    },
+    {
+      "key": "event-list",
+      "label": "혜택형 > 이벤트형 > 리스트형",
+      "source": "어드민 · 프로모션 관리",
+      "presetCount": 5,
+      "unused": false
+    },
+    {
+      "key": "mission-list",
+      "label": "혜택형 > 미션형 > 리스트형",
+      "source": "어드민 > 내부 미션유형 (AS-IS 출석체크 · 혜택여행 스탬프 · 바로적립 · 참여적립 · 쇼핑적립 · 돈 버는 교통 · 돈 버는 설문)",
+      "presetCount": 2,
+      "unused": false
+    },
+    {
+      "key": "mission-attendance",
+      "label": "혜택형 > 미션형 > 출석체크형",
+      "source": "어드민 > 내부 미션유형 (AS-IS 출석체크 · 혜택여행 스탬프 · 바로적립 · 참여적립 · 쇼핑적립 · 돈 버는 교통 · 돈 버는 설문)",
+      "presetCount": 2,
+      "unused": false
+    },
+    {
+      "key": "mission-roulette",
+      "label": "혜택형 > 미션형 > 룰렛형",
+      "source": "어드민 > 내부 미션유형 (AS-IS 출석체크 · 혜택여행 스탬프 · 바로적립 · 참여적립 · 쇼핑적립 · 돈 버는 교통 · 돈 버는 설문)",
+      "presetCount": 1,
+      "unused": false
+    },
+    {
+      "key": "program-list",
+      "label": "혜택형 > 혜택프로그램형 > 리스트형",
+      "source": "어드민 > 내부 프로그램 (T 멤버십 · T day · VIP PICK · 글로벌여행 · 클럽 멤버십 · T 장기고객 · 열린 멤버십 · 기프티콘)",
+      "presetCount": 14,
+      "unused": false
+    },
+    {
+      "key": "program-carousel",
+      "label": "혜택형 > 혜택프로그램형 > 캐러셀형",
+      "source": "어드민 > 내부 프로그램 (T 멤버십 · T day · VIP PICK · 글로벌여행 · 클럽 멤버십 · T 장기고객 · 열린 멤버십 · 기프티콘)",
+      "presetCount": 2,
+      "unused": false
+    },
+    {
+      "key": "combo-list",
+      "label": "혜택형 > 종합형 > 리스트형",
+      "source": "EPC > 제휴사 + 혜택 프로그램(MP) 종합",
+      "presetCount": 0,
+      "unused": true
+    },
+    {
+      "key": "program-barcode",
+      "label": "혜택형 > 바코드형 > 리스트형",
+      "source": "EPC > 제휴사 카테고리 관리 (기존 혜택 브랜드) + 멤버십 바코드(런타임)",
+      "presetCount": 3,
+      "unused": false
+    },
+    {
+      "key": "support-list",
+      "label": "혜택형 > 이용지원형 > 리스트형",
+      "source": "직접 입력(운영) · 앱 내 링크 (API 아님)",
+      "presetCount": 6,
+      "unused": false
+    },
+    {
+      "key": "free-product-list",
+      "label": "혜택형 > 무료상품형 > 리스트형",
+      "source": "EPC 원장 (0원 상품) · 혜택 존 전용",
+      "presetCount": 0,
+      "unused": false
+    },
+    {
+      "key": "support-carousel",
+      "label": "혜택형 > 이용지원형 > 캐러셀형",
+      "source": "직접 입력(운영) · 앱 내 링크 (API 아님)",
+      "presetCount": 0,
+      "unused": false
+    },
+    {
+      "key": "tbd-list",
+      "label": "구분 미정 > 리스트형",
+      "source": "구분 미정 — 재분류 검토",
+      "presetCount": 5,
+      "unused": false
+    },
+    {
+      "key": "tbd-graph",
+      "label": "구분 미정 > 그래프형",
+      "source": "구분 미정 — 재분류 검토",
+      "presetCount": 2,
+      "unused": false
+    },
+    {
+      "key": "tbd-siderow",
+      "label": "구분 미정 > 좌우 리스트형",
+      "source": "구분 미정 — 재분류 검토",
+      "presetCount": 1,
+      "unused": false
+    },
+    {
+      "key": "psub-banner",
+      "label": "상품형 > 구독상품 > 배너형",
+      "source": "EPC 원장 (구독)",
+      "presetCount": 4,
+      "unused": false
+    },
+    {
+      "key": "psub-list",
+      "label": "상품형 > 구독상품 > 리스트형",
+      "source": "EPC 원장 (구독)",
+      "presetCount": 1,
+      "unused": false
+    },
+    {
+      "key": "psub-carousel",
+      "label": "상품형 > 구독상품 > 캐러셀형",
+      "source": "EPC 원장 (구독)",
+      "presetCount": 6,
+      "unused": false
+    },
+    {
+      "key": "pdev-list",
+      "label": "상품형 > 디바이스 > 리스트형",
+      "source": "EPC 원장 (단말 지원금·요금제)",
+      "presetCount": 3,
+      "unused": false
+    },
+    {
+      "key": "pdev-carousel",
+      "label": "상품형 > 디바이스 > 캐러셀형",
+      "source": "EPC 원장 (단말 지원금·요금제)",
+      "presetCount": 5,
+      "unused": false
+    }
+  ],
+  "states": {
+    "list": [
+      {
+        "key": "DRAFT",
+        "code": "ST-DSP-001",
+        "label": "초안 작성중"
+      },
+      {
+        "key": "REVIEW",
+        "code": "ST-DSP-002",
+        "label": "검수 대기"
+      },
+      {
+        "key": "REJECTED",
+        "code": "ST-DSP-003",
+        "label": "수정 필요"
+      },
+      {
+        "key": "APPROVED",
+        "code": "ST-DSP-004",
+        "label": "승인 완료"
+      },
+      {
+        "key": "SCHEDULED",
+        "code": "ST-DSP-005",
+        "label": "예약 대기"
+      },
+      {
+        "key": "PUBLISHED",
+        "code": "ST-DSP-006",
+        "label": "게시 중"
+      },
+      {
+        "key": "SUSPENDED",
+        "code": "ST-DSP-007",
+        "label": "게시 중지"
+      },
+      {
+        "key": "ENDED",
+        "code": "ST-DSP-008",
+        "label": "종료"
+      },
+      {
+        "key": "ROLLED_BACK",
+        "code": "ST-DSP-009",
+        "label": "롤백 완료"
+      },
+      {
+        "key": "PERSONALIZATION_LIMITED",
+        "code": "ST-DSP-010",
+        "label": "개인화 제한"
+      }
+    ],
+    "transitions": {
+      "DRAFT": [
+        "REVIEW"
+      ],
+      "REVIEW": [
+        "APPROVED",
+        "REJECTED"
+      ],
+      "REJECTED": [
+        "REVIEW"
+      ],
+      "APPROVED": [
+        "SCHEDULED",
+        "PUBLISHED"
+      ],
+      "SCHEDULED": [
+        "PUBLISHED",
+        "REJECTED"
+      ],
+      "PUBLISHED": [
+        "ENDED",
+        "SUSPENDED",
+        "PERSONALIZATION_LIMITED"
+      ],
+      "SUSPENDED": [
+        "ROLLED_BACK"
+      ],
+      "ENDED": [],
+      "ROLLED_BACK": [
+        "REVIEW"
+      ],
+      "PERSONALIZATION_LIMITED": [
+        "PUBLISHED"
+      ]
+    }
+  },
+  "containerTypes": [
+    "MAIN",
+    "MENU",
+    "CURATION",
+    "BENEFIT"
+  ]
+}
