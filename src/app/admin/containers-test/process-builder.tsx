@@ -632,7 +632,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const fillForFallback = isCvmSrc && !isData && fb === '운영자 편성으로 대체' && !isProfile && !isStatus && !isBarcode;
   // 섹션 번호 — CVM 코너는 ③ 폴백(채우기 위로)이 끼어 번호가 하나씩 밀린다(2026-11-10 사용자 요청: 폴백이 채우기 결과를 좌우하므로 위로). 번호 공백 방지.
   //  운영/픽스 영역(비개인화)은 ② 수급 선택을 숨기므로 콘텐츠 설정이 ②로 당겨진다(2026-11-25 사용자 요청).
-  const nFill = 2; // 코너 콘텐츠 설정 = 항상 ②. 대체 노출(폴백)은 ③로 아래에(2026-11-25 사용자 요청).
+  // nFillSec·nFallback은 showFillMode 확정 후 아래에서 정의(채우는 방식 ② 유무에 따라 번호 이동).
   // '채우기 → 불러오기' — 유형별 카탈로그(상품형=상품, 혜택·오퍼형=혜택)에서 멀티 셀렉으로 담는다(2026-10-28 사용자 요청).
   const catalogByType = React.useContext(ProductCatalogCtx);
   // 혜택형 코너는 '불러오기' 시 그 코너의 중분류 구좌만 뜨게 한다(2026-11-25 사용자 요청: 이벤트면 이벤트 구좌, 미션은 미션, 제휴사면 브랜드).
@@ -771,6 +771,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const isBenefitType = corner.cornerType === '혜택·오퍼형' || corner.cornerType === '혜택형';
   // 채우는 방식(운영자 직접/운영자 고정+추천/전부 추천) 노출 대상 — 혜택형 + 퀵메뉴(업무 진입형 카테고리 탭). 후보 코너 유형은 혜택형만(2026-11-25 사용자 요청).
   const showFillMode = isBenefitType || isQuickMenu;
+  // 섹션 번호(2026-11-26 사용자 요청: 채우는 방식 ② / 채우기 ③ 분리) — 채우는 방식(②)이 있으면 채우기=③·폴백=④, 없으면(프로필·CVM 등) 채우기=②·폴백=③.
+  const nFillSec = showFillMode ? 3 : 2;
+  const nFallback = showFillMode ? 4 : 3;
   // 배너형 = '배너 캠페인 관리'에서 가져오기 전용(직접 입력 없음). 가져오기 버튼으로 등록된 배너를 담는다(2026-11-05 사용자 요청).
   const isBanner = corner.cornerType === '배너형';
   // 상품형 = 컴포넌트(아이템) 테이블을 가격 규격 컬럼으로(No·이미지·타이틀·할인율·가격·기간·서브 텍스트·경로 상세·상품 조회·삭제). 할인율/가격/기간은 상품(EPC) 원장 값(상품 조회) — 데모는 플레이스홀더. SB PG557(2026-11-17 사용자 요청).
@@ -1135,18 +1138,14 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
 
       {/* ② 개인화 구성은 아래 '코너 콘텐츠 설정' 섹션 안으로 이동(2026-11-25 사용자 요청: 구성 방식이 코너 콘텐츠 설정으로 들어가야 함). */}
 
-      {/* ② 코너 콘텐츠 설정 — 운영자 편성=채우기, 데이터 연동=요청+운영자 고정 앵커, 콘텐츠 연동=구좌만. 대체 노출(폴백)은 이 아래로(2026-11-25 사용자 요청). */}
-      {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
-        <Sec n={nFill} title={isPersonal ? '코너 콘텐츠 설정' : fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '코너 콘텐츠 설정'} hint="구성 방식을 고르고 노출할 데이터를 설정합니다">
-          {/* 채우는 방식 — 혜택형 + 퀵메뉴. '개인화'를 따로 클릭하는 모드가 아니라 '어떻게 채울지'의 선택지로 통합(2026-11-25 사용자 요청).
-              운영자 직접 / 운영자 고정+추천(혼합) / 전부 추천. 출석·룰렛=전부 추천 고정, 수동 전용=운영자 직접만. */}
-          {showFillMode && (<>
-          <div className="mb-4">
-            <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">채우는 방식</p>
+      {/* ② 채우는 방식 — 콘텐츠를 누가·어떻게 채우는지. 채우기(③)·폴백(④)과 분리(2026-11-26 사용자 요청: AS-IS 구조). */}
+      {showFillMode && (
+        <Sec n={2} title="채우는 방식" hint="콘텐츠를 누가·어떻게 채우는지 고릅니다">
+          <div className="pb-1">
             <div className="flex flex-wrap items-center gap-1.5">
               {FILL_MODES.map((m) => {
                 const on = fillMode === m;
-                // 미션형(룰렛·출석체크)은 운영자가 미션을 '연결'해야 하므로 운영자 직접·고정+추천을 비활성화하지 않는다(2026-11-26 사용자 확정, 비활성 제안 철회). 수동 전용은 '운영자 직접'만.
+                // 미션형(룰렛·출석체크)은 운영자가 미션을 '연결'해야 하므로 비활성화하지 않는다. 수동 전용은 '운영자 직접'만.
                 const blocked = (!corner.canPersonal && m !== '운영자 직접') || (forcePersonal && m === '운영자 직접');
                 return (
                   <button key={m} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(m); }}
@@ -1156,15 +1155,25 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 );
               })}
             </div>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--ink4)]">
-              {fillMode === '운영자 직접' ? '운영자가 아이템을 직접 담아요.'
+            {/* 명확성 보강(2026-11-26): 행동 한 줄 + 소유 분담(운영자/CVM) + 결과(개인화 여부). */}
+            <p className="mt-2 text-[12px] leading-relaxed text-[var(--ink3)]">
+              {fillMode === '운영자 직접' ? '운영자가 노출 항목과 순서를 직접 정해요.'
                 : fillMode === '운영자 고정 + 추천' ? '앞자리는 운영자가 고정하고, 나머지는 추천 엔진이 고객별로 채워요.'
-                : '후보 코너 유형을 여러 개 담아두면, 고객마다 추천 엔진이 노출 개수만큼 골라요.'}
-              {forcePersonal && ' (출석체크·룰렛형은 개인화 전용)'}
+                : '후보 코너 유형을 여러 개 담아두면, 고객마다 추천 엔진이 노출 개수만큼 골라요. 없으면 미노출.'}
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+              <span className="rounded-full bg-[var(--th)] px-2 py-0.5 font-semibold text-[var(--ink3)]">운영자 {fillMode === '운영자 직접' ? '전부' : fillMode === '운영자 고정 + 추천' ? '앞자리 고정·문구' : '후보 등록'}</span>
+              <span className="rounded-full bg-[var(--th)] px-2 py-0.5 font-semibold text-[var(--ink3)]">CVM {fillMode === '운영자 직접' ? '없음' : fillMode === '운영자 고정 + 추천' ? '나머지 자리·순서' : '노출 선택'}</span>
+              <span className={cn('rounded-full px-2 py-0.5 font-bold', fillMode === '운영자 직접' ? 'bg-[#eef0f2] text-[var(--ink3)]' : 'bg-[#F2ECFB] text-[#6D28D9]')}>{fillMode === '운영자 직접' ? '모두 같음' : '개인화 · 고객마다 다름'}</span>
+              {forcePersonal && <span className="rounded-full bg-[#F2ECFB] px-2 py-0.5 font-bold text-[#6D28D9]">출석체크·룰렛형 개인화 전용</span>}
+            </div>
           </div>
+        </Sec>
+      )}
 
-          </>)}
+      {/* ③ 채우기 — 선택한 방식으로 노출할 데이터를 설정. 대체 노출(폴백)은 ④로 아래에. */}
+      {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
+        <Sec n={nFillSec} title={fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '채우기'} hint="노출할 데이터를 설정합니다">
 
           {/* ── 미션 연결(출석체크·룰렛) — 고정 틀이라 콘텐츠를 조립하지 않고 운영 중인 미션에 '연결'(2026-11-26 A안). 콘텐츠·보상은 연결된 미션에서 내려오고, 개인화는 CVM이 고객별로 채움. ── */}
           {forcePersonal && (
@@ -1935,7 +1944,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           )}
         </Sec>
       ) : isProfile ? (
-        <Sec n={nFill} title="프로필 항목">
+        <Sec n={nFillSec} title="프로필 항목">
           <div className="mb-2 flex items-start gap-1.5 rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] leading-relaxed text-[#2e4fd6]">
             <span className="mt-0.5">ⓘ</span><span><b>고객명·휴대폰 번호·프로필 이미지</b>는 고객 정보로 자동 표시(@cvm)됩니다. 아래 문구만 설정하세요.</span>
           </div>
@@ -1956,7 +1965,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           </div>
         </Sec>
       ) : (
-        <Sec n={nFill} title="CVM 요청 (구좌만)" help>
+        <Sec n={nFillSec} title="CVM 요청 (구좌만)" help>
           <p className="rounded-[8px] bg-[var(--ac2)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
             <b className="text-[var(--ac)]">CVM 콘텐츠 연동</b> = 구좌(자리)만 넘깁니다. 이미지·문구·랜딩까지 <b>CVM이 완성본을 내려주고</b> 전시 어드민은 받은 그대로 노출합니다. 별도 요청 범위(③) 설정은 없습니다.
           </p>
@@ -1968,7 +1977,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
         const isRec = fillMode === '전부 추천' && !isCvmSrc; // 추천 수급(전부 추천) vs CVM
         const emptyWord = isRec ? '추천이 비면' : 'CVM이 비면';
         return (
-        <Sec n={3} title="대체 노출 설정 (폴백)" hint={`${isRec ? '추천이 없을 때' : 'CVM 응답이 없을 때'} 대체 노출을 설정합니다`}>
+        <Sec n={nFallback} title="대체 노출 설정 (폴백)" hint={`${isRec ? '추천이 없을 때' : 'CVM 응답이 없을 때'} 대체 노출을 설정합니다`}>
           <div className="space-y-1.5">
             {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
               const on = fb === f;
