@@ -19,7 +19,8 @@ export function MainHomeOfferCard({ corner }: { corner: PreviewCorner }) {
           <button type="button" className="mt-2.5 inline-flex items-center rounded-full border border-[#c9ccf7] bg-white/80 px-3 py-1 text-[12px] font-semibold text-[#4b59ff]">{cta}</button>
         </div>
         <div className="grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[14px] bg-gradient-to-br from-[#e7eaf6] to-[#d9def0]">
-          {img ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={img} alt="오퍼 이미지" className="h-full w-full object-cover" /> : null}
+          {/* 이미지 URL이 404여도 '깨진 이미지'가 안 보이게 — 실패하면 숨겨 그라데이션 박스만(2026-11-26 사용자: 자꾸 깨져 보임). */}
+          {img ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={img} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : null}
         </div>
       </div>
     </section>

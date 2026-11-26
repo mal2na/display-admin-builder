@@ -573,12 +573,15 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const [fillMode, setFillMode] = React.useState<string>(() => (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접');
   const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); };
   const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법', '남은 데이터 확인하기', '가족 결합 할인 알아보기', '기기 할부금 조회하기', '요금제 바로 변경하기', 'T멤버십 쿠폰 받기', '오늘의 맞춤 혜택 보기', '해외 데이터 로밍 신청', '소액결제 한도 변경', '유독(구독) 추천받기', '약정 만료일 확인', '포인트 적립 내역 보기', '단말기 보험 가입 확인', '자동이체 할인 신청', 'VIP 전용 혜택 보기'];
-  const RQ_MAX = 20; // 운영자는 풀(최대 20개)을 등록, 개인화가 고객마다 택(최대 2개 노출)(2026-11-26 사용자 요청).
-  // 추천 질의어 — 코너 컴포넌트(선택형) TEXT 아톰에서 초기값. 등록 풀은 최대 20개, 적게 저장돼 있으면 기본 풀(샘플)로 채워 '개인 맞춤 운영'을 보여준다.
+  const RQ_MAX = 20;      // 등록 풀 상한(운영자가 여기까지 추가 가능).
+  const RQ_SEED = 10;     // 기본 채움 개수(2026-11-26 사용자: 20개 말고 10개만 우선).
+  // 추천 질의어 — 코너 컴포넌트(선택형) TEXT 아톰에서 초기값. 적게 저장돼 있으면 기본 10개로 채워 '개인 맞춤 운영'을 보여준다.
   const [rqList, setRqList] = React.useState<string[]>(() => {
     const qs = (corner.preview?.components ?? []).flatMap((c) => c.atoms ?? []).filter((a) => a.atomType === 'TEXT').map((a) => a.content ?? '').filter(Boolean);
-    return qs.length > 2 ? qs.slice(0, RQ_MAX) : RQ_SAMPLES.slice(0, RQ_MAX);
+    return qs.length > 2 ? qs.slice(0, RQ_MAX) : RQ_SAMPLES.slice(0, RQ_SEED);
   });
+  const [rqMin, setRqMin] = React.useState(1); // FO 노출 개수(최소~최대) — 개인화가 고객마다 이 범위로 노출.
+  const [rqMax, setRqMax] = React.useState(2);
   // 추천 질의어 → 미리보기(RecQueryCard) 동기화: 선택형 컴포넌트의 TEXT 아톰으로 반영.
   const syncRecQuery = (list: string[]) => {
     const atoms = list.filter((q) => q.trim()).map((q, i) => ({ id: `rq-${i}`, name: `질의어${i + 1}`, atomType: 'TEXT', content: q, imageUrl: null, altText: null, linkUrl: null }));
@@ -1155,7 +1158,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
             </p>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[12px] font-semibold text-[var(--ink3)]">등록 질의어 <span className="text-[var(--ac)]">{rqList.filter((q) => q.trim()).length}</span><span className="text-[var(--ink4)]">/{RQ_MAX}</span> <span className="font-normal text-[var(--ink4)]">· 개인 맞춤 풀</span></span>
-              <button type="button" onClick={() => { const picks = [...RQ_SAMPLES].sort(() => Math.random() - 0.5).slice(0, RQ_MAX); setRqList(picks); syncRecQuery(picks); onToast(`AI가 추천 질의어 ${picks.length}개를 생성했어요`); }}
+              <button type="button" onClick={() => { const picks = [...RQ_SAMPLES].sort(() => Math.random() - 0.5).slice(0, RQ_SEED); setRqList(picks); syncRecQuery(picks); onToast(`AI가 추천 질의어 ${picks.length}개를 생성했어요`); }}
                 className="inline-flex h-[30px] items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3.5 w-3.5" /> AI로 풀 채우기</button>
             </div>
             <div className="space-y-1.5">
@@ -1176,6 +1179,18 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
               <button type="button" onClick={() => { const next = [...rqList, '']; setRqList(next); }}
                 className="mt-2 inline-flex h-[32px] items-center gap-1 rounded-[6px] border border-dashed border-[#cfd2ff] px-3 text-[12px] font-semibold text-[var(--ac)] hover:bg-[var(--ac2)]"><Plus className="h-3.5 w-3.5" /> 질의어 추가</button>
             )}
+            {/* 노출 개수(최소~최대) — 개인화가 고객마다 이 범위로 노출. FO는 독립 칩이라 최대 2개 권장(2026-11-26 사용자 요청). */}
+            <div className="mt-4 border-t border-[var(--line2)] pt-3">
+              <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">노출 개수 <span className="font-normal text-[var(--ink4)]">· 고객마다 개인 맞춤으로 노출</span></p>
+              <div className="flex items-center gap-2 text-[13px]">
+                <span className="text-[var(--ink3)]">최소</span>
+                <Stepper value={rqMin} min={1} max={rqMax} onChange={(v) => setRqMin(v)} />
+                <span className="text-[var(--ink4)]">~</span>
+                <span className="text-[var(--ink3)]">최대</span>
+                <Stepper value={rqMax} min={rqMin} max={2} onChange={(v) => setRqMax(v)} />
+                <span className="ml-1 text-[12px] text-[var(--ink4)]">개 노출 (독립 칩, 최대 2개)</span>
+              </div>
+            </div>
           </div>
           ) : (<>
           {fillForFallback && (
