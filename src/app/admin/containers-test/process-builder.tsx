@@ -762,10 +762,11 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
     if (didSyncRef.current) return;
     didSyncRef.current = true;
     const opts: Record<string, boolean> = { ...optOn };
+    delete opts['배너']; // 배너(상단 이미지)는 마운트에서 강제하지 않는다 — 코너를 '선택'할 때 배너가 '뿅' 나타나던 문제(2026-11-26 사용자 요청). 토글을 바꾸면 그때 반영.
     if (isCategory || availOptions.includes('칩')) opts['칩'] = catOn; // 카테고리 설정(catOn)에 칩 노출 동기화 — off면 칩 제거(2026-11-25 사용자 요청)
     onOptionsChange(opts, ctaLabelVal);
     const patch: Record<string, unknown> = {
-      contextHeader: (isPersonal || fillMode !== '운영자 직접') ? ctxHeaderOn : false,
+      // 추천 맥락 헤더도 마운트에서 강제하지 않는다 — 선택 시 헤더가 '뿅' 나타나지 않게. 토글(아래 Y/N)로만 켠다(2026-11-26 사용자 요청).
       information: isPersonal ? false : infoOn,
     };
     if (isCategory && !subCtaOn) patch.subTitle = null;
@@ -1330,8 +1331,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                   </>)}
                 </FormBlock>
               )}
-              {/* 추천 맥락 헤더 — '추천'을 쓸 때만(운영자 편성+추천·구좌 전체 추천) Y/N로 노출. 운영자 편성(추천 아님)이면 숨김(2026-11-26 사용자 요청). */}
-              {fillMode !== '운영자 직접' && (
+              {/* 추천 맥락 헤더 — '추천'을 쓸 때만(운영자 편성+추천·구좌 전체 추천) Y/N로 노출. 운영자 편성·업무진입형(퀵메뉴)은 숨김(2026-11-26 사용자 요청: 업무진입형은 맥락 헤더 뜨면 안 됨). */}
+              {fillMode !== '운영자 직접' && !isQuickMenu && (
                 <FormBlock title="추천 맥락 헤더" desc="개인화 추천 근거 밴드 · API 활동 기록일">
                   <FormRow label="사용 여부" req>
                     <RadioRow options={['Y', 'N'] as const} value={ctxHeaderOn ? 'Y' : 'N'} onChange={(v) => { const on = v === 'Y'; setCtxHeaderOn(on); onPreviewPatch({ contextHeader: on, contextHeaderText: ctxHeaderText || null }); }} />
