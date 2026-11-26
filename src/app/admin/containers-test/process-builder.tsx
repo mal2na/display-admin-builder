@@ -2653,8 +2653,14 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
 
   // 코너 순서·존의 공유 상태 — 리스트(BandedCorners)와 미리보기가 같은 state를 본다.
   //  드래그/고정으로 즉시 미리보기 반영, 서버 refresh 시 활성 템플릿 코너로 재동기화(2026-10-21).
-  const [liveCorners, setLiveCorners] = React.useState<PCorner[]>(activeTemplate?.corners ?? []);
-  React.useEffect(() => { setLiveCorners(activeTemplate?.corners ?? []); }, [activeTemplate?.corners]);
+  // 추천(구좌 전체 추천) 기본 코너는 recSource를 'CVM 콘텐츠 연동'으로 맞춰 '빈 구좌(추천 구좌)'로 뜨게 한다 — 추천이면 구좌를 비워야 하고 클릭 전/새로고침 후에도 유지(2026-11-26 사용자 요청: 추천은 구좌를 비워달라).
+  //  대상 = fillMode 기본값이 '전부 추천'인 코너(개인화 영역 zone='personal' 또는 출석체크·룰렛). 서버 코너를 liveCorners에 반영할 때마다 함께 적용. 운영자가 ②에서 로컬로 바꾼 선택은 liveCorners에만 있어 덮이지 않음.
+  const syncRec = React.useCallback((raw: PCorner[]): PCorner[] => raw.map((c) => {
+    const defaultAllRec = c.zone === 'personal' || (/(출석체크|룰렛)/.test(c.name) && c.canPersonal);
+    return (defaultAllRec && (c.recSource == null || c.recSource === '운영자 편성')) ? { ...c, recSource: 'CVM 콘텐츠 연동', isCvm: true } : c;
+  }), []);
+  const [liveCorners, setLiveCorners] = React.useState<PCorner[]>(() => syncRec(activeTemplate?.corners ?? []));
+  React.useEffect(() => { setLiveCorners(syncRec(activeTemplate?.corners ?? [])); }, [activeTemplate?.corners, syncRec]);
   const totalCorners = liveCorners.length;
   // 노출 토글(코너 카드)로 숨긴 코너 — 좌측 미리보기에서도 빠진다(2026-11-12 사용자 요청). templateCornerId 기준.
   const [hiddenIds, setHiddenIds] = React.useState<Set<string>>(new Set());
