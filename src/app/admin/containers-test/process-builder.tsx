@@ -19,6 +19,7 @@ import { BenefitPreviewCard, benefitDesignKey } from '@/components/preview/benef
 import { RecQueryCard } from '@/components/preview/rec-query-card';
 import { MainHomeOfferCard } from '@/components/preview/main-home-card';
 import { benefitTypes, canPersonalize, sbPreviewSrc } from '@/lib/benefit-corner-types';
+import { BenefitCornerPreview } from '@/app/admin/corner-types/benefit-corner-preview';
 import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
@@ -2577,10 +2578,9 @@ function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast, initial
                 {/* 미리보기 폭 축소 — 코너 유형 관리처럼 폰 폭(최대 300px)으로 가운데 정렬(2026-11-05 사용자 요청). */}
                 <div className="rounded-[14px] border border-[var(--line2)] bg-[var(--th)] p-4">
                   <div className="mx-auto w-full max-w-[300px]">
-                    {/* SB Figma 프리뷰가 있으면 그대로(코너 유형 관리와 동일), 없으면 빌더 껍데기 가이드 */}
-                    {sel.sbPreview
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={sel.sbPreview} alt={`${sel.subType ?? sel.cornerType} 프리뷰`} className="mx-auto block w-full rounded-[18px] shadow-[0_8px_26px_-14px_rgba(20,22,40,0.22)]" />
+    {/* 혜택형(subType)은 코너 유형 관리·빌더와 '동일한' 렌더러(BenefitCornerPreview, 전 요소 ON)로 — 불러오기/미리보기 UI 일치(2026-11-26 사용자 요청). 그 외(배너형·업무진입형)는 껍데기 가이드. */}
+                    {sel.subType
+                      ? <BenefitCornerPreview mid={sel.subType} layout={sel.layout ?? sel.shell} variant="detail" />
                       : <CornerBlock corner={sel.preview} />}
                   </div>
                 </div>
