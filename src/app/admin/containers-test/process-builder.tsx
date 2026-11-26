@@ -572,12 +572,13 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const FILL_MODES = ['운영자 직접', '운영자 고정 + 추천', '전부 추천'] as const;
   const [fillMode, setFillMode] = React.useState<string>(() => (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접');
   const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); };
-  // 추천 질의어 — 코너 컴포넌트(선택형)의 TEXT 아톰에서 초기값, 최대 2개(스펙). AI 생성·직접 입력.
+  const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법', '남은 데이터 확인하기', '가족 결합 할인 알아보기', '기기 할부금 조회하기', '요금제 바로 변경하기', 'T멤버십 쿠폰 받기', '오늘의 맞춤 혜택 보기', '해외 데이터 로밍 신청', '소액결제 한도 변경', '유독(구독) 추천받기', '약정 만료일 확인', '포인트 적립 내역 보기', '단말기 보험 가입 확인', '자동이체 할인 신청', 'VIP 전용 혜택 보기'];
+  const RQ_MAX = 20; // 운영자는 풀(최대 20개)을 등록, 개인화가 고객마다 택(최대 2개 노출)(2026-11-26 사용자 요청).
+  // 추천 질의어 — 코너 컴포넌트(선택형) TEXT 아톰에서 초기값. 등록 풀은 최대 20개, 적게 저장돼 있으면 기본 풀(샘플)로 채워 '개인 맞춤 운영'을 보여준다.
   const [rqList, setRqList] = React.useState<string[]>(() => {
     const qs = (corner.preview?.components ?? []).flatMap((c) => c.atoms ?? []).filter((a) => a.atomType === 'TEXT').map((a) => a.content ?? '').filter(Boolean);
-    return [qs[0] ?? '', qs[1] ?? ''];
+    return qs.length > 2 ? qs.slice(0, RQ_MAX) : RQ_SAMPLES.slice(0, RQ_MAX);
   });
-  const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법'];
   // 추천 질의어 → 미리보기(RecQueryCard) 동기화: 선택형 컴포넌트의 TEXT 아톰으로 반영.
   const syncRecQuery = (list: string[]) => {
     const atoms = list.filter((q) => q.trim()).map((q, i) => ({ id: `rq-${i}`, name: `질의어${i + 1}`, atomType: 'TEXT', content: q, imageUrl: null, altText: null, linkUrl: null }));
@@ -1146,27 +1147,35 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           {showFillMode && fillMode === '운영자 고정 + 추천' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 고정 항목</p>}
           {showFillMode && fillMode === '전부 추천' && fb === '운영자 편성으로 대체' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[#b67a12]"><UserCog className="h-3.5 w-3.5" /> 대체 항목 <span className="text-[11px] font-normal text-[var(--ink4)]">· 추천이 없을 때 노출</span></p>}
           {showFillMode && fillMode === '전부 추천' && fb !== '운영자 편성으로 대체' ? null : isRecQuery ? (
-          /* ── 추천 질의어 — AI 생성/직접 입력(최대 2개·≤20자·1줄). SB [홈]유형(2026-11-25 사용자 요청: 콘텐츠 불러오기 아님). ── */
+          /* ── 추천 질의어 — 운영자가 풀(최대 20개)을 등록, 개인화가 고객마다 맞춤(FO 최대 2개 노출). SB [홈]유형(2026-11-26 사용자 요청). ── */
           <div>
             <p className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#f5f1ff] px-3 py-2 text-[12px] leading-relaxed text-[#6D28D9]">
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>독립 칩 <b>최대 2개</b> · 질문당 <b>20자 이내·1줄</b>. <b>개인화 On</b> = 등록한 여러 질의어 중 고객별 맞춤, <b>Off</b> = 입력한 질의어 그대로. 선택 시 AI 대화로 이동해 답변을 제공해요.</span>
+              <span>질의어를 <b>여러 개(최대 {RQ_MAX}개) 등록</b>해 두면, <b>개인화 On</b> 시 고객마다 맞춤으로 골라 <b>최대 2개</b>를 노출해요(질문당 20자·1줄). <b>Off</b>면 입력한 순서대로. 선택 시 AI 대화로 이동해 답변을 제공해요.</span>
             </p>
-            <div className="mb-2 flex justify-end">
-              <button type="button" onClick={() => { const picks = [...RQ_SAMPLES].sort(() => Math.random() - 0.5).slice(0, 2); setRqList(picks); syncRecQuery(picks); onToast('AI가 추천 질의어 2개를 생성했어요'); }}
-                className="inline-flex h-[32px] items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3.5 w-3.5" /> AI로 질의어 생성</button>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[12px] font-semibold text-[var(--ink3)]">등록 질의어 <span className="text-[var(--ac)]">{rqList.filter((q) => q.trim()).length}</span><span className="text-[var(--ink4)]">/{RQ_MAX}</span> <span className="font-normal text-[var(--ink4)]">· 개인 맞춤 풀</span></span>
+              <button type="button" onClick={() => { const picks = [...RQ_SAMPLES].sort(() => Math.random() - 0.5).slice(0, RQ_MAX); setRqList(picks); syncRecQuery(picks); onToast(`AI가 추천 질의어 ${picks.length}개를 생성했어요`); }}
+                className="inline-flex h-[30px] items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3.5 w-3.5" /> AI로 풀 채우기</button>
             </div>
-            {[0, 1].map((i) => (
-              <FormRow key={i} label={`질의어 ${i + 1}`} req={i === 0}>
-                <div className="flex items-center gap-1">
-                  <button type="button" onClick={() => { const v = RQ_SAMPLES[Math.floor(Math.random() * RQ_SAMPLES.length)]; const next = [...rqList]; next[i] = v; setRqList(next); syncRecQuery(next); }}
-                    className="flex h-[32px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3 w-3" /> AI 추천</button>
-                  <input value={rqList[i] ?? ''} maxLength={20} onChange={(e) => { const next = [...rqList]; next[i] = e.target.value; setRqList(next); syncRecQuery(next); }}
+            <div className="space-y-1.5">
+              {rqList.map((q, i) => (
+                <div key={i} className="flex items-center gap-1">
+                  <span className="w-5 shrink-0 text-center text-[12px] tabular-nums text-[var(--ink4)]">{i + 1}</span>
+                  <button type="button" title="AI 추천으로 채우기" onClick={() => { const v = RQ_SAMPLES[Math.floor(Math.random() * RQ_SAMPLES.length)]; const next = [...rqList]; next[i] = v; setRqList(next); syncRecQuery(next); }}
+                    className="flex h-[32px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3 w-3" /> AI</button>
+                  <input value={q} maxLength={20} onChange={(e) => { const next = [...rqList]; next[i] = e.target.value; setRqList(next); syncRecQuery(next); }}
                     placeholder="추천 질의어 입력 (비어 있으면 AI 추천)" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                  <span className="shrink-0 text-[11px] tabular-nums text-[var(--ink4)]">{(rqList[i] ?? '').length}/20</span>
+                  <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-[var(--ink4)]">{q.length}/20</span>
+                  <button type="button" title="삭제" disabled={rqList.length <= 1} onClick={() => { const next = rqList.filter((_, j) => j !== i); setRqList(next); syncRecQuery(next); }}
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)] disabled:opacity-30"><X className="h-3.5 w-3.5" /></button>
                 </div>
-              </FormRow>
-            ))}
+              ))}
+            </div>
+            {rqList.length < RQ_MAX && (
+              <button type="button" onClick={() => { const next = [...rqList, '']; setRqList(next); }}
+                className="mt-2 inline-flex h-[32px] items-center gap-1 rounded-[6px] border border-dashed border-[#cfd2ff] px-3 text-[12px] font-semibold text-[var(--ac)] hover:bg-[var(--ac2)]"><Plus className="h-3.5 w-3.5" /> 질의어 추가</button>
+            )}
           </div>
           ) : (<>
           {fillForFallback && (
