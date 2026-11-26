@@ -45,9 +45,9 @@ function benefitRows(): BenefitTypeRow[] {
     { top: '배너형', typeId: 'CYB001', mid: '배너형', layout: '단수형', name: '배너형 · 단수형', repImg: null, presetCount: 0, source: '배너 캠페인 관리', presetKey: 'banner-single', updatedBy: '김마리나', updatedAt: '2026-11-25 09:00' },
     { top: '배너형', typeId: 'CYB002', mid: '배너형', layout: '복수형', name: '배너형 · 복수형', repImg: null, presetCount: 0, source: '배너 캠페인 관리', presetKey: 'banner-multi', updatedBy: '김마리나', updatedAt: '2026-11-25 09:00' },
     { top: '업무 진입형', typeId: 'CYW001', mid: '퀵메뉴형', layout: '스와이프형', name: '퀵메뉴형 · 스와이프형', repImg: null, presetCount: 0, source: '-', presetKey: 'tab-swipe', updatedBy: '김마리나', updatedAt: '2026-11-25 09:00' },
-    // 홈형(메인 홈) 코너 유형 2종(2026-11-26 회의) — ① 추천 카드 + 추천 질의어 묶음, ② 큰 배너 확장형. SB 프리셋 대기(상세 라우트 없음).
-    { top: '홈형', typeId: 'CYM001', mid: '추천형', layout: '추천 카드 + 질의어', name: '추천형 · 추천 카드 + 질의어', repImg: null, presetCount: 0, source: '어드민 · CVM 추천 + 추천 질의어 풀', presetKey: '', updatedBy: '김마리나', updatedAt: '2026-11-26 09:00' },
-    { top: '홈형', typeId: 'CYM002', mid: '추천형', layout: '배너 확장형', name: '추천형 · 배너 확장형', repImg: null, presetCount: 0, source: '배너 캠페인 관리', presetKey: '', updatedBy: '김마리나', updatedAt: '2026-11-26 09:00' },
+    // 홈형(메인 홈) 코너 유형 2종(2026-11-26 회의) — ① 추천 카드 + 추천 질의어 묶음, ② 큰 배너 확장형. 상세 = SPECIAL_TYPES(home-rec·home-banner).
+    { top: '홈형', typeId: 'CYM001', mid: '추천형', layout: '추천 카드 + 질의어', name: '추천형 · 추천 카드 + 질의어', repImg: null, presetCount: 0, source: '어드민 · CVM 추천 + 추천 질의어 풀', presetKey: 'home-rec', updatedBy: '김마리나', updatedAt: '2026-11-26 09:00' },
+    { top: '홈형', typeId: 'CYM002', mid: '추천형', layout: '배너 확장형', name: '추천형 · 배너 확장형', repImg: null, presetCount: 0, source: '배너 캠페인 관리', presetKey: 'home-banner', updatedBy: '김마리나', updatedAt: '2026-11-26 09:00' },
   ];
   return [...rows, ...extra];
 }
