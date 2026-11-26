@@ -667,7 +667,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const [barcodeLabel, setBarcodeLabel] = React.useState(() => { const t = bcAtoms.find((a) => a.atomType === 'TEXT')?.content; return (t && !/^Title/.test(String(t))) ? String(t) : 'T멤버십'; });
   const [barcodeRefresh, setBarcodeRefresh] = React.useState(() => { const b = bcAtoms.find((a) => a.atomType === 'BARCODE')?.content; return String(Number(b) || 20); });
   // 바코드 유형 — 일반 바코드 / 매직 바코드(SB BO-AIM-DSP-PG557 코너 레이아웃). 데모 로컬 상태.
-  const [barcodeKind, setBarcodeKind] = React.useState<'일반 바코드' | '매직 바코드'>('일반 바코드');
+  // 바코드 3종(2026-11-26 회의): 통합(상시)·매직·쿠폰(일회용) 중 택1. 멤버십 바코드=원타임(런타임 발급).
+  const [barcodeKind, setBarcodeKind] = React.useState<'통합 바코드' | '매직 바코드' | '쿠폰 바코드'>('통합 바코드');
   // 버튼 텍스트(ButtonText) = 미리보기의 '서브 타이틀'(타이틀 아래 보조 문구, 예: T 영화예매). CTA(전체보기)와는 별개(2026-11-05 사용자 요청).
   const [buttonTextVal, setButtonTextVal] = React.useState(() => (pv?.subTitle && pv.subTitle !== 'ButtonText' ? pv.subTitle : ''));
   // CTA 라벨(전체보기 등) = 하단 더보기 버튼. CTA 옵션을 켤 때만 입력, 버튼 텍스트와 별개(2026-11-05 사용자 요청).
@@ -1430,10 +1431,15 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           {/* ── 바코드형 = 라벨·갱신 주기 정책만. 번호는 회원별 런타임 발급(미리보기엔 sample). ── */}
           {isBarcode && (
             <FormBlock title="코너 레이아웃" desc="바코드 유형 · 코너 타이틀 · 갱신 주기">
-              {/* 바코드 유형 — 일반/매직(SB BO-AIM-DSP-PG557 코너 레이아웃). */}
+              {/* 바코드 유형 — 3종 택1(2026-11-26 회의): 통합(상시, 모든 제휴사 공통) · 매직(제휴사·기간 지정) · 쿠폰(다운로드·일회용). */}
               <FormRow label="바코드 유형">
-                <RadioRow options={['일반 바코드', '매직 바코드'] as const} value={barcodeKind} onChange={setBarcodeKind} />
+                <RadioRow options={['통합 바코드', '매직 바코드', '쿠폰 바코드'] as const} value={barcodeKind} onChange={setBarcodeKind} />
               </FormRow>
+              <p className="-mt-1 mb-1 px-[76px] text-[11px] leading-relaxed text-[var(--ink4)]">
+                {barcodeKind === '통합 바코드' ? '상시 · 모든 제휴사 공통 할인 바코드.'
+                  : barcodeKind === '매직 바코드' ? '제휴사·기간이 지정된 마케팅 바코드(구독 상품 등).'
+                  : '고객이 다운로드한 쿠폰 바코드(일회용).'}
+              </p>
               <FormRow label="코너 타이틀" en="CornerTitle">
                 <input value={barcodeLabel} onChange={(e) => { setBarcodeLabel(e.target.value); onPreviewPatch({ mainTitle: e.target.value || 'T멤버십' }); }} placeholder="코너 타이틀에 노출할 바코드명을 입력하세요" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
               </FormRow>
