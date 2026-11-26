@@ -38,10 +38,11 @@ export function BenefitCornerPreview({ mid, layout, variant }: { mid: string; la
   // 타이틀 플레이스홀더를 중분류에 맞게(제휴사/이벤트/미션/혜택 프로그램/이용 지원).
   const tWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' } as Record<string, string>)[mid] ?? mid.replace('형', '');
 
-  const iWord = ({ 제휴사형: '혜택 프로그램', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' } as Record<string, string>)[mid] ?? tWord;
+  const iWord = ({ 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' } as Record<string, string>)[mid] ?? tWord;
   const chips = comp('chip', '선택형', ['{Label}', '{Label}', '{Label}', '{Label}', '{Label}'].map((c, i) => atom(`c${i}`, c)));
-  // 아이템 플레이스홀더도 중분류에 맞게({미션 내용} 등). title·sub 두 아톰.
-  const items = [0, 1].map((i) => comp(`it${i}`, '상품형', [atom(`t${i}`, `{${iWord} 내용}`), atom(`s${i}`, `{${iWord} 내용}`)]));
+  // 아이템 플레이스홀더도 중분류에 맞게({미션 내용} 등). title·sub 두 아톰. 혜택프로그램형은 개별 혜택이라 '{혜택명}'(2026-11-26 사용자 요청).
+  const itemPh = mid === '혜택프로그램형' ? '{혜택명}' : `{${iWord} 내용}`;
+  const items = [0, 1].map((i) => comp(`it${i}`, '상품형', [atom(`t${i}`, itemPh), atom(`s${i}`, itemPh)]));
   const corner: PreviewCorner = {
     id: 'preview', name: '미리보기', cornerType: '혜택형', title: null, maxItems: null,
     mainTitle: `{${tWord} 타이틀}`, subTitle: hasSubCta ? '{Label}' : null,

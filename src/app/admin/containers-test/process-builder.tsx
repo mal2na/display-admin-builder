@@ -253,7 +253,8 @@ type BtnOpen = '현재 화면' | '내부 브라우저' | '외부 브라우저';
 // 코너 타이틀 최대 글자수 — CN-DSP-0001 정의(최대 36자 · 줄바꿈 포함 25자 권장 · 2줄 이하). 초과 시 경고 토스트.
 const TITLE_MAX = 36;
 // 코너 유형 표시 라벨 — 코너 유형 관리와 워딩 통일(혜택·오퍼형 → 혜택형, 2026-11-25 사용자 요청).
-const cornerTypeLabel = (ct: string | null | undefined) => (ct === '혜택·오퍼형' ? '혜택형' : (ct ?? ''));
+// 표기: 혜택·오퍼형→혜택형, '업무 진입형'→'업무진입형'(띄어쓰기 제거, 표기만 · 2026-11-26 사용자 요청). 저장값은 그대로.
+const cornerTypeLabel = (ct: string | null | undefined) => (ct === '혜택·오퍼형' ? '혜택형' : ct === '업무 진입형' ? '업무진입형' : (ct ?? ''));
 // 미리보기 디바이스 프리셋 — 디바이스 선택 드롭다운(SB 디바이스 프레임, 2026-11-17 사용자 요청).
 //  최소/최대 폭 = FO 반응형 한계(min 320 · max 768)로 양끝 확인용(2026-11-19 사용자 요청).
 const DEVICE_PRESETS = [
@@ -550,10 +551,15 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   // CN-DSP-0001 — 개인화 코너만 CVM/MLS 추천(맥락 헤더 노출). forcePersonal은 zone 저장 전이라도 개인화로 취급.
   const isPersonal = corner.zone === 'personal' || forcePersonal;
   // 강제 개인화인데 아직 zone이 personal이 아니면(예: 방금 추가) 한 번 저장해 리스트·미리보기에도 반영.
+  //  ref 가드 — 저장(비동기)·router.refresh 사이에 zone이 잠깐 비-personal로 돌아와도 재발화하지 않게(2026-11-26 사용자: 룰렛 추가 시 화면 왔다갔다/루프).
+  const forcedOnceRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (forcePersonal && corner.zone !== 'personal') onPersonalChange(true);
+    if (forcePersonal && corner.zone !== 'personal' && forcedOnceRef.current !== corner.templateCornerId) {
+      forcedOnceRef.current = corner.templateCornerId;
+      onPersonalChange(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [corner.templateCornerId, forcePersonal]);
+  }, [corner.templateCornerId, forcePersonal, corner.zone]);
   const [srcState, setSrc] = React.useState<string>(corner.recSource ?? '운영자 편성');
   // 프로필형·상태 안내형 = 'CVM 추천'이 아니라 '고객정보 바인딩(@cvm:key)'. 무엇을 노출할지는 운영자가 정하고 값만 런타임 고객 데이터로 자동.
   //  바코드형도 추천 대상이 아니라 시스템 카드(런타임 발급) → 모두 운영자 편성 고정(CVM 추천 잠금). (2026-11-05 사용자 확정)
@@ -572,12 +578,16 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const FILL_MODES = ['운영자 직접', '운영자 고정 + 추천', '전부 추천'] as const;
   const [fillMode, setFillMode] = React.useState<string>(() => (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접');
   const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); };
-  // 추천 질의어 — 코너 컴포넌트(선택형)의 TEXT 아톰에서 초기값, 최대 2개(스펙). AI 생성·직접 입력.
+  const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법', '남은 데이터 확인하기', '가족 결합 할인 알아보기', '기기 할부금 조회하기', '요금제 바로 변경하기', 'T멤버십 쿠폰 받기', '오늘의 맞춤 혜택 보기', '해외 데이터 로밍 신청', '소액결제 한도 변경', '유독(구독) 추천받기', '약정 만료일 확인', '포인트 적립 내역 보기', '단말기 보험 가입 확인', '자동이체 할인 신청', 'VIP 전용 혜택 보기'];
+  const RQ_MAX = 20;      // 등록 풀 상한(운영자가 여기까지 추가 가능).
+  const RQ_SEED = 10;     // 기본 채움 개수(2026-11-26 사용자: 20개 말고 10개만 우선).
+  // 추천 질의어 — 코너 컴포넌트(선택형) TEXT 아톰에서 초기값. 적게 저장돼 있으면 기본 10개로 채워 '개인 맞춤 운영'을 보여준다.
   const [rqList, setRqList] = React.useState<string[]>(() => {
     const qs = (corner.preview?.components ?? []).flatMap((c) => c.atoms ?? []).filter((a) => a.atomType === 'TEXT').map((a) => a.content ?? '').filter(Boolean);
-    return [qs[0] ?? '', qs[1] ?? ''];
+    return qs.length > 2 ? qs.slice(0, RQ_MAX) : RQ_SAMPLES.slice(0, RQ_SEED);
   });
-  const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법'];
+  const [rqMin, setRqMin] = React.useState(1); // FO 노출 개수(최소~최대) — 개인화가 고객마다 이 범위로 노출.
+  const [rqMax, setRqMax] = React.useState(2);
   // 추천 질의어 → 미리보기(RecQueryCard) 동기화: 선택형 컴포넌트의 TEXT 아톰으로 반영.
   const syncRecQuery = (list: string[]) => {
     const atoms = list.filter((q) => q.trim()).map((q, i) => ({ id: `rq-${i}`, name: `질의어${i + 1}`, atomType: 'TEXT', content: q, imageUrl: null, altText: null, linkUrl: null }));
@@ -1122,6 +1132,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
             <div className="flex flex-wrap items-center gap-1.5">
               {FILL_MODES.map((m) => {
                 const on = fillMode === m;
+                // 미션형(룰렛·출석체크)은 운영자가 미션을 '연결'해야 하므로 운영자 직접·고정+추천을 비활성화하지 않는다(2026-11-26 사용자 확정, 비활성 제안 철회). 수동 전용은 '운영자 직접'만.
                 const blocked = (!corner.canPersonal && m !== '운영자 직접') || (forcePersonal && m === '운영자 직접');
                 return (
                   <button key={m} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(m); }}
@@ -1145,27 +1156,47 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           {showFillMode && fillMode === '운영자 고정 + 추천' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[var(--ink2)]"><UserCog className="h-3.5 w-3.5 text-[var(--ink4)]" /> 운영자 고정 항목</p>}
           {showFillMode && fillMode === '전부 추천' && fb === '운영자 편성으로 대체' && <p className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-[#b67a12]"><UserCog className="h-3.5 w-3.5" /> 대체 항목 <span className="text-[11px] font-normal text-[var(--ink4)]">· 추천이 없을 때 노출</span></p>}
           {showFillMode && fillMode === '전부 추천' && fb !== '운영자 편성으로 대체' ? null : isRecQuery ? (
-          /* ── 추천 질의어 — AI 생성/직접 입력(최대 2개·≤20자·1줄). SB [홈]유형(2026-11-25 사용자 요청: 콘텐츠 불러오기 아님). ── */
+          /* ── 추천 질의어 — 운영자가 풀(최대 20개)을 등록, 개인화가 고객마다 맞춤(FO 최대 2개 노출). SB [홈]유형(2026-11-26 사용자 요청). ── */
           <div>
             <p className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#f5f1ff] px-3 py-2 text-[12px] leading-relaxed text-[#6D28D9]">
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>독립 칩 <b>최대 2개</b> · 질문당 <b>20자 이내·1줄</b>. <b>개인화 On</b> = 등록한 여러 질의어 중 고객별 맞춤, <b>Off</b> = 입력한 질의어 그대로. 선택 시 AI 대화로 이동해 답변을 제공해요.</span>
+              <span>질의어를 <b>여러 개(최대 {RQ_MAX}개) 등록</b>해 두면, <b>개인화 On</b> 시 고객마다 맞춤으로 골라 <b>최대 2개</b>를 노출해요(질문당 20자·1줄). <b>Off</b>면 입력한 순서대로. 선택 시 AI 대화로 이동해 답변을 제공해요.</span>
             </p>
-            <div className="mb-2 flex justify-end">
-              <button type="button" onClick={() => { const picks = [...RQ_SAMPLES].sort(() => Math.random() - 0.5).slice(0, 2); setRqList(picks); syncRecQuery(picks); onToast('AI가 추천 질의어 2개를 생성했어요'); }}
-                className="inline-flex h-[32px] items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3.5 w-3.5" /> AI로 질의어 생성</button>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[12px] font-semibold text-[var(--ink3)]">등록 질의어 <span className="text-[var(--ac)]">{rqList.filter((q) => q.trim()).length}</span><span className="text-[var(--ink4)]">/{RQ_MAX}</span> <span className="font-normal text-[var(--ink4)]">· 개인 맞춤 풀</span></span>
+              <button type="button" onClick={() => { const picks = [...RQ_SAMPLES].sort(() => Math.random() - 0.5).slice(0, RQ_SEED); setRqList(picks); syncRecQuery(picks); onToast(`AI가 추천 질의어 ${picks.length}개를 생성했어요`); }}
+                className="inline-flex h-[30px] items-center gap-1 rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2.5 text-[12px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3.5 w-3.5" /> AI로 풀 채우기</button>
             </div>
-            {[0, 1].map((i) => (
-              <FormRow key={i} label={`질의어 ${i + 1}`} req={i === 0}>
-                <div className="flex items-center gap-1">
-                  <button type="button" onClick={() => { const v = RQ_SAMPLES[Math.floor(Math.random() * RQ_SAMPLES.length)]; const next = [...rqList]; next[i] = v; setRqList(next); syncRecQuery(next); }}
-                    className="flex h-[32px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3 w-3" /> AI 추천</button>
-                  <input value={rqList[i] ?? ''} maxLength={20} onChange={(e) => { const next = [...rqList]; next[i] = e.target.value; setRqList(next); syncRecQuery(next); }}
+            <div className="space-y-1.5">
+              {rqList.map((q, i) => (
+                <div key={i} className="flex items-center gap-1">
+                  <span className="w-5 shrink-0 text-center text-[12px] tabular-nums text-[var(--ink4)]">{i + 1}</span>
+                  <button type="button" title="AI 추천으로 채우기" onClick={() => { const v = RQ_SAMPLES[Math.floor(Math.random() * RQ_SAMPLES.length)]; const next = [...rqList]; next[i] = v; setRqList(next); syncRecQuery(next); }}
+                    className="flex h-[32px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] border border-[#cfd2ff] bg-[var(--ac2)] px-2 text-[11px] font-semibold text-[var(--ac)] hover:bg-[#e6e8ff]"><Sparkles className="h-3 w-3" /> AI</button>
+                  <input value={q} maxLength={20} onChange={(e) => { const next = [...rqList]; next[i] = e.target.value; setRqList(next); syncRecQuery(next); }}
                     placeholder="추천 질의어 입력 (비어 있으면 AI 추천)" className="h-[32px] min-w-0 flex-1 rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                  <span className="shrink-0 text-[11px] tabular-nums text-[var(--ink4)]">{(rqList[i] ?? '').length}/20</span>
+                  <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-[var(--ink4)]">{q.length}/20</span>
+                  <button type="button" title="삭제" disabled={rqList.length <= 1} onClick={() => { const next = rqList.filter((_, j) => j !== i); setRqList(next); syncRecQuery(next); }}
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[var(--ink4)] hover:bg-[#fff0f1] hover:text-[var(--bad)] disabled:opacity-30"><X className="h-3.5 w-3.5" /></button>
                 </div>
-              </FormRow>
-            ))}
+              ))}
+            </div>
+            {rqList.length < RQ_MAX && (
+              <button type="button" onClick={() => { const next = [...rqList, '']; setRqList(next); }}
+                className="mt-2 inline-flex h-[32px] items-center gap-1 rounded-[6px] border border-dashed border-[#cfd2ff] px-3 text-[12px] font-semibold text-[var(--ac)] hover:bg-[var(--ac2)]"><Plus className="h-3.5 w-3.5" /> 질의어 추가</button>
+            )}
+            {/* 노출 개수(최소~최대) — 개인화가 고객마다 이 범위로 노출. FO는 독립 칩이라 최대 2개 권장(2026-11-26 사용자 요청). */}
+            <div className="mt-4 border-t border-[var(--line2)] pt-3">
+              <p className="mb-1.5 text-[13px] font-bold text-[var(--ink2)]">노출 개수 <span className="font-normal text-[var(--ink4)]">· 고객마다 개인 맞춤으로 노출</span></p>
+              <div className="flex items-center gap-2 text-[13px]">
+                <span className="text-[var(--ink3)]">최소</span>
+                <Stepper value={rqMin} min={1} max={rqMax} onChange={(v) => setRqMin(v)} />
+                <span className="text-[var(--ink4)]">~</span>
+                <span className="text-[var(--ink3)]">최대</span>
+                <Stepper value={rqMax} min={rqMin} max={2} onChange={(v) => setRqMax(v)} />
+                <span className="ml-1 text-[12px] text-[var(--ink4)]">개 노출 (독립 칩, 최대 2개)</span>
+              </div>
+            </div>
           </div>
           ) : (<>
           {fillForFallback && (
@@ -1301,7 +1332,20 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                   </>)}
                 </FormBlock>
               )}
-              {/* 하단 CTA 버튼 설정 — 코너 하단 더보기/CTA 버튼. 사용 여부(Y/N) + 문구·이동 경로·경로 상세·열기 방식(SB PG557, 2026-11-17 사용자 요청). */}
+              {/* 추가 인포메이션 — CN-DSP-0001. 운영 정보성 영역. 수동(운영/픽스) 코너에서만. 순서: 하단 CTA '위'(2026-11-26 사용자 요청). */}
+              {!isPersonal && (
+                <FormBlock title="추가 인포메이션" desc="운영 정보성 영역 · 수동 운영에서만">
+                  <FormRow label="사용 여부" req>
+                    <RadioRow options={['Y', 'N'] as const} value={infoOn ? 'Y' : 'N'} onChange={(v) => { const on = v === 'Y'; setInfoOn(on); onPreviewPatch({ information: on, informationText: infoText || null }); }} />
+                  </FormRow>
+                  {infoOn && (
+                    <FormRow label="정보 문구" en="Information">
+                      <input value={infoText} onChange={(e) => { setInfoText(e.target.value); onPreviewPatch({ informationText: e.target.value || null }); }} placeholder="운영에 필요한 안내 문구" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    </FormRow>
+                  )}
+                </FormBlock>
+              )}
+              {/* 하단 CTA 버튼 설정 — 코너 하단 더보기/CTA 버튼. 사용 여부(Y/N) + 문구·이동 경로·경로 상세·열기 방식(SB PG557, 2026-11-17 사용자 요청). 추가 인포 '아래'. */}
               {availOptions.includes('CTA') && (
                 <FormBlock title="하단 CTA 설정">
                   <FormRow label="사용 여부" req>
@@ -1327,20 +1371,6 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                       <RadioRow options={['현재 화면', '내부 브라우저', '외부 브라우저'] as const} value={btnOpen} onChange={setBtnOpen} />
                     </FormRow>
                   </>)}
-                </FormBlock>
-              )}
-              {/* 탭(카테고리)·인디케이터는 '컴포넌트' 탭으로 이동 — 아이템 리스트 노출 방식이라(2026-11-25 사용자 요청). 추가 인포메이션만 코너 카드에 유지. */}
-              {/* 추가 인포메이션 — CN-DSP-0001. 운영 정보성 영역. 수동(운영/픽스) 코너에서만 — 개인화 코너에선 노출 안 함. */}
-              {!isPersonal && (
-                <FormBlock title="추가 인포메이션" desc="운영 정보성 영역 · 수동 운영에서만">
-                  <FormRow label="사용 여부" req>
-                    <RadioRow options={['Y', 'N'] as const} value={infoOn ? 'Y' : 'N'} onChange={(v) => { const on = v === 'Y'; setInfoOn(on); onPreviewPatch({ information: on, informationText: infoText || null }); }} />
-                  </FormRow>
-                  {infoOn && (
-                    <FormRow label="정보 문구" en="Information">
-                      <input value={infoText} onChange={(e) => { setInfoText(e.target.value); onPreviewPatch({ informationText: e.target.value || null }); }} placeholder="운영에 필요한 안내 문구" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                    </FormRow>
-                  )}
                 </FormBlock>
               )}
             </div>
@@ -1806,25 +1836,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 </div>
               </FormRow>
             </FormBlock>
-            {fillMode === '전부 추천' && (
-            <FormBlock title="추천이 없을 때">
-              <div className="flex flex-col gap-1.5">
-                {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
-                  const on = fb === f;
-                  return (
-                    <button key={f} type="button" onClick={() => { setFb(f); onFallbackChange(f); onPreviewFallback(true); }}
-                      className={cn('flex items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px] transition', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white hover:bg-[var(--surface-hover)]')}>
-                      <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#d99b2b] bg-[#d99b2b]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
-                      <span className="min-w-0 flex-1">
-                        <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
-                        <span className="block text-[var(--ink4)]">{f === '미노출' ? '걸리는 후보가 없으면 이 코너는 노출하지 않아요.' : '추천이 비면 아래 ‘대체 항목’에 등록한 운영자 편성을 대신 노출해요.'}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </FormBlock>
-            )}
+            {/* '추천이 없을 때(폴백)'는 ③ 대체 노출 설정으로 분리 — 추천을 쓸 때만 뜨면 되므로(2026-11-26 사용자 요청). */}
             {isBenefitType && fillMode === '전부 추천' && (
             <div className="mt-1 flex flex-wrap items-center gap-2 rounded-[10px] border border-[#e8ddff] bg-[#faf7ff] px-3 py-2.5 text-[12px]">
               <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">후보 {persoTypes.length}개 유형</span>
@@ -1883,9 +1895,12 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
         </Sec>
       )}
 
-      {/* ③ 대체 노출 설정(폴백) — CVM 수급일 때. 코너 콘텐츠 설정(②) '아래'로 배치(2026-11-25 사용자 요청). */}
-      {isCvmSrc && (
-        <Sec n={3} title="대체 노출 설정 (폴백)" hint="CVM 응답이 없을 때 대체 노출을 설정합니다">
+      {/* ③ 대체 노출 설정(폴백) — 추천을 쓸 때(CVM 수급 또는 전부 추천)만 노출. 코너 콘텐츠 설정(②) '아래'(2026-11-25·2026-11-26 사용자 요청). */}
+      {(isCvmSrc || fillMode === '전부 추천') && (() => {
+        const isRec = fillMode === '전부 추천' && !isCvmSrc; // 추천 수급(전부 추천) vs CVM
+        const emptyWord = isRec ? '추천이 비면' : 'CVM이 비면';
+        return (
+        <Sec n={3} title="대체 노출 설정 (폴백)" hint={`${isRec ? '추천이 없을 때' : 'CVM 응답이 없을 때'} 대체 노출을 설정합니다`}>
           <div className="space-y-1.5">
             {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
               const on = fb === f;
@@ -1894,14 +1909,15 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                   <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#e59a2a] bg-[#e59a2a]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
                   <span className="min-w-0 flex-1">
                     <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
-                    <span className="block text-[var(--ink4)]">{f === '미노출' ? 'CVM이 비면 이 코너는 노출되지 않아요.' : '등록한 운영자 편성 항목을 대신 노출해요.'}</span>
+                    <span className="block text-[var(--ink4)]">{f === '미노출' ? `${emptyWord} 이 코너는 노출되지 않아요.` : `${emptyWord} 위 ‘대체 항목’에 등록한 운영자 편성을 대신 노출해요.`}</span>
                   </span>
                 </button>
               );
             })}
           </div>
         </Sec>
-      )}
+        );
+      })()}
 
       {/* ⑥ 출처(컴포넌트/데이터 출처) 섹션 제거 — 2026-11-19 사용자 요청. 값·로직은 상단 수급(②)·채우기(③)로 충분. */}
     </div>
@@ -1913,7 +1929,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
 function CornerChip({ c, no, selected, fixed, on, isPersonal, onToggleOn, onSelect, onToggleFixed, onDelete, onToast }: { c: PCorner; no: number; selected: boolean; fixed: boolean; on: boolean; isPersonal: boolean; onToggleOn: () => void; onSelect: () => void; onToggleFixed: () => void; onDelete: () => void; onToast: (m: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.templateCornerId });
   const style = { transform: CSS.Transform.toString(transform), transition };
-  const layoutText = cornerLayoutText(c.cornerType, c.layout, c.layoutDetail);
+  // 혜택형 코너는 이름이 이미 '{중분류} · {배열}'(예: 제휴사형 · 리스트형)이라, 하단에 베이스 혜택·오퍼형 배열(세로형(카테고리형) 등)을 또 띄우면 혼란 → 숨긴다(2026-11-26 사용자 요청). 실제 cornerType은 '혜택·오퍼형'(cornerTypeLabel→혜택형)이라 라벨 기준으로 판정.
+  const layoutText = cornerTypeLabel(c.cornerType) === '혜택형' ? '' : cornerLayoutText(c.cornerType, c.layout, c.layoutDetail);
   // 이름에 '유형 · ' 접두가 붙은 자동생성 코너는 접두를 떼어 '배열(레이아웃)'만 제목으로(유형은 아래 칩으로만). 2026-11-05 사용자 요청.
   const typePrefix = `${c.cornerType} · `;
   const displayName = c.name.startsWith(typePrefix) ? c.name.slice(typePrefix.length) : c.name;
@@ -2394,10 +2411,14 @@ function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast, initial
     }
     return out;
   }, [corners]);
-  // 상단 탭 = 전체 + 등록된 그룹(혜택형 중분류 5 + 배너형). 유형별 개수 표기.
-  const TABS = React.useMemo(() => ['전체', ...Array.from(new Set(shells.map((c) => c.subType ?? c.cornerType)))], [shells]);
-  const countOf = (t: string) => (t === '전체' ? shells.length : shells.filter((c) => gk(c) === t).length);
-  const list = shells.filter((c) => (tab === '전체' || gk(c) === tab) && (!q || c.shellTitle.includes(q) || gk(c).includes(q)));
+  // 상단 탭 = 전체 + 최상위 코너 유형(혜택형·배너형·업무 진입형). 중분류(제휴사형 등)가 아니라 유형으로 묶는다(2026-11-26 사용자 요청).
+  const TOP_ORDER = ['혜택형', '배너형', '업무 진입형'];
+  const TABS = React.useMemo(() => {
+    const set = new Set(shells.map((c) => (c.subType ? '혜택형' : c.cornerType)));
+    return ['전체', ...TOP_ORDER.filter((t) => set.has(t)), ...[...set].filter((t) => !TOP_ORDER.includes(t))];
+  }, [shells]);
+  const countOf = (t: string) => (t === '전체' ? shells.length : shells.filter((c) => topOf(c) === t).length);
+  const list = shells.filter((c) => (tab === '전체' || topOf(c) === tab) && (!q || c.shellTitle.includes(q) || gk(c).includes(q)));
   // 멀티셀렉 — 체크된 코너 집합 + 우측 미리보기용 포커스
   const [picked, setPicked] = React.useState<Set<string>>(new Set(initialPicked ?? []));
   const [focusId, setFocusId] = React.useState<string | null>(shells[0]?.id ?? null);
@@ -2421,7 +2442,7 @@ function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast, initial
                     active ? 'border-[var(--ac)] bg-[var(--ac)] text-white'
                     : empty ? 'cursor-not-allowed border-[var(--line2)] bg-[var(--th)] text-[var(--ink5)]'
                     : 'border-[var(--line2)] bg-white text-[var(--ink2)] hover:border-[var(--line3)] hover:bg-[var(--th)]')}>
-                  {t}<span className={cn(active ? 'text-white/80' : 'text-[var(--ink4)]')}>{cnt}</span>
+                  {cornerTypeLabel(t) || t}<span className={cn(active ? 'text-white/80' : 'text-[var(--ink4)]')}>{cnt}</span>
                 </button>
               );
             })}
@@ -2563,9 +2584,10 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   //  미리보기를 클릭하면 코너 구성에서도 같이 스크롤돼 복잡한 정보에서 길을 잃지 않게 한다(2026-11-05 사용자 요청).
   React.useEffect(() => {
     if (!activeSel) return;
-    document.getElementById(`pv-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    document.getElementById(`chip-${activeSel}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    // 새 코너 추가 직후엔 refresh로 리스트가 갱신된 다음 프레임에 요소가 생기므로 한 번 더 시도(2026-11-05 사용자 요청: 추가 코너로 포커스).
+    // 두 컨테이너를 'smooth'로 동시에 스크롤하면 개인화 코너(룰렛·출석체크) 선택 시 레이아웃 시프트와 겹쳐 화면이 왔다갔다 한다
+    //  → 'auto'(즉시) + 'nearest'로, 이미 보이면 움직이지 않게(2026-11-26 사용자 버그).
+    document.getElementById(`pv-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    document.getElementById(`chip-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
   }, [activeSel, liveCorners.length]);
 
   // Figma BO 공통 textfield 토큰 — h38·r6·inset-x 14·본문 14·border #c4c9cf·포커스 border #b3b9c0+ring 2 #dce0e5

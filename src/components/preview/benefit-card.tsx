@@ -112,14 +112,15 @@ function ActionButton({ label }: { label: string }) {
 // 중분류(mid) → 타이틀/아이템 플레이스홀더 워딩. list·carousel 등 한 디자인을 여러 중분류가 공유하므로,
 //  하드코딩('제휴사')이 아니라 실제 중분류로 치환해야 한다(2026-11-25 버그픽스: 이벤트형인데 제휴사로 보임).
 const MID_TITLE_WORD: Record<string, string> = { 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' };
-const MID_ITEM_WORD: Record<string, string> = { 제휴사형: '혜택 프로그램', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' };
+const MID_ITEM_WORD: Record<string, string> = { 제휴사형: '제휴사', 이벤트형: '이벤트', 미션형: '미션', 혜택프로그램형: '혜택 프로그램', 이용지원형: '이용 지원' };
 
 export function BenefitPreviewCard({ corner, design, squareThumb, itemButton, mid }: { corner: PreviewCorner; design: BenefitDesign; squareThumb?: boolean; itemButton?: boolean; mid?: string }) {
   // 중분류 워딩(있으면 공유 디자인의 하드코딩 플레이스홀더를 덮어씀).
   const tw = mid ? (MID_TITLE_WORD[mid] ?? mid.replace('형', '')) : null;
   const iw = mid ? (MID_ITEM_WORD[mid] ?? tw ?? '') : null;
   const titlePh = tw ? `{${tw} 타이틀}` : null;
-  const itemPh = iw ? `{${iw} 내용}` : null;
+  // 혜택프로그램형 아이템은 개별 혜택이라 '{혜택명}'으로 표기(2026-11-26 사용자 요청).
+  const itemPh = mid === '혜택프로그램형' ? '{혜택명}' : (iw ? `{${iw} 내용}` : null);
   const showImage = !!corner.bigBanner;
   const showContext = !!corner.contextHeader;
   const showSubCta = corner.subTitle != null && corner.subTitle !== '' && corner.subTitle !== 'ButtonText';
