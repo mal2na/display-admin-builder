@@ -1122,6 +1122,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
             <div className="flex flex-wrap items-center gap-1.5">
               {FILL_MODES.map((m) => {
                 const on = fillMode === m;
+                // 미션형(룰렛·출석체크)은 운영자가 미션을 '연결'해야 하므로 운영자 직접·고정+추천을 비활성화하지 않는다(2026-11-26 사용자 확정, 비활성 제안 철회). 수동 전용은 '운영자 직접'만.
                 const blocked = (!corner.canPersonal && m !== '운영자 직접') || (forcePersonal && m === '운영자 직접');
                 return (
                   <button key={m} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(m); }}
@@ -1806,25 +1807,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                 </div>
               </FormRow>
             </FormBlock>
-            {fillMode === '전부 추천' && (
-            <FormBlock title="추천이 없을 때">
-              <div className="flex flex-col gap-1.5">
-                {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
-                  const on = fb === f;
-                  return (
-                    <button key={f} type="button" onClick={() => { setFb(f); onFallbackChange(f); onPreviewFallback(true); }}
-                      className={cn('flex items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left text-[12px] transition', on ? 'border-[#f2c47a] bg-[#fff8ef]' : 'border-[var(--line2)] bg-white hover:bg-[var(--surface-hover)]')}>
-                      <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#d99b2b] bg-[#d99b2b]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
-                      <span className="min-w-0 flex-1">
-                        <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
-                        <span className="block text-[var(--ink4)]">{f === '미노출' ? '걸리는 후보가 없으면 이 코너는 노출하지 않아요.' : '추천이 비면 아래 ‘대체 항목’에 등록한 운영자 편성을 대신 노출해요.'}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </FormBlock>
-            )}
+            {/* '추천이 없을 때(폴백)'는 ③ 대체 노출 설정으로 분리 — 추천을 쓸 때만 뜨면 되므로(2026-11-26 사용자 요청). */}
             {isBenefitType && fillMode === '전부 추천' && (
             <div className="mt-1 flex flex-wrap items-center gap-2 rounded-[10px] border border-[#e8ddff] bg-[#faf7ff] px-3 py-2.5 text-[12px]">
               <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">후보 {persoTypes.length}개 유형</span>
@@ -1883,9 +1866,12 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
         </Sec>
       )}
 
-      {/* ③ 대체 노출 설정(폴백) — CVM 수급일 때. 코너 콘텐츠 설정(②) '아래'로 배치(2026-11-25 사용자 요청). */}
-      {isCvmSrc && (
-        <Sec n={3} title="대체 노출 설정 (폴백)" hint="CVM 응답이 없을 때 대체 노출을 설정합니다">
+      {/* ③ 대체 노출 설정(폴백) — 추천을 쓸 때(CVM 수급 또는 전부 추천)만 노출. 코너 콘텐츠 설정(②) '아래'(2026-11-25·2026-11-26 사용자 요청). */}
+      {(isCvmSrc || fillMode === '전부 추천') && (() => {
+        const isRec = fillMode === '전부 추천' && !isCvmSrc; // 추천 수급(전부 추천) vs CVM
+        const emptyWord = isRec ? '추천이 비면' : 'CVM이 비면';
+        return (
+        <Sec n={3} title="대체 노출 설정 (폴백)" hint={`${isRec ? '추천이 없을 때' : 'CVM 응답이 없을 때'} 대체 노출을 설정합니다`}>
           <div className="space-y-1.5">
             {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
               const on = fb === f;
@@ -1894,14 +1880,15 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                   <span className={cn('mt-0.5 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border', on ? 'border-[#e59a2a] bg-[#e59a2a]' : 'border-[var(--line3)]')}>{on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
                   <span className="min-w-0 flex-1">
                     <b className="text-[var(--ink)]">{f === '미노출' ? '미노출 (기본)' : '운영자 편성으로 대체'}</b>
-                    <span className="block text-[var(--ink4)]">{f === '미노출' ? 'CVM이 비면 이 코너는 노출되지 않아요.' : '등록한 운영자 편성 항목을 대신 노출해요.'}</span>
+                    <span className="block text-[var(--ink4)]">{f === '미노출' ? `${emptyWord} 이 코너는 노출되지 않아요.` : `${emptyWord} 위 ‘대체 항목’에 등록한 운영자 편성을 대신 노출해요.`}</span>
                   </span>
                 </button>
               );
             })}
           </div>
         </Sec>
-      )}
+        );
+      })()}
 
       {/* ⑥ 출처(컴포넌트/데이터 출처) 섹션 제거 — 2026-11-19 사용자 요청. 값·로직은 상단 수급(②)·채우기(③)로 충분. */}
     </div>
@@ -1913,8 +1900,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
 function CornerChip({ c, no, selected, fixed, on, isPersonal, onToggleOn, onSelect, onToggleFixed, onDelete, onToast }: { c: PCorner; no: number; selected: boolean; fixed: boolean; on: boolean; isPersonal: boolean; onToggleOn: () => void; onSelect: () => void; onToggleFixed: () => void; onDelete: () => void; onToast: (m: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.templateCornerId });
   const style = { transform: CSS.Transform.toString(transform), transition };
-  // 혜택형 코너는 이름이 이미 '{중분류} · {배열}'(예: 제휴사형 · 리스트형)이라, 하단에 베이스 혜택·오퍼형 배열(세로형(카테고리형) 등)을 또 띄우면 혼란 → 숨긴다(2026-11-26 사용자 요청).
-  const layoutText = c.cornerType === '혜택형' ? '' : cornerLayoutText(c.cornerType, c.layout, c.layoutDetail);
+  // 혜택형 코너는 이름이 이미 '{중분류} · {배열}'(예: 제휴사형 · 리스트형)이라, 하단에 베이스 혜택·오퍼형 배열(세로형(카테고리형) 등)을 또 띄우면 혼란 → 숨긴다(2026-11-26 사용자 요청). 실제 cornerType은 '혜택·오퍼형'(cornerTypeLabel→혜택형)이라 라벨 기준으로 판정.
+  const layoutText = cornerTypeLabel(c.cornerType) === '혜택형' ? '' : cornerLayoutText(c.cornerType, c.layout, c.layoutDetail);
   // 이름에 '유형 · ' 접두가 붙은 자동생성 코너는 접두를 떼어 '배열(레이아웃)'만 제목으로(유형은 아래 칩으로만). 2026-11-05 사용자 요청.
   const typePrefix = `${c.cornerType} · `;
   const displayName = c.name.startsWith(typePrefix) ? c.name.slice(typePrefix.length) : c.name;
