@@ -1142,32 +1142,35 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
       {/* ② 채우는 방식 — 콘텐츠를 누가·어떻게 채우는지. 채우기(③)·폴백(④)과 분리(2026-11-26 사용자 요청: AS-IS 구조). */}
       {showFillMode && (
         <Sec n={2} title="채우는 방식" hint="콘텐츠를 누가·어떻게 채우는지 고릅니다">
-          <div className="pb-1">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {FILL_MODES.map((m) => {
-                const on = fillMode === m;
-                // 미션형(룰렛·출석체크)은 운영자가 미션을 '연결'해야 하므로 비활성화하지 않는다. 수동 전용은 '운영자 직접'만.
-                const blocked = (!corner.canPersonal && m !== '운영자 직접') || (forcePersonal && m === '운영자 직접');
-                return (
-                  <button key={m} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(m); }}
-                    className={cn('rounded-full border px-3 py-1.5 text-[12px] font-semibold transition', on ? 'border-[#6D28D9] bg-[#6D28D9] text-white' : 'border-[var(--line3)] bg-white text-[var(--ink2)] hover:border-[#b79ae8]', blocked && 'cursor-not-allowed opacity-40')}>
-                    {FILL_MODE_LABEL[m] ?? m}
-                  </button>
-                );
-              })}
-            </div>
-            {/* 명확성 보강(2026-11-26): 행동 한 줄 + 소유 분담(운영자/CVM) + 결과(개인화 여부). */}
-            <p className="mt-2 text-[12px] leading-relaxed text-[var(--ink3)]">
-              {fillMode === '운영자 직접' ? '운영자가 노출 항목과 순서를 직접 정해요.'
-                : fillMode === '운영자 고정 + 추천' ? '앞자리는 운영자가 고정하고, 나머지는 추천 엔진이 고객별로 채워요.'
-                : '후보 코너 유형을 여러 개 담아두면, 고객마다 추천 엔진이 노출 개수만큼 골라요. 없으면 미노출.'}
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
-              <span className="rounded-full bg-[var(--th)] px-2 py-0.5 font-semibold text-[var(--ink3)]">운영자 {fillMode === '운영자 직접' ? '전부' : fillMode === '운영자 고정 + 추천' ? '앞자리 고정·문구' : '후보 등록'}</span>
-              <span className="rounded-full bg-[var(--th)] px-2 py-0.5 font-semibold text-[var(--ink3)]">CVM {fillMode === '운영자 직접' ? '없음' : fillMode === '운영자 고정 + 추천' ? '나머지 자리·순서' : '노출 선택'}</span>
-              <span className={cn('rounded-full px-2 py-0.5 font-bold', fillMode === '운영자 직접' ? 'bg-[#eef0f2] text-[var(--ink3)]' : 'bg-[#F2ECFB] text-[#6D28D9]')}>{fillMode === '운영자 직접' ? '모두 같음' : '개인화 · 고객마다 다름'}</span>
-              {forcePersonal && <span className="rounded-full bg-[#F2ECFB] px-2 py-0.5 font-bold text-[#6D28D9]">출석체크·룰렛형 개인화 전용</span>}
-            </div>
+          {/* AS-IS(node 29268-74688) '코너 콘텐츠 구성 방식' 라디오 카드 — 수급 3종 + CVM/운영자 소유 분담(2026-11-26 사용자 요청). 내부 fillMode는 매핑 유지. */}
+          <div className="space-y-1.5 pb-1">
+            {([
+              { method: '운영자 편성', mode: '운영자 직접' },
+              { method: 'CVM 데이터 연동', mode: '운영자 고정 + 추천' },
+              { method: 'CVM 콘텐츠 연동', mode: '전부 추천' },
+            ] as const).map(({ method, mode }) => {
+              const on = fillMode === mode;
+              const info = REC_SOURCE_INFO[method];
+              const blocked = (!corner.canPersonal && mode !== '운영자 직접') || (forcePersonal && mode === '운영자 직접');
+              return (
+                <button key={method} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(mode); }}
+                  className={cn('flex w-full items-start gap-3 rounded-[10px] border px-3.5 py-3 text-left transition', on ? 'border-[#6D28D9] bg-[#faf7ff]' : 'border-[var(--line2)] bg-white hover:border-[#c9b8ec]', blocked && 'cursor-not-allowed opacity-40')}>
+                  <span className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[#6D28D9]' : 'border-[var(--line3)]')}>{on && <span className="h-2 w-2 rounded-full bg-[#6D28D9]" />}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <b className="text-[14px] text-[var(--ink)]">{method}</b>
+                      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-bold', info.personalized ? 'bg-[#F2ECFB] text-[#6D28D9]' : 'bg-[#eef0f2] text-[var(--ink3)]')}>{info.personalized ? '개인화 · 고객마다 다름' : '모두 같음'}</span>
+                    </span>
+                    <span className="mt-0.5 block text-[12px] text-[var(--ink3)]">{info.sub}</span>
+                    <span className="mt-1.5 flex flex-wrap gap-1.5 text-[11px]">
+                      <span className="rounded-full bg-[var(--th)] px-2 py-0.5 font-semibold text-[var(--ink3)]">운영자 · {info.weBuild}</span>
+                      <span className="rounded-full bg-[var(--th)] px-2 py-0.5 font-semibold text-[var(--ink3)]">CVM · {info.cvmGives}</span>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+            {forcePersonal && <p className="mt-1 text-[11px] text-[#6D28D9]">· 출석체크·룰렛형은 개인화 전용입니다(운영자 편성 불가).</p>}
           </div>
         </Sec>
       )}
