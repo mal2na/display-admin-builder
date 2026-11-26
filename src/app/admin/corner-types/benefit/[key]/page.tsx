@@ -213,15 +213,20 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
             type Attr = typeof spec.card[number];
             // 코드 → SB Figma(29305-82718) 라벨. 값은 Y로 단순 표기(2026-11-26 사용자 요청: On/Off 배지·툴팁 제거).
             const FIG: Record<string, string> = {
-              Image: '상단 이미지', ContextHeader: '추천', CornerTitle: '코너 타이틀', LandingLink: '코너 랜딩 링크 버튼',
+              Image: '상단 이미지', ContextHeader: '추천 안내 문구', CornerTitle: '코너 타이틀', LandingLink: '코너 랜딩 링크 버튼',
               Information: '추가 인포메이션', ActionButton: '하단 CTA', Barcode: '바코드',
               Category: '카테고리 탭', Thumbnail: '컴포넌트 이미지', ItemTitle: '컴포넌트 타이틀', ItemDesc: '컴포넌트 내용', ItemLink: '상세 링크',
               Price: '가격', DiscountRate: '할인율', ItemButton: '우측 버튼',
               Attendance: '출석 진행', Reward: '보상 아이템', RewardButton: '받기 버튼', EntryMetric: '응모 기회',
             };
+            // 값 = 필수(항상 노출) / ON·OFF(빌더에서 운영자가 끄고 켬). '필수값 마킹'이 곧 required(2026-11-26 사용자 요청).
             const Cell = ({ a }: { a: Attr | null }) => a ? (<>
-              <div className="flex items-center whitespace-nowrap bg-[#f8f9fb] px-4 py-3 text-[14px] font-medium text-[#454f59]">{FIG[a.code] ?? a.label}{a.state === 'required' && <span className="ml-0.5 text-[#cf2a3c]">*</span>}</div>
-              <div className="flex min-w-0 items-center px-4 py-3 text-[14px] text-[#1a1a1a]">Y</div>
+              <div className="flex items-center whitespace-nowrap bg-[#f8f9fb] px-4 py-3 text-[14px] font-medium text-[#454f59]">{FIG[a.code] ?? a.label}</div>
+              <div className="flex min-w-0 items-center px-4 py-3 text-[14px]">
+                {a.state === 'required'
+                  ? <span className="inline-flex items-center rounded-md bg-[#fdecee] px-2 py-0.5 text-[12px] font-bold text-[#cf2a3c]">필수</span>
+                  : <span className="inline-flex items-center rounded-md bg-[#eef0f4] px-2 py-0.5 text-[12px] font-semibold text-[#697582]">ON · OFF</span>}
+              </div>
             </>) : <><div /><div /></>;
             // 2열 페어 행 — 라벨|값|라벨|값(세로 보더 없음). 홀수면 뒤칸 비움.
             const PairRows = ({ list }: { list: Attr[] }) => (<>
