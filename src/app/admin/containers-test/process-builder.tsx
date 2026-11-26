@@ -651,10 +651,10 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   //  CTA=moreButtonUse / 배너=bigBanner / 칩=선택형 컴포넌트 유무. 토글을 끄면 applyOptsToPreview로 미리보기도 함께 꺼진다.
   const pv = corner.preview;
   const hasChipComp = !!pv?.components?.some((c) => c.componentType === '선택형');
-  // 상단 이미지(배너)·하단 CTA는 기본 N — 운영자가 빌더에서 켤 때만 노출(2026-11-25 사용자 요청). 칩만 프리셋 구조 유지.
+  // 불러올 때 '풀 패키지' — 유형 미리보기(전 요소 ON)와 맞춰 모든 옵션(배너·칩·CTA)을 기본 ON으로 로드(2026-11-26 사용자 요청: 불러올 때 꺼져 있어 불일치/에러처럼 보임). 운영자가 필요 시 끈다.
   const [optOn, setOptOn] = React.useState<Record<string, boolean>>(() =>
-    Object.fromEntries(availOptions.map((o) => [o,
-      (o === '칩' && (/칩/.test(rawDetail) || hasChipComp))])));
+    Object.fromEntries(availOptions.map((o) => [o, true])));
+  void rawDetail; void hasChipComp; // (풀 패키지 로드로 더 이상 조건 분기 안 함 — 참조 보존)
   // 코너 공통 필드(코너 타이틀·버튼 텍스트) — 코너 유형 required 중 corner 그룹. 빌더에 입력란이 없던 문제 수정(2026-11-05 사용자 요청).
   const cornerReqFields = (optSpec?.required ?? []).filter((f) => f.group === 'corner');
   // 프로필형 = '내 정보/프로필·가입현황' 같은 코너 타이틀/서브를 두지 않는다(고객정보 행 자체가 콘텐츠). 코너 세팅 없이 '고객정보 가져오기'만(2026-11-05 사용자 요청).
@@ -685,9 +685,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const [btnRoute, setBtnRoute] = React.useState<BtnRoute>('페이지');
   const [btnOpen, setBtnOpen] = React.useState<BtnOpen>('현재 화면');
   // CN-DSP-0001 정의(2026-11-25) — 추천 맥락 헤더(개인화 전용)·추가 인포메이션(수동 전용)·인디케이터. 모두 기본 N.
-  const [ctxHeaderOn, setCtxHeaderOn] = React.useState(false);     // [추천 맥락 헤더] On/Off — 개인화 코너에서만
+  const [ctxHeaderOn, setCtxHeaderOn] = React.useState(true);      // [추천 맥락 헤더] 기본 ON(풀 패키지, 2026-11-26) — 개인화 코너에서만 적용
   const [ctxHeaderText, setCtxHeaderText] = React.useState('');    // 추천 맥락 헤더 문구(없으면 플레이스홀더)
-  const [infoOn, setInfoOn] = React.useState(false);               // [추가 인포메이션] On/Off — 수동 운영에서만
+  const [infoOn, setInfoOn] = React.useState(true);                // [추가 인포메이션] 기본 ON(풀 패키지, 2026-11-26) — 수동 운영에서만 적용
   const [infoText, setInfoText] = React.useState('');              // 추가 인포메이션 문구
   // 인디케이터(스와이프) 제외 — 리스트 타입은 좌우 스와이프 탐색이 없어 효용 낮고 접근성 이슈(2026-11-25 임태은/SKT 확정, Slack). 전 코너에서 삭제.
   // ③채우기를 '코너 | 아이템' 탭으로 나눠 등록(2026-11-05 사용자 요청). 코너 속성이 없는 유형(배너형 등)은 아이템만.
@@ -730,7 +730,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const [bannerFileName, setBannerFileName] = React.useState('');
   const [bannerAlt, setBannerAlt] = React.useState('');
   // 카테고리 설정(상품형·혜택 카테고리형) — 카테고리별 메뉴 메타(아이콘·링크·이동경로·열기방식). SB PG557 '카테고리 설정' 테이블(2026-11-17 사용자 요청).
-  const [catOn, setCatOn] = React.useState(false); // 카테고리 설정 기본 N(2026-11-25 사용자 요청)
+  const [catOn, setCatOn] = React.useState(true); // 카테고리 설정 기본 ON(풀 패키지 로드, 2026-11-26 사용자 요청: 불러올 때 유형 미리보기와 일치)
   type CatMeta = { icon: string | null; link: string; linkType: 'internal' | 'external'; mode: 'direct' | 'load' };
   const [catMeta, setCatMeta] = React.useState<Record<string, CatMeta>>({});
   const [catIconFor, setCatIconFor] = React.useState<string | null>(null);
