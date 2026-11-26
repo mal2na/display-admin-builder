@@ -661,9 +661,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   //  CTA=moreButtonUse / 배너=bigBanner / 칩=선택형 컴포넌트 유무. 토글을 끄면 applyOptsToPreview로 미리보기도 함께 꺼진다.
   const pv = corner.preview;
   const hasChipComp = !!pv?.components?.some((c) => c.componentType === '선택형');
-  // 불러올 때 '풀 패키지' — 유형 미리보기(전 요소 ON)와 맞춰 모든 옵션(배너·칩·CTA)을 기본 ON으로 로드(2026-11-26 사용자 요청: 불러올 때 꺼져 있어 불일치/에러처럼 보임). 운영자가 필요 시 끈다.
+  // 불러올 때 기본값 — 배너·칩 등은 ON으로 로드하되, 하단 CTA는 잘 안 쓰므로 기본 OFF(2026-11-26 사용자 요청). 운영자가 필요 시 켠다.
   const [optOn, setOptOn] = React.useState<Record<string, boolean>>(() =>
-    Object.fromEntries(availOptions.map((o) => [o, true])));
+    Object.fromEntries(availOptions.map((o) => [o, o !== 'CTA'])));
   void rawDetail; void hasChipComp; // (풀 패키지 로드로 더 이상 조건 분기 안 함 — 참조 보존)
   // 코너 공통 필드(코너 타이틀·버튼 텍스트) — 코너 유형 required 중 corner 그룹. 빌더에 입력란이 없던 문제 수정(2026-11-05 사용자 요청).
   const cornerReqFields = (optSpec?.required ?? []).filter((f) => f.group === 'corner');
@@ -2824,15 +2824,14 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           const squareThumb = c.sbImage ? /event|support/.test(c.sbImage) : (mid === '이벤트형' || mid === '이용지원형');
           const itemButton = c.sbImage ? c.sbImage.includes('mission') : (mid === '미션형' && design === 'list');
           if (design && c.preview) {
-            // 코너 불러오기 = 풀 패키지(모든 요소 ON) — 모달(BenefitCornerPreview)과 '동일한 UI'로. 배너·맥락 헤더·추가 인포·하단 CTA를
-            //  기본 노출하되, 운영자가 입력한 텍스트(타이틀·맥락·인포·버튼 라벨)는 보존(2026-11-26 사용자 요청: 불러오기/미리보기 일치).
+            // 코너 불러오기 미리보기 — 배너·맥락 헤더·추가 인포는 기본 노출(모달과 일치). 단 하단 CTA는 기본 OFF(잘 안 씀) → 토글/입력값 따름(2026-11-26 사용자 요청).
             const CTX_MIDS = new Set(['제휴사형', '이벤트형', '혜택프로그램형']);
             const fullPreview = {
               ...c.preview,
               bigBanner: true,
               contextHeader: c.preview.contextHeader || (mid ? CTX_MIDS.has(mid) : false),
               information: true,
-              moreButtonUse: design !== 'barcode',
+              moreButtonUse: !!c.preview.moreButtonUse,
             };
             return <BenefitPreviewCard corner={fullPreview} design={design} mid={mid} squareThumb={squareThumb} itemButton={itemButton} />;
           }
