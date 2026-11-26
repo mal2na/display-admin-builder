@@ -9,7 +9,6 @@ import { benefitTypeByKey, cornerAttrSpec, benefitGuide, operModeOf } from '@/li
 import { presetDesignName } from '@/components/preview/preset-design-card';
 import { BenefitCornerPreview } from '../../benefit-corner-preview';
 import { Collapse } from './collapse';
-import { DetailTabs, ApprovalInfoCard } from './detail-tabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,7 +116,7 @@ function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
                 </span>} />
               <RowFull label="설명"><span className="text-[14px] leading-relaxed text-[#1a1a1a] [word-break:keep-all]">{sp.desc}</span></RowFull>
               <Row2
-                l1="사용여부" v1={<span className="inline-flex items-center gap-1 font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span>}
+                l1="사용 여부" v1={<span className="inline-flex items-center gap-1 font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span>}
                 l2="등록일시" v2={<span className="text-[#697582]">2026-11-23 10:21</span>} />
              </div>
             </div>
@@ -152,9 +151,6 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
         <span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[12px] font-bold text-[#697582]"><Lock className="h-3 w-3" />조회 전용</span>
       </div>
 
-      {/* 상세 탭(상세정보 / 변경·승인 이력) + 승인 정보 — SB Figma(29305-82657). 상세정보 = 승인정보 + 미리보기 + 기본/속성/프리셋. */}
-      <DetailTabs detail={(<>
-      <ApprovalInfoCard typeId={t.typeId} />
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
           <div className="mb-2.5 flex items-center gap-2 px-1">
@@ -168,19 +164,19 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
         <div className="min-w-0 flex-1 space-y-6">
           <Collapse title="코너 기본 정보">
             <div className="px-5 pb-5 pt-4">
-             <div className="">
+             <div className="border-t border-[#dce0e5]">
               {/* SB Figma(node 29305-82718) 필드·워딩 — 코너 구분/배열·레이아웃/사용여부/운영규칙/노출규격/DB원장 정보/등록일. 값은 plain 텍스트(2026-11-26 사용자 요청). */}
               <Row2
                 l1="코너 유형 ID" v1={<span className="font-mono text-[13px] text-[#454f59]">{t.typeId}</span>}
-                l2="코너 유형" v2={<span className="text-[#1a1a1a]">혜택형</span>} />
+                l2="코너 유형" v2={<span className={`${CHIP} bg-[#EAF7F0] text-[#0B8A75]`}>혜택형</span>} />
               <Row2
                 l1="코너 구분" v1={<span className="text-[#454f59]">{t.mid.replace(/형$/, '')}</span>}
                 l2="배열·레이아웃" v2={<span className="text-[#454f59]">{t.layout.replace(/형$/, '')}</span>} />
               <Row2
-                l1="사용여부" v1={<span className="text-[#1a1a1a]">{t.unused ? 'N' : 'Y'}</span>}
-                l2="운영규칙" v2={<span className="text-[#454f59]">{operModeOf(t.mid, t.layout)}</span>} />
-              <RowFull label="노출규격"><span className="text-[14px] leading-relaxed text-[#1a1a1a] [word-break:keep-all]">{benefitGuide(t.mid, t.layout)}</span></RowFull>
-              <RowFull label="DB원장 정보"><span className="text-[14px] text-[#1a1a1a] [word-break:keep-all]">{t.source}</span></RowFull>
+                l1="사용 여부" v1={<span className="text-[#1a1a1a]">{t.unused ? 'N' : 'Y'}</span>}
+                l2="운영 규칙" v2={<span className="text-[#454f59]">{operModeOf(t.mid, t.layout)}</span>} />
+              <RowFull label="노출 규격"><span className="text-[14px] leading-relaxed text-[#1a1a1a] [word-break:keep-all]">{benefitGuide(t.mid, t.layout)}</span></RowFull>
+              <RowFull label="원장 정보"><span className="text-[14px] text-[#1a1a1a] [word-break:keep-all]">{t.source}</span></RowFull>
               <RowFull label="등록일"><span className="text-[#454f59]">2026.11.23 10:21</span></RowFull>
              </div>
             </div>
@@ -201,7 +197,7 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
             const Cell = ({ a }: { a: Attr | null }) => a ? (<>
               <div className="flex items-center whitespace-nowrap bg-[#f8f9fb] px-4 py-3 text-[14px] font-medium text-[#454f59]">{FIG[a.code] ?? a.label}{a.state === 'required' && <span className="ml-0.5 text-[#cf2a3c]">*</span>}</div>
               <div className="flex min-w-0 items-center px-4 py-3 text-[14px] text-[#1a1a1a]">Y</div>
-            </>) : <><div className="bg-[#f8f9fb]" /><div /></>;
+            </>) : <><div /><div /></>;
             // 2열 페어 행 — 라벨|값|라벨|값(세로 보더 없음). 홀수면 뒤칸 비움.
             const PairRows = ({ list }: { list: Attr[] }) => (<>
               {Array.from({ length: Math.ceil(list.length / 2) }, (_, i) => (
@@ -219,11 +215,11 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
               <Collapse title="코너 속성 정보">
                 <div className="px-5 pb-5 pt-4">
                   <GroupBar title="코너 카드" />
-                  <div><PairRows list={spec.card} /></div>
+                  <div className="border-t border-[#dce0e5]"><PairRows list={spec.card} /></div>
                   {spec.item.length > 0 && (
                     <>
                       <GroupBar title="컴포넌트" />
-                      <div><PairRows list={spec.item} /></div>
+                      <div className="border-t border-[#dce0e5]"><PairRows list={spec.item} /></div>
                     </>
                   )}
                 </div>
@@ -242,8 +238,8 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
                 <figure key={id} className="flex flex-col gap-2">
                   <div className="flex aspect-[5/8] items-center justify-center overflow-hidden rounded-[14px] border border-[#e8ecef] bg-white p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {/* 프리셋 이미지에 드롭섀도 — 흰 타일 배경과 프리셋(흰 디바이스 카드)을 구분(2026-11-25 사용자 요청: 프리셋 페이지와 동일). */}
-                    <img src={imgSrc(id)} alt={presetDesignName(id)} className="max-h-full max-w-full rounded-md object-contain" />
+                    {/* 보더 2겹 — 균일 타일 프레임(영역) + 프리셋 이미지 자신(실제 크기)에 각각. 프리셋끼리 크기가 달라 보이는 문제 방지(2026-11-26 사용자 요청). */}
+                    <img src={imgSrc(id)} alt={presetDesignName(id)} className="max-h-full max-w-full rounded-[10px] border border-[#dce0e5] object-contain" />
                   </div>
                   <figcaption className="px-0.5 text-[12px] leading-tight [word-break:keep-all]">
                     <span className="font-medium text-[#454f59]">{presetDesignName(id)}</span>
@@ -255,7 +251,6 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
           </Collapse>
         </div>
       </div>
-      </>)} />
     </div>
   );
 }

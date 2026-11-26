@@ -17,7 +17,7 @@ export function Collapse({ title, hint, badge, defaultOpen = true, children }: {
         {hint && <span className="truncate text-[12px] text-[#8b949e]">{hint}</span>}
         <ChevronUp className={`ml-auto h-5 w-5 shrink-0 text-[#8b949e] transition-transform ${open ? '' : 'rotate-180'}`} />
       </button>
-      {open && <div className="border-t border-[#f1f3f5]">{children}</div>}
+      {open && <div>{children}</div>}
     </div>
   );
 }
