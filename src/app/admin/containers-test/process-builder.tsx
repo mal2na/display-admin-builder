@@ -2584,10 +2584,31 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   //  미리보기를 클릭하면 코너 구성에서도 같이 스크롤돼 복잡한 정보에서 길을 잃지 않게 한다(2026-11-05 사용자 요청).
   React.useEffect(() => {
     if (!activeSel) return;
-    // 두 컨테이너를 'smooth'로 동시에 스크롤하면 개인화 코너(룰렛·출석체크) 선택 시 레이아웃 시프트와 겹쳐 화면이 왔다갔다 한다
-    //  → 'auto'(즉시) + 'nearest'로, 이미 보이면 움직이지 않게(2026-11-26 사용자 버그).
-    document.getElementById(`pv-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
-    document.getElementById(`chip-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    // '왔다갔다' 버그(2026-11-26) 근본 원인 — pv-(미리보기)와 chip-(리스트)이 '공통 바깥 스크롤러'를 공유하는데,
+    //  네이티브 scrollIntoView는 모든 스크롤 조상을 움직여 그 공통 스크롤러를 pv 위치→chip 위치로 연달아 당긴다.
+    //  개인화 코너(룰렛·출석체크)는 선택 시 개인화 박스가 추가돼 레이아웃이 밀리면서 이 당김이 더 크게 겹쳐 튄다.
+    //  → 각 앵커를 '가장 가까운(전용) 스크롤러' 안에서만, 보이지 않을 때만 이동. 공통 바깥 스크롤러는 건드리지 않아 싸움이 사라진다.
+    const scrollWithinNearest = (id: string) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      let sc: HTMLElement | null = el.parentElement;
+      while (sc) {
+        const o = getComputedStyle(sc).overflowY;
+        if ((o === 'auto' || o === 'scroll') && sc.scrollHeight > sc.clientHeight + 1) break;
+        sc = sc.parentElement;
+      }
+      if (!sc) return;
+      const er = el.getBoundingClientRect(), cr = sc.getBoundingClientRect();
+      if (er.top < cr.top) sc.scrollTop -= cr.top - er.top;
+      else if (er.bottom > cr.bottom) sc.scrollTop += er.bottom - cr.bottom;
+      // 이미 전부 보이면 아무것도 하지 않는다(튐 방지).
+    };
+    // 레이아웃(개인화 박스)이 자리잡은 뒤 한 번만 이동 — 리플로우 도중 측정으로 인한 튐 방지.
+    const raf = requestAnimationFrame(() => {
+      scrollWithinNearest(`pv-${activeSel}`);
+      scrollWithinNearest(`chip-${activeSel}`);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [activeSel, liveCorners.length]);
 
   // Figma BO 공통 textfield 토큰 — h38·r6·inset-x 14·본문 14·border #c4c9cf·포커스 border #b3b9c0+ring 2 #dce0e5
