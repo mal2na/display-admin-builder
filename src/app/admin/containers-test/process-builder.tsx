@@ -2584,9 +2584,10 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   //  미리보기를 클릭하면 코너 구성에서도 같이 스크롤돼 복잡한 정보에서 길을 잃지 않게 한다(2026-11-05 사용자 요청).
   React.useEffect(() => {
     if (!activeSel) return;
-    document.getElementById(`pv-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    document.getElementById(`chip-${activeSel}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    // 새 코너 추가 직후엔 refresh로 리스트가 갱신된 다음 프레임에 요소가 생기므로 한 번 더 시도(2026-11-05 사용자 요청: 추가 코너로 포커스).
+    // 두 컨테이너를 'smooth'로 동시에 스크롤하면 개인화 코너(룰렛·출석체크) 선택 시 레이아웃 시프트와 겹쳐 화면이 왔다갔다 한다
+    //  → 'auto'(즉시) + 'nearest'로, 이미 보이면 움직이지 않게(2026-11-26 사용자 버그).
+    document.getElementById(`pv-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    document.getElementById(`chip-${activeSel}`)?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
   }, [activeSel, liveCorners.length]);
 
   // Figma BO 공통 textfield 토큰 — h38·r6·inset-x 14·본문 14·border #c4c9cf·포커스 border #b3b9c0+ring 2 #dce0e5
