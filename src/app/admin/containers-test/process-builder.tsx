@@ -550,10 +550,15 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   // CN-DSP-0001 — 개인화 코너만 CVM/MLS 추천(맥락 헤더 노출). forcePersonal은 zone 저장 전이라도 개인화로 취급.
   const isPersonal = corner.zone === 'personal' || forcePersonal;
   // 강제 개인화인데 아직 zone이 personal이 아니면(예: 방금 추가) 한 번 저장해 리스트·미리보기에도 반영.
+  //  ref 가드 — 저장(비동기)·router.refresh 사이에 zone이 잠깐 비-personal로 돌아와도 재발화하지 않게(2026-11-26 사용자: 룰렛 추가 시 화면 왔다갔다/루프).
+  const forcedOnceRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (forcePersonal && corner.zone !== 'personal') onPersonalChange(true);
+    if (forcePersonal && corner.zone !== 'personal' && forcedOnceRef.current !== corner.templateCornerId) {
+      forcedOnceRef.current = corner.templateCornerId;
+      onPersonalChange(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [corner.templateCornerId, forcePersonal]);
+  }, [corner.templateCornerId, forcePersonal, corner.zone]);
   const [srcState, setSrc] = React.useState<string>(corner.recSource ?? '운영자 편성');
   // 프로필형·상태 안내형 = 'CVM 추천'이 아니라 '고객정보 바인딩(@cvm:key)'. 무엇을 노출할지는 운영자가 정하고 값만 런타임 고객 데이터로 자동.
   //  바코드형도 추천 대상이 아니라 시스템 카드(런타임 발급) → 모두 운영자 편성 고정(CVM 추천 잠금). (2026-11-05 사용자 확정)
