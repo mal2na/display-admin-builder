@@ -184,8 +184,8 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
     preview: guideCornerPreview(ct.baseCategory, ct.typeDetail, ct.componentType),
     bannerCount: /스와이프/.test(ct.typeDetail ?? '') ? 2 : 0,
     sbPreview: null,
-    operMode: '수동',       // 배너형 = 운영자 편성(수동)
-    canPersonal: false,     // 배너형은 개인화 영역 불가
+    operMode: '개인화/수동',  // 배너형 = 개인화/수동 둘 다(2026-11-26 사용자 요청: CVM 타겟 배너도 가능)
+    canPersonal: true,
   }));
   //  ③ 탭형(업무 진입형 = 상단 퀵메뉴·카테고리) — 고정(픽스) 영역에 등록. 2026-11-25 사용자 요청: 탭형·배너형 다시 코너 유형에.
   const tabTypes = await prisma.cornerType.findMany({
@@ -207,8 +207,8 @@ export async function loadProcessData(containerId: string, activeTemplateId?: st
       preview: guideCornerPreview(ct.baseCategory, ct.typeDetail, ct.componentType),
       bannerCount: 0,
       sbPreview: null,
-      operMode: '수동',       // 탭형(퀵메뉴) = 고정/수동
-      canPersonal: false,     // 개인화 영역 불가
+      operMode: '개인화/수동',  // 퀵메뉴형 = 개인화/수동 둘 다(2026-11-26 사용자 요청)
+      canPersonal: true,
     }));
   const libCorners: LibCorner[] = [...benefitLib, ...bannerLib, ...tabLib];
 

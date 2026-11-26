@@ -2552,7 +2552,7 @@ function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast, initial
                   {/* 3뎁스 — 위: 혜택형(칩) + 운영여부 배지 · 아래: 제휴사형(중분류) 굵게 + 리스트형(배열)은 보조 (2026-11-25 사용자 요청: 중분류가 배열보다 중요). */}
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1 text-[11px] text-[var(--ink4)]">
-                      <span className={cn(cornerTypeChipClass(c.shellTop), 'shrink-0')}>{c.shellTop}</span>
+                      <span className={cn(cornerTypeChipClass(cornerTypeLabel(c.shellTop)), 'shrink-0')}>{cornerTypeLabel(c.shellTop)}</span>
                       <span className={cn('ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold', c.canPersonal ? 'bg-[#F2ECFB] text-[#6D28D9]' : 'bg-[#eef0f2] text-[#697582]')}>{c.operMode}</span>
                     </span>
                     <span className="mt-1 flex min-w-0 items-baseline gap-1.5">
