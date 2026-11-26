@@ -591,9 +591,13 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const FILL_MODE_LABEL: Record<string, string> = { '운영자 직접': '운영자 직접', '운영자 고정 + 추천': '코너 고정 · 콘텐츠 추천', '전부 추천': '전부 추천' };
   // ③ 섹션 타이틀 = ② 채우는 방식에서 고른 라벨과 동일하게(2026-11-26 사용자 요청). ② 라디오 라벨과 일치.
   const FILL_MODE_SEC_TITLE: Record<string, string> = { '운영자 직접': '운영자 편성', '운영자 고정 + 추천': '운영자 편성 + 추천', '전부 추천': '구좌 전체 추천' };
-  const [fillMode, setFillMode] = React.useState<string>(() => (
-    isQuickMenu ? '운영자 고정 + 추천'  // 퀵메뉴(카테고리 탭)는 6+6(운영자 고정 + 추천) — 구좌 전체 추천 불가(2026-11-26 사용자 요청)
-    : (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접'));
+  // fillMode 기본값 = 코너 recSource에서 파생(③ 섹션·미리보기 일치). null/운영자 편성 → 운영자 직접(내용 표시), CVM 콘텐츠 연동 → 전부 추천(빈 구좌). 새로고침해도 DB 그대로라 안 바뀜(2026-11-26 사용자 요청).
+  const [fillMode, setFillMode] = React.useState<string>(() => {
+    if (isQuickMenu) return '운영자 고정 + 추천';  // 퀵메뉴(카테고리 탭)는 6+6 — 구좌 전체 추천 불가
+    if (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal) return '전부 추천';  // 출석·룰렛은 개인화 전용
+    const rec = corner.recSource ?? '';
+    return rec === 'CVM 콘텐츠 연동' ? '전부 추천' : rec === 'CVM 데이터 연동' ? '운영자 고정 + 추천' : '운영자 직접';
+  });
   // 채우는 방식(fillMode) → 수급(recSource) 매핑. ② 라디오 선택이 코너 recSource에 반영돼야 미리보기가 'CVM 구좌'로 바뀐다(2026-11-26 사용자 요청: 개인화면 뚫린 구좌).
   const FILL_TO_REC: Record<string, string> = { '운영자 직접': '운영자 편성', '운영자 고정 + 추천': 'CVM 데이터 연동', '전부 추천': 'CVM 콘텐츠 연동' };
   // 모드 전환(운영자 편성 ↔ 운영자 편성+추천)은 미리보기를 바꾸지 않는다 — 추천 맥락 헤더는 여기서 자동 토글하지 않고, 아래 Y/N 토글(ctxHeaderOn)로만 제어(2026-11-26 사용자 요청: 클릭할 때마다 좌측 이미지가 변하면 안 됨).
@@ -2657,22 +2661,9 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
 
   // 코너 순서·존의 공유 상태 — 리스트(BandedCorners)와 미리보기가 같은 state를 본다.
   //  드래그/고정으로 즉시 미리보기 반영, 서버 refresh 시 활성 템플릿 코너로 재동기화(2026-10-21).
-  // 추천(구좌 전체 추천) 기본 코너는 recSource를 'CVM 콘텐츠 연동'으로 맞춰 '빈 구좌(추천 구좌)'로 뜨게 한다 — 추천이면 구좌를 비워야 하고 클릭 전/새로고침 후에도 유지(2026-11-26 사용자 요청: 추천은 구좌를 비워달라).
-  //  대상 = fillMode 기본값이 '전부 추천'인 코너(개인화 영역 zone='personal' 또는 출석체크·룰렛). 서버 코너를 liveCorners에 반영할 때마다 함께 적용. 운영자가 ②에서 로컬로 바꾼 선택은 liveCorners에만 있어 덮이지 않음.
-  const syncRec = React.useCallback((raw: PCorner[]): PCorner[] => raw.map((c) => {
-    // 업무진입형(퀵메뉴·상태·프로필·바코드)은 구좌 전체 추천(빈 구좌) 대상 아님 — 메뉴/카드 아이템이라 제외(2026-11-26 사용자 요청).
-    const defaultAllRec = c.cornerType !== '업무 진입형' && (c.zone === 'personal' || (/(출석체크|룰렛)/.test(c.name) && c.canPersonal));
-    return (defaultAllRec && (c.recSource == null || c.recSource === '운영자 편성')) ? { ...c, recSource: 'CVM 콘텐츠 연동', isCvm: true } : c;
-  }), []);
-  const [liveCorners, setLiveCorners] = React.useState<PCorner[]>(() => syncRec(activeTemplate?.corners ?? []));
-  // 템플릿당 1회만 서버 코너 → liveCorners 반영(+추천 기본 동기화). 같은 템플릿에서의 서버 새로고침(zone 저장 등)은 무시해 운영자가 ②에서 바꾼 선택이 되돌아가지 않게(2026-11-26 사용자 요청: 운영자 편성+추천은 내용 유지).
-  const syncedTplRef = React.useRef<string | null>(null);
-  React.useEffect(() => {
-    const tid = activeTemplate?.id ?? null;
-    if (syncedTplRef.current === tid) return;
-    syncedTplRef.current = tid;
-    setLiveCorners(syncRec(activeTemplate?.corners ?? []));
-  }, [activeTemplate?.id, activeTemplate?.corners, syncRec]);
+  // 미리보기 코너는 DB recSource를 '그대로' 쓴다 — 강제 동기화(syncRec) 제거. 새로고침 때마다 '추천 구좌'로 바뀌던 문제 해결(2026-11-26 사용자 요청: 왜 자꾸 돌아가냐). '추천 구좌(빈 구좌)'는 코너의 recSource가 실제로 'CVM 콘텐츠 연동'일 때(또는 운영자가 ②에서 구좌 전체 추천 선택 시)만.
+  const [liveCorners, setLiveCorners] = React.useState<PCorner[]>(activeTemplate?.corners ?? []);
+  React.useEffect(() => { setLiveCorners(activeTemplate?.corners ?? []); }, [activeTemplate?.corners]);
   const totalCorners = liveCorners.length;
   // 노출 토글(코너 카드)로 숨긴 코너 — 좌측 미리보기에서도 빠진다(2026-11-12 사용자 요청). templateCornerId 기준.
   const [hiddenIds, setHiddenIds] = React.useState<Set<string>>(new Set());
