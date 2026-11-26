@@ -253,7 +253,8 @@ type BtnOpen = '현재 화면' | '내부 브라우저' | '외부 브라우저';
 // 코너 타이틀 최대 글자수 — CN-DSP-0001 정의(최대 36자 · 줄바꿈 포함 25자 권장 · 2줄 이하). 초과 시 경고 토스트.
 const TITLE_MAX = 36;
 // 코너 유형 표시 라벨 — 코너 유형 관리와 워딩 통일(혜택·오퍼형 → 혜택형, 2026-11-25 사용자 요청).
-const cornerTypeLabel = (ct: string | null | undefined) => (ct === '혜택·오퍼형' ? '혜택형' : (ct ?? ''));
+// 표기: 혜택·오퍼형→혜택형, '업무 진입형'→'업무진입형'(띄어쓰기 제거, 표기만 · 2026-11-26 사용자 요청). 저장값은 그대로.
+const cornerTypeLabel = (ct: string | null | undefined) => (ct === '혜택·오퍼형' ? '혜택형' : ct === '업무 진입형' ? '업무진입형' : (ct ?? ''));
 // 미리보기 디바이스 프리셋 — 디바이스 선택 드롭다운(SB 디바이스 프레임, 2026-11-17 사용자 요청).
 //  최소/최대 폭 = FO 반응형 한계(min 320 · max 768)로 양끝 확인용(2026-11-19 사용자 요청).
 const DEVICE_PRESETS = [
@@ -1331,7 +1332,20 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                   </>)}
                 </FormBlock>
               )}
-              {/* 하단 CTA 버튼 설정 — 코너 하단 더보기/CTA 버튼. 사용 여부(Y/N) + 문구·이동 경로·경로 상세·열기 방식(SB PG557, 2026-11-17 사용자 요청). */}
+              {/* 추가 인포메이션 — CN-DSP-0001. 운영 정보성 영역. 수동(운영/픽스) 코너에서만. 순서: 하단 CTA '위'(2026-11-26 사용자 요청). */}
+              {!isPersonal && (
+                <FormBlock title="추가 인포메이션" desc="운영 정보성 영역 · 수동 운영에서만">
+                  <FormRow label="사용 여부" req>
+                    <RadioRow options={['Y', 'N'] as const} value={infoOn ? 'Y' : 'N'} onChange={(v) => { const on = v === 'Y'; setInfoOn(on); onPreviewPatch({ information: on, informationText: infoText || null }); }} />
+                  </FormRow>
+                  {infoOn && (
+                    <FormRow label="정보 문구" en="Information">
+                      <input value={infoText} onChange={(e) => { setInfoText(e.target.value); onPreviewPatch({ informationText: e.target.value || null }); }} placeholder="운영에 필요한 안내 문구" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
+                    </FormRow>
+                  )}
+                </FormBlock>
+              )}
+              {/* 하단 CTA 버튼 설정 — 코너 하단 더보기/CTA 버튼. 사용 여부(Y/N) + 문구·이동 경로·경로 상세·열기 방식(SB PG557, 2026-11-17 사용자 요청). 추가 인포 '아래'. */}
               {availOptions.includes('CTA') && (
                 <FormBlock title="하단 CTA 설정">
                   <FormRow label="사용 여부" req>
@@ -1357,20 +1371,6 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                       <RadioRow options={['현재 화면', '내부 브라우저', '외부 브라우저'] as const} value={btnOpen} onChange={setBtnOpen} />
                     </FormRow>
                   </>)}
-                </FormBlock>
-              )}
-              {/* 탭(카테고리)·인디케이터는 '컴포넌트' 탭으로 이동 — 아이템 리스트 노출 방식이라(2026-11-25 사용자 요청). 추가 인포메이션만 코너 카드에 유지. */}
-              {/* 추가 인포메이션 — CN-DSP-0001. 운영 정보성 영역. 수동(운영/픽스) 코너에서만 — 개인화 코너에선 노출 안 함. */}
-              {!isPersonal && (
-                <FormBlock title="추가 인포메이션" desc="운영 정보성 영역 · 수동 운영에서만">
-                  <FormRow label="사용 여부" req>
-                    <RadioRow options={['Y', 'N'] as const} value={infoOn ? 'Y' : 'N'} onChange={(v) => { const on = v === 'Y'; setInfoOn(on); onPreviewPatch({ information: on, informationText: infoText || null }); }} />
-                  </FormRow>
-                  {infoOn && (
-                    <FormRow label="정보 문구" en="Information">
-                      <input value={infoText} onChange={(e) => { setInfoText(e.target.value); onPreviewPatch({ informationText: e.target.value || null }); }} placeholder="운영에 필요한 안내 문구" className="h-[32px] w-full rounded-[6px] border border-[var(--line2)] bg-white px-2 text-[13px] focus:border-[var(--ac)] focus:outline-none" />
-                    </FormRow>
-                  )}
                 </FormBlock>
               )}
             </div>
@@ -2442,7 +2442,7 @@ function LoadCornerModal({ corners, targetZone, onClose, onAdd, onToast, initial
                     active ? 'border-[var(--ac)] bg-[var(--ac)] text-white'
                     : empty ? 'cursor-not-allowed border-[var(--line2)] bg-[var(--th)] text-[var(--ink5)]'
                     : 'border-[var(--line2)] bg-white text-[var(--ink2)] hover:border-[var(--line3)] hover:bg-[var(--th)]')}>
-                  {t}<span className={cn(active ? 'text-white/80' : 'text-[var(--ink4)]')}>{cnt}</span>
+                  {cornerTypeLabel(t) || t}<span className={cn(active ? 'text-white/80' : 'text-[var(--ink4)]')}>{cnt}</span>
                 </button>
               );
             })}
