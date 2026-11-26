@@ -22,7 +22,8 @@ import { benefitTypes, canPersonalize, sbPreviewSrc } from '@/lib/benefit-corner
 import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
-import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, MLS_REC_LOGICS, type Zone } from '@/lib/display-taxonomy';
+import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, type Zone } from '@/lib/display-taxonomy';
+import { persoOptionsFor } from '@/lib/personalization-options';
 import { PRESET_SHAPE_GROUPS } from '@/lib/preset-shape-groups';
 import { presetDesignName } from '@/components/preview/preset-design-card';
 import { ChevronLeft, ChevronRight, ChevronDown, GripVertical, X, Plus, Minus, Maximize2, Copy, Pencil, ShieldCheck, EyeOff, Lock, LockOpen, Trash2, Sparkles, UserCog, Search, Link2, Check, ImageIcon, Info, AlertTriangle, Barcode, ArrowRight, LayoutGrid } from 'lucide-react';
@@ -574,7 +575,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const srcLocked = isProfile || isStatus || isBarcode;
   // 개인화 구성(2026-11-25 통화 결론) — 개인화 코너는 '추천 후보 코너 유형'을 여러 개 등록하고, 추천 엔진이 노출 개수(최소~최대, 1~3)만큼 골라 노출(없으면 미노출). 데모 로컬 상태.
   const [persoTypes, setPersoTypes] = React.useState<string[]>([]);
-  const [persoMls, setPersoMls] = React.useState<string>(MLS_REC_LOGICS[0]);
+  // 개인화 옵션(대분류) 복수 선택 상태 — 옵션 목록(persoOpts)은 benefitMidKey 확정 후 아래에서 계산.
+  const [persoCats, setPersoCats] = React.useState<string[]>([]);
+  const togglePersoCat = (c: string) => setPersoCats((a) => (a.includes(c) ? a.filter((x) => x !== c) : [...a, c]));
   const [persoMin, setPersoMin] = React.useState(1);
   const [persoMax, setPersoMax] = React.useState(3);
   const [persoPickerOpen, setPersoPickerOpen] = React.useState(false);
@@ -639,6 +642,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
     const seg = (corner.name.split('·')[0] ?? '').trim();
     return /형$/.test(seg) ? seg : null;
   })();
+  // 개인화 옵션(대분류) — 코너 중분류에 맞는 시트 분류(SKT NC_정보 분류, 2026-11-26). 대분류만 복수 선택.
+  const persoOpts = persoOptionsFor(benefitMidKey);
   // 상태 안내형(업무 진입형)은 '상태 카드' 전용 카탈로그에서 가져온다 — 메뉴 카탈로그와 구분(2026-11-05 사용자 요청).
   const catalog = (isStatus ? catalogByType['상태 안내형'] : isProfile ? catalogByType['프로필형']
     : (benefitMidKey ? catalogByType['혜택형·' + benefitMidKey] : undefined) ?? catalogByType[corner.cornerType]) ?? [];
@@ -1831,10 +1836,31 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
               </ul>
             </div>
             )}
-            <FormBlock title="추천 로직">
-              <FormRow label="추천 엔진" req>
-                <RadioRow options={[...MLS_REC_LOGICS]} value={persoMls} onChange={setPersoMls} />
-              </FormRow>
+            {/* 개인화 옵션(대분류) — 복수 선택. 코너 유형(중분류)마다 옵션이 다름(SKT NC_정보 분류 시트). 운영자가 복수로 제안 → CVM이 조정(2026-11-26 사용자 요청). */}
+            <FormBlock title={`개인화 옵션 · ${persoCats.length}`}>
+              <div className="px-0.5 py-1">
+                <p className="mb-2 text-[11px] leading-relaxed text-[var(--ink4)]">이 코너 유형에 맞는 <b className="text-[#6D28D9]">개인화 기준(대분류)</b>을 <b>복수 선택</b>하세요. 운영자 제안값이며 CVM 협의로 조정됩니다.</p>
+                <div className="space-y-1.5">
+                  {persoOpts.map(({ category, items }) => {
+                    const on = persoCats.includes(category);
+                    return (
+                      <button key={category} type="button" onClick={() => togglePersoCat(category)}
+                        className={cn('flex w-full items-start gap-2 rounded-[8px] border px-2.5 py-2 text-left transition', on ? 'border-[#6D28D9] bg-[#faf7ff]' : 'border-[var(--line2)] bg-white hover:border-[#c9b8ec]')}>
+                        <span className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border', on ? 'border-[#6D28D9] bg-[#6D28D9]' : 'border-[var(--line3)]')}>{on && <Check className="h-3 w-3 text-white" />}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[12px] font-bold text-[var(--ink)]">{category}</span>
+                          <span className="block text-[11px] text-[var(--ink4)]">{items.join(' · ')}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {persoCats.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {persoCats.map((c) => <span key={c} className="inline-flex items-center gap-1 rounded-full bg-[#6D28D9] px-2 py-0.5 text-[11px] font-semibold text-white"><Sparkles className="h-2.5 w-2.5" />{c}</span>)}
+                  </div>
+                )}
+              </div>
             </FormBlock>
             {/* 후보 코너 유형 — 혜택형 '전부 추천'일 때만(여러 코너 껍데기 중 추천이 택). 퀵메뉴는 아이템 추천이라 후보 선택 없이 개수만(2026-11-25 사용자 요청). */}
             {isBenefitType && fillMode === '전부 추천' && (
@@ -1883,7 +1909,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
             <div className="mt-1 flex flex-wrap items-center gap-2 rounded-[10px] border border-[#e8ddff] bg-[#faf7ff] px-3 py-2.5 text-[12px]">
               <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">후보 {persoTypes.length}개 유형</span>
               <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#b79ae8]" />
-              <span className="flex items-center gap-1 rounded-full bg-[#6D28D9] px-2.5 py-1 font-semibold text-white"><Sparkles className="h-3 w-3" />{persoMls}</span>
+              <span className="flex items-center gap-1 rounded-full bg-[#6D28D9] px-2.5 py-1 font-semibold text-white"><Sparkles className="h-3 w-3" />개인화 옵션 {persoCats.length}개</span>
               <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#b79ae8]" />
               <span className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-semibold text-[#6D28D9] shadow-sm">최소 {persoMin}~최대 {persoMax}개 노출</span>
               <span className="ml-auto shrink-0 text-[11px] text-[var(--ink4)]">{fb === '운영자 편성으로 대체' ? '없으면 운영자 대체' : '없으면 미노출'}</span>
