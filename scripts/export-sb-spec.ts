@@ -15,8 +15,9 @@ import {
 } from '../src/lib/display-taxonomy';
 import { benefitTypes, cornerAttrSpec, operModeOf, benefitGuide, hasLandingLink } from '../src/lib/benefit-corner-types';
 import { PRESET_SHAPE_GROUPS } from '../src/lib/preset-shape-groups';
+import { prisma } from '../src/lib/prisma';
 
-const spec = {
+const spec: Record<string, unknown> = {
   meta: {
     title: '전시화면 관리(빌더) 스펙',
     generatedAt: new Date().toISOString(),
@@ -129,9 +130,76 @@ const spec = {
   containerTypes: CONTAINER_TYPES,
 };
 
-const outDir = path.join(process.cwd(), 'docs', 'sb-export');
-fs.mkdirSync(outDir, { recursive: true });
-const outPath = path.join(outDir, 'display-admin-spec.json');
-fs.writeFileSync(outPath, JSON.stringify(spec, null, 2), 'utf8');
-console.log(`✓ 저장: ${outPath}`);
-console.log(`  코너 유형(최상위) ${CORNER_TYPES.length}종 · 혜택형 ${benefitTypes().length}종 · 상태 ${DISPLAY_STATUSES.length}단계 · 프리셋 그룹 ${PRESET_SHAPE_GROUPS.length}`);
+// 11) 실제 배치(placements) — 활성 컨테이너 → 템플릿 → 코너(순서·유형·수급·존). DB 현재 상태.
+async function loadPlacements() {
+  const containers = await prisma.container.findMany({
+    where: { status: 'active' },
+    orderBy: [{ containerType: 'asc' }, { name: 'asc' }],
+    include: {
+      templates: {
+        where: { archivedAt: null },
+        orderBy: [{ isDefault: 'desc' }, { priority: 'desc' }],
+        include: {
+          templateCorners: {
+            orderBy: { order: 'asc' },
+            include: { corner: true },
+          },
+        },
+      },
+    },
+  });
+  return containers.map((c) => ({
+    id: c.id,
+    name: c.name,
+    containerType: c.containerType,
+    channel: c.channel,
+    status: c.status,
+    approvalStatus: c.approvalStatus,
+    defaultTemplateId: c.defaultTemplateId,
+    templates: c.templates.map((t) => ({
+      id: t.id,
+      name: t.name,
+      conditionGroup: t.conditionGroup,
+      isDefault: t.isDefault,
+      status: t.status,
+      priority: t.priority,
+      period: t.startAt || t.endAt ? { startAt: t.startAt, endAt: t.endAt } : '상시',
+      personalSlots: t.personalSlots ? safeJson(t.personalSlots) : null,
+      cornerCount: t.templateCorners.length,
+      corners: t.templateCorners.map((tc, i) => ({
+        order: i + 1,
+        name: tc.corner.name,
+        cornerType: tc.corner.cornerType,
+        typeLabel: tc.corner.typeLabel ?? null,
+        layout: tc.corner.layoutDetail ?? tc.corner.cornerLayout ?? null,
+        maxItems: tc.corner.maxItems,
+        minItems: tc.corner.minItems,
+        recSource: tc.corner.recSource,
+        cvmCatalog: tc.corner.cvmCatalog ?? null,
+        cvmTopN: tc.corner.cvmTopN ?? null,
+        cvmFallback: tc.corner.cvmFallback ?? null,
+        zone: tc.zone ?? '(파생)',
+        pinned: tc.pinned,
+        visible: tc.visible,
+      })),
+    })),
+  }));
+}
+function safeJson(s: string): unknown { try { return JSON.parse(s); } catch { return s; } }
+
+async function main() {
+  spec.placements = await loadPlacements();
+
+  const outDir = path.join(process.cwd(), 'docs', 'sb-export');
+  fs.mkdirSync(outDir, { recursive: true });
+  const outPath = path.join(outDir, 'display-admin-spec.json');
+  fs.writeFileSync(outPath, JSON.stringify(spec, null, 2), 'utf8');
+
+  const placements = spec.placements as { name: string; templates: { cornerCount: number }[] }[];
+  const totalCorners = placements.reduce((a, c) => a + c.templates.reduce((b, t) => b + t.cornerCount, 0), 0);
+  console.log(`✓ 저장: ${outPath}`);
+  console.log(`  코너 유형(최상위) ${CORNER_TYPES.length}종 · 혜택형 ${benefitTypes().length}종 · 상태 ${DISPLAY_STATUSES.length}단계 · 프리셋 그룹 ${PRESET_SHAPE_GROUPS.length}`);
+  console.log(`  실제 배치: 컨테이너 ${placements.length} · 코너 배치 ${totalCorners}`);
+  await prisma.$disconnect();
+}
+main().catch(async (e) => { console.error(e); await prisma.$disconnect(); process.exit(1); });
