@@ -293,10 +293,11 @@ function FormBlock({ title, desc, locked, children }: { title: string; desc?: st
 }
 // 라벨-좌(회색 셀) / 컨트롤-우(흰 셀) 테이블 행 — FieldRow와 동일(라벨 bg-th·14/500·ink2·px-4 py-3, 값 px-4 py-2.5, border-b #dce0e5).
 function FormRow({ label, en, req, children }: { label: string; en?: string; req?: boolean; children: React.ReactNode }) {
+  void en; // 영문 필드 코드(ImageSrc·CornerTitle·ButtonText 등) 표시는 제거(2026-11-26 사용자 요청). prop은 호출부 호환 위해 유지.
   return (
     <div className="grid grid-cols-[120px_minmax(0,1fr)] items-stretch border-b border-[#dce0e5]">
       <div className="flex flex-col justify-center whitespace-nowrap bg-[var(--th)] px-4 py-3 text-[14px] font-medium text-[var(--ink2)]">
-        <span>{label}{req && <span className="text-[var(--bad)]"> *</span>}</span>{en && <span className="text-[10px] font-normal text-[var(--ink4)]">{en}</span>}
+        <span>{label}{req && <span className="text-[var(--bad)]"> *</span>}</span>
       </div>
       <div className="flex min-w-0 flex-col justify-center bg-white px-4 py-2.5">{children}</div>
     </div>
@@ -2829,7 +2830,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             const showCtx = c.recSource !== '운영자 편성' && !!c.preview.contextHeader;
             const fullPreview = {
               ...c.preview,
-              bigBanner: true,
+              bigBanner: !!c.preview.bigBanner,
               contextHeader: showCtx,
               information: true,
               moreButtonUse: !!c.preview.moreButtonUse,
