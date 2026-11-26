@@ -48,16 +48,23 @@ function RowFull({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-// 배너형·탭형 조회 전용 상세 — 혜택형 프리셋이 아니라 공통 유형이라 간이 상세(미리보기 + 기본 정보)로 렌더(2026-11-25 사용자 요청).
-const SPECIAL_TYPES: Record<string, { top: string; mid: string; layout: string; source: string; desc: string; pager?: boolean; kind: 'banner' | 'tab' }> = {
-  'banner-single': { top: '배너형', mid: '배너형', layout: '단수형', source: '배너 캠페인 관리', desc: '배너 1개를 노출합니다. 소재·문구·랜딩은 배너 캠페인 관리에서 가져옵니다.', kind: 'banner' },
-  'banner-multi': { top: '배너형', mid: '배너형', layout: '복수형', source: '배너 캠페인 관리', desc: '여러 배너(최대 10개)를 스와이프로 노출합니다(하단 1/N). 노출 순서 = 등록 순서대로 또는 개인화 순서(2026-11-26 회의: 동일 순번 추천은 폐기). 비로그인은 등록 순서.', pager: true, kind: 'banner' },
-  'tab-swipe': { top: '업무 진입형', mid: '퀵메뉴형', layout: '스와이프형', source: '-', desc: '상단 진입 퀵메뉴. 아이콘+라벨 칩을 가로 스와이프로 노출합니다.', kind: 'tab' },
+// 배너형·업무진입형·홈형 조회 전용 상세 — 혜택형 프리셋이 아닌 공통 유형. 레이아웃은 혜택형(event-list) 메인 상세와 동일(2026-11-26 사용자 요청).
+const SPECIAL_TYPES: Record<string, { typeId: string; top: string; mid: string; layout: string; oper: string; source: string; desc: string; pager?: boolean; kind: 'banner' | 'tab' | 'home'; big?: boolean }> = {
+  'banner-single': { typeId: 'CYB001', top: '배너형', mid: '배너형', layout: '단수형', oper: '개인화/수동', source: '배너 캠페인 관리', desc: '배너 1개를 노출합니다. 소재·문구·랜딩은 배너 캠페인 관리에서 가져옵니다.', kind: 'banner' },
+  'banner-multi': { typeId: 'CYB002', top: '배너형', mid: '배너형', layout: '복수형', oper: '개인화/수동', source: '배너 캠페인 관리', desc: '여러 배너(최대 10개)를 스와이프로 노출합니다(하단 1/N). 노출 순서 = 등록 순서대로 또는 개인화 순서(2026-11-26 회의: 동일 순번 추천은 폐기). 비로그인은 등록 순서.', pager: true, kind: 'banner' },
+  'tab-swipe': { typeId: 'CYW001', top: '업무 진입형', mid: '퀵메뉴형', layout: '스와이프형', oper: '개인화/수동', source: '-', desc: '상단 진입 퀵메뉴. 아이콘+라벨 칩을 가로 스와이프로 노출합니다. 운영자 최대 12개 등록, 2번째 고정 + 개인화(Max 5) + 후순위 교체(2026-11-26 회의).', kind: 'tab' },
+  'home-rec': { typeId: 'CYM001', top: '홈형', mid: '추천형', layout: '추천 카드 + 질의어', oper: '개인화', source: '어드민 · CVM 추천 + 추천 질의어 풀', desc: '메인 홈 상단. 인사말 + 추천 카드 + 추천 질의어 칩을 노출합니다. CVM 추천과 추천 질의어 풀에서 채웁니다.', kind: 'home' },
+  'home-banner': { typeId: 'CYM002', top: '홈형', mid: '추천형', layout: '배너 확장형', oper: '개인화', source: '배너 캠페인 관리', desc: '메인 홈 상단. 말풍선 없이 큰 배너로 확장 노출합니다. 소재는 배너 캠페인 관리에서 가져옵니다.', kind: 'home', big: true },
+};
+
+// 코너 유형(top) → 칩 톤(코너 유형 리스트 TOP_TONE과 동일).
+const SPECIAL_CHIP: Record<string, string> = {
+  '배너형': 'bg-[#E6F0FF] text-[#2E6FF2]', '업무 진입형': 'bg-[#EAF7F0] text-[#0B8A75]', '홈형': 'bg-[#F2ECFB] text-[#6D28D9]',
 };
 
 function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
   const Preview = sp.kind === 'banner' ? (
-    <div className="mx-auto w-full max-w-[320px] rounded-[18px] border border-[#e3e6ea] bg-white p-4 shadow-[0_2px_12px_rgba(20,22,40,0.08)]">
+    <div className="mx-auto w-full max-w-[320px] rounded-[18px] border border-[#e3e6ea] bg-white p-4">
       <div className="flex items-start gap-3">
         <p className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-[#8b949e]">배너 타이틀</p>
         <div className="h-14 w-14 shrink-0 rounded-[10px] bg-gradient-to-br from-[#e7eaf1] to-[#d7dce6]" />
@@ -68,8 +75,26 @@ function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
         </div>
       )}
     </div>
+  ) : sp.kind === 'home' ? (
+    /* 홈형 — ① 추천 카드 + 질의어 묶음(인사말·카드·질의어 칩 2개) ② 배너 확장형(말풍선 없이 큰 배너). */
+    <div className="mx-auto w-full max-w-[320px] rounded-[18px] border border-[#e3e6ea] bg-white p-4">
+      {sp.big ? (
+        <div className="flex h-[132px] items-center justify-center rounded-[14px] bg-gradient-to-br from-[#e7eaf1] to-[#d7dce6] text-[12px] font-semibold text-[#8b949e]">Banner</div>
+      ) : (
+        <>
+          <p className="text-[12px] font-medium text-[#8b949e]">Greeting</p>
+          <div className="mt-2 flex items-center gap-3 rounded-[14px] bg-[#f4f5fb] p-3">
+            <div className="h-11 w-11 shrink-0 rounded-[10px] bg-gradient-to-br from-[#e7eaf1] to-[#d7dce6]" />
+            <div className="min-w-0 flex-1 space-y-1.5"><span className="block h-2.5 w-3/4 rounded-full bg-[#dce0e5]" /><span className="block h-2.5 w-1/2 rounded-full bg-[#e8ecef]" /></div>
+          </div>
+          <div className="mt-3 flex gap-1.5">
+            {['Query', 'Query'].map((q, i) => <span key={i} className="rounded-full border border-[#dce0e5] bg-white px-2.5 py-1 text-[11px] font-medium text-[#8b949e]">{q}</span>)}
+          </div>
+        </>
+      )}
+    </div>
   ) : (
-    /* 탭형(상단 퀵메뉴) — 운영자가 최대 12개 등록 → 위아래 2행×6개가 모두 보이게 아이콘 타일 그리드(잘림 없음, 2026-11-25 사용자 요청). 라벨은 껍데기(필드 코드)라 'menu'. */
+    /* 업무 진입형(상단 퀵메뉴) — 최대 12개(2행×6). 라벨은 껍데기(필드 코드)라 'menu'. */
     <div className="mx-auto w-full max-w-[320px] rounded-[18px] bg-[#eef0ff] p-4">
       <div className="grid grid-cols-6 gap-x-1.5 gap-y-3">
         {Array.from({ length: 12 }, (_, i) => (
@@ -83,24 +108,21 @@ function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
   );
   return (
     <div className="px-12 py-9 pb-28">
+      {/* 헤더 — 혜택형 상세와 동일(브레드크럼 + '코너 유형 상세' + 조회 전용). */}
       <nav className="mb-2 flex items-center gap-1.5 text-[14px] text-[#697582]">
         <span>홈</span><span>›</span><span>전시 관리</span><span>›</span>
         <Link href="/admin/corner-types" className="hover:text-[#3617ce]">코너 유형 관리</Link><span>›</span>
-        <span className="text-[#1a1a1a]">{sp.mid} · {sp.layout}</span>
+        <span className="text-[#1a1a1a]">코너 유형 상세</span>
       </nav>
-      <Link href="/admin/corner-types" className="mb-3 inline-flex items-center gap-1 text-[13px] font-medium text-[#697582] hover:text-[#3617ce]">
-        <ChevronLeft className="h-4 w-4" /> 목록으로
-      </Link>
       <div className="mb-6 flex flex-wrap items-center gap-2.5">
-        <h1 className="text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[#1a1a1a]">{sp.top} &gt; {sp.mid} &gt; {sp.layout}</h1>
+        <h1 className="text-[24px] font-bold leading-[32px] tracking-[-0.6px] text-[#1a1a1a]">코너 유형 상세</h1>
         <span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[12px] font-bold text-[#697582]"><Lock className="h-3 w-3" />조회 전용</span>
       </div>
-      {/* 미리보기(좌·고정폭 340·sticky) + 코너 기본 정보(우·콜랩스) — 혜택형 상세와 동일 레이아웃(2026-11-25 사용자 요청). */}
+      {/* 미리보기(좌·고정폭 340·sticky) + 코너 기본 정보(우·콜랩스) — 혜택형 상세와 동일. */}
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
           <div className="mb-2.5 flex items-center gap-2 px-1">
-            <span className="text-[13px] font-bold text-[#454f59]">코너 미리보기</span>
-            <span className="text-[12px] text-[#b3b9c0]">껍데기(필드 코드)</span>
+            <span className="text-[14px] font-bold text-[#1a1a1a]">코너 유형 미리보기</span>
           </div>
           <div className="flex justify-center rounded-[20px] bg-[#eceef5] p-6">{Preview}</div>
         </div>
@@ -108,16 +130,19 @@ function GenericTypeDetail({ sp }: { sp: (typeof SPECIAL_TYPES)[string] }) {
         <div className="min-w-0 flex-1 space-y-6">
           <Collapse title="코너 기본 정보">
             <div className="px-5 pb-5 pt-4">
-             <div className="">
-              <Row2 l1="코너 유형" v1={<span className={`${CHIP} ${sp.top === '배너형' ? 'bg-[#E6F0FF] text-[#2E6FF2]' : 'bg-[#EAF7F0] text-[#0B8A75]'}`}>{sp.top}</span>} l2="중분류" v2={<span className="text-[#454f59]">{sp.mid}</span>} />
-              <Row2 l1="배열·레이아웃" v1={<span className="text-[#454f59]">{sp.layout}</span>} l2="원장" v2={
-                <span className="inline-flex items-center gap-1.5 rounded-md border border-[#dce0e5] bg-[#f8f9fb] px-2 py-1 text-[13px] text-[#454f59]">
-                  <Database className="h-3.5 w-3.5 shrink-0 text-[#8b949e]" /><span className="[word-break:keep-all]">{sp.source}</span>
-                </span>} />
-              <RowFull label="설명"><span className="text-[14px] leading-relaxed text-[#1a1a1a] [word-break:keep-all]">{sp.desc}</span></RowFull>
+             <div className="border-t border-[#dce0e5]">
               <Row2
-                l1="사용 여부" v1={<span className="inline-flex items-center gap-1 font-semibold text-[#0B8A75]"><span className="h-1.5 w-1.5 rounded-full bg-[#00a058]" />사용</span>}
-                l2="등록일시" v2={<span className="text-[#697582]">2026-11-23 10:21</span>} />
+                l1="코너 유형 ID" v1={<span className="font-mono text-[13px] text-[#454f59]">{sp.typeId}</span>}
+                l2="코너 유형" v2={<span className={`${CHIP} ${SPECIAL_CHIP[sp.top] ?? 'bg-[#EAF7F0] text-[#0B8A75]'}`}>{sp.top}</span>} />
+              <Row2
+                l1="코너 구분" v1={<span className="text-[#454f59]">{sp.mid.replace(/형$/, '')}</span>}
+                l2="배열·레이아웃" v2={<span className="text-[#454f59]">{sp.layout}</span>} />
+              <Row2
+                l1="사용 여부" v1={<span className="text-[#1a1a1a]">Y</span>}
+                l2="운영 규칙" v2={<span className="text-[#454f59]">{sp.oper}</span>} />
+              <RowFull label="노출 규격"><span className="text-[14px] leading-relaxed text-[#1a1a1a] [word-break:keep-all]">{sp.desc}</span></RowFull>
+              <RowFull label="원장 정보"><span className="text-[14px] text-[#1a1a1a] [word-break:keep-all]">{sp.source}</span></RowFull>
+              <RowFull label="등록일"><span className="text-[#454f59]">2026.11.23 10:21</span></RowFull>
              </div>
             </div>
           </Collapse>
