@@ -9,6 +9,7 @@ import { benefitTypeByKey, cornerAttrSpec, benefitGuide, operModeOf } from '@/li
 import { presetDesignName } from '@/components/preview/preset-design-card';
 import { BenefitCornerPreview } from '../../benefit-corner-preview';
 import { Collapse } from './collapse';
+import { DetailTabs, ApprovalInfoCard } from './detail-tabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -151,7 +152,9 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
         <span className="inline-flex items-center gap-1 rounded-full bg-[#eef0f6] px-2.5 py-0.5 text-[12px] font-bold text-[#697582]"><Lock className="h-3 w-3" />조회 전용</span>
       </div>
 
-      {/* 미리보기(좌·고정폭 340·sticky) + 코너 기본/속성 정보(우) — Figma 레이아웃 */}
+      {/* 상세 탭(상세정보 / 변경·승인 이력) + 승인 정보 — SB Figma(29305-82657). 상세정보 = 승인정보 + 미리보기 + 기본/속성/프리셋. */}
+      <DetailTabs detail={(<>
+      <ApprovalInfoCard typeId={t.typeId} />
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="w-[340px] max-w-full shrink-0 self-start lg:sticky lg:top-3">
           <div className="mb-2.5 flex items-center gap-2 px-1">
@@ -252,6 +255,7 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
           </Collapse>
         </div>
       </div>
+      </>)} />
     </div>
   );
 }
