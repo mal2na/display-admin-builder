@@ -23,7 +23,7 @@ import { BenefitCornerPreview } from '@/app/admin/corner-types/benefit-corner-pr
 import { PreviewImage } from '@/components/preview/preview-image';
 import { compositionToPreviewCorner } from '@/components/preview/composition-preview';
 import { FieldRow } from '@/components/ops-ui';
-import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, REC_SOURCE_METHODS, REC_SOURCE_INFO, type Zone } from '@/lib/display-taxonomy';
+import { cornerTypeChipClass, layoutLabel, displayLayout, cornerFieldSpec, ZONE_META, ZONE_RANK, type Zone } from '@/lib/display-taxonomy';
 import { persoOptionsFor } from '@/lib/personalization-options';
 import { PRESET_SHAPE_GROUPS } from '@/lib/preset-shape-groups';
 import { presetDesignName } from '@/components/preview/preset-design-card';
@@ -589,7 +589,9 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   // 표시명(2026-11-26 회의) — 저장값은 유지, 라벨만 명확화: '운영자 고정 + 추천' → '코너 고정 · 콘텐츠 추천'(코너 하나 고정 후 콘텐츠 일부 입력+나머지 추천).
   const FILL_MODE_LABEL: Record<string, string> = { '운영자 직접': '운영자 직접', '운영자 고정 + 추천': '코너 고정 · 콘텐츠 추천', '전부 추천': '전부 추천' };
   const [fillMode, setFillMode] = React.useState<string>(() => (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접');
-  const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); };
+  // 채우는 방식(fillMode) → 수급(recSource) 매핑. ② 라디오 선택이 코너 recSource에 반영돼야 미리보기가 'CVM 구좌'로 바뀐다(2026-11-26 사용자 요청: 개인화면 뚫린 구좌).
+  const FILL_TO_REC: Record<string, string> = { '운영자 직접': '운영자 편성', '운영자 고정 + 추천': 'CVM 데이터 연동', '전부 추천': 'CVM 콘텐츠 연동' };
+  const pickFillMode = (m: string) => { setFillMode(m); onPersonalChange(m !== '운영자 직접'); const rec = FILL_TO_REC[m] ?? '운영자 편성'; setSrc(rec); onRecSourceChange(rec); };
   const RQ_SAMPLES = ['이번 달 통신비 아끼는 법', '지금 받을 수 있는 혜택은?', '내게 맞는 요금제 추천받기', '로밍 저렴하게 쓰는 법', '데이터 선물하는 방법', '멤버십 등급 올리는 법', '남은 데이터 확인하기', '가족 결합 할인 알아보기', '기기 할부금 조회하기', '요금제 바로 변경하기', 'T멤버십 쿠폰 받기', '오늘의 맞춤 혜택 보기', '해외 데이터 로밍 신청', '소액결제 한도 변경', '유독(구독) 추천받기', '약정 만료일 확인', '포인트 적립 내역 보기', '단말기 보험 가입 확인', '자동이체 할인 신청', 'VIP 전용 혜택 보기'];
   const RQ_MAX = 20;      // 등록 풀 상한(운영자가 여기까지 추가 가능).
   const RQ_SEED = 10;     // 기본 채움 개수(2026-11-26 사용자: 20개 말고 10개만 우선).
@@ -1145,27 +1147,29 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           {/* AS-IS(node 29268-74688) '코너 콘텐츠 구성 방식' 라디오 카드 — 수급 3종 + CVM/운영자 소유 분담(2026-11-26 사용자 요청). 내부 fillMode는 매핑 유지. */}
           <div className="space-y-1.5 pb-1">
             {([
-              { method: '운영자 편성', mode: '운영자 직접' },
-              { method: 'CVM 데이터 연동', mode: '운영자 고정 + 추천' },
-              { method: 'CVM 콘텐츠 연동', mode: '전부 추천' },
-            ] as const).map(({ method, mode }) => {
+              // 표시 워딩 — 'CVM' 단어를 빼고 '추천'으로(추천 출처가 CVM만은 아닐 수 있음). 저장 recSource(method) 키는 유지(2026-11-26 사용자 요청).
+              //  ① 운영자 편성 ② 운영자 편성 + 추천(일부 고정·나머지 추천) ③ 구좌 전체 추천(자리째 추천에 위임).
+              { method: '운영자 편성', mode: '운영자 직접', label: '운영자 편성', personalized: false,
+                sub: '운영자가 노출 항목과 순서를 직접 설정해요', who: '운영자 · 전체', rec: '추천 · 없음' },
+              { method: 'CVM 데이터 연동', mode: '운영자 고정 + 추천', label: '운영자 편성 + 추천', personalized: true,
+                sub: '운영자가 일부 자리를 고정하고, 나머지 자리는 추천이 고객마다 채워요', who: '운영자 · 일부 고정', rec: '추천 · 나머지 자리' },
+              { method: 'CVM 콘텐츠 연동', mode: '전부 추천', label: '구좌 전체 추천', personalized: true,
+                sub: '구좌 자체를 추천에 맡겨요 — 이미지·문구·랜딩까지 추천이 고객마다 채워요', who: '운영자 · 구좌만', rec: '추천 · 전체' },
+            ] as const).map(({ method, mode, label, personalized, sub, who, rec }) => {
               const on = fillMode === mode;
-              const info = REC_SOURCE_INFO[method];
               const blocked = (!corner.canPersonal && mode !== '운영자 직접') || (forcePersonal && mode === '운영자 직접');
               return (
+                // 컴팩트 2줄 — 라디오+라벨+배지+분담(1줄) / 설명(1줄). 높이 최소화(2026-11-26 사용자 요청: 영역 과다 차지).
                 <button key={method} type="button" disabled={blocked} onClick={() => { if (!blocked) pickFillMode(mode); }}
-                  className={cn('flex w-full items-start gap-3 rounded-[10px] border px-3.5 py-3 text-left transition', on ? 'border-[#6D28D9] bg-[#faf7ff]' : 'border-[var(--line2)] bg-white hover:border-[#c9b8ec]', blocked && 'cursor-not-allowed opacity-40')}>
-                  <span className={cn('mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[#6D28D9]' : 'border-[var(--line3)]')}>{on && <span className="h-2 w-2 rounded-full bg-[#6D28D9]" />}</span>
+                  className={cn('flex w-full items-center gap-2.5 rounded-[9px] border px-3 py-2 text-left transition', on ? 'border-[#6D28D9] bg-[#faf7ff]' : 'border-[var(--line2)] bg-white hover:border-[#c9b8ec]', blocked && 'cursor-not-allowed opacity-40')}>
+                  <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full border', on ? 'border-[#6D28D9]' : 'border-[var(--line3)]')}>{on && <span className="h-2 w-2 rounded-full bg-[#6D28D9]" />}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <b className="text-[14px] text-[var(--ink)]">{method}</b>
-                      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-bold', info.personalized ? 'bg-[#F2ECFB] text-[#6D28D9]' : 'bg-[#eef0f2] text-[var(--ink3)]')}>{info.personalized ? '개인화 · 고객마다 다름' : '모두 같음'}</span>
+                    <span className="flex items-center gap-1.5">
+                      <b className="shrink-0 text-[13px] text-[var(--ink)]">{label}</b>
+                      <span className={cn('shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold', personalized ? 'bg-[#F2ECFB] text-[#6D28D9]' : 'bg-[#eef0f2] text-[var(--ink3)]')}>{personalized ? '개인화' : '모두 같음'}</span>
+                      <span className="ml-auto hidden shrink-0 items-center gap-1 text-[10.5px] font-semibold text-[var(--ink4)] sm:flex">{who}<span className="text-[var(--line3)]">·</span>{rec}</span>
                     </span>
-                    <span className="mt-0.5 block text-[12px] text-[var(--ink3)]">{info.sub}</span>
-                    <span className="mt-1.5 flex flex-wrap gap-1.5 text-[11px]">
-                      <span className="rounded-full bg-[var(--th)] px-2 py-0.5 font-semibold text-[var(--ink3)]">운영자 · {info.weBuild}</span>
-                      <span className="rounded-full bg-[var(--th)] px-2 py-0.5 font-semibold text-[var(--ink3)]">CVM · {info.cvmGives}</span>
-                    </span>
+                    <span className="mt-0.5 block truncate text-[11.5px] text-[var(--ink3)]">{sub}</span>
                   </span>
                 </button>
               );
@@ -1245,7 +1249,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           ) : (<>
           {fillForFallback && (
             <div className="mb-3 flex items-start gap-1.5 rounded-[8px] bg-[#fff8ef] px-3 py-2 text-[12px] leading-relaxed text-[#b67a12]">
-              <span className="mt-0.5">⚠</span><span>이 코너는 <b>CVM 콘텐츠 연동</b>이라 평소엔 CVM 완성본이 노출됩니다. <b>CVM 응답이 비면</b> 아래에 등록한 운영자 편성 항목이 대신 노출돼요(폴백 미리보기에서 확인).</span>
+              <span className="mt-0.5">⚠</span><span>이 코너는 <b>구좌 전체 추천</b>이라 평소엔 추천 완성본이 노출됩니다. <b>추천이 비면</b> 아래에 등록한 운영자 편성 항목이 대신 노출돼요(폴백 미리보기에서 확인).</span>
             </div>
           )}
           {/* 칩 불러오기 모달 — 탭(코너 속성)에서 눌러도 뜨도록 탭 바깥(최상단)에 렌더(2026-11-05 사용자 요청). */}
@@ -1965,19 +1969,18 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           </div>
         </Sec>
       ) : (
-        <Sec n={nFillSec} title="CVM 요청 (구좌만)" help>
+        <Sec n={nFillSec} title="추천 구좌 (자리만 넘김)" help>
           <p className="rounded-[8px] bg-[var(--ac2)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
-            <b className="text-[var(--ac)]">CVM 콘텐츠 연동</b> = 구좌(자리)만 넘깁니다. 이미지·문구·랜딩까지 <b>CVM이 완성본을 내려주고</b> 전시 어드민은 받은 그대로 노출합니다. 별도 요청 범위(③) 설정은 없습니다.
+            <b className="text-[var(--ac)]">구좌 전체 추천</b> = 자리(구좌)만 넘깁니다. 이미지·문구·랜딩까지 <b>추천이 완성본을 내려주고</b> 전시 어드민은 받은 그대로 노출합니다. 별도 요청 범위(③) 설정은 없습니다.
           </p>
         </Sec>
       )}
 
       {/* ③ 대체 노출 설정(폴백) — 추천을 쓸 때(CVM 수급 또는 전부 추천)만 노출. 코너 콘텐츠 설정(②) '아래'(2026-11-25·2026-11-26 사용자 요청). */}
       {(isCvmSrc || fillMode === '전부 추천') && (() => {
-        const isRec = fillMode === '전부 추천' && !isCvmSrc; // 추천 수급(전부 추천) vs CVM
-        const emptyWord = isRec ? '추천이 비면' : 'CVM이 비면';
+        const emptyWord = '추천이 비면';
         return (
-        <Sec n={nFallback} title="대체 노출 설정 (폴백)" hint={`${isRec ? '추천이 없을 때' : 'CVM 응답이 없을 때'} 대체 노출을 설정합니다`}>
+        <Sec n={nFallback} title="대체 노출 설정 (폴백)" hint="추천이 없을 때 대체 노출을 설정합니다">
           <div className="space-y-1.5">
             {(['미노출', '운영자 편성으로 대체'] as const).map((f) => {
               const on = fb === f;
@@ -2772,12 +2775,13 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
     // 메인홈 코너는 CVM이어도 '구좌 placeholder' 대신 실제 콘텐츠로 그린다(SB [홈]유형 UI 맞춤, 2026-11-25 사용자 요청).
     const cvmContent = c.recSource === 'CVM 콘텐츠 연동' && !hidden && !replaced && !/메인홈/.test(c.name);
     if (cvmContent) {
+      // 뚫려있는 구좌 — CVM 콘텐츠 연동(개인화)은 이미지·문구·랜딩까지 CVM이 런타임에 내려주므로 빌더에선 내용을 그리지 않고 '빈 구좌'로만 표시(2026-11-26 사용자 요청).
       return (
         <div key={c.id} id={`pv-${c.id}`} onClick={() => setSelCorner((m) => ({ ...m, [activeTemplate.id]: c.id }))}
-          className={cn('cursor-pointer scroll-mt-4 rounded-xl border border-dashed border-[#b9a7ff] bg-[#f3f0ff] px-3 py-5 text-center', c.id === activeSel && 'ring-2 ring-[var(--ac)] ring-offset-2')}>
-          <Sparkles className="mx-auto mb-1 h-4 w-4 text-[var(--ac)]" />
-          <p className="text-[12px] font-bold text-[var(--ac)]">CVM 완성본 자리</p>
-          <p className="text-[11px] text-[var(--ink4)]">구좌만 — 이미지·문구·랜딩은 CVM이 내려줘요</p>
+          className={cn('group flex min-h-[132px] cursor-pointer flex-col items-center justify-center gap-1.5 scroll-mt-4 rounded-[20px] border-2 border-dashed border-[#c3b4f2] bg-[#f6f3ff] px-4 py-7 text-center transition hover:border-[var(--ac)]', c.id === activeSel && 'border-[var(--ac)] ring-2 ring-[var(--ac)] ring-offset-2')}>
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]"><Sparkles className="h-3 w-3" />개인화 구좌</span>
+          <p className="text-[12px] font-bold text-[var(--ink2)]">{c.name}</p>
+          <p className="text-[11px] leading-relaxed text-[var(--ink4)]">이미지·문구·랜딩까지 <b className="text-[#6D28D9]">추천이 고객마다</b> 채웁니다 · 빌더엔 내용 미표시</p>
         </div>
       );
     }
