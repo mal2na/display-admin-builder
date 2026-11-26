@@ -257,8 +257,8 @@ export default function BenefitCornerTypeDetailPage({ params }: { params: { key:
             );
           })()}
 
-          {/* 등록된 프리셋 — 이 유형에 묶인 프리셋 목록 */}
-          <Collapse title="등록된 프리셋" hint={`${t.presetIds.length}개`}>
+          {/* 등록된 프리셋 — 이 유형에 묶인 프리셋 목록. 기본 접힘(이후 삭제 가능성 높음, 2026-11-26 사용자 요청). */}
+          <Collapse title="등록된 프리셋" hint={`${t.presetIds.length}개`} defaultOpen={false}>
             <div className="flex items-center px-4 pt-3">
               <Link href={`/admin/corner-types/preset#${t.presetKey}`} className="ml-auto text-[13px] font-medium text-[#3617ce] hover:underline">프리셋 페이지에서 보기 ›</Link>
             </div>
