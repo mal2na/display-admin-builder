@@ -132,8 +132,9 @@ const spec: Record<string, unknown> = {
 
 // 11) 실제 배치(placements) — 활성 컨테이너 → 템플릿 → 코너(순서·유형·수급·존). DB 현재 상태.
 async function loadPlacements() {
+  // 혜택 홈만 — 지금 혜택 영역만 작업 중(2026-11-26 사용자 요청).
   const containers = await prisma.container.findMany({
-    where: { status: 'active' },
+    where: { status: 'active', name: { contains: '혜택' } },
     orderBy: [{ containerType: 'asc' }, { name: 'asc' }],
     include: {
       templates: {
