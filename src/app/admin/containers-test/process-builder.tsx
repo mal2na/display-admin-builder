@@ -588,6 +588,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const FILL_MODES = ['운영자 직접', '운영자 고정 + 추천', '전부 추천'] as const;
   // 표시명(2026-11-26 회의) — 저장값은 유지, 라벨만 명확화: '운영자 고정 + 추천' → '코너 고정 · 콘텐츠 추천'(코너 하나 고정 후 콘텐츠 일부 입력+나머지 추천).
   const FILL_MODE_LABEL: Record<string, string> = { '운영자 직접': '운영자 직접', '운영자 고정 + 추천': '코너 고정 · 콘텐츠 추천', '전부 추천': '전부 추천' };
+  // ③ 섹션 타이틀 = ② 채우는 방식에서 고른 라벨과 동일하게(2026-11-26 사용자 요청). ② 라디오 라벨과 일치.
+  const FILL_MODE_SEC_TITLE: Record<string, string> = { '운영자 직접': '운영자 편성', '운영자 고정 + 추천': '운영자 편성 + 추천', '전부 추천': '구좌 전체 추천' };
   const [fillMode, setFillMode] = React.useState<string>(() => (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접');
   // 채우는 방식(fillMode) → 수급(recSource) 매핑. ② 라디오 선택이 코너 recSource에 반영돼야 미리보기가 'CVM 구좌'로 바뀐다(2026-11-26 사용자 요청: 개인화면 뚫린 구좌).
   const FILL_TO_REC: Record<string, string> = { '운영자 직접': '운영자 편성', '운영자 고정 + 추천': 'CVM 데이터 연동', '전부 추천': 'CVM 콘텐츠 연동' };
@@ -836,6 +838,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
     // 배너형 — '깡통(껍데기) 불러오기'라 ③ 콘텐츠 설정은 비어서 시작한다(2026-11-19 사용자 요청). 배너 소재는 '배너 캠페인'에서 등록하고,
     //  운영자가 '배너 불러오기/조회'로 직접 담는다(미팅 2026-11-17: 배너 이미지·링크는 조회 전용, 어드민은 선택만). 처음부터 데이터가 차 있으면 안 됨.
     if (isBanner) return [];
+    // 혜택형도 '껍데기(깡통) 불러오기' — ③ 컴포넌트는 비워서 시작하고, 운영자가 '등록된 혜택에서 불러오기'(모달)로 직접 담는다(2026-11-26 사용자 요청: 껍데기인데 컴포넌트가 다 차있는 게 이상). 카테고리형(칩 기반)은 제외.
+    if (isBenefitType && !isCategory) return [];
     // 카테고리형 — 활성 카테고리(칩)에 해당하는 카탈로그 항목으로 시드. 카테고리를 바꾸면 그 카테고리 리스트로 교체된다(2026-11-09 사용자 요청: 카페·베이커리·외식 전환 시 변경).
     if (chipMode && isCategory && catalog.length) {
       const activeCat = chips[chipIdx];
@@ -1181,7 +1185,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
 
       {/* ③ 채우기 — 선택한 방식으로 노출할 데이터를 설정. 대체 노출(폴백)은 ④로 아래에. */}
       {(src === '운영자 편성' || (isData && !isProfile) || fillForFallback) ? (
-        <Sec n={nFillSec} title={fillForFallback ? '대체 항목 (CVM이 비면 노출)' : isData ? '운영자 고정 항목 (나머지 CVM)' : '채우기'} hint="노출할 데이터를 설정합니다">
+        <Sec n={nFillSec} title={fillForFallback ? '대체 항목 (추천이 비면 노출)' : (FILL_MODE_SEC_TITLE[fillMode] ?? '채우기')} hint="노출할 데이터를 설정합니다">
 
           {/* ── 미션 연결(출석체크·룰렛) — 고정 틀이라 콘텐츠를 조립하지 않고 운영 중인 미션에 '연결'(2026-11-26 A안). 콘텐츠·보상은 연결된 미션에서 내려오고, 개인화는 CVM이 고객별로 채움. ── */}
           {forcePersonal && (
@@ -1969,7 +1973,7 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
           </div>
         </Sec>
       ) : (
-        <Sec n={nFillSec} title="추천 구좌 (자리만 넘김)" help>
+        <Sec n={nFillSec} title={FILL_MODE_SEC_TITLE[fillMode] ?? '구좌 전체 추천'} help>
           <p className="rounded-[8px] bg-[var(--ac2)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--ink2)]">
             <b className="text-[var(--ac)]">구좌 전체 추천</b> = 자리(구좌)만 넘깁니다. 이미지·문구·랜딩까지 <b>추천이 완성본을 내려주고</b> 전시 어드민은 받은 그대로 노출합니다. 별도 요청 범위(③) 설정은 없습니다.
           </p>
