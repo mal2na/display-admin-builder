@@ -58,6 +58,8 @@ export function canPersonalize(mid: string, layout: string): boolean {
 
 // 유형별 노출 규격(가이드) — SB 프리셋 정책 기준. 인디케이터·아이템 개수·옵션 규칙(2026-11-24).
 export function benefitGuide(mid: string, layout: string): string {
+  // 바코드형(독립 중분류)은 레이아웃이 리스트형이어도 바코드 안내로(2026-11-26).
+  if (mid === '바코드형') return '제휴사 리스트 + 멤버십 바코드(값은 런타임 발급 · 원타임). 상단 이미지·추천 맥락 헤더는 옵션.';
   switch (layout) {
     case '리스트형':
       return '세로 리스트. 아이템 기본 3개·최대 4개 이하 권장. 상단 이미지·카테고리·CTA는 옵션.';
@@ -84,7 +86,7 @@ export const SB_PREVIEW: Record<string, string> = {
   '미션형 > 룰렛형': '/assets/sb-preview/roulette.png',             // node 28813
   '혜택프로그램형 > 리스트형': '/assets/sb-preview/program.png',     // node 28274
   '혜택프로그램형 > 캐러셀형': '/assets/sb-preview/program-carousel.png', // node 28312
-  '제휴사형 > 바코드형': '/assets/sb-preview/program-barcode.png', // node 28912:21916 (바코드형 제휴사형으로 이동 2026-11-25)
+  '바코드형 > 리스트형': '/assets/sb-preview/program-barcode.png', // node 28912:21916 (바코드형=독립 중분류로 분리 2026-11-26)
   '이용지원형 > 리스트형': '/assets/sb-preview/support.png',         // node 28582
   '이용지원형 > 캐러셀형': '/assets/sb-preview/support-carousel.png',    // node 28620
 };
@@ -101,8 +103,8 @@ export function benefitMap(mid: string, layout: string): { base: string; detail:
     //  detail은 기존 렌더러용 저장값('세로형'·'가로형'…). '상단 이미지형' 문자열은 noTitle 조건에 걸리므로 금지.
     // 제휴사형 리스트형: 배너·카테고리 옵션, 아이템 1, 혜택 문구(가격 없음).
     case '제휴사형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, price: false };
-    //  바코드형: 안씀(미사용) 보존 — Figma 최종본 미포함.
-    case '제휴사형 > 바코드형': return { base: '혜택형', detail: '세로형+배너', comp: '혜택형', barcode: true, items: 1, price: false };
+    // 바코드형 리스트형(2026-11-26 독립 중분류): 제휴사 리스트 + 멤버십 바코드(값 런타임 발급).
+    case '바코드형 > 리스트형': return { base: '혜택형', detail: '세로형+배너', comp: '혜택형', barcode: true, items: 1, price: false };
     // 미션형 리스트형: 배너+카테고리 + 아이템 1 + 우측 버튼(Label).
     case '미션형 > 리스트형': return { base: '혜택·오퍼형', detail: '세로형(카테고리형)+배너', comp: '혜택형', items: 1, itemButton: true, price: false };
     // 미션형 출석체크형(통합)·룰렛형 — 기존 CornerBlock에 없는 레이아웃 → 전용 껍데기 목업(진행바·룰렛 위젯).
@@ -139,7 +141,7 @@ export function fullsetSlots(mid: string, layout: string): Slot[] {
   switch (`${mid} > ${layout}`) {
     case '제휴사형 > 세로형':
       return [banner, title, buttonText, { kind: 'items', label: '제휴사 아이템', note: itemSource }, cta];
-    case '제휴사형 > 바코드형':
+    case '바코드형 > 리스트형':
       return [title, buttonText, { kind: 'items', label: '제휴사 아이템', note: itemSource }, { kind: 'barcode', label: '멤버십 바코드', note: '런타임 발급' }];
     case '미션형 > 세로형':
       return [title, buttonText, { kind: 'items', label: '미션 아이템', note: itemSource }, cta];

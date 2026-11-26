@@ -6,7 +6,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, LayoutGrid, List as ListIcon, Database, Lock, ChevronRight } from 'lucide-react';
+import { Search, LayoutGrid, List as ListIcon, Database, Lock, ChevronRight, ChevronDown } from 'lucide-react';
 import { BenefitCornerPreview } from './benefit-corner-preview';
 import { operModeOf } from '@/lib/benefit-corner-types';
 
@@ -33,7 +33,7 @@ const TOP_BADGE: Record<string, string> = {
   '업무 진입형': 'bg-[#EAF7F0] text-[#0B8A75]',
 };
 // 2026-11-24 SB DSP_03 최종 순서: 제휴사 → 이벤트 → 미션 → 혜택프로그램 → 이용지원. (+배너형·탭형)
-const MID_ORDER = ['제휴사형', '이벤트형', '미션형', '혜택프로그램형', '이용지원형', '배너형', '탭형'];
+const MID_ORDER = ['제휴사형', '이벤트형', '미션형', '혜택프로그램형', '이용지원형', '바코드형', '배너형', '탭형'];
 // 중분류 텍스트 색상(칩 아님, 글자색만 구별).
 const MID_TEXT: Record<string, string> = {
   '제휴사형': 'text-[#2E7AFF]',
@@ -41,6 +41,7 @@ const MID_TEXT: Record<string, string> = {
   '이벤트형': 'text-[#6D28D9]',
   '혜택프로그램형': 'text-[#BE2063]',
   '이용지원형': 'text-[#0B8A75]',
+  '바코드형': 'text-[#038E52]',
   '탭형': 'text-[#454f59]',
   '배너형': 'text-[#2E6FF2]',
 };
@@ -145,32 +146,32 @@ export function BenefitTypeList({ rows }: { rows: BenefitTypeRow[] }) {
               ))}
             </div>
           </div>
-          {/* 필터1 — 코너 유형(혜택형·배너형·업무 진입형). 선택 시 하위 중분류(필터2)가 그 유형으로 좁혀진다(2026-11-25 사용자 요청). */}
-          <div className="flex items-start gap-2 text-[13px] text-[#454f59]">
-            <span className="mt-1 w-[72px] shrink-0 font-semibold">코너 유형</span>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {['전체', ...tops].map((t) => (
-                <button key={t} onClick={() => pickTop(t)}
-                  className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition ${top === t ? 'border-[#3617ce] bg-[#3617ce] text-white' : 'border-[#e3e6ea] bg-white text-[#454f59] hover:border-[#3617ce] hover:text-[#3617ce]'}`}>
-                  {t}
-                </button>
-              ))}
-            </div>
+          {/* 필터1·2 — 코너 유형(뎁스1)·중분류(뎁스2) 드롭다운(2026-11-26 사용자 요청: 칩 → 드롭다운 2필터).
+              코너 유형을 바꾸면 중분류는 그 하위로 좁혀지고 '전체'로 리셋. 코너 유형='전체'면 중분류는 전체 중분류. */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px] text-[#454f59]">
+            <label className="flex items-center gap-2">
+              <span className="w-[72px] shrink-0 font-semibold">코너 유형</span>
+              <span className="relative">
+                <select value={top} onChange={(e) => pickTop(e.target.value)}
+                  className="h-[38px] w-[180px] appearance-none rounded-[6px] border border-[#c4c9cf] bg-white pl-3 pr-9 text-[14px] text-[#1a1a1a] outline-none focus:border-[#b3b9c0]">
+                  <option value="전체">전체 (코너 유형)</option>
+                  {tops.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b949e]" />
+              </span>
+            </label>
+            <label className="flex items-center gap-2">
+              <span className="w-[56px] shrink-0 font-semibold">중분류</span>
+              <span className="relative">
+                <select value={mid} onChange={(e) => setMid(e.target.value)} disabled={mids.length === 0}
+                  className="h-[38px] w-[180px] appearance-none rounded-[6px] border border-[#c4c9cf] bg-white pl-3 pr-9 text-[14px] text-[#1a1a1a] outline-none focus:border-[#b3b9c0] disabled:cursor-not-allowed disabled:bg-[#f1f3f5] disabled:text-[#b3b9c0]">
+                  <option value="전체">전체 (중분류)</option>
+                  {mids.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b949e]" />
+              </span>
+            </label>
           </div>
-          {/* 필터2 — 중분류(선택). 코너 유형을 먼저 고른 뒤에만 노출(2026-11-25 사용자 요청: 코너 유형이 1차, 중분류는 선택). */}
-          {top !== '전체' && mids.length > 0 && (
-          <div className="flex items-start gap-2 text-[13px] text-[#454f59]">
-            <span className="mt-1 w-[72px] shrink-0 font-semibold">중분류 <span className="font-normal text-[#b3b9c0]">선택</span></span>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {['전체', ...mids].map((m) => (
-                <button key={m} onClick={() => setMid(m)}
-                  className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition ${mid === m ? 'border-[#3617ce] bg-[#3617ce] text-white' : 'border-[#e3e6ea] bg-white text-[#454f59] hover:border-[#3617ce] hover:text-[#3617ce]'}`}>
-                  {m}
-                </button>
-              ))}
-            </div>
-          </div>
-          )}
           <div className="flex items-center gap-2">
             <label className="flex flex-1 items-center gap-2 text-[13px] text-[#454f59]">
               <span className="w-[72px] shrink-0 font-semibold">직접 검색</span>
