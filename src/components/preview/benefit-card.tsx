@@ -119,7 +119,8 @@ export function BenefitPreviewCard({ corner, design, squareThumb, itemButton, mi
   const tw = mid ? (MID_TITLE_WORD[mid] ?? mid.replace('형', '')) : null;
   const iw = mid ? (MID_ITEM_WORD[mid] ?? tw ?? '') : null;
   const titlePh = tw ? `{${tw} 타이틀}` : null;
-  const itemPh = iw ? `{${iw} 내용}` : null;
+  // 혜택프로그램형 아이템은 개별 혜택이라 '{혜택명}'으로 표기(2026-11-26 사용자 요청).
+  const itemPh = mid === '혜택프로그램형' ? '{혜택명}' : (iw ? `{${iw} 내용}` : null);
   const showImage = !!corner.bigBanner;
   const showContext = !!corner.contextHeader;
   const showSubCta = corner.subTitle != null && corner.subTitle !== '' && corner.subTitle !== 'ButtonText';
