@@ -2854,7 +2854,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
               bigBanner: true,
               contextHeader: hasCtx,
               information: true,
-              moreButtonUse: design !== 'barcode',
+              moreButtonUse: !!c.preview.moreButtonUse,  // 하단 CTA만 기본 제외(③ 토글 N과 일치) — 잘 안 써서. 토글 Y로 켜면 노출(2026-11-27 사용자 요청)
             };
             return <BenefitPreviewCard corner={fullPreview} design={design} mid={mid} squareThumb={squareThumb} itemButton={itemButton} />;
           }
