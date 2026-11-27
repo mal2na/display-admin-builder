@@ -912,11 +912,8 @@ export function DeviceFrame({
     <div style={fillBox ? undefined : { width }} className={cn(fillBox ? 'flex h-full w-full flex-col' : 'mx-auto max-w-full', fill && 'flex min-h-0 flex-1 flex-col')}>
       <div className={cn('overflow-hidden shadow-xl', boxed && 'flex min-h-0 flex-1 flex-col', slim ? 'rounded-[30px] border-[3px] border-[#1d1e2c] bg-white' : 'rounded-[2.2rem] border-[10px] border-slate-900 bg-slate-100')}>
         {slim ? (
-          // 미니멀 상단 — OS 상태바(9:41) 제거, 앱 헤더(뒤로/공유·메뉴)만(2026-11-19 사용자 요청: 상품 레퍼런스처럼 깔끔히)
-          <div className="flex shrink-0 items-center justify-between border-b border-[var(--line2)] bg-white px-3.5 py-2.5 text-slate-500">
-            <ChevronLeft className="h-[18px] w-[18px]" />
-            <div className="flex items-center gap-3"><Share className="h-[17px] w-[17px]" /><Menu className="h-[18px] w-[18px]" /></div>
-          </div>
+          // 앱 헤더(뒤로/공유·메뉴) 제거 — 미리보기 콘텐츠 위 헤더 바 숨김(2026-11-26 사용자 요청).
+          null
         ) : (
           <>
             <div className="flex shrink-0 items-center justify-between bg-slate-100 px-5 py-2 text-xs font-semibold text-slate-900">

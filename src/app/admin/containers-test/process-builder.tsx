@@ -591,9 +591,13 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
   const FILL_MODE_LABEL: Record<string, string> = { '운영자 직접': '운영자 직접', '운영자 고정 + 추천': '코너 고정 · 콘텐츠 추천', '전부 추천': '전부 추천' };
   // ③ 섹션 타이틀 = ② 채우는 방식에서 고른 라벨과 동일하게(2026-11-26 사용자 요청). ② 라디오 라벨과 일치.
   const FILL_MODE_SEC_TITLE: Record<string, string> = { '운영자 직접': '운영자 편성', '운영자 고정 + 추천': '운영자 편성 + 추천', '전부 추천': '구좌 전체 추천' };
-  const [fillMode, setFillMode] = React.useState<string>(() => (
-    isQuickMenu ? '운영자 고정 + 추천'  // 퀵메뉴(카테고리 탭)는 6+6(운영자 고정 + 추천) — 구좌 전체 추천 불가(2026-11-26 사용자 요청)
-    : (corner.zone === 'personal' || (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal)) ? '전부 추천' : '운영자 직접'));
+  // fillMode 기본값 = 코너 recSource에서 파생(③ 섹션·미리보기 일치). null/운영자 편성 → 운영자 직접(내용 표시), CVM 콘텐츠 연동 → 전부 추천(빈 구좌). 새로고침해도 DB 그대로라 안 바뀜(2026-11-26 사용자 요청).
+  const [fillMode, setFillMode] = React.useState<string>(() => {
+    if (isQuickMenu) return '운영자 고정 + 추천';  // 퀵메뉴(카테고리 탭)는 6+6 — 구좌 전체 추천 불가
+    if (/(출석체크|룰렛)/.test(corner.name) && corner.canPersonal) return '전부 추천';  // 출석·룰렛은 개인화 전용
+    const rec = corner.recSource ?? '';
+    return rec === 'CVM 콘텐츠 연동' ? '전부 추천' : rec === 'CVM 데이터 연동' ? '운영자 고정 + 추천' : '운영자 직접';
+  });
   // 채우는 방식(fillMode) → 수급(recSource) 매핑. ② 라디오 선택이 코너 recSource에 반영돼야 미리보기가 'CVM 구좌'로 바뀐다(2026-11-26 사용자 요청: 개인화면 뚫린 구좌).
   const FILL_TO_REC: Record<string, string> = { '운영자 직접': '운영자 편성', '운영자 고정 + 추천': 'CVM 데이터 연동', '전부 추천': 'CVM 콘텐츠 연동' };
   // 모드 전환(운영자 편성 ↔ 운영자 편성+추천)은 미리보기를 바꾸지 않는다 — 추천 맥락 헤더는 여기서 자동 토글하지 않고, 아래 Y/N 토글(ctxHeaderOn)로만 제어(2026-11-26 사용자 요청: 클릭할 때마다 좌측 이미지가 변하면 안 됨).
@@ -758,10 +762,11 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
     if (didSyncRef.current) return;
     didSyncRef.current = true;
     const opts: Record<string, boolean> = { ...optOn };
+    delete opts['배너']; // 배너(상단 이미지)는 마운트에서 강제하지 않는다 — 코너를 '선택'할 때 배너가 '뿅' 나타나던 문제(2026-11-26 사용자 요청). 토글을 바꾸면 그때 반영.
     if (isCategory || availOptions.includes('칩')) opts['칩'] = catOn; // 카테고리 설정(catOn)에 칩 노출 동기화 — off면 칩 제거(2026-11-25 사용자 요청)
     onOptionsChange(opts, ctaLabelVal);
     const patch: Record<string, unknown> = {
-      contextHeader: (isPersonal || fillMode !== '운영자 직접') ? ctxHeaderOn : false,
+      // 추천 맥락 헤더도 마운트에서 강제하지 않는다 — 선택 시 헤더가 '뿅' 나타나지 않게. 토글(아래 Y/N)로만 켠다(2026-11-26 사용자 요청).
       information: isPersonal ? false : infoOn,
     };
     if (isCategory && !subCtaOn) patch.subTitle = null;
@@ -1326,8 +1331,8 @@ function CornerDetailBody({ template, corner, libCorners, onPreviewFallback, onF
                   </>)}
                 </FormBlock>
               )}
-              {/* 추천 맥락 헤더 — '추천'을 쓸 때만(운영자 편성+추천·구좌 전체 추천) Y/N로 노출. 운영자 편성(추천 아님)이면 숨김(2026-11-26 사용자 요청). */}
-              {fillMode !== '운영자 직접' && (
+              {/* 추천 맥락 헤더 — '추천'을 쓸 때만(운영자 편성+추천·구좌 전체 추천) Y/N로 노출. 운영자 편성·업무진입형(퀵메뉴)은 숨김(2026-11-26 사용자 요청: 업무진입형은 맥락 헤더 뜨면 안 됨). */}
+              {fillMode !== '운영자 직접' && !isQuickMenu && (
                 <FormBlock title="추천 맥락 헤더" desc="개인화 추천 근거 밴드 · API 활동 기록일">
                   <FormRow label="사용 여부" req>
                     <RadioRow options={['Y', 'N'] as const} value={ctxHeaderOn ? 'Y' : 'N'} onChange={(v) => { const on = v === 'Y'; setCtxHeaderOn(on); onPreviewPatch({ contextHeader: on, contextHeaderText: ctxHeaderText || null }); }} />
@@ -2167,13 +2172,7 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
       fixed={c.zone === 'fixed'} isPersonal={c.zone === 'personal'} on={!hiddenIds.has(c.templateCornerId)} onToggleOn={() => onToggleHidden(c.templateCornerId)}
       onSelect={() => onSelect(c.id)} onToggleFixed={() => toggleFixed(c)} onDelete={() => setDeleteTarget(c)} onToast={onToast} />
   );
-  // 코너 추가 버튼 — 리스트 하단 하나로(2026-11-25 사용자 요청). 영역 지정 없이 추가 → 기본 운영 구성(dynamic), 이후 상세에서 고정/개인화 선택.
-  const AddBtn = () => (
-    <button type="button" onClick={() => onAddCorner()}
-      className="flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-dashed border-[var(--line3)] bg-white px-2 py-2.5 text-[13px] font-semibold text-[var(--ink3)] transition hover:border-[var(--ac)] hover:text-[var(--ac)]">
-      <Plus className="h-4 w-4" /> 코너 추가
-    </button>
-  );
+  // 코너 추가 버튼은 TemplateCard의 박스 하단에 고정 렌더(스크롤 바깥) — 여기(리스트 안)에선 렌더 안 함(2026-11-27 사용자 요청).
   const EmptyRow = ({ text }: { text: string }) => (
     <p className="rounded-[8px] bg-white px-3 py-2.5 text-center text-[11px] text-[var(--ink4)]">{text}</p>
   );
@@ -2185,7 +2184,7 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
         <div className="space-y-1.5">
           {rows.map(chipOf)}
           {rows.length === 0 && <EmptyRow text="아래에서 코너를 추가하세요" />}
-          <AddBtn />
+          {/* 코너 추가 버튼은 스크롤 리스트 '바깥'(박스 하단)에 고정 — 코너 추가 시 같이 내려가지 않게(2026-11-27 사용자 요청). AddBtn은 TemplateCard에서 렌더. */}
         </div>
       </SortableContext>
       {/* 코너 삭제 확인 — 디자인 모달(시스템 confirm 대체, 2026-11-12 사용자 요청). */}
@@ -2439,6 +2438,11 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
                     onSelect={(id) => { onActivate(); onSelCorner(id); }} onAddCorner={onAddCorner} onToast={onToast}
                     hiddenIds={hiddenIds} onToggleHidden={onToggleHidden} />
                 </div>
+                {/* 코너 추가 — 스크롤 리스트 바깥, 박스 하단에 고정(코너 추가해도 안 내려감, 2026-11-27 사용자 요청) */}
+                <button type="button" onClick={() => onAddCorner()}
+                  className="mt-2 flex w-full shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-dashed border-[var(--line3)] bg-white px-2 py-2.5 text-[13px] font-semibold text-[var(--ink3)] transition hover:border-[var(--ac)] hover:text-[var(--ac)]">
+                  <Plus className="h-4 w-4" /> 코너 추가
+                </button>
               </div>
               {/* 코너 상세 — 독립 스크롤 */}
               <div className="min-h-0 overflow-y-auto pr-0.5">
@@ -2657,22 +2661,20 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
 
   // 코너 순서·존의 공유 상태 — 리스트(BandedCorners)와 미리보기가 같은 state를 본다.
   //  드래그/고정으로 즉시 미리보기 반영, 서버 refresh 시 활성 템플릿 코너로 재동기화(2026-10-21).
-  // 추천(구좌 전체 추천) 기본 코너는 recSource를 'CVM 콘텐츠 연동'으로 맞춰 '빈 구좌(추천 구좌)'로 뜨게 한다 — 추천이면 구좌를 비워야 하고 클릭 전/새로고침 후에도 유지(2026-11-26 사용자 요청: 추천은 구좌를 비워달라).
-  //  대상 = fillMode 기본값이 '전부 추천'인 코너(개인화 영역 zone='personal' 또는 출석체크·룰렛). 서버 코너를 liveCorners에 반영할 때마다 함께 적용. 운영자가 ②에서 로컬로 바꾼 선택은 liveCorners에만 있어 덮이지 않음.
-  const syncRec = React.useCallback((raw: PCorner[]): PCorner[] => raw.map((c) => {
-    // 업무진입형(퀵메뉴·상태·프로필·바코드)은 구좌 전체 추천(빈 구좌) 대상 아님 — 메뉴/카드 아이템이라 제외(2026-11-26 사용자 요청).
-    const defaultAllRec = c.cornerType !== '업무 진입형' && (c.zone === 'personal' || (/(출석체크|룰렛)/.test(c.name) && c.canPersonal));
-    return (defaultAllRec && (c.recSource == null || c.recSource === '운영자 편성')) ? { ...c, recSource: 'CVM 콘텐츠 연동', isCvm: true } : c;
-  }), []);
-  const [liveCorners, setLiveCorners] = React.useState<PCorner[]>(() => syncRec(activeTemplate?.corners ?? []));
-  // 템플릿당 1회만 서버 코너 → liveCorners 반영(+추천 기본 동기화). 같은 템플릿에서의 서버 새로고침(zone 저장 등)은 무시해 운영자가 ②에서 바꾼 선택이 되돌아가지 않게(2026-11-26 사용자 요청: 운영자 편성+추천은 내용 유지).
-  const syncedTplRef = React.useRef<string | null>(null);
+  // 미리보기 코너는 DB recSource를 '그대로' 쓴다 — 강제 동기화(syncRec) 제거. 새로고침 때마다 '추천 구좌'로 바뀌던 문제 해결(2026-11-26 사용자 요청: 왜 자꾸 돌아가냐). '추천 구좌(빈 구좌)'는 코너의 recSource가 실제로 'CVM 콘텐츠 연동'일 때(또는 운영자가 ②에서 구좌 전체 추천 선택 시)만.
+  const [liveCorners, setLiveCorners] = React.useState<PCorner[]>(activeTemplate?.corners ?? []);
+  // 서버 코너를 liveCorners에 반영하되, 운영자가 ②에서 로컬로 바꾼 값(recSource·존·미리보기·폴백)은 '유지'한다.
+  //  zone 저장(setTestCornerZone) 등으로 서버가 리렌더될 때 recSource가 시드로 덮여 '구좌 전체 추천'이 원복되던 문제 해결(2026-11-27 사용자 요청). 새 코너(코너 추가)는 그대로 추가.
   React.useEffect(() => {
-    const tid = activeTemplate?.id ?? null;
-    if (syncedTplRef.current === tid) return;
-    syncedTplRef.current = tid;
-    setLiveCorners(syncRec(activeTemplate?.corners ?? []));
-  }, [activeTemplate?.id, activeTemplate?.corners, syncRec]);
+    const server = activeTemplate?.corners ?? [];
+    setLiveCorners((prev) => {
+      const byId = new Map(prev.map((c) => [c.templateCornerId, c]));
+      return server.map((sc) => {
+        const local = byId.get(sc.templateCornerId);
+        return local ? { ...sc, recSource: local.recSource, isCvm: local.isCvm, zone: local.zone, preview: local.preview, fallback: local.fallback } : sc;
+      });
+    });
+  }, [activeTemplate?.corners]);
   const totalCorners = liveCorners.length;
   // 노출 토글(코너 카드)로 숨긴 코너 — 좌측 미리보기에서도 빠진다(2026-11-12 사용자 요청). templateCornerId 기준.
   const [hiddenIds, setHiddenIds] = React.useState<Set<string>>(new Set());
@@ -2843,16 +2845,17 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           const squareThumb = c.sbImage ? /event|support/.test(c.sbImage) : (mid === '이벤트형' || mid === '이용지원형');
           const itemButton = c.sbImage ? c.sbImage.includes('mission') : (mid === '미션형' && design === 'list');
           if (design && c.preview) {
-            // 코너 불러오기 미리보기 — 배너·맥락 헤더·추가 인포는 기본 노출(모달과 일치). 단 하단 CTA는 기본 OFF(잘 안 씀) → 토글/입력값 따름(2026-11-26 사용자 요청).
-            // 추천 맥락 헤더 = '추천'일 때만. 운영자 편성이면 끄고, 추천 모드에선 Y/N 토글값(c.preview.contextHeader)을 따른다(2026-11-26 사용자 요청).
-            // 추천 맥락 헤더 = 토글값(c.preview.contextHeader)만 따른다 — 모드(운영자 편성↔+추천)로 켜지고 꺼지지 않게(2026-11-26 사용자 요청).
-            const showCtx = !!c.preview.contextHeader;
+            // 코너 추가 미리보기 = 코너 추가 모달(BenefitCornerPreview)과 '동일한' 풀 패키지 — 배너·추천 맥락 헤더·추가 인포·하단 CTA 모두 포함(2026-11-27 사용자 요청: 모달이랑 동일하게, 배너·버튼 지우지 말 것).
+            //  모든 코너에 일관 적용하므로 '선택'해도 배너가 뿅 나타나지 않음(선택 전후 동일). 운영자 편성 ↔ 운영자 편성+추천도 동일(구좌 전체 추천만 빈 구좌).
+            const CTX_MIDS = new Set(['제휴사형', '이벤트형', '혜택프로그램형']);
+            const hasCtx = mid ? CTX_MIDS.has(mid) : false;
+            // ③ 폼 입력·토글을 좌측 미리보기에 '다 반영'한다 — 각 값은 c.preview(입력값)를 따르고, 미설정(undefined)일 때만 풀 패키지 기본값 적용(2026-11-27 사용자 요청: 배너 끄면 꺼지고·코너 타이틀/서브 CTA 타이핑하면 보여야).
             const fullPreview = {
-              ...c.preview,
-              bigBanner: !!c.preview.bigBanner,
-              contextHeader: showCtx,
-              information: true,
-              moreButtonUse: !!c.preview.moreButtonUse,
+              ...c.preview,  // mainTitle(코너 타이틀)·subTitle(서브 CTA 버튼 텍스트) 등 입력값 그대로 사용
+              bigBanner: c.preview.bigBanner ?? true,          // 상단 이미지: 기본 ON, N으로 끄면 OFF
+              contextHeader: c.preview.contextHeader ?? hasCtx, // 추천 맥락 헤더: 토글 따름, 기본은 중분류 기준
+              information: c.preview.information ?? true,
+              moreButtonUse: !!c.preview.moreButtonUse,          // 하단 CTA: 기본 OFF
             };
             return <BenefitPreviewCard corner={fullPreview} design={design} mid={mid} squareThumb={squareThumb} itemButton={itemButton} />;
           }
@@ -2881,18 +2884,9 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-[13px] text-slate-400">코너 구성 시 미리보기가 표시됩니다.</div>
   );
 
-  // 메인홈(AI 어시스턴트) — SB [홈]유형 배경(연보라 그라데이션) + 하단 AI 입력바(2026-11-25 사용자 요청: 메인홈 UI 맞춤).
+  // 메인홈(AI 어시스턴트) — SB [홈]유형 배경(연보라 그라데이션)만. 하단 AI 입력바는 제거(2026-11-26 사용자 요청).
   const isMainHome = /메인홈/.test(data.containerName);
   const mainHomeBg = 'bg-gradient-to-b from-[#fcfcff] via-[#f1f3ff] to-[#e6ebfb]';
-  const mainHomeFooter = (
-    <div className="shrink-0 bg-transparent px-3 pb-3 pt-2">
-      <div className="flex items-center gap-2 rounded-full border border-[#dcdff2] bg-white px-3.5 py-2.5 shadow-[0_2px_10px_rgba(50,56,120,0.10)]">
-        <Sparkles className="h-4 w-4 shrink-0 text-[#4b59ff]" />
-        <span className="min-w-0 flex-1 truncate text-[13px] text-[#9aa0b4]">T에 대해 무엇이든 물어보세요</span>
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#6a5cff] to-[#4b59ff] text-white"><ArrowRight className="h-3.5 w-3.5" /></span>
-      </div>
-    </div>
-  );
 
   return (
     <ProductCatalogCtx.Provider value={data.catalogByType ?? {}}>
@@ -2955,7 +2949,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
               marginBottom: 'var(--dev-bottom)',
             } as React.CSSProperties}
           >
-          <DeviceFrame width={device.w} bodyHeight={0} fillBox headerLabel={data.containerName} slim bodyClassName={isMainHome ? mainHomeBg : undefined} footer={isMainHome ? mainHomeFooter : undefined}>
+          <DeviceFrame width={device.w} bodyHeight={0} fillBox headerLabel={data.containerName} slim bodyClassName={isMainHome ? mainHomeBg : undefined}>
                   {previewBody}
           </DeviceFrame>
           </div>
@@ -2976,7 +2970,7 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             </div>
             <div className="flex min-h-0 flex-1 justify-center overflow-auto py-1">
               <div className="h-full shrink-0" style={{ width: device.w }} onClick={(e) => e.stopPropagation()}>
-                <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim bodyClassName={isMainHome ? mainHomeBg : undefined} footer={isMainHome ? mainHomeFooter : undefined}>{previewBody}</DeviceFrame>
+                <DeviceFrame width={device.w} bodyHeight={0} fill headerLabel={data.containerName} slim bodyClassName={isMainHome ? mainHomeBg : undefined}>{previewBody}</DeviceFrame>
               </div>
             </div>
           </div>
