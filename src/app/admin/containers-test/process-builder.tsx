@@ -2172,13 +2172,7 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
       fixed={c.zone === 'fixed'} isPersonal={c.zone === 'personal'} on={!hiddenIds.has(c.templateCornerId)} onToggleOn={() => onToggleHidden(c.templateCornerId)}
       onSelect={() => onSelect(c.id)} onToggleFixed={() => toggleFixed(c)} onDelete={() => setDeleteTarget(c)} onToast={onToast} />
   );
-  // 코너 추가 버튼 — 리스트 하단 하나로(2026-11-25 사용자 요청). 영역 지정 없이 추가 → 기본 운영 구성(dynamic), 이후 상세에서 고정/개인화 선택.
-  const AddBtn = () => (
-    <button type="button" onClick={() => onAddCorner()}
-      className="flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-dashed border-[var(--line3)] bg-white px-2 py-2.5 text-[13px] font-semibold text-[var(--ink3)] transition hover:border-[var(--ac)] hover:text-[var(--ac)]">
-      <Plus className="h-4 w-4" /> 코너 추가
-    </button>
-  );
+  // 코너 추가 버튼은 TemplateCard의 박스 하단에 고정 렌더(스크롤 바깥) — 여기(리스트 안)에선 렌더 안 함(2026-11-27 사용자 요청).
   const EmptyRow = ({ text }: { text: string }) => (
     <p className="rounded-[8px] bg-white px-3 py-2.5 text-center text-[11px] text-[var(--ink4)]">{text}</p>
   );
@@ -2190,7 +2184,7 @@ function BandedCorners({ corners, onCornersChange, templateId, selCorner, onSele
         <div className="space-y-1.5">
           {rows.map(chipOf)}
           {rows.length === 0 && <EmptyRow text="아래에서 코너를 추가하세요" />}
-          <AddBtn />
+          {/* 코너 추가 버튼은 스크롤 리스트 '바깥'(박스 하단)에 고정 — 코너 추가 시 같이 내려가지 않게(2026-11-27 사용자 요청). AddBtn은 TemplateCard에서 렌더. */}
         </div>
       </SortableContext>
       {/* 코너 삭제 확인 — 디자인 모달(시스템 confirm 대체, 2026-11-12 사용자 요청). */}
@@ -2444,6 +2438,11 @@ function TemplateCard({ t, corners, onCornersChange, idx, open, active, onToggle
                     onSelect={(id) => { onActivate(); onSelCorner(id); }} onAddCorner={onAddCorner} onToast={onToast}
                     hiddenIds={hiddenIds} onToggleHidden={onToggleHidden} />
                 </div>
+                {/* 코너 추가 — 스크롤 리스트 바깥, 박스 하단에 고정(코너 추가해도 안 내려감, 2026-11-27 사용자 요청) */}
+                <button type="button" onClick={() => onAddCorner()}
+                  className="mt-2 flex w-full shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-dashed border-[var(--line3)] bg-white px-2 py-2.5 text-[13px] font-semibold text-[var(--ink3)] transition hover:border-[var(--ac)] hover:text-[var(--ac)]">
+                  <Plus className="h-4 w-4" /> 코너 추가
+                </button>
               </div>
               {/* 코너 상세 — 독립 스크롤 */}
               <div className="min-h-0 overflow-y-auto pr-0.5">
@@ -2664,7 +2663,18 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
   //  드래그/고정으로 즉시 미리보기 반영, 서버 refresh 시 활성 템플릿 코너로 재동기화(2026-10-21).
   // 미리보기 코너는 DB recSource를 '그대로' 쓴다 — 강제 동기화(syncRec) 제거. 새로고침 때마다 '추천 구좌'로 바뀌던 문제 해결(2026-11-26 사용자 요청: 왜 자꾸 돌아가냐). '추천 구좌(빈 구좌)'는 코너의 recSource가 실제로 'CVM 콘텐츠 연동'일 때(또는 운영자가 ②에서 구좌 전체 추천 선택 시)만.
   const [liveCorners, setLiveCorners] = React.useState<PCorner[]>(activeTemplate?.corners ?? []);
-  React.useEffect(() => { setLiveCorners(activeTemplate?.corners ?? []); }, [activeTemplate?.corners]);
+  // 서버 코너를 liveCorners에 반영하되, 운영자가 ②에서 로컬로 바꾼 값(recSource·존·미리보기·폴백)은 '유지'한다.
+  //  zone 저장(setTestCornerZone) 등으로 서버가 리렌더될 때 recSource가 시드로 덮여 '구좌 전체 추천'이 원복되던 문제 해결(2026-11-27 사용자 요청). 새 코너(코너 추가)는 그대로 추가.
+  React.useEffect(() => {
+    const server = activeTemplate?.corners ?? [];
+    setLiveCorners((prev) => {
+      const byId = new Map(prev.map((c) => [c.templateCornerId, c]));
+      return server.map((sc) => {
+        const local = byId.get(sc.templateCornerId);
+        return local ? { ...sc, recSource: local.recSource, isCvm: local.isCvm, zone: local.zone, preview: local.preview, fallback: local.fallback } : sc;
+      });
+    });
+  }, [activeTemplate?.corners]);
   const totalCorners = liveCorners.length;
   // 노출 토글(코너 카드)로 숨긴 코너 — 좌측 미리보기에서도 빠진다(2026-11-12 사용자 요청). templateCornerId 기준.
   const [hiddenIds, setHiddenIds] = React.useState<Set<string>>(new Set());
@@ -2835,16 +2845,16 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
           const squareThumb = c.sbImage ? /event|support/.test(c.sbImage) : (mid === '이벤트형' || mid === '이용지원형');
           const itemButton = c.sbImage ? c.sbImage.includes('mission') : (mid === '미션형' && design === 'list');
           if (design && c.preview) {
-            // 코너 불러오기 미리보기 — 배너·맥락 헤더·추가 인포는 기본 노출(모달과 일치). 단 하단 CTA는 기본 OFF(잘 안 씀) → 토글/입력값 따름(2026-11-26 사용자 요청).
-            // 추천 맥락 헤더 = '추천'일 때만. 운영자 편성이면 끄고, 추천 모드에선 Y/N 토글값(c.preview.contextHeader)을 따른다(2026-11-26 사용자 요청).
-            // 추천 맥락 헤더 = 토글값(c.preview.contextHeader)만 따른다 — 모드(운영자 편성↔+추천)로 켜지고 꺼지지 않게(2026-11-26 사용자 요청).
-            const showCtx = !!c.preview.contextHeader;
+            // 코너 추가 미리보기 = 코너 추가 모달(BenefitCornerPreview)과 '동일한' 풀 패키지 — 배너·추천 맥락 헤더·추가 인포·하단 CTA 모두 포함(2026-11-27 사용자 요청: 모달이랑 동일하게, 배너·버튼 지우지 말 것).
+            //  모든 코너에 일관 적용하므로 '선택'해도 배너가 뿅 나타나지 않음(선택 전후 동일). 운영자 편성 ↔ 운영자 편성+추천도 동일(구좌 전체 추천만 빈 구좌).
+            const CTX_MIDS = new Set(['제휴사형', '이벤트형', '혜택프로그램형']);
+            const hasCtx = mid ? CTX_MIDS.has(mid) : false;
             const fullPreview = {
               ...c.preview,
-              bigBanner: !!c.preview.bigBanner,
-              contextHeader: showCtx,
+              bigBanner: true,
+              contextHeader: hasCtx,
               information: true,
-              moreButtonUse: !!c.preview.moreButtonUse,
+              moreButtonUse: design !== 'barcode',
             };
             return <BenefitPreviewCard corner={fullPreview} design={design} mid={mid} squareThumb={squareThumb} itemButton={itemButton} />;
           }
