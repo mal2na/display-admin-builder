@@ -2849,12 +2849,13 @@ export function ProcessBuilder({ data, isNew = false }: { data: ProcessData; isN
             //  모든 코너에 일관 적용하므로 '선택'해도 배너가 뿅 나타나지 않음(선택 전후 동일). 운영자 편성 ↔ 운영자 편성+추천도 동일(구좌 전체 추천만 빈 구좌).
             const CTX_MIDS = new Set(['제휴사형', '이벤트형', '혜택프로그램형']);
             const hasCtx = mid ? CTX_MIDS.has(mid) : false;
+            // ③ 폼 입력·토글을 좌측 미리보기에 '다 반영'한다 — 각 값은 c.preview(입력값)를 따르고, 미설정(undefined)일 때만 풀 패키지 기본값 적용(2026-11-27 사용자 요청: 배너 끄면 꺼지고·코너 타이틀/서브 CTA 타이핑하면 보여야).
             const fullPreview = {
-              ...c.preview,
-              bigBanner: true,
-              contextHeader: hasCtx,
-              information: true,
-              moreButtonUse: !!c.preview.moreButtonUse,  // 하단 CTA만 기본 제외(③ 토글 N과 일치) — 잘 안 써서. 토글 Y로 켜면 노출(2026-11-27 사용자 요청)
+              ...c.preview,  // mainTitle(코너 타이틀)·subTitle(서브 CTA 버튼 텍스트) 등 입력값 그대로 사용
+              bigBanner: c.preview.bigBanner ?? true,          // 상단 이미지: 기본 ON, N으로 끄면 OFF
+              contextHeader: c.preview.contextHeader ?? hasCtx, // 추천 맥락 헤더: 토글 따름, 기본은 중분류 기준
+              information: c.preview.information ?? true,
+              moreButtonUse: !!c.preview.moreButtonUse,          // 하단 CTA: 기본 OFF
             };
             return <BenefitPreviewCard corner={fullPreview} design={design} mid={mid} squareThumb={squareThumb} itemButton={itemButton} />;
           }
